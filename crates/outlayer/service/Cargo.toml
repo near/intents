@@ -1,0 +1,37 @@
+[package]
+name = "defuse-outlayer-service"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_with = { workspace = true, features = ["hex", "base64"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "sync"] }
+url.workspace = true
+ed25519-dalek.workspace = true
+
+bytes        = { version = "1", features = ["serde"] }
+uuid         = { version = "1", features = ["v4", "serde"] }
+serde_json   = "1"
+tower        = { version = "0.5", features = ["timeout", "util", "steer", "retry"] }
+sha2         = "0.10"
+base64       = "0.22"
+lru          = "0.12"
+reqwest      = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
+tokio-util   = { version = "0.7", features = ["io"] }
+futures-util = "0.3"
+anyhow.workspace = true
+defuse-outlayer-vm-runner      = { workspace = true }
+defuse-outlayer-host-functions = { workspace = true }
+wasmtime      = { workspace = true }
+wasmtime-wasi = { workspace = true }
+
+[dev-dependencies]
+defuse-outlayer-state = { workspace = true }
+clap.workspace = true
