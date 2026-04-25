@@ -1585,10 +1585,13 @@ version = "0.1.0"
 dependencies = [
  "borsh",
  "derive_more",
+ "digest 0.11.2",
+ "digest-io",
  "near-account-id",
  "schemars 0.8.22",
  "serde",
  "serde_with",
+ "sha3 0.11.0",
  "strum 0.27.2",
  "thiserror 2.0.17",
 ]

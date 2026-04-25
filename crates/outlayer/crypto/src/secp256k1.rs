@@ -13,9 +13,9 @@ impl DerivableCurve for Secp256k1 {
     type Tweak = NonZeroScalar;
     type Signature = (Signature, RecoveryId);
 
-    fn make_tweak(tweak: [u8; 32]) -> Self::Tweak {
+    fn make_tweak(hash: [u8; 32]) -> Self::Tweak {
         // TODO: are we sure that we need **non-zero** scalar?
-        <NonZeroScalar as Reduce<U256>>::reduce_bytes(&tweak.into())
+        <NonZeroScalar as Reduce<U256>>::reduce_bytes(&hash.into())
     }
 }
 

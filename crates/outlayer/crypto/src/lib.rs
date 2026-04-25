@@ -4,23 +4,13 @@ pub mod signer;
 
 use std::{rc::Rc, sync::Arc};
 
-use borsh::BorshSerialize;
-use digest::Digest;
-use digest_io::IoWrapper;
 use impl_tools::autoimpl;
-use sha3::Sha3_256;
 
 pub trait DerivableCurve {
     type Tweak;
     type Signature;
 
-    fn make_tweak(tweak: [u8; 32]) -> Self::Tweak;
-
-    fn derive_tweak(path: impl BorshSerialize) -> Self::Tweak {
-        let mut hasher = IoWrapper(Sha3_256::new());
-        borsh::to_writer(&mut hasher, &path).expect("borsh");
-        Self::make_tweak(hasher.0.finalize().into())
-    }
+    fn make_tweak(hash: [u8; 32]) -> Self::Tweak;
 }
 
 pub trait DerivablePublicKey<C>: Sized
@@ -29,11 +19,6 @@ where
 {
     #[must_use]
     fn derive_from_tweak(&self, tweak: C::Tweak) -> Self;
-
-    #[must_use]
-    fn derive_from_borsh(&self, path: impl BorshSerialize) -> Self {
-        self.derive_from_tweak(C::derive_tweak(path))
-    }
 }
 
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
@@ -62,7 +47,7 @@ mod tests {
         C: DerivableCurve,
         <C as DerivableCurve>::Tweak: Copy,
     {
-        let tweak = <C as DerivableCurve>::derive_tweak(());
+        let tweak = <C as DerivableCurve>::make_tweak([42u8; 32]);
         let derived_pk = root_sk.public_key().derive_from_tweak(tweak);
 
         // TODO: type-safe msg or prehash?

@@ -15,11 +15,15 @@ strum.workspace = true
 thiserror.workspace = true
 
 borsh = { workspace = true, optional = true }
+digest = { workspace = true, optional = true }
+digest-io = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true }
+sha3 = { workspace = true, optional = true }
 
 [features]
 abi = ["borsh?/unstable__schema", "dep:schemars", "near-account-id/abi"]
 borsh = ["dep:borsh", "near-account-id/borsh"]
+digest = ["borsh", "dep:digest", "dep:digest-io", "dep:sha3"]
 serde = ["dep:serde", "dep:serde_with", "near-account-id/serde"]

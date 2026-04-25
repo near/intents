@@ -24,6 +24,8 @@ use strum::{EnumDiscriminants, EnumString};
 )]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, EnumDiscriminants, derive_more::From)]
 #[strum_discriminants(
+    doc = "Type of [`AppId`]",
+    vis(pub),
     name(AppIdType),
     derive(strum::Display, EnumString),
     strum(serialize_all = "snake_case"),
@@ -41,9 +43,7 @@ use strum::{EnumDiscriminants, EnumString};
         derive(borsh::BorshSerialize, borsh::BorshDeserialize),
         cfg_attr(feature = "abi", derive(borsh::BorshSchema)),
         borsh(use_discriminant = true),
-    ),
-    vis(pub),
-    doc = "Type of [`AppId`]"
+    )
 )]
 #[repr(u8)]
 /// Application identifier

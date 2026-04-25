@@ -13,8 +13,8 @@ impl DerivableCurve for Ed25519 {
     type Tweak = Scalar;
     type Signature = Signature;
 
-    fn make_tweak(tweak: [u8; 32]) -> Self::Tweak {
-        Scalar::from_bytes_mod_order(tweak)
+    fn make_tweak(hash: [u8; 32]) -> Self::Tweak {
+        Scalar::from_bytes_mod_order(hash)
     }
 }
 
