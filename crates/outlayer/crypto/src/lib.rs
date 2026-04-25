@@ -27,8 +27,10 @@ pub trait DerivablePublicKey<C>: Sized
 where
     C: DerivableCurve,
 {
+    #[must_use]
     fn derive_from_tweak(&self, tweak: C::Tweak) -> Self;
 
+    #[must_use]
     fn derive_from_borsh(&self, path: impl BorshSerialize) -> Self {
         self.derive_from_tweak(C::derive_tweak(path))
     }

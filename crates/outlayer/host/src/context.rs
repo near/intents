@@ -40,7 +40,7 @@ impl crate::outlayer::crypto::ed25519::Host for HostContext {
         crate::crypto::DerivableSigningKey::<Ed25519>::public_key(&self.signer)
             .derive_from_borsh(DerivationPath {
                 app_id: self.app_id.as_ref(),
-                path: &path,
+                path: path.into(),
             })
             .as_bytes()
             .to_vec()
@@ -51,7 +51,7 @@ impl crate::outlayer::crypto::ed25519::Host for HostContext {
             &self.signer,
             Ed25519::derive_tweak(DerivationPath {
                 app_id: self.app_id.as_ref(),
-                path: &path,
+                path: path.into(),
             }),
             &msg,
         )
@@ -64,7 +64,7 @@ impl crate::outlayer::crypto::secp256k1::Host for HostContext {
         crate::crypto::DerivableSigningKey::<Secp256k1>::public_key(&self.signer)
             .derive_from_borsh(DerivationPath {
                 app_id: self.app_id.as_ref(),
-                path: &path,
+                path: path.into(),
             })
             .to_sec1_bytes()
             .to_vec()
@@ -76,7 +76,7 @@ impl crate::outlayer::crypto::secp256k1::Host for HostContext {
                 &self.signer,
                 Secp256k1::derive_tweak(DerivationPath {
                     app_id: self.app_id.as_ref(),
-                    path: &path,
+                    path: path.into(),
                 }),
                 &msg,
             );

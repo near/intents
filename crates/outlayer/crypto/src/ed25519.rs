@@ -21,7 +21,7 @@ impl DerivableCurve for Ed25519 {
 impl DerivablePublicKey<Ed25519> for VerifyingKey {
     fn derive_from_tweak(&self, tweak: <Ed25519 as DerivableCurve>::Tweak) -> Self {
         let derived_point = self.to_edwards() + EdwardsPoint::mul_base(&tweak);
-        VerifyingKey::from(derived_point)
+        Self::from(derived_point)
     }
 }
 
@@ -66,7 +66,7 @@ mod tests {
     fn roundtrip() {
         test_roundtrip(SigningKey::from_bytes(&[42u8; 32]), |pk, msg, signature| {
             pk.verify_strict(msg, &signature)
-                .expect("invalid signature")
+                .expect("invalid signature");
         });
     }
 }

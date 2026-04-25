@@ -9,15 +9,17 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
+derive_more = { workspace = true, features = ["from"] }
 near-account-id.workspace = true
+strum.workspace = true
+thiserror.workspace = true
 
 borsh = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
+serde_with = { workspace = true, optional = true }
 
 [features]
-default = ["abi", "borsh", "serde"] # TODO: remove
-
 abi = ["borsh?/unstable__schema", "dep:schemars", "near-account-id/abi"]
 borsh = ["dep:borsh", "near-account-id/borsh"]
-serde = ["dep:serde", "near-account-id/serde"]
+serde = ["dep:serde", "dep:serde_with", "near-account-id/serde"]

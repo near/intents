@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 defuse-outlayer-crypto.workspace = true
-defuse-outlayer-primitives.workspace = true
+defuse-outlayer-primitives = { workspace = true, features = ["borsh"] }
 
 borsh.workspace = true
 hkdf = { workspace = true, features = ["kdf"] }

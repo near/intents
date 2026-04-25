@@ -11,8 +11,6 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
-
     use defuse_outlayer_sdk::AccountId;
 
     use super::*;

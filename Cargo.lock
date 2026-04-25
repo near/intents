@@ -1584,9 +1584,13 @@ name = "defuse-outlayer-primitives"
 version = "0.1.0"
 dependencies = [
  "borsh",
+ "derive_more",
  "near-account-id",
  "schemars 0.8.22",
  "serde",
+ "serde_with",
+ "strum 0.27.2",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
