@@ -29,3 +29,15 @@ impl<'a> AppId<'a> {
         }
     }
 }
+
+impl From<AccountId> for AppId<'_> {
+    fn from(account_id: AccountId) -> Self {
+        Self::Near(Cow::Owned(account_id))
+    }
+}
+
+impl<'a> From<&'a AccountIdRef> for AppId<'a> {
+    fn from(account_id: &'a AccountIdRef) -> Self {
+        Self::Near(Cow::Borrowed(account_id))
+    }
+}

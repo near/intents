@@ -44,10 +44,6 @@ where
     fn public_key(&self) -> Self::PublicKey;
 
     fn sign_derive_from_tweak(&self, tweak: C::Tweak, msg: &[u8]) -> C::Signature;
-
-    fn sign_derive_from_borsh(&self, path: impl BorshSerialize, msg: &[u8]) -> C::Signature {
-        self.sign_derive_from_tweak(C::derive_tweak(path), msg)
-    }
 }
 
 #[cfg(test)]

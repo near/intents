@@ -14,7 +14,6 @@ mod tests {
     use std::borrow::Cow;
 
     use defuse_outlayer_sdk::AccountId;
-    use sdk::AppId;
 
     use super::*;
 
@@ -26,7 +25,7 @@ mod tests {
         println!("{pk:?}");
 
         sdk::host::mock::with(|h| {
-            h.with_app_id(AppId::near("test1.near".parse::<AccountId>().unwrap()));
+            h.with_app_id("test1.near".parse::<AccountId>().unwrap());
         });
 
         let pk = sdk::host::crypto::ed25519::derive_public_key(path);
