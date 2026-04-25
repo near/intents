@@ -45,9 +45,10 @@ members = [
   "crates/testing/randomness",
   "crates/testing/sandbox",
 
+  "crates/outlayer/crypto",
   "crates/outlayer/host",
+  "crates/outlayer/primitives",
   "crates/outlayer/sys",
-  "crates/outlayer/worker-host",
   "crates/outlayer/sdk",
 
   "tests",
@@ -105,10 +106,11 @@ defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
+defuse-outlayer-crypto.path = "crates/outlayer/crypto"
 defuse-outlayer-host.path = "crates/outlayer/host"
+defuse-outlayer-primitives.path = "crates/outlayer/primitives"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
 defuse-outlayer-sys.path = "crates/outlayer/sys"
-defuse-outlayer-worker-host.path = "crates/outlayer/worker-host"
 
 defuse-tests.path = "tests"
 
@@ -125,6 +127,18 @@ near-sandbox = "0.3.9"
 near-sdk = "5.26.1"
 near-workspaces = "0.22"
 
+curve25519-dalek = "4.1.3"
+digest = { version = "0.11", default-features = false }
+digest-io = "0.1.0"
+ed25519-dalek = { version = "2.1", default-features = false }
+hkdf = "0.13"
+k256 = "0.13.4"
+p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
+rand = "0.10"
+rand_core = "0.10"
+sha2 = "0.11"
+sha3 = "0.11"
+
 anyhow = "1"
 # TODO: `features = ["derive"]` needed because near-sdk uses `derive(Arbitrary)`
 # but doesn't enable the feature itself. Remove once fixed upstream in near-sdk.
@@ -132,11 +146,10 @@ arbitrary = { version = "1", features = ["derive"] }
 array-util = "1"
 bitflags = "2.9.1"
 bnum = { version = "0.13", features = ["borsh"] }
+borsh = "1.6.1"
 chrono = { version = "0.4", default-features = false }
 clap = { version = "4.5.55", features = ["derive"] }
 derive_more = "2.0"
-digest = { version = "0.10", default-features = false }
-ed25519-dalek = { version = "2.1", default-features = false }
 futures = "0.3"
 generic-array = "1"
 hex = "0.4"
@@ -144,10 +157,7 @@ hex-literal = "1.0"
 impl-tools = "0.11"
 itertools = "0.14"
 num-traits = "0.2.19"
-p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
 proptest = "1.5"
-rand = "0.10"
-rand_core = "0.10"
 rstest = "0.25"
 schemars = "0.8"
 serde = "1"
@@ -156,7 +166,7 @@ serde_with = "3.9"
 stellar-strkey = "0.0.13"
 strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
-tlb-ton = { version = "0.7.2", default-features = false }
+tlb-ton = { version = "0.8", default-features = false }
 tokio = { version = "1.45", default-features = false }
 tracing = "0.1"
 tracing-subscriber = "0.3"

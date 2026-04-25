@@ -1,0 +1,23 @@
+[package]
+name = "defuse-outlayer-primitives"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+near-account-id.workspace = true
+
+borsh = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+
+[features]
+default = ["abi", "borsh", "serde"] # TODO: remove
+
+abi = ["borsh?/unstable__schema", "dep:schemars", "near-account-id/abi"]
+borsh = ["dep:borsh", "near-account-id/borsh"]
+serde = ["dep:serde", "near-account-id/serde"]

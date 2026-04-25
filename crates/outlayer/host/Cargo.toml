@@ -9,4 +9,11 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-impl-tools.workspace = true
+defuse-outlayer-crypto.workspace = true
+defuse-outlayer-primitives.workspace = true
+
+borsh.workspace = true
+hkdf = { workspace = true, features = ["kdf"] }
+sha3.workspace = true
+
+wasmtime.workspace = true

@@ -1,0 +1,23 @@
+[package]
+name = "defuse-outlayer-crypto"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+borsh = { workspace = true, features = ["derive"] }
+# TODO: precomputed-tables?
+curve25519-dalek = { workspace = true, features = ["alloc", "zeroize"] }
+digest.workspace = true
+digest-io.workspace = true
+ed25519-dalek = { workspace = true, features = ["std", "digest", "fast", "hazmat", "zeroize"] }
+hex-literal.workspace = true
+hkdf = { workspace = true, features = ["kdf"] }
+impl-tools.workspace = true
+k256 = { workspace = true, features = ["arithmetic", "ecdsa"] }
+sha2.workspace = true
+sha3.workspace = true
