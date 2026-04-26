@@ -55,7 +55,8 @@ where
     /// [tweak](DerivableCurve::Tweak)
     fn sign(&self, tweak: &C::Tweak, msg: &[u8]) -> C::Signature;
 
-    /// Helper method to derive public key
+    /// Helper method to derive public key from [root](Self::public_key)
+    /// for given [tweak](DerivableCurve::Tweak)
     fn derive_public_key(&self, tweak: &C::Tweak) -> C::PublicKey {
         C::derive_public_key(&self.public_key(), tweak)
     }
@@ -67,10 +68,10 @@ mod tests {
 
     use super::*;
 
-    pub fn test_roundtrip<C, K>(root_sk: K)
+    pub fn test_roundtrip<C, S>(root_sk: S)
     where
         C: DerivableCurve,
-        K: DeriveSigner<C>,
+        S: DeriveSigner<C>,
     {
         let tweak = C::tweak([42u8; 32]); // TODO: rng?
         let derived_pk = C::derive_public_key(&root_sk.public_key(), &tweak);

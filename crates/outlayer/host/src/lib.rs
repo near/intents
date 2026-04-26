@@ -1,9 +1,9 @@
+pub mod crypto;
+
 pub use defuse_outlayer_primitives as primitives;
 use defuse_outlayer_primitives::AppId;
 
 use crate::crypto::Signer;
-
-mod crypto;
 
 // TODO: rename
 pub mod bindings {
