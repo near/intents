@@ -51,6 +51,7 @@ const _: () = {
 
 #[cfg(all(test, feature = "digest"))]
 mod tests {
+    use hex_literal::hex;
     use near_account_id::AccountIdRef;
     use rstest::rstest;
 
@@ -62,24 +63,23 @@ mod tests {
             app_id: AccountIdRef::new_or_panic("test.near").into(),
             path: "".into()
         },
-        "7beed0108170c657c97e189db048b402226b2681d427b36e1e62c1984985558b",
+        hex!("7beed0108170c657c97e189db048b402226b2681d427b36e1e62c1984985558b"),
     )]
     #[case(
         DerivationPath {
             app_id: AccountIdRef::new_or_panic("test.near").into(),
             path: "test".into()
         },
-        "fe502ff6b7cf154385169e4901b745739b2a0327cf2f80024535b3dd023abfc9",
+        hex!("fe502ff6b7cf154385169e4901b745739b2a0327cf2f80024535b3dd023abfc9"),
     )]
     #[case(
         DerivationPath {
             app_id: AccountIdRef::new_or_panic("0s1234567890abcdef1234567890abcdef12345678").into(),
             path: "test".into()
         },
-        "6f719da726eea8a6bd79f28fffea8f34c404278a6935a0a0c930e8464c91fd9b",
+        hex!("6f719da726eea8a6bd79f28fffea8f34c404278a6935a0a0c930e8464c91fd9b"),
     )]
-    fn derive_has_not_changed(#[case] path: DerivationPath<'_>, #[case] hash: &str) {
-        let got = hex::encode(path.hash());
-        assert_eq!(got, hash, "derived hash has changed");
+    fn derive_has_not_changed(#[case] path: DerivationPath<'_>, #[case] hash: [u8; 32]) {
+        assert_eq!(path.hash(), hash, "derived hash has changed");
     }
 }

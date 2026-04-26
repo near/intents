@@ -21,6 +21,13 @@ pub trait DerivableCurve {
     /// Public key of the curve
     type PublicKey;
 
+    /// Message for signing.
+    ///
+    /// This type can vary between different [`DerivableCurve`] implementatons:
+    /// some curves can sign arbitrary byte slices, while others might expect
+    /// prehashed messages of a specific size.
+    type Message: ?Sized;
+
     /// Signature of the curve
     type Signature;
 
@@ -32,7 +39,11 @@ pub trait DerivableCurve {
     fn derive_public_key(root: &Self::PublicKey, tweak: &Self::Tweak) -> Self::PublicKey;
 
     /// Verify the signature over the message for given public key
-    fn verify(public_key: &Self::PublicKey, msg: &[u8], signature: &Self::Signature) -> bool;
+    fn verify(
+        public_key: &Self::PublicKey,
+        msg: &Self::Message,
+        signature: &Self::Signature,
+    ) -> bool;
 }
 
 #[cfg(feature = "signing")]
@@ -53,7 +64,7 @@ where
 
     /// Sign given message with a secret key **internally** derived for given
     /// [tweak](DerivableCurve::Tweak)
-    fn sign(&self, tweak: &C::Tweak, msg: &[u8]) -> C::Signature;
+    fn sign(&self, tweak: &C::Tweak, msg: &C::Message) -> C::Signature;
 
     /// Helper method to derive public key from [root](Self::public_key)
     /// for given [tweak](DerivableCurve::Tweak)
@@ -64,26 +75,46 @@ where
 
 #[cfg(all(test, feature = "signing"))]
 mod tests {
-    use sha3::{Digest, Sha3_256};
+    use std::fmt::Debug;
 
     use super::*;
 
-    pub fn test_roundtrip<C, S>(root_sk: S)
+    #[track_caller]
+    pub fn assert_roundtrip<C, S>(
+        root_sk: S,
+        tweak: [u8; 32],
+        msg: &C::Message,
+    ) -> (C::PublicKey, C::Signature)
     where
         C: DerivableCurve,
         S: DeriveSigner<C>,
     {
-        let tweak = C::tweak([42u8; 32]); // TODO: rng?
+        let tweak = C::tweak(tweak);
         let derived_pk = C::derive_public_key(&root_sk.public_key(), &tweak);
+        let signature = root_sk.sign(&tweak, msg);
 
-        // TODO: type-safe msg or prehash?
-        let msg: [u8; 32] = Sha3_256::digest(b"message").into();
+        assert!(C::verify(&derived_pk, msg, &signature), "invalid signature");
 
-        let signature = root_sk.sign(&tweak, &msg);
+        (derived_pk, signature)
+    }
 
-        assert!(
-            C::verify(&derived_pk, &msg, &signature),
-            "invalid signature"
+    #[track_caller]
+    pub fn assert_roundtrip_expected<C, S>(
+        root_sk: S,
+        tweak: [u8; 32],
+        msg: &C::Message,
+        expected_derived_pk: C::PublicKey,
+    ) -> C::Signature
+    where
+        C: DerivableCurve,
+        C::PublicKey: PartialEq + Debug,
+        S: DeriveSigner<C>,
+    {
+        let (derived_pk, signature) = assert_roundtrip(root_sk, tweak, msg);
+        assert_eq!(
+            derived_pk, expected_derived_pk,
+            "derived public key has changed"
         );
+        signature
     }
 }

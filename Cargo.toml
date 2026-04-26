@@ -106,7 +106,7 @@ defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
-defuse-outlayer-crypto.path = "crates/outlayer/crypto"
+defuse-outlayer-crypto = { path = "crates/outlayer/crypto", default-features = false }
 defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-primitives.path = "crates/outlayer/primitives"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"

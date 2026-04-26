@@ -15,19 +15,31 @@ curve25519-dalek = { workspace = true, optional = true }
 ed25519-dalek = { workspace = true, features = ["std", "zeroize"], optional = true }
 hkdf = { workspace = true, features = ["kdf"], optional = true }
 k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"], optional = true }
+rand = { workspace = true, optional = true }
 sha3 = { workspace = true, optional = true }
 zeroize = { workspace = true, optional = true }
 
 [features]
-default = ["fast"]
+default = ["ed25519", "fast", "secp256k1", "signing"]
 
 ed25519 = ["dep:curve25519-dalek", "dep:ed25519-dalek"]
 secp256k1 = ["dep:k256"]
 fast = ["ed25519-dalek?/fast", "k256?/precomputed-tables"]
 signing = [
   "dep:hkdf",
+  "dep:rand",
   "dep:sha3",
   "dep:zeroize",
   "ed25519-dalek?/digest",
   "ed25519-dalek?/hazmat",
 ]
+
+[dev-dependencies]
+ed25519-dalek = { workspace = true, features = ["std", "zeroize", "serde"] }
+k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"] }
+hex-literal.workspace = true
+rstest.workspace = true
+
+hex.workspace = true
+serde.workspace = true
+serde_json.workspace = true                                                     # TODO: remove

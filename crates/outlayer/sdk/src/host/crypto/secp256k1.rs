@@ -38,14 +38,15 @@ pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
     .expect("invalid length")
 }
 
-/// Sign given message with a secret key **intetnally** derived for
-/// given application-specific path.
+/// Sign 32-byte `prehash` with a secret key **intetnally** derived for
+/// given application-specific `path`.
+/// Prehash MUST be an output of a cryptographic hash function.
 ///
 /// Returns a signature as concatenated `r`, `s` and `v` (recovery byte).
-pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Signature {
+pub fn sign(path: impl AsRef<str>, prehash: &[u8; 32]) -> Signature {
     #[cfg(target_family = "wasm")]
     {
-        sys::crypto::secp256k1::sign(path.as_ref(), msg.as_ref())
+        sys::crypto::secp256k1::sign(path.as_ref(), prehash.as_ref())
     }
     #[cfg(not(target_family = "wasm"))]
     {
@@ -53,7 +54,7 @@ pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Signature {
             host::outlayer::crypto::secp256k1::Host::sign(
                 h,
                 path.as_ref().to_string(), // TODO
-                msg.as_ref().to_vec(),     // TODO
+                prehash.as_ref().to_vec(), // TODO
             )
         })
     }

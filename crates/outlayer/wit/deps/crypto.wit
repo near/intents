@@ -2,7 +2,7 @@ package outlayer:crypto@0.1.0;
 
 /// Ed25519
 interface ed25519 {
-    /// Derive public key from root for given application-specific path.
+    /// Derive public key from root for given application-specific `path`.
     ///
     /// The derivation is **non-hierarchical** (or "plain"): derived
     /// keys **do not** form a tree-like structure. Instead, child keys
@@ -10,14 +10,14 @@ interface ed25519 {
     /// "peers" to each other.
     derive-public-key: func(path: string) -> list<u8>;
 
-    /// Sign given message with a secret key **intetnally** derived for
-    /// given application-specific path.
+    /// Sign given `message` with a secret key **intetnally** derived for
+    /// given application-specific `path`.
     sign: func(path: string, msg: list<u8>) -> list<u8>;
 }
 
 /// Secp256k1 (a.k.a. k256)
 interface secp256k1 {
-    /// Derive public key from root for given application-specific path.
+    /// Derive public key from root for given application-specific `path`.
     ///
     /// The derivation is **non-hierarchical** (or "plain"): derived
     /// keys **do not** form a tree-like structure. Instead, child keys
@@ -28,11 +28,12 @@ interface secp256k1 {
     /// **without** leading tag byte (0x04).
     derive-public-key: func(path: string) -> list<u8>;
 
-    /// Sign given message with a secret key **intetnally** derived for
-    /// given application-specific path.
+    /// Sign 32-byte `prehash` with a secret key **intetnally** derived for
+    /// given application-specific `path`.
+    /// Prehash MUST be an output of a cryptographic hash function.
     ///
     /// Returns a signature as concatenated `r`, `s` and `v` (recovery byte).
-    sign: func(path: string, msg: list<u8>) -> list<u8>;
+    sign: func(path: string, prehash: list<u8>) -> list<u8>;
 }
 
 world imports {

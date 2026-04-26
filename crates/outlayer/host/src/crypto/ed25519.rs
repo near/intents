@@ -14,7 +14,7 @@ impl crate::bindings::outlayer::crypto::ed25519::Host for Host {
     fn sign(&mut self, path: String, msg: Vec<u8>) -> Vec<u8> {
         let tweak = self.tweak::<Ed25519>(path);
 
-        let signature = crate::crypto::DeriveSigner::<Ed25519>::sign(&self.signer, &tweak, &msg);
+        let signature = DeriveSigner::<Ed25519>::sign(&self.signer, &tweak, &msg);
 
         signature.to_vec()
     }

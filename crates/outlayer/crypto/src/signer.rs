@@ -80,9 +80,14 @@ const _: () = {
         fn sign(
             &self,
             tweak: &<Secp256k1 as crate::DerivableCurve>::Tweak,
-            msg: &[u8],
+            msg: &[u8; 32],
         ) -> <Secp256k1 as crate::DerivableCurve>::Signature {
             self.secp256k1_root_sk.sign(tweak, msg)
         }
     }
 };
+
+#[cfg(test)]
+mod tests {
+    // TODO
+}

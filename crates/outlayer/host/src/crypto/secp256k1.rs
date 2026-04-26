@@ -17,11 +17,11 @@ impl crate::bindings::outlayer::crypto::secp256k1::Host for Host {
             .to_vec()
     }
 
-    fn sign(&mut self, path: String, msg: Vec<u8>) -> Vec<u8> {
+    fn sign(&mut self, path: String, prehash: Vec<u8>) -> Vec<u8> {
         let tweak = self.tweak::<Secp256k1>(path);
 
         let (signature, recovery_id) =
-            crate::crypto::DeriveSigner::<Secp256k1>::sign(&self.signer, &tweak, &msg);
+            DeriveSigner::<Secp256k1>::sign(&self.signer, &tweak, &prehash);
 
         let mut sig = signature.to_vec();
         sig.push(recovery_id.to_byte());

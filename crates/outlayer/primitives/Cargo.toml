@@ -36,5 +36,5 @@ digest = ["borsh", "dep:digest", "dep:digest-io", "dep:sha3"]
 serde = ["dep:serde", "dep:serde_with", "near-account-id/serde"]
 
 [dev-dependencies]
-hex.workspace = true
+hex-literal.workspace = true
 rstest.workspace = true
