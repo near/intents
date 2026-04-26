@@ -4,9 +4,17 @@ use std::{
     str::FromStr,
 };
 
-pub use near_account_id::*;
+pub use near_account_id as account_id;
+use near_account_id::{AccountId, AccountIdRef, ParseAccountError};
 use strum::{EnumDiscriminants, EnumString};
 
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "borsh",
+    derive(borsh::BorshSerialize, borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(borsh::BorshSchema)),
+    borsh(use_discriminant = true)
+)]
 #[cfg_attr(
     feature = "serde",
     derive(serde_with::SerializeDisplay, serde_with::DeserializeFromStr),
@@ -15,12 +23,6 @@ use strum::{EnumDiscriminants, EnumString};
         derive(schemars::JsonSchema),
         schemars(with = "String"),
     )
-)]
-#[cfg_attr(
-    feature = "borsh",
-    derive(borsh::BorshSerialize, borsh::BorshDeserialize),
-    cfg_attr(feature = "abi", derive(borsh::BorshSchema)),
-    borsh(use_discriminant = true)
 )]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, EnumDiscriminants, derive_more::From)]
 #[strum_discriminants(

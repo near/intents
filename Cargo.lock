@@ -1583,11 +1583,14 @@ dependencies = [
 name = "defuse-outlayer-primitives"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
  "borsh",
  "derive_more",
  "digest 0.11.2",
  "digest-io",
+ "hex",
  "near-account-id",
+ "rstest",
  "schemars 0.8.22",
  "serde",
  "serde_with",
