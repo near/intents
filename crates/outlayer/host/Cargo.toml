@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-outlayer-crypto.workspace = true
+defuse-outlayer-crypto = { workspace = true, features = ["signing"] }
 defuse-outlayer-primitives = { workspace = true, features = ["digest"] }
 
 borsh.workspace = true

@@ -1554,17 +1554,13 @@ dependencies = [
 name = "defuse-outlayer-crypto"
 version = "0.1.0"
 dependencies = [
- "borsh",
  "curve25519-dalek",
- "digest 0.11.2",
- "digest-io",
  "ed25519-dalek",
- "hex-literal",
  "hkdf",
  "impl-tools",
  "k256",
- "sha2 0.11.0",
  "sha3 0.11.0",
+ "zeroize",
 ]
 
 [[package]]
