@@ -5,20 +5,34 @@ pub mod secp256k1;
 #[cfg(feature = "signing")]
 pub mod signer;
 
+/// A curve with **non-hardened** public key derivation capabilities,
+/// i.e. when child public key can be derived from the root one
+/// without knowing any secret.
+///
+/// The derivation is **non-hierarchical** (or "plain"): derived
+/// keys **do not** form a tree-like structure. Instead, child keys
+/// are all derived from a single root key and can be considered as
+/// "peers" to each other.
 pub trait DerivableCurve {
+    /// An intermediate result of [derivation](Self::tweak) that is
+    /// reused for both public and signing key derivation.
     type Tweak;
+
+    /// Public key of the curve
+    type PublicKey;
+
+    /// Signature of the curve
     type Signature;
 
+    /// Derive curve-specific [tweak](Self::Tweak) from a **uniform**
+    /// digest.
     fn tweak(hash: [u8; 32]) -> Self::Tweak;
-    // TODO: verify()?
-}
 
-pub trait DerivablePublicKey<C>: Sized
-where
-    C: DerivableCurve,
-{
-    #[must_use]
-    fn derive(&self, tweak: C::Tweak) -> Self;
+    /// Derive public key from root for given [tweak](Self::Tweak).
+    fn derive_public_key(root: &Self::PublicKey, tweak: &Self::Tweak) -> Self::PublicKey;
+
+    /// Verify the signature over the message for given public key
+    fn verify(public_key: &Self::PublicKey, msg: &[u8], signature: &Self::Signature) -> bool;
 }
 
 #[cfg(feature = "signing")]
@@ -29,15 +43,22 @@ where
     std::rc::Rc<T>,
     std::sync::Arc<T>
 )]
+/// Signer for [`DerivableCurve`]
 pub trait DeriveSigner<C>
 where
     C: DerivableCurve,
 {
-    type PublicKey: DerivablePublicKey<C>;
+    /// Get root public key of the signer
+    fn public_key(&self) -> C::PublicKey;
 
-    fn public_key(&self) -> Self::PublicKey;
+    /// Sign given message with a secret key **internally** derived for given
+    /// [tweak](DerivableCurve::Tweak)
+    fn sign(&self, tweak: &C::Tweak, msg: &[u8]) -> C::Signature;
 
-    fn sign(&self, tweak: C::Tweak, msg: &[u8]) -> C::Signature;
+    /// Helper method to derive public key
+    fn derive_public_key(&self, tweak: &C::Tweak) -> C::PublicKey {
+        C::derive_public_key(&self.public_key(), tweak)
+    }
 }
 
 #[cfg(all(test, feature = "signing"))]
@@ -46,22 +67,22 @@ mod tests {
 
     use super::*;
 
-    pub fn test_roundtrip<K, C>(
-        root_sk: K,
-        verify: impl FnOnce(K::PublicKey, &[u8], <C as DerivableCurve>::Signature),
-    ) where
-        K: DeriveSigner<C>,
+    pub fn test_roundtrip<C, K>(root_sk: K)
+    where
         C: DerivableCurve,
-        <C as DerivableCurve>::Tweak: Clone,
+        K: DeriveSigner<C>,
     {
-        let tweak = <C as DerivableCurve>::tweak([42u8; 32]);
-        let derived_pk = root_sk.public_key().derive(tweak.clone());
+        let tweak = C::tweak([42u8; 32]); // TODO: rng?
+        let derived_pk = C::derive_public_key(&root_sk.public_key(), &tweak);
 
         // TODO: type-safe msg or prehash?
         let msg: [u8; 32] = Sha3_256::digest(b"message").into();
 
-        let signature = root_sk.sign(tweak, &msg);
+        let signature = root_sk.sign(&tweak, &msg);
 
-        verify(derived_pk, &msg, signature);
+        assert!(
+            C::verify(&derived_pk, &msg, &signature),
+            "invalid signature"
+        );
     }
 }

@@ -1,49 +1,51 @@
 use curve25519_dalek::EdwardsPoint;
-pub use curve25519_dalek::Scalar;
+pub use curve25519_dalek::{self, Scalar};
 #[cfg(feature = "signing")]
 pub use ed25519_dalek::SigningKey;
-pub use ed25519_dalek::{Signature, VerifyingKey};
+pub use ed25519_dalek::{self, Signature, VerifyingKey};
 
-use crate::{DerivableCurve, DerivablePublicKey};
+use crate::DerivableCurve;
 
 pub struct Ed25519;
 
 impl DerivableCurve for Ed25519 {
     type Tweak = Scalar;
+    type PublicKey = VerifyingKey;
     type Signature = Signature;
 
     fn tweak(hash: [u8; 32]) -> Self::Tweak {
         Scalar::from_bytes_mod_order(hash)
     }
-}
 
-impl DerivablePublicKey<Ed25519> for VerifyingKey {
-    fn derive(&self, tweak: <Ed25519 as DerivableCurve>::Tweak) -> Self {
-        let derived_point = self.to_edwards() + EdwardsPoint::mul_base(&tweak);
-        Self::from(derived_point)
+    fn derive_public_key(root: &Self::PublicKey, tweak: &Self::Tweak) -> Self::PublicKey {
+        let derived_point = root.to_edwards() + EdwardsPoint::mul_base(tweak);
+        VerifyingKey::from(derived_point)
+    }
+
+    fn verify(public_key: &Self::PublicKey, msg: &[u8], signature: &Self::Signature) -> bool {
+        public_key.verify_strict(msg, &signature).is_ok()
     }
 }
 
 #[cfg(feature = "signing")]
 const _: () = {
-    use ed25519_dalek::{Sha512, hazmat::ExpandedSecretKey};
+    use ed25519_dalek::{
+        Sha512,
+        hazmat::{ExpandedSecretKey, raw_sign},
+    };
 
     use crate::DeriveSigner;
 
     impl DeriveSigner<Ed25519> for SigningKey {
-        type PublicKey = VerifyingKey;
-
-        fn public_key(&self) -> Self::PublicKey {
+        fn public_key(&self) -> VerifyingKey {
             self.verifying_key()
         }
 
         fn sign(
             &self,
-            tweak: <Ed25519 as DerivableCurve>::Tweak,
+            tweak: &<Ed25519 as DerivableCurve>::Tweak,
             msg: &[u8],
         ) -> <Ed25519 as DerivableCurve>::Signature {
-            use ed25519_dalek::hazmat::raw_sign;
-
             let root_sk = ExpandedSecretKey::from(self.as_bytes());
 
             let esk = ExpandedSecretKey {
@@ -72,9 +74,6 @@ mod tests {
 
     #[test]
     fn roundtrip() {
-        test_roundtrip(SigningKey::from_bytes(&[42u8; 32]), |pk, msg, signature| {
-            pk.verify_strict(msg, &signature)
-                .expect("invalid signature");
-        });
+        test_roundtrip(SigningKey::from_bytes(&[42u8; 32]));
     }
 }

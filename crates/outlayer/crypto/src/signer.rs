@@ -4,6 +4,8 @@ use hkdf::Hkdf;
 use sha3::Sha3_512;
 use zeroize::ZeroizeOnDrop;
 
+use crate::{DerivableCurve, DeriveSigner};
+
 #[derive(Clone, ZeroizeOnDrop)]
 pub struct InMemorySigner {
     #[cfg(feature = "ed25519")]
@@ -49,21 +51,16 @@ impl InMemorySigner {
 
 #[cfg(feature = "ed25519")]
 const _: () = {
-    use crate::{
-        DeriveSigner,
-        ed25519::{Ed25519, VerifyingKey},
-    };
+    use crate::ed25519::Ed25519;
 
     impl DeriveSigner<Ed25519> for InMemorySigner {
-        type PublicKey = VerifyingKey;
-
-        fn public_key(&self) -> Self::PublicKey {
+        fn public_key(&self) -> <Ed25519 as DerivableCurve>::PublicKey {
             self.ed25519_root_sk.public_key()
         }
 
         fn sign(
             &self,
-            tweak: <Ed25519 as crate::DerivableCurve>::Tweak,
+            tweak: &<Ed25519 as crate::DerivableCurve>::Tweak,
             msg: &[u8],
         ) -> <Ed25519 as crate::DerivableCurve>::Signature {
             self.ed25519_root_sk.sign(tweak, msg)
@@ -73,21 +70,16 @@ const _: () = {
 
 #[cfg(feature = "secp256k1")]
 const _: () = {
-    use crate::{
-        DeriveSigner,
-        secp256k1::{PublicKey, Secp256k1},
-    };
+    use crate::secp256k1::Secp256k1;
 
     impl DeriveSigner<Secp256k1> for InMemorySigner {
-        type PublicKey = PublicKey;
-
-        fn public_key(&self) -> Self::PublicKey {
+        fn public_key(&self) -> <Secp256k1 as DerivableCurve>::PublicKey {
             self.secp256k1_root_sk.public_key()
         }
 
         fn sign(
             &self,
-            tweak: <Secp256k1 as crate::DerivableCurve>::Tweak,
+            tweak: &<Secp256k1 as crate::DerivableCurve>::Tweak,
             msg: &[u8],
         ) -> <Secp256k1 as crate::DerivableCurve>::Signature {
             self.secp256k1_root_sk.sign(tweak, msg)
