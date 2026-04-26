@@ -55,7 +55,7 @@ const _: () = {
 
     impl DeriveSigner<Secp256k1> for SecretKey {
         fn public_key(&self) -> PublicKey {
-            self.public_key().into()
+            self.public_key()
         }
 
         fn sign(&self, tweak: &NonZeroScalar, prehash: &[u8; 32]) -> (Signature, RecoveryId) {

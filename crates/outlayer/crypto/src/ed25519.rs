@@ -26,7 +26,7 @@ impl DerivableCurve for Ed25519 {
     }
 
     fn verify(public_key: &VerifyingKey, msg: &[u8], signature: &Signature) -> bool {
-        public_key.verify_strict(msg, &signature).is_ok()
+        public_key.verify_strict(msg, signature).is_ok()
     }
 }
 
