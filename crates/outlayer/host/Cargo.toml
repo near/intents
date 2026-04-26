@@ -9,11 +9,8 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-outlayer-crypto = { workspace = true, features = ["signing"] }
+defuse-outlayer-crypto = { workspace = true, features = ["ed25519", "secp256k1", "signing"] }
 defuse-outlayer-primitives = { workspace = true, features = ["digest"] }
 
 borsh.workspace = true
-hkdf = { workspace = true, features = ["kdf"] }
-sha3.workspace = true
-
 wasmtime.workspace = true

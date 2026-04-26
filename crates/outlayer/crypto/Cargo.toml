@@ -9,23 +9,25 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-curve25519-dalek.workspace = true
-ed25519-dalek = { workspace = true, features = ["std", "zeroize"] }
 impl-tools.workspace = true
-k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"] }
 
+curve25519-dalek = { workspace = true, optional = true }
+ed25519-dalek = { workspace = true, features = ["std", "zeroize"], optional = true }
 hkdf = { workspace = true, features = ["kdf"], optional = true }
+k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"], optional = true }
 sha3 = { workspace = true, optional = true }
 zeroize = { workspace = true, optional = true }
 
 [features]
 default = ["fast"]
 
-fast = ["ed25519-dalek/fast", "k256/precomputed-tables"]
+ed25519 = ["dep:curve25519-dalek", "dep:ed25519-dalek"]
+secp256k1 = ["dep:k256"]
+fast = ["ed25519-dalek?/fast", "k256?/precomputed-tables"]
 signing = [
   "dep:hkdf",
   "dep:sha3",
   "dep:zeroize",
-  "ed25519-dalek/digest",
-  "ed25519-dalek/hazmat",
+  "ed25519-dalek?/digest",
+  "ed25519-dalek?/hazmat",
 ]

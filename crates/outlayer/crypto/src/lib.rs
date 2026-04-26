@@ -1,4 +1,6 @@
+#[cfg(feature = "ed25519")]
 pub mod ed25519;
+#[cfg(feature = "secp256k1")]
 pub mod secp256k1;
 #[cfg(feature = "signing")]
 pub mod signer;
@@ -50,10 +52,10 @@ mod tests {
     ) where
         K: DeriveSigner<C>,
         C: DerivableCurve,
-        <C as DerivableCurve>::Tweak: Copy,
+        <C as DerivableCurve>::Tweak: Clone,
     {
         let tweak = <C as DerivableCurve>::tweak([42u8; 32]);
-        let derived_pk = root_sk.public_key().derive(tweak);
+        let derived_pk = root_sk.public_key().derive(tweak.clone());
 
         // TODO: type-safe msg or prehash?
         let msg: [u8; 32] = Sha3_256::digest(b"message").into();

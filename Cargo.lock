@@ -1570,8 +1570,6 @@ dependencies = [
  "borsh",
  "defuse-outlayer-crypto",
  "defuse-outlayer-primitives",
- "hkdf",
- "sha3 0.11.0",
  "wasmtime",
 ]
 
