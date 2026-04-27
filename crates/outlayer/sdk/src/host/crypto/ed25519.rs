@@ -32,7 +32,7 @@ pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
     .expect("invalid length")
 }
 
-/// Sign given message with a secret key **intetnally** derived for
+/// Sign given message with a secret key **internally** derived for
 /// given application-specific path.
 pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Signature {
     #[cfg(target_family = "wasm")]

@@ -30,7 +30,7 @@ const _: () = {
 
     impl DerivationPath<'_> {
         // TODO: do we need other domain separators?
-        const PREFIX: &'static [u8] = b"outlayer v0.1.0 tweak derivaton:";
+        const PREFIX: &'static [u8] = b"outlayer v0.1.0 tweak derivation:";
 
         pub fn hash(&self) -> [u8; 32] {
             // use SHA-3 family as an additional safety measure to prevent from
@@ -63,21 +63,21 @@ mod tests {
             app_id: AccountIdRef::new_or_panic("test.near").into(),
             path: "".into()
         },
-        hex!("7beed0108170c657c97e189db048b402226b2681d427b36e1e62c1984985558b"),
+        hex!("19662bc997912779e2f54550bb06b07006943eb106af0632a669e350d8faa245"),
     )]
     #[case(
         DerivationPath {
             app_id: AccountIdRef::new_or_panic("test.near").into(),
             path: "test".into()
         },
-        hex!("fe502ff6b7cf154385169e4901b745739b2a0327cf2f80024535b3dd023abfc9"),
+        hex!("b581f6b4c6b43a673777747ea01d69891342ebd35625e927d3f12403631c33fb"),
     )]
     #[case(
         DerivationPath {
             app_id: AccountIdRef::new_or_panic("0s1234567890abcdef1234567890abcdef12345678").into(),
             path: "test".into()
         },
-        hex!("6f719da726eea8a6bd79f28fffea8f34c404278a6935a0a0c930e8464c91fd9b"),
+        hex!("a1c48b73cf43f80611edeae5e1f809b776af00adde05195984573c2ab22c395f"),
     )]
     fn derive_has_not_changed(#[case] path: DerivationPath<'_>, #[case] hash: [u8; 32]) {
         assert_eq!(path.hash(), hash, "derived hash has changed");

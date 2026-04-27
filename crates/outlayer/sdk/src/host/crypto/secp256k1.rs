@@ -37,7 +37,7 @@ pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
     .expect("invalid length")
 }
 
-/// Sign 32-byte `prehash` with a secret key **intetnally** derived for
+/// Sign 32-byte `prehash` with a secret key **internally** derived for
 /// given application-specific `path`.
 /// Prehash MUST be an output of a cryptographic hash function.
 ///
