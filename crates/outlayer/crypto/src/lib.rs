@@ -67,7 +67,11 @@ where
     fn public_key(&self) -> C::PublicKey;
 
     /// Sign given message with a secret key **internally** derived for given
-    /// [tweak](DerivableCurve::Tweak)
+    /// [tweak](DerivableCurve::Tweak).
+    ///
+    /// NOTE: the returned signatures are non-deterministic, i.e.
+    /// implementations MAY return different signatures for the same
+    /// `tweak` and `msg`.
     fn sign(&self, tweak: &C::Tweak, msg: &C::Message) -> C::Signature;
 
     /// Helper method to derive public key from [root](Self::public_key)

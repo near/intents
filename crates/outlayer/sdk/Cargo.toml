@@ -29,7 +29,6 @@ defuse-outlayer-sys.workspace = true
 defuse-outlayer-host.workspace = true
 
 anyhow.workspace = true
-config = { workspace = true, features = ["json"] }
 
 [features]
 abi = [

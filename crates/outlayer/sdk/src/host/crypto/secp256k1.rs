@@ -22,6 +22,7 @@ pub type Signature = [u8; 65];
 ///
 /// Returns secp256k1 public key encoded in SEC-1 uncompressed form
 /// **without** leading tag byte (0x04).
+#[track_caller]
 pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
     #[cfg(target_family = "wasm")]
     {
@@ -42,6 +43,10 @@ pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
 /// Prehash MUST be an output of a cryptographic hash function.
 ///
 /// Returns a signature as concatenated `r`, `s` and `v` (recovery byte).
+///
+/// NOTE: signatures are non-deterministic, i.e. host implementation MAY
+/// return different signatures for the same `path` and `prehash`.
+#[track_caller]
 pub fn sign(path: impl AsRef<str>, prehash: &[u8; 32]) -> Signature {
     #[cfg(target_family = "wasm")]
     {

@@ -12,6 +12,9 @@ interface ed25519 {
 
     /// Sign given `message` with a secret key **internally** derived for
     /// given application-specific `path`.
+    ///
+    /// NOTE: signatures are non-deterministic, i.e. host implementation MAY
+    /// return different signatures for the same `path` and `msg`. 
     sign: func(path: string, msg: list<u8>) -> list<u8>;
 }
 
@@ -33,6 +36,9 @@ interface secp256k1 {
     /// Prehash MUST be an output of a cryptographic hash function.
     ///
     /// Returns a signature as concatenated `r`, `s` and `v` (recovery byte).
+    ///
+    /// NOTE: signatures are non-deterministic, i.e. host implementation MAY
+    /// return different signatures for the same `path` and `msg`. 
     sign: func(path: string, prehash: list<u8>) -> list<u8>;
 }
 
