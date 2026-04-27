@@ -107,7 +107,7 @@ mod tests {
         root_sk: S,
         tweak: [u8; 32],
         msg: &C::Message,
-        expected_derived_pk: C::PublicKey,
+        expected_derived_pk: &C::PublicKey,
     ) -> C::Signature
     where
         C: DerivableCurve,
@@ -116,7 +116,7 @@ mod tests {
     {
         let (derived_pk, signature) = assert_roundtrip(root_sk, tweak, msg);
         assert_eq!(
-            derived_pk, expected_derived_pk,
+            &derived_pk, expected_derived_pk,
             "derived public key has changed"
         );
         signature

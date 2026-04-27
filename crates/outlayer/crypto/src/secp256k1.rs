@@ -131,7 +131,7 @@ mod tests {
             SecretKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
             tweak,
             &hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
-            PublicKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
+            &PublicKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
                 &expected_derived_pk.into(),
             ))
             .expect("invalid expected derived pk"),

@@ -112,7 +112,7 @@ mod tests {
             SigningKey::from_bytes(&root_sk),
             tweak,
             b"message",
-            VerifyingKey::from_bytes(&expected_derived_pk).expect("invalid expected derived pk"),
+            &VerifyingKey::from_bytes(&expected_derived_pk).expect("invalid expected derived pk"),
         );
     }
 }
