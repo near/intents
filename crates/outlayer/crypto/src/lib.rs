@@ -14,7 +14,8 @@ pub mod signer;
 /// are all derived from a single root key and can be considered as
 /// "peers" to each other.
 pub trait DerivableCurve {
-    /// A path to derive both public and signing key for.
+    /// A path to derive both [public](DerivablePublicKey::derive) and
+    /// [signing](DeriveSigner::derive_sign) keys for.
     /// Typically, it should be an output of a cryptographic hash function.
     type Path: ?Sized;
 
