@@ -38,7 +38,7 @@ interface secp256k1 {
     /// Returns a signature as concatenated `r`, `s` and `v` (recovery byte).
     ///
     /// NOTE: signatures are non-deterministic, i.e. host implementation MAY
-    /// return different signatures for the same `path` and `msg`. 
+    /// return different signatures for the same `prehash` and `msg`. 
     sign: func(path: string, prehash: list<u8>) -> list<u8>;
 }
 
