@@ -2,6 +2,8 @@ mod borsh;
 mod domain;
 #[cfg(feature = "ed25519")]
 pub mod ed25519;
+#[cfg(feature = "eip712")]
+pub mod eip712;
 mod hash;
 pub mod no_sign;
 
@@ -18,6 +20,8 @@ use crate::Request;
 
 pub use self::{borsh::*, domain::*, hash::*};
 
+use crate::auth_resolve::{AuthorizationResolution, ErrorKind, Purpose};
+
 /// Signing standard, which defines the public key and how `signature` on
 /// `msg` is verified.
 pub trait SigningStandard<M> {
@@ -25,6 +29,23 @@ pub trait SigningStandard<M> {
     type PublicKey;
 
     fn verify(msg: M, public_key: &Self::PublicKey, signature: &str) -> bool;
+
+    /// NEP-641: Resolve an off-chain authorization.
+    ///
+    /// The default implementation returns `INVALID` (unsupported).
+    /// Signing standards that support off-chain authorization (EIP-712,
+    /// WebAuthn, etc.) override this.
+    fn auth_resolve(
+        _purpose: &Purpose,
+        _recipient: &str,
+        _authorization: &str,
+        _public_key: &Self::PublicKey,
+    ) -> AuthorizationResolution {
+        AuthorizationResolution::Invalid {
+            error_kind: ErrorKind::InvalidInput,
+            error_message: "auth_resolve is not supported by this signing standard".into(),
+        }
+    }
 }
 
 #[near(serializers = [borsh, json])]

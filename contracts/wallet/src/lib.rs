@@ -2,6 +2,7 @@
 
 #[cfg(any(feature = "arbitrary", test))]
 mod arbitrary;
+pub mod auth_resolve;
 #[cfg(feature = "contract")]
 mod contract;
 mod error;
@@ -16,6 +17,7 @@ use std::collections::BTreeSet;
 use defuse_deadline::Deadline;
 use near_sdk::{AccountId, ext_contract};
 
+use crate::auth_resolve::{AuthorizationResolution, Purpose};
 use crate::signature::RequestMessage;
 
 pub use self::{error::*, events::*, nonces::*, request::*, state::*};
@@ -67,4 +69,15 @@ pub trait Wallet {
 
     /// Returns a timestamp when nonces were last cleaned up.
     fn w_last_cleaned_at(&self) -> Deadline;
+
+    /// NEP-641: Resolve an off-chain authorization.
+    ///
+    /// View function that verifies the `authorization` blob against
+    /// the contract's signing standard and returns the extracted payload.
+    fn w_auth_resolve(
+        &self,
+        purpose: Purpose,
+        recipient: String,
+        authorization: String,
+    ) -> AuthorizationResolution;
 }

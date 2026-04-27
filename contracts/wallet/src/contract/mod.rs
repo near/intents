@@ -10,6 +10,7 @@ use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near};
 
 use crate::{
     Actor, Error, Request, RequestMessage, Result, Wallet, WalletEvent, WalletOp,
+    auth_resolve::{AuthorizationResolution, Purpose},
     signature::SigningStandard,
 };
 
@@ -57,6 +58,18 @@ impl Wallet for Contract {
 
     fn w_last_cleaned_at(&self) -> Deadline {
         self.nonces.last_cleaned_at()
+    }
+
+    /// NEP-641: Resolve an off-chain authorization.
+    ///
+    /// Delegates to the signing standard's `auth_resolve` implementation.
+    fn w_auth_resolve(
+        &self,
+        purpose: Purpose,
+        recipient: String,
+        authorization: String,
+    ) -> AuthorizationResolution {
+        SS::auth_resolve(&purpose, &recipient, &authorization, &self.public_key)
     }
 }
 
