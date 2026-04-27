@@ -24,7 +24,7 @@ pub trait DerivableCurve {
 
     /// Message for signing.
     ///
-    /// This type can vary between different [`DerivableCurve`] implementatons:
+    /// This type can vary between different [`DerivableCurve`] implementations:
     /// some curves can sign arbitrary byte slices, while others might expect
     /// prehashed messages of a specific size.
     type Message: ?Sized;
