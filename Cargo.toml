@@ -174,7 +174,7 @@ tracing-subscriber = "0.3"
 url = "2"
 zeroize = { version = "1.8", features = ["derive"] }
 
-wasmtime = { version = ">=36.0.7", default-features = false }
+wasmtime = { version = ">=36.0.7", default-features = false, features = ["std"] }
 wasmtime-wasi = ">=36.0.7"
 wit-bindgen = "0.49.0"
 
