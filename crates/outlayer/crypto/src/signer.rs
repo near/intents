@@ -53,12 +53,12 @@ const _: () = {
             self.ed25519_root_sk.public_key()
         }
 
-        fn sign(
+        fn derive_sign(
             &self,
-            tweak: &<Ed25519 as DerivableCurve>::Tweak,
+            tweak: &<Ed25519 as DerivableCurve>::Path,
             msg: &<Ed25519 as DerivableCurve>::Message,
         ) -> <Ed25519 as DerivableCurve>::Signature {
-            self.ed25519_root_sk.sign(tweak, msg)
+            self.ed25519_root_sk.derive_sign(tweak, msg)
         }
     }
 };
@@ -72,12 +72,12 @@ const _: () = {
             self.secp256k1_root_sk.public_key()
         }
 
-        fn sign(
+        fn derive_sign(
             &self,
-            tweak: &<Secp256k1 as DerivableCurve>::Tweak,
+            tweak: &<Secp256k1 as DerivableCurve>::Path,
             msg: &<Secp256k1 as DerivableCurve>::Message,
         ) -> <Secp256k1 as DerivableCurve>::Signature {
-            self.secp256k1_root_sk.sign(tweak, msg)
+            self.secp256k1_root_sk.derive_sign(tweak, msg)
         }
     }
 };

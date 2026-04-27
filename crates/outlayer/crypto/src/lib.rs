@@ -14,12 +14,12 @@ pub mod signer;
 /// are all derived from a single root key and can be considered as
 /// "peers" to each other.
 pub trait DerivableCurve {
-    /// An intermediate result of [derivation](Self::tweak) that is
-    /// reused for both public and signing key derivation.
-    type Tweak;
+    /// A path to derive both public and signing key for.
+    /// Typically, it should be an output of a cryptographic hash function.
+    type Path: ?Sized;
 
     /// Public key of the curve
-    type PublicKey;
+    type PublicKey: DerivablePublicKey<Self>;
 
     /// Message for signing.
     ///
@@ -31,19 +31,20 @@ pub trait DerivableCurve {
     /// Signature of the curve
     type Signature;
 
-    /// Derive curve-specific [tweak](Self::Tweak) from a **uniform**
-    /// digest.
-    fn tweak(hash: [u8; 32]) -> Self::Tweak;
-
-    /// Derive public key from root for given [tweak](Self::Tweak).
-    fn derive_public_key(root: &Self::PublicKey, tweak: &Self::Tweak) -> Self::PublicKey;
-
     /// Verify the signature over the message for given public key
     fn verify(
         public_key: &Self::PublicKey,
         msg: &Self::Message,
         signature: &Self::Signature,
     ) -> bool;
+}
+
+/// Derivable public key.
+/// See [`DerivableCurve`].
+pub trait DerivablePublicKey<C: DerivableCurve + ?Sized> {
+    /// Derive public key with given [path](DerivableCurve::Path).
+    #[must_use]
+    fn derive(&self, path: &C::Path) -> Self;
 }
 
 #[cfg(feature = "signing")]
@@ -59,25 +60,22 @@ pub trait DerivableCurve {
     std::borrow::Cow<'_, T>
 )]
 /// Signer for [`DerivableCurve`]
-pub trait DeriveSigner<C>
-where
-    C: DerivableCurve,
-{
+pub trait DeriveSigner<C: DerivableCurve + ?Sized> {
     /// Get root public key of the signer
     fn public_key(&self) -> C::PublicKey;
 
     /// Sign given message with a secret key **internally** derived for given
-    /// [tweak](DerivableCurve::Tweak).
+    /// [`path`](DerivableCurve::Path).
     ///
     /// NOTE: the returned signatures are non-deterministic, i.e.
     /// implementations MAY return different signatures for the same
-    /// `tweak` and `msg`.
-    fn sign(&self, tweak: &C::Tweak, msg: &C::Message) -> C::Signature;
+    /// `path` and `msg`.
+    fn derive_sign(&self, path: &C::Path, msg: &C::Message) -> C::Signature;
 
     /// Helper method to derive public key from [root](Self::public_key)
-    /// for given [tweak](DerivableCurve::Tweak)
-    fn derive_public_key(&self, tweak: &C::Tweak) -> C::PublicKey {
-        C::derive_public_key(&self.public_key(), tweak)
+    /// for given [path](DerivableCurve::Path)
+    fn derive_public_key(&self, path: &C::Path) -> C::PublicKey {
+        self.public_key().derive(path)
     }
 }
 
@@ -90,16 +88,15 @@ mod tests {
     #[track_caller]
     pub fn assert_roundtrip<C, S>(
         root_sk: S,
-        tweak: [u8; 32],
+        path: &C::Path,
         msg: &C::Message,
     ) -> (C::PublicKey, C::Signature)
     where
         C: DerivableCurve,
         S: DeriveSigner<C>,
     {
-        let tweak = C::tweak(tweak);
-        let derived_pk = C::derive_public_key(&root_sk.public_key(), &tweak);
-        let signature = root_sk.sign(&tweak, msg);
+        let derived_pk = root_sk.public_key().derive(path);
+        let signature = root_sk.derive_sign(path, msg);
 
         assert!(C::verify(&derived_pk, msg, &signature), "invalid signature");
 
@@ -109,7 +106,7 @@ mod tests {
     #[track_caller]
     pub fn assert_roundtrip_expected<C, S>(
         root_sk: S,
-        tweak: [u8; 32],
+        path: &C::Path,
         msg: &C::Message,
         expected_derived_pk: &C::PublicKey,
     ) -> C::Signature
@@ -118,7 +115,7 @@ mod tests {
         C::PublicKey: PartialEq + Debug,
         S: DeriveSigner<C>,
     {
-        let (derived_pk, signature) = assert_roundtrip(root_sk, tweak, msg);
+        let (derived_pk, signature) = assert_roundtrip(root_sk, path, msg);
         assert_eq!(
             &derived_pk, expected_derived_pk,
             "derived public key has changed"

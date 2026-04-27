@@ -1,33 +1,39 @@
-use curve25519_dalek::EdwardsPoint;
-pub use curve25519_dalek::{self, Scalar};
+pub use curve25519_dalek;
+use curve25519_dalek::{EdwardsPoint, Scalar};
 #[cfg(feature = "signing")]
 pub use ed25519_dalek::SigningKey;
 pub use ed25519_dalek::{self, Signature, VerifyingKey};
 
-use crate::DerivableCurve;
+use crate::{DerivableCurve, DerivablePublicKey};
 
 pub struct Ed25519;
 
+impl Ed25519 {
+    fn tweak(path: &[u8; 32]) -> Scalar {
+        // TODO: are we sure there is no need to clamp?
+        Scalar::from_bytes_mod_order(*path)
+    }
+}
+
 impl DerivableCurve for Ed25519 {
-    type Tweak = Scalar;
+    type Path = [u8; 32];
     type PublicKey = VerifyingKey;
     type Message = [u8];
     type Signature = Signature;
 
-    fn tweak(hash: [u8; 32]) -> Scalar {
-        // TODO: are we sure there is no need to clamp?
-        Scalar::from_bytes_mod_order(hash)
-    }
-
-    fn derive_public_key(root: &VerifyingKey, tweak: &Scalar) -> VerifyingKey {
-        // pk' <- pk + G * tweak
-        let derived_point = root.to_edwards() + EdwardsPoint::mul_base(tweak);
-
-        VerifyingKey::from(derived_point)
-    }
-
     fn verify(public_key: &VerifyingKey, msg: &[u8], signature: &Signature) -> bool {
         public_key.verify_strict(msg, signature).is_ok()
+    }
+}
+
+impl DerivablePublicKey<Ed25519> for VerifyingKey {
+    fn derive(&self, path: &<Ed25519 as DerivableCurve>::Path) -> Self {
+        let tweak = Ed25519::tweak(path);
+
+        // pk' <- pk + G * tweak
+        let derived_point = self.to_edwards() + EdwardsPoint::mul_base(&tweak);
+
+        Self::from(derived_point)
     }
 }
 
@@ -46,7 +52,9 @@ const _: () = {
             self.verifying_key()
         }
 
-        fn sign(&self, tweak: &Scalar, msg: &[u8]) -> Signature {
+        fn derive_sign(&self, path: &<Ed25519 as DerivableCurve>::Path, msg: &[u8]) -> Signature {
+            let tweak = Ed25519::tweak(path);
+
             let root_esk = ExpandedSecretKey::from(self.as_bytes());
 
             let derived_esk = ExpandedSecretKey {
@@ -91,10 +99,10 @@ mod tests {
         #[values(
             hex!("f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2"),
         )]
-        tweak: [u8; 32],
+        path: [u8; 32],
         #[values(b"", b"test", b"message")] msg: &[u8],
     ) {
-        assert_roundtrip(SigningKey::from_bytes(&root_sk), tweak, msg);
+        assert_roundtrip(SigningKey::from_bytes(&root_sk), &path, msg);
     }
 
     #[rstest]
@@ -105,12 +113,12 @@ mod tests {
     )]
     fn derived_pk_has_not_changed(
         #[case] root_sk: SecretKey,
-        #[case] tweak: [u8; 32],
+        #[case] path: [u8; 32],
         #[case] expected_derived_pk: [u8; PUBLIC_KEY_LENGTH],
     ) {
         assert_roundtrip_expected(
             SigningKey::from_bytes(&root_sk),
-            tweak,
+            &path,
             b"message",
             &VerifyingKey::from_bytes(&expected_derived_pk).expect("invalid expected derived pk"),
         );

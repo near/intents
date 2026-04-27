@@ -1,40 +1,31 @@
 #[cfg(feature = "signing")]
 pub use k256::SecretKey;
 pub use k256::{
-    self, NonZeroScalar, PublicKey,
+    self, PublicKey,
     ecdsa::{RecoveryId, Signature},
 };
 use k256::{
-    ProjectivePoint, U256,
+    NonZeroScalar, ProjectivePoint, U256,
     ecdsa::{VerifyingKey, signature::hazmat::PrehashVerifier},
     elliptic_curve::ops::{MulByGenerator, Reduce},
 };
 
-use crate::DerivableCurve;
+use crate::{DerivableCurve, DerivablePublicKey};
 
 pub struct Secp256k1;
 
+impl Secp256k1 {
+    fn tweak(path: &[u8; 32]) -> NonZeroScalar {
+        <NonZeroScalar as Reduce<U256>>::reduce_bytes(path.into())
+    }
+}
+
 impl DerivableCurve for Secp256k1 {
-    type Tweak = NonZeroScalar;
+    type Path = [u8; 32];
     type PublicKey = PublicKey;
     /// Prehash, i.e. output of a cryptographic hash function
     type Message = [u8; 32];
     type Signature = (Signature, RecoveryId);
-
-    fn tweak(hash: [u8; 32]) -> NonZeroScalar {
-        <NonZeroScalar as Reduce<U256>>::reduce_bytes(&hash.into())
-    }
-
-    fn derive_public_key(root: &PublicKey, tweak: &NonZeroScalar) -> PublicKey {
-        // pk' <- pk + G * tweak
-        let derived_point = root.to_projective() + ProjectivePoint::mul_by_generator(tweak);
-
-        // `PublicKey::from_affine` rejects the identity point for us.
-        // With a random `tweak`, `derived_point == 0` iff `tweak == -root_sk`,
-        // which happens with probability ≈ 2^-256 — treat as unreachable.
-        PublicKey::from_affine(derived_point.to_affine())
-            .expect("derived public key is the point at infinity")
-    }
 
     fn verify(
         public_key: &PublicKey,
@@ -44,6 +35,21 @@ impl DerivableCurve for Secp256k1 {
         VerifyingKey::from(public_key)
             .verify_prehash(prehash, signature)
             .is_ok()
+    }
+}
+
+impl DerivablePublicKey<Secp256k1> for PublicKey {
+    fn derive(&self, path: &<Secp256k1 as DerivableCurve>::Path) -> Self {
+        let tweak = Secp256k1::tweak(path);
+
+        // pk' <- pk + G * tweak
+        let derived_point = self.to_projective() + ProjectivePoint::mul_by_generator(&tweak);
+
+        // `PublicKey::from_affine` rejects the identity point for us.
+        // With a random `tweak`, `derived_point == 0` iff `tweak == -root_sk`,
+        // which happens with probability ≈ 2^-256 — treat as unreachable.
+        Self::from_affine(derived_point.to_affine())
+            .expect("derived public key is the point at infinity")
     }
 }
 
@@ -58,10 +64,16 @@ const _: () = {
             self.public_key()
         }
 
-        fn sign(&self, tweak: &NonZeroScalar, prehash: &[u8; 32]) -> (Signature, RecoveryId) {
+        fn derive_sign(
+            &self,
+            path: &<Secp256k1 as DerivableCurve>::Path,
+            prehash: &[u8; 32],
+        ) -> (Signature, RecoveryId) {
+            let tweak = Secp256k1::tweak(path);
+
             let derived_scalar = NonZeroScalar::new(
                 // sk' = sk + tweak
-                *self.to_nonzero_scalar() + **tweak,
+                *self.to_nonzero_scalar() + *tweak,
             )
             .expect("derived secret key is zero");
 
@@ -93,7 +105,7 @@ mod tests {
         #[values(
             hex!("f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2"),
         )]
-        tweak: [u8; 32],
+        path: [u8; 32],
         #[values(
             hex!("0000000000000000000000000000000000000000000000000000000000000000"),
             hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
@@ -102,7 +114,7 @@ mod tests {
     ) {
         let (derived_pk, (signature, recovery_id)) = assert_roundtrip(
             SecretKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
-            tweak,
+            &path,
             &prehash,
         );
 
@@ -124,12 +136,12 @@ mod tests {
     )]
     fn derived_pk_has_not_changed(
         #[case] root_sk: [u8; 32],
-        #[case] tweak: [u8; 32],
+        #[case] path: [u8; 32],
         #[case] expected_derived_pk: [u8; 64],
     ) {
         assert_roundtrip_expected(
             SecretKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
-            tweak,
+            &path,
             &hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
             &PublicKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
                 &expected_derived_pk.into(),
