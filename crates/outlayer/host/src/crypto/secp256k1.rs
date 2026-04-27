@@ -1,13 +1,32 @@
-use std::{rc::Rc, sync::Arc};
+use anyhow::anyhow;
+use defuse_outlayer_crypto::{DeriveSigner, secp256k1::Secp256k1};
 
-use impl_tools::autoimpl;
+use crate::State;
 
-// TODO: use defuse crypto?
-pub type Secp256k1PublicKey = [u8; 64];
-pub type Secp256k1Signature = [u8; 65];
+impl crate::bindings::outlayer::crypto::secp256k1::Host for State<'_> {
+    fn derive_public_key(&mut self, path: String) -> wasmtime::Result<Vec<u8>> {
+        let path = self.tweak(path);
 
-#[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
-pub trait Secp256k1Host {
-    fn secp256k1_derive_public_key(&self, path: &str) -> Secp256k1PublicKey;
-    fn secp256k1_sign(&self, path: &str, msg: &[u8]) -> Secp256k1Signature;
+        let derived_pk = DeriveSigner::<Secp256k1>::derive_public_key(&self.signer, &path);
+
+        Ok(derived_pk
+            .to_encoded_point(false) // uncompressed
+            .as_bytes()[1..] // trim leading SEC1 tag byte (0x04)
+            .to_vec())
+    }
+
+    fn sign(&mut self, path: String, prehash: Vec<u8>) -> wasmtime::Result<Vec<u8>> {
+        let prehash: [u8; 32] = prehash
+            .try_into()
+            .map_err(|v: Vec<_>| anyhow!("prehash must be 32 bytes long, got: {}", v.len()))?;
+
+        let path = self.tweak(path);
+
+        let (signature, recovery_id) =
+            DeriveSigner::<Secp256k1>::derive_sign(&self.signer, &path, &prehash);
+
+        let mut sig = signature.to_vec();
+        sig.push(recovery_id.to_byte());
+        Ok(sig)
+    }
 }

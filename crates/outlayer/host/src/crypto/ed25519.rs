@@ -1,13 +1,21 @@
-use std::{rc::Rc, sync::Arc};
+use defuse_outlayer_crypto::{DeriveSigner, ed25519::Ed25519};
 
-use impl_tools::autoimpl;
+use crate::State;
 
-// TODO: use defuse crypto?
-pub type Ed25519PublicKey = [u8; 32];
-pub type Ed25519Signature = [u8; 64];
+impl crate::bindings::outlayer::crypto::ed25519::Host for State<'_> {
+    fn derive_public_key(&mut self, path: String) -> wasmtime::Result<Vec<u8>> {
+        let path = self.tweak(path);
 
-#[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
-pub trait Ed25519Host {
-    fn ed25519_derive_public_key(&self, path: &str) -> Ed25519PublicKey;
-    fn ed25519_sign(&self, path: &str, msg: &[u8]) -> Ed25519Signature;
+        let derived_pk = DeriveSigner::<Ed25519>::derive_public_key(&self.signer, &path);
+
+        Ok(derived_pk.to_bytes().to_vec())
+    }
+
+    fn sign(&mut self, path: String, msg: Vec<u8>) -> wasmtime::Result<Vec<u8>> {
+        let tweak = self.tweak(path);
+
+        let signature = DeriveSigner::<Ed25519>::derive_sign(&self.signer, &tweak, &msg);
+
+        Ok(signature.to_vec())
+    }
 }
