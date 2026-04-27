@@ -22,6 +22,11 @@ impl InMemorySigner {
     #[cfg(feature = "secp256k1")]
     const HKDF_INFO_SECP256K1_ROOT_SK: &'static [u8] = b"secp256k1/root_sk";
 
+    /// Construct from a seed, i.e. input key material with _not necessarily_
+    /// uniformly distributed entropy.
+    ///
+    /// NOTE: `seed` is passed by reference, and the referenced value is
+    /// recommended to be zeroized afterwards.
     pub fn from_seed(seed: &[u8]) -> Self {
         let hk = Hkdf::<Sha3_512>::new(Some(Self::HKDF_SEED_SALT), seed);
 
