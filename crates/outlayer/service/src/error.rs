@@ -1,4 +1,5 @@
 use thiserror::Error;
+use tower::BoxError;
 
 use crate::{
     env::EnvFetchError, executor::WasmEnvironmentInternalError, resolver::ResolveError,
@@ -20,4 +21,6 @@ pub enum ExecutionStackError {
     Compile(anyhow::Error),
     #[error("execution timed out")]
     Timeout,
+    #[error("internal error: {0}")]
+    Internal(BoxError),
 }
