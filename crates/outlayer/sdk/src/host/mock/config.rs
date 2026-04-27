@@ -8,7 +8,7 @@ use std::borrow::Cow;
 
 #[serde_as]
 #[derive(Deserialize)]
-pub struct TestConfig {
+pub struct MockConfig {
     #[serde(default = "default_app_id")]
     app_id: AppId<'static>,
 
@@ -17,7 +17,7 @@ pub struct TestConfig {
     seed: Vec<u8>,
 }
 
-impl Default for TestConfig {
+impl Default for MockConfig {
     fn default() -> Self {
         Self {
             app_id: default_app_id(),
@@ -26,7 +26,7 @@ impl Default for TestConfig {
     }
 }
 
-impl TestConfig {
+impl MockConfig {
     pub fn from_env() -> anyhow::Result<Self> {
         config::Config::builder()
             .add_source(Environment::with_prefix("TEST_OUTLAYER"))

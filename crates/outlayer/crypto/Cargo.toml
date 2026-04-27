@@ -36,10 +36,6 @@ signing = [
 
 [dev-dependencies]
 ed25519-dalek = { workspace = true, features = ["std", "zeroize", "serde"] }
-k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"] }
 hex-literal.workspace = true
+k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"] }
 rstest.workspace = true
-
-hex.workspace = true
-serde.workspace = true
-serde_json.workspace = true                                                     # TODO: remove

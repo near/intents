@@ -1568,15 +1568,12 @@ version = "0.1.0"
 dependencies = [
  "curve25519-dalek",
  "ed25519-dalek",
- "hex",
  "hex-literal",
  "hkdf",
  "impl-tools",
  "k256",
  "rand 0.10.1",
  "rstest",
- "serde",
- "serde_json",
  "sha3 0.11.0",
  "zeroize",
 ]
@@ -1618,11 +1615,15 @@ name = "defuse-outlayer-sdk"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "base64 0.22.1",
  "borsh",
+ "bs58 0.5.1",
  "config",
  "defuse-outlayer-host",
  "defuse-outlayer-primitives",
  "defuse-outlayer-sys",
+ "hex",
+ "hex-literal",
  "schemars 0.8.22",
  "serde",
  "serde_json",
