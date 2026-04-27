@@ -1,0 +1,24 @@
+[package]
+name = "defuse-eip712"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+defuse-crypto = { workspace = true, default-features = false, features = ["secp256k1"] }
+
+impl-tools.workspace = true
+near-sdk.workspace = true
+
+[features]
+abi = ["defuse-crypto/abi", "near-sdk/abi"]
+
+[dev-dependencies]
+defuse-test-utils.workspace = true
+hex-literal.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
+rstest.workspace = true
+
+[lints]
+workspace = true

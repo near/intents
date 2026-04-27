@@ -1403,6 +1403,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-eip712"
+version = "0.1.0"
+dependencies = [
+ "defuse-crypto",
+ "defuse-test-utils",
+ "hex-literal",
+ "impl-tools",
+ "near-sdk",
+ "rstest",
+]
+
+[[package]]
 name = "defuse-erc191"
 version = "0.1.0"
 dependencies = [
@@ -1747,6 +1759,7 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-crypto",
  "defuse-deadline",
+ "defuse-eip712",
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-webauthn",

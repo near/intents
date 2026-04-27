@@ -161,6 +161,19 @@ contract_impl! {
         }
 
     }
+
+    #[cfg_attr(
+        feature = "eip712",
+        near(contract_metadata(
+            standard(standard = "wallet-eip712", version = "1.0.0")
+        ))
+    )] {
+        use crate::signature::eip712::Eip712;
+
+        impl ContractImpl for Contract {
+            type SigningStandard = Eip712;
+        }
+    }
 }
 
 impl Deref for Contract {
