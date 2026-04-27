@@ -15,6 +15,7 @@ impl DerivableCurve for Ed25519 {
     type Signature = Signature;
 
     fn tweak(hash: [u8; 32]) -> Scalar {
+        // TODO: are we sure there is no need to clamp?
         Scalar::from_bytes_mod_order(hash)
     }
 
@@ -46,11 +47,11 @@ const _: () = {
         }
 
         fn sign(&self, tweak: &Scalar, msg: &[u8]) -> Signature {
-            let root_sk = ExpandedSecretKey::from(self.as_bytes());
+            let root_esk = ExpandedSecretKey::from(self.as_bytes());
 
-            let esk = ExpandedSecretKey {
+            let derived_esk = ExpandedSecretKey {
                 // sk' = sk + tweak
-                scalar: root_sk.scalar + tweak,
+                scalar: root_esk.scalar + tweak,
 
                 // In ed25519-dalek implementation hash_prefix takes part in
                 // deterministic nonce generation. It's very important to not
@@ -66,9 +67,9 @@ const _: () = {
                 hash_prefix: UnwrapErr::<SysRng>::default().random(),
             };
 
-            let verifying_key = VerifyingKey::from(&esk);
+            let derived_verifying_key = VerifyingKey::from(&derived_esk);
 
-            raw_sign::<Sha512>(&esk, msg, &verifying_key)
+            raw_sign::<Sha512>(&derived_esk, msg, &derived_verifying_key)
         }
     }
 };

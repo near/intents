@@ -65,9 +65,10 @@ const _: () = {
             )
             .expect("derived secret key is zero");
 
-            let sk = SigningKey::from(derived_scalar);
+            let derived_sk = SigningKey::from(derived_scalar);
 
-            sk.sign_prehash_recoverable(prehash)
+            derived_sk
+                .sign_prehash_recoverable(prehash)
                 .expect("invalid derived signing key")
         }
     }

@@ -54,6 +54,10 @@ pub trait DerivableCurve {
     std::rc::Rc<T>,
     std::sync::Arc<T>
 )]
+#[impl_tools::autoimpl(
+    for<T: trait + ToOwned + ?Sized>
+    std::borrow::Cow<'_, T>
+)]
 /// Signer for [`DerivableCurve`]
 pub trait DeriveSigner<C>
 where

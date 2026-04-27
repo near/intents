@@ -772,6 +772,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "config"
+version = "0.15.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b30fa8254caad766fc03cb0ccae691e14bf3bd72bfff27f72802ce729551b3d6"
+dependencies = [
+ "pathdiff",
+ "serde_core",
+ "serde_json",
+ "winnow 0.7.14",
+]
+
+[[package]]
 name = "conquer-once"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1573,9 +1585,11 @@ dependencies = [
 name = "defuse-outlayer-host"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "borsh",
  "defuse-outlayer-crypto",
  "defuse-outlayer-primitives",
+ "tracing",
  "wasmtime",
 ]
 
@@ -1603,10 +1617,16 @@ dependencies = [
 name = "defuse-outlayer-sdk"
 version = "0.1.0"
 dependencies = [
- "defuse-outlayer-crypto",
+ "anyhow",
+ "borsh",
+ "config",
  "defuse-outlayer-host",
  "defuse-outlayer-primitives",
  "defuse-outlayer-sys",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
 ]
 
 [[package]]

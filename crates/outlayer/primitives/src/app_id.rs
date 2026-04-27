@@ -4,8 +4,8 @@ use std::{
     str::FromStr,
 };
 
-pub use near_account_id as account_id;
-use near_account_id::{AccountId, AccountIdRef, ParseAccountError};
+use near_account_id::ParseAccountError;
+pub use near_account_id::{self as account_id, AccountId, AccountIdRef};
 use strum::{EnumDiscriminants, EnumString};
 
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]

@@ -1,17 +1,17 @@
 pub mod crypto;
 
+use std::borrow::Cow;
+
+pub use defuse_outlayer_crypto::signer::InMemorySigner;
 pub use defuse_outlayer_primitives as primitives;
 use defuse_outlayer_primitives::AppId;
 
-use crate::crypto::Signer;
-
-// TODO: rename
 pub mod bindings {
     wasmtime::component::bindgen!({
         path: "../wit",
         world: "imports",
         imports: {
-            // default: async | trappable,
+            default: trappable | tracing,
         },
         ownership: Borrowing {
             duplicate_if_necessary: true
@@ -24,21 +24,13 @@ pub struct Context<'a> {
     pub app_id: AppId<'a>,
 }
 
-pub struct Host {
-    ctx: Context<'static>,
-    signer: Box<dyn Signer>,
+pub struct State<'a> {
+    ctx: Context<'a>,
+    signer: Cow<'a, InMemorySigner>,
 }
 
-impl Host {
-    pub fn new(ctx: Context<'static>, signer: impl Signer + 'static) -> Self {
-        Self {
-            ctx,
-            signer: Box::new(signer),
-        }
-    }
-
-    pub fn with_app_id(&mut self, app_id: impl Into<AppId<'static>>) -> &mut Self {
-        self.app_id = app_id.into();
-        self
+impl<'a> State<'a> {
+    pub const fn new(ctx: Context<'a>, signer: Cow<'a, InMemorySigner>) -> Self {
+        Self { ctx, signer }
     }
 }
