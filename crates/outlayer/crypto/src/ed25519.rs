@@ -1,4 +1,3 @@
-pub use curve25519_dalek;
 use curve25519_dalek::{EdwardsPoint, Scalar};
 #[cfg(feature = "signing")]
 pub use ed25519_dalek::SigningKey;
@@ -76,6 +75,12 @@ const _: () = {
             };
 
             let derived_verifying_key = VerifyingKey::from(&derived_esk);
+
+            debug_assert_eq!(
+                derived_verifying_key,
+                self.derive_public_key(path),
+                "derived public key mismatch",
+            );
 
             raw_sign::<Sha512>(&derived_esk, msg, &derived_verifying_key)
         }

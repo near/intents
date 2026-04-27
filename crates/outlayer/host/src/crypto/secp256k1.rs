@@ -1,8 +1,5 @@
 use anyhow::anyhow;
-use defuse_outlayer_crypto::{
-    DeriveSigner,
-    secp256k1::{Secp256k1, k256::elliptic_curve::sec1::ToEncodedPoint},
-};
+use defuse_outlayer_crypto::{DeriveSigner, secp256k1::Secp256k1};
 
 use crate::State;
 

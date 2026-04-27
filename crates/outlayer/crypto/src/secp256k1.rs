@@ -1,12 +1,12 @@
 #[cfg(feature = "signing")]
-pub use k256::SecretKey;
+pub use k256::ecdsa::SigningKey;
 pub use k256::{
-    self, PublicKey,
-    ecdsa::{RecoveryId, Signature},
+    self,
+    ecdsa::{RecoveryId, Signature, VerifyingKey},
 };
 use k256::{
     NonZeroScalar, ProjectivePoint, U256,
-    ecdsa::{VerifyingKey, signature::hazmat::PrehashVerifier},
+    ecdsa::signature::hazmat::PrehashVerifier,
     elliptic_curve::ops::{MulByGenerator, Reduce},
 };
 
@@ -22,28 +22,27 @@ impl Secp256k1 {
 
 impl DerivableCurve for Secp256k1 {
     type Path = [u8; 32];
-    type PublicKey = PublicKey;
+    type PublicKey = VerifyingKey;
     /// Prehash, i.e. output of a cryptographic hash function
     type Message = [u8; 32];
     type Signature = (Signature, RecoveryId);
 
     fn verify(
-        public_key: &PublicKey,
+        public_key: &VerifyingKey,
         prehash: &[u8; 32],
         (signature, _recovery_id): &Self::Signature,
     ) -> bool {
-        VerifyingKey::from(public_key)
-            .verify_prehash(prehash, signature)
-            .is_ok()
+        public_key.verify_prehash(prehash, signature).is_ok()
     }
 }
 
-impl DerivablePublicKey<Secp256k1> for PublicKey {
+impl DerivablePublicKey<Secp256k1> for VerifyingKey {
     fn derive(&self, path: &<Secp256k1 as DerivableCurve>::Path) -> Self {
         let tweak = Secp256k1::tweak(path);
 
         // pk' <- pk + G * tweak
-        let derived_point = self.to_projective() + ProjectivePoint::mul_by_generator(&tweak);
+        let derived_point =
+            ProjectivePoint::from(self.as_affine()) + ProjectivePoint::mul_by_generator(&tweak);
 
         // `PublicKey::from_affine` rejects the identity point for us.
         // With a random `tweak`, `derived_point == 0` iff `tweak == -root_sk`,
@@ -55,13 +54,11 @@ impl DerivablePublicKey<Secp256k1> for PublicKey {
 
 #[cfg(feature = "signing")]
 const _: () = {
-    use k256::ecdsa::SigningKey;
-
     use crate::DeriveSigner;
 
-    impl DeriveSigner<Secp256k1> for SecretKey {
-        fn public_key(&self) -> PublicKey {
-            self.public_key()
+    impl DeriveSigner<Secp256k1> for SigningKey {
+        fn public_key(&self) -> VerifyingKey {
+            self.verifying_key().clone()
         }
 
         fn derive_sign(
@@ -73,11 +70,17 @@ const _: () = {
 
             let derived_scalar = NonZeroScalar::new(
                 // sk' = sk + tweak
-                *self.to_nonzero_scalar() + *tweak,
+                **self.as_nonzero_scalar() + *tweak,
             )
             .expect("derived secret key is zero");
 
             let derived_sk = SigningKey::from(derived_scalar);
+
+            debug_assert_eq!(
+                derived_sk.verifying_key(),
+                &self.derive_public_key(path),
+                "derived public key mismatch",
+            );
 
             derived_sk
                 .sign_prehash_recoverable(prehash)
@@ -89,7 +92,7 @@ const _: () = {
 #[cfg(all(test, feature = "signing"))]
 mod tests {
     use hex_literal::hex;
-    use k256::{EncodedPoint, ecdsa::VerifyingKey, elliptic_curve::sec1::FromEncodedPoint};
+    use k256::{EncodedPoint, ecdsa::VerifyingKey};
     use rstest::rstest;
 
     use crate::tests::{assert_roundtrip, assert_roundtrip_expected};
@@ -113,7 +116,7 @@ mod tests {
         prehash: [u8; 32],
     ) {
         let (derived_pk, (signature, recovery_id)) = assert_roundtrip(
-            SecretKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
+            SigningKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
             &path,
             &prehash,
         );
@@ -140,10 +143,10 @@ mod tests {
         #[case] expected_derived_pk: [u8; 64],
     ) {
         assert_roundtrip_expected(
-            SecretKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
+            SigningKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
             &path,
             &hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
-            &PublicKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
+            &VerifyingKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
                 &expected_derived_pk.into(),
             ))
             .expect("invalid expected derived pk"),
