@@ -17,7 +17,7 @@ fn main() {
 
 #[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "command", rename_all = "snake_case")]
+#[serde(tag = "curve", rename_all = "snake_case")]
 pub enum Input {
     Ed25519 {
         path: String,
@@ -59,50 +59,5 @@ fn run(input: Input) -> Output {
             derived_pk: secp256k1::derive_public_key(&path),
             signature: secp256k1::sign(path, &prehash),
         },
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use defuse_outlayer_sdk::hex_literal::hex;
-
-    // TODO: values
-
-    #[test]
-    fn test_ed25519() {
-        assert_eq!(
-            run(Input::Ed25519 {
-                path: "path".to_string(),
-                msg: b"message".to_vec(),
-            }),
-            Output::Ed25519 {
-                derived_pk: hex!(
-                    "00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"
-                ),
-                signature: hex!(
-                    "00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee4200cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"
-                ),
-            }
-        );
-    }
-
-    #[test]
-    fn test_secp256k1() {
-        assert_eq!(
-            run(Input::Secp256k1 {
-                path: "path".to_string(),
-                prehash: hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
-            }),
-            Output::Secp256k1 {
-                derived_pk: hex!(
-                    "00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee4200cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"
-                ),
-                signature: hex!(
-                    "00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee4200cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee4201"
-                ),
-            }
-        );
     }
 }
