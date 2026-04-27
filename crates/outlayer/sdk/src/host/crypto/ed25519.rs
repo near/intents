@@ -25,12 +25,7 @@ pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
     #[cfg(not(target_family = "wasm"))]
     {
         mock::HOST
-            .with_borrow_mut(|h| {
-                Host::derive_public_key(
-                    h,
-                    path.as_ref().to_string(), // TODO
-                )
-            })
+            .with_borrow_mut(|h| h.derive_public_key(path.as_ref().to_string()))
             .expect("host")
     }
     .try_into()
@@ -47,13 +42,7 @@ pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Signature {
     #[cfg(not(target_family = "wasm"))]
     {
         mock::HOST
-            .with_borrow_mut(|h| {
-                Host::sign(
-                    h,
-                    path.as_ref().to_string(), // TODO
-                    msg.as_ref().to_vec(),     // TODO
-                )
-            })
+            .with_borrow_mut(|h| h.sign(path.as_ref().to_string(), msg.as_ref().to_vec()))
             .expect("host")
     }
     .try_into()

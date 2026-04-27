@@ -1,3 +1,4 @@
+pub mod bindings;
 pub mod crypto;
 
 use std::borrow::Cow;
@@ -5,19 +6,6 @@ use std::borrow::Cow;
 pub use defuse_outlayer_crypto::signer::InMemorySigner;
 pub use defuse_outlayer_primitives as primitives;
 use defuse_outlayer_primitives::AppId;
-
-pub mod bindings {
-    wasmtime::component::bindgen!({
-        path: "../wit",
-        world: "imports",
-        imports: {
-            default: trappable | tracing,
-        },
-        ownership: Borrowing {
-            duplicate_if_necessary: true
-        },
-    });
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Context<'a> {
