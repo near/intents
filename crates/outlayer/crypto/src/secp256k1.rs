@@ -58,7 +58,7 @@ const _: () = {
 
     impl DeriveSigner<Secp256k1> for SigningKey {
         fn public_key(&self) -> VerifyingKey {
-            self.verifying_key().clone()
+            *self.verifying_key()
         }
 
         fn derive_sign(
@@ -74,7 +74,7 @@ const _: () = {
             )
             .expect("derived secret key is zero");
 
-            let derived_sk = SigningKey::from(derived_scalar);
+            let derived_sk = Self::from(derived_scalar);
 
             debug_assert_eq!(
                 derived_sk.verifying_key(),
@@ -124,11 +124,7 @@ mod tests {
         let recovered_key = VerifyingKey::recover_from_prehash(&prehash, &signature, recovery_id)
             .expect("failed to recover verifying key");
 
-        assert_eq!(
-            recovered_key,
-            derived_pk.into(),
-            "invalid recovered verifying key"
-        );
+        assert_eq!(recovered_key, derived_pk, "invalid recovered verifying key");
     }
 
     #[rstest]
