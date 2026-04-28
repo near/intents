@@ -17,7 +17,7 @@ pub type Signature = [u8; 64];
 /// keys **do not** form a tree-like structure. Instead, child keys
 /// are all derived from a single root key and can be considered as
 /// "peers" to each other.
-// #[track_caller]
+#[track_caller]
 pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
     #[cfg(target_family = "wasm")]
     {
@@ -38,7 +38,7 @@ pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
 ///
 /// NOTE: signatures are non-deterministic, i.e. host implementation MAY
 /// return different signatures for the same `path` and `msg`.
-// #[track_caller]
+#[track_caller]
 pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Signature {
     #[cfg(target_family = "wasm")]
     {
