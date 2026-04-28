@@ -1,5 +1,5 @@
 use anyhow::Result;
-use defuse_outlayer_host::bindings::{HostFunctions, Imports};
+use defuse_outlayer_host::{HostFunctions, bindings::Imports};
 use std::marker::PhantomData;
 use tracing::instrument;
 use wasmtime::component::{Component, HasSelf, Linker};
@@ -180,24 +180,29 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     ///
     /// # Example
     ///
-    /// Using [`HostState`] directly:
+    /// Using [`State`] directly:
     ///
     /// ```rust,no_run
-    /// use defuse_outlayer_state::HostState;
+    /// use defuse_outlayer_host::State;
     /// use defuse_outlayer_vm_runner::{Context, VmRuntimeBuilder};
     /// use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
     ///
     /// # async fn example() -> anyhow::Result<()> {
+    ///     let state = State::new(
+    ///         HostContext { app_id },
+    ///         Cow::Owned(InMemorySigner::from_seed(seed)),
+    ///     );
+    ///
     /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024);
     /// let stderr = MemoryOutputPipe::new(64 * 1024);
     /// let ctx = Context::new(
     ///     MemoryInputPipe::new(b"input".to_vec()),
     ///     stdout.clone(),
     ///     stderr.clone(),
-    ///     HostState::default(),
+    ///     state,
     /// );
     ///
-    /// let runner = VmRuntimeBuilder::<HostState>::new().build()?;
+    /// let runner = VmRuntimeBuilder::<State>::new().build()?;
     /// let wasm = std::fs::read("component.wasm")?;
     /// let component = runner.compile(&wasm)?;
     /// runner.execute(ctx, &component).await?;
@@ -206,19 +211,19 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// # Ok(()) }
     /// ```
     ///
-    /// You can also wrap [`HostState`] to share it across concurrent executions
+    /// You can also wrap [`State`] to share it across concurrent executions
     /// or inject additional context. Implement each host-function trait on your
     /// wrapper and delegate to the inner state:
     ///
     /// ```rust,no_run
     /// use std::sync::Arc;
-    /// use defuse_outlayer_state::HostState;
+    /// use defuse_outlayer_host::State;
     /// use defuse_outlayer_vm_runner::{Context, VmRuntimeBuilder};
     /// use tokio::sync::Mutex;
     /// use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
     ///
     /// struct Wrapper {
-    ///     inner: Arc<Mutex<HostState>>,
+    ///     inner: Arc<Mutex<State>>,
     /// }
     ///
     /// impl defuse_outlayer_host_functions::crypto::ed25519::Host for Wrapper {
@@ -240,7 +245,12 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// }
     ///
     /// # async fn example() -> anyhow::Result<()> {
-    /// let shared = Arc::new(Mutex::new(HostState::default()));
+    /// let state = State::new(
+    ///     HostContext { app_id },
+    ///     Cow::Owned(InMemorySigner::from_seed(seed)),
+    /// );
+    ///
+    /// let shared = Arc::new(Mutex::new(state));
     /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024);
     /// let stderr = MemoryOutputPipe::new(64 * 1024);
     /// let ctx = Context::new(
