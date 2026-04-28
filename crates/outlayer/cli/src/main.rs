@@ -1,9 +1,9 @@
 use anyhow::Result;
 use clap::Parser;
-use std::path::PathBuf;
+use std::{borrow::Cow, env, path::PathBuf};
 
-use defuse_outlayer_state::HostState;
-use defuse_outlayer_vm_runner::{Context, VmRuntime};
+use defuse_outlayer_host::{Context as HostContext, InMemorySigner, State, primitives::AppId};
+use defuse_outlayer_vm_runner::{Context as RunnerContext, VmRuntime};
 
 #[derive(Parser)]
 #[command(
@@ -15,6 +15,9 @@ use defuse_outlayer_vm_runner::{Context, VmRuntime};
     "
 )]
 struct Args {
+    /// Application ID to use in the host context
+    app_id: AppId<'static>,
+
     /// Path to the WebAssembly component to execute
     path: PathBuf,
 
@@ -31,14 +34,24 @@ struct Args {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let ctx = Context::new(
+    let seed = env::var("OUTLAYER_SEED")
+        .map_err(|_| anyhow::anyhow!("OUTLAYER_SEED env var is not set"))?;
+
+    let state = State::new(
+        HostContext {
+            app_id: args.app_id,
+        },
+        Cow::Owned(InMemorySigner::from_seed(seed.as_bytes())),
+    );
+
+    let ctx = RunnerContext::new(
         tokio::io::stdin(),
         tokio::io::stdout(),
         tokio::io::stderr(),
-        HostState::default(),
+        state,
     );
 
-    let mut builder = VmRuntime::<HostState>::builder();
+    let mut builder = VmRuntime::<State>::builder();
     if let Some(fuel_limit) = args.fuel_limit {
         builder = builder.fuel_limit(fuel_limit);
     }

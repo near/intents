@@ -1,4 +1,4 @@
-use defuse_outlayer_host_functions::HostFunctions;
+use defuse_outlayer_host::bindings::HostFunctions;
 use wasmtime::StoreLimits;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 

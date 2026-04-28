@@ -1,5 +1,5 @@
 use anyhow::Result;
-use defuse_outlayer_host_functions::{HostFunctions, Imports};
+use defuse_outlayer_host::bindings::{HostFunctions, Imports};
 use std::marker::PhantomData;
 use tracing::instrument;
 use wasmtime::component::{Component, HasSelf, Linker};

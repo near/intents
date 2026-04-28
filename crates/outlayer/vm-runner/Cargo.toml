@@ -12,9 +12,9 @@ workspace = true
 anyhow.workspace = true
 thiserror.workspace = true
 
-wasmtime.workspace = true
+wasmtime = { workspace = true, features = ["cranelift"] }
 wasmtime-wasi.workspace = true
 
-defuse-outlayer-host-functions = { workspace = true }
-
 tracing = { workspace = true }
+
+defuse-outlayer-host = { workspace = true }

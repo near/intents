@@ -12,6 +12,6 @@ workspace = true
 anyhow.workspace = true
 clap = { workspace = true, features = ["derive"] }
 
-defuse-outlayer-state = { workspace = true }
+defuse-outlayer-host = { workspace = true }
 defuse-outlayer-vm-runner = { workspace = true }
 tokio = { workspace = true, features = ["full"] }

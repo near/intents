@@ -27,6 +27,8 @@ pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
     #[cfg(target_family = "wasm")]
     {
         sys::crypto::secp256k1::derive_public_key(path.as_ref())
+            .try_into()
+            .expect("invalid length")
     }
     #[cfg(not(target_family = "wasm"))]
     {
@@ -51,6 +53,8 @@ pub fn sign(path: impl AsRef<str>, prehash: &[u8; 32]) -> Signature {
     #[cfg(target_family = "wasm")]
     {
         sys::crypto::secp256k1::sign(path.as_ref(), prehash.as_ref())
+            .try_into()
+            .expect("invalid length")
     }
     #[cfg(not(target_family = "wasm"))]
     {
