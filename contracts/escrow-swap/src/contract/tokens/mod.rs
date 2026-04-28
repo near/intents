@@ -20,7 +20,7 @@ impl Contract {
     pub fn on_receive(
         &mut self,
         sender_id: AccountId,
-        token_id: TokenId,
+        token_id: &TokenId,
         amount: u128,
         msg: &str,
     ) -> Result<PromiseOrValue<u128>> {
@@ -43,7 +43,7 @@ impl State {
         &mut self,
         params: Params,
         sender_id: AccountId,
-        token_id: TokenId,
+        token_id: &TokenId,
         amount: u128,
         action: TransferAction,
     ) -> Result<PromiseOrValue<u128>> {
@@ -52,10 +52,10 @@ impl State {
         }
 
         match action {
-            TransferAction::Fund if token_id == params.src_token => {
-                self.fund(params, sender_id, amount)
+            TransferAction::Fund if *token_id == params.src_token => {
+                self.fund(params, &sender_id, amount)
             }
-            TransferAction::Fill(fill) if token_id == params.dst_token => {
+            TransferAction::Fill(fill) if *token_id == params.dst_token => {
                 self.fill(params, sender_id, amount, fill)
             }
             _ => Err(Error::WrongToken),

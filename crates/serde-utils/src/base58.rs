@@ -59,8 +59,7 @@ const _: () = {
             // TODO: use #[schemars(extend(...))] when released
             SchemaObject {
                 instance_type: Some(InstanceType::String.into()),
-                extensions: [("contentEncoding", "base58".into())]
-                    .into_iter()
+                extensions: std::iter::once(("contentEncoding", "base58".into()))
                     .map(|(k, v)| (k.to_string(), v))
                     .collect(),
                 ..Default::default()

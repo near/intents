@@ -13,14 +13,14 @@ use super::{Contract, ContractExt};
 
 impl Contract {
     #[inline]
-    pub(super) fn cleanup_guard(&mut self) -> CleanupGuard<'_> {
+    pub(super) const fn cleanup_guard(&mut self) -> CleanupGuard<'_> {
         CleanupGuard(&mut self.0)
     }
 }
 
 pub struct CleanupGuard<'a>(&'a mut ContractStorage);
 
-impl<'a> CleanupGuard<'a> {
+impl CleanupGuard<'_> {
     #[inline]
     pub const fn as_alive_mut(&mut self) -> Option<&mut Storage> {
         self.0.0.as_mut()
@@ -56,9 +56,11 @@ impl<'a> CleanupGuard<'a> {
     }
 }
 
-impl<'a> Drop for CleanupGuard<'a> {
+impl Drop for CleanupGuard<'_> {
     fn drop(&mut self) {
-        self.maybe_cleanup().map(Promise::detach);
+        if let Some(p) = self.maybe_cleanup() {
+            p.detach();
+        }
     }
 }
 

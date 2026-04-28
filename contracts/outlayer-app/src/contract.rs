@@ -74,7 +74,7 @@ impl OutlayerApp for Contract {
 impl Contract {
     fn set_code(&mut self, code_hash: [u8; 32], url: String) {
         self.0.code_hash = code_hash;
-        self.0.code_url = url.clone();
+        self.0.code_url.clone_from(&url);
         Event::SetCode {
             hash: code_hash,
             url,

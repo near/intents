@@ -1,21 +1,55 @@
-use defuse_outlayer_host::crypto::ed25519::{Ed25519Host, Ed25519PublicKey, Ed25519Signature};
+#[cfg(not(target_family = "wasm"))]
+use crate::host::mock;
+#[cfg(not(target_family = "wasm"))]
+use defuse_outlayer_host::bindings::outlayer::crypto::ed25519::Host;
 
-pub fn derive_public_key(path: impl AsRef<str>) -> Ed25519PublicKey {
+#[cfg(target_family = "wasm")]
+use defuse_outlayer_sys as sys;
+
+/// Ed25519 public key
+pub type PublicKey = [u8; 32];
+/// Ed25519 signature
+pub type Signature = [u8; 64];
+
+/// Derive public key from root for given application-specific path.
+///
+/// The derivation is **non-hierarchical** (or "plain"): derived
+/// keys **do not** form a tree-like structure. Instead, child keys
+/// are all derived from a single root key and can be considered as
+/// "peers" to each other.
+// #[track_caller]
+pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
     #[cfg(target_family = "wasm")]
-    return ::defuse_outlayer_sys::crypto::ed25519::derive_public_key(path.as_ref())
-        .try_into()
-        .expect("ed25519 public key must be 32 bytes");
-
+    {
+        sys::crypto::ed25519::derive_public_key(path.as_ref())
+    }
     #[cfg(not(target_family = "wasm"))]
-    return crate::host::mock::HOST.with_borrow(|h| h.ed25519_derive_public_key(path.as_ref()));
+    {
+        mock::HOST
+            .with_borrow_mut(|h| h.derive_public_key(path.as_ref().to_string()))
+            .expect("host")
+    }
+    .try_into()
+    .expect("invalid length")
 }
 
-pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Ed25519Signature {
+/// Sign given message with a secret key **internally** derived for
+/// given application-specific path.
+///
+/// NOTE: signatures are non-deterministic, i.e. host implementation MAY
+/// return different signatures for the same `path` and `msg`.
+// #[track_caller]
+pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Signature {
     #[cfg(target_family = "wasm")]
-    return ::defuse_outlayer_sys::crypto::ed25519::sign(path.as_ref(), msg.as_ref())
-        .try_into()
-        .expect("ed25519 signature must be 64 bytes");
-
+    {
+        sys::crypto::ed25519::sign(path.as_ref(), msg.as_ref())
+    }
     #[cfg(not(target_family = "wasm"))]
-    return crate::host::mock::HOST.with_borrow(|h| h.ed25519_sign(path.as_ref(), msg.as_ref()));
+    {
+        mock::HOST
+            .with_borrow_mut(|h| h.sign(path.as_ref().to_string(), msg.as_ref().to_vec()))
+            .expect("host")
+    }
+    .try_into()
+    .expect("invalid length")
 }
