@@ -8,11 +8,10 @@ use clap::Parser;
 use defuse_outlayer_host::primitives::{AppId, AccountIdRef};
 use defuse_outlayer_host::{Context, InMemorySigner, State};
 use defuse_outlayer_service::{
-    Config, WorkerSigningKey, build_stack,
+    Config, build_stack,
     types::{AccountId, OnChainRequest},
 };
 use defuse_outlayer_vm_runner::VmRuntime;
-use ed25519_dalek::SigningKey;
 use tower::ServiceExt;
 
 /// Run a WASM component through the outlayer service stack.
@@ -68,7 +67,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     // Fixed key — replace with a real TEE key in production.
-    let signing_key = WorkerSigningKey(Arc::new(SigningKey::from_bytes(&[1u8; 32])));
+    let signing_key = defuse_outlayer_crypto::signer::InMemorySigner::from_seed(&[1u8; 32]);
     let host_template = State::new(
         Context {
             app_id: AppId::Near(Cow::Borrowed(AccountIdRef::new_or_panic("example.near"))),

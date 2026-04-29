@@ -4,7 +4,6 @@ pub mod error;
 pub mod executor;
 pub mod resolver;
 pub mod service;
-pub mod sign;
 pub mod signing_service;
 pub mod storage;
 pub mod types;
@@ -13,6 +12,7 @@ pub mod utils;
 use std::sync::Arc;
 
 use bytes::Bytes;
+use defuse_outlayer_crypto::signer::InMemorySigner;
 use tower::{Service, ServiceBuilder};
 
 use defuse_outlayer_host::HostFunctions;
@@ -23,8 +23,7 @@ pub use error::ExecutionStackError;
 pub use executor::{WasmExecutor, WasmExecutorConfig};
 pub use resolver::HttpResolver;
 pub use service::OutlayerService;
-pub use sign::{SignedExecutionResponse, WorkerSigningKey};
-pub use signing_service::SigningService;
+pub use signing_service::{SignedExecutionResponse, SigningService};
 pub use types::{ExecutionRequest, ExecutionResponse, OnChainRequest};
 pub use utils::cache::CacheConfig;
 
@@ -33,7 +32,7 @@ use utils::retry::Attempts;
 use utils::timeout_err;
 
 pub fn build_stack<H, Req>(
-    signing_key: WorkerSigningKey,
+    signing_key: InMemorySigner,
     runtime: Arc<VmRuntime<H>>,
     config: Config,
     host_template: H,
@@ -77,6 +76,7 @@ where
         .timeout(config.fetch.timeout)
         .service(storage::StorageFetchService);
 
+    // TODO: consider moving signing outside of the Tower stack
     ServiceBuilder::new()
         .map_err(timeout_err::<ExecutionStackError>)
         .timeout(config.total_timeout)
