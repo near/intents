@@ -47,28 +47,27 @@ async fn main() -> Result<()> {
         Cow::Owned(InMemorySigner::from_seed(&seed)),
     );
 
-    let ctx = RunnerContext::new(
+    let mut ctx = RunnerContext::new(
         tokio::io::stdin(),
         tokio::io::stdout(),
         tokio::io::stderr(),
         state,
     );
 
-    let mut builder = VmRuntime::<State>::builder();
-
     if let Some(fuel) = args.fuel {
-        builder = builder.fuel_limit(fuel);
+        ctx = ctx.fuel_limit(fuel);
     }
 
     if let Some(memory) = args.memory {
-        builder = builder.memory_limit(memory.as_u64().try_into().with_context(|| {
+        ctx = ctx.memory_limit(memory.as_u64().try_into().with_context(|| {
             format!(
                 "memory limit {memory} exceeds platform maximum ({} bytes)",
                 usize::MAX
             )
         })?);
     }
-    let runner = builder.build().context("runtime: build")?;
+
+    let runner = VmRuntime::<State>::new().context("failed to initialize runtime")?;
 
     let wasm_binary = std::fs::read(&args.path)
         .with_context(|| format!("failed to read: {}", args.path.display()))?;

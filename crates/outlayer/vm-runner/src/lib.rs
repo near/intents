@@ -10,4 +10,4 @@ pub use wasmtime_wasi;
 
 pub use error::ExecutionError;
 pub use outcome::{ExecutionDetails, ExecutionOutcome};
-pub use runtime::{Context, DEFAULT_FUEL_LIMIT, DEFAULT_MEMORY_LIMIT, VmRuntime, VmRuntimeBuilder};
+pub use runtime::{Context, VmRuntime};

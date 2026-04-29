@@ -1,6 +1,5 @@
 use anyhow::{Context as _, Result, anyhow};
 use defuse_outlayer_host::{HostFunctions, bindings::Imports};
-use std::marker::PhantomData;
 use tracing::instrument;
 use wasmtime::{
     Config, Engine, Store, StoreLimitsBuilder, Trap,
@@ -20,19 +19,13 @@ use crate::{context::HostCtx, outcome::ExecutionDetails};
 /// catch out-of-bounds accesses
 const MEMORY_GUARD_SIZE: u64 = 64 * 1024 * 1024; // 64 MiB
 
-/// Default maximum physical memory for a single component
-/// execution (100 MiB)
-pub const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024;
-
-/// Default fuel budget for a single component execution
-/// (~1 billion wasm instructions)
-pub const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
-
 pub struct Context<I, O, E, H> {
     input: I,
     output: O,
     error: E,
     host_state: H,
+    fuel_limit: Option<u64>,
+    memory_limit: Option<usize>,
 }
 
 impl<I, O, E, H> Context<I, O, E, H>
@@ -42,44 +35,25 @@ where
     E: StdoutStream + 'static,
     H: HostFunctions,
 {
+    /// Default maximum physical memory for a single component
+    /// execution (100 MiB)
+    pub const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024;
+
+    /// Default fuel budget for a single component execution
+    /// (~1 billion wasm instructions)
+    pub const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
+
+    /// Creates a new execution context
+    /// By default, there are no fuel or memory limits
+    #[must_use]
     pub const fn new(input: I, output: O, error: E, host_state: H) -> Self {
         Self {
             input,
             output,
             error,
             host_state,
-        }
-    }
-}
-
-/// A builder for configuring and creating a `VmRuntime`
-/// with a custom host environment
-pub struct VmRuntimeBuilder<H: HostFunctions + 'static> {
-    config: Config,
-    fuel_limit: u64,
-    memory_limit: usize,
-    _host: PhantomData<H>,
-}
-
-impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
-    /// Creates a new builder with default configuration.
-    ///
-    /// Async support and fuel metering are always enabled and cannot be
-    /// disabled. Use [`fuel_limit`](Self::fuel_limit) and
-    /// [`memory_limit`](Self::memory_limit) to override the defaults
-    pub fn new() -> Self {
-        let mut config = Config::new();
-        config.guard_before_linear_memory(true);
-        config.memory_guard_size(MEMORY_GUARD_SIZE);
-        // NOTE: this is enabling async in host-defined functions
-        config.async_support(true);
-        config.consume_fuel(true);
-
-        Self {
-            config,
-            fuel_limit: DEFAULT_FUEL_LIMIT,
-            memory_limit: DEFAULT_MEMORY_LIMIT,
-            _host: PhantomData,
+            fuel_limit: None,
+            memory_limit: None,
         }
     }
 
@@ -87,61 +61,50 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
     ///
     /// Fuel roughly corresponds to the number of WebAssembly instructions
     /// executed. Exceeding the limit raises [`ExecutionError::Trap`].
-    /// Defaults to [`DEFAULT_FUEL_LIMIT`] if not set
     #[must_use]
     pub const fn fuel_limit(mut self, fuel_limit: u64) -> Self {
-        self.fuel_limit = fuel_limit;
+        self.fuel_limit = Some(fuel_limit);
         self
     }
 
     /// Sets the maximum physical memory the components linear memory may use
     ///
     /// Attempts to grow beyond this limit will trap. Defaults to
-    /// [`DEFAULT_MEMORY_LIMIT`] if not set
     #[must_use]
     pub const fn memory_limit(mut self, memory_limit: usize) -> Self {
-        self.memory_limit = memory_limit;
+        self.memory_limit = Some(memory_limit);
         self
     }
 
-    /// Builds the `VmRuntime` with the specified configuration
-    /// If fuel limit or memory limit are not set, default values will be used
-    pub fn build(self) -> anyhow::Result<VmRuntime<H>> {
-        // TODO: uncomment in corresponding pr
-        // // NOTE: set initial chunk of virtual memory that a linear memory
-        // // may grow into limited to allow multiple linear memories to be
-        // // instantiated without exhausting host resources
-        // self.config
-        //     .memory_reservation(self.memory_limit.try_into().unwrap());
+    pub fn into_store(self, engine: &Engine) -> Store<HostCtx<H>> {
+        let Self {
+            input,
+            output,
+            error,
+            host_state,
+            fuel_limit,
+            memory_limit,
+        } = self;
 
-        let engine = Engine::new(&self.config)?;
-        let linker = Self::create_linker(&engine)?;
+        let wasi_ctx = WasiCtx::builder()
+            .stdin(input)
+            .stdout(output)
+            .stderr(error)
+            .build();
 
-        Ok(VmRuntime {
-            fuel_limit: self.fuel_limit,
-            memory_limit: self.memory_limit,
-            linker,
-        })
-    }
+        let limits = memory_limit.map_or_else(StoreLimitsBuilder::new, |m| {
+            StoreLimitsBuilder::new().memory_size(m)
+        });
 
-    fn create_linker(engine: &Engine) -> anyhow::Result<Linker<HostCtx<H>>> {
-        let mut linker = Linker::new(engine);
+        let mut store = Store::new(engine, HostCtx::new(wasi_ctx, host_state, limits.build()));
 
-        // Add WASI imports to the linker
-        wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+        store.limiter(|ctx| ctx.limits_mut());
 
-        // Add host function imports to the linker
-        Imports::add_to_linker::<HostCtx<H>, HasSelf<H>>(&mut linker, |ctx: &mut HostCtx<H>| {
-            ctx.host_state_mut()
-        })?;
+        if let Some(fuel_limit) = fuel_limit {
+            store.set_fuel(fuel_limit).expect("fuel must be enabled");
+        }
 
-        Ok(linker)
-    }
-}
-
-impl<H: HostFunctions + 'static> Default for VmRuntimeBuilder<H> {
-    fn default() -> Self {
-        Self::new()
+        store
     }
 }
 
@@ -152,20 +115,33 @@ impl<H: HostFunctions + 'static> Default for VmRuntimeBuilder<H> {
 /// which must be implemented by the user and provided as a type
 /// parameter to the builder.
 pub struct VmRuntime<H: HostFunctions + 'static> {
-    fuel_limit: u64,
-    memory_limit: usize,
     linker: Linker<HostCtx<H>>,
 }
 
 impl<H: HostFunctions + 'static> VmRuntime<H> {
-    /// Creates a new `VmRuntime` with the default configuration
+    /// Creates a new `VmRuntime` with default configuration.
+    ///
+    /// Async support and fuel metering are always enabled and cannot be
+    /// disabled.
     pub fn new() -> anyhow::Result<Self> {
-        Self::builder().build()
-    }
+        let mut config = Config::new();
+        config.guard_before_linear_memory(true);
+        config.memory_guard_size(MEMORY_GUARD_SIZE);
+        // NOTE: this is enabling async in host-defined functions
+        config.async_support(true);
+        config.consume_fuel(true);
 
-    /// Creates a new builder for `VmRuntime`
-    pub fn builder() -> VmRuntimeBuilder<H> {
-        VmRuntimeBuilder::new()
+        // TODO: uncomment in corresponding pr
+        // // NOTE: set initial chunk of virtual memory that a linear memory
+        // // may grow into limited to allow multiple linear memories to be
+        // // instantiated without exhausting host resources
+        // self.config
+        //     .memory_reservation(self.memory_limit.try_into().unwrap());
+
+        let engine = Engine::new(&config)?;
+        let linker = create_linker::<H>(&engine)?;
+
+        Ok(Self { linker })
     }
 
     /// Compile wasip2 component from the given binary data
@@ -288,31 +264,8 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         O: StdoutStream + 'static,
         E: StdoutStream + 'static,
     {
-        let Context {
-            input,
-            output,
-            error,
-            host_state,
-        } = ctx;
-
-        let wasi_ctx = WasiCtx::builder()
-            .stdin(input)
-            .stdout(output)
-            .stderr(error)
-            .build();
-
-        let limits = StoreLimitsBuilder::new()
-            .memory_size(self.memory_limit)
-            .build();
-        let mut store = Store::new(
-            self.linker.engine(),
-            HostCtx::new(wasi_ctx, host_state, limits),
-        );
-
-        store.limiter(|ctx| ctx.limits_mut());
-        store
-            .set_fuel(self.fuel_limit)
-            .expect("fuel must be enabled");
+        let fuel_limit = ctx.fuel_limit;
+        let mut store = ctx.into_store(self.linker.engine());
 
         let command = Command::instantiate_async(&mut store, component, &self.linker).await?;
         let run_result = command.wasi_cli_run().call_run(&mut store).await;
@@ -323,9 +276,8 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
             Err(trap) => classify_error(trap),
         };
 
-        let fuel_consumed = self
-            .fuel_limit
-            .saturating_sub(store.get_fuel().expect("fuel must be enabled"));
+        let fuel_consumed = fuel_limit
+            .map(|limit| limit.saturating_sub(store.get_fuel().expect("fuel must be enabled")));
 
         Ok(ExecutionOutcome::new(
             ExecutionDetails::new(fuel_consumed),
@@ -375,4 +327,21 @@ fn classify_error(err: anyhow::Error) -> Option<ExecutionError> {
             .copied()
             .map_or_else(|| ExecutionError::Unknown(err), ExecutionError::Trap),
     )
+}
+
+fn create_linker<H>(engine: &Engine) -> anyhow::Result<Linker<HostCtx<H>>>
+where
+    H: HostFunctions,
+{
+    let mut linker = Linker::new(engine);
+
+    // Add WASI imports to the linker
+    wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+
+    // Add host function imports to the linker
+    Imports::add_to_linker::<HostCtx<H>, HasSelf<H>>(&mut linker, |ctx: &mut HostCtx<H>| {
+        ctx.host_state_mut()
+    })?;
+
+    Ok(linker)
 }

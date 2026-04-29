@@ -1,20 +1,20 @@
 use crate::error::ExecutionError;
 
 /// Details about the execution of a component
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Default)]
 #[non_exhaustive]
 pub struct ExecutionDetails {
-    pub fuel_consumed: u64,
+    pub fuel_consumed: Option<u64>,
 }
 
 impl ExecutionDetails {
-    pub const fn new(fuel_consumed: u64) -> Self {
+    pub const fn new(fuel_consumed: Option<u64>) -> Self {
         Self { fuel_consumed }
     }
 }
 
 /// Outcome of executing a component in the VM runtime
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[non_exhaustive]
 pub struct ExecutionOutcome {
     pub details: ExecutionDetails,
