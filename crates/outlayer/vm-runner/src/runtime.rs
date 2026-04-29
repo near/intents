@@ -12,9 +12,9 @@ use wasmtime_wasi::{
     p2::bindings::Command,
 };
 
-use crate::context::HostCtx;
 use crate::error::ExecutionError;
 use crate::outcome::ExecutionOutcome;
+use crate::{context::HostCtx, outcome::ExecutionDetails};
 
 /// Size of the guard region placed before linear memory to
 /// catch out-of-bounds accesses
@@ -327,10 +327,10 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
             .fuel_limit
             .saturating_sub(store.get_fuel().expect("fuel must be enabled"));
 
-        Ok(ExecutionOutcome {
-            fuel_consumed,
+        Ok(ExecutionOutcome::new(
+            ExecutionDetails::new(fuel_consumed),
             error,
-        })
+        ))
     }
 
     /// Convenience method to compile and execute a component in one step. See

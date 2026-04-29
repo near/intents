@@ -55,25 +55,27 @@ async fn main() -> Result<()> {
     );
 
     let mut builder = VmRuntime::<State>::builder();
+
     if let Some(fuel) = args.fuel {
         builder = builder.fuel_limit(fuel);
     }
+
     if let Some(memory) = args.memory {
-        builder = builder.memory_limit(
-            memory
-                .as_u64()
-                .try_into()
-                .with_context(|| format!("memory limit {memory} exceeds maximum"))?,
-        );
+        builder = builder.memory_limit(memory.as_u64().try_into().with_context(|| {
+            format!(
+                "memory limit {memory} exceeds platform maximum ({} bytes)",
+                usize::MAX
+            )
+        })?);
     }
     let runner = builder.build().context("runtime: build")?;
 
-    let wasm_binary =
-        std::fs::read(&args.path).with_context(|| format!("read: {}", args.path.display()))?;
+    let wasm_binary = std::fs::read(&args.path)
+        .with_context(|| format!("failed to read: {}", args.path.display()))?;
 
     let component = runner
         .compile(&wasm_binary)
-        .with_context(|| format!("compile {}", args.path.display()))?;
+        .with_context(|| format!("failed to compile: {}", args.path.display()))?;
 
     let outcome = runner.execute(ctx, &component).await.context("execute")?;
 
