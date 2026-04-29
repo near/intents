@@ -17,4 +17,3 @@ tracing.workspace = true
 
 wasmtime = { workspace = true, features = ["cranelift"] }
 wasmtime-wasi.workspace = true
-

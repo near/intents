@@ -12,8 +12,7 @@ workspace = true
 defuse-outlayer-vm-runner.workspace = true
 
 anyhow.workspace = true
-clap = { workspace = true, features = ["derive"] }
-tokio = { workspace = true, features = ["full"] }
 bytesize.workspace = true
+clap = { workspace = true, features = ["derive"] }
 hex.workspace = true
-
+tokio = { workspace = true, features = ["full"] }

@@ -157,22 +157,22 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// before passing it into the context)
     ///
     /// Execution is bounded by the fuel and memory limits configured on the
-    /// builder. Fuel exhaustion is reported as [`ExecutionError::Trap`]
+    /// [`Context`]. Fuel exhaustion is reported as [`ExecutionError::Trap`]
     ///
     /// # Example
     ///
     /// Using [`State`] directly:
     ///
     /// ```rust,no_run
-    /// use defuse_outlayer_host::State;
-    /// use defuse_outlayer_vm_runner::{Context, VmRuntimeBuilder};
+    /// use std::borrow::Cow;
+    /// use defuse_outlayer_host::{State, host::Context as HostContext};
+    /// use defuse_outlayer_vm_runner::{Context, VmRuntime};
     /// use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
     ///
     /// # async fn example() -> anyhow::Result<()> {
-    /// let state = State::new(
-    ///     HostContext { app_id },
-    ///     Cow::Owned(InMemorySigner::from_seed(seed)),
-    /// );
+    /// # let app_id = todo!();
+    /// # let signer = todo!();
+    /// let state = State::new(HostContext { app_id }, Cow::Owned(signer));
     ///
     /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024);
     /// let stderr = MemoryOutputPipe::new(64 * 1024);
@@ -183,67 +183,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     ///     state,
     /// );
     ///
-    /// let runner = VmRuntimeBuilder::<State>::new().build()?;
-    /// let wasm = std::fs::read("component.wasm")?;
-    /// let component = runner.compile(&wasm)?;
-    /// runner.execute(ctx, &component).await?;
-    ///
-    /// let stdout = stdout.contents();
-    /// let stderr = stderr.contents();
-    ///
-    /// # Ok(()) }
-    /// ```
-    ///
-    /// You can also wrap [`State`] to share it across concurrent executions
-    /// or inject additional context. Implement each host-function trait on your
-    /// wrapper and delegate to the inner state:
-    ///
-    /// ```rust,no_run
-    /// use std::sync::Arc;
-    /// use defuse_outlayer_host::State;
-    /// use defuse_outlayer_vm_runner::{Context, VmRuntimeBuilder};
-    /// use tokio::sync::Mutex;
-    /// use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
-    ///
-    /// struct Wrapper {
-    ///     inner: Arc<Mutex<State>>,
-    /// }
-    ///
-    /// impl defuse_outlayer_host_functions::crypto::ed25519::Host for Wrapper {
-    ///     async fn derive_public_key(&mut self, path: String) -> Vec<u8> {
-    ///         self.inner.lock().await.derive_public_key(path).await
-    ///     }
-    ///     async fn sign(&mut self, path: String, msg: Vec<u8>) -> Vec<u8> {
-    ///         self.inner.lock().await.sign(path, msg).await
-    ///     }
-    /// }
-    ///
-    /// impl defuse_outlayer_host_functions::crypto::secp256k1::Host for Wrapper {
-    ///     async fn derive_public_key(&mut self, path: String) -> Vec<u8> {
-    ///         self.inner.lock().await.derive_public_key(path).await
-    ///     }
-    ///     async fn sign(&mut self, path: String, msg: Vec<u8>) -> Vec<u8> {
-    ///         self.inner.lock().await.sign(path, msg).await
-    ///     }
-    /// }
-    ///
-    /// # async fn example() -> anyhow::Result<()> {
-    /// let state = State::new(
-    ///     HostContext { app_id },
-    ///     Cow::Owned(InMemorySigner::from_seed(seed)),
-    /// );
-    ///
-    /// let shared = Arc::new(Mutex::new(state));
-    /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024); // 4MB
-    /// let stderr = MemoryOutputPipe::new(64 * 1024); // 64KB
-    /// let ctx = Context::new(
-    ///     MemoryInputPipe::new(b"input".to_vec()),
-    ///     stdout.clone(),
-    ///     stderr.clone(),
-    ///     Wrapper { inner: shared.clone() },
-    /// );
-    ///
-    /// let runner = VmRuntimeBuilder::<Wrapper>::new().build()?;
+    /// let runner = VmRuntime::<State>::new()?;
     /// let wasm = std::fs::read("component.wasm")?;
     /// let component = runner.compile(&wasm)?;
     /// runner.execute(ctx, &component).await?;
