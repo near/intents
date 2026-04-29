@@ -7,8 +7,8 @@ use wasmtime::{Config, Engine, Store, StoreLimitsBuilder, Trap};
 use wasmtime_wasi::cli::{StdinStream, StdoutStream};
 use wasmtime_wasi::{WasiCtx, p2::bindings::Command};
 
+use crate::context::HostCtx;
 use crate::error::ExecutionError;
-use crate::host::HostCtx;
 use crate::outcome::ExecutionOutcome;
 
 /// Size of the guard region placed before linear memory to

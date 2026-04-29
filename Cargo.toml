@@ -177,6 +177,7 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 url = "2"
 zeroize = { version = "1.8", features = ["derive"] }
+bytesize = "2.3.1"
 
 wasmtime = { version = ">=36.0.7", default-features = false, features = ["std"] }
 wasmtime-wasi = ">=36.0.7"

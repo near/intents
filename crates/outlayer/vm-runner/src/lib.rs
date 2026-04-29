@@ -1,7 +1,9 @@
+mod context;
 mod error;
-mod host;
 mod outcome;
 mod runtime;
+
+pub use defuse_outlayer_host as host;
 
 pub use error::ExecutionError;
 pub use outcome::ExecutionOutcome;
