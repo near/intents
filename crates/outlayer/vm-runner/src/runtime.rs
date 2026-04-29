@@ -1,11 +1,16 @@
-use anyhow::{Result, anyhow};
+use anyhow::{Context as _, Result, anyhow};
 use defuse_outlayer_host::{HostFunctions, bindings::Imports};
 use std::marker::PhantomData;
 use tracing::instrument;
-use wasmtime::component::{Component, HasSelf, Linker};
-use wasmtime::{Config, Engine, Store, StoreLimitsBuilder, Trap};
-use wasmtime_wasi::cli::{StdinStream, StdoutStream};
-use wasmtime_wasi::{WasiCtx, p2::bindings::Command};
+use wasmtime::{
+    Config, Engine, Store, StoreLimitsBuilder, Trap,
+    component::{Component, HasSelf, Linker},
+};
+use wasmtime_wasi::{
+    WasiCtx,
+    cli::{StdinStream, StdoutStream},
+    p2::bindings::Command,
+};
 
 use crate::context::HostCtx;
 use crate::error::ExecutionError;
@@ -188,10 +193,10 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
     ///
     /// # async fn example() -> anyhow::Result<()> {
-    ///     let state = State::new(
-    ///         HostContext { app_id },
-    ///         Cow::Owned(InMemorySigner::from_seed(seed)),
-    ///     );
+    /// let state = State::new(
+    ///     HostContext { app_id },
+    ///     Cow::Owned(InMemorySigner::from_seed(seed)),
+    /// );
     ///
     /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024);
     /// let stderr = MemoryOutputPipe::new(64 * 1024);
@@ -207,7 +212,9 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// let component = runner.compile(&wasm)?;
     /// runner.execute(ctx, &component).await?;
     ///
-    /// println!("{}", String::from_utf8_lossy(&stdout.contents()));
+    /// let stdout = stdout.contents();
+    /// let stderr = stderr.contents();
+    ///
     /// # Ok(()) }
     /// ```
     ///
@@ -251,8 +258,8 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// );
     ///
     /// let shared = Arc::new(Mutex::new(state));
-    /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024);
-    /// let stderr = MemoryOutputPipe::new(64 * 1024);
+    /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024); // 4MB
+    /// let stderr = MemoryOutputPipe::new(64 * 1024); // 64KB
     /// let ctx = Context::new(
     ///     MemoryInputPipe::new(b"input".to_vec()),
     ///     stdout.clone(),
@@ -265,7 +272,9 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// let component = runner.compile(&wasm)?;
     /// runner.execute(ctx, &component).await?;
     ///
-    /// println!("{}", String::from_utf8_lossy(&stdout.contents()));
+    /// let stdout = stdout.contents();
+    /// let stderr = stderr.contents();
+    ///
     /// # Ok(()) }
     /// ```
     #[instrument(skip_all)]
@@ -336,8 +345,17 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         O: StdoutStream + 'static,
         E: StdoutStream + 'static,
     {
-        let component = self.compile(binary)?;
+        let component = self.compile(binary).context("compile")?;
         self.execute(ctx, &component).await
+    }
+}
+
+impl<H> Default for VmRuntime<H>
+where
+    H: HostFunctions,
+{
+    fn default() -> Self {
+        Self::new().expect("setup")
     }
 }
 
@@ -352,12 +370,9 @@ fn classify_error(err: anyhow::Error) -> Option<ExecutionError> {
         };
     }
 
-    let err = err
-        .downcast_ref::<Trap>()
-        .copied()
-        .map_or_else(|| ExecutionError::Unknown(err), ExecutionError::Trap);
-
-    tracing::debug!("Program trapped: {err}");
-
-    Some(err)
+    Some(
+        err.downcast_ref::<Trap>()
+            .copied()
+            .map_or_else(|| ExecutionError::Unknown(err), ExecutionError::Trap),
+    )
 }
