@@ -27,11 +27,10 @@ reqwest      = { version = "0.12", default-features = false, features = ["rustls
 tokio-util   = { version = "0.7", features = ["io"] }
 futures-util = "0.3"
 anyhow.workspace = true
-defuse-outlayer-vm-runner      = { workspace = true }
-defuse-outlayer-host-functions = { workspace = true }
+defuse-outlayer-vm-runner = { workspace = true }
+defuse-outlayer-host      = { workspace = true }
 wasmtime      = { workspace = true }
 wasmtime-wasi = { workspace = true }
 
 [dev-dependencies]
-defuse-outlayer-state = { workspace = true }
 clap.workspace = true

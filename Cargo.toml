@@ -52,6 +52,7 @@ members = [
   "crates/outlayer/sdk",
   "crates/outlayer/vm-runner",
   "crates/outlayer/cli",
+  "crates/outlayer/service",
 
   "tests",
 ]
@@ -113,6 +114,7 @@ defuse-outlayer-crypto = { path = "crates/outlayer/crypto", default-features = f
 defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-primitives.path = "crates/outlayer/primitives"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
+defuse-outlayer-service.path = "crates/outlayer/service"
 defuse-outlayer-sys.path = "crates/outlayer/sys"
 defuse-outlayer-vm-runner.path = "crates/outlayer/vm-runner"
 

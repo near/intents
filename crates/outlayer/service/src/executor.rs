@@ -6,7 +6,7 @@ use thiserror::Error;
 use tower::Service;
 use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
 
-use defuse_outlayer_host_functions::HostFunctions;
+use defuse_outlayer_host::HostFunctions;
 use defuse_outlayer_vm_runner::{self as vm_runner, VmRuntime};
 
 use crate::types::{
@@ -42,27 +42,33 @@ pub struct WasmExecutionRequest {
 #[error("vm infrastructure error: {0}")]
 pub struct WasmEnvironmentInternalError(#[from] anyhow::Error);
 
-pub struct WasmExecutor<H: HostFunctions + Default + 'static> {
+pub struct WasmExecutor<H: HostFunctions + Clone + 'static> {
     runtime: Arc<VmRuntime<H>>,
     config: WasmExecutorConfig,
+    host_template: H,
 }
 
-impl<H: HostFunctions + Default + 'static> WasmExecutor<H> {
-    pub fn new(runtime: Arc<VmRuntime<H>>, config: WasmExecutorConfig) -> Self {
-        Self { runtime, config }
-    }
-}
-
-impl<H: HostFunctions + Default + 'static> Clone for WasmExecutor<H> {
-    fn clone(&self) -> Self {
+impl<H: HostFunctions + Clone + 'static> WasmExecutor<H> {
+    pub fn new(runtime: Arc<VmRuntime<H>>, config: WasmExecutorConfig, host_template: H) -> Self {
         Self {
-            runtime: Arc::clone(&self.runtime),
-            config: self.config.clone(),
+            runtime,
+            config,
+            host_template,
         }
     }
 }
 
-impl<H: HostFunctions + Default + Send + 'static> Service<WasmExecutionRequest>
+impl<H: HostFunctions + Clone + 'static> Clone for WasmExecutor<H> {
+    fn clone(&self) -> Self {
+        Self {
+            runtime: Arc::clone(&self.runtime),
+            config: self.config.clone(),
+            host_template: self.host_template.clone(),
+        }
+    }
+}
+
+impl<H: HostFunctions + Clone + Send + 'static> Service<WasmExecutionRequest>
     for WasmExecutor<H>
 {
     type Response = ExecutionResponse;
@@ -76,6 +82,7 @@ impl<H: HostFunctions + Default + Send + 'static> Service<WasmExecutionRequest>
     fn call(&mut self, req: WasmExecutionRequest) -> Self::Future {
         let runtime = Arc::clone(&self.runtime);
         let config = self.config.clone();
+        let host_state = self.host_template.clone();
         Box::pin(async move {
             let stdout = MemoryOutputPipe::new(config.stdout_limit);
             let stderr = MemoryOutputPipe::new(config.stderr_limit);
@@ -83,7 +90,7 @@ impl<H: HostFunctions + Default + Send + 'static> Service<WasmExecutionRequest>
                 MemoryInputPipe::new(req.request.input),
                 stdout.clone(),
                 stderr.clone(),
-                H::default(),
+                host_state,
             );
 
             let outcome = runtime

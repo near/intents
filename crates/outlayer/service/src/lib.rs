@@ -14,7 +14,7 @@ use std::sync::Arc;
 use bytes::Bytes;
 use tower::{Service, ServiceBuilder};
 
-use defuse_outlayer_host_functions::HostFunctions;
+use defuse_outlayer_host::HostFunctions;
 use defuse_outlayer_vm_runner::VmRuntime;
 
 pub use config::{Config, FetchConfig};
@@ -33,13 +33,14 @@ pub fn build_stack<H>(
     signing_key: WorkerSigningKey,
     runtime: Arc<VmRuntime<H>>,
     config: Config,
+    host_template: H,
 ) -> impl Service<Request, Response = SignedExecutionResponse, Error = ExecutionStackError>
 + Send
 + 'static
 where
-    H: HostFunctions + Default + Send + Sync + 'static,
+    H: HostFunctions + Clone + Send + Sync + 'static,
 {
-    let executor = WasmExecutor::new(Arc::clone(&runtime), config.executor);
+    let executor = WasmExecutor::new(Arc::clone(&runtime), config.executor, host_template);
 
     let wasm = ServiceBuilder::new()
         .layer(CacheLayer::new(config.cache.capacity))
