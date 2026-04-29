@@ -22,10 +22,14 @@ pub struct SignedExecutionResponse<T = ExecutionResponse> {
 pub struct WorkerSigningKey(pub Arc<SigningKey>);
 
 impl WorkerSigningKey {
+    pub fn sign_bytes(&self, data: &[u8]) -> [u8; 64] {
+        let hash = Sha256::digest(data);
+        self.0.sign(&hash).to_bytes()
+    }
+
     pub fn sign<T: Serialize>(&self, response: T) -> SignedExecutionResponse<T> {
         let json = serde_json::to_vec(&response).expect("response serialization is infallible");
-        let hash = Sha256::digest(&json);
-        let signature = self.0.sign(&hash).to_bytes();
+        let signature = self.sign_bytes(&json);
         SignedExecutionResponse {
             response,
             signature,

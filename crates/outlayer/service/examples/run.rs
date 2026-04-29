@@ -9,7 +9,7 @@ use defuse_outlayer_host::primitives::{AppId, AccountIdRef};
 use defuse_outlayer_host::{Context, InMemorySigner, State};
 use defuse_outlayer_service::{
     Config, WorkerSigningKey, build_stack,
-    types::{AccountId, OnChainRequest, Request},
+    types::{AccountId, OnChainRequest},
 };
 use defuse_outlayer_vm_runner::VmRuntime;
 use ed25519_dalek::SigningKey;
@@ -22,7 +22,7 @@ use tower::ServiceExt;
 ///
 /// Examples:
 ///   echo 'hello world' | run 'data:application/wasm;base64,AGFzbQ...' --wasm-hash <64 hex chars>
-///   run 'https://example.com/component.wasm' --wasm-hash <64 hex chars> < input.bin
+///   run '<https://example.com/component.wasm>' --wasm-hash <64 hex chars> < input.bin
 #[derive(Parser)]
 struct Args {
     /// WASM URL — inline (`data:application/wasm;base64,…`) or remote (`http(s)://…`).
@@ -58,14 +58,14 @@ async fn main() -> anyhow::Result<()> {
     let mut input = Vec::new();
     std::io::stdin().read_to_end(&mut input)?;
 
-    let request = Request::OnChain(OnChainRequest {
+    let request = OnChainRequest {
         tx_hash: [0u8; 32],
         project_id: AccountId("example.near".to_string()),
         input: Bytes::from(input),
         wasm_hash,
         wasm_url: args.url,
         nonce: [0u8; 32],
-    });
+    };
 
     // Fixed key — replace with a real TEE key in production.
     let signing_key = WorkerSigningKey(Arc::new(SigningKey::from_bytes(&[1u8; 32])));

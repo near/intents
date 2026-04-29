@@ -5,6 +5,7 @@ pub mod executor;
 pub mod resolver;
 pub mod service;
 pub mod sign;
+pub mod signing_service;
 pub mod storage;
 pub mod types;
 pub mod utils;
@@ -23,22 +24,25 @@ pub use executor::{WasmExecutor, WasmExecutorConfig};
 pub use resolver::HttpResolver;
 pub use service::OutlayerService;
 pub use sign::{SignedExecutionResponse, WorkerSigningKey};
-pub use types::{ExecutionResponse, Request};
+pub use signing_service::SigningService;
+pub use types::{ExecutionRequest, ExecutionResponse, OnChainRequest};
 pub use utils::cache::CacheConfig;
 
 use utils::cache::CacheLayer;
 use utils::retry::Attempts;
 use utils::timeout_err;
-pub fn build_stack<H>(
+
+pub fn build_stack<H, Req>(
     signing_key: WorkerSigningKey,
     runtime: Arc<VmRuntime<H>>,
     config: Config,
     host_template: H,
-) -> impl Service<Request, Response = SignedExecutionResponse, Error = ExecutionStackError>
+) -> impl Service<Req, Response = SignedExecutionResponse, Error = ExecutionStackError>
 + Send
 + 'static
 where
     H: HostFunctions + Clone + Send + Sync + 'static,
+    Req: Into<ExecutionRequest> + Clone + Send + 'static,
 {
     let executor = WasmExecutor::new(Arc::clone(&runtime), config.executor, host_template);
 
@@ -76,6 +80,8 @@ where
     ServiceBuilder::new()
         .map_err(timeout_err::<ExecutionStackError>)
         .timeout(config.total_timeout)
-        .map_response(move |r| signing_key.sign(r))
-        .service(OutlayerService::new(executor, wasm, env, storage))
+        .service(SigningService::new(
+            OutlayerService::new(executor, wasm, env, storage),
+            signing_key,
+        ))
 }

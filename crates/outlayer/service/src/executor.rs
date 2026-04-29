@@ -10,7 +10,7 @@ use defuse_outlayer_host::HostFunctions;
 use defuse_outlayer_vm_runner::{self as vm_runner, VmRuntime};
 
 use crate::types::{
-    AccountId, ExecutionMetrics, ExecutionResponse, OnChainRequest, ProjectEnv, ProjectStorage,
+    AccountId, ExecutionMetrics, ExecutionRequest, ExecutionResponse, ProjectEnv, ProjectStorage,
 };
 
 #[derive(Debug, Clone)]
@@ -30,7 +30,7 @@ impl Default for WasmExecutorConfig {
 
 #[derive(Clone)]
 pub struct WasmExecutionRequest {
-    pub request: OnChainRequest,
+    pub request: ExecutionRequest,
     pub component: wasmtime::component::Component,
     pub storage: ProjectStorage,
     pub env: ProjectEnv,
@@ -49,7 +49,7 @@ pub struct WasmExecutor<H: HostFunctions + Clone + 'static> {
 }
 
 impl<H: HostFunctions + Clone + 'static> WasmExecutor<H> {
-    pub fn new(runtime: Arc<VmRuntime<H>>, config: WasmExecutorConfig, host_template: H) -> Self {
+    pub const fn new(runtime: Arc<VmRuntime<H>>, config: WasmExecutorConfig, host_template: H) -> Self {
         Self {
             runtime,
             config,
@@ -103,15 +103,9 @@ impl<H: HostFunctions + Clone + Send + 'static> Service<WasmExecutionRequest>
             let instructions_used = outcome.fuel_consumed;
 
             Ok(ExecutionResponse {
-                nonce: req.request.nonce,
-                wasm_hash: req.request.wasm_hash,
-                project_id: req.request.project_id,
                 result,
                 logs: stderr.contents(),
-                metrics: ExecutionMetrics {
-                    instructions_used,
-                    ..ExecutionMetrics::default()
-                },
+                metrics: ExecutionMetrics { instructions_used },
                 storage: ProjectStorage,
             })
         })

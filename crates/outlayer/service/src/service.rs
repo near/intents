@@ -7,9 +7,10 @@ use wasmtime::component::Component;
 use crate::{
     error::ExecutionStackError,
     executor::{self, WasmExecutionRequest},
-    types::{AccountId, ExecutionResponse, ProjectEnv, ProjectStorage, Request},
+    types::{AccountId, ExecutionRequest, ExecutionResponse, ProjectEnv, ProjectStorage},
 };
 
+#[derive(Clone)]
 pub struct OutlayerService<E, W, Env, St> {
     executor: E,
     wasm: W,
@@ -28,7 +29,7 @@ impl<E, W, Env, St> OutlayerService<E, W, Env, St> {
     }
 }
 
-impl<E, W, Env, St> Service<Request> for OutlayerService<E, W, Env, St>
+impl<E, W, Env, St> Service<ExecutionRequest> for OutlayerService<E, W, Env, St>
 where
     E: Service<
             WasmExecutionRequest,
@@ -66,33 +67,28 @@ where
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: Request) -> Self::Future {
+    fn call(&mut self, req: ExecutionRequest) -> Self::Future {
         let mut executor = self.executor.clone();
         let mut wasm = self.wasm.clone();
         let mut env = self.env.clone();
         let mut storage = self.storage.clone();
 
         Box::pin(async move {
-            let Request::OnChain(onchain) = req else {
-                todo!("offchain not yet implemented")
-            };
-
             let (component_res, env_res, storage_res) = tokio::join!(
-                wasm.call((onchain.wasm_url.clone(), onchain.wasm_hash)),
-                env.call(onchain.project_id.clone()),
-                storage.call(onchain.project_id.clone()),
+                wasm.call((req.wasm_url.clone(), req.wasm_hash)),
+                env.call(req.project_id.clone()),
+                storage.call(req.project_id.clone()),
             );
 
             let wasm_req = WasmExecutionRequest {
                 component: component_res?,
-                request: onchain,
+                request: req,
                 env: env_res?,
                 storage: storage_res?,
                 caller: None,
             };
 
-            let response = executor.call(wasm_req).await?;
-            Ok(response)
+            Ok(executor.call(wasm_req).await?)
         })
     }
 }
