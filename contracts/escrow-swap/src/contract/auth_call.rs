@@ -12,7 +12,7 @@ use super::{Contract, ContractExt};
 #[near]
 impl AuthCallee for Contract {
     fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
-        self.internal_on_auth(&signer_id, msg).unwrap_or_panic()
+        self.internal_on_auth(&signer_id, &msg).unwrap_or_panic()
     }
 }
 
@@ -20,18 +20,18 @@ impl Contract {
     fn internal_on_auth(
         &mut self,
         signer_id: &AccountIdRef,
-        msg: String,
+        msg: &str,
     ) -> Result<PromiseOrValue<()>> {
-        let msg: Message = serde_json::from_str(&msg)?;
+        let msg: Message = serde_json::from_str(msg)?;
 
         let mut guard = self.cleanup_guard();
         let state = guard.try_as_alive_mut()?.verify_mut(&msg.params)?;
 
-        if !msg
+        if msg
             .params
             .auth_caller
             .as_ref()
-            .is_some_and(|a| *a == env::predecessor_account_id())
+            .is_none_or(|a| *a != env::predecessor_account_id())
         {
             return Err(Error::Unauthorized);
         }

@@ -9,10 +9,31 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-outlayer-host.workspace = true
+defuse-outlayer-primitives = { workspace = true, features = ["borsh", "serde"] }
+
+base64.workspace = true
+borsh = { workspace = true, features = ["derive"] }
+bs58.workspace = true
+hex.workspace = true
+hex-literal.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+serde_with = { workspace = true, features = ["hex", "base64"] }
+
+schemars = { workspace = true, optional = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 defuse-outlayer-sys.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-defuse-outlayer-worker-host.workspace = true
+defuse-outlayer-host.workspace = true
+
+anyhow.workspace = true
+
+[features]
+abi = [
+  "borsh/unstable__schema",
+  "defuse-outlayer-primitives/abi",
+  "dep:schemars",
+  "serde_with/schemars_0_8",
+]

@@ -11,10 +11,10 @@ impl State {
     pub(super) fn fund(
         &mut self,
         params: Params,
-        sender_id: AccountId,
+        sender_id: &AccountId,
         amount: u128,
     ) -> Result<PromiseOrValue<u128>> {
-        if sender_id != params.maker {
+        if *sender_id != params.maker {
             return Err(Error::Unauthorized);
         }
 

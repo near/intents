@@ -32,16 +32,16 @@ pub struct Contract {
 #[near]
 impl Contract {
     #[init]
-    #[allow(dead_code)]
+    #[allow(dead_code, clippy::use_self)]
     pub fn new(owner_id: Option<AccountId>, metadata: Option<FungibleTokenMetadata>) -> Self {
         let metadata = metadata.unwrap_or_else(|| FungibleTokenMetadata {
             spec: FT_METADATA_SPEC.to_string(),
-            name: Default::default(),
-            symbol: Default::default(),
-            icon: Default::default(),
-            reference: Default::default(),
-            reference_hash: Default::default(),
-            decimals: Default::default(),
+            name: String::new(),
+            symbol: String::new(),
+            icon: None,
+            reference: None,
+            reference_hash: None,
+            decimals: 0,
         });
         metadata.assert_valid();
 
@@ -50,7 +50,7 @@ impl Contract {
             metadata: Lazy::new(Prefix::Metadata, metadata),
         };
 
-        let owner = owner_id.unwrap_or_else(|| env::predecessor_account_id());
+        let owner = owner_id.unwrap_or_else(env::predecessor_account_id);
         // Ownable::owner_set requires it to be a promise
         require!(!env::storage_write(
             contract.owner_storage_key(),
@@ -99,11 +99,11 @@ impl FungibleTokenCore for Contract {
         if receiver_id == env::current_account_id()
             && memo
                 .as_deref()
-                .map_or(false, |memo| memo.starts_with(WITHDRAW_MEMO_PREFIX))
+                .is_some_and(|memo| memo.starts_with(WITHDRAW_MEMO_PREFIX))
         {
-            self.ft_withdraw(&env::predecessor_account_id(), amount, memo);
+            self.ft_withdraw(&env::predecessor_account_id(), amount, memo.as_deref());
         } else {
-            self.token.ft_transfer(receiver_id, amount, memo)
+            self.token.ft_transfer(receiver_id, amount, memo);
         }
     }
 
@@ -180,14 +180,14 @@ impl FungibleTokenMetadataProvider for Contract {
 }
 
 impl Contract {
-    fn ft_withdraw(&mut self, account_id: &AccountId, amount: U128, memo: Option<String>) {
+    fn ft_withdraw(&mut self, account_id: &AccountId, amount: U128, memo: Option<&str>) {
         assert_one_yocto();
         require!(amount.0 > 0, "zero amount");
         self.token.internal_withdraw(account_id, amount.into());
         FtBurn {
             owner_id: account_id,
             amount,
-            memo: memo.as_deref(),
+            memo,
         }
         .emit();
     }

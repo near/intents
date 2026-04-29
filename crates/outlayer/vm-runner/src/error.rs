@@ -11,6 +11,7 @@ pub enum ExecutionError {
     #[error("wasm trap: {0}")]
     Trap(Trap),
 
+    /// The component execution failed
     #[error("component execution failed")]
     Failed,
 

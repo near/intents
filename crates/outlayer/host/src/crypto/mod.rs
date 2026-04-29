@@ -1,7 +1,17 @@
-pub mod ed25519;
-pub mod secp256k1;
+mod ed25519;
+mod secp256k1;
 
-use self::{ed25519::Ed25519Host, secp256k1::Secp256k1Host};
+use defuse_outlayer_primitives::crypto::DerivationPath;
 
-pub trait CryptoHost: Ed25519Host + Secp256k1Host {}
-impl<T> CryptoHost for T where T: Ed25519Host + Secp256k1Host {}
+use crate::State;
+
+impl State<'_> {
+    fn tweak(&self, path: impl AsRef<str>) -> [u8; 32] {
+        let path = DerivationPath {
+            app_id: self.ctx.app_id.as_ref(),
+            path: path.as_ref().into(),
+        };
+
+        path.hash()
+    }
+}

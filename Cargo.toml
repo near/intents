@@ -45,15 +45,13 @@ members = [
   "crates/testing/randomness",
   "crates/testing/sandbox",
 
-  "crates/outlayer/cli",
+  "crates/outlayer/crypto",
   "crates/outlayer/host",
+  "crates/outlayer/primitives",
   "crates/outlayer/sys",
-  "crates/outlayer/worker-host",
   "crates/outlayer/sdk",
   "crates/outlayer/vm-runner",
-  "crates/outlayer/state",
-  "crates/outlayer/host-functions",
-  "crates/outlayer/service",
+  "crates/outlayer/cli",
 
   "tests",
 ]
@@ -111,14 +109,12 @@ defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
 defuse-outlayer-cli.path = "crates/outlayer/cli"
+defuse-outlayer-crypto = { path = "crates/outlayer/crypto", default-features = false }
 defuse-outlayer-host.path = "crates/outlayer/host"
-defuse-outlayer-host-functions.path = "crates/outlayer/host-functions"
+defuse-outlayer-primitives.path = "crates/outlayer/primitives"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
-defuse-outlayer-state.path = "crates/outlayer/state"
 defuse-outlayer-sys.path = "crates/outlayer/sys"
 defuse-outlayer-vm-runner.path = "crates/outlayer/vm-runner"
-defuse-outlayer-worker-host.path = "crates/outlayer/worker-host"
-defuse-outlayer-service.path = "crates/outlayer/service"
 
 defuse-tests.path = "tests"
 
@@ -135,25 +131,33 @@ near-sandbox = "0.3.9"
 near-sdk = "5.26.1"
 near-workspaces = "0.22"
 
+# TODO: `features = ["derive"]` needed because near-sdk uses `derive(Arbitrary)`
+# but doesn't enable the feature itself. Remove once fixed upstream in near-sdk.
 anyhow = "1"
-
-arbitrary = "1"
+arbitrary = { version = "1", features = ["derive"] }
 array-util = "1"
+base64 = "0.22.1"
 bitflags = "2.9.1"
 bnum = { version = "0.13", features = ["borsh"] }
+borsh = "1.6.1"
+bs58 = "0.5.1"
 chrono = { version = "0.4", default-features = false }
 clap = { version = "4.5.55", features = ["derive"] }
+curve25519-dalek = "4.1.3"
 derive_more = "2.0"
-digest = { version = "0.10", default-features = false }
+digest = { version = "0.11", default-features = false }
+digest-io = "0.1.0"
 ed25519-dalek = { version = "2.1", default-features = false }
 futures = "0.3"
 generic-array = "1"
 hex = "0.4"
 hex-literal = "1.0"
+hkdf = "0.13"
 impl-tools = "0.11"
 itertools = "0.14"
+k256 = { version = "0.13.4", default-features = false }
 num-traits = "0.2.19"
-p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
+p256 = { version = "0.13.2", default-features = false }
 proptest = "1.5"
 rand = "0.10"
 rand_core = "0.10"
@@ -161,17 +165,20 @@ rstest = "0.25"
 schemars = "0.8"
 serde = "1"
 serde_json = "1"
-serde_with = "3.9"
+serde_with = "3.17"
+sha2 = "0.11"
+sha3 = "0.11"
 stellar-strkey = "0.0.13"
 strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
-tlb-ton = { version = "0.7.2", default-features = false }
+tlb-ton = { version = "0.8", default-features = false }
 tokio = { version = "1.45", default-features = false }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 url = "2"
+zeroize = { version = "1.8", features = ["derive"] }
 
-wasmtime = { version = ">=36.0.7", features = ["component-model"] }
+wasmtime = { version = ">=36.0.7", default-features = false, features = ["std"] }
 wasmtime-wasi = ">=36.0.7"
 wit-bindgen = "0.49.0"
 

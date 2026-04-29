@@ -1,4 +1,4 @@
 pub mod crypto;
 
-#[cfg(not(target_family = "wasm"))]
-pub mod mock;
+#[cfg(not(target_family = "wasm"))] // TODO: or feature?
+mod mock;
