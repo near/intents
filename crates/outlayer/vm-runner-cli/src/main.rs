@@ -63,24 +63,21 @@ async fn main() -> Result<()> {
             memory
                 .as_u64()
                 .try_into()
-                .with_context(|| format!("memory limit {memory} exceeds platform maximum"))?,
+                .with_context(|| format!("memory limit {memory} exceeds maximum"))?,
         );
     }
-    let runner = builder.build()?;
+    let runner = builder.build().context("runtime: build")?;
 
-    let wasm_binary = std::fs::read(&args.path)
-        .with_context(|| format!("failed to read {}", args.path.display()))?;
+    let wasm_binary =
+        std::fs::read(&args.path).with_context(|| format!("read: {}", args.path.display()))?;
 
     let component = runner
         .compile(&wasm_binary)
-        .with_context(|| format!("failed to compile {}", args.path.display()))?;
+        .with_context(|| format!("compile {}", args.path.display()))?;
 
-    let outcome = runner
-        .execute(ctx, &component)
-        .await
-        .context("failed to execute wasm")?;
+    let outcome = runner.execute(ctx, &component).await.context("execute")?;
 
-    if let Some(error) = outcome.guest_error {
+    if let Some(error) = outcome.error {
         eprintln!("{error:?}");
     }
 

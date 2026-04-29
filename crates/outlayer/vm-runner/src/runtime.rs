@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use defuse_outlayer_host::{HostFunctions, bindings::Imports};
 use std::marker::PhantomData;
 use tracing::instrument;
@@ -308,9 +308,9 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         let command = Command::instantiate_async(&mut store, component, &self.linker).await?;
         let run_result = command.wasi_cli_run().call_run(&mut store).await;
 
-        let guest_error = match run_result {
+        let error = match run_result {
             Ok(Ok(())) => None,
-            Ok(Err(())) => Some(ExecutionError::Failed),
+            Ok(Err(())) => Some(anyhow!("wasm component failed").into()),
             Err(trap) => classify_error(trap),
         };
 
@@ -320,7 +320,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
 
         Ok(ExecutionOutcome {
             fuel_consumed,
-            guest_error,
+            error,
         })
     }
 

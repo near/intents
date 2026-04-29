@@ -9,12 +9,12 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
+defuse-outlayer-host.workspace = true
+
 anyhow.workspace = true
 thiserror.workspace = true
+tracing.workspace = true
 
 wasmtime = { workspace = true, features = ["cranelift"] }
 wasmtime-wasi.workspace = true
 
-tracing = { workspace = true }
-
-defuse-outlayer-host = { workspace = true }

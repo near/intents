@@ -48,8 +48,8 @@ members = [
   "crates/outlayer/crypto",
   "crates/outlayer/host",
   "crates/outlayer/primitives",
-  "crates/outlayer/sys",
   "crates/outlayer/sdk",
+  "crates/outlayer/sys",
   "crates/outlayer/vm-runner",
   "crates/outlayer/vm-runner-cli",
 

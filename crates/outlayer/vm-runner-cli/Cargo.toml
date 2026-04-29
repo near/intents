@@ -9,10 +9,11 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
+defuse-outlayer-vm-runner.workspace = true
+
 anyhow.workspace = true
 clap = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }
 bytesize.workspace = true
 hex.workspace = true
 
-defuse-outlayer-vm-runner = { workspace = true }
