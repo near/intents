@@ -4,14 +4,12 @@ use crate::error::ExecutionError;
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Default)]
 #[non_exhaustive]
 pub struct ExecutionDetails {
-    pub fuel_consumed: Option<u64>,
+    pub fuel_consumed: u64,
 }
 
 impl ExecutionDetails {
     pub const fn new(fuel_consumed: u64) -> Self {
-        Self {
-            fuel_consumed: Some(fuel_consumed),
-        }
+        Self { fuel_consumed }
     }
 }
 
