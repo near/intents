@@ -46,7 +46,7 @@ pub struct CacheLayer<K, V> {
 }
 
 impl<K: Hash, V> CacheLayer<K, V> {
-    pub fn new(cache: Arc<Mutex<LruCache<[u8; 32], V>>>) -> Self {
+    pub const fn new(cache: Arc<Mutex<LruCache<[u8; 32], V>>>) -> Self {
         Self {
             cache,
             _phantom: PhantomData,
@@ -94,7 +94,8 @@ where
         let hash = cache_key(&key);
 
         Box::pin(async move {
-            if let Some(cached) = cache.lock().unwrap().get(&hash).cloned() {
+            let cached = cache.lock().unwrap().get(&hash).cloned();
+            if let Some(cached) = cached {
                 return Ok(cached);
             }
             let value = inner.call(key).await?;

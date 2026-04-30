@@ -59,6 +59,7 @@ impl Service<OffChainRequest> for OnChainFetchService {
     }
 }
 
+#[allow(clippy::unused_async)]
 async fn fetch_project_wasm(
     _client: &Client,
     _rpc_url: &Url,

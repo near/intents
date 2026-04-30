@@ -85,7 +85,7 @@ where
         Box::pin(async move {
             let exec_req = match req {
                 Request::OnChain(r) => ExecutionRequest::from(r),
-                Request::OffChain(r) => fetch.call(r).await.map_err(Into::into)?,
+                Request::OffChain(r) => fetch.call(r).await?,
             };
 
             let (component_res, env_res, storage_res) = tokio::join!(
