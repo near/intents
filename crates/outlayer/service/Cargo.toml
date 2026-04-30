@@ -15,6 +15,7 @@ defuse-outlayer-host      = { workspace = true }
 defuse-outlayer-vm-runner = { workspace = true }
 
 anyhow.workspace = true
+hex.workspace = true
 base64.workspace = true
 bytes        = { workspace = true, features = ["serde"] }
 futures-util.workspace = true

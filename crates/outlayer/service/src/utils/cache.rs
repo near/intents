@@ -19,7 +19,7 @@ impl Default for CacheConfig {
     fn default() -> Self {
         Self {
             capacity: NonZeroUsize::new(100).unwrap(),
-            max_fetch_bytes: 10 * 1024 * 1024, // 10 MiB
+            max_fetch_bytes: 100 * 1024 * 1024, // 10 MiB
         }
     }
 }

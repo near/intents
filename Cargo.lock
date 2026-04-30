@@ -1708,6 +1708,7 @@ dependencies = [
  "defuse-outlayer-host",
  "defuse-outlayer-vm-runner",
  "futures-util",
+ "hex",
  "lru 0.12.5",
  "reqwest 0.12.28",
  "serde",

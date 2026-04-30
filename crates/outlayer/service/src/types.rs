@@ -1,5 +1,3 @@
-use std::fmt::Write as _;
-
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
@@ -32,13 +30,6 @@ pub struct OnChainRequest {
     pub wasm_url: String,
 }
 
-/// Unified request type — either sourced from on-chain data or provided directly off-chain.
-#[derive(Debug, Clone)]
-pub enum Request {
-    OnChain(OnChainRequest),
-    OffChain(OffChainRequest),
-}
-
 /// Simplified, internal execution request passed to `OutlayerService`.
 /// Contains only what WASM execution needs.
 #[derive(Debug, Clone)]
@@ -47,6 +38,13 @@ pub struct OffChainRequest {
     pub request_id: String,
     pub project_id: AccountId,
     pub input: Bytes,
+}
+
+/// Unified request type — either sourced from on-chain data or provided directly off-chain.
+#[derive(Debug, Clone)]
+pub enum Request {
+    OnChain(OnChainRequest),
+    OffChain(OffChainRequest),
 }
 
 /// Simplified, internal execution request passed to `OutlayerService`.
@@ -76,10 +74,7 @@ impl From<OffChainRequest> for Request {
 impl From<OnChainRequest> for ExecutionRequest {
     fn from(r: OnChainRequest) -> Self {
         Self {
-            request_id: r.nonce.iter().fold(String::with_capacity(64), |mut s, b| {
-                let _ = write!(s, "{b:02x}");
-                s
-            }),
+            request_id: format!("{}-{}", r.project_id, hex::encode(r.tx_hash)),
             project_id: r.project_id,
             wasm_url: r.wasm_url,
             wasm_hash: r.wasm_hash,
