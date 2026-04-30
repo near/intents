@@ -6,8 +6,8 @@ use std::{borrow::Cow, path::PathBuf};
 const DEFAULT_APP_ID: &str = "near:0sab1c86e60758fe3e8fc7ae40ecd2df1a07513ca9";
 
 use defuse_outlayer_vm_runner::{
-    Context as RunnerContext, VmRuntime,
-    host::{Context as HostContext, InMemorySigner, State, primitives::AppId},
+    ExecutionContext, VmRuntime,
+    host::{AppContext, InMemorySigner, State, primitives::AppId},
 };
 
 #[derive(Parser)]
@@ -15,7 +15,7 @@ use defuse_outlayer_vm_runner::{
     about = "Execute a WASI component with a custom host environment",
     long_about = "\n
     Runs a WASIP2 component, wiring its stdin/stdout/stderr to the host \n
-    Input can be piped from stdin or supplied via --input-file.\n
+    Input can be piped from stdin. Output is written to stdout and stderr.
     Execution is bounded by configurable fuel and memory limits.
     "
 )]
@@ -49,13 +49,13 @@ async fn main() -> Result<()> {
         hex::decode(seed_hex.trim()).context("seed file must contain a hex-encoded byte string")?;
 
     let state = State::new(
-        HostContext {
+        AppContext {
             app_id: args.app_id,
         },
         Cow::Owned(InMemorySigner::from_seed(&seed)),
     );
 
-    let mut ctx = RunnerContext::new(
+    let mut ctx = ExecutionContext::new(
         tokio::io::stdin(),
         tokio::io::stdout(),
         tokio::io::stderr(),
@@ -86,9 +86,7 @@ async fn main() -> Result<()> {
 
     let outcome = runner.execute(ctx, &component).await.context("execute")?;
 
-    if let Some(error) = outcome.error {
-        eprintln!("{error:?}");
-    }
+    outcome.into_result().context("component failed")?;
 
     Ok(())
 }

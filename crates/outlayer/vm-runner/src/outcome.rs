@@ -27,9 +27,6 @@ impl ExecutionOutcome {
     }
 
     pub fn into_result(self) -> Result<(), ExecutionError> {
-        if let Some(err) = self.error {
-            return Err(err);
-        }
-        Ok(())
+        self.error.map_or(Ok(()), Err)
     }
 }

@@ -22,7 +22,7 @@ const MEMORY_GUARD_SIZE: u64 = 64 * 1024 * 1024; // 64 MiB
 /// Maximum fuel consumption allowed for a single component execution
 const MAX_FUEL_CONSUMPTION: u64 = u64::MAX;
 
-pub struct Context<I, O, E, H> {
+pub struct ExecutionContext<I, O, E, H> {
     input: I,
     output: O,
     error: E,
@@ -31,7 +31,7 @@ pub struct Context<I, O, E, H> {
     memory_limit: Option<usize>,
 }
 
-impl<I, O, E, H> Context<I, O, E, H>
+impl<I, O, E, H> ExecutionContext<I, O, E, H>
 where
     I: StdinStream + 'static,
     O: StdoutStream + 'static,
@@ -79,7 +79,7 @@ where
         self
     }
 
-    pub fn into_store(self, engine: &Engine) -> Store<HostCtx<H>> {
+    pub(crate) fn into_store(self, engine: &Engine) -> Store<HostCtx<H>> {
         let Self {
             input,
             output,
@@ -199,7 +199,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     #[instrument(skip_all)]
     pub async fn execute<I, O, E>(
         &self,
-        ctx: Context<I, O, E, H>,
+        ctx: ExecutionContext<I, O, E, H>,
         component: &Component,
     ) -> Result<ExecutionOutcome>
     where
@@ -232,7 +232,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// [`execute`](Self::execute) for details and examples.
     pub async fn run<I, O, E>(
         &self,
-        ctx: Context<I, O, E, H>,
+        ctx: ExecutionContext<I, O, E, H>,
         binary: impl AsRef<[u8]>,
     ) -> Result<ExecutionOutcome>
     where

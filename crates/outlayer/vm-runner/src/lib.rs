@@ -11,4 +11,4 @@ pub use wasmtime_wasi;
 
 pub use error::ExecutionError;
 pub use outcome::{ExecutionDetails, ExecutionOutcome};
-pub use runtime::{Context, VmRuntime};
+pub use runtime::{ExecutionContext, VmRuntime};
