@@ -35,6 +35,16 @@ pub struct OnChainRequest {
 /// Simplified, internal execution request passed to `OutlayerService`.
 /// Contains only what WASM execution needs.
 #[derive(Debug, Clone)]
+pub struct OffChainRequest {
+    /// Opaque identifier for this request, used for logging only.
+    pub request_id: String,
+    pub project_id: AccountId,
+    pub input: Bytes,
+}
+
+/// Simplified, internal execution request passed to `OutlayerService`.
+/// Contains only what WASM execution needs.
+#[derive(Debug, Clone)]
 pub struct ExecutionRequest {
     /// Opaque identifier for this request, used for logging only.
     pub request_id: String,

@@ -2,6 +2,7 @@ pub mod config;
 pub mod env;
 pub mod error;
 pub mod executor;
+pub mod on_chain;
 pub mod resolver;
 pub mod service;
 pub mod signing_service;
