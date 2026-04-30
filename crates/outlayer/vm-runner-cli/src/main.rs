@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use bytesize::ByteSize;
 use clap::Parser;
-use std::{borrow::Cow, env, path::PathBuf};
+use std::{borrow::Cow, path::PathBuf};
 
 use defuse_outlayer_vm_runner::{
     Context as RunnerContext, VmRuntime,
@@ -22,7 +22,10 @@ struct Args {
     app_id: AppId<'static>,
 
     /// Path to the WebAssembly component to execute
-    path: PathBuf,
+    wasm_path: PathBuf,
+
+    /// Path to the hex-encoded seed file for the host's signer key
+    seed_path: PathBuf,
 
     /// Maximum number of WebAssembly instructions the component may execute
     #[clap(long, short)]
@@ -37,8 +40,9 @@ struct Args {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let seed = hex::decode(env::var("OUTLAYER_SEED").context("OUTLAYER_SEED env var is not set")?)
-        .context("OUTLAYER_SEED must be a hex-encoded byte string")?;
+    let seed = std::fs::read(&args.seed_path)
+        .with_context(|| format!("failed to read seed file: {}", args.seed_path.display()))?;
+    let seed = hex::decode(&seed).context("OUTLAYER_SEED must be a hex-encoded byte string")?;
 
     let state = State::new(
         HostContext {
@@ -69,12 +73,12 @@ async fn main() -> Result<()> {
 
     let runner = VmRuntime::<State>::new().context("failed to initialize runtime")?;
 
-    let wasm_binary = std::fs::read(&args.path)
-        .with_context(|| format!("failed to read: {}", args.path.display()))?;
+    let wasm_binary = std::fs::read(&args.wasm_path)
+        .with_context(|| format!("failed to read: {}", args.wasm_path.display()))?;
 
     let component = runner
         .compile(&wasm_binary)
-        .with_context(|| format!("failed to compile: {}", args.path.display()))?;
+        .with_context(|| format!("failed to compile: {}", args.wasm_path.display()))?;
 
     let outcome = runner.execute(ctx, &component).await.context("execute")?;
 
