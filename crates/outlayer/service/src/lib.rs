@@ -15,7 +15,7 @@ use std::sync::{Arc, Mutex};
 use bytes::Bytes;
 use defuse_outlayer_crypto::signer::InMemorySigner;
 use lru::LruCache;
-use tower::{Service, ServiceBuilder, service_fn};
+use tower::{Service, ServiceBuilder};
 
 use defuse_outlayer_host::HostFunctions;
 use defuse_outlayer_vm_runner::VmRuntime;
@@ -34,15 +34,18 @@ use utils::cache::CacheLayer;
 use utils::retry::Attempts;
 use utils::timeout_err;
 
-pub fn build_stack<H, Req>(
+pub fn build_stack<H, F>(
     signing_key: InMemorySigner,
     runtime: Arc<VmRuntime<H>>,
     config: Config,
     host_template: H,
-) -> impl Service<Req, Response = SignedExecutionResponse, Error = ExecutionStackError> + Send + 'static
+    fetch: F,
+) -> impl Service<Request, Response = SignedExecutionResponse, Error = ExecutionStackError> + Send + 'static
 where
     H: HostFunctions + Clone + Send + Sync + 'static,
-    Req: Into<Request> + Clone + Send + 'static,
+    F: Service<OffChainRequest, Response = ExecutionRequest> + Clone + Send + 'static,
+    F::Future: Send,
+    ExecutionStackError: From<F::Error>,
 {
     let executor = WasmExecutor::new(Arc::clone(&runtime), config.executor, host_template);
 
@@ -86,17 +89,7 @@ where
         .map_err(timeout_err::<ExecutionStackError>)
         .timeout(config.total_timeout)
         .service(SigningService::new(
-            OutlayerService::new(
-                executor,
-                wasm,
-                env,
-                storage,
-                service_fn(|_: OffChainRequest| async {
-                    Err::<ExecutionRequest, _>(ExecutionStackError::Internal(
-                        "off-chain requests not supported in this stack".into(),
-                    ))
-                }),
-            ),
+            OutlayerService::new(executor, wasm, env, storage, fetch),
             signing_key,
         ))
 }

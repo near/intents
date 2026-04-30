@@ -18,6 +18,7 @@ use crate::types::{
 pub struct WasmExecutorConfig {
     pub stdout_limit: usize,
     pub stderr_limit: usize,
+    pub fuel_limit: u64,
 }
 
 impl Default for WasmExecutorConfig {
@@ -25,6 +26,7 @@ impl Default for WasmExecutorConfig {
         Self {
             stdout_limit: 4 * 1024 * 1024, // 4 MiB
             stderr_limit: 64 * 1024,       // 64 KiB
+            fuel_limit: 1_000_000_000,
         }
     }
 }
@@ -95,7 +97,8 @@ impl<H: HostFunctions + Clone + Send + 'static> Service<WasmExecutionRequest> fo
                 stdout.clone(),
                 stderr.clone(),
                 host_state,
-            );
+            )
+            .fuel_limit(config.fuel_limit);
 
             let outcome = runtime
                 .execute(ctx, &req.component)

@@ -8,11 +8,11 @@ use clap::Parser;
 use defuse_outlayer_host::primitives::{AccountIdRef, AppId};
 use defuse_outlayer_host::{Context, InMemorySigner, State};
 use defuse_outlayer_service::{
-    Config, build_stack,
-    types::{AccountId, OnChainRequest},
+    Config, ExecutionRequest, ExecutionStackError, Request, build_stack,
+    types::{AccountId, OffChainRequest},
 };
 use defuse_outlayer_vm_runner::VmRuntime;
-use tower::ServiceExt;
+use tower::{ServiceExt, service_fn};
 
 /// Run a WASM component through the outlayer service stack.
 ///
@@ -57,18 +57,30 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     let wasm_hash = parse_hash_hex(&args.wasm_hash)?;
+    let wasm_url = args.url.clone();
 
     let mut input = Vec::new();
     std::io::stdin().read_to_end(&mut input)?;
 
-    let request = OnChainRequest {
-        tx_hash: [0u8; 32],
+    let request = Request::OffChain(OffChainRequest {
+        request_id: uuid::Uuid::new_v4().to_string(),
         project_id: AccountId("example.near".to_string()),
         input: Bytes::from(input),
-        wasm_hash,
-        wasm_url: args.url,
-        nonce: [0u8; 32],
-    };
+    });
+
+    // TODO: replace with OnChainFetchService once NEAR RPC fetch is implemented
+    let fetch = service_fn(move |req: OffChainRequest| {
+        let url = wasm_url.clone();
+        async move {
+            Ok::<ExecutionRequest, ExecutionStackError>(ExecutionRequest {
+                request_id: req.request_id,
+                project_id: req.project_id,
+                wasm_url: url,
+                wasm_hash,
+                input: req.input,
+            })
+        }
+    });
 
     // Fixed key — replace with a real TEE key in production.
     let signing_key = defuse_outlayer_crypto::signer::InMemorySigner::from_seed(&[1u8; 32]);
@@ -80,7 +92,7 @@ async fn main() -> anyhow::Result<()> {
     );
     let runtime = Arc::new(VmRuntime::<State<'static>>::new()?);
 
-    let signed = build_stack(signing_key, runtime, Config::default(), host_template)
+    let signed = build_stack(signing_key, runtime, Config::default(), host_template, fetch)
         .oneshot(request)
         .await?;
 
