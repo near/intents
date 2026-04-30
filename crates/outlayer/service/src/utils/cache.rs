@@ -8,6 +8,7 @@ use futures_util::future::BoxFuture;
 use lru::LruCache;
 use sha2::{Digest, Sha256};
 use tower::{Layer, Service};
+use tracing::Instrument as _;
 
 #[derive(Debug, Clone)]
 pub struct CacheConfig {
@@ -88,19 +89,22 @@ where
         self.inner.poll_ready(cx)
     }
 
+    #[tracing::instrument(level = "debug", name = "cache.get", skip_all)]
     fn call(&mut self, key: K) -> Self::Future {
         let cache = self.cache.clone();
         let mut inner = self.inner.clone();
         let hash = cache_key(&key);
-
         Box::pin(async move {
             let cached = cache.lock().unwrap().get(&hash).cloned();
             if let Some(cached) = cached {
+                tracing::debug!("cache hit");
                 return Ok(cached);
             }
+            tracing::debug!("cache miss, fetching");
             let value = inner.call(key).await?;
             cache.lock().unwrap().put(hash, value.clone());
+            tracing::debug!("value cached");
             Ok(value)
-        })
+        }.instrument(tracing::Span::current()))
     }
 }

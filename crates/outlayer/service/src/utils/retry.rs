@@ -10,7 +10,9 @@ impl<Req: Clone, Res, E> Policy<Req, Res, E> for Attempts {
 
     fn retry(&mut self, _: &mut Req, result: &mut Result<Res, E>) -> Option<Self::Future> {
         result.is_err().then_some(())?;
-        self.0 = self.0.checked_sub(1)?;
+        let remaining = self.0.checked_sub(1)?;
+        tracing::warn!(attempts_remaining = remaining, "request failed, retrying");
+        self.0 = remaining;
         Some(std::future::ready(()))
     }
 

@@ -13,6 +13,7 @@ where
     E: std::error::Error + Send + Sync + 'static + Into<ExecutionStackError>,
 {
     if e.is::<tower::timeout::error::Elapsed>() {
+        tracing::warn!("request timed out");
         ExecutionStackError::Timeout
     } else {
         match e.downcast::<E>() {

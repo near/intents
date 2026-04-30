@@ -31,6 +31,7 @@ impl Service<AccountId> for StorageFetchService {
         Poll::Ready(Ok(()))
     }
 
+    #[tracing::instrument(level = "debug", name = "storage.fetch", skip_all)]
     fn call(&mut self, _project_id: AccountId) -> Self::Future {
         ready(Ok(ProjectStorage))
     }

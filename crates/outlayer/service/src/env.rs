@@ -26,6 +26,7 @@ impl Service<AccountId> for EnvFetchService {
         Poll::Ready(Ok(()))
     }
 
+    #[tracing::instrument(level = "debug", name = "env.fetch", skip_all)]
     fn call(&mut self, _project_id: AccountId) -> Self::Future {
         ready(Ok(ProjectEnv))
     }

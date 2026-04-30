@@ -5,6 +5,7 @@ use futures_util::future::BoxFuture;
 use serde::Serialize;
 use serde_with::{hex::Hex, serde_as};
 use tower::Service;
+use tracing::Instrument as _;
 
 use crate::{
     error::ExecutionStackError,
@@ -59,6 +60,7 @@ where
         self.inner.poll_ready(cx)
     }
 
+    #[tracing::instrument(level = "debug", name = "signing", skip_all)]
     fn call(&mut self, req: Req) -> Self::Future {
         let mut inner = self.inner.clone();
         let key = self.signing_key.clone();
@@ -66,6 +68,6 @@ where
         Box::pin(async move {
             let response = inner.call(request).await?;
             Ok(sign_response(&key, response))
-        })
+        }.instrument(tracing::Span::current()))
     }
 }

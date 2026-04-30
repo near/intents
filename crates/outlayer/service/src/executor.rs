@@ -8,6 +8,7 @@ use defuse_outlayer_vm_runner::{
 use futures_util::future::BoxFuture;
 use thiserror::Error;
 use tower::Service;
+use tracing::Instrument as _;
 
 use crate::types::{
     AccountId, ExecutionMetrics, ExecutionRequest, ExecutionResponse, ProjectEnv, ProjectStorage,
@@ -81,6 +82,7 @@ impl<H: HostFunctions + Clone + Send + 'static> Service<WasmExecutionRequest> fo
         Poll::Ready(Ok(()))
     }
 
+    #[tracing::instrument(level = "debug", name = "wasm.execute", skip_all)]
     fn call(&mut self, req: WasmExecutionRequest) -> Self::Future {
         let runtime = Arc::clone(&self.runtime);
         let config = self.config.clone();
@@ -99,17 +101,28 @@ impl<H: HostFunctions + Clone + Send + 'static> Service<WasmExecutionRequest> fo
                 .execute(ctx, &req.component)
                 .await
                 .map_err(WasmEnvironmentInternalError)?;
+            let instructions_used = outcome.details.fuel_consumed.unwrap_or_default();
+            let stdout_bytes = stdout.contents();
+            let stderr_bytes = stderr.contents();
+            tracing::debug!(
+                instructions_used,
+                stdout_len = stdout_bytes.len(),
+                stderr_len = stderr_bytes.len(),
+                "wasm execution finished"
+            );
+            if outcome.error.is_some() {
+                tracing::warn!(instructions_used, "wasm component returned error");
+            }
             let result = outcome
                 .error
-                .map_or_else(|| Ok(stdout.contents()), |e| Err(anyhow::Error::from(e)));
-            let instructions_used = outcome.details.fuel_consumed.unwrap_or_default();
+                .map_or_else(|| Ok(stdout_bytes), |e| Err(anyhow::Error::from(e)));
 
             Ok(ExecutionResponse {
                 result,
-                logs: stderr.contents(),
+                logs: stderr_bytes,
                 metrics: ExecutionMetrics { instructions_used },
                 storage: ProjectStorage,
             })
-        })
+        }.instrument(tracing::Span::current()))
     }
 }

@@ -3,6 +3,7 @@ use std::task::{Context, Poll, ready};
 use defuse_outlayer_vm_runner::Component;
 use futures_util::future::BoxFuture;
 use tower::Service;
+use tracing::Instrument as _;
 
 use crate::{
     error::ExecutionStackError,
@@ -75,6 +76,11 @@ where
         Poll::Ready(Ok(()))
     }
 
+    #[tracing::instrument(level = "info", name = "outlayer.execute", skip_all, fields(
+        source = tracing::field::Empty,
+        request_id = tracing::field::Empty,
+        project_id = tracing::field::Empty,
+    ))]
     fn call(&mut self, req: Request) -> Self::Future {
         let mut executor = self.executor.clone();
         let mut wasm = self.wasm.clone();
@@ -82,16 +88,25 @@ where
         let mut storage = self.storage.clone();
         let mut fetch = self.fetch.clone();
 
+        tracing::Span::current().record("source", match &req {
+            Request::OnChain(_) => "on_chain",
+            Request::OffChain(_) => "off_chain",
+        });
         Box::pin(async move {
             let exec_req = match req {
                 Request::OnChain(r) => ExecutionRequest::from(r),
                 Request::OffChain(r) => fetch.call(r).await?,
             };
 
+            tracing::Span::current().record("request_id", &exec_req.request_id);
+            tracing::Span::current().record("project_id", exec_req.project_id.0.as_str());
+            tracing::debug!(wasm_url = %exec_req.wasm_url, "dispatching parallel fetches");
+
+            let current = tracing::Span::current();
             let (component_res, env_res, storage_res) = tokio::join!(
-                wasm.call((exec_req.wasm_url.clone(), exec_req.wasm_hash)),
-                env.call(exec_req.project_id.clone()),
-                storage.call(exec_req.project_id.clone()),
+                wasm.call((exec_req.wasm_url.clone(), exec_req.wasm_hash)).instrument(current.clone()),
+                env.call(exec_req.project_id.clone()).instrument(current.clone()),
+                storage.call(exec_req.project_id.clone()).instrument(current),
             );
 
             let wasm_req = WasmExecutionRequest {
@@ -102,7 +117,9 @@ where
                 caller: None,
             };
 
-            Ok(executor.call(wasm_req).await?)
-        })
+            let response = executor.call(wasm_req).await?;
+            tracing::info!(instructions_used = response.metrics.instructions_used, "execution complete");
+            Ok(response)
+        }.instrument(tracing::Span::current()))
     }
 }

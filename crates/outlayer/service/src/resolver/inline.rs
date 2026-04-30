@@ -5,6 +5,7 @@ use base64::{Engine, engine::general_purpose::STANDARD};
 use bytes::Bytes;
 use futures_util::future::BoxFuture;
 use tower::Service;
+use tracing::Instrument as _;
 
 use super::ResolveError;
 
@@ -23,6 +24,7 @@ impl Service<String> for InlineResolver {
         Poll::Ready(Ok(()))
     }
 
+    #[tracing::instrument(level = "debug", name = "inline.decode", skip_all)]
     fn call(&mut self, url: String) -> Self::Future {
         Box::pin(async move {
             let data = url.strip_prefix(DATA_URL_PREFIX).ok_or_else(|| {
@@ -32,7 +34,8 @@ impl Service<String> for InlineResolver {
                 .decode(data)
                 .map(|b| Arc::new(Bytes::from(b)))
                 .map_err(|e| ResolveError::InlineDecode(e.to_string()))?;
+            tracing::debug!(bytes = bytes.len(), "decoded inline wasm data URL");
             Ok(bytes)
-        })
+        }.instrument(tracing::Span::current()))
     }
 }

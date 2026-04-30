@@ -50,6 +50,10 @@ fn parse_hash_hex(hex: &str) -> anyhow::Result<[u8; 32]> {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
+
     let args = Args::parse();
 
     let wasm_hash = parse_hash_hex(&args.wasm_hash)?;

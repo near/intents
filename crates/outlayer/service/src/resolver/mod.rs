@@ -14,6 +14,7 @@ use thiserror::Error;
 use tower::steer::Steer;
 use tower::util::BoxCloneService;
 use tower::{Service, service_fn};
+use tracing::Instrument as _;
 use url::Url;
 
 #[derive(Debug, Error)]
@@ -60,22 +61,29 @@ impl Service<(String, [u8; 32])> for ResolverService {
         self.inner.poll_ready(cx)
     }
 
+    #[tracing::instrument(level = "debug", name = "resolver.resolve", skip_all, fields(url = %url))]
     fn call(&mut self, (url, expected_hash): (String, [u8; 32])) -> Self::Future {
         let mut inner = self.inner.clone();
-
         Box::pin(async move {
             let bytes = inner.call(url).await?;
+            tracing::debug!(bytes = bytes.len(), "fetched, verifying hash");
 
             let actual: [u8; 32] = Sha256::digest(bytes.as_ref()).into();
             if actual != expected_hash {
+                tracing::warn!(
+                    expected = hex_encode(&expected_hash),
+                    actual = hex_encode(&actual),
+                    "wasm hash mismatch"
+                );
                 return Err(ResolveError::HashMismatch {
                     expected: hex_encode(&expected_hash),
                     actual: hex_encode(&actual),
                 });
             }
 
+            tracing::debug!(bytes = bytes.len(), "hash verified");
             Ok(bytes)
-        })
+        }.instrument(tracing::Span::current()))
     }
 }
 

@@ -7,6 +7,7 @@ use futures_util::future::BoxFuture;
 use tokio::io::AsyncReadExt;
 use tokio_util::io::StreamReader;
 use tower::Service;
+use tracing::Instrument as _;
 
 use super::ResolveError;
 
@@ -31,6 +32,7 @@ impl Service<String> for HttpResolver {
         Poll::Ready(Ok(()))
     }
 
+    #[tracing::instrument(level = "debug", name = "http.fetch", skip_all)]
     fn call(&mut self, url: String) -> Self::Future {
         let client = self.client.clone();
         let max_bytes = self.max_bytes;
@@ -40,6 +42,7 @@ impl Service<String> for HttpResolver {
                 .send()
                 .await
                 .map_err(|e| ResolveError::Http(e.to_string()))?;
+            tracing::debug!(status = %response.status(), "http response received");
 
             let stream = response.bytes_stream().map_err(std::io::Error::other);
             let mut reader = StreamReader::new(stream);
@@ -59,13 +62,15 @@ impl Service<String> for HttpResolver {
                 .map_err(|e| ResolveError::Http(e.to_string()))?
                 .is_some()
             {
+                tracing::warn!(limit = max_bytes, "http response exceeds size limit");
                 return Err(ResolveError::TooLarge {
                     size: buf.len() + 1,
                     limit: max_bytes,
                 });
             }
 
+            tracing::debug!(bytes = buf.len(), "http fetch complete");
             Ok(Arc::new(Bytes::from(buf)))
-        })
+        }.instrument(tracing::Span::current()))
     }
 }

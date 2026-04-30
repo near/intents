@@ -4,6 +4,7 @@ use futures_util::future::BoxFuture;
 use reqwest::Client;
 use thiserror::Error;
 use tower::Service;
+use tracing::Instrument as _;
 use url::Url;
 
 use crate::types::{AccountId, ExecutionRequest, OffChainRequest};
@@ -40,10 +41,10 @@ impl Service<OffChainRequest> for OnChainFetchService {
         Poll::Ready(Ok(()))
     }
 
+    #[tracing::instrument(level = "debug", name = "on_chain.fetch", skip_all)]
     fn call(&mut self, req: OffChainRequest) -> Self::Future {
         let client = self.client.clone();
         let rpc_url = self.rpc_url.clone();
-
         Box::pin(async move {
             let (wasm_url, wasm_hash) =
                 fetch_project_wasm(&client, &rpc_url, &req.project_id).await?;
@@ -55,7 +56,7 @@ impl Service<OffChainRequest> for OnChainFetchService {
                 wasm_hash,
                 input: req.input,
             })
-        })
+        }.instrument(tracing::Span::current()))
     }
 }
 
