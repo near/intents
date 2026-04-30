@@ -61,12 +61,12 @@ impl Service<(String, [u8; 32])> for ResolverService {
         self.inner.poll_ready(cx)
     }
 
-    #[tracing::instrument(level = "debug", name = "resolver.resolve", skip_all, fields(url = %url))]
+    #[tracing::instrument(level = "debug", name = "resolve", skip_all, fields(url = tracing::field::display(format_args!("{:.50}", url))))]
     fn call(&mut self, (url, expected_hash): (String, [u8; 32])) -> Self::Future {
         let mut inner = self.inner.clone();
         Box::pin(async move {
             let bytes = inner.call(url).await?;
-            tracing::debug!(bytes = bytes.len(), "fetched, verifying hash");
+            tracing::debug!(bytes = bytes.len(), "fetched");
 
             let actual: [u8; 32] = Sha256::digest(bytes.as_ref()).into();
             if actual != expected_hash {

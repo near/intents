@@ -63,7 +63,7 @@ async fn main() -> anyhow::Result<()> {
     std::io::stdin().read_to_end(&mut input)?;
 
     let request = Request::OffChain(OffChainRequest {
-        request_id: uuid::Uuid::new_v4().to_string(),
+        request_id: "dummy_id".to_string(),
         project_id: AccountId("example.near".to_string()),
         input: Bytes::from(input),
     });

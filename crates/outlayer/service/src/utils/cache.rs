@@ -103,7 +103,7 @@ where
             tracing::debug!("cache miss, fetching");
             let value = inner.call(key).await?;
             cache.lock().unwrap().put(hash, value.clone());
-            tracing::debug!("value cached");
+            tracing::debug!("cached ");
             Ok(value)
         }.instrument(tracing::Span::current()))
     }
