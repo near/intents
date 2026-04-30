@@ -28,10 +28,8 @@ pub struct CacheLayer<K, V> {
 }
 
 impl<K: Hash + Eq, V> CacheLayer<K, V> {
-    pub fn new(capacity: NonZeroUsize) -> Self {
-        Self {
-            cache: Arc::new(Mutex::new(LruCache::new(capacity))),
-        }
+    pub fn new(cache: Arc<Mutex<LruCache<K, V>>>) -> Self {
+        Self { cache }
     }
 }
 
@@ -82,3 +80,4 @@ where
         })
     }
 }
+
