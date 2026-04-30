@@ -48,11 +48,12 @@ members = [
   "crates/outlayer/crypto",
   "crates/outlayer/host",
   "crates/outlayer/primitives",
-  "crates/outlayer/sys",
   "crates/outlayer/sdk",
+  "crates/outlayer/sys",
   "crates/outlayer/vm-runner",
   "crates/outlayer/cli",
   "crates/outlayer/service",
+  "crates/outlayer/vm-runner-cli",
 
   "tests",
 ]
@@ -109,7 +110,6 @@ defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
-defuse-outlayer-cli.path = "crates/outlayer/cli"
 defuse-outlayer-crypto = { path = "crates/outlayer/crypto", default-features = false }
 defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-primitives.path = "crates/outlayer/primitives"
@@ -117,6 +117,7 @@ defuse-outlayer-sdk.path = "crates/outlayer/sdk"
 defuse-outlayer-service.path = "crates/outlayer/service"
 defuse-outlayer-sys.path = "crates/outlayer/sys"
 defuse-outlayer-vm-runner.path = "crates/outlayer/vm-runner"
+defuse-outlayer-vm-runner-cli.path = "crates/outlayer/vm-runner-cli"
 
 defuse-tests.path = "tests"
 
@@ -144,6 +145,7 @@ bnum = { version = "0.13", features = ["borsh"] }
 borsh = "1.6.1"
 bytes        = { version = "1", features = ["serde"] }
 bs58 = "0.5.1"
+bytesize = "2.3.1"
 chrono = { version = "0.4", default-features = false }
 clap = { version = "4.5.55", features = ["derive"] }
 curve25519-dalek = "4.1.3"

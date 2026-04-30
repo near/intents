@@ -100,9 +100,9 @@ impl<H: HostFunctions + Clone + Send + 'static> Service<WasmExecutionRequest> fo
                 .await
                 .map_err(WasmEnvironmentInternalError)?;
             let result = outcome
-                .guest_error
+                .error
                 .map_or_else(|| Ok(stdout.contents()), |e| Err(anyhow::Error::from(e)));
-            let instructions_used = outcome.fuel_consumed;
+            let instructions_used = outcome.details.fuel_consumed.unwrap_or_default();
 
             Ok(ExecutionResponse {
                 result,
