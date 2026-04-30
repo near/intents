@@ -8,8 +8,10 @@ pub struct ExecutionDetails {
 }
 
 impl ExecutionDetails {
-    pub const fn new(fuel_consumed: Option<u64>) -> Self {
-        Self { fuel_consumed }
+    pub const fn new(fuel_consumed: u64) -> Self {
+        Self {
+            fuel_consumed: Some(fuel_consumed),
+        }
     }
 }
 

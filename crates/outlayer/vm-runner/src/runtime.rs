@@ -24,8 +24,8 @@ pub struct Context<I, O, E, H> {
     output: O,
     error: E,
     host_state: H,
-    fuel_limit: Option<u64>,
-    memory_limit: Option<usize>,
+    fuel_limit: u64,
+    memory_limit: usize,
 }
 
 impl<I, O, E, H> Context<I, O, E, H>
@@ -37,11 +37,11 @@ where
 {
     /// Default maximum physical memory for a single component
     /// execution (100 MiB)
-    pub const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024;
+    const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024;
 
     /// Default fuel budget for a single component execution
     /// (~1 billion wasm instructions)
-    pub const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
+    const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
 
     /// Creates a new execution context
     /// By default, there are no fuel or memory limits
@@ -52,8 +52,8 @@ where
             output,
             error,
             host_state,
-            fuel_limit: None,
-            memory_limit: None,
+            fuel_limit: Self::DEFAULT_FUEL_LIMIT,
+            memory_limit: Self::DEFAULT_MEMORY_LIMIT,
         }
     }
 
@@ -63,7 +63,7 @@ where
     /// executed. Exceeding the limit raises [`ExecutionError::Trap`].
     #[must_use]
     pub const fn fuel_limit(mut self, fuel_limit: u64) -> Self {
-        self.fuel_limit = Some(fuel_limit);
+        self.fuel_limit = fuel_limit;
         self
     }
 
@@ -72,7 +72,7 @@ where
     /// Attempts to grow beyond this limit will trap. Defaults to
     #[must_use]
     pub const fn memory_limit(mut self, memory_limit: usize) -> Self {
-        self.memory_limit = Some(memory_limit);
+        self.memory_limit = memory_limit;
         self
     }
 
@@ -92,17 +92,11 @@ where
             .stderr(error)
             .build();
 
-        let limits = memory_limit.map_or_else(StoreLimitsBuilder::new, |m| {
-            StoreLimitsBuilder::new().memory_size(m)
-        });
-
+        let limits = StoreLimitsBuilder::new().memory_size(memory_limit);
         let mut store = Store::new(engine, HostCtx::new(wasi_ctx, host_state, limits.build()));
 
         store.limiter(|ctx| ctx.limits_mut());
-
-        if let Some(fuel_limit) = fuel_limit {
-            store.set_fuel(fuel_limit).expect("fuel must be enabled");
-        }
+        store.set_fuel(fuel_limit).expect("fuel must be enabled");
 
         store
     }
@@ -216,8 +210,8 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
             Err(trap) => classify_error(trap),
         };
 
-        let fuel_consumed = fuel_limit
-            .map(|limit| limit.saturating_sub(store.get_fuel().expect("fuel must be enabled")));
+        let fuel_consumed =
+            fuel_limit.saturating_sub(store.get_fuel().expect("fuel must be enabled"));
 
         Ok(ExecutionOutcome::new(
             ExecutionDetails::new(fuel_consumed),
