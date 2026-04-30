@@ -46,10 +46,12 @@ where
 {
     let executor = WasmExecutor::new(Arc::clone(&runtime), config.executor, host_template);
 
+    let wasm_cache = Arc::new(Mutex::new(LruCache::<[u8; 32], _>::new(
+        config.cache.capacity,
+    )));
+
     let wasm = ServiceBuilder::new()
-        .layer(CacheLayer::new(Arc::new(Mutex::new(LruCache::new(
-            config.cache.capacity,
-        )))))
+        .layer(CacheLayer::new(wasm_cache))
         .and_then(move |bytes: Arc<Bytes>| {
             let rt = Arc::clone(&runtime);
             async move {
