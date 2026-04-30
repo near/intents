@@ -1,4 +1,3 @@
-pub mod bindings;
 pub mod crypto;
 
 use std::borrow::Cow;
@@ -6,6 +5,8 @@ use std::borrow::Cow;
 pub use defuse_outlayer_crypto::signer::InMemorySigner;
 pub use defuse_outlayer_primitives as primitives;
 use defuse_outlayer_primitives::AppId;
+
+use crate::crypto::CryptoHost;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Context<'a> {
@@ -23,14 +24,7 @@ impl<'a> State<'a> {
     }
 }
 
-pub trait HostFunctions:
-    bindings::outlayer::crypto::ed25519::Host + bindings::outlayer::crypto::secp256k1::Host + Send
-{
-}
+/// Trait defining the host functions available to the component
+pub trait HostFunctions: Send + CryptoHost {}
 
-impl<T> HostFunctions for T where
-    T: bindings::outlayer::crypto::ed25519::Host
-        + bindings::outlayer::crypto::secp256k1::Host
-        + Send
-{
-}
+impl<T: Send + CryptoHost> HostFunctions for T {}

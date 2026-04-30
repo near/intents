@@ -1,7 +1,8 @@
 #[cfg(not(target_family = "wasm"))]
 use crate::host::mock;
 #[cfg(not(target_family = "wasm"))]
-use defuse_outlayer_host::bindings::outlayer::crypto::secp256k1::Host;
+use defuse_outlayer_host::crypto::Secp256k1Host;
+
 #[cfg(target_family = "wasm")]
 use defuse_outlayer_sys as sys;
 
@@ -31,7 +32,7 @@ pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
 
     #[cfg(not(target_family = "wasm"))]
     let raw = mock::HOST
-        .with_borrow_mut(|h| h.derive_public_key(path.to_string()))
+        .with_borrow_mut(|h| h.secp256k1_derive_public_key(path.to_string()))
         .expect("host");
 
     raw.try_into().expect("invalid length")
@@ -54,7 +55,7 @@ pub fn sign(path: impl AsRef<str>, prehash: &[u8; 32]) -> Signature {
 
     #[cfg(not(target_family = "wasm"))]
     let raw = mock::HOST
-        .with_borrow_mut(|h| h.sign(path.to_string(), prehash.as_ref().to_vec()))
+        .with_borrow_mut(|h| h.secp256k1_sign(path.to_string(), prehash.as_ref().to_vec()))
         .expect("host");
 
     raw.try_into().expect("invalid length")
