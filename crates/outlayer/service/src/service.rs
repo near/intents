@@ -7,29 +7,34 @@ use wasmtime::component::Component;
 use crate::{
     error::ExecutionStackError,
     executor::{self, WasmExecutionRequest},
-    types::{AccountId, ExecutionRequest, ExecutionResponse, ProjectEnv, ProjectStorage},
+    types::{
+        AccountId, ExecutionRequest, ExecutionResponse, OffChainRequest, ProjectEnv, ProjectStorage,
+        Request,
+    },
 };
 
 #[derive(Clone)]
-pub struct OutlayerService<E, W, Env, St> {
+pub struct OutlayerService<E, W, Env, St, F> {
     executor: E,
     wasm: W,
     env: Env,
     storage: St,
+    fetch: F,
 }
 
-impl<E, W, Env, St> OutlayerService<E, W, Env, St> {
-    pub const fn new(executor: E, wasm: W, env: Env, storage: St) -> Self {
+impl<E, W, Env, St, F> OutlayerService<E, W, Env, St, F> {
+    pub const fn new(executor: E, wasm: W, env: Env, storage: St, fetch: F) -> Self {
         Self {
             executor,
             wasm,
             env,
             storage,
+            fetch,
         }
     }
 }
 
-impl<E, W, Env, St> Service<ExecutionRequest> for OutlayerService<E, W, Env, St>
+impl<E, W, Env, St, F> Service<Request> for OutlayerService<E, W, Env, St, F>
 where
     E: Service<
             WasmExecutionRequest,
@@ -54,6 +59,9 @@ where
         + Clone
         + 'static,
     St::Future: Send,
+    F: Service<OffChainRequest, Response = ExecutionRequest> + Clone + Send + 'static,
+    F::Future: Send,
+    ExecutionStackError: From<F::Error>,
 {
     type Response = ExecutionResponse;
     type Error = ExecutionStackError;
@@ -63,26 +71,32 @@ where
         ready!(self.wasm.poll_ready(cx))?;
         ready!(self.env.poll_ready(cx))?;
         ready!(self.storage.poll_ready(cx))?;
-        ready!(self.executor.poll_ready(cx)).map_err(ExecutionStackError::from)?;
+        ready!(self.executor.poll_ready(cx)).map_err(ExecutionStackError::Executor)?;
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: ExecutionRequest) -> Self::Future {
+    fn call(&mut self, req: Request) -> Self::Future {
         let mut executor = self.executor.clone();
         let mut wasm = self.wasm.clone();
         let mut env = self.env.clone();
         let mut storage = self.storage.clone();
+        let mut fetch = self.fetch.clone();
 
         Box::pin(async move {
+            let exec_req = match req {
+                Request::OnChain(r) => ExecutionRequest::from(r),
+                Request::OffChain(r) => fetch.call(r).await.map_err(Into::into)?,
+            };
+
             let (component_res, env_res, storage_res) = tokio::join!(
-                wasm.call((req.wasm_url.clone(), req.wasm_hash)),
-                env.call(req.project_id.clone()),
-                storage.call(req.project_id.clone()),
+                wasm.call((exec_req.wasm_url.clone(), exec_req.wasm_hash)),
+                env.call(exec_req.project_id.clone()),
+                storage.call(exec_req.project_id.clone()),
             );
 
             let wasm_req = WasmExecutionRequest {
                 component: component_res?,
-                request: req,
+                request: exec_req,
                 env: env_res?,
                 storage: storage_res?,
                 caller: None,

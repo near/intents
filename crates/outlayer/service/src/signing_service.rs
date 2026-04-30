@@ -8,7 +8,7 @@ use tower::Service;
 
 use crate::{
     error::ExecutionStackError,
-    types::{ExecutionRequest, ExecutionResponse},
+    types::{ExecutionResponse, Request},
 };
 
 #[serde_as]
@@ -41,8 +41,8 @@ fn sign_response<T: Serialize>(key: &InMemorySigner, response: T) -> SignedExecu
 
 impl<S, Req> Service<Req> for SigningService<S>
 where
-    Req: Into<ExecutionRequest> + Clone + Send + 'static,
-    S: Service<ExecutionRequest, Response = ExecutionResponse, Error = ExecutionStackError>
+    Req: Into<Request> + Clone + Send + 'static,
+    S: Service<Request, Response = ExecutionResponse, Error = ExecutionStackError>
         + Clone
         + Send
         + 'static,
@@ -59,9 +59,9 @@ where
     fn call(&mut self, req: Req) -> Self::Future {
         let mut inner = self.inner.clone();
         let key = self.signing_key.clone();
-        let execution_req: ExecutionRequest = req.into();
+        let request: Request = req.into();
         Box::pin(async move {
-            let response = inner.call(execution_req).await?;
+            let response = inner.call(request).await?;
             Ok(sign_response(&key, response))
         })
     }

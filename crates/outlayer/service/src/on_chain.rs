@@ -41,12 +41,12 @@ impl Service<OffChainRequest> for OnChainFetchService {
     }
 
     fn call(&mut self, req: OffChainRequest) -> Self::Future {
-        let _client = self.client.clone();
-        let _rpc_url = self.rpc_url.clone();
+        let client = self.client.clone();
+        let rpc_url = self.rpc_url.clone();
 
         Box::pin(async move {
-            // TODO: fetch wasm_url and wasm_hash for req.project_id via NEAR RPC
-            let (wasm_url, wasm_hash) = fetch_project_wasm(&_client, &_rpc_url, &req.project_id).await?;
+            let (wasm_url, wasm_hash) =
+                fetch_project_wasm(&client, &rpc_url, &req.project_id).await?;
 
             Ok(ExecutionRequest {
                 request_id: req.request_id,
@@ -65,6 +65,5 @@ async fn fetch_project_wasm(
     _project_id: &AccountId,
 ) -> Result<(String, [u8; 32]), OnChainFetchError> {
     // TODO: implement NEAR RPC view call to fetch wasm_url and wasm_hash
-    // for the given project_id
     todo!("NEAR RPC fetch not yet implemented")
 }

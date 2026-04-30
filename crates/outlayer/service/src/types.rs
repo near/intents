@@ -32,6 +32,13 @@ pub struct OnChainRequest {
     pub wasm_url: String,
 }
 
+/// Unified request type — either sourced from on-chain data or provided directly off-chain.
+#[derive(Debug, Clone)]
+pub enum Request {
+    OnChain(OnChainRequest),
+    OffChain(OffChainRequest),
+}
+
 /// Simplified, internal execution request passed to `OutlayerService`.
 /// Contains only what WASM execution needs.
 #[derive(Debug, Clone)]
@@ -52,6 +59,18 @@ pub struct ExecutionRequest {
     pub wasm_url: String,
     pub wasm_hash: [u8; 32],
     pub input: Bytes,
+}
+
+impl From<OnChainRequest> for Request {
+    fn from(r: OnChainRequest) -> Self {
+        Self::OnChain(r)
+    }
+}
+
+impl From<OffChainRequest> for Request {
+    fn from(r: OffChainRequest) -> Self {
+        Self::OffChain(r)
+    }
 }
 
 impl From<OnChainRequest> for ExecutionRequest {

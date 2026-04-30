@@ -2,7 +2,10 @@ use thiserror::Error;
 use tower::BoxError;
 
 use crate::{
-    env::EnvFetchError, executor::WasmEnvironmentInternalError, resolver::ResolveError,
+    env::EnvFetchError,
+    executor::WasmEnvironmentInternalError,
+    on_chain::OnChainFetchError,
+    resolver::ResolveError,
     storage::StorageFetchError,
 };
 
@@ -17,6 +20,8 @@ pub enum ExecutionStackError {
     StorageFetch(#[from] StorageFetchError),
     #[error(transparent)]
     Executor(#[from] WasmEnvironmentInternalError),
+    #[error(transparent)]
+    OnChainFetch(#[from] OnChainFetchError),
     #[error("wasm compilation failed: {0}")]
     Compile(anyhow::Error),
     #[error("execution timed out")]
