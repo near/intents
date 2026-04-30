@@ -3,6 +3,8 @@ use bytesize::ByteSize;
 use clap::Parser;
 use std::{borrow::Cow, path::PathBuf};
 
+const DEFAULT_APP_ID: &str = "near:0sab1c86e60758fe3e8fc7ae40ecd2df1a07513ca9";
+
 use defuse_outlayer_vm_runner::{
     Context as RunnerContext, VmRuntime,
     host::{Context as HostContext, InMemorySigner, State, primitives::AppId},
@@ -18,14 +20,15 @@ use defuse_outlayer_vm_runner::{
     "
 )]
 struct Args {
-    /// Application ID to use in the host context
-    app_id: AppId<'static>,
-
     /// Path to the WebAssembly component to execute
     wasm_path: PathBuf,
 
-    /// Path to the hex-encoded seed file for the host's signer key
+    /// Path to a file containing the hex-encoded 32-byte seed for the host's signer key
     seed_path: PathBuf,
+
+    /// Application ID to use in the host context
+    #[clap(long, short, default_value = DEFAULT_APP_ID)]
+    app_id: AppId<'static>,
 
     /// Maximum number of WebAssembly instructions the component may execute
     #[clap(long, short)]
@@ -40,9 +43,10 @@ struct Args {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let seed = std::fs::read(&args.seed_path)
+    let seed_hex = std::fs::read_to_string(&args.seed_path)
         .with_context(|| format!("failed to read seed file: {}", args.seed_path.display()))?;
-    let seed = hex::decode(&seed).context("OUTLAYER_SEED must be a hex-encoded byte string")?;
+    let seed =
+        hex::decode(seed_hex.trim()).context("seed file must contain a hex-encoded byte string")?;
 
     let state = State::new(
         HostContext {
