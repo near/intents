@@ -1639,8 +1639,6 @@ dependencies = [
  "anyhow",
  "defuse-outlayer-crypto",
  "defuse-outlayer-primitives",
- "tracing",
- "wasmtime",
 ]
 
 [[package]]
