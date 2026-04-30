@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use bytes::Bytes;
 use clap::Parser;
-use defuse_outlayer_host::primitives::{AppId, AccountIdRef};
+use defuse_outlayer_host::primitives::{AccountIdRef, AppId};
 use defuse_outlayer_host::{Context, InMemorySigner, State};
 use defuse_outlayer_service::{
     Config, build_stack,

@@ -36,7 +36,10 @@ fn sign_response<T: Serialize>(key: &InMemorySigner, response: T) -> SignedExecu
     let json = serde_json::to_vec(&response).expect("response serialization is infallible");
     let signature =
         <InMemorySigner as DeriveSigner<Ed25519>>::derive_sign(key, &[0u8; 32], &json).to_bytes();
-    SignedExecutionResponse { response, signature }
+    SignedExecutionResponse {
+        response,
+        signature,
+    }
 }
 
 impl<S, Req> Service<Req> for SigningService<S>

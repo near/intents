@@ -13,8 +13,8 @@ pub mod utils;
 use std::sync::{Arc, Mutex};
 
 use bytes::Bytes;
-use lru::LruCache;
 use defuse_outlayer_crypto::signer::InMemorySigner;
+use lru::LruCache;
 use tower::{Service, ServiceBuilder, service_fn};
 
 use defuse_outlayer_host::HostFunctions;
@@ -23,10 +23,10 @@ use defuse_outlayer_vm_runner::VmRuntime;
 pub use config::{Config, FetchConfig};
 pub use error::ExecutionStackError;
 pub use executor::{WasmExecutor, WasmExecutorConfig};
+pub use on_chain::{OnChainFetchError, OnChainFetchService};
 pub use resolver::HttpResolver;
 pub use service::OutlayerService;
 pub use signing_service::{SignedExecutionResponse, SigningService};
-pub use on_chain::{OnChainFetchError, OnChainFetchService};
 pub use types::{ExecutionRequest, ExecutionResponse, OffChainRequest, OnChainRequest, Request};
 pub use utils::cache::CacheConfig;
 
@@ -39,9 +39,7 @@ pub fn build_stack<H, Req>(
     runtime: Arc<VmRuntime<H>>,
     config: Config,
     host_template: H,
-) -> impl Service<Req, Response = SignedExecutionResponse, Error = ExecutionStackError>
-+ Send
-+ 'static
+) -> impl Service<Req, Response = SignedExecutionResponse, Error = ExecutionStackError> + Send + 'static
 where
     H: HostFunctions + Clone + Send + Sync + 'static,
     Req: Into<Request> + Clone + Send + 'static,
@@ -88,11 +86,17 @@ where
         .map_err(timeout_err::<ExecutionStackError>)
         .timeout(config.total_timeout)
         .service(SigningService::new(
-            OutlayerService::new(executor, wasm, env, storage, service_fn(|_: OffChainRequest| async {
-            Err::<ExecutionRequest, _>(ExecutionStackError::Internal(
-                "off-chain requests not supported in this stack".into(),
-            ))
-        })),
+            OutlayerService::new(
+                executor,
+                wasm,
+                env,
+                storage,
+                service_fn(|_: OffChainRequest| async {
+                    Err::<ExecutionRequest, _>(ExecutionStackError::Internal(
+                        "off-chain requests not supported in this stack".into(),
+                    ))
+                }),
+            ),
             signing_key,
         ))
 }

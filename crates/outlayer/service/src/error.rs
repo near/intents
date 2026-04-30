@@ -2,11 +2,8 @@ use thiserror::Error;
 use tower::BoxError;
 
 use crate::{
-    env::EnvFetchError,
-    executor::WasmEnvironmentInternalError,
-    on_chain::OnChainFetchError,
-    resolver::ResolveError,
-    storage::StorageFetchError,
+    env::EnvFetchError, executor::WasmEnvironmentInternalError, on_chain::OnChainFetchError,
+    resolver::ResolveError, storage::StorageFetchError,
 };
 
 /// Top-level error type for the composed Tower stack.

@@ -1,15 +1,15 @@
 use std::task::{Context, Poll, ready};
 
+use defuse_outlayer_vm_runner::Component;
 use futures_util::future::BoxFuture;
 use tower::Service;
-use wasmtime::component::Component;
 
 use crate::{
     error::ExecutionStackError,
     executor::{self, WasmExecutionRequest},
     types::{
-        AccountId, ExecutionRequest, ExecutionResponse, OffChainRequest, ProjectEnv, ProjectStorage,
-        Request,
+        AccountId, ExecutionRequest, ExecutionResponse, OffChainRequest, ProjectEnv,
+        ProjectStorage, Request,
     },
 };
 

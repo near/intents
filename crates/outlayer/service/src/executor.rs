@@ -1,13 +1,13 @@
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
+use defuse_outlayer_host::HostFunctions;
+use defuse_outlayer_vm_runner::{
+    self as vm_runner, Component, MemoryInputPipe, MemoryOutputPipe, VmRuntime,
+};
 use futures_util::future::BoxFuture;
 use thiserror::Error;
 use tower::Service;
-use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
-
-use defuse_outlayer_host::HostFunctions;
-use defuse_outlayer_vm_runner::{self as vm_runner, VmRuntime};
 
 use crate::types::{
     AccountId, ExecutionMetrics, ExecutionRequest, ExecutionResponse, ProjectEnv, ProjectStorage,
@@ -31,7 +31,7 @@ impl Default for WasmExecutorConfig {
 #[derive(Clone)]
 pub struct WasmExecutionRequest {
     pub request: ExecutionRequest,
-    pub component: wasmtime::component::Component,
+    pub component: Component,
     pub storage: ProjectStorage,
     pub env: ProjectEnv,
     pub caller: Option<AccountId>,
@@ -49,7 +49,11 @@ pub struct WasmExecutor<H: HostFunctions + Clone + 'static> {
 }
 
 impl<H: HostFunctions + Clone + 'static> WasmExecutor<H> {
-    pub const fn new(runtime: Arc<VmRuntime<H>>, config: WasmExecutorConfig, host_template: H) -> Self {
+    pub const fn new(
+        runtime: Arc<VmRuntime<H>>,
+        config: WasmExecutorConfig,
+        host_template: H,
+    ) -> Self {
         Self {
             runtime,
             config,
@@ -68,9 +72,7 @@ impl<H: HostFunctions + Clone + 'static> Clone for WasmExecutor<H> {
     }
 }
 
-impl<H: HostFunctions + Clone + Send + 'static> Service<WasmExecutionRequest>
-    for WasmExecutor<H>
-{
+impl<H: HostFunctions + Clone + Send + 'static> Service<WasmExecutionRequest> for WasmExecutor<H> {
     type Response = ExecutionResponse;
     type Error = WasmEnvironmentInternalError;
     type Future = BoxFuture<'static, Result<ExecutionResponse, WasmEnvironmentInternalError>>;
