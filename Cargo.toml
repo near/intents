@@ -114,7 +114,7 @@ defuse-outlayer-primitives.path = "crates/outlayer/primitives"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
 defuse-outlayer-sys.path = "crates/outlayer/sys"
 defuse-outlayer-vm-runner.path = "crates/outlayer/vm-runner"
-defuse-outlayer-vm-runner-cli.path = "crates/outlayer/vm-runner-cli"
+defuse-outlayer-vm-runner-cli.path = "crates/outlayer/vm-runner/cli"
 
 defuse-tests.path = "tests"
 
