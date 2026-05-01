@@ -14,8 +14,7 @@ use wasmtime_wasi::{
 use crate::{
     context::{HostCtx, HostFunctions},
     error::ExecutionError,
-    outcome::ExecutionDetails,
-    outcome::ExecutionOutcome,
+    outcome::{ExecutionDetails, ExecutionOutcome},
 };
 
 /// Size of the guard region placed before linear memory to
@@ -41,14 +40,6 @@ where
     E: StdoutStream + 'static,
     H: HostFunctions,
 {
-    /// Default maximum physical memory for a single component
-    /// execution (100 MiB)
-    pub const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024;
-
-    /// Default fuel budget for a single component execution
-    /// (~1 billion wasm instructions)
-    pub const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
-
     /// Creates a new execution context
     /// By default, there are no fuel or memory limits
     #[must_use]
@@ -251,7 +242,7 @@ where
     H: HostFunctions,
 {
     fn default() -> Self {
-        Self::new().expect("setup")
+        Self::new().expect("failed to initialize VmRuntime")
     }
 }
 
