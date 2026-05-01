@@ -13,18 +13,18 @@ thread_local! {
         ));
 }
 
-// Generated via near-cli@0.26.0:
+// Generated via near-cli@0.26.1:
 // ```sh
 // near contract state-init \
 //   use-global-account-id 'test' \
 //   data-from-json "$(near oa -q \
 //       --admin-id 'test' \
 //       --code-hash '0000000000000000000000000000000000000000000000000000000000000000' \
-//       --code-url 'data:' \
+//       --code-url 'data:application/wasm;base64,' \
 //   )" inspect account-id
 // ```
 const TEST_APP_ID: AppId = AppId::Near(Cow::Borrowed(AccountIdRef::new_or_panic(
-    "0sab1c86e60758fe3e8fc7ae40ecd2df1a07513ca9",
+    "0se1573c9dff58d4a57384dee048c9b1a809fb6839",
 )));
 
 const TEST_SEED: &[u8] = b"test";

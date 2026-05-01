@@ -2,7 +2,7 @@ use anyhow::{Context as _, Result, anyhow};
 use defuse_outlayer_host::bindings::Imports;
 use tracing::instrument;
 use wasmtime::{
-    Config, Engine, Store, StoreLimitsBuilder, Trap,
+    Config, Engine, Store, StoreLimitsBuilder,
     component::{Component, HasSelf, Linker},
 };
 use wasmtime_wasi::{
@@ -87,6 +87,10 @@ where
             .stdin(stdin)
             .stdout(stdout)
             .stderr(stderr)
+            .allow_udp(false)
+            .allow_tcp(false)
+            // TODO: other settings, such as:
+            // * .secure_random()
             .build();
 
         let mut limits = StoreLimitsBuilder::new();
@@ -169,8 +173,8 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// # let signer = todo!();
     /// let state = State::new(HostContext { app_id }, Cow::Owned(signer));
     ///
-    /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024);
-    /// let stderr = MemoryOutputPipe::new(64 * 1024);
+    /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024); // 4 MB
+    /// let stderr = MemoryOutputPipe::new(64 * 1024);       // 64 KB
     /// let ctx = Context::new(
     ///     MemoryInputPipe::new(b"input".to_vec()),
     ///     stdout.clone(),
@@ -202,21 +206,22 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         let fuel_limit = ctx.fuel_limit;
         let mut store = ctx.into_store(self.linker.engine());
 
-        let command = Command::instantiate_async(&mut store, component, &self.linker).await?;
+        let command = Command::instantiate_async(&mut store, component, &self.linker)
+            .await
+            .context("instantiate")?;
+
         let run_result = command.wasi_cli_run().call_run(&mut store).await;
 
-        let error = match run_result {
-            Ok(Ok(())) => None,
-            Ok(Err(())) => Some(anyhow!("wasm component failed").into()),
-            Err(trap) => classify_error(trap),
-        };
-
-        let fuel_consumed =
-            fuel_limit.saturating_sub(store.get_fuel().expect("fuel must be enabled"));
-
         Ok(ExecutionOutcome {
-            details: ExecutionDetails { fuel_consumed },
-            error,
+            error: match run_result {
+                Ok(Ok(())) => None,
+                Ok(Err(())) => Some(ExecutionError::Unknown(anyhow!("wasm component failed"))),
+                Err(trap) => ExecutionError::from_trap(trap),
+            },
+            details: ExecutionDetails {
+                fuel_consumed: fuel_limit
+                    .saturating_sub(store.get_fuel().expect("fuel must be enabled")),
+            },
         })
     }
 
@@ -235,30 +240,6 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         let component = self.compile(binary).context("compile")?;
         self.execute(ctx, &component).await
     }
-}
-
-impl<H> Default for VmRuntime<H>
-where
-    H: HostFunctions,
-{
-    fn default() -> Self {
-        Self::new().expect("failed to initialize VmRuntime")
-    }
-}
-
-fn classify_error(err: anyhow::Error) -> Option<ExecutionError> {
-    if let Some(exit) = err.downcast_ref::<wasmtime_wasi::I32Exit>() {
-        // exit(0) is equivalent to a clean return from main
-        return match exit.0 {
-            0 => None,
-            code => Some(ExecutionError::NonZeroExit(code)),
-        };
-    }
-
-    Some(
-        err.downcast::<Trap>()
-            .map_or_else(ExecutionError::Unknown, ExecutionError::Trap),
-    )
 }
 
 fn create_linker<H>(engine: &Engine) -> anyhow::Result<Linker<HostCtx<H>>>

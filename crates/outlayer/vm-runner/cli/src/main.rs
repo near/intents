@@ -1,52 +1,62 @@
+use std::{borrow::Cow, path::PathBuf};
+
 use anyhow::{Context, Result};
 use bytesize::ByteSize;
 use clap::Parser;
-use std::{borrow::Cow, path::PathBuf};
+use tokio::{fs, io};
 
-// Generated via near-cli@0.26.0:
+use defuse_outlayer_vm_runner::{
+    ExecutionContext, VmRuntime,
+    host::{
+        AppContext, InMemorySigner, State,
+        primitives::{AccountIdRef, AppId},
+    },
+};
+
+// Generated via near-cli@0.26.1:
 // ```sh
 // near contract state-init \
 //   use-global-account-id 'test' \
 //   data-from-json "$(near oa -q \
 //       --admin-id 'test' \
 //       --code-hash '0000000000000000000000000000000000000000000000000000000000000000' \
-//       --code-url 'data:' \
+//       --code-url 'data:application/wasm;base64,' \
 //   )" inspect account-id
 // ```
-const DEFAULT_APP_ID: &str = "near:0sab1c86e60758fe3e8fc7ae40ecd2df1a07513ca9";
+// matches mocked default in SDK
+const DEFAULT_APP_ID: AppId = AppId::Near(Cow::Borrowed(AccountIdRef::new_or_panic(
+    "0se1573c9dff58d4a57384dee048c9b1a809fb6839",
+)));
+
+// matches mocked default in SDK
+const DEFAULT_SEED: &[u8] = b"test";
+
 const DEFAULT_FUEL: u64 = u64::MAX;
 
-use defuse_outlayer_vm_runner::{
-    ExecutionContext, VmRuntime,
-    host::{AppContext, InMemorySigner, State, primitives::AppId},
-};
-
 #[derive(Parser)]
-#[command(
-    about = "Execute a WASI component with a custom host environment",
-    long_about = "\n
-    Runs a WASIP2 component, wiring its stdin/stdout/stderr to the host \n
-    Input can be piped from stdin. Output is written to stdout and stderr.
-    Execution is bounded by configurable fuel and memory limits.
-    "
-)]
+/// Execute a WASI-P2 component with a custom host environment
+#[command(long_about = r#"
+Run a WASI-p2 component, wiring its stdin/stdout/stderr to the host.
+Input can be piped from stdin. Output is written to stdout and stderr.
+Execution is bounded by configurable fuel and memory limits."#)]
 struct Args {
     /// Path to the WebAssembly component to execute
-    wasm_path: PathBuf,
-
-    /// Path to a file containing the raw 32-byte seed for the host's signer key
-    seed_path: PathBuf,
+    wasm: PathBuf,
 
     /// Application ID to use in the host context
-    #[clap(long, short, default_value = DEFAULT_APP_ID)]
+    #[arg(long, short, default_value_t = DEFAULT_APP_ID)]
     app_id: AppId<'static>,
 
+    /// Path to a file containing the raw seed for the host's signer key
+    #[arg(long, value_name = "FILE")]
+    seed: Option<PathBuf>,
+
     /// Maximum number of WebAssembly instructions the component may execute
-    #[clap(long, short, default_value_t = DEFAULT_FUEL)]
+    #[arg(long, default_value_t = DEFAULT_FUEL, value_name = "u64")]
     fuel: u64,
 
-    /// Maximum memory the component may use, in bytes
-    #[clap(long, short)]
+    /// Maximum memory the component may use
+    #[arg(long, value_name = "MEM")]
     memory: Option<ByteSize>,
 }
 
@@ -54,8 +64,13 @@ struct Args {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let seed = std::fs::read(&args.seed_path)
-        .with_context(|| format!("failed to read seed file: {}", args.seed_path.display()))?;
+    let seed = if let Some(seed) = args.seed {
+        fs::read(&seed)
+            .await
+            .with_context(|| format!("seed: read {}", seed.display()))?
+    } else {
+        DEFAULT_SEED.to_vec()
+    };
 
     let state = State::new(
         AppContext {
@@ -65,9 +80,9 @@ async fn main() -> Result<()> {
     );
 
     let mut ctx = ExecutionContext::new(
-        tokio::io::stdin(),
-        tokio::io::stdout(),
-        tokio::io::stderr(),
+        io::stdin(),  // forward stdin
+        io::stdout(), // forward stdout
+        io::stderr(), // forward stderr
         state,
     )
     .fuel_limit(args.fuel);
@@ -81,16 +96,17 @@ async fn main() -> Result<()> {
         })?);
     }
 
-    let runner = VmRuntime::<State>::new().context("failed to initialize runtime")?;
+    let wasm_binary = fs::read(&args.wasm)
+        .await
+        .with_context(|| format!("failed to read: {}", args.wasm.display()))?;
 
-    let wasm_binary = std::fs::read(&args.wasm_path)
-        .with_context(|| format!("failed to read: {}", args.wasm_path.display()))?;
+    let runner = VmRuntime::<State>::new().context("failed to initialize runtime")?;
 
     let component = runner
         .compile(&wasm_binary)
-        .with_context(|| format!("failed to compile: {}", args.wasm_path.display()))?;
+        .with_context(|| format!("failed to compile: {}", args.wasm.display()))?;
 
     let outcome = runner.execute(ctx, &component).await.context("execute")?;
 
-    outcome.into_result().context("component failed")
+    outcome.into_result().map_err(Into::into)
 }
