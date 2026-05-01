@@ -24,7 +24,7 @@ const MEMORY_GUARD_SIZE: u64 = 64 * 1024 * 1024; // 64 MiB
 /// Maximum fuel consumption allowed for a single component execution
 const MAX_FUEL_CONSUMPTION: u64 = u64::MAX;
 
-pub struct ExecutionContext<I, O, E, H> {
+pub struct Context<I, O, E, H> {
     stdin: I,
     stdout: O,
     stderr: E,
@@ -33,7 +33,7 @@ pub struct ExecutionContext<I, O, E, H> {
     memory_limit: Option<usize>,
 }
 
-impl<I, O, E, H> ExecutionContext<I, O, E, H>
+impl<I, O, E, H> Context<I, O, E, H>
 where
     I: StdinStream + 'static,
     O: StdoutStream + 'static,
@@ -152,7 +152,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     ///
     /// stdin, stdout, stderr, and the host state are provided via [`Context`].
     /// The caller is responsible for reading output from the stdout/stderr
-    /// streams after execution (e.g. by keeping a clone of [`MemoryOutputPipe`]
+    /// streams after execution (e.g. by keeping a clone of [`MemoryOutputPipe`](wasmtime_wasi::p2::pipe::MemoryOutputPipe)
     /// before passing it into the context)
     ///
     /// Execution is bounded by the fuel and memory limits configured on the
@@ -160,18 +160,20 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     ///
     /// # Example
     ///
-    /// Using [`State`] directly:
+    /// Using [`State`](crate::host::State) directly:
     ///
     /// ```rust,no_run
     /// use std::borrow::Cow;
-    /// use defuse_outlayer_host::{State, host::Context as HostContext};
-    /// use defuse_outlayer_vm_runner::{Context, VmRuntime};
+    /// use defuse_outlayer_vm_runner::{
+    ///     Context, VmRuntime,
+    ///     host::{AppContext, State},
+    /// };
     /// use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
     ///
     /// # async fn example() -> anyhow::Result<()> {
     /// # let app_id = todo!();
     /// # let signer = todo!();
-    /// let state = State::new(HostContext { app_id }, Cow::Owned(signer));
+    /// let state = State::new(AppContext { app_id }, Cow::Owned(signer));
     ///
     /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024); // 4 MB
     /// let stderr = MemoryOutputPipe::new(64 * 1024);       // 64 KB
@@ -195,7 +197,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     #[instrument(skip_all)]
     pub async fn execute<I, O, E>(
         &self,
-        ctx: ExecutionContext<I, O, E, H>,
+        ctx: Context<I, O, E, H>,
         component: &Component,
     ) -> Result<ExecutionOutcome>
     where
@@ -229,7 +231,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// [`execute`](Self::execute) for details and examples.
     pub async fn run<I, O, E>(
         &self,
-        ctx: ExecutionContext<I, O, E, H>,
+        ctx: Context<I, O, E, H>,
         binary: impl AsRef<[u8]>,
     ) -> Result<ExecutionOutcome>
     where

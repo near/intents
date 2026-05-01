@@ -6,7 +6,7 @@ use clap::Parser;
 use tokio::{fs, io};
 
 use defuse_outlayer_vm_runner::{
-    ExecutionContext, VmRuntime,
+    Context, VmRuntime,
     host::{
         AppContext, InMemorySigner, State,
         primitives::{AccountIdRef, AppId},
@@ -79,7 +79,7 @@ async fn main() -> Result<()> {
         Cow::Owned(InMemorySigner::from_seed(&seed)),
     );
 
-    let mut ctx = ExecutionContext::new(
+    let mut ctx = Context::new(
         io::stdin(),  // forward stdin
         io::stdout(), // forward stdout
         io::stderr(), // forward stderr
