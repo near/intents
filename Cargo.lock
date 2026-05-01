@@ -1709,7 +1709,6 @@ dependencies = [
  "bytesize 2.3.1",
  "clap",
  "defuse-outlayer-vm-runner",
- "hex",
  "tokio",
 ]
 
