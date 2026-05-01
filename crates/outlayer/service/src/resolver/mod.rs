@@ -28,7 +28,7 @@ pub enum ResolveError {
     #[error("unsupported URL scheme: {0}")]
     UnsupportedScheme(String),
     #[error("response too large: {size} bytes exceeds limit of {limit} bytes")]
-    TooLarge { size: usize, limit: usize },
+    TooLarge { size: u64, limit: u64 },
     #[error("hash mismatch: expected {expected}, got {actual}")]
     HashMismatch { expected: String, actual: String },
 }
@@ -61,29 +61,32 @@ impl Service<(String, [u8; 32])> for ResolverService {
         self.inner.poll_ready(cx)
     }
 
-    #[tracing::instrument(level = "debug", name = "resolve", skip_all, fields(url = tracing::field::display(format_args!("{:.50}", url))))]
+    #[tracing::instrument(level = "debug", name = "resolve", skip_all, fields(url = tracing::field::display(format_args!("{url:.50}"))))]
     fn call(&mut self, (url, expected_hash): (String, [u8; 32])) -> Self::Future {
         let mut inner = self.inner.clone();
-        Box::pin(async move {
-            let bytes = inner.call(url).await?;
-            tracing::debug!(bytes = bytes.len(), "fetched");
+        Box::pin(
+            async move {
+                let bytes = inner.call(url).await?;
+                tracing::debug!(bytes = bytes.len(), "fetched");
 
-            let actual: [u8; 32] = Sha256::digest(bytes.as_ref()).into();
-            if actual != expected_hash {
-                tracing::warn!(
-                    expected = hex_encode(&expected_hash),
-                    actual = hex_encode(&actual),
-                    "wasm hash mismatch"
-                );
-                return Err(ResolveError::HashMismatch {
-                    expected: hex_encode(&expected_hash),
-                    actual: hex_encode(&actual),
-                });
+                let actual: [u8; 32] = Sha256::digest(bytes.as_ref()).into();
+                if actual != expected_hash {
+                    tracing::warn!(
+                        expected = hex_encode(&expected_hash),
+                        actual = hex_encode(&actual),
+                        "wasm hash mismatch"
+                    );
+                    return Err(ResolveError::HashMismatch {
+                        expected: hex_encode(&expected_hash),
+                        actual: hex_encode(&actual),
+                    });
+                }
+
+                tracing::debug!(bytes = bytes.len(), "hash verified");
+                Ok(bytes)
             }
-
-            tracing::debug!(bytes = bytes.len(), "hash verified");
-            Ok(bytes)
-        }.instrument(tracing::Span::current()))
+            .instrument(tracing::Span::current()),
+        )
     }
 }
 
@@ -95,7 +98,7 @@ impl Service<(String, [u8; 32])> for ResolverService {
 ///   anything else    → `ResolveError::UnsupportedScheme`
 ///
 /// Both resolvers reject responses larger than `max_bytes`.
-pub fn build_resolver(max_bytes: usize) -> BoxCloneService<String, Arc<Bytes>, ResolveError> {
+pub fn build_resolver(max_bytes: u64) -> BoxCloneService<String, Arc<Bytes>, ResolveError> {
     let unsupported = service_fn(|url: String| async move {
         Err::<Arc<Bytes>, ResolveError>(ResolveError::UnsupportedScheme(url))
     });

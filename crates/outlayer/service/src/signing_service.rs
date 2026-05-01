@@ -65,9 +65,12 @@ where
         let mut inner = self.inner.clone();
         let key = self.signing_key.clone();
         let request: Request = req.into();
-        Box::pin(async move {
-            let response = inner.call(request).await?;
-            Ok(sign_response(&key, response))
-        }.instrument(tracing::Span::current()))
+        Box::pin(
+            async move {
+                let response = inner.call(request).await?;
+                Ok(sign_response(&key, response))
+            }
+            .instrument(tracing::Span::current()),
+        )
     }
 }

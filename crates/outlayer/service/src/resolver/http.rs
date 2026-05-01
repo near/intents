@@ -2,9 +2,9 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use bytes::Bytes;
-use futures_util::TryStreamExt;
+use futures_util::TryStreamExt as _;
 use futures_util::future::BoxFuture;
-use tokio::io::AsyncReadExt;
+use tokio::io::AsyncReadExt as _;
 use tokio_util::io::StreamReader;
 use tower::Service;
 use tracing::Instrument as _;
@@ -14,11 +14,11 @@ use super::ResolveError;
 #[derive(Clone)]
 pub struct HttpResolver {
     client: reqwest::Client,
-    max_bytes: usize,
+    max_bytes: u64,
 }
 
 impl HttpResolver {
-    pub const fn new(client: reqwest::Client, max_bytes: usize) -> Self {
+    pub const fn new(client: reqwest::Client, max_bytes: u64) -> Self {
         Self { client, max_bytes }
     }
 }
@@ -32,45 +32,55 @@ impl Service<String> for HttpResolver {
         Poll::Ready(Ok(()))
     }
 
-    #[tracing::instrument(level = "debug", name = "http.fetch", skip_all)]
+    #[tracing::instrument(level = "debug", name = "fetch::http", skip_all)]
     fn call(&mut self, url: String) -> Self::Future {
         let client = self.client.clone();
         let max_bytes = self.max_bytes;
-        Box::pin(async move {
-            let response = client
-                .get(&url)
-                .send()
-                .await
-                .map_err(|e| ResolveError::Http(e.to_string()))?;
-            tracing::debug!(status = %response.status(), "http response received");
+        Box::pin(
+            async move {
+                let response = client
+                    .get(&url)
+                    .send()
+                    .await
+                    .map_err(|e| ResolveError::Http(e.to_string()))?;
+                tracing::debug!(status = %response.status(), "http response received");
 
-            let stream = response.bytes_stream().map_err(std::io::Error::other);
-            let mut reader = StreamReader::new(stream);
+                let content_length = response.content_length();
 
-            let mut buf = Vec::new();
-            let limit = u64::try_from(max_bytes).unwrap_or(u64::MAX);
-            (&mut reader)
-                .take(limit)
-                .read_to_end(&mut buf)
-                .await
-                .map_err(|e| ResolveError::Http(e.to_string()))?;
+                if let Some(len) = content_length {
+                    if len > max_bytes {
+                        return Err(ResolveError::TooLarge {
+                            size: len,
+                            limit: max_bytes,
+                        });
+                    }
+                }
 
-            if reader
-                .into_inner()
-                .try_next()
-                .await
-                .map_err(|e| ResolveError::Http(e.to_string()))?
-                .is_some()
-            {
-                tracing::warn!(limit = max_bytes, "http response exceeds size limit");
-                return Err(ResolveError::TooLarge {
-                    size: buf.len() + 1,
-                    limit: max_bytes,
-                });
+                // Cap reads to prevent unbounded allocation and OOM on large/malicious responses.
+                // Pre-allocate to the declared content length but cap at max_bytes — a lying
+                // server could advertise Content-Length: max_bytes to force a large allocation
+                // even if it delivers almost no data.
+                // Read max_bytes+1 so the post-read length check can detect truncation.
+                let cap = usize::try_from(content_length.unwrap_or(0).min(max_bytes)).unwrap_or(0);
+                let mut buf = Vec::with_capacity(cap);
+                StreamReader::new(response.bytes_stream().map_err(std::io::Error::other))
+                    .take(max_bytes + 1)
+                    .read_to_end(&mut buf)
+                    .await
+                    .map_err(|e| ResolveError::Http(e.to_string()))?;
+
+                let read = u64::try_from(buf.len()).unwrap_or(u64::MAX); // infallible: usize <= u64
+                if read > max_bytes {
+                    return Err(ResolveError::TooLarge {
+                        size: read,
+                        limit: max_bytes,
+                    });
+                }
+
+                tracing::debug!(bytes = buf.len(), "http fetch complete");
+                Ok(Arc::new(Bytes::from(buf)))
             }
-
-            tracing::debug!(bytes = buf.len(), "http fetch complete");
-            Ok(Arc::new(Bytes::from(buf)))
-        }.instrument(tracing::Span::current()))
+            .instrument(tracing::Span::current()),
+        )
     }
 }

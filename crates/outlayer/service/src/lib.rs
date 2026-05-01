@@ -3,6 +3,7 @@ pub mod env;
 pub mod error;
 pub mod executor;
 pub mod on_chain;
+pub mod outlayer_app_client;
 pub mod resolver;
 pub mod service;
 pub mod signing_service;
@@ -40,7 +41,9 @@ pub fn build_stack<H, F>(
     config: Config,
     host_template: H,
     fetch: F,
-) -> impl Service<Request, Response = SignedExecutionResponse, Error = ExecutionStackError> + Send + 'static
+) -> impl Service<Request, Response = SignedExecutionResponse, Error = ExecutionStackError>
++ Send
++ 'static
 where
     H: HostFunctions + Clone + Send + Sync + 'static,
     F: Service<OffChainRequest, Response = ExecutionRequest> + Clone + Send + 'static,

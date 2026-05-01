@@ -26,17 +26,20 @@ impl Service<String> for InlineResolver {
 
     #[tracing::instrument(level = "debug", name = "inline.decode", skip_all)]
     fn call(&mut self, url: String) -> Self::Future {
-        Box::pin(async move {
-            let data = url.strip_prefix(DATA_URL_PREFIX).ok_or_else(|| {
-                ResolveError::InlineDecode(format!("expected prefix `{DATA_URL_PREFIX}`"))
-            })?;
-            let data: String = data.chars().filter(|c| !c.is_ascii_whitespace()).collect();
-            let bytes = STANDARD
-                .decode(&data)
-                .map(|b| Arc::new(Bytes::from(b)))
-                .map_err(|e| ResolveError::InlineDecode(e.to_string()))?;
-            tracing::debug!(bytes = bytes.len(), "decoded inline wasm data URL");
-            Ok(bytes)
-        }.instrument(tracing::Span::current()))
+        Box::pin(
+            async move {
+                let data = url.strip_prefix(DATA_URL_PREFIX).ok_or_else(|| {
+                    ResolveError::InlineDecode(format!("expected prefix `{DATA_URL_PREFIX}`"))
+                })?;
+                let data: String = data.chars().filter(|c| !c.is_ascii_whitespace()).collect();
+                let bytes = STANDARD
+                    .decode(&data)
+                    .map(|b| Arc::new(Bytes::from(b)))
+                    .map_err(|e| ResolveError::InlineDecode(e.to_string()))?;
+                tracing::debug!(bytes = bytes.len(), "decoded inline wasm data URL");
+                Ok(bytes)
+            }
+            .instrument(tracing::Span::current()),
+        )
     }
 }

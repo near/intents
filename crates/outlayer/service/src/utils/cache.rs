@@ -13,14 +13,14 @@ use tracing::Instrument as _;
 #[derive(Debug, Clone)]
 pub struct CacheConfig {
     pub capacity: NonZeroUsize,
-    pub max_fetch_bytes: usize,
+    pub max_fetch_bytes: u64,
 }
 
 impl Default for CacheConfig {
     fn default() -> Self {
         Self {
             capacity: NonZeroUsize::new(100).unwrap(),
-            max_fetch_bytes: 100 * 1024 * 1024, // 10 MiB
+            max_fetch_bytes: 100 * 1024 * 1024, // 100 MiB
         }
     }
 }
@@ -89,22 +89,25 @@ where
         self.inner.poll_ready(cx)
     }
 
-    #[tracing::instrument(level = "debug", name = "cache.get", skip_all)]
+    #[tracing::instrument(level = "debug", name = "cache", skip_all)]
     fn call(&mut self, key: K) -> Self::Future {
         let cache = self.cache.clone();
         let mut inner = self.inner.clone();
         let hash = cache_key(&key);
-        Box::pin(async move {
-            let cached = cache.lock().unwrap().get(&hash).cloned();
-            if let Some(cached) = cached {
-                tracing::debug!("cache hit");
-                return Ok(cached);
+        Box::pin(
+            async move {
+                let cached = cache.lock().unwrap().get(&hash).cloned();
+                if let Some(cached) = cached {
+                    tracing::debug!("cache hit");
+                    return Ok(cached);
+                }
+                tracing::debug!("cache miss, fetching");
+                let value = inner.call(key).await?;
+                cache.lock().unwrap().put(hash, value.clone());
+                tracing::debug!("cached ");
+                Ok(value)
             }
-            tracing::debug!("cache miss, fetching");
-            let value = inner.call(key).await?;
-            cache.lock().unwrap().put(hash, value.clone());
-            tracing::debug!("cached ");
-            Ok(value)
-        }.instrument(tracing::Span::current()))
+            .instrument(tracing::Span::current()),
+        )
     }
 }

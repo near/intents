@@ -89,43 +89,46 @@ impl<H: HostFunctions + Clone + Send + 'static> Service<WasmExecutionRequest> fo
         let runtime = Arc::clone(&self.runtime);
         let config = self.config.clone();
         let host_state = self.host_template.clone();
-        Box::pin(async move {
-            let stdout = MemoryOutputPipe::new(config.stdout_limit);
-            let stderr = MemoryOutputPipe::new(config.stderr_limit);
-            let ctx = vm_runner::Context::new(
-                MemoryInputPipe::new(req.request.input),
-                stdout.clone(),
-                stderr.clone(),
-                host_state,
-            )
-            .fuel_limit(config.fuel_limit);
+        Box::pin(
+            async move {
+                let stdout = MemoryOutputPipe::new(config.stdout_limit);
+                let stderr = MemoryOutputPipe::new(config.stderr_limit);
+                let ctx = vm_runner::Context::new(
+                    MemoryInputPipe::new(req.request.input),
+                    stdout.clone(),
+                    stderr.clone(),
+                    host_state,
+                )
+                .fuel_limit(config.fuel_limit);
 
-            let outcome = runtime
-                .execute(ctx, &req.component)
-                .await
-                .map_err(WasmEnvironmentInternalError)?;
-            let instructions_used = outcome.details.fuel_consumed.unwrap_or_default();
-            let stdout_bytes = stdout.contents();
-            let stderr_bytes = stderr.contents();
-            tracing::debug!(
-                instructions_used,
-                stdout_len = stdout_bytes.len(),
-                stderr_len = stderr_bytes.len(),
-                "wasm execution finished"
-            );
-            if outcome.error.is_some() {
-                tracing::warn!(instructions_used, "wasm component returned error");
+                let outcome = runtime
+                    .execute(ctx, &req.component)
+                    .await
+                    .map_err(WasmEnvironmentInternalError)?;
+                let instructions_used = outcome.details.fuel_consumed.unwrap_or_default();
+                let stdout_bytes = stdout.contents();
+                let stderr_bytes = stderr.contents();
+                tracing::debug!(
+                    instructions_used,
+                    stdout_len = stdout_bytes.len(),
+                    stderr_len = stderr_bytes.len(),
+                    "wasm execution finished"
+                );
+                if outcome.error.is_some() {
+                    tracing::warn!(instructions_used, "wasm component returned error");
+                }
+                let result = outcome
+                    .error
+                    .map_or_else(|| Ok(stdout_bytes), |e| Err(anyhow::Error::from(e)));
+
+                Ok(ExecutionResponse {
+                    result,
+                    logs: stderr_bytes,
+                    metrics: ExecutionMetrics { instructions_used },
+                    storage: ProjectStorage,
+                })
             }
-            let result = outcome
-                .error
-                .map_or_else(|| Ok(stdout_bytes), |e| Err(anyhow::Error::from(e)));
-
-            Ok(ExecutionResponse {
-                result,
-                logs: stderr_bytes,
-                metrics: ExecutionMetrics { instructions_used },
-                storage: ProjectStorage,
-            })
-        }.instrument(tracing::Span::current()))
+            .instrument(tracing::Span::current()),
+        )
     }
 }

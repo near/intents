@@ -92,9 +92,15 @@ async fn main() -> anyhow::Result<()> {
     );
     let runtime = Arc::new(VmRuntime::<State<'static>>::new()?);
 
-    let signed = build_stack(signing_key, runtime, Config::default(), host_template, fetch)
-        .oneshot(request)
-        .await?;
+    let signed = build_stack(
+        signing_key,
+        runtime,
+        Config::default(),
+        host_template,
+        fetch,
+    )
+    .oneshot(request)
+    .await?;
 
     if args.verbose {
         eprintln!("{}", serde_json::to_string_pretty(&signed)?);

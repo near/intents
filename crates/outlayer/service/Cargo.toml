@@ -14,6 +14,9 @@ defuse-outlayer-crypto = { workspace = true, features = ["ed25519", "signing"] }
 defuse-outlayer-host      = { workspace = true }
 defuse-outlayer-vm-runner = { workspace = true }
 
+near-api.workspace = true
+near-sdk.workspace = true
+
 anyhow.workspace = true
 hex.workspace = true
 base64.workspace = true
@@ -34,5 +37,16 @@ url.workspace = true
 uuid         = { workspace = true, features = ["v4", "serde"] }
 
 [dev-dependencies]
+defuse-outlayer-app.workspace = true
+defuse-outlayer-crypto = { workspace = true, features = ["ed25519", "signing"] }
+defuse-outlayer-host.workspace = true
+defuse-outlayer-vm-runner.workspace = true
+defuse-sandbox = { workspace = true, features = ["outlayer"] }
+defuse-test-utils = { workspace = true, features = ["outlayer"] }
+
+axum = "0.8"
+
 clap.workspace = true
+rstest.workspace = true
+tokio = { workspace = true, features = ["macros"] }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }

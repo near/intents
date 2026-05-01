@@ -88,38 +88,51 @@ where
         let mut storage = self.storage.clone();
         let mut fetch = self.fetch.clone();
 
-        tracing::Span::current().record("source", match &req {
-            Request::OnChain(_) => "on_chain",
-            Request::OffChain(_) => "off_chain",
-        });
-        Box::pin(async move {
-            let exec_req = match req {
-                Request::OnChain(r) => ExecutionRequest::from(r),
-                Request::OffChain(r) => fetch.call(r).await?,
-            };
+        tracing::Span::current().record(
+            "source",
+            match &req {
+                Request::OnChain(_) => "on_chain",
+                Request::OffChain(_) => "off_chain",
+            },
+        );
+        Box::pin(
+            async move {
+                let exec_req = match req {
+                    Request::OnChain(r) => ExecutionRequest::from(r),
+                    Request::OffChain(r) => fetch.call(r).await?,
+                };
 
-            tracing::Span::current().record("request_id", &exec_req.request_id);
-            tracing::Span::current().record("project_id", exec_req.project_id.0.as_str());
-            tracing::debug!(wasm_url = %exec_req.wasm_url, "dispatching parallel fetches");
+                tracing::Span::current().record("request_id", &exec_req.request_id);
+                tracing::Span::current().record("project_id", exec_req.project_id.0.as_str());
+                tracing::debug!(wasm_url = %exec_req.wasm_url, "dispatching parallel fetches");
 
-            let current = tracing::Span::current();
-            let (component_res, env_res, storage_res) = tokio::join!(
-                wasm.call((exec_req.wasm_url.clone(), exec_req.wasm_hash)).instrument(current.clone()),
-                env.call(exec_req.project_id.clone()).instrument(current.clone()),
-                storage.call(exec_req.project_id.clone()).instrument(current),
-            );
+                let current = tracing::Span::current();
+                let (component_res, env_res, storage_res) = tokio::join!(
+                    wasm.call((exec_req.wasm_url.clone(), exec_req.wasm_hash))
+                        .instrument(current.clone()),
+                    env.call(exec_req.project_id.clone())
+                        .instrument(current.clone()),
+                    storage
+                        .call(exec_req.project_id.clone())
+                        .instrument(current),
+                );
 
-            let wasm_req = WasmExecutionRequest {
-                component: component_res?,
-                request: exec_req,
-                env: env_res?,
-                storage: storage_res?,
-                caller: None,
-            };
+                let wasm_req = WasmExecutionRequest {
+                    component: component_res?,
+                    request: exec_req,
+                    env: env_res?,
+                    storage: storage_res?,
+                    caller: None,
+                };
 
-            let response = executor.call(wasm_req).await?;
-            tracing::info!(instructions_used = response.metrics.instructions_used, "execution complete");
-            Ok(response)
-        }.instrument(tracing::Span::current()))
+                let response = executor.call(wasm_req).await?;
+                tracing::info!(
+                    instructions_used = response.metrics.instructions_used,
+                    "execution complete"
+                );
+                Ok(response)
+            }
+            .instrument(tracing::Span::current()),
+        )
     }
 }
