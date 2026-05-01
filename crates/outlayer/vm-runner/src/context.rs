@@ -29,7 +29,7 @@ impl<T> HostCtx<T> {
         &mut self.limits
     }
 
-    pub const fn host_state_mut(&mut self) -> &mut T {
+    pub(crate) const fn host_state_mut(&mut self) -> &mut T {
         &mut self.host_state
     }
 }
