@@ -19,18 +19,17 @@ pub type Signature = [u8; 64];
 /// "peers" to each other.
 #[track_caller]
 pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
+    let path = path.as_ref();
+
     #[cfg(target_family = "wasm")]
-    {
-        sys::crypto::ed25519::derive_public_key(path.as_ref())
-    }
+    let raw = sys::crypto::ed25519::derive_public_key(path);
+
     #[cfg(not(target_family = "wasm"))]
-    {
-        mock::HOST
-            .with_borrow_mut(|h| h.derive_public_key(path.as_ref().to_string()))
-            .expect("host")
-    }
-    .try_into()
-    .expect("invalid length")
+    let raw = mock::HOST
+        .with_borrow_mut(|h| h.derive_public_key(path.to_string()))
+        .expect("host");
+
+    raw.try_into().expect("invalid length")
 }
 
 /// Sign given message with a secret key **internally** derived for
@@ -40,16 +39,16 @@ pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
 /// return different signatures for the same `path` and `msg`.
 #[track_caller]
 pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Signature {
+    let path = path.as_ref();
+    let msg = msg.as_ref();
+
     #[cfg(target_family = "wasm")]
-    {
-        sys::crypto::ed25519::sign(path.as_ref(), msg.as_ref())
-    }
+    let raw = sys::crypto::ed25519::sign(path, msg);
+
     #[cfg(not(target_family = "wasm"))]
-    {
-        mock::HOST
-            .with_borrow_mut(|h| h.sign(path.as_ref().to_string(), msg.as_ref().to_vec()))
-            .expect("host")
-    }
-    .try_into()
-    .expect("invalid length")
+    let raw = mock::HOST
+        .with_borrow_mut(|h| h.sign(path.to_string(), msg.to_vec()))
+        .expect("host");
+
+    raw.try_into().expect("invalid length")
 }

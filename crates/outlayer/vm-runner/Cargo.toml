@@ -1,0 +1,19 @@
+[package]
+name = "defuse-outlayer-vm-runner"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-outlayer-host.workspace = true
+
+anyhow.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+wasmtime = { workspace = true, features = ["cranelift"] } # TODO: no JIT?
+wasmtime-wasi.workspace = true

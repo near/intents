@@ -2,6 +2,7 @@
 use crate::host::mock;
 #[cfg(not(target_family = "wasm"))]
 use defuse_outlayer_host::bindings::outlayer::crypto::secp256k1::Host;
+
 #[cfg(target_family = "wasm")]
 use defuse_outlayer_sys as sys;
 
@@ -24,18 +25,17 @@ pub type Signature = [u8; 65];
 /// **without** leading tag byte (0x04).
 #[track_caller]
 pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
+    let path = path.as_ref();
+
     #[cfg(target_family = "wasm")]
-    {
-        sys::crypto::secp256k1::derive_public_key(path.as_ref())
-    }
+    let raw = sys::crypto::secp256k1::derive_public_key(path.as_ref());
+
     #[cfg(not(target_family = "wasm"))]
-    {
-        mock::HOST
-            .with_borrow_mut(|h| h.derive_public_key(path.as_ref().to_string()))
-            .expect("host")
-    }
-    .try_into()
-    .expect("invalid length")
+    let raw = mock::HOST
+        .with_borrow_mut(|h| h.derive_public_key(path.to_string()))
+        .expect("host");
+
+    raw.try_into().expect("invalid length")
 }
 
 /// Sign 32-byte `prehash` with a secret key **internally** derived for
@@ -48,16 +48,15 @@ pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
 /// return different signatures for the same `path` and `prehash`.
 #[track_caller]
 pub fn sign(path: impl AsRef<str>, prehash: &[u8; 32]) -> Signature {
+    let path = path.as_ref();
+
     #[cfg(target_family = "wasm")]
-    {
-        sys::crypto::secp256k1::sign(path.as_ref(), prehash.as_ref())
-    }
+    let raw = sys::crypto::secp256k1::sign(path, prehash.as_ref());
+
     #[cfg(not(target_family = "wasm"))]
-    {
-        mock::HOST
-            .with_borrow_mut(|h| h.sign(path.as_ref().to_string(), prehash.as_ref().to_vec()))
-            .expect("host")
-    }
-    .try_into()
-    .expect("invalid length")
+    let raw = mock::HOST
+        .with_borrow_mut(|h| h.sign(path.to_string(), prehash.as_ref().to_vec()))
+        .expect("host");
+
+    raw.try_into().expect("invalid length")
 }
