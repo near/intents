@@ -15,27 +15,27 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub struct OutlayerService<E, W, Env, St, F> {
+pub struct OutlayerService<E, W, Env, St, On> {
     executor: E,
     wasm: W,
     env: Env,
     storage: St,
-    fetch: F,
+    on_chain: On,
 }
 
-impl<E, W, Env, St, F> OutlayerService<E, W, Env, St, F> {
-    pub const fn new(executor: E, wasm: W, env: Env, storage: St, fetch: F) -> Self {
+impl<E, W, Env, St, On> OutlayerService<E, W, Env, St, On> {
+    pub const fn new(executor: E, wasm: W, env: Env, storage: St, on_chain: On) -> Self {
         Self {
             executor,
             wasm,
             env,
             storage,
-            fetch,
+            on_chain,
         }
     }
 }
 
-impl<E, W, Env, St, F> Service<Request> for OutlayerService<E, W, Env, St, F>
+impl<E, W, Env, St, On> Service<Request> for OutlayerService<E, W, Env, St, On>
 where
     E: Service<
             WasmExecutionRequest,
@@ -60,9 +60,9 @@ where
         + Clone
         + 'static,
     St::Future: Send,
-    F: Service<OffChainRequest, Response = ExecutionRequest> + Clone + Send + 'static,
-    F::Future: Send,
-    ExecutionStackError: From<F::Error>,
+    On: Service<OffChainRequest, Response = ExecutionRequest> + Clone + Send + 'static,
+    On::Future: Send,
+    ExecutionStackError: From<On::Error>,
 {
     type Response = ExecutionResponse;
     type Error = ExecutionStackError;
@@ -86,7 +86,7 @@ where
         let mut wasm = self.wasm.clone();
         let mut env = self.env.clone();
         let mut storage = self.storage.clone();
-        let mut fetch = self.fetch.clone();
+        let mut on_chain = self.on_chain.clone();
 
         tracing::Span::current().record(
             "source",
@@ -99,7 +99,7 @@ where
             async move {
                 let exec_req = match req {
                     Request::OnChain(r) => ExecutionRequest::from(r),
-                    Request::OffChain(r) => fetch.call(r).await?,
+                    Request::OffChain(r) => on_chain.call(r).await?,
                 };
 
                 tracing::Span::current().record("request_id", &exec_req.request_id);

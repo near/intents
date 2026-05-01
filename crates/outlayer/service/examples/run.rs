@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::io::Read as _;
 use std::io::Write as _;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use bytes::Bytes;
 use clap::Parser;
@@ -12,6 +12,7 @@ use defuse_outlayer_service::{
     types::{AccountId, OffChainRequest},
 };
 use defuse_outlayer_vm_runner::VmRuntime;
+use lru::LruCache;
 use tower::{ServiceExt, service_fn};
 
 /// Run a WASM component through the outlayer service stack.
@@ -48,6 +49,7 @@ fn parse_hash_hex(hex: &str) -> anyhow::Result<[u8; 32]> {
     Ok(out)
 }
 
+/// NOTE: probably should be removed ....
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
@@ -68,8 +70,8 @@ async fn main() -> anyhow::Result<()> {
         input: Bytes::from(input),
     });
 
-    // TODO: replace with OnChainFetchService once NEAR RPC fetch is implemented
-    let fetch = service_fn(move |req: OffChainRequest| {
+    // TODO: replace with OnChainFetchService once NEAR RPC on_chain is implemented
+    let on_chain = service_fn(move |req: OffChainRequest| {
         let url = wasm_url.clone();
         async move {
             Ok::<ExecutionRequest, ExecutionStackError>(ExecutionRequest {
@@ -92,12 +94,15 @@ async fn main() -> anyhow::Result<()> {
     );
     let runtime = Arc::new(VmRuntime::<State<'static>>::new()?);
 
+    let config = Config::default();
+    let wasm_cache = Arc::new(Mutex::new(LruCache::new(config.cache.capacity)));
     let signed = build_stack(
         signing_key,
         runtime,
-        Config::default(),
+        config,
         host_template,
-        fetch,
+        on_chain,
+        wasm_cache,
     )
     .oneshot(request)
     .await?;

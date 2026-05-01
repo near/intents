@@ -15,6 +15,7 @@ use std::sync::{Arc, Mutex};
 
 use bytes::Bytes;
 use defuse_outlayer_crypto::signer::InMemorySigner;
+use defuse_outlayer_vm_runner::Component;
 use lru::LruCache;
 use tower::{Service, ServiceBuilder};
 
@@ -31,30 +32,29 @@ pub use signing_service::{SignedExecutionResponse, SigningService};
 pub use types::{ExecutionRequest, ExecutionResponse, OffChainRequest, OnChainRequest, Request};
 pub use utils::cache::CacheConfig;
 
+pub type WasmCache = Arc<Mutex<LruCache<[u8; 32], Component>>>;
+
 use utils::cache::CacheLayer;
 use utils::retry::Attempts;
 use utils::timeout_err;
 
-pub fn build_stack<H, F>(
+pub fn build_stack<H, On>(
     signing_key: InMemorySigner,
     runtime: Arc<VmRuntime<H>>,
     config: Config,
     host_template: H,
-    fetch: F,
+    on_chain: On,
+    wasm_cache: WasmCache,
 ) -> impl Service<Request, Response = SignedExecutionResponse, Error = ExecutionStackError>
 + Send
 + 'static
 where
     H: HostFunctions + Clone + Send + Sync + 'static,
-    F: Service<OffChainRequest, Response = ExecutionRequest> + Clone + Send + 'static,
-    F::Future: Send,
-    ExecutionStackError: From<F::Error>,
+    On: Service<OffChainRequest, Response = ExecutionRequest> + Clone + Send + 'static,
+    On::Future: Send,
+    ExecutionStackError: From<On::Error>,
 {
     let executor = WasmExecutor::new(Arc::clone(&runtime), config.executor, host_template);
-
-    let wasm_cache = Arc::new(Mutex::new(LruCache::<[u8; 32], _>::new(
-        config.cache.capacity,
-    )));
 
     let wasm = ServiceBuilder::new()
         .layer(CacheLayer::new(wasm_cache))
@@ -92,7 +92,7 @@ where
         .map_err(timeout_err::<ExecutionStackError>)
         .timeout(config.total_timeout)
         .service(SigningService::new(
-            OutlayerService::new(executor, wasm, env, storage, fetch),
+            OutlayerService::new(executor, wasm, env, storage, on_chain),
             signing_key,
         ))
 }

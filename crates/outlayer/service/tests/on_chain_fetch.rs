@@ -1,4 +1,7 @@
-use std::{borrow::Cow, sync::Arc};
+use std::{
+    borrow::Cow,
+    sync::{Arc, Mutex},
+};
 
 use bytes::Bytes;
 use defuse_outlayer_app::State as OutlayerState;
@@ -16,19 +19,23 @@ use defuse_sandbox::{
     Sandbox, api::types::transaction::actions::GlobalContractDeployMode,
     extensions::outlayer_app::OutlayerAppExt as _, sandbox,
 };
-use defuse_test_utils::wasms::OUTLAYER_APP_WASM;
+use defuse_test_utils::wasms::{OUTLAYER_APP_WASM, WASM_STUB};
+use lru::LruCache;
 use near_sdk::{GlobalContractId, env::sha256_array};
-use rstest::rstest;
+use rstest::{fixture, rstest};
 use sha2::{Digest as _, Sha256};
 use std::future::IntoFuture as _;
 
 use axum::{Router, routing::get};
 use tower::ServiceExt as _;
 
-async fn spawn_wasm_server(wasm_bytes: Arc<Vec<u8>>) -> std::net::SocketAddr {
+#[fixture]
+async fn wasm_server(
+    #[default(Arc::new(WASM_STUB.clone()))] wasm_bytes: Arc<Vec<u8>>,
+) -> std::net::SocketAddr {
     let wasm = Bytes::copy_from_slice(&wasm_bytes);
     let app = Router::new().route(
-        "/near-pds.wasm",
+        "/wasm_stub.wasm",
         get(move || async move {
             (
                 [(axum::http::header::CONTENT_TYPE, "application/wasm")],
@@ -45,7 +52,10 @@ async fn spawn_wasm_server(wasm_bytes: Arc<Vec<u8>>) -> std::net::SocketAddr {
 #[rstest]
 #[tokio::test]
 #[allow(clippy::future_not_send)]
-async fn test_on_chain_fetch_service(#[future(awt)] sandbox: Sandbox) {
+async fn test_on_chain_fetch_service(
+    #[future(awt)] sandbox: Sandbox,
+    #[future(awt)] wasm_server: std::net::SocketAddr,
+) {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::builder()
@@ -54,14 +64,8 @@ async fn test_on_chain_fetch_service(#[future(awt)] sandbox: Sandbox) {
         )
         .try_init();
 
-    let wasm_bytes = Arc::new(
-        std::fs::read(std::path::Path::new(env!("HOME")).join("near-pds.wasm"))
-            .expect("~/near-pds.wasm not found"),
-    );
-    let wasm_hash: [u8; 32] = Sha256::digest(&**wasm_bytes).into();
-
-    let addr = spawn_wasm_server(Arc::clone(&wasm_bytes)).await;
-    let wasm_url = format!("http://{addr}/near-pds.wasm");
+    let wasm_hash: [u8; 32] = Sha256::digest(&**WASM_STUB).into();
+    let wasm_url = format!("http://{wasm_server}/wasm_stub.wasm");
 
     let root = sandbox.root();
     root.deploy_global_contract(
@@ -83,14 +87,17 @@ async fn test_on_chain_fetch_service(#[future(awt)] sandbox: Sandbox) {
         Cow::Owned(HostSigner::from_seed(b"test")),
     );
     let runtime = Arc::new(VmRuntime::<HostState<'static>>::new().unwrap());
-    let fetch = OnChainFetchService::with_network_config(root.network_config().clone());
+    let on_chain = OnChainFetchService::with_network_config(root.network_config().clone());
 
+    let config = Config::default();
+    let wasm_cache = Arc::new(Mutex::new(LruCache::new(config.cache.capacity)));
     let response = build_stack(
         signing_key,
         runtime,
-        Config::default(),
+        config,
         host_template,
-        fetch,
+        on_chain,
+        wasm_cache,
     )
     .oneshot(Request::OffChain(OffChainRequest {
         request_id: "test".to_string(),
