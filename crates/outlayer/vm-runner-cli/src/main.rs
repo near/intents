@@ -3,7 +3,18 @@ use bytesize::ByteSize;
 use clap::Parser;
 use std::{borrow::Cow, path::PathBuf};
 
+// Generated via near-cli@0.26.0:
+// ```sh
+// near contract state-init \
+//   use-global-account-id 'test' \
+//   data-from-json "$(near oa -q \
+//       --admin-id 'test' \
+//       --code-hash '0000000000000000000000000000000000000000000000000000000000000000' \
+//       --code-url 'data:' \
+//   )" inspect account-id
+// ```
 const DEFAULT_APP_ID: &str = "near:0sab1c86e60758fe3e8fc7ae40ecd2df1a07513ca9";
+const DEFAULT_FUEL: u64 = u64::MAX;
 
 use defuse_outlayer_vm_runner::{
     ExecutionContext, VmRuntime,
@@ -31,8 +42,8 @@ struct Args {
     app_id: AppId<'static>,
 
     /// Maximum number of WebAssembly instructions the component may execute
-    #[clap(long, short)]
-    fuel: Option<u64>,
+    #[clap(long, short, default_value_t = DEFAULT_FUEL)]
+    fuel: u64,
 
     /// Maximum memory the component may use, in bytes
     #[clap(long, short)]
@@ -60,11 +71,8 @@ async fn main() -> Result<()> {
         tokio::io::stdout(),
         tokio::io::stderr(),
         state,
-    );
-
-    if let Some(fuel) = args.fuel {
-        ctx = ctx.fuel_limit(fuel);
-    }
+    )
+    .fuel_limit(args.fuel);
 
     if let Some(memory) = args.memory {
         ctx = ctx.memory_limit(memory.as_u64().try_into().with_context(|| {
@@ -86,7 +94,5 @@ async fn main() -> Result<()> {
 
     let outcome = runner.execute(ctx, &component).await.context("execute")?;
 
-    outcome.into_result().context("component failed")?;
-
-    Ok(())
+    outcome.into_result().context("component failed")
 }

@@ -7,25 +7,14 @@ pub struct ExecutionDetails {
     pub fuel_consumed: u64,
 }
 
-impl ExecutionDetails {
-    pub const fn new(fuel_consumed: u64) -> Self {
-        Self { fuel_consumed }
-    }
-}
-
 /// Outcome of executing a component in the VM runtime
 #[derive(Debug, Default)]
-#[non_exhaustive]
 pub struct ExecutionOutcome {
     pub details: ExecutionDetails,
     pub error: Option<ExecutionError>,
 }
 
 impl ExecutionOutcome {
-    pub const fn new(details: ExecutionDetails, error: Option<ExecutionError>) -> Self {
-        Self { details, error }
-    }
-
     pub fn into_result(self) -> Result<(), ExecutionError> {
         self.error.map_or(Ok(()), Err)
     }

@@ -11,9 +11,12 @@ use wasmtime_wasi::{
     p2::bindings::Command,
 };
 
-use crate::outcome::ExecutionOutcome;
-use crate::{context::HostCtx, outcome::ExecutionDetails};
-use crate::{context::HostFunctions, error::ExecutionError};
+use crate::{
+    context::{HostCtx, HostFunctions},
+    error::ExecutionError,
+    outcome::ExecutionDetails,
+    outcome::ExecutionOutcome,
+};
 
 /// Size of the guard region placed before linear memory to
 /// catch out-of-bounds accesses
@@ -23,11 +26,11 @@ const MEMORY_GUARD_SIZE: u64 = 64 * 1024 * 1024; // 64 MiB
 const MAX_FUEL_CONSUMPTION: u64 = u64::MAX;
 
 pub struct ExecutionContext<I, O, E, H> {
-    input: I,
-    output: O,
-    error: E,
+    stdin: I,
+    stdout: O,
+    stderr: E,
     host_state: H,
-    fuel_limit: Option<u64>,
+    fuel_limit: u64,
     memory_limit: Option<usize>,
 }
 
@@ -49,13 +52,13 @@ where
     /// Creates a new execution context
     /// By default, there are no fuel or memory limits
     #[must_use]
-    pub const fn new(input: I, output: O, error: E, host_state: H) -> Self {
+    pub const fn new(stdin: I, stdout: O, stderr: E, host_state: H) -> Self {
         Self {
-            input,
-            output,
-            error,
+            stdin,
+            stdout,
+            stderr,
             host_state,
-            fuel_limit: None,
+            fuel_limit: MAX_FUEL_CONSUMPTION,
             memory_limit: None,
         }
     }
@@ -66,7 +69,7 @@ where
     /// executed. Exceeding the limit raises [`ExecutionError::Trap`].
     #[must_use]
     pub const fn fuel_limit(mut self, fuel_limit: u64) -> Self {
-        self.fuel_limit = Some(fuel_limit);
+        self.fuel_limit = fuel_limit;
         self
     }
 
@@ -81,31 +84,29 @@ where
 
     pub(crate) fn into_store(self, engine: &Engine) -> Store<HostCtx<H>> {
         let Self {
-            input,
-            output,
-            error,
+            stdin,
+            stdout,
+            stderr,
             host_state,
             fuel_limit,
             memory_limit,
         } = self;
 
         let wasi_ctx = WasiCtx::builder()
-            .stdin(input)
-            .stdout(output)
-            .stderr(error)
+            .stdin(stdin)
+            .stdout(stdout)
+            .stderr(stderr)
             .build();
 
-        let limits = memory_limit.map_or_else(StoreLimitsBuilder::new, |m| {
-            StoreLimitsBuilder::new().memory_size(m)
-        });
+        let mut limits = StoreLimitsBuilder::new();
+        if let Some(memory_limit) = memory_limit {
+            limits = limits.memory_size(memory_limit);
+        }
 
         let mut store = Store::new(engine, HostCtx::new(wasi_ctx, host_state, limits.build()));
 
         store.limiter(|ctx| ctx.limits_mut());
-
-        store
-            .set_fuel(fuel_limit.unwrap_or(MAX_FUEL_CONSUMPTION))
-            .expect("fuel must be enabled");
+        store.set_fuel(fuel_limit).expect("fuel must be enabled");
 
         store
     }
@@ -207,7 +208,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         O: StdoutStream + 'static,
         E: StdoutStream + 'static,
     {
-        let fuel_limit = ctx.fuel_limit.unwrap_or(MAX_FUEL_CONSUMPTION);
+        let fuel_limit = ctx.fuel_limit;
         let mut store = ctx.into_store(self.linker.engine());
 
         let command = Command::instantiate_async(&mut store, component, &self.linker).await?;
@@ -222,10 +223,10 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         let fuel_consumed =
             fuel_limit.saturating_sub(store.get_fuel().expect("fuel must be enabled"));
 
-        Ok(ExecutionOutcome::new(
-            ExecutionDetails::new(fuel_consumed),
+        Ok(ExecutionOutcome {
+            details: ExecutionDetails { fuel_consumed },
             error,
-        ))
+        })
     }
 
     /// Convenience method to compile and execute a component in one step. See
@@ -256,8 +257,6 @@ where
 
 fn classify_error(err: anyhow::Error) -> Option<ExecutionError> {
     if let Some(exit) = err.downcast_ref::<wasmtime_wasi::I32Exit>() {
-        tracing::debug!("Program exited with code {}", exit.0);
-
         // exit(0) is equivalent to a clean return from main
         return match exit.0 {
             0 => None,
@@ -266,9 +265,8 @@ fn classify_error(err: anyhow::Error) -> Option<ExecutionError> {
     }
 
     Some(
-        err.downcast_ref::<Trap>()
-            .copied()
-            .map_or_else(|| ExecutionError::Unknown(err), ExecutionError::Trap),
+        err.downcast::<Trap>()
+            .map_or_else(ExecutionError::Unknown, ExecutionError::Trap),
     )
 }
 
