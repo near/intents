@@ -1,4 +1,3 @@
-mod bindings;
 mod context;
 mod error;
 mod outcome;

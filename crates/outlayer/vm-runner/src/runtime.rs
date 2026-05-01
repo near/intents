@@ -1,9 +1,9 @@
 use anyhow::{Context as _, Result, anyhow};
-use defuse_outlayer_host::HostFunctions;
+use defuse_outlayer_host::bindings::Imports;
 use tracing::instrument;
 use wasmtime::{
     Config, Engine, Store, StoreLimitsBuilder, Trap,
-    component::{Component, Linker},
+    component::{Component, HasSelf, Linker},
 };
 use wasmtime_wasi::{
     WasiCtx,
@@ -11,9 +11,9 @@ use wasmtime_wasi::{
     p2::bindings::Command,
 };
 
-use crate::{bindings::Imports, outcome::ExecutionOutcome};
+use crate::outcome::ExecutionOutcome;
 use crate::{context::HostCtx, outcome::ExecutionDetails};
-use crate::{context::HostFunctionsImpl, error::ExecutionError};
+use crate::{context::HostFunctions, error::ExecutionError};
 
 /// Size of the guard region placed before linear memory to
 /// catch out-of-bounds accesses
@@ -278,10 +278,12 @@ where
 {
     let mut linker = Linker::new(engine);
 
+    // Add WASI imports to the linker
     wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
 
-    Imports::add_to_linker::<HostCtx<H>, HostCtx<H>>(&mut linker, |ctx| {
-        HostFunctionsImpl(ctx.host_state_mut())
+    // Add host function imports to the linker
+    Imports::add_to_linker::<HostCtx<H>, HasSelf<H>>(&mut linker, |ctx: &mut HostCtx<H>| {
+        ctx.host_state_mut()
     })?;
 
     Ok(linker)

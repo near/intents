@@ -1,3 +1,4 @@
+pub mod bindings;
 pub mod crypto;
 
 use std::borrow::Cow;
@@ -5,8 +6,6 @@ use std::borrow::Cow;
 pub use defuse_outlayer_crypto::signer::InMemorySigner;
 pub use defuse_outlayer_primitives as primitives;
 use defuse_outlayer_primitives::AppId;
-
-use crate::crypto::CryptoHost;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AppContext<'a> {
@@ -23,8 +22,3 @@ impl<'a> State<'a> {
         Self { ctx, signer }
     }
 }
-
-/// Trait defining the host functions available to the component
-pub trait HostFunctions: Send + CryptoHost {}
-
-impl<T: Send + CryptoHost> HostFunctions for T {}

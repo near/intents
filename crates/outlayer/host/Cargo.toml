@@ -13,3 +13,8 @@ defuse-outlayer-crypto = { workspace = true, features = ["ed25519", "secp256k1",
 defuse-outlayer-primitives = { workspace = true, features = ["digest"] }
 
 anyhow.workspace = true
+tracing.workspace = true
+wasmtime = { workspace = true, features = ["runtime", "component-model"] }
+
+[package.metadata.cargo-machete]
+ignored = ["tracing"] # required by `wasmtime::component::bindgen!()`
