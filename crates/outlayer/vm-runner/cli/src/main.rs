@@ -34,7 +34,7 @@ struct Args {
     /// Path to the WebAssembly component to execute
     wasm_path: PathBuf,
 
-    /// Path to a file containing the hex-encoded 32-byte seed for the host's signer key
+    /// Path to a file containing the raw 32-byte seed for the host's signer key
     seed_path: PathBuf,
 
     /// Application ID to use in the host context
@@ -54,10 +54,8 @@ struct Args {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let seed_hex = std::fs::read_to_string(&args.seed_path)
+    let seed = std::fs::read(&args.seed_path)
         .with_context(|| format!("failed to read seed file: {}", args.seed_path.display()))?;
-    let seed =
-        hex::decode(seed_hex.trim()).context("seed file must contain a hex-encoded byte string")?;
 
     let state = State::new(
         AppContext {
