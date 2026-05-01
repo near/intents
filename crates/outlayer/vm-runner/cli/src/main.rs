@@ -1,6 +1,6 @@
 use std::{borrow::Cow, path::PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use bytesize::ByteSize;
 use clap::Parser;
 use tokio::{fs, io};
