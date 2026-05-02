@@ -142,8 +142,8 @@ base64 = "0.22.1"
 bitflags = "2.9.1"
 bnum = { version = "0.13", features = ["borsh"] }
 borsh = "1.6.1"
-bytes        = { version = "1", features = ["serde"] }
 bs58 = "0.5.1"
+bytes = { version = "1", features = ["serde"] }
 bytesize = "2.3.1"
 chrono = { version = "0.4", default-features = false }
 clap = { version = "4.5.55", features = ["derive"] }
@@ -161,13 +161,13 @@ hkdf = "0.13"
 impl-tools = "0.11"
 itertools = "0.14"
 k256 = { version = "0.13.4", default-features = false }
-lru          = "0.12"
+lru = "0.12"
 num-traits = "0.2.19"
 p256 = { version = "0.13.2", default-features = false }
 proptest = "1.5"
 rand = "0.10"
 rand_core = "0.10"
-reqwest      = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
 rstest = "0.25"
 schemars = "0.8"
 serde = "1"
@@ -180,12 +180,12 @@ strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
 tlb-ton = { version = "0.8", default-features = false }
 tokio = { version = "1.45", default-features = false }
-tokio-util   = { version = "0.7", features = ["io"] }
-tower        = { version = "0.5", features = ["timeout", "util", "steer", "retry"] }
+tokio-util = { version = "0.7", features = ["io"] }
+tower = { version = "0.5", features = ["timeout", "util", "steer", "retry"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 url = "2"
-uuid         = { version = "1", features = ["v4", "serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
 zeroize = { version = "1.8", features = ["derive"] }
 
 wasmtime = { version = ">=36.0.8", default-features = false, features = ["std"] }
