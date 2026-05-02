@@ -15,5 +15,5 @@ anyhow.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 
-wasmtime = { workspace = true, features = ["cranelift"] }
+wasmtime = { workspace = true, features = ["cranelift"] } # TODO: no JIT?
 wasmtime-wasi.workspace = true

@@ -2,6 +2,7 @@
 use crate::host::mock;
 #[cfg(not(target_family = "wasm"))]
 use defuse_outlayer_host::bindings::outlayer::crypto::secp256k1::Host;
+
 #[cfg(target_family = "wasm")]
 use defuse_outlayer_sys as sys;
 
@@ -22,7 +23,7 @@ pub type Signature = [u8; 65];
 ///
 /// Returns secp256k1 public key encoded in SEC-1 uncompressed form
 /// **without** leading tag byte (0x04).
-// #[track_caller]
+#[track_caller]
 pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
     let path = path.as_ref();
 
@@ -45,7 +46,7 @@ pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
 ///
 /// NOTE: signatures are non-deterministic, i.e. host implementation MAY
 /// return different signatures for the same `path` and `prehash`.
-// #[track_caller]
+#[track_caller]
 pub fn sign(path: impl AsRef<str>, prehash: &[u8; 32]) -> Signature {
     let path = path.as_ref();
 

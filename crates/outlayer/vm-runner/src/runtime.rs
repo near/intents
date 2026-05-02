@@ -2,7 +2,7 @@ use anyhow::{Context as _, Result, anyhow};
 use defuse_outlayer_host::{HostFunctions, bindings::Imports};
 use tracing::instrument;
 use wasmtime::{
-    Config, Engine, Store, StoreLimitsBuilder, Trap,
+    Config, Engine, Store, StoreLimitsBuilder,
     component::{Component, HasSelf, Linker},
 };
 use wasmtime_wasi::{
@@ -11,20 +11,25 @@ use wasmtime_wasi::{
     p2::bindings::Command,
 };
 
-use crate::error::ExecutionError;
-use crate::outcome::ExecutionOutcome;
-use crate::{context::HostCtx, outcome::ExecutionDetails};
+use crate::{
+    context::HostCtx,
+    error::ExecutionError,
+    outcome::{ExecutionDetails, ExecutionOutcome},
+};
 
 /// Size of the guard region placed before linear memory to
 /// catch out-of-bounds accesses
 const MEMORY_GUARD_SIZE: u64 = 64 * 1024 * 1024; // 64 MiB
 
+/// Maximum fuel consumption allowed for a single component execution
+const MAX_FUEL_CONSUMPTION: u64 = u64::MAX;
+
 pub struct Context<I, O, E, H> {
-    input: I,
-    output: O,
-    error: E,
+    stdin: I,
+    stdout: O,
+    stderr: E,
     host_state: H,
-    fuel_limit: Option<u64>,
+    fuel_limit: u64,
     memory_limit: Option<usize>,
 }
 
@@ -35,24 +40,16 @@ where
     E: StdoutStream + 'static,
     H: HostFunctions,
 {
-    /// Default maximum physical memory for a single component
-    /// execution (100 MiB)
-    pub const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024;
-
-    /// Default fuel budget for a single component execution
-    /// (~1 billion wasm instructions)
-    pub const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
-
     /// Creates a new execution context
     /// By default, there are no fuel or memory limits
     #[must_use]
-    pub const fn new(input: I, output: O, error: E, host_state: H) -> Self {
+    pub const fn new(stdin: I, stdout: O, stderr: E, host_state: H) -> Self {
         Self {
-            input,
-            output,
-            error,
+            stdin,
+            stdout,
+            stderr,
             host_state,
-            fuel_limit: None,
+            fuel_limit: MAX_FUEL_CONSUMPTION,
             memory_limit: None,
         }
     }
@@ -63,7 +60,7 @@ where
     /// executed. Exceeding the limit raises [`ExecutionError::Trap`].
     #[must_use]
     pub const fn fuel_limit(mut self, fuel_limit: u64) -> Self {
-        self.fuel_limit = Some(fuel_limit);
+        self.fuel_limit = fuel_limit;
         self
     }
 
@@ -76,33 +73,35 @@ where
         self
     }
 
-    pub fn into_store(self, engine: &Engine) -> Store<HostCtx<H>> {
+    pub(crate) fn into_store(self, engine: &Engine) -> Store<HostCtx<H>> {
         let Self {
-            input,
-            output,
-            error,
+            stdin,
+            stdout,
+            stderr,
             host_state,
             fuel_limit,
             memory_limit,
         } = self;
 
         let wasi_ctx = WasiCtx::builder()
-            .stdin(input)
-            .stdout(output)
-            .stderr(error)
+            .stdin(stdin)
+            .stdout(stdout)
+            .stderr(stderr)
+            .allow_udp(false)
+            .allow_tcp(false)
+            // TODO: other settings, such as:
+            // * .secure_random()
             .build();
 
-        let limits = memory_limit.map_or_else(StoreLimitsBuilder::new, |m| {
-            StoreLimitsBuilder::new().memory_size(m)
-        });
+        let mut limits = StoreLimitsBuilder::new();
+        if let Some(memory_limit) = memory_limit {
+            limits = limits.memory_size(memory_limit);
+        }
 
         let mut store = Store::new(engine, HostCtx::new(wasi_ctx, host_state, limits.build()));
 
         store.limiter(|ctx| ctx.limits_mut());
-
-        if let Some(fuel_limit) = fuel_limit {
-            store.set_fuel(fuel_limit).expect("fuel must be enabled");
-        }
+        store.set_fuel(fuel_limit).expect("fuel must be enabled");
 
         store
     }
@@ -153,7 +152,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     ///
     /// stdin, stdout, stderr, and the host state are provided via [`Context`].
     /// The caller is responsible for reading output from the stdout/stderr
-    /// streams after execution (e.g. by keeping a clone of [`MemoryOutputPipe`]
+    /// streams after execution (e.g. by keeping a clone of [`MemoryOutputPipe`](wasmtime_wasi::p2::pipe::MemoryOutputPipe)
     /// before passing it into the context)
     ///
     /// Execution is bounded by the fuel and memory limits configured on the
@@ -161,21 +160,23 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     ///
     /// # Example
     ///
-    /// Using [`State`] directly:
+    /// Using [`State`](crate::host::State) directly:
     ///
     /// ```rust,no_run
     /// use std::borrow::Cow;
-    /// use defuse_outlayer_host::{State, host::Context as HostContext};
-    /// use defuse_outlayer_vm_runner::{Context, VmRuntime};
+    /// use defuse_outlayer_vm_runner::{
+    ///     Context, VmRuntime,
+    ///     host::{AppContext, State},
+    /// };
     /// use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
     ///
     /// # async fn example() -> anyhow::Result<()> {
     /// # let app_id = todo!();
     /// # let signer = todo!();
-    /// let state = State::new(HostContext { app_id }, Cow::Owned(signer));
+    /// let state = State::new(AppContext { app_id }, Cow::Owned(signer));
     ///
-    /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024);
-    /// let stderr = MemoryOutputPipe::new(64 * 1024);
+    /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024); // 4 MB
+    /// let stderr = MemoryOutputPipe::new(64 * 1024);       // 64 KB
     /// let ctx = Context::new(
     ///     MemoryInputPipe::new(b"input".to_vec()),
     ///     stdout.clone(),
@@ -207,22 +208,23 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         let fuel_limit = ctx.fuel_limit;
         let mut store = ctx.into_store(self.linker.engine());
 
-        let command = Command::instantiate_async(&mut store, component, &self.linker).await?;
+        let command = Command::instantiate_async(&mut store, component, &self.linker)
+            .await
+            .context("instantiate")?;
+
         let run_result = command.wasi_cli_run().call_run(&mut store).await;
 
-        let error = match run_result {
-            Ok(Ok(())) => None,
-            Ok(Err(())) => Some(anyhow!("wasm component failed").into()),
-            Err(trap) => classify_error(trap),
-        };
-
-        let fuel_consumed = fuel_limit
-            .map(|limit| limit.saturating_sub(store.get_fuel().expect("fuel must be enabled")));
-
-        Ok(ExecutionOutcome::new(
-            ExecutionDetails::new(fuel_consumed),
-            error,
-        ))
+        Ok(ExecutionOutcome {
+            error: match run_result {
+                Ok(Ok(())) => None,
+                Ok(Err(())) => Some(ExecutionError::Unknown(anyhow!("wasm component failed"))),
+                Err(trap) => ExecutionError::from_trap(trap),
+            },
+            details: ExecutionDetails {
+                fuel_consumed: fuel_limit
+                    .saturating_sub(store.get_fuel().expect("fuel must be enabled")),
+            },
+        })
     }
 
     /// Convenience method to compile and execute a component in one step. See
@@ -240,33 +242,6 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         let component = self.compile(binary).context("compile")?;
         self.execute(ctx, &component).await
     }
-}
-
-impl<H> Default for VmRuntime<H>
-where
-    H: HostFunctions,
-{
-    fn default() -> Self {
-        Self::new().expect("setup")
-    }
-}
-
-fn classify_error(err: anyhow::Error) -> Option<ExecutionError> {
-    if let Some(exit) = err.downcast_ref::<wasmtime_wasi::I32Exit>() {
-        tracing::debug!("Program exited with code {}", exit.0);
-
-        // exit(0) is equivalent to a clean return from main
-        return match exit.0 {
-            0 => None,
-            code => Some(ExecutionError::NonZeroExit(code)),
-        };
-    }
-
-    Some(
-        err.downcast_ref::<Trap>()
-            .copied()
-            .map_or_else(|| ExecutionError::Unknown(err), ExecutionError::Trap),
-    )
 }
 
 fn create_linker<H>(engine: &Engine) -> anyhow::Result<Linker<HostCtx<H>>>

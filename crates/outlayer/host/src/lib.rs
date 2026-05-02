@@ -8,18 +8,18 @@ pub use defuse_outlayer_primitives as primitives;
 use defuse_outlayer_primitives::AppId;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Context<'a> {
+pub struct AppContext<'a> {
     pub app_id: AppId<'a>,
 }
 
 #[derive(Clone)]
 pub struct State<'a> {
-    ctx: Context<'a>,
+    ctx: AppContext<'a>,
     signer: Cow<'a, InMemorySigner>,
 }
 
 impl<'a> State<'a> {
-    pub const fn new(ctx: Context<'a>, signer: Cow<'a, InMemorySigner>) -> Self {
+    pub const fn new(ctx: AppContext<'a>, signer: Cow<'a, InMemorySigner>) -> Self {
         Self { ctx, signer }
     }
 }

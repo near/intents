@@ -2,6 +2,7 @@ use defuse_outlayer_host::HostFunctions;
 use wasmtime::StoreLimits;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
+
 /// The host context passed to the component, containing both
 /// the WASI state and the custom host state
 ///
@@ -22,12 +23,12 @@ impl<T: HostFunctions> HostCtx<T> {
         }
     }
 
-    pub const fn host_state_mut(&mut self) -> &mut T {
-        &mut self.host_state
-    }
-
     pub(crate) const fn limits_mut(&mut self) -> &mut StoreLimits {
         &mut self.limits
+    }
+
+    pub(crate) const fn host_state_mut(&mut self) -> &mut T {
+        &mut self.host_state
     }
 }
 
