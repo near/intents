@@ -23,15 +23,3 @@ impl<'a> State<'a> {
         Self { ctx, signer }
     }
 }
-
-pub trait HostFunctions:
-    bindings::outlayer::crypto::ed25519::Host + bindings::outlayer::crypto::secp256k1::Host + Send
-{
-}
-
-impl<T> HostFunctions for T where
-    T: bindings::outlayer::crypto::ed25519::Host
-        + bindings::outlayer::crypto::secp256k1::Host
-        + Send
-{
-}

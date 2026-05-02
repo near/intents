@@ -1,7 +1,16 @@
-use defuse_outlayer_host::HostFunctions;
+use defuse_outlayer_host::bindings::outlayer;
 use wasmtime::StoreLimits;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
+pub trait HostFunctions:
+    Send + outlayer::crypto::ed25519::Host + outlayer::crypto::secp256k1::Host
+{
+}
+
+impl<T> HostFunctions for T where
+    T: Send + outlayer::crypto::ed25519::Host + outlayer::crypto::secp256k1::Host
+{
+}
 
 /// The host context passed to the component, containing both
 /// the WASI state and the custom host state

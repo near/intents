@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use defuse_outlayer_host::HostFunctions;
+use defuse_outlayer_vm_runner::HostFunctions;
 use defuse_outlayer_vm_runner::{
     self as vm_runner, Component, MemoryInputPipe, MemoryOutputPipe, VmRuntime,
 };
@@ -105,7 +105,7 @@ impl<H: HostFunctions + Clone + Send + 'static> Service<WasmExecutionRequest> fo
                     .execute(ctx, &req.component)
                     .await
                     .map_err(WasmEnvironmentInternalError)?;
-                let instructions_used = outcome.details.fuel_consumed.unwrap_or_default();
+                let instructions_used = outcome.details.fuel_consumed;
                 let stdout_bytes = stdout.contents();
                 let stderr_bytes = stderr.contents();
                 tracing::debug!(

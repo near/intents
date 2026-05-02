@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use bytes::Bytes;
 use clap::Parser;
 use defuse_outlayer_host::primitives::{AccountIdRef, AppId};
-use defuse_outlayer_host::{Context, InMemorySigner, State};
+use defuse_outlayer_host::{AppContext, InMemorySigner, State};
 use defuse_outlayer_service::{
     Config, ExecutionRequest, ExecutionStackError, Request, build_stack,
     types::{AccountId, OffChainRequest},
@@ -87,7 +87,7 @@ async fn main() -> anyhow::Result<()> {
     // Fixed key — replace with a real TEE key in production.
     let signing_key = defuse_outlayer_crypto::signer::InMemorySigner::from_seed(&[1u8; 32]);
     let host_template = State::new(
-        Context {
+        AppContext {
             app_id: AppId::Near(Cow::Borrowed(AccountIdRef::new_or_panic("example.near"))),
         },
         Cow::Owned(InMemorySigner::from_seed(b"example")),

@@ -7,7 +7,7 @@ use bytes::Bytes;
 use defuse_outlayer_app::State as OutlayerState;
 use defuse_outlayer_crypto::signer::InMemorySigner as SigningSigner;
 use defuse_outlayer_host::{
-    Context, InMemorySigner as HostSigner, State as HostState,
+    AppContext, InMemorySigner as HostSigner, State as HostState,
     primitives::{AccountIdRef, AppId},
 };
 use defuse_outlayer_service::{
@@ -81,7 +81,7 @@ async fn test_on_chain_fetch_service(
 
     let signing_key = SigningSigner::from_seed(&[1u8; 32]);
     let host_template = HostState::new(
-        Context {
+        AppContext {
             app_id: AppId::Near(Cow::Borrowed(AccountIdRef::new_or_panic("test.near"))),
         },
         Cow::Owned(HostSigner::from_seed(b"test")),

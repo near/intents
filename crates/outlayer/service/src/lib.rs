@@ -19,7 +19,7 @@ use defuse_outlayer_vm_runner::Component;
 use lru::LruCache;
 use tower::{Service, ServiceBuilder};
 
-use defuse_outlayer_host::HostFunctions;
+use defuse_outlayer_vm_runner::HostFunctions;
 use defuse_outlayer_vm_runner::VmRuntime;
 
 pub use config::{Config, FetchConfig};

@@ -1,5 +1,5 @@
 use anyhow::{Context as _, Result, anyhow};
-use defuse_outlayer_host::{HostFunctions, bindings::Imports};
+use defuse_outlayer_host::bindings::Imports;
 use tracing::instrument;
 use wasmtime::{
     Config, Engine, Store, StoreLimitsBuilder,
@@ -12,7 +12,7 @@ use wasmtime_wasi::{
 };
 
 use crate::{
-    context::HostCtx,
+    context::{HostCtx, HostFunctions},
     error::ExecutionError,
     outcome::{ExecutionDetails, ExecutionOutcome},
 };

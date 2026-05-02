@@ -1629,17 +1629,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-outlayer-cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "defuse-outlayer-host",
- "defuse-outlayer-vm-runner",
- "tokio",
-]
-
-[[package]]
 name = "defuse-outlayer-crypto"
 version = "0.1.0"
 dependencies = [

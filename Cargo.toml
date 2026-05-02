@@ -51,7 +51,6 @@ members = [
   "crates/outlayer/sdk",
   "crates/outlayer/sys",
   "crates/outlayer/vm-runner",
-  "crates/outlayer/cli",
   "crates/outlayer/service",
   "crates/outlayer/vm-runner/cli",
 
