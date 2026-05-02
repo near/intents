@@ -185,7 +185,6 @@ tower = { version = "0.5", features = ["timeout", "util", "steer", "retry"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 url = "2"
-uuid = { version = "1", features = ["v4", "serde"] }
 zeroize = { version = "1.8", features = ["derive"] }
 
 wasmtime = { version = ">=36.0.8", default-features = false, features = ["std"] }

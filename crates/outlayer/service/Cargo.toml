@@ -34,7 +34,6 @@ tokio-util = { workspace = true, features = ["io"] }
 tower = { workspace = true, features = ["timeout", "util", "steer", "retry"] }
 tracing.workspace = true
 url.workspace = true
-uuid = { workspace = true, features = ["v4", "serde"] }
 
 [dev-dependencies]
 defuse-outlayer-app.workspace = true
