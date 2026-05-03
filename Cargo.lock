@@ -1685,6 +1685,7 @@ dependencies = [
  "defuse-outlayer-vm-runner",
  "futures",
  "lru 0.18.0",
+ "thiserror 2.0.18",
  "tower",
  "tracing",
 ]

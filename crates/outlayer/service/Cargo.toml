@@ -15,5 +15,6 @@ anyhow.workspace = true
 bytes.workspace = true
 futures.workspace = true
 lru.workspace = true
+thiserror.workspace = true
 tower.workspace = true
 tracing.workspace = true
