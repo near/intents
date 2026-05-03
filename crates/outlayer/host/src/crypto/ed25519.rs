@@ -1,8 +1,8 @@
 use defuse_outlayer_crypto::{DeriveSigner, ed25519::Ed25519};
 
-use crate::State;
+use crate::Host;
 
-impl crate::bindings::outlayer::crypto::ed25519::Host for State {
+impl crate::bindings::outlayer::crypto::ed25519::Host for Host<'_> {
     fn derive_public_key(&mut self, path: String) -> wasmtime::Result<Vec<u8>> {
         let path = self.tweak(path);
 

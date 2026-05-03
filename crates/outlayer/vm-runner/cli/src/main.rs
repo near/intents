@@ -7,7 +7,7 @@ use tokio::{fs, io};
 use defuse_outlayer_vm_runner::{
     Context as VmContext, VmRuntime, WasiContext,
     host::{
-        Context as HostContext, InMemorySigner, State as HostState,
+        Context as HostContext, Host, InMemorySigner,
         primitives::{AccountIdRef, AppId},
     },
 };
@@ -83,7 +83,7 @@ async fn main() -> Result<()> {
             stdout: io::stdout(), // forward stdout
             stderr: io::stderr(), // forward stderr
         },
-        host_state: HostState::new(
+        host: Host::new(
             HostContext {
                 app_id: args.app_id,
             },

@@ -10,7 +10,7 @@ use std::{
 
 use defuse_outlayer_vm_runner::{
     Context as VmContext, VmRuntime, WasiContext,
-    host::{InMemorySigner, State},
+    host::{Host, InMemorySigner},
     wasmtime::Error,
     wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe},
 };
@@ -53,7 +53,7 @@ impl Service<Request> for Executor {
                             stdout: stdout.clone(),
                             stderr: stderr.clone(),
                         },
-                        host_state: State::new(req.ctx.host, signer),
+                        host: Host::new(req.ctx.host, signer),
                         fuel: req.fuel,
                     },
                     &req.component,

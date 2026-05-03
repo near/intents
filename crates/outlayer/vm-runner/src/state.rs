@@ -1,4 +1,4 @@
-use defuse_outlayer_host::State as HostState;
+use defuse_outlayer_host::{Host, HostView};
 use wasmtime::StoreLimits;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
@@ -9,12 +9,12 @@ use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 /// passed to host functions when called by the component
 pub struct State {
     wasi: WasiP2State,
-    host: HostState,
+    host: Host<'static>,
     limits: StoreLimits,
 }
 
 impl State {
-    pub fn new(wasi: WasiCtx, host: HostState, limits: StoreLimits) -> Self {
+    pub fn new(wasi: WasiCtx, host: Host<'static>, limits: StoreLimits) -> Self {
         Self {
             wasi: WasiP2State::new(wasi),
             host,
@@ -25,9 +25,11 @@ impl State {
     pub(crate) const fn limits_mut(&mut self) -> &mut StoreLimits {
         &mut self.limits
     }
+}
 
-    pub(crate) const fn host_state_mut(&mut self) -> &mut HostState {
-        &mut self.host
+impl HostView for State {
+    fn ctx(&mut self) -> Host<'_> {
+        self.host.ctx()
     }
 }
 

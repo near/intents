@@ -1,11 +1,11 @@
 use std::{borrow::Cow, cell::RefCell};
 
-use defuse_outlayer_host::{Context, InMemorySigner, State};
+use defuse_outlayer_host::{Context, Host, InMemorySigner};
 use defuse_outlayer_primitives::{AccountIdRef, AppId};
 
 thread_local! {
-    pub(crate) static HOST: RefCell<State> =
-        RefCell::new(State::new(
+    pub(crate) static HOST: RefCell<Host<'static>> =
+        RefCell::new(Host::new(
             Context {
                 app_id: TEST_APP_ID,
             },

@@ -1,4 +1,4 @@
-use defuse_outlayer_host::State as HostState;
+use defuse_outlayer_host::Host;
 
 pub struct WasiContext<I, O, E> {
     pub stdin: I,
@@ -8,7 +8,7 @@ pub struct WasiContext<I, O, E> {
 
 pub struct Context<I, O, E> {
     pub wasi: WasiContext<I, O, E>,
-    pub host_state: HostState,
+    pub host: Host<'static>,
     /// Maximum fuel the component may consume per execution
     ///
     /// Fuel roughly corresponds to the number of WebAssembly instructions

@@ -1,9 +1,9 @@
 use anyhow::{Context as _, Result, anyhow};
-use defuse_outlayer_host::{State as HostState, bindings::Imports};
+use defuse_outlayer_host as host;
 use tracing::instrument;
 use wasmtime::{
     Config, Engine, Store, StoreLimits, StoreLimitsBuilder,
-    component::{Component, HasSelf, Linker},
+    component::{Component, Linker},
 };
 use wasmtime_wasi::{
     WasiCtx,
@@ -56,7 +56,7 @@ impl VmRuntime {
         //     .memory_reservation(self.memory_limit.try_into().unwrap());
 
         let engine = Engine::new(&config).context("engine")?;
-        let linker = Self::create_linker(&engine).context("linker")?;
+        let linker = Self::make_linker(&engine).context("linker")?;
 
         Ok(Self {
             linker,
@@ -67,16 +67,14 @@ impl VmRuntime {
         })
     }
 
-    fn create_linker(engine: &Engine) -> anyhow::Result<Linker<State>> {
-        let mut linker = Linker::new(engine);
+    fn make_linker(engine: &Engine) -> anyhow::Result<Linker<State>> {
+        let mut linker = Linker::<State>::new(engine);
 
         // Add WASI imports to the linker
         wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
 
         // Add host function imports to the linker
-        Imports::add_to_linker::<State, HasSelf<HostState>>(&mut linker, |ctx: &mut State| {
-            ctx.host_state_mut()
-        })?;
+        host::add_to_linker(&mut linker)?;
 
         Ok(linker)
     }
@@ -191,7 +189,7 @@ impl VmRuntime {
             self.linker.engine(),
             State::new(
                 Self::make_wasi_ctx(ctx.wasi),
-                ctx.host_state,
+                ctx.host,
                 self.store_limits.clone(),
             ),
         );

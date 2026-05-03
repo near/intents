@@ -10,5 +10,5 @@ pub struct Request {
 
 pub struct Context {
     pub input: Bytes,
-    pub host: HostContext,
+    pub host: HostContext<'static>,
 }
