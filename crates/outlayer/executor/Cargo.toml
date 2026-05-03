@@ -1,5 +1,5 @@
 [package]
-name = "defuse-outlayer-service"
+name = "defuse-outlayer-executor"
 edition.workspace = true
 version.workspace = true
 rust-version.workspace = true
@@ -9,12 +9,10 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-outlayer-executor.workspace = true
-defuse-outlayer-primitives.workspace = true
+defuse-outlayer-vm-runner.workspace = true
 
 anyhow.workspace = true
 bytes.workspace = true
-futures.workspace = true
+lru.workspace = true
 thiserror.workspace = true
-tower = { workspace = true, features = ["util"] }
-tracing.workspace = true
+tokio = { workspace = true, features = ["sync"] }

@@ -9,6 +9,6 @@ pub enum Error {
     #[error("compile: {0}")]
     Compile(wasmtime::Error),
 
-    #[error("execute: {0}")]
+    #[error(transparent)]
     Execute(wasmtime::Error),
 }

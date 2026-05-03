@@ -1627,6 +1627,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-outlayer-executor"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "defuse-outlayer-vm-runner",
+ "lru 0.18.0",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
 name = "defuse-outlayer-host"
 version = "0.1.0"
 dependencies = [
@@ -1682,11 +1694,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytes",
- "defuse-outlayer-vm-runner",
+ "defuse-outlayer-executor",
+ "defuse-outlayer-primitives",
  "futures",
- "lru 0.18.0",
  "thiserror 2.0.18",
- "tokio",
  "tower",
  "tracing",
 ]

@@ -1,16 +1,16 @@
 use bytes::Bytes;
-use defuse_outlayer_vm_runner::host::primitives::AppId;
+use defuse_outlayer_primitives::AppId;
 
-pub enum App<'a> {
+pub enum App {
     // TODO: feature flag?
     Inline { wasm: Bytes },
-    AppId(AppId<'a>),
+    AppId(AppId<'static>),
 }
 
-impl<'a> App<'a> {
-    pub fn app_id(&'a self) -> AppId<'a> {
+impl App {
+    pub fn app_id(&self) -> AppId<'static> {
         match self {
-            Self::AppId(app_id) => app_id.as_ref(),
+            Self::AppId(app_id) => app_id.clone().into_owned(),
             Self::Inline { wasm } => {
                 // TODO: derive from state_init
                 todo!()

@@ -46,6 +46,7 @@ members = [
   "crates/testing/sandbox",
 
   "crates/outlayer/crypto",
+  "crates/outlayer/executor",
   "crates/outlayer/host",
   "crates/outlayer/primitives",
   "crates/outlayer/sdk",
@@ -110,6 +111,7 @@ defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
 defuse-outlayer-crypto = { path = "crates/outlayer/crypto", default-features = false }
+defuse-outlayer-executor.path = "crates/outlayer/executor"
 defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-primitives.path = "crates/outlayer/primitives"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
