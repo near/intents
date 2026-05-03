@@ -8,9 +8,9 @@ pub enum App<'a> {
 }
 
 impl<'a> App<'a> {
-    pub fn into_app_id(self) -> AppId<'a> {
+    pub fn app_id(&'a self) -> AppId<'a> {
         match self {
-            Self::AppId(app_id) => app_id,
+            Self::AppId(app_id) => app_id.as_ref(),
             Self::Inline { wasm } => {
                 // TODO: derive from state_init
                 todo!()

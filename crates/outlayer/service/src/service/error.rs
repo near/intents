@@ -1,9 +1,9 @@
-use crate::executor;
+use tower::BoxError;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("resolver: {0}")]
-    Resolver(anyhow::Error),
+    #[error("resolve: {0}")]
+    Resolve(anyhow::Error),
     #[error(transparent)]
-    Executor(executor::Error),
+    Execute(BoxError),
 }

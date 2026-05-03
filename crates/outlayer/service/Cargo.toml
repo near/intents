@@ -16,5 +16,6 @@ bytes.workspace = true
 futures.workspace = true
 lru.workspace = true
 thiserror.workspace = true
-tower = { workspace = true, features = ["util"] }
+tokio = { workspace = true, features = ["sync"] }
+tower = { workspace = true, features = ["buffer", "util"] }
 tracing.workspace = true

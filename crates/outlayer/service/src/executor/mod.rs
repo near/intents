@@ -19,12 +19,13 @@ use defuse_outlayer_vm_runner::{
 };
 use futures::{FutureExt, future::BoxFuture};
 use lru::LruCache;
+use tokio::sync::OnceCell;
 use tower::Service;
 use tracing::Instrument;
 
 pub struct Executor {
     runtime: Arc<VmRuntime>,
-    compiled: LruCache<Bytes, Component>,
+    compiled: LruCache<Bytes, OnceCell<Component>>,
     signer: Arc<InMemorySigner>,
 }
 
@@ -73,10 +74,8 @@ impl Executor {
 
         let component = self
             .compiled
-            .try_get_or_insert_with_key(req.wasm, |binary| {
-                self.runtime.compile(binary).map_err(Error::Compile)
-            })
-            .cloned()?;
+            .get_or_insert(req.wasm.clone(), OnceCell::new)
+            .clone();
 
         let ctx = VmContext {
             wasi: WasiContext {
@@ -90,6 +89,11 @@ impl Executor {
 
         let runtime = self.runtime.clone();
         Ok(async move {
+            let component = component
+                .get_or_try_init(|| async { runtime.compile(req.wasm) })
+                .await
+                .map_err(Error::Compile)?;
+
             let stdout = ctx.wasi.stdout.clone();
             let stderr = ctx.wasi.stderr.clone();
 
