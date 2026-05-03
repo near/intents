@@ -12,6 +12,7 @@ pub struct AppContext<'a> {
     pub app_id: AppId<'a>,
 }
 
+#[derive(Clone)]
 pub struct State<'a> {
     ctx: AppContext<'a>,
     signer: Cow<'a, InMemorySigner>,

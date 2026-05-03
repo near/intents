@@ -1,0 +1,51 @@
+[package]
+name = "defuse-outlayer-service"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+
+defuse-outlayer-crypto = { workspace = true, features = ["ed25519", "signing"] }
+defuse-outlayer-host = { workspace = true }
+defuse-outlayer-vm-runner = { workspace = true }
+
+near-api.workspace = true
+near-sdk.workspace = true
+
+anyhow.workspace = true
+base64.workspace = true
+bytes = { workspace = true, features = ["serde"] }
+futures-util.workspace = true
+hex.workspace = true
+lru.workspace = true
+reqwest = { workspace = true, default-features = false, features = ["rustls-tls", "stream"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+serde_with = { workspace = true, features = ["hex", "base64"] }
+sha2.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "sync"] }
+tokio-util = { workspace = true, features = ["io"] }
+tower = { workspace = true, features = ["timeout", "util", "steer", "retry"] }
+tracing.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+defuse-outlayer-app.workspace = true
+defuse-outlayer-crypto = { workspace = true, features = ["ed25519", "signing"] }
+defuse-outlayer-host.workspace = true
+defuse-outlayer-vm-runner.workspace = true
+defuse-sandbox = { workspace = true, features = ["outlayer"] }
+defuse-test-utils = { workspace = true, features = ["outlayer"] }
+
+axum = "0.8"
+
+clap.workspace = true
+rstest.workspace = true
+tokio = { workspace = true, features = ["macros"] }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
