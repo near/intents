@@ -16,12 +16,12 @@ pub struct Resolver {
 }
 
 impl Resolver {
-    pub async fn resolve_code(&self, code: CodeRef<'_>) -> Result<Bytes, Error> {
+    pub async fn resolve_code(&self, code: CodeRef<'_>) -> Result<Bytes> {
         let AppCodeUrl {
             code_url,
             code_hash,
         } = match code {
-            CodeRef::AppId(AppId::Near(contract_id)) => self.near.resolve(contract_id).await?,
+            CodeRef::AppId(app_id) => self.resolve_app_id(app_id).await?,
             CodeRef::Url(code_url) => code_url,
         };
 
@@ -33,7 +33,17 @@ impl Resolver {
 
         Ok(code)
     }
+
+    async fn resolve_app_id(&self, app_id: AppId<'_>) -> Result<AppCodeUrl> {
+        match app_id {
+            AppId::Near(oa_contract_id) => {
+                self.near.resolve(oa_contract_id).await.map_err(Into::into)
+            }
+        }
+    }
 }
+
+pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

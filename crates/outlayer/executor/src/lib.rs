@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 
 pub use defuse_outlayer_vm_runner::host::Context as HostContext;
 use defuse_outlayer_vm_runner::{
-    Context as VmContext, ExecutionError, ExecutionOutcome, VmRuntime, WasiContext,
+    Context as VmContext, ExecutionOutcome, VmRuntime, WasiContext,
     host::{Host, InMemorySigner},
     wasmtime::component::Component,
     wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe},
@@ -29,14 +29,23 @@ pub struct Context {
     pub host: HostContext<'static>,
 }
 
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize)
+)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Outcome {
+    #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::base64::Base64"))]
     pub output: Bytes,
+    #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::base64::Base64"))]
     pub logs: Bytes,
     pub execution: ExecutionOutcome,
 }
 
 impl Outcome {
-    pub fn into_result(self) -> Result<Bytes, ExecutionError> {
+    pub fn into_result(self) -> Result<Bytes, String> {
         self.execution.into_result().map(|()| self.output)
     }
 }

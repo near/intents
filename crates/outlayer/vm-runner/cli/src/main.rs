@@ -94,5 +94,5 @@ async fn main() -> Result<()> {
 
     let outcome = runner.execute(ctx, &component).await.context("execute")?;
 
-    outcome.into_result().map_err(Into::into)
+    outcome.into_result().map_err(anyhow::Error::msg)
 }

@@ -1,11 +1,10 @@
 mod code;
-mod error;
 mod resolver;
 
-pub use self::{code::*, error::*};
+pub use self::code::*;
 
 use bytes::Bytes;
-use defuse_outlayer_executor::{Context, Executor, HostContext, Outcome};
+use defuse_outlayer_executor::{self as executor, Context, Executor, HostContext, Outcome};
 
 use crate::resolver::Resolver;
 
@@ -39,4 +38,12 @@ impl Outlayer {
             .await
             .map_err(Error::Execute)
     }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("resolve: {0}")]
+    Resolve(resolver::Error),
+    #[error(transparent)]
+    Execute(executor::Error),
 }

@@ -14,7 +14,7 @@ pub enum ExecutionError {
 
     /// An error that does not map to a known trap code
     #[error(transparent)]
-    Unknown(anyhow::Error),
+    Custom(anyhow::Error),
 }
 
 impl ExecutionError {
@@ -25,7 +25,7 @@ impl ExecutionError {
 
         Some(
             trap.downcast::<Trap>()
-                .map_or_else(Self::Unknown, Self::Trap),
+                .map_or_else(Self::Custom, Self::Trap),
         )
     }
 

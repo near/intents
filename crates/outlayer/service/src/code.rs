@@ -4,10 +4,20 @@ use defuse_outlayer_primitives::AppId;
 use sha2::{Digest, Sha256};
 use url::Url;
 
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize)
+)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Code<'a> {
     Ref(CodeRef<'a>),
     // TODO: feature flag?
-    Inline { code: Bytes },
+    Inline {
+        #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::base64::Base64"))]
+        code: Bytes,
+    },
 }
 
 impl Code<'_> {
@@ -26,6 +36,8 @@ impl Code<'_> {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum CodeRef<'a> {
     AppId(AppId<'a>),
     Url(AppCodeUrl),
@@ -40,8 +52,16 @@ impl CodeRef<'_> {
     }
 }
 
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize)
+)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct AppCodeUrl {
     pub code_url: Url,
+    #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::hex::Hex"))]
     pub code_hash: [u8; 32],
 }
 

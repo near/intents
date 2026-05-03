@@ -147,6 +147,7 @@ bnum = { version = "0.13", features = ["borsh"] }
 borsh = "1.6.1"
 bs58 = "0.5.1"
 bytes = "1.11.1"
+cfg_eval = "0.1.2"
 chrono = { version = "0.4", default-features = false }
 clap = { version = "4.5.55", features = ["derive"] }
 curve25519-dalek = "4.1.3"

@@ -561,6 +561,9 @@ name = "bytes"
 version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e748733b7cbc798e1434b6ac524f0c1ff2ab456fe201501e6497c8417a4fc33"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "bytesize"
@@ -731,6 +734,17 @@ name = "cfg_aliases"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
+
+[[package]]
+name = "cfg_eval"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45565fc9416b9896014f5732ac776f810ee53a66730c17e4020c3ec064a8f88f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
 
 [[package]]
 name = "chacha20"
@@ -1638,8 +1652,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytes",
+ "cfg_eval",
  "defuse-outlayer-vm-runner",
  "lru 0.18.0",
+ "serde",
+ "serde_with",
  "thiserror 2.0.18",
  "tokio",
 ]
@@ -1701,6 +1718,7 @@ dependencies = [
  "anyhow",
  "base64 0.22.1",
  "bytes",
+ "cfg_eval",
  "data-url",
  "defuse-outlayer-executor",
  "defuse-outlayer-primitives",
@@ -1708,6 +1726,8 @@ dependencies = [
  "futures",
  "near-kit",
  "reqwest 0.13.3",
+ "serde",
+ "serde_with",
  "sha2 0.11.0",
  "thiserror 2.0.18",
  "tower",
@@ -1727,7 +1747,10 @@ name = "defuse-outlayer-vm-runner"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "cfg_eval",
  "defuse-outlayer-host",
+ "serde",
+ "serde_with",
  "thiserror 2.0.18",
  "tracing",
  "wasmtime",

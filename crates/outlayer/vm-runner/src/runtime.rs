@@ -169,9 +169,11 @@ impl VmRuntime {
         Ok(ExecutionOutcome {
             error: match run_result {
                 Ok(Ok(())) => None,
-                Ok(Err(())) => Some(ExecutionError::Unknown(anyhow!("wasm component failed"))),
+                Ok(Err(())) => Some(ExecutionError::Custom(anyhow!("wasm component failed"))),
                 Err(trap) => ExecutionError::from_trap(trap),
-            },
+            }
+            .as_ref()
+            .map(ToString::to_string),
             details: ExecutionDetails {
                 fuel_consumed: fuel_limit
                     .saturating_sub(store.get_fuel().expect("fuel must be enabled")),

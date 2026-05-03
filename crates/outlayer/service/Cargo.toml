@@ -24,4 +24,20 @@ sha2.workspace = true
 thiserror.workspace = true
 tower = { workspace = true, features = ["util"] }
 tracing.workspace = true
-url = { workspace = true, features = ["serde"] }
+url.workspace = true
+
+cfg_eval = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_with = { workspace = true, optional = true, features = ["hex"] }
+
+[features]
+default = ["serde"]
+
+serde = [
+  "bytes/serde",
+  "defuse-outlayer-primitives/serde",
+  "dep:cfg_eval",
+  "dep:serde",
+  "dep:serde_with",
+  "url/serde",
+]
