@@ -4,12 +4,12 @@ use defuse_outlayer_host::{AppContext, InMemorySigner, State};
 use defuse_outlayer_primitives::{AccountIdRef, AppId};
 
 thread_local! {
-    pub(crate) static HOST: RefCell<State<'static>> =
+    pub(crate) static HOST: RefCell<State> =
         RefCell::new(State::new(
             AppContext {
                 app_id: TEST_APP_ID,
             },
-            Cow::Owned(InMemorySigner::from_seed(TEST_SEED)),
+            InMemorySigner::from_seed(TEST_SEED),
         ));
 }
 

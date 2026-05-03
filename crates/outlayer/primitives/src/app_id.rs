@@ -62,6 +62,13 @@ impl<'a> AppId<'a> {
             Self::Near(app_id) => Self::Near(Cow::Borrowed(app_id)),
         }
     }
+
+    #[inline]
+    pub fn into_owned(self) -> AppId<'static> {
+        match self {
+            Self::Near(account_id) => AppId::Near(account_id.into_owned().into()),
+        }
+    }
 }
 
 impl Debug for AppId<'_> {

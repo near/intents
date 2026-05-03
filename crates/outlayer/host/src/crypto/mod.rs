@@ -5,7 +5,7 @@ use defuse_outlayer_primitives::crypto::DerivationPath;
 
 use crate::State;
 
-impl State<'_> {
+impl State {
     fn tweak(&self, path: impl AsRef<str>) -> [u8; 32] {
         let path = DerivationPath {
             app_id: self.ctx.app_id.as_ref(),

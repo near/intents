@@ -3,7 +3,7 @@ use defuse_outlayer_crypto::{DeriveSigner, secp256k1::Secp256k1};
 
 use crate::State;
 
-impl crate::bindings::outlayer::crypto::secp256k1::Host for State<'_> {
+impl crate::bindings::outlayer::crypto::secp256k1::Host for State {
     fn derive_public_key(&mut self, path: String) -> wasmtime::Result<Vec<u8>> {
         let path = self.tweak(path);
 

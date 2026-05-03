@@ -1,5 +1,5 @@
 [package]
-name = "defuse-outlayer-vm-runner-cli"
+name = "defuse-outlayer-service"
 edition.workspace = true
 version.workspace = true
 rust-version.workspace = true
@@ -11,6 +11,7 @@ workspace = true
 [dependencies]
 defuse-outlayer-vm-runner.workspace = true
 
-anyhow.workspace = true
-clap = { workspace = true, features = ["derive", "wrap_help"] }
-tokio = { workspace = true, features = ["full"] }
+bytes.workspace = true
+futures.workspace = true
+tower.workspace = true
+tracing.workspace = true

@@ -1,12 +1,11 @@
 use std::{borrow::Cow, path::PathBuf};
 
 use anyhow::{Context as _, Result};
-use bytesize::ByteSize;
 use clap::Parser;
 use tokio::{fs, io};
 
 use defuse_outlayer_vm_runner::{
-    Context, VmRuntime,
+    Context, VmRuntime, WasiContext,
     host::{
         AppContext, InMemorySigner, State,
         primitives::{AccountIdRef, AppId},
@@ -54,10 +53,6 @@ struct Args {
     /// Maximum number of WebAssembly instructions the component may execute
     #[arg(long, default_value_t = DEFAULT_FUEL, value_name = "u64")]
     fuel: u64,
-
-    /// Maximum memory the component may use
-    #[arg(long, value_name = "MEM")]
-    memory: Option<ByteSize>,
 }
 
 #[tokio::main]
@@ -72,30 +67,6 @@ async fn main() -> Result<()> {
         DEFAULT_SEED.to_vec()
     };
 
-    let state = State::new(
-        AppContext {
-            app_id: args.app_id,
-        },
-        Cow::Owned(InMemorySigner::from_seed(&seed)),
-    );
-
-    let mut ctx = Context::new(
-        io::stdin(),  // forward stdin
-        io::stdout(), // forward stdout
-        io::stderr(), // forward stderr
-        state,
-    )
-    .fuel_limit(args.fuel);
-
-    if let Some(memory) = args.memory {
-        ctx = ctx.memory_limit(memory.as_u64().try_into().with_context(|| {
-            format!(
-                "memory limit {memory} exceeds platform maximum ({} bytes)",
-                usize::MAX
-            )
-        })?);
-    }
-
     let wasm_binary = fs::read(&args.wasm)
         .await
         .with_context(|| format!("failed to read: {}", args.wasm.display()))?;
@@ -105,6 +76,21 @@ async fn main() -> Result<()> {
     let component = runner
         .compile(&wasm_binary)
         .with_context(|| format!("failed to compile: {}", args.wasm.display()))?;
+
+    let ctx = Context {
+        wasi: WasiContext {
+            stdin: io::stdin(),   // forward stdin
+            stdout: io::stdout(), // forward stdout
+            stderr: io::stderr(), // forward stderr
+        },
+        host_state: State::new(
+            AppContext {
+                app_id: args.app_id,
+            },
+            InMemorySigner::from_seed(&seed),
+        ),
+        fuel: args.fuel,
+    };
 
     let outcome = runner.execute(ctx, &component).await.context("execute")?;
 

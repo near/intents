@@ -17,13 +17,13 @@ impl<T> HostFunctions for T where
 ///
 /// Used as the context for the linker when instantiating the component, and
 /// passed to host functions when called by the component
-pub struct HostCtx<T: HostFunctions> {
+pub struct HostCtx<T> {
     wasi_state: WasiP2State,
     host_state: T,
     limits: StoreLimits,
 }
 
-impl<T: HostFunctions> HostCtx<T> {
+impl<T> HostCtx<T> {
     pub fn new(wasi_state: WasiCtx, host_state: T, limits: StoreLimits) -> Self {
         Self {
             wasi_state: WasiP2State::new(wasi_state),
@@ -41,7 +41,7 @@ impl<T: HostFunctions> HostCtx<T> {
     }
 }
 
-impl<T: HostFunctions> WasiView for HostCtx<T> {
+impl<T: Send> WasiView for HostCtx<T> {
     fn ctx(&mut self) -> WasiCtxView<'_> {
         self.wasi_state.ctx()
     }

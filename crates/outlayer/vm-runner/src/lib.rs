@@ -3,7 +3,7 @@ mod error;
 mod outcome;
 mod runtime;
 
-pub use self::{error::*, outcome::*, runtime::*};
+pub use self::{context::*, error::*, outcome::*, runtime::*};
 
 pub use defuse_outlayer_host as host;
 
