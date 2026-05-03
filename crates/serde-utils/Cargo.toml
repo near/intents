@@ -7,21 +7,25 @@ repository.workspace = true
 
 [dependencies]
 derive_more = { workspace = true, features = ["from"] }
-near-sdk.workspace = true
+serde.workspace = true
 serde_with.workspace = true
 tlb-ton = { workspace = true, optional = true }
+
+bs58 = { workspace = true, optional = true }
+hex = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true }
 
 [features]
 default = ["base58", "base64", "hex"]
 
-abi = ["near-sdk/abi"]
-base58 = []
+abi = ["dep:schemars"]
+base58 = ["dep:bs58"]
 base64 = ["serde_with/base64"]
-hex = []
+hex = ["dep:hex"]
 tlb = ["dep:tlb-ton"]
 
 [dev-dependencies]
-near-sdk = { workspace = true, features = ["unit-testing"] }
+serde_json.workspace = true
 
 [lints]
 workspace = true

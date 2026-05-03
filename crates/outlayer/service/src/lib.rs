@@ -1,33 +1,28 @@
-mod app;
+mod code;
 mod error;
 mod resolver;
+
+pub use self::{code::*, error::*};
 
 use bytes::Bytes;
 use defuse_outlayer_executor::{Context, Executor, HostContext, Outcome};
 
-pub use self::{app::*, error::*, resolver::*};
+use crate::resolver::Resolver;
 
-pub struct Outlayer<R> {
-    resolver: R,
+pub struct Outlayer {
+    resolver: Resolver,
     executor: Executor,
 }
 
-impl<R> Outlayer<R>
-where
-    R: Resolver,
-{
-    pub async fn execute(
-        &self,
-        app: App,
-        input: Bytes,
-        fuel: u64,
-    ) -> Result<Outcome, Error<R::Error>> {
+impl Outlayer {
+    pub async fn execute(&self, app: Code<'_>, input: Bytes, fuel: u64) -> Result<Outcome, Error> {
         let app_id = app.app_id();
+
         let wasm = match app {
-            App::Inline { wasm } => wasm,
-            App::AppId(app_id) => self
+            Code::Inline { code: wasm } => wasm,
+            Code::Ref(app_id) => self
                 .resolver
-                .resolve_wasm(app_id)
+                .resolve_code(app_id)
                 .await
                 .map_err(Error::Resolve)?,
         };

@@ -1,9 +1,7 @@
 use std::marker::PhantomData;
 
-use near_sdk::{
-    serde::{self, Deserializer, Serializer},
-    serde_with::{DeserializeAs, SerializeAs},
-};
+use serde::{self, Deserializer, Serializer};
+use serde_with::{DeserializeAs, SerializeAs};
 use tlb_ton::{
     BagOfCellsArgs, BoC, Context, Same,
     bits::NoArgs,
