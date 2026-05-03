@@ -8,17 +8,17 @@ pub use defuse_outlayer_primitives as primitives;
 use defuse_outlayer_primitives::AppId;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AppContext {
+pub struct Context {
     pub app_id: AppId<'static>,
 }
 
 pub struct State {
-    ctx: AppContext,
+    ctx: Context,
     signer: Arc<InMemorySigner>,
 }
 
 impl State {
-    pub fn new(ctx: AppContext, signer: impl Into<Arc<InMemorySigner>>) -> Self {
+    pub fn new(ctx: Context, signer: impl Into<Arc<InMemorySigner>>) -> Self {
         Self {
             ctx,
             signer: signer.into(),

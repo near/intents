@@ -5,9 +5,9 @@ use clap::Parser;
 use tokio::{fs, io};
 
 use defuse_outlayer_vm_runner::{
-    Context, VmRuntime, WasiContext,
+    Context as VmContext, VmRuntime, WasiContext,
     host::{
-        AppContext, InMemorySigner, State,
+        Context as HostContext, InMemorySigner, State as HostState,
         primitives::{AccountIdRef, AppId},
     },
 };
@@ -71,20 +71,20 @@ async fn main() -> Result<()> {
         .await
         .with_context(|| format!("failed to read: {}", args.wasm.display()))?;
 
-    let runner = VmRuntime::<State>::new().context("failed to initialize runtime")?;
+    let runner = VmRuntime::new().context("failed to initialize runtime")?;
 
     let component = runner
         .compile(&wasm_binary)
         .with_context(|| format!("failed to compile: {}", args.wasm.display()))?;
 
-    let ctx = Context {
+    let ctx = VmContext {
         wasi: WasiContext {
             stdin: io::stdin(),   // forward stdin
             stdout: io::stdout(), // forward stdout
             stderr: io::stderr(), // forward stderr
         },
-        host_state: State::new(
-            AppContext {
+        host_state: HostState::new(
+            HostContext {
                 app_id: args.app_id,
             },
             InMemorySigner::from_seed(&seed),

@@ -1,5 +1,5 @@
 use anyhow::{Context as _, Result, anyhow};
-use defuse_outlayer_host::bindings::Imports;
+use defuse_outlayer_host::{State as HostState, bindings::Imports};
 use tracing::instrument;
 use wasmtime::{
     Config, Engine, Store, StoreLimits, StoreLimitsBuilder,
@@ -12,30 +12,15 @@ use wasmtime_wasi::{
 };
 
 use crate::{
-    context::{HostCtx, HostFunctions},
+    Context, WasiContext,
     error::ExecutionError,
     outcome::{ExecutionDetails, ExecutionOutcome},
+    state::State,
 };
 
 /// Size of the guard region placed before linear memory to
 /// catch out-of-bounds accesses
 const MEMORY_GUARD_SIZE: u64 = 64 * 1024 * 1024; // 64 MiB
-
-pub struct WasiContext<I, O, E> {
-    pub stdin: I,
-    pub stdout: O,
-    pub stderr: E,
-}
-
-pub struct Context<I, O, E, H> {
-    pub wasi: WasiContext<I, O, E>,
-    pub host_state: H,
-    /// Maximum fuel the component may consume per execution
-    ///
-    /// Fuel roughly corresponds to the number of WebAssembly instructions
-    /// executed. Exceeding the limit raises [`ExecutionError::Trap`].
-    pub fuel: u64,
-}
 
 /// A runtime for executing wasip2 components with a custom host
 /// environment.
@@ -43,12 +28,12 @@ pub struct Context<I, O, E, H> {
 /// The host environment is defined by the `HostFunctions` trait,
 /// which must be implemented by the user and provided as a type
 /// parameter to the builder.
-pub struct VmRuntime<H: 'static> {
-    linker: Linker<HostCtx<H>>,
+pub struct VmRuntime {
+    linker: Linker<State>,
     store_limits: StoreLimits,
 }
 
-impl<H: HostFunctions + 'static> VmRuntime<H> {
+impl VmRuntime {
     const MEMORY_LIMIT: usize = 100 * 1024 * 1024; // 100 MB
 
     /// Creates a new `VmRuntime` with default configuration.
@@ -71,21 +56,36 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         //     .memory_reservation(self.memory_limit.try_into().unwrap());
 
         let engine = Engine::new(&config).context("engine")?;
-        let linker = create_linker::<H>(&engine).context("linker")?;
+        let linker = Self::create_linker(&engine).context("linker")?;
 
         Ok(Self {
             linker,
             store_limits: StoreLimitsBuilder::new()
                 .memory_size(Self::MEMORY_LIMIT)
+                // TODO: other?
                 .build(),
         })
+    }
+
+    fn create_linker(engine: &Engine) -> anyhow::Result<Linker<State>> {
+        let mut linker = Linker::new(engine);
+
+        // Add WASI imports to the linker
+        wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+
+        // Add host function imports to the linker
+        Imports::add_to_linker::<State, HasSelf<HostState>>(&mut linker, |ctx: &mut State| {
+            ctx.host_state_mut()
+        })?;
+
+        Ok(linker)
     }
 
     /// Convenience method to compile and execute a component in one step. See
     /// [`execute`](Self::execute) for details and examples.
     pub async fn run<I, O, E>(
         &self,
-        ctx: Context<I, O, E, H>,
+        ctx: Context<I, O, E>,
         binary: impl AsRef<[u8]>,
     ) -> Result<ExecutionOutcome>
     where
@@ -151,7 +151,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     #[instrument(skip_all)]
     pub async fn execute<I, O, E>(
         &self,
-        ctx: Context<I, O, E, H>,
+        ctx: Context<I, O, E>,
         component: &Component,
     ) -> Result<ExecutionOutcome>
     where
@@ -181,7 +181,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         })
     }
 
-    fn make_store<I, O, E>(&self, ctx: Context<I, O, E, H>) -> Store<HostCtx<H>>
+    fn make_store<I, O, E>(&self, ctx: Context<I, O, E>) -> Store<State>
     where
         I: StdinStream + 'static,
         O: StdoutStream + 'static,
@@ -189,7 +189,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     {
         let mut store = Store::new(
             self.linker.engine(),
-            HostCtx::new(
+            State::new(
                 Self::make_wasi_ctx(ctx.wasi),
                 ctx.host_state,
                 self.store_limits.clone(),
@@ -222,21 +222,4 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
             // * .secure_random()
             .build()
     }
-}
-
-fn create_linker<H>(engine: &Engine) -> anyhow::Result<Linker<HostCtx<H>>>
-where
-    H: HostFunctions,
-{
-    let mut linker = Linker::new(engine);
-
-    // Add WASI imports to the linker
-    wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
-
-    // Add host function imports to the linker
-    Imports::add_to_linker::<HostCtx<H>, HasSelf<H>>(&mut linker, |ctx: &mut HostCtx<H>| {
-        ctx.host_state_mut()
-    })?;
-
-    Ok(linker)
 }

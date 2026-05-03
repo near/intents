@@ -19,9 +19,12 @@ use tower::Service;
 use tracing::Instrument;
 
 pub struct Executor {
+    runtime: Arc<VmRuntime>,
     signer: Arc<InMemorySigner>,
-    runtime: Arc<VmRuntime<State>>,
 }
+
+const STDOUT_LIMIT: usize = 4 * 1024 * 1024; // 4 MB
+const STDERR_LIMIT: usize = 16 * 1024; // 16 KB
 
 impl Service<Request> for Executor {
     type Response = Response;
@@ -39,8 +42,8 @@ impl Service<Request> for Executor {
         let signer = self.signer.clone();
 
         async move {
-            let stdout = MemoryOutputPipe::new(req.limits.stdout_size);
-            let stderr = MemoryOutputPipe::new(req.limits.stderr_size);
+            let stdout = MemoryOutputPipe::new(STDOUT_LIMIT);
+            let stderr = MemoryOutputPipe::new(STDERR_LIMIT);
 
             let outcome = runtime
                 .execute(
@@ -50,8 +53,8 @@ impl Service<Request> for Executor {
                             stdout: stdout.clone(),
                             stderr: stderr.clone(),
                         },
-                        host_state: State::new(req.ctx.app, signer),
-                        fuel: req.limits.fuel,
+                        host_state: State::new(req.ctx.host, signer),
+                        fuel: req.fuel,
                     },
                     &req.component,
                 )
