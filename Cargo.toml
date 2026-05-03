@@ -159,6 +159,7 @@ hkdf = "0.13"
 impl-tools = "0.11"
 itertools = "0.14"
 k256 = { version = "0.13.4", default-features = false }
+lru = "0.18"
 num-traits = "0.2.19"
 p256 = { version = "0.13.2", default-features = false }
 proptest = "1.5"

@@ -1,10 +1,9 @@
 use bytes::Bytes;
-use defuse_outlayer_vm_runner::{host::Context as HostContext, wasmtime::component::Component};
+use defuse_outlayer_vm_runner::host::Context as HostContext;
 
 pub struct Request {
     pub ctx: Context,
-    // TODO: replace with binary and add caching layer?
-    pub component: Component,
+    pub wasm: Bytes,
     pub fuel: u64,
 }
 

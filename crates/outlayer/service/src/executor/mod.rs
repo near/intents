@@ -4,23 +4,56 @@ mod response;
 pub use self::{request::*, response::*};
 
 use std::{
+    num::NonZeroUsize,
     sync::Arc,
     task::{self, Poll},
 };
 
+use anyhow::Context as _;
+use bytes::Bytes;
 use defuse_outlayer_vm_runner::{
     Context as VmContext, VmRuntime, WasiContext,
     host::{Host, InMemorySigner},
-    wasmtime::Error,
+    wasmtime::{Error, component::Component},
     wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe},
 };
 use futures::{FutureExt, future::BoxFuture};
+use lru::LruCache;
 use tower::Service;
 use tracing::Instrument;
 
 pub struct Executor {
     runtime: Arc<VmRuntime>,
+    cache: LruCache<Bytes, Component>,
+    // TODO: add LRU cache for components
     signer: Arc<InMemorySigner>,
+}
+
+pub struct ExecutorBuilder {
+    component_cache_cap: NonZeroUsize,
+}
+
+impl Default for ExecutorBuilder {
+    fn default() -> Self {
+        Self {
+            component_cache_cap: NonZeroUsize::new(1).unwrap_or_else(|| unreachable!()),
+        }
+    }
+}
+
+impl ExecutorBuilder {
+    pub fn cache_components(mut self, cap: NonZeroUsize) -> Self {
+        self.component_cache_cap = cap;
+        self
+    }
+
+    pub fn build(self, signer: impl Into<Arc<InMemorySigner>>) -> anyhow::Result<Executor> {
+        Ok(Executor {
+            runtime: VmRuntime::new()?.into(),
+            cache: LruCache::new(self.component_cache_cap),
+            signer: signer.into(),
+        })
+    }
 }
 
 const STDOUT_LIMIT: usize = 4 * 1024 * 1024; // 4 MB
@@ -38,27 +71,33 @@ impl Service<Request> for Executor {
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
+        let component = match self
+            .cache
+            .try_get_or_insert_with_key(req.wasm, |binary| {
+                self.runtime.compile(binary).context("compile")
+            })
+            .cloned()
+        {
+            Ok(component) => component,
+            Err(err) => return futures::future::ready(Err(err)).boxed(),
+        };
+
+        let ctx = VmContext {
+            wasi: WasiContext {
+                stdin: MemoryInputPipe::new(req.ctx.input),
+                stdout: MemoryOutputPipe::new(STDOUT_LIMIT),
+                stderr: MemoryOutputPipe::new(STDERR_LIMIT),
+            },
+            host: Host::new(req.ctx.host, self.signer.clone()),
+            fuel: req.fuel,
+        };
+
         let runtime = self.runtime.clone();
-        let signer = self.signer.clone();
-
         async move {
-            let stdout = MemoryOutputPipe::new(STDOUT_LIMIT);
-            let stderr = MemoryOutputPipe::new(STDERR_LIMIT);
+            let stdout = ctx.wasi.stdout.clone();
+            let stderr = ctx.wasi.stderr.clone();
 
-            let outcome = runtime
-                .execute(
-                    VmContext {
-                        wasi: WasiContext {
-                            stdin: MemoryInputPipe::new(req.ctx.input),
-                            stdout: stdout.clone(),
-                            stderr: stderr.clone(),
-                        },
-                        host: Host::new(req.ctx.host, signer),
-                        fuel: req.fuel,
-                    },
-                    &req.component,
-                )
-                .await?;
+            let outcome = runtime.execute(ctx, &component).await?;
 
             Ok(Response {
                 output: stdout.contents(),
