@@ -1,4 +1,5 @@
 pub mod executor;
-mod service;
+mod resolver;
+pub mod service;
 
 pub use self::service::*;
