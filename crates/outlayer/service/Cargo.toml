@@ -34,7 +34,6 @@ serde_with = { workspace = true, optional = true, features = ["hex"] }
 default = ["serde"]
 
 serde = [
-  "bytes/serde",
   "defuse-outlayer-primitives/serde",
   "dep:cfg_eval",
   "dep:serde",
