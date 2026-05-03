@@ -1,17 +1,13 @@
-mod error;
 mod near;
 mod url;
-
-pub use self::error::*;
 
 use bytes::Bytes;
 use defuse_outlayer_primitives::AppId;
 use sha2::{Digest, Sha256};
 
-use crate::{
-    AppCodeUrl, CodeRef,
-    resolver::{near::NearResolver, url::UrlResolver},
-};
+use crate::{AppCodeUrl, CodeRef};
+
+use self::{near::NearResolver, url::UrlResolver};
 
 // TODO: caching
 pub struct Resolver {
@@ -37,4 +33,16 @@ impl Resolver {
 
         Ok(code)
     }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("code hash mismatch")]
+    CodeHashMismatch,
+
+    #[error("NEAR: {0}")]
+    NearRpc(#[from] near_kit::Error),
+
+    #[error("URL: {0}")]
+    Url(#[from] self::url::Error),
 }

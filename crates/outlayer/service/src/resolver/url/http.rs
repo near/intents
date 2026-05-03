@@ -3,19 +3,24 @@ use reqwest::{Client, Result};
 use url::Url;
 
 pub struct HttpResolver {
+    // TODO: caching?
     client: Client,
 }
 
 impl HttpResolver {
     pub async fn resolve(&self, url: Url) -> Result<Bytes> {
-        self.client
+        let resp = self
+            .client
             .get(url)
+            .header("Accept", "application/wasm,application/octet-stream")
             // TODO: + Accept-Encoding?
-            .header("Accept", "application/wasm")
             .send()
             .await?
-            .error_for_status()?
-            .bytes()
-            .await
+            .error_for_status()?;
+
+        // TODO: check resp.content_length()
+
+        // TODO: limit downloaded size
+        resp.bytes().await
     }
 }
