@@ -26,3 +26,9 @@ serde_with = { workspace = true, optional = true }
 default = ["serde"]
 
 serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with"]
+wat = ["wasmtime/wat"]
+
+[dev-dependencies]
+defuse-outlayer-primitives = { workspace = true, features = ["example"] }
+defuse-outlayer-vm-runner = { path = ".", features = ["wat"] }
+tokio = { workspace = true, features = ["rt", "macros"] }

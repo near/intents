@@ -1,38 +1,20 @@
-use std::{
-    num::NonZeroUsize,
-    sync::{Arc, Mutex},
-};
+use std::sync::Arc;
 
 use defuse_outlayer_vm_runner::{VmRuntime, host::InMemorySigner};
-use lru::LruCache;
 
-use crate::Executor;
+use crate::{CacheBuilder, Executor};
 
 #[must_use = "use .build()"]
+#[derive(Debug, Clone, Default)]
 pub struct ExecutorBuilder {
-    compiled_cache_cap: NonZeroUsize,
-}
-
-impl Default for ExecutorBuilder {
-    fn default() -> Self {
-        Self {
-            compiled_cache_cap: Self::DEFAULT_CACHE_CAP,
-        }
-    }
+    compile_cache: CacheBuilder,
 }
 
 impl ExecutorBuilder {
-    const DEFAULT_CACHE_CAP: NonZeroUsize = NonZeroUsize::new(1).unwrap();
-
-    pub const fn compiled_cache_cap(mut self, cap: NonZeroUsize) -> Self {
-        self.compiled_cache_cap = cap;
-        self
-    }
-
     pub fn build(self, signer: impl Into<Arc<InMemorySigner>>) -> anyhow::Result<Executor> {
         Ok(Executor {
             runtime: VmRuntime::new()?.into(),
-            compiled_cache: Arc::new(Mutex::new(LruCache::new(self.compiled_cache_cap))),
+            compiled_cache: self.compile_cache.build(),
             signer: signer.into(),
         })
     }

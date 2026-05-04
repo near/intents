@@ -110,3 +110,20 @@ pub enum ParseAppIdError {
     #[error(transparent)]
     ParseError(#[from] strum::ParseError),
 }
+
+#[cfg(feature = "example")]
+impl AppId<'static> {
+    /// Generated via near-cli@0.26.1:
+    /// ```sh
+    /// near contract state-init \
+    ///   use-global-account-id 'test' \
+    ///   data-from-json "$(near oa -q \
+    ///       --admin-id 'test' \
+    ///       --code-hash /'0000000000000000000000000000000000000000000000000000000000000000' \
+    ///       --code-url 'data:application/wasm;base64,' \
+    ///   )" inspect account-id
+    /// ```
+    pub const EXAMPLE: Self = Self::Near(Cow::Borrowed(AccountIdRef::new_or_panic(
+        "0se1573c9dff58d4a57384dee048c9b1a809fb6839",
+    )));
+}

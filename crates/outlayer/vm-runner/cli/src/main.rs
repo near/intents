@@ -1,4 +1,4 @@
-use std::{borrow::Cow, path::PathBuf};
+use std::path::PathBuf;
 
 use anyhow::{Context as _, Result};
 use clap::Parser;
@@ -6,26 +6,8 @@ use tokio::{fs, io};
 
 use defuse_outlayer_vm_runner::{
     Context as VmContext, VmRuntime, WasiContext,
-    host::{
-        Context as HostContext, Host, InMemorySigner,
-        primitives::{AccountIdRef, AppId},
-    },
+    host::{Context as HostContext, Host, InMemorySigner, primitives::AppId},
 };
-
-// Generated via near-cli@0.26.1:
-// ```sh
-// near contract state-init \
-//   use-global-account-id 'test' \
-//   data-from-json "$(near oa -q \
-//       --admin-id 'test' \
-//       --code-hash '0000000000000000000000000000000000000000000000000000000000000000' \
-//       --code-url 'data:application/wasm;base64,' \
-//   )" inspect account-id
-// ```
-// matches mocked default in SDK
-const DEFAULT_APP_ID: AppId = AppId::Near(Cow::Borrowed(AccountIdRef::new_or_panic(
-    "0se1573c9dff58d4a57384dee048c9b1a809fb6839",
-)));
 
 // matches mocked default in SDK
 const DEFAULT_SEED: &[u8] = b"test";
@@ -43,7 +25,7 @@ struct Args {
     wasm: PathBuf,
 
     /// Application ID to use in the host context
-    #[arg(long, short, default_value_t = DEFAULT_APP_ID)]
+    #[arg(long, short, default_value_t = AppId::EXAMPLE)]
     app_id: AppId<'static>,
 
     /// Path to a file containing the raw seed for the host's signer key

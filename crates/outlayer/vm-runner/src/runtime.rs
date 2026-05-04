@@ -97,7 +97,7 @@ impl VmRuntime {
 
     /// Compile wasip2 component from the given binary data
     pub fn compile(&self, binary: impl AsRef<[u8]>) -> Result<Component> {
-        Component::from_binary(self.linker.engine(), binary.as_ref())
+        Component::new(self.linker.engine(), binary.as_ref())
     }
 
     /// Executes the `wasi:cli/run` function of the given component.
@@ -114,31 +114,33 @@ impl VmRuntime {
     ///
     /// Using [`State`](crate::host::State) directly:
     ///
-    /// ```rust,no_run
-    /// use std::borrow::Cow;
-    /// use defuse_outlayer_vm_runner::{
-    ///     Context, VmRuntime,
-    ///     host::{AppContext, State},
-    /// };
-    /// use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
-    ///
-    /// # async fn example() -> anyhow::Result<()> {
-    /// # let app_id = todo!();
-    /// # let signer = todo!();
-    /// let state = State::new(AppContext { app_id }, Cow::Owned(signer));
+    /// ```rust
+    /// # use std::borrow::Cow;
+    /// # use defuse_outlayer_vm_runner::{
+    /// #     Context, VmRuntime, WasiContext,
+    /// #     host::{Context as HostContext, Host, InMemorySigner, primitives::AppId},
+    /// # };
+    /// # use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
+    /// # #[tokio::main]
+    /// # async fn main() -> anyhow::Result<()> {
+    /// # let app_id = AppId::EXAMPLE;
+    /// # let signer = InMemorySigner::from_seed(b"");
+    /// let host = Host::new(HostContext { app_id }, signer);
     ///
     /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024); // 4 MB
     /// let stderr = MemoryOutputPipe::new(64 * 1024);       // 64 KB
-    /// let ctx = Context::new(
-    ///     MemoryInputPipe::new(b"input".to_vec()),
-    ///     stdout.clone(),
-    ///     stderr.clone(),
-    ///     state,
-    /// );
+    /// let ctx = Context {
+    ///     wasi: WasiContext {
+    ///         stdin: MemoryInputPipe::new(b"input".to_vec()),
+    ///         stdout: stdout.clone(),
+    ///         stderr: stderr.clone(),
+    ///     },
+    ///     host,
+    ///     fuel: 1_000_000_000,
+    /// };
     ///
-    /// let runner = VmRuntime::<State>::new()?;
-    /// let wasm = std::fs::read("component.wasm")?;
-    /// let component = runner.compile(&wasm)?;
+    /// let runner = VmRuntime::new()?;
+    /// let component = runner.compile(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../sdk/examples/empty.wat")))?;
     /// runner.execute(ctx, &component).await?;
     ///
     /// let stdout = stdout.contents();

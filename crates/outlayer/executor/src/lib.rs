@@ -1,9 +1,10 @@
 mod builder;
+mod cache;
 mod error;
 
-pub use self::{builder::*, error::*};
+pub use self::{builder::*, cache::*, error::*};
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub use defuse_outlayer_vm_runner::host::Context as HostContext;
 use defuse_outlayer_vm_runner::{
@@ -14,13 +15,12 @@ use defuse_outlayer_vm_runner::{
 };
 
 use bytes::Bytes;
-use lru::LruCache;
-use tokio::sync::OnceCell;
+use moka::sync::Cache;
 
 #[derive(Clone)]
 pub struct Executor {
     runtime: Arc<VmRuntime>,
-    compiled_cache: Arc<Mutex<LruCache<Bytes, OnceCell<Component>>>>,
+    compiled_cache: Cache<Bytes, Component>,
     signer: Arc<InMemorySigner>,
 }
 
@@ -39,8 +39,10 @@ pub struct Context {
 pub struct Outcome {
     #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::base64::Base64"))]
     pub output: Bytes,
+
     #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::base64::Base64"))]
     pub logs: Bytes,
+
     pub execution: ExecutionOutcome,
 }
 
@@ -66,7 +68,7 @@ impl Executor {
             return Err(Error::InputTooLong);
         }
 
-        let component = self.compile(wasm).await.map_err(Error::Compile)?;
+        let component = self.compile(wasm).map_err(Error::Compile)?;
 
         let stdout = MemoryOutputPipe::new(STDOUT_LIMIT);
         let stderr = MemoryOutputPipe::new(STDERR_LIMIT);
@@ -93,17 +95,8 @@ impl Executor {
         })
     }
 
-    async fn compile(&self, wasm: Bytes) -> anyhow::Result<Component> {
-        let cached = self
-            .compiled_cache
-            .lock()
-            .unwrap()
-            .get_or_insert(wasm.clone(), OnceCell::new)
-            .clone();
-
-        cached
-            .get_or_try_init(|| async { self.runtime.compile(wasm) })
-            .await
-            .cloned()
+    fn compile(&self, wasm: Bytes) -> Result<Component, Arc<anyhow::Error>> {
+        self.compiled_cache
+            .try_get_with(wasm.clone(), || self.runtime.compile(wasm))
     }
 }

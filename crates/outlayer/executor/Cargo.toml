@@ -13,9 +13,8 @@ defuse-outlayer-vm-runner.workspace = true
 
 anyhow.workspace = true
 bytes.workspace = true
-lru.workspace = true
+moka = { workspace = true, features = ["sync"] }
 thiserror.workspace = true
-tokio = { workspace = true, features = ["sync"] }
 
 cfg_eval = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
