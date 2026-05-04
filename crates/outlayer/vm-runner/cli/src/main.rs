@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::{Context as _, Result};
+use anyhow::{Context as _, Error, Result};
 use clap::Parser;
 use tokio::{fs, io};
 
@@ -76,5 +76,5 @@ async fn main() -> Result<()> {
 
     let outcome = runner.execute(ctx, &component).await.context("execute")?;
 
-    outcome.into_result().map_err(anyhow::Error::msg)
+    outcome.into_result().map_err(Error::msg)
 }

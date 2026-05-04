@@ -7,5 +7,5 @@
     (canon lift (core func $i "run")))
   (instance $iface
     (export "run" (func $run)))
-  (export "wasi:cli/run@0.2.6" (instance $iface))
+  (export "wasi:cli/run@0.2.0" (instance $iface))
 )
