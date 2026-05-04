@@ -1762,6 +1762,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "defuse-outlayer-primitives",
  "defuse-outlayer-vm-runner",
  "tokio",
 ]
