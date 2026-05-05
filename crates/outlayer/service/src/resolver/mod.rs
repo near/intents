@@ -4,12 +4,11 @@ mod url;
 use bytes::Bytes;
 use defuse_outlayer_primitives::AppId;
 use sha2::{Digest, Sha256};
-
 use crate::{AppCodeUrl, CodeRef};
 
 use self::{near::NearResolver, url::UrlResolver};
 
-// TODO: caching
+#[derive(Clone)]
 pub struct Resolver {
     near: NearResolver,
     url: UrlResolver,
@@ -34,7 +33,7 @@ impl Resolver {
         Ok(code)
     }
 
-    async fn resolve_app_id(&self, app_id: AppId<'_>) -> Result<AppCodeUrl> {
+    pub async fn resolve_app_id(&self, app_id: AppId<'_>) -> Result<AppCodeUrl> {
         match app_id {
             AppId::Near(oa_contract_id) => {
                 self.near.resolve(oa_contract_id).await.map_err(Into::into)

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use defuse_outlayer_vm_runner::wasmtime;
 
 #[derive(thiserror::Error, Debug)]
@@ -9,7 +7,7 @@ pub enum Error {
     InputTooLong,
 
     #[error("compile: {0}")]
-    Compile(Arc<wasmtime::Error>),
+    Compile(anyhow::Error),
 
     #[error(transparent)]
     Execute(wasmtime::Error),
