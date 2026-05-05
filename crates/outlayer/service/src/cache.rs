@@ -23,7 +23,8 @@ impl CacheBuilder {
     }
 
     pub fn build(self) -> Cache<Bytes, Component> {
-        let mut builder = Cache::builder();
+        let mut builder = Cache::<Bytes, Component>::builder()
+            .weigher(|wasm, _compiled| wasm.len().try_into().unwrap_or(u32::MAX));
         if let Some(cap) = self.max_capacity {
             builder = builder.max_capacity(cap);
         }
