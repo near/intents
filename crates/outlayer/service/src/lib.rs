@@ -75,7 +75,8 @@ impl Outlayer {
                 .await
                 .map_err(Error::Compile)
         } else {
-            do_compile(code).await
+            do_compile(code)
+                .await
                 .map_err(Arc::new)
                 .map_err(Error::Compile)
         }
@@ -91,8 +92,6 @@ impl Outlayer {
             .map_err(Into::into)
     }
 }
-
-
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

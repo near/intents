@@ -15,7 +15,7 @@ impl Compiler {
         Ok(self.0.compile(wasm)?)
     }
 }
- 
+
 #[derive(thiserror::Error, Debug)]
 #[error(transparent)]
 pub struct CompileError(#[from] pub anyhow::Error);

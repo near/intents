@@ -1,10 +1,10 @@
 mod near;
 mod url;
 
+use crate::{AppCodeUrl, CodeRef};
 use bytes::Bytes;
 use defuse_outlayer_primitives::AppId;
 use sha2::{Digest, Sha256};
-use crate::{AppCodeUrl, CodeRef};
 
 use self::{near::NearResolver, url::UrlResolver};
 

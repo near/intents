@@ -9,4 +9,3 @@ pub enum Error {
     #[error(transparent)]
     Execute(wasmtime::Error),
 }
-
