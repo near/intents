@@ -27,7 +27,7 @@ pub enum Error {
     Data(#[from] data::Error),
 
     #[error("HTTP: {0}")]
-    Http(#[from] reqwest::Error),
+    Http(#[from] http::Error),
 
     #[error("unsupported scheme: {0}")]
     UnsupportedScheme(String),

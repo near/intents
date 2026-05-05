@@ -19,7 +19,7 @@ bytes.workspace = true
 data-url.workspace = true
 futures.workspace = true
 near-kit.workspace = true
-reqwest.workspace = true
+reqwest = { workspace = true, features = ["stream"] }
 sha2.workspace = true
 thiserror.workspace = true
 tower = { workspace = true, features = ["util"] }

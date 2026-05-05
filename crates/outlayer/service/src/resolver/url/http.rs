@@ -1,14 +1,23 @@
 use bytes::Bytes;
-use reqwest::{Client, Result};
+
+// Safe: usize is at most 64 bits wide (pointer-width), so it always fits in u64.
+const USIZE_FITS_U64: &str = "usize should always fit in u64";
+use futures::TryStreamExt as _;
+use reqwest::Client;
 use url::Url;
 
 pub struct HttpResolver {
     // TODO: caching?
     client: Client,
+    max_len: u64,
 }
 
 impl HttpResolver {
-    pub async fn resolve(&self, url: Url) -> Result<Bytes> {
+    pub fn new(client: Client, max_len: u64) -> Self {
+        Self { client, max_len }
+    }
+
+    pub async fn resolve(&self, url: Url) -> Result<Bytes, Error> {
         let resp = self
             .client
             .get(url)
@@ -18,9 +27,47 @@ impl HttpResolver {
             .await?
             .error_for_status()?;
 
-        // TODO: check resp.content_length()
+        // Fast-reject on a declared Content-Length that already exceeds the limit.
+        if let Some(len) = resp.content_length() {
+            if len > self.max_len {
+                return Err(Error::TooLarge {
+                    limit: self.max_len,
+                });
+            }
+        }
 
-        // TODO: limit downloaded size
-        resp.bytes().await
+        // Pre-allocate to the declared length (capped)
+        let mut buf = resp
+            .content_length()
+            .map(|len| len.min(self.max_len))
+            .and_then(|len| usize::try_from(len).ok())
+            .map(Vec::with_capacity)
+            .unwrap_or_default();
+
+        let mut stream = resp.bytes_stream();
+        while let Some(chunk) = stream.try_next().await? {
+            let buf_len = u64::try_from(buf.len()).expect(USIZE_FITS_U64);
+            let chunk_len = u64::try_from(chunk.len()).expect(USIZE_FITS_U64);
+            match buf_len.checked_add(chunk_len) {
+                Some(new_len) if new_len <= self.max_len => {}
+                Some(_) | None => {
+                    return Err(Error::TooLarge {
+                        limit: self.max_len,
+                    });
+                }
+            }
+            buf.extend_from_slice(&chunk);
+        }
+
+        Ok(Bytes::from(buf))
     }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("HTTP request failed: {0}")]
+    Reqwest(#[from] reqwest::Error),
+
+    #[error("response too large, limit is {limit} bytes")]
+    TooLarge { limit: u64 },
 }
