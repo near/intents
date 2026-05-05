@@ -1,9 +1,8 @@
+use bytes::Bytes;
 use std::time::Duration;
 
 use defuse_outlayer_executor::Component;
 use moka::future::Cache;
-
-use crate::AppCodeUrl;
 
 #[must_use = "use .build()"]
 #[derive(Debug, Clone, Default)]
@@ -23,7 +22,7 @@ impl CacheBuilder {
         self
     }
 
-    pub fn build(self) -> Cache<AppCodeUrl, Component> {
+    pub fn build(self) -> Cache<Bytes, Component> {
         let mut builder = Cache::builder();
         if let Some(cap) = self.max_capacity {
             builder = builder.max_capacity(cap);

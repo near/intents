@@ -12,20 +12,19 @@ use defuse_outlayer_executor::{
     self as executor, CompileError, Component, Context, Executor, HostContext, Outcome,
 };
 use moka::future::Cache;
-use sha2::{Digest, Sha256};
 
 #[derive(Clone)]
 pub struct Outlayer {
     resolver: Resolver,
     executor: Executor,
-    runtime_cache: Option<Cache<[u8; 32], Component>>,
+    runtime_cache: Option<Cache<Bytes, Component>>,
 }
 
 impl Outlayer {
     pub const fn new(
         resolver: Resolver,
         executor: Executor,
-        cache: Option<Cache<[u8; 32], Component>>,
+        cache: Option<Cache<Bytes, Component>>,
     ) -> Self {
         Self {
             resolver,
@@ -36,17 +35,12 @@ impl Outlayer {
 
     async fn resolve(&self, app: Code<'_>) -> Result<(HostContext<'static>, Bytes), Error> {
         match app {
-            Code::Ref(CodeRef::AppId(app_id)) => {
-                let app_id = app_id.into_owned();
-                let url = self.resolver.resolve_app_id(app_id.as_ref()).await?;
-                let bytes = self.resolver.fetch_and_verify(&url).await?;
-                Ok((HostContext { app_id }, bytes))
-            }
-            Code::Ref(CodeRef::Url(app_code_url)) => {
-                let app_id = app_code_url.immutable_app_id();
-                let bytes = self.resolver.fetch_and_verify(&app_code_url).await?;
-                Ok((HostContext { app_id }, bytes))
-            }
+            Code::Ref(code_ref) => Ok((
+                HostContext {
+                    app_id: code_ref.app_id(),
+                },
+                self.resolver.resolve_code(code_ref).await?,
+            )),
             Code::Inline { code } => {
                 let app_code_url: AppCodeUrl = code.clone().into();
                 Ok((
@@ -60,8 +54,6 @@ impl Outlayer {
     }
 
     async fn compile(&self, code: Bytes) -> Result<Component, Error> {
-        let code_hash = Sha256::digest(&code).into();
-
         let do_compile = |code| async {
             let compiler = self.executor.compiler();
             tokio::task::spawn_blocking(move || compiler.compile(code))
@@ -71,7 +63,7 @@ impl Outlayer {
 
         if let Some(cache) = &self.runtime_cache {
             cache
-                .try_get_with(code_hash, do_compile(code))
+                .try_get_with(code.clone(), do_compile(code))
                 .await
                 .map_err(Error::Compile)
         } else {

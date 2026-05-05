@@ -16,21 +16,13 @@ pub struct Resolver {
 
 impl Resolver {
     pub async fn resolve_code(&self, code: CodeRef<'_>) -> Result<Bytes> {
-        let AppCodeUrl {
-            code_url,
-            code_hash,
-        } = match code {
-            CodeRef::AppId(app_id) => self.resolve_app_id(app_id).await?,
-            CodeRef::Url(code_url) => code_url,
-        };
-
-        let code = self.url.resolve(code_url).await?;
-
-        if code_hash != Sha256::digest(&code) {
-            return Err(Error::CodeHashMismatch);
+        match code {
+            CodeRef::AppId(app_id) => {
+                let url = self.resolve_app_id(app_id.as_ref()).await?;
+                self.fetch_and_verify(&url).await
+            }
+            CodeRef::Url(app_code_url) => self.fetch_and_verify(&app_code_url).await,
         }
-
-        Ok(code)
     }
 
     pub async fn fetch_and_verify(&self, url: &AppCodeUrl) -> Result<Bytes> {

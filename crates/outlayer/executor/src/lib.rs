@@ -56,13 +56,6 @@ const STDOUT_LIMIT: usize = 4 * 1024 * 1024; // 4 MB
 const STDERR_LIMIT: usize = 16 * 1024; // 16 KB
 
 impl Executor {
-    pub fn new(signer: impl Into<Arc<InMemorySigner>>) -> anyhow::Result<Self> {
-        Ok(Self {
-            runtime: VmRuntime::new()?.into(),
-            signer: signer.into(),
-        })
-    }
-
     pub fn compiler(&self) -> Compiler {
         Compiler::new(self.runtime.clone())
     }
