@@ -6,13 +6,7 @@ pub enum Error {
     #[error("input is too long")]
     InputTooLong,
 
-    #[error("compile: {0}")]
-    Compile(CompileError),
-
     #[error(transparent)]
     Execute(wasmtime::Error),
 }
 
-#[derive(thiserror::Error, Debug)]
-#[error(transparent)]
-pub struct CompileError(pub anyhow::Error);

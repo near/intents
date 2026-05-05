@@ -67,7 +67,6 @@ impl Outlayer {
             tokio::task::spawn_blocking(move || compiler.compile(code))
                 .await
                 .map_err(|e| CompileError(anyhow::anyhow!("compile panicked: {e}")))?
-                .map_err(CompileError)
         };
 
         if let Some(cache) = &self.runtime_cache {
@@ -76,7 +75,9 @@ impl Outlayer {
                 .await
                 .map_err(Error::Compile)
         } else {
-            do_compile(code).await.map_err(|e| Error::Compile(Arc::new(e)))
+            do_compile(code).await
+                .map_err(Arc::new)
+                .map_err(Error::Compile)
         }
     }
 

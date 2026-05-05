@@ -11,7 +11,11 @@ impl Compiler {
         Self(runtime)
     }
 
-    pub fn compile(&self, wasm: Bytes) -> anyhow::Result<Component> {
-        self.0.compile(wasm)
+    pub fn compile(&self, wasm: Bytes) -> Result<Component, CompileError> {
+        Ok(self.0.compile(wasm)?)
     }
 }
+ 
+#[derive(thiserror::Error, Debug)]
+#[error(transparent)]
+pub struct CompileError(#[from] pub anyhow::Error);
