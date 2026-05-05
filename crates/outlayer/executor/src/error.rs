@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use defuse_outlayer_vm_runner::wasmtime;
 
 #[derive(thiserror::Error, Debug)]
@@ -15,6 +13,6 @@ pub enum Error {
     Execute(wasmtime::Error),
 }
 
-#[derive(thiserror::Error, Debug, Clone)]
+#[derive(thiserror::Error, Debug)]
 #[error(transparent)]
-pub struct CompileError(pub Arc<anyhow::Error>);
+pub struct CompileError(pub anyhow::Error);

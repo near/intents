@@ -66,18 +66,17 @@ impl Outlayer {
             let compiler = self.executor.compiler();
             tokio::task::spawn_blocking(move || compiler.compile(code))
                 .await
-                .map_err(|e| anyhow::anyhow!("compile panicked: {e}"))?
+                .map_err(|e| CompileError(anyhow::anyhow!("compile panicked: {e}")))?
+                .map_err(CompileError)
         };
 
         if let Some(cache) = &self.runtime_cache {
             cache
                 .try_get_with(code_hash, do_compile(code))
                 .await
-                .map_err(|e| Error::Compile(CompileError(e)))
+                .map_err(Error::Compile)
         } else {
-            do_compile(code)
-                .await
-                .map_err(|e| Error::Compile(CompileError(Arc::new(e))))
+            do_compile(code).await.map_err(|e| Error::Compile(Arc::new(e)))
         }
     }
 
@@ -99,7 +98,7 @@ pub enum Error {
     #[error("resolve: {0}")]
     Resolve(#[from] resolver::Error),
     #[error("compile: {0}")]
-    Compile(CompileError),
+    Compile(Arc<CompileError>),
     #[error(transparent)]
     Execute(#[from] executor::Error),
 }
