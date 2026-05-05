@@ -1,0 +1,36 @@
+use std::time::Duration;
+
+use defuse_outlayer_executor::Component;
+use moka::future::Cache;
+
+use crate::AppCodeUrl;
+
+#[must_use = "use .build()"]
+#[derive(Debug, Clone, Default)]
+pub struct CacheBuilder {
+    max_capacity: Option<u64>,
+    time_to_idle: Option<Duration>,
+}
+
+impl CacheBuilder {
+    pub const fn max_capacity(mut self, max_capacity: u64) -> Self {
+        self.max_capacity = Some(max_capacity);
+        self
+    }
+
+    pub const fn time_to_idle(mut self, tti: Duration) -> Self {
+        self.time_to_idle = Some(tti);
+        self
+    }
+
+    pub fn build(self) -> Cache<AppCodeUrl, Component> {
+        let mut builder = Cache::builder();
+        if let Some(cap) = self.max_capacity {
+            builder = builder.max_capacity(cap);
+        }
+        if let Some(tti) = self.time_to_idle {
+            builder = builder.time_to_idle(tti);
+        }
+        builder.build()
+    }
+}

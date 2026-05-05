@@ -1,8 +1,7 @@
-mod builder;
 mod compiler;
 mod error;
 
-pub use self::{builder::*, compiler::*, error::*};
+pub use self::{compiler::*, error::*};
 
 use std::sync::Arc;
 
@@ -57,12 +56,15 @@ const STDOUT_LIMIT: usize = 4 * 1024 * 1024; // 4 MB
 const STDERR_LIMIT: usize = 16 * 1024; // 16 KB
 
 impl Executor {
-    pub fn builder() -> ExecutorBuilder {
-        ExecutorBuilder::default()
+    pub fn new(signer: impl Into<Arc<InMemorySigner>>) -> anyhow::Result<Self> {
+        Ok(Self {
+            runtime: VmRuntime::new()?.into(),
+            signer: signer.into(),
+        })
     }
 
     pub fn compiler(&self) -> Compiler {
-        Compiler(self.runtime.clone())
+        Compiler::new(self.runtime.clone())
     }
 
     pub async fn execute(

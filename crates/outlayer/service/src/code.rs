@@ -24,14 +24,7 @@ impl Code<'_> {
     pub fn app_id(&self) -> AppId<'static> {
         match self {
             Self::Ref(app) => app.app_id(),
-            Self::Inline { code } => AppCodeUrl {
-                // See <https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/data>
-                code_url: format!("data:application/wasm;base64,{}", URL_SAFE.encode(code))
-                    .parse()
-                    .expect("URL: parse"),
-                code_hash: Sha256::digest(code).into(),
-            }
-            .app_id(),
+            Self::Inline { code } => AppCodeUrl::from(code.clone()).immutable_app_id(),
         }
     }
 }
@@ -47,7 +40,7 @@ impl CodeRef<'_> {
     pub fn app_id(&self) -> AppId<'static> {
         match self {
             Self::AppId(app_id) => app_id.clone().into_owned(),
-            Self::Url(url) => url.app_id(),
+            Self::Url(url) => url.immutable_app_id(),
         }
     }
 }
@@ -66,8 +59,19 @@ pub struct AppCodeUrl {
 }
 
 impl AppCodeUrl {
-    pub fn app_id(&self) -> AppId<'static> {
+    pub fn immutable_app_id(&self) -> AppId<'static> {
         // TODO: derive from state_init
         todo!()
+    }
+}
+
+impl From<Bytes> for AppCodeUrl {
+    fn from(code: Bytes) -> Self {
+        Self {
+            code_url: format!("data:application/wasm;base64,{}", URL_SAFE.encode(&code))
+                .parse()
+                .expect("URL: parse"),
+            code_hash: Sha256::digest(&code).into(),
+        }
     }
 }

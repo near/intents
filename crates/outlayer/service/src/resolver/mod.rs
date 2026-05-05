@@ -33,6 +33,14 @@ impl Resolver {
         Ok(code)
     }
 
+    pub async fn fetch_and_verify(&self, url: &AppCodeUrl) -> Result<Bytes> {
+        let code = self.url.resolve(url.code_url.clone()).await?;
+        if url.code_hash != Sha256::digest(&code) {
+            return Err(Error::CodeHashMismatch);
+        }
+        Ok(code)
+    }
+
     pub async fn resolve_app_id(&self, app_id: AppId<'_>) -> Result<AppCodeUrl> {
         match app_id {
             AppId::Near(oa_contract_id) => {
