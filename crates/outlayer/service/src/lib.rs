@@ -1,10 +1,11 @@
+mod builder;
 mod cache;
 mod code;
 mod hashed_code;
 mod resolver;
 
 pub use self::resolver::Resolver;
-pub use self::{cache::*, code::*, hashed_code::*};
+pub use self::{builder::*, cache::*, code::*, hashed_code::*};
 
 use std::sync::Arc;
 
@@ -23,16 +24,8 @@ pub struct Outlayer {
 }
 
 impl Outlayer {
-    pub const fn new(
-        resolver: Resolver,
-        executor: Executor,
-        cache: Cache<[u8; 32], Component>,
-    ) -> Self {
-        Self {
-            resolver,
-            executor,
-            runtime_cache: cache,
-        }
+    pub fn builder() -> OutlayerBuilder {
+        OutlayerBuilder::default()
     }
 
     async fn resolve(&self, app: Code<'_>) -> Result<(AppId<'static>, HashedCode), Error> {
