@@ -27,22 +27,17 @@ impl HttpResolver {
             .await?
             .error_for_status()?;
 
-        // Fast-reject on a declared Content-Length that already exceeds the limit.
-        if let Some(len) = resp.content_length() {
-            if len > self.max_len {
+        // Fast-reject on a declared Content-Length that already exceeds the limit,
+        // and pre-allocate to the declared length otherwise.
+        let mut buf = match resp.content_length() {
+            Some(len) if len > self.max_len => {
                 return Err(Error::TooLarge {
                     limit: self.max_len,
                 });
             }
-        }
-
-        // Pre-allocate to the declared length (capped)
-        let mut buf = resp
-            .content_length()
-            .map(|len| len.min(self.max_len))
-            .and_then(|len| usize::try_from(len).ok())
-            .map(Vec::with_capacity)
-            .unwrap_or_default();
+            Some(len) => usize::try_from(len).map(Vec::with_capacity).unwrap_or_default(),
+            None => Vec::new(),
+        };
 
         let mut stream = resp.bytes_stream();
         while let Some(chunk) = stream.try_next().await? {
