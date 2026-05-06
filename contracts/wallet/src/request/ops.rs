@@ -6,7 +6,21 @@ use near_sdk::{AccountId, near};
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
 pub enum WalletOp {
+    /// Enable or disable authentication by signature.
+    ///
+    /// This operation is idempotent, i.e. no error will be raised if
+    /// signature mode is already in this state.
     SetSignatureMode { enable: bool } = 0,
+
+    /// Add extension with given `AccountId`.
+    ///
+    /// This operation is idempotent, i.e. no error will be raised if
+    /// given extension is already enabled.
     AddExtension { account_id: AccountId } = 1,
+
+    /// Remove extension with given `AccountId`.
+    ///
+    /// This operation is idempotent, i.e. no error will be raised if
+    /// given extension is not currently enabled.
     RemoveExtension { account_id: AccountId } = 2,
 }

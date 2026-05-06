@@ -127,38 +127,44 @@ impl Contract {
     }
 
     fn set_signature_mode(&mut self, enable: bool, actor: Actor<'_>) -> Result<()> {
-        if self.signature_enabled != enable {
-            self.signature_enabled = enable;
-            WalletEvent::SignatureModeSet {
-                enabled: enable,
-                by: actor,
-            }
-            .emit();
+        if self.signature_enabled == enable {
+            return Ok(());
         }
+
+        self.signature_enabled = enable;
+        WalletEvent::SignatureModeSet {
+            enabled: enable,
+            by: actor,
+        }
+        .emit();
 
         self.check_lockout()
     }
 
     fn add_extension(&mut self, account_id: AccountId, actor: Actor<'_>) -> Result<()> {
-        if self.extensions.insert(account_id.clone()) {
-            WalletEvent::ExtensionAdded {
-                account_id: (&account_id).into(),
-                by: actor,
-            }
-            .emit();
+        if !self.extensions.insert(account_id.clone()) {
+            return Ok(());
         }
+
+        WalletEvent::ExtensionAdded {
+            account_id: (&account_id).into(),
+            by: actor,
+        }
+        .emit();
 
         Ok(())
     }
 
     fn remove_extension(&mut self, account_id: AccountId, actor: Actor<'_>) -> Result<()> {
-        if self.extensions.remove(&account_id) {
-            WalletEvent::ExtensionRemoved {
-                account_id: (&account_id).into(),
-                by: actor,
-            }
-            .emit();
+        if !self.extensions.remove(&account_id) {
+            return Ok(());
         }
+
+        WalletEvent::ExtensionRemoved {
+            account_id: (&account_id).into(),
+            by: actor,
+        }
+        .emit();
 
         self.check_lockout()
     }
