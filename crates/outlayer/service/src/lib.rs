@@ -12,6 +12,7 @@ use bytes::Bytes;
 use defuse_outlayer_executor::{
     self as executor, Component, Context, Executor, HostContext, Outcome,
 };
+use defuse_outlayer_primitives::AppId;
 use moka::future::Cache;
 
 #[derive(Clone)]
@@ -34,22 +35,17 @@ impl Outlayer {
         }
     }
 
-    async fn resolve(&self, app: Code<'_>) -> Result<(HostContext<'static>, HashedCode), Error> {
+    async fn resolve(&self, app: Code<'_>) -> Result<(AppId<'static>, HashedCode), Error> {
         match app {
-            Code::Ref(code_ref) => Ok((
-                HostContext {
-                    app_id: code_ref.app_id(),
-                },
-                self.resolver.resolve_code(code_ref).await?,
-            )),
+            Code::Ref(code_ref) => {
+                let app_id = code_ref.app_id();
+                let hashed = self.resolver.resolve_code(code_ref).await?;
+                Ok((app_id, hashed))
+            }
             Code::Inline { code } => {
                 let hashed = HashedCode::new(code);
-                Ok((
-                    HostContext {
-                        app_id: AppCodeUrl::from_code(hashed.clone()).immutable_app_id(),
-                    },
-                    hashed,
-                ))
+                let app_id = AppCodeUrl::from_code(hashed.clone()).immutable_app_id();
+                Ok((app_id, hashed))
             }
         }
     }
@@ -68,11 +64,18 @@ impl Outlayer {
     }
 
     pub async fn execute(&self, app: Code<'_>, input: Bytes, fuel: u64) -> Result<Outcome, Error> {
-        let (host, code) = self.resolve(app).await?;
+        let (app_id, code) = self.resolve(app).await?;
         let component = self.compile(code).await?;
 
         self.executor
-            .execute(Context { input, host }, &component, fuel)
+            .execute(
+                Context {
+                    input,
+                    host: HostContext { app_id },
+                },
+                &component,
+                fuel,
+            )
             .await
             .map_err(Into::into)
     }
