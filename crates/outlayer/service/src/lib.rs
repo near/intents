@@ -55,15 +55,14 @@ impl Outlayer {
     }
 
     async fn compile(&self, code: HashedCode) -> Result<Component, Error> {
-        let do_compile = |bytes: Bytes| async {
-            let compiler = self.executor.compiler();
-            tokio::task::spawn_blocking(move || compiler.compile(bytes))
-                .await
-                .map_err(|e| anyhow::anyhow!("compile panicked: {e}"))?
-        };
-
         self.runtime_cache
-            .try_get_with(*code.hash(), do_compile(code.bytes()))
+            .try_get_with(*code.hash(), async {
+                let compiler = self.executor.compiler();
+                let bytes = code.bytes();
+                tokio::task::spawn_blocking(move || compiler.compile(bytes))
+                    .await
+                    .map_err(|e| anyhow::anyhow!("compile panicked: {e}"))?
+            })
             .await
             .map_err(Error::Compile)
     }
