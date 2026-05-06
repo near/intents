@@ -1,8 +1,9 @@
 use base64::{Engine as _, engine::general_purpose::URL_SAFE};
 use bytes::Bytes;
 use defuse_outlayer_primitives::AppId;
-use sha2::{Digest, Sha256};
 use url::Url;
+
+use crate::HashedCode;
 
 #[cfg_attr(
     feature = "serde",
@@ -24,7 +25,9 @@ impl Code<'_> {
     pub fn app_id(&self) -> AppId<'static> {
         match self {
             Self::Ref(app) => app.app_id(),
-            Self::Inline { code } => AppCodeUrl::from_code(code).immutable_app_id(),
+            Self::Inline { code } => {
+                AppCodeUrl::from_code(HashedCode::new(code.clone())).immutable_app_id()
+            }
         }
     }
 }
@@ -59,13 +62,18 @@ pub struct AppCodeUrl {
 }
 
 impl AppCodeUrl {
-    pub fn from_code(code: impl AsRef<[u8]>) -> Self {
-        let code = code.as_ref();
+    ///NOTE: lets use generic impl so that we can add From<AsRef<[u8]>> for HashedCode to
+    ///allow compatibility with WIT format
+    pub fn from_code(code: impl Into<HashedCode>) -> Self {
+        let code = code.into();
         Self {
-            code_url: format!("data:application/wasm;base64,{}", URL_SAFE.encode(code))
-                .parse()
-                .expect("URL: parse"),
-            code_hash: Sha256::digest(code).into(),
+            code_url: format!(
+                "data:application/wasm;base64,{}",
+                URL_SAFE.encode(code.bytes())
+            )
+            .parse()
+            .expect("URL: parse"),
+            code_hash: *code.hash(),
         }
     }
 

@@ -1,4 +1,3 @@
-use bytes::Bytes;
 use std::time::Duration;
 
 use defuse_outlayer_executor::Component;
@@ -22,9 +21,8 @@ impl CacheBuilder {
         self
     }
 
-    pub fn build(self) -> Cache<Bytes, Component> {
-        let mut builder = Cache::<Bytes, Component>::builder()
-            .weigher(|wasm, _compiled| wasm.len().try_into().unwrap_or(u32::MAX));
+    pub fn build(self) -> Cache<[u8; 32], Component> {
+        let mut builder = Cache::<[u8; 32], Component>::builder();
 
         if let Some(max_capacity) = self.max_capacity {
             builder = builder.max_capacity(max_capacity);
@@ -33,7 +31,6 @@ impl CacheBuilder {
             builder = builder.time_to_idle(tti);
         }
 
-        // TODO: is default hasher ok for large Bytes? or use `ahash`?
         builder.build()
     }
 }

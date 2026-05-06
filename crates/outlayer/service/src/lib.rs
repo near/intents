@@ -1,9 +1,10 @@
 mod cache;
 mod code;
+mod hashed_code;
 mod resolver;
 
 pub use self::resolver::Resolver;
-pub use self::{cache::*, code::*};
+pub use self::{cache::*, code::*, hashed_code::*};
 
 use std::sync::Arc;
 
@@ -17,14 +18,14 @@ use moka::future::Cache;
 pub struct Outlayer {
     resolver: Resolver,
     executor: Executor,
-    runtime_cache: Option<Cache<Bytes, Component>>,
+    runtime_cache: Option<Cache<[u8; 32], Component>>,
 }
 
 impl Outlayer {
     pub const fn new(
         resolver: Resolver,
         executor: Executor,
-        cache: Option<Cache<Bytes, Component>>,
+        cache: Option<Cache<[u8; 32], Component>>,
     ) -> Self {
         Self {
             resolver,
@@ -33,7 +34,7 @@ impl Outlayer {
         }
     }
 
-    async fn resolve(&self, app: Code<'_>) -> Result<(HostContext<'static>, Bytes), Error> {
+    async fn resolve(&self, app: Code<'_>) -> Result<(HostContext<'static>, HashedCode), Error> {
         match app {
             Code::Ref(code_ref) => Ok((
                 HostContext {
@@ -42,36 +43,37 @@ impl Outlayer {
                 self.resolver.resolve_code(code_ref).await?,
             )),
             Code::Inline { code } => {
-                let app_code_url = AppCodeUrl::from_code(&code);
+                let hashed = HashedCode::new(code);
                 Ok((
                     HostContext {
-                        app_id: app_code_url.immutable_app_id(),
+                        app_id: AppCodeUrl::from_code(hashed.clone()).immutable_app_id(),
                     },
-                    code,
+                    hashed,
                 ))
             }
         }
     }
 
-    async fn compile(&self, code: Bytes) -> Result<Component, Error> {
-        let do_compile = |code| async {
+    async fn compile(&self, code: HashedCode) -> Result<Component, Error> {
+        let do_compile = |bytes: Bytes| async {
             let compiler = self.executor.compiler();
-            tokio::task::spawn_blocking(move || compiler.compile(code))
+            tokio::task::spawn_blocking(move || compiler.compile(bytes))
                 .await
                 .map_err(|e| anyhow::anyhow!("compile panicked: {e}"))?
         };
 
         if let Some(cache) = &self.runtime_cache {
-            cache.try_get_with(code.clone(), do_compile(code)).await
+            let hash = *code.hash();
+            cache.try_get_with(hash, do_compile(code.bytes())).await
         } else {
-            do_compile(code).await.map_err(Arc::new)
+            do_compile(code.bytes()).await.map_err(Arc::new)
         }
         .map_err(Error::Compile)
     }
 
     pub async fn execute(&self, app: Code<'_>, input: Bytes, fuel: u64) -> Result<Outcome, Error> {
-        let (host, bytes) = self.resolve(app).await?;
-        let component = self.compile(bytes).await?;
+        let (host, code) = self.resolve(app).await?;
+        let component = self.compile(code).await?;
 
         self.executor
             .execute(Context { input, host }, &component, fuel)

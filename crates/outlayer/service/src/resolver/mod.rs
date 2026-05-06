@@ -1,10 +1,8 @@
 mod near;
 mod url;
 
-use crate::{AppCodeUrl, CodeRef};
-use bytes::Bytes;
+use crate::{AppCodeUrl, CodeRef, HashedCode};
 use defuse_outlayer_primitives::AppId;
-use sha2::{Digest, Sha256};
 
 use self::{near::NearResolver, url::UrlResolver};
 
@@ -15,7 +13,7 @@ pub struct Resolver {
 }
 
 impl Resolver {
-    pub async fn resolve_code(&self, code: CodeRef<'_>) -> Result<Bytes> {
+    pub async fn resolve_code(&self, code: CodeRef<'_>) -> Result<HashedCode> {
         let AppCodeUrl {
             code_url,
             code_hash,
@@ -25,12 +23,7 @@ impl Resolver {
         };
 
         let code = self.url.resolve(code_url).await?;
-
-        if code_hash != Sha256::digest(&code) {
-            return Err(Error::CodeHashMismatch);
-        }
-
-        Ok(code)
+        HashedCode::from_parts(code, code_hash).map_err(|_| Error::CodeHashMismatch)
     }
 
     async fn resolve_app_id(&self, app_id: AppId<'_>) -> Result<AppCodeUrl> {
