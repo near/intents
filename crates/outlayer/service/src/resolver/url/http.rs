@@ -1,19 +1,20 @@
-use bytes::Bytes;
+use std::io;
 
-// Safe: usize is at most 64 bits wide (pointer-width), so it always fits in u64.
-const USIZE_FITS_U64: &str = "usize should always fit in u64";
+use bytes::Bytes;
 use futures::TryStreamExt as _;
 use reqwest::Client;
+use tokio::io::AsyncReadExt as _;
+use tokio_util::io::StreamReader;
 use url::Url;
 
 pub struct HttpResolver {
     // TODO: caching?
     client: Client,
-    max_len: u64,
+    max_len: usize,
 }
 
 impl HttpResolver {
-    pub fn new(client: Client, max_len: u64) -> Self {
+    pub const fn new(client: Client, max_len: usize) -> Self {
         Self { client, max_len }
     }
 
@@ -27,31 +28,27 @@ impl HttpResolver {
             .await?
             .error_for_status()?;
 
-        // Fast-reject on a declared Content-Length that already exceeds the limit,
-        // and pre-allocate to the declared length otherwise.
-        let mut buf = match resp.content_length() {
-            Some(len) if len > self.max_len => {
+        // Fast-reject on a declared Content-Length that doesn't fit in `usize` or
+        // already exceeds the limit, and pre-allocate to the declared length otherwise.
+        let mut buf = match resp.content_length().map(usize::try_from) {
+            Some(Ok(len)) if len <= self.max_len => Vec::with_capacity(len),
+            Some(_) => {
                 return Err(Error::TooLarge {
                     limit: self.max_len,
                 });
             }
-            Some(len) => usize::try_from(len).map(Vec::with_capacity).unwrap_or_default(),
             None => Vec::new(),
         };
 
-        let mut stream = resp.bytes_stream();
-        while let Some(chunk) = stream.try_next().await? {
-            let buf_len = u64::try_from(buf.len()).expect(USIZE_FITS_U64);
-            let chunk_len = u64::try_from(chunk.len()).expect(USIZE_FITS_U64);
-            match buf_len.checked_add(chunk_len) {
-                Some(new_len) if new_len <= self.max_len => {}
-                Some(_) | None => {
-                    return Err(Error::TooLarge {
-                        limit: self.max_len,
-                    });
-                }
-            }
-            buf.extend_from_slice(&chunk);
+        let limit = u64::try_from(self.max_len).expect("usize fits in u64");
+        let stream = resp.bytes_stream().map_err(io::Error::other);
+        let mut stream = StreamReader::new(stream).take(limit);
+        stream.read_to_end(&mut buf).await?;
+
+        if stream.into_inner().read(&mut [0u8]).await? != 0 {
+            return Err(Error::TooLarge {
+                limit: self.max_len,
+            });
         }
 
         Ok(Bytes::from(buf))
@@ -63,6 +60,9 @@ pub enum Error {
     #[error("HTTP request failed: {0}")]
     Reqwest(#[from] reqwest::Error),
 
+    #[error("I/O error: {0}")]
+    Io(#[from] io::Error),
+
     #[error("response too large, limit is {limit} bytes")]
-    TooLarge { limit: u64 },
+    TooLarge { limit: usize },
 }
