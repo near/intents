@@ -62,7 +62,7 @@ pub struct AppCodeUrl {
 }
 
 impl AppCodeUrl {
-    ///NOTE: lets use generic impl so that we can add From<AsRef<[u8]>> for HashedCode to
+    ///NOTE: lets use generic impl so that we can add `From<AsRef<[u8]>>` for `HashedCode` to
     ///allow compatibility with WIT format
     pub fn from_code(code: impl Into<HashedCode>) -> Self {
         let code = code.into();
