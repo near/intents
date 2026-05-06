@@ -16,10 +16,6 @@ pub struct HttpResolver {
 }
 
 impl HttpResolver {
-    pub const fn new(client: Client, max_len: usize) -> Self {
-        Self { client, max_len }
-    }
-
     pub async fn resolve(&self, url: Url) -> Result<Bytes, Error> {
         let resp = self
             .client
@@ -33,15 +29,16 @@ impl HttpResolver {
         // Fast-reject on a declared Content-Length that doesn't fit in `usize` or
         // already exceeds the limit. Otherwise pre-allocate up to a small cap to
         // avoid attacker-controlled speculative allocations from a lying server.
-        let mut buf = match resp.content_length().map(usize::try_from) {
-            Some(Ok(len)) if len <= self.max_len => Vec::with_capacity(len.min(INITIAL_CAP)),
-            Some(_) => {
-                return Err(Error::TooLarge {
-                    limit: self.max_len,
-                });
-            }
-            None => Vec::new(),
-        };
+        let cap = resp
+            .content_length()
+            .map(usize::try_from)
+            .transpose()
+            .map_err(|_| Error::TooLarge {
+                limit: self.max_len,
+            })?
+            .unwrap_or_default()
+            .min(INITIAL_CAP);
+        let mut buf = Vec::with_capacity(cap);
 
         let limit = u64::try_from(self.max_len).expect("usize fits in u64");
         let stream = resp.bytes_stream().map_err(io::Error::other);
