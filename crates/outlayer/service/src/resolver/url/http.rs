@@ -2,6 +2,7 @@ use bytes::Bytes;
 use reqwest::{Client, Result};
 use url::Url;
 
+#[derive(Clone)]
 pub struct HttpResolver {
     // TODO: caching?
     client: Client,

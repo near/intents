@@ -6,6 +6,7 @@ use url::Url;
 
 use crate::AppCodeUrl;
 
+#[derive(Clone)]
 pub struct NearResolver {
     client: Near,
 }

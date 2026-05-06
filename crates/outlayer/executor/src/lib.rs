@@ -1,26 +1,24 @@
-mod builder;
-mod cache;
+mod compiler;
 mod error;
 
-pub use self::{builder::*, cache::*, error::*};
+pub use self::{compiler::*, error::*};
 
 use std::sync::Arc;
 
 pub use defuse_outlayer_vm_runner::host::Context as HostContext;
+pub use defuse_outlayer_vm_runner::wasmtime::component::Component;
+
 use defuse_outlayer_vm_runner::{
     Context as VmContext, ExecutionOutcome, VmRuntime, WasiContext,
     host::{Host, InMemorySigner},
-    wasmtime::component::Component,
     wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe},
 };
 
 use bytes::Bytes;
-use moka::sync::Cache;
 
 #[derive(Clone)]
 pub struct Executor {
     runtime: Arc<VmRuntime>,
-    compiled_cache: Cache<Bytes, Component>,
     signer: Arc<InMemorySigner>,
 }
 
@@ -58,17 +56,19 @@ const STDOUT_LIMIT: usize = 4 * 1024 * 1024; // 4 MB
 const STDERR_LIMIT: usize = 16 * 1024; // 16 KB
 
 impl Executor {
-    pub fn builder() -> ExecutorBuilder {
-        ExecutorBuilder::default()
+    pub fn compiler(&self) -> Compiler {
+        Compiler::new(self.runtime.clone())
     }
 
-    pub async fn execute(&self, ctx: Context, wasm: Bytes, fuel: u64) -> Result<Outcome, Error> {
+    pub async fn execute(
+        &self,
+        ctx: Context,
+        component: &Component,
+        fuel: u64,
+    ) -> Result<Outcome, Error> {
         if ctx.input.len() > STDIN_LIMIT {
-            // fail early, before compilation
             return Err(Error::InputTooLong);
         }
-
-        let component = self.compile(wasm).map_err(Error::Compile)?;
 
         let stdout = MemoryOutputPipe::new(STDOUT_LIMIT);
         let stderr = MemoryOutputPipe::new(STDERR_LIMIT);
@@ -84,7 +84,7 @@ impl Executor {
 
         let outcome = self
             .runtime
-            .execute(ctx, &component)
+            .execute(ctx, component)
             .await
             .map_err(Error::Execute)?;
 
@@ -93,10 +93,5 @@ impl Executor {
             logs: stderr.contents(),
             execution: outcome,
         })
-    }
-
-    fn compile(&self, wasm: Bytes) -> Result<Component, Arc<anyhow::Error>> {
-        self.compiled_cache
-            .try_get_with(wasm.clone(), || self.runtime.compile(wasm))
     }
 }
