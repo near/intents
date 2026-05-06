@@ -24,7 +24,7 @@ impl Code<'_> {
     pub fn app_id(&self) -> AppId<'static> {
         match self {
             Self::Ref(app) => app.app_id(),
-            Self::Inline { code } => AppCodeUrl::from(code.clone()).immutable_app_id(),
+            Self::Inline { code } => AppCodeUrl::from_code(code).immutable_app_id(),
         }
     }
 }
@@ -59,19 +59,18 @@ pub struct AppCodeUrl {
 }
 
 impl AppCodeUrl {
+    pub fn from_code(code: impl AsRef<[u8]>) -> Self {
+        let code = code.as_ref();
+        Self {
+            code_url: format!("data:application/wasm;base64,{}", URL_SAFE.encode(code))
+                .parse()
+                .expect("URL: parse"),
+            code_hash: Sha256::digest(code).into(),
+        }
+    }
+
     pub fn immutable_app_id(&self) -> AppId<'static> {
         // TODO: derive from state_init
         todo!()
-    }
-}
-
-impl From<Bytes> for AppCodeUrl {
-    fn from(code: Bytes) -> Self {
-        Self {
-            code_url: format!("data:application/wasm;base64,{}", URL_SAFE.encode(&code))
-                .parse()
-                .expect("URL: parse"),
-            code_hash: Sha256::digest(&code).into(),
-        }
     }
 }

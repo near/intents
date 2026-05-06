@@ -42,7 +42,7 @@ impl Outlayer {
                 self.resolver.resolve_code(code_ref).await?,
             )),
             Code::Inline { code } => {
-                let app_code_url: AppCodeUrl = code.clone().into();
+                let app_code_url = AppCodeUrl::from_code(&code);
                 Ok((
                     HostContext {
                         app_id: app_code_url.immutable_app_id(),
