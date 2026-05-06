@@ -36,8 +36,9 @@ impl CacheBuilder {
         let mut builder = Cache::<[u8; 32], Component>::builder()
             .max_capacity(self.max_capacity)
             .weigher(|_hash, comp: &Component| {
-                // The compiled wasm image is a contiguous mmap region, so its size is
-                // just `end - start`.
+                // Approximates the in-memory size of a compiled component using its
+                // mmap'd image range. Per-Component heap metadata (type tables, etc.)
+                // lives outside this range and is not counted.
                 let r = comp.image_range();
                 u32::try_from((r.start.addr()..r.end.addr()).len()).unwrap_or(u32::MAX)
             });
