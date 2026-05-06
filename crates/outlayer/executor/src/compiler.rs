@@ -10,11 +10,7 @@ impl Compiler {
         Self(runtime)
     }
 
-    pub fn compile(&self, wasm: impl AsRef<[u8]>) -> Result<Component, CompileError> {
-        Ok(self.0.compile(wasm)?)
+    pub fn compile(&self, wasm: impl AsRef<[u8]>) -> anyhow::Result<Component> {
+        self.0.compile(wasm)
     }
 }
-
-#[derive(thiserror::Error, Debug)]
-#[error(transparent)]
-pub struct CompileError(#[from] pub anyhow::Error);

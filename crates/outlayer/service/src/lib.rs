@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use bytes::Bytes;
 use defuse_outlayer_executor::{
-    self as executor, CompileError, Component, Context, Executor, HostContext, Outcome,
+    self as executor, Component, Context, Executor, HostContext, Outcome,
 };
 use moka::future::Cache;
 
@@ -58,20 +58,15 @@ impl Outlayer {
             let compiler = self.executor.compiler();
             tokio::task::spawn_blocking(move || compiler.compile(code))
                 .await
-                .map_err(|e| CompileError(anyhow::anyhow!("compile panicked: {e}")))?
+                .map_err(|e| anyhow::anyhow!("compile panicked: {e}"))?
         };
 
         if let Some(cache) = &self.runtime_cache {
-            cache
-                .try_get_with(code.clone(), do_compile(code))
-                .await
-                .map_err(Error::Compile)
+            cache.try_get_with(code.clone(), do_compile(code)).await
         } else {
-            do_compile(code)
-                .await
-                .map_err(Arc::new)
-                .map_err(Error::Compile)
+            do_compile(code).await.map_err(Arc::new)
         }
+        .map_err(Error::Compile)
     }
 
     pub async fn execute(&self, app: Code<'_>, input: Bytes, fuel: u64) -> Result<Outcome, Error> {
@@ -90,7 +85,7 @@ pub enum Error {
     #[error("resolve: {0}")]
     Resolve(#[from] resolver::Error),
     #[error("compile: {0}")]
-    Compile(Arc<CompileError>),
+    Compile(Arc<anyhow::Error>),
     #[error(transparent)]
     Execute(#[from] executor::Error),
 }
