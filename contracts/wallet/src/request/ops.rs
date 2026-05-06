@@ -4,7 +4,7 @@ use near_sdk::{AccountId, near};
 ///
 /// # Idempotence
 ///
-/// Currently, all operations are idempotent, i.e. they expess an intent on
+/// Currently, all operations are idempotent, i.e. they express an intent on
 /// the final state rather than "compare-and-swap" semantics. If ever needed,
 /// we can add more `require_*` operations, e.g.
 /// `RequireExtensionEnabled { account_id }`.
