@@ -14,7 +14,7 @@ near-account-id.workspace = true
 near-gas.workspace = true
 near-token.workspace = true
 # TODO: use only for `near-contract` feature once `near-global-contracts` is out
-near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
+near-sdk = { workspace = true, features = ["deterministic-account-ids", "non-contract-usage"] }
 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
@@ -25,7 +25,6 @@ serde_json = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true, features = ["base64"] }
 
 [features]
-
 arbitrary = [
   "dep:arbitrary",
   "near-account-id/arbitrary",
@@ -59,6 +58,5 @@ serde = [
 json = ["dep:serde_json", "serde"]
 
 [dev-dependencies]
-defuse-promise = { path = ".", features = ["arbitrary", "abi", "borsh", "near-contract", "serde", "json"] }
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true

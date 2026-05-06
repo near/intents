@@ -1,5 +1,6 @@
 #[cfg(feature = "ed25519")]
 pub mod ed25519;
+mod nonces;
 
 use std::time::Duration;
 

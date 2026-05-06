@@ -1,0 +1,32 @@
+[package]
+name = "defuse-wallet-core"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-crypto.workspace = true
+defuse-promise.workspace = true
+
+near-account-id.workspace = true
+# TODO: replace with `near-global-contract`
+near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
+
+borsh = { workspace = true, features = ["derive"], optional = true }
+defuse-webauthn = { workspace = true, optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+
+[features]
+abi = ["defuse-promise/abi", "near-account-id/abi"]
+arbitrary = ["defuse-promise/arbitrary", "near-account-id/arbitrary"]
+borsh = ["defuse-promise/borsh", "dep:borsh", "near-account-id/borsh"]
+json = ["defuse-promise/json"]
+near-contract = ["defuse-promise/near-contract"]
+serde = ["defuse-promise/serde", "dep:serde", "near-account-id/serde"]
+
+ed25519 = ["defuse-crypto/ed25519"]
+webauthn = ["dep:defuse-webauthn"]

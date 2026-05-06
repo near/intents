@@ -3,10 +3,10 @@ use std::{
     time::Duration,
 };
 
+use near_account_id::{AccountId, AccountIdRef};
+
 use near_sdk::{
-    AccountId, AccountIdRef, GlobalContractId,
-    borsh::{self, BorshSerialize},
-    near,
+    GlobalContractId,
     state_init::{StateInit, StateInitV1},
 };
 

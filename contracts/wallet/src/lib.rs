@@ -1,15 +1,10 @@
 #![doc = include_str!(env!("CARGO_PKG_README"))]
 
-#[cfg(any(feature = "arbitrary", test))]
-mod arbitrary;
 #[cfg(feature = "contract")]
 mod contract;
 mod error;
 mod events;
-mod nonces;
-mod request;
 pub mod signature;
-mod state;
 
 use std::collections::BTreeSet;
 

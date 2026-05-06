@@ -188,7 +188,7 @@ impl FromIterator<PromiseSingle> for PromiseDAG {
     }
 }
 
-// #[cfg(all(feature = "near-contract", target_family = "wasm"))]
+#[cfg(feature = "near-contract")]
 const _: () = {
     use near_sdk::Promise;
 

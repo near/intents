@@ -16,9 +16,9 @@ workspace = true
 defuse-bitmap.workspace = true
 defuse-borsh-utils.workspace = true
 defuse-deadline.workspace = true
+defuse-promise = { workspace = true, features = ["borsh", "serde"] }
 defuse-serde-utils.workspace = true
 
-derive_more = { workspace = true, features = ["from"] }
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 thiserror.workspace = true
 
@@ -34,11 +34,12 @@ abi = [
   "defuse-borsh-utils/abi",
   "defuse-crypto?/abi",
   "defuse-deadline/abi",
+  "defuse-promise/abi",
   "defuse-serde-utils/abi",
   "defuse-webauthn?/abi",
   "near-sdk/abi",
 ]
-arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
+arbitrary = ["defuse-promise/arbitrary", "dep:arbitrary", "near-sdk/arbitrary"]
 concurrent = ["dep:rand_core"]
 webauthn = ["dep:defuse-webauthn"]
 
@@ -47,7 +48,7 @@ webauthn = ["dep:defuse-webauthn"]
 # This can be useful to deploy "1-of-M multisig"/"fan-out" wallet, where
 # extensions are pre-defined at the initialization stage (i.e. state_init).
 # So only extensions can execute requests via `w_execute_extension()`.
-contract = []
+contract = ["defuse-promise/near-contract"]
 
 # Webauthn (a.k.a passkey) variants:
 webauthn-ed25519 = ["defuse-webauthn/ed25519", "webauthn"]

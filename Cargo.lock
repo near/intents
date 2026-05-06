@@ -493,7 +493,7 @@ version = "3.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "519bd3116aeeb42d5372c29d982d16d0170d3d4a5ed85fc7dd91642ffff3c67c"
 dependencies = [
- "darling 0.21.3",
+ "darling 0.20.11",
  "ident_case",
  "prettyplease 0.2.37",
  "proc-macro2",
@@ -1757,7 +1757,6 @@ dependencies = [
  "arbitrary",
  "borsh",
  "cfg_eval",
- "defuse-promise",
  "derive_more",
  "near-account-id",
  "near-gas",
@@ -1929,15 +1928,28 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-crypto",
  "defuse-deadline",
+ "defuse-promise",
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-webauthn",
- "derive_more",
  "near-sdk",
  "rand 0.10.1",
  "rand_core 0.10.1",
  "rstest",
  "thiserror 2.0.18",
+]
+
+[[package]]
+name = "defuse-wallet-core"
+version = "0.1.0"
+dependencies = [
+ "borsh",
+ "defuse-crypto",
+ "defuse-promise",
+ "defuse-webauthn",
+ "near-account-id",
+ "near-sdk",
+ "serde",
 ]
 
 [[package]]
@@ -1964,7 +1976,7 @@ dependencies = [
 name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
- "defuse-wallet",
+ "defuse-wallet-core",
  "ed25519-dalek",
  "impl-tools",
  "near-sdk",

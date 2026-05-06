@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-wallet = { workspace = true, features = ["concurrent"] }
+defuse-wallet-core = { workspace = true }
 impl-tools.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
 rand.workspace = true
@@ -19,4 +19,4 @@ ed25519-dalek = { workspace = true, optional = true }
 [features]
 default = ["ed25519"]
 
-ed25519 = ["defuse-wallet/ed25519", "dep:ed25519-dalek"]
+ed25519 = ["defuse-wallet-core/ed25519", "dep:ed25519-dalek"]

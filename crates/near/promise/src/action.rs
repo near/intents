@@ -6,8 +6,8 @@ use near_token::NearToken;
 use near_sdk::state_init::StateInit;
 
 /// NOTE: there is no support for other actions, since they operate on the
-/// account itself (e.g. DeployContract, AddKey and etc...) or on its subaccounts
-/// (e.g. CreateAccount). Wallet-contracts are not self-upgradable and do
+/// account itself (e.g. `DeployContract`, `AddKey` and etc...) or on its subaccounts
+/// (e.g. `CreateAccount`). Wallet-contracts are not self-upgradable and do
 /// not allow creating subaccounts.
 #[cfg_attr(any(feature = "arbitrary", test), derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -220,11 +220,11 @@ impl FunctionCallAction {
     }
 }
 
-fn default_gas_weight() -> u64 {
+const fn default_gas_weight() -> u64 {
     1
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)]
-fn is_default_gas_weight(gas_weight: &u64) -> bool {
+const fn is_default_gas_weight(gas_weight: &u64) -> bool {
     *gas_weight == default_gas_weight()
 }

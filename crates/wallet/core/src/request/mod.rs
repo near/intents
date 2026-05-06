@@ -1,8 +1,8 @@
 mod ops;
-mod promise;
 
-pub use self::{ops::*, promise::*};
+pub use self::ops::*;
 
+pub use defuse_promise::*;
 use near_sdk::near;
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
