@@ -1,14 +1,14 @@
 mod builder;
 mod cache;
 mod code;
-mod hashed_code;
 mod resolver;
 
 pub use self::resolver::Resolver;
-pub use self::{builder::*, cache::*, code::*, hashed_code::*};
+pub use self::{builder::*, cache::*, code::*};
 
-use std::sync::Arc;
+use std::{convert, sync::Arc};
 
+use anyhow::Context as _;
 use bytes::Bytes;
 use defuse_outlayer_executor::{
     self as executor, Component, Context, Executor, HostContext, Outcome,
@@ -28,38 +28,44 @@ impl Outlayer {
         OutlayerBuilder::default()
     }
 
-    async fn resolve(&self, app: Code<'_>) -> Result<(AppId<'static>, HashedCode), Error> {
-        match app {
-            Code::Ref(code_ref) => {
-                let app_id = code_ref.app_id();
-                let hashed = self.resolver.resolve_code(code_ref).await?;
-                Ok((app_id, hashed))
-            }
+    async fn resolve_app(&self, app: Code<'_>) -> Result<(AppId<'static>, Component), Error> {
+        let (app_id, app_code_url, code) = match app {
+            Code::Ref(code_ref) => (
+                code_ref.app_id(),
+                self.resolver.resolve_code_url(code_ref).await?,
+                None,
+            ),
             Code::Inline { code } => {
-                let hashed = HashedCode::new(code);
-                let app_id = AppCodeUrl::from_code(hashed.clone()).immutable_app_id();
-                Ok((app_id, hashed))
+                let app_code_url = AppCodeUrl::from_code(&code);
+                (app_code_url.immutable_app_id(), app_code_url, Some(code))
             }
-        }
-    }
+        };
 
-    async fn compile(&self, code: HashedCode) -> Result<Component, Error> {
-        // `try_get_with` collapses concurrent compiles for the same hash into a single computation.
-        self.runtime_cache
-            .try_get_with(code.hash(), async {
-                let compiler = self.executor.compiler();
-                let bytes = code.bytes();
-                tokio::task::spawn_blocking(move || compiler.compile(bytes))
-                    .await
-                    .map_err(|e| anyhow::anyhow!("compile panicked: {e}"))?
+        let component = self
+            .runtime_cache
+            .try_get_with(app_code_url.code_hash, async move {
+                let code = if let Some(code) = code {
+                    code
+                } else {
+                    self.resolver.resolve_code(app_code_url).await?
+                };
+
+                tokio::task::spawn_blocking({
+                    let compiler = self.executor.compiler();
+                    move || compiler.compile(code)
+                })
+                .await
+                .context("panicked")
+                .and_then(convert::identity) // TODO: .flatten()
+                .map_err(PrepareError::Compile)
             })
-            .await
-            .map_err(Error::Compile)
+            .await?;
+
+        Ok((app_id, component))
     }
 
     pub async fn execute(&self, app: Code<'_>, input: Bytes, fuel: u64) -> Result<Outcome, Error> {
-        let (app_id, code) = self.resolve(app).await?;
-        let component = self.compile(code).await?;
+        let (app_id, component) = self.resolve_app(app).await?;
 
         self.executor
             .execute(
@@ -75,12 +81,26 @@ impl Outlayer {
     }
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(derive_more::From, thiserror::Error, Debug)]
 pub enum Error {
-    #[error("resolve: {0}")]
-    Resolve(#[from] resolver::Error),
-    #[error("compile: {0}")]
-    Compile(Arc<anyhow::Error>),
+    #[from(PrepareError)]
+    #[error("prepare: {0}")]
+    Prepare(#[from] Arc<PrepareError>),
     #[error(transparent)]
     Execute(#[from] executor::Error),
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum PrepareError {
+    #[error("resolve: {0}")]
+    Resolve(#[from] resolver::Error),
+
+    #[error("compile: {0}")]
+    Compile(anyhow::Error),
+}
+
+impl From<resolver::Error> for Error {
+    fn from(err: resolver::Error) -> Self {
+        Self::Prepare(PrepareError::Resolve(err).into())
+    }
 }

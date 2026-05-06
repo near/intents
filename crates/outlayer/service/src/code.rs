@@ -1,9 +1,8 @@
 use base64::{Engine as _, engine::general_purpose::URL_SAFE};
 use bytes::Bytes;
 use defuse_outlayer_primitives::AppId;
+use sha2::{Digest, Sha256};
 use url::Url;
-
-use crate::HashedCode;
 
 #[cfg_attr(
     feature = "serde",
@@ -14,7 +13,6 @@ use crate::HashedCode;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Code<'a> {
     Ref(CodeRef<'a>),
-    // TODO: feature flag?
     Inline {
         #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::base64::Base64"))]
         code: Bytes,
@@ -25,9 +23,7 @@ impl Code<'_> {
     pub fn app_id(&self) -> AppId<'static> {
         match self {
             Self::Ref(app) => app.app_id(),
-            Self::Inline { code } => {
-                AppCodeUrl::from_code(HashedCode::new(code.clone())).immutable_app_id()
-            }
+            Self::Inline { code } => AppCodeUrl::from_code(code).immutable_app_id(),
         }
     }
 }
@@ -62,16 +58,14 @@ pub struct AppCodeUrl {
 }
 
 impl AppCodeUrl {
-    pub fn from_code(code: impl Into<HashedCode>) -> Self {
-        let code = code.into();
+    pub fn from_code(code: impl AsRef<[u8]>) -> Self {
+        let code = code.as_ref();
+
         Self {
-            code_url: format!(
-                "data:application/wasm;base64,{}",
-                URL_SAFE.encode(code.bytes())
-            )
-            .parse()
-            .expect("URL: parse"),
-            code_hash: code.hash(),
+            code_hash: Sha256::digest(code).into(),
+            code_url: format!("data:application/wasm;base64,{}", URL_SAFE.encode(code))
+                .parse()
+                .expect("URL: parse"),
         }
     }
 

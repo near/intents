@@ -1738,6 +1738,7 @@ dependencies = [
  "defuse-outlayer-executor",
  "defuse-outlayer-primitives",
  "defuse-serde-utils",
+ "derive_more",
  "futures",
  "moka",
  "near-kit",
