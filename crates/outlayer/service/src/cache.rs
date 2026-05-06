@@ -3,6 +3,8 @@ use std::time::Duration;
 use defuse_outlayer_executor::Component;
 use moka::future::Cache;
 
+const DEFAULT_MAX_CAPACITY: u64 = 100 * 1024 * 1024; // 100MB
+
 #[must_use = "use .build()"]
 #[derive(Debug, Clone)]
 pub struct CacheBuilder {
@@ -13,7 +15,7 @@ pub struct CacheBuilder {
 impl Default for CacheBuilder {
     fn default() -> Self {
         Self {
-            max_capacity: 0,
+            max_capacity: DEFAULT_MAX_CAPACITY,
             time_to_idle: None,
         }
     }
@@ -31,7 +33,14 @@ impl CacheBuilder {
     }
 
     pub fn build(self) -> Cache<[u8; 32], Component> {
-        let mut builder = Cache::<[u8; 32], Component>::builder().max_capacity(self.max_capacity);
+        let mut builder = Cache::<[u8; 32], Component>::builder()
+            .max_capacity(self.max_capacity)
+            .weigher(|_hash, comp: &Component| {
+                // The compiled wasm image is a contiguous mmap region, so its size is
+                // just `end - start`.
+                let r = comp.image_range();
+                u32::try_from((r.start.addr()..r.end.addr()).len()).unwrap_or(u32::MAX)
+            });
         if let Some(tti) = self.time_to_idle {
             builder = builder.time_to_idle(tti);
         }

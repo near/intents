@@ -73,7 +73,7 @@ impl AppCodeUrl {
             )
             .parse()
             .expect("URL: parse"),
-            code_hash: *code.hash(),
+            code_hash: code.hash(),
         }
     }
 

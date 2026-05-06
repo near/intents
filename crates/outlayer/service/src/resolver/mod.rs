@@ -1,7 +1,7 @@
 mod near;
 mod url;
 
-use crate::{AppCodeUrl, CodeRef, HashedCode};
+use crate::{AppCodeUrl, CodeRef, HashMismatch, HashedCode};
 use defuse_outlayer_primitives::AppId;
 
 use self::{near::NearResolver, url::UrlResolver};
@@ -23,7 +23,7 @@ impl Resolver {
         };
 
         let code = self.url.resolve(code_url).await?;
-        HashedCode::from_parts(code, code_hash).map_err(|_| Error::CodeHashMismatch)
+        Ok(HashedCode::from_parts(code, code_hash)?)
     }
 
     async fn resolve_app_id(&self, app_id: AppId<'_>) -> Result<AppCodeUrl> {
@@ -40,7 +40,7 @@ pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("code hash mismatch")]
-    CodeHashMismatch,
+    CodeHashMismatch(#[from] HashMismatch),
 
     #[error("NEAR: {0}")]
     NearRpc(#[from] near_kit::Error),

@@ -9,7 +9,7 @@ pub struct OutlayerBuilder {
 }
 
 impl OutlayerBuilder {
-    pub fn with_cache(mut self, cache: CacheBuilder) -> Self {
+    pub const fn with_cache(mut self, cache: CacheBuilder) -> Self {
         self.cache = cache;
         self
     }

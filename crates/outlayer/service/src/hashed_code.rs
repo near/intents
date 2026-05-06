@@ -25,8 +25,8 @@ impl HashedCode {
         self.bytes.clone()
     }
 
-    pub const fn hash(&self) -> &[u8; 32] {
-        &self.hash
+    pub const fn hash(&self) -> [u8; 32] {
+        self.hash
     }
 }
 

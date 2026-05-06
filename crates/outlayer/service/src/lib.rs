@@ -44,8 +44,9 @@ impl Outlayer {
     }
 
     async fn compile(&self, code: HashedCode) -> Result<Component, Error> {
+        // `try_get_with` collapses concurrent compiles for the same hash into a single computation.
         self.runtime_cache
-            .try_get_with(*code.hash(), async {
+            .try_get_with(code.hash(), async {
                 let compiler = self.executor.compiler();
                 let bytes = code.bytes();
                 tokio::task::spawn_blocking(move || compiler.compile(bytes))
