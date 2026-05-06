@@ -18,14 +18,14 @@ use moka::future::Cache;
 pub struct Outlayer {
     resolver: Resolver,
     executor: Executor,
-    runtime_cache: Option<Cache<[u8; 32], Component>>,
+    runtime_cache: Cache<[u8; 32], Component>,
 }
 
 impl Outlayer {
     pub const fn new(
         resolver: Resolver,
         executor: Executor,
-        cache: Option<Cache<[u8; 32], Component>>,
+        cache: Cache<[u8; 32], Component>,
     ) -> Self {
         Self {
             resolver,
@@ -62,13 +62,10 @@ impl Outlayer {
                 .map_err(|e| anyhow::anyhow!("compile panicked: {e}"))?
         };
 
-        if let Some(cache) = &self.runtime_cache {
-            let hash = *code.hash();
-            cache.try_get_with(hash, do_compile(code.bytes())).await
-        } else {
-            do_compile(code.bytes()).await.map_err(Arc::new)
-        }
-        .map_err(Error::Compile)
+        self.runtime_cache
+            .try_get_with(*code.hash(), do_compile(code.bytes()))
+            .await
+            .map_err(Error::Compile)
     }
 
     pub async fn execute(&self, app: Code<'_>, input: Bytes, fuel: u64) -> Result<Outcome, Error> {
