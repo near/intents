@@ -22,6 +22,7 @@ members = [
   "crates/near/auth-call",
   "crates/near/controller",
   "crates/near/nep245",
+  "crates/near/promise",
   "crates/near/utils",
   "crates/near/wnear",
 
@@ -86,6 +87,7 @@ defuse-auth-call.path = "crates/near/auth-call"
 defuse-controller.path = "crates/near/controller"
 defuse-near-utils.path = "crates/near/utils"
 defuse-nep245.path = "crates/near/nep245"
+defuse-promise.path = "crates/near/promise"
 defuse-wnear.path = "crates/near/wnear"
 
 defuse-deadline.path = "crates/primitives/deadline"
@@ -124,11 +126,13 @@ near-api = "0.8.6"
 near-api-types = "0.8.6"
 near-contract-standards = "5.24"
 near-crypto = "0.35.0"
+near-gas = "0.3.6"
 near-kit = { version = "0.9.0", default-features = false }
 near-openapi-types = "0.8.0"
 near-plugins = "0.5.1"
 near-sandbox = "0.3.9"
 near-sdk = "5.26.1"
+near-token = "0.3.4"
 near-workspaces = "0.22"
 
 # TODO: `features = ["derive"]` needed because near-sdk uses `derive(Arbitrary)`
@@ -142,6 +146,7 @@ bnum = { version = "0.13", features = ["borsh"] }
 borsh = "1.6.1"
 bs58 = "0.5.1"
 bytesize = "2.3.1"
+cfg_eval = "0.1.2"
 chrono = { version = "0.4", default-features = false }
 clap = { version = "4.5.55", features = ["derive"] }
 curve25519-dalek = "4.1.3"

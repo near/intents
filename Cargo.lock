@@ -739,6 +739,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
+name = "cfg_eval"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45565fc9416b9896014f5732ac776f810ee53a66730c17e4020c3ec064a8f88f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
 name = "chacha20"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1737,6 +1748,26 @@ dependencies = [
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
+]
+
+[[package]]
+name = "defuse-promise"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "borsh",
+ "cfg_eval",
+ "defuse-promise",
+ "derive_more",
+ "near-account-id",
+ "near-gas",
+ "near-sdk",
+ "near-token",
+ "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
 ]
 
 [[package]]
@@ -3865,10 +3896,11 @@ dependencies = [
 
 [[package]]
 name = "near-gas"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6fbc2f97dea1fad4289ce70604955fc3421fb7c95c7300aba1d6a3466590f60"
+checksum = "559c33c9c86e05da946358485fa6e7e881a09726f909fbd8bcf357f998d7d03d"
 dependencies = [
+ "arbitrary",
  "borsh",
  "schemars 0.8.22",
  "serde",
@@ -4380,10 +4412,11 @@ dependencies = [
 
 [[package]]
 name = "near-token"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34de6b54d82d0790b2a56b677e7b4ecb7f021a7e8559f8611065c890d56cfcda"
+checksum = "2a8000d5859172ce4cd29d51ae1af18a80571939f2975ffcae2c00d241ef4507"
 dependencies = [
+ "arbitrary",
  "borsh",
  "schemars 0.8.22",
  "serde",
