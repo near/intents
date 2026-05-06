@@ -121,8 +121,11 @@ impl Contract {
     fn execute_op(&mut self, op: WalletOp, actor: Actor<'_>) -> Result<()> {
         match op {
             WalletOp::SetSignatureMode { enable } => self.set_signature_mode(enable, actor),
-            WalletOp::AddExtension { account_id } => self.add_extension(account_id, actor),
-            WalletOp::RemoveExtension { account_id } => self.remove_extension(account_id, actor),
+            WalletOp::AddExtension { account_id } => {
+                self.add_extension(&account_id, actor);
+                Ok(())
+            }
+            WalletOp::RemoveExtension { account_id } => self.remove_extension(&account_id, actor),
         }
     }
 
@@ -130,24 +133,11 @@ impl Contract {
         if self.signature_enabled == enable {
             return Ok(());
         }
-
         self.signature_enabled = enable;
+        self.check_lockout()?;
+
         WalletEvent::SignatureModeSet {
             enabled: enable,
-            by: actor,
-        }
-        .emit();
-
-        self.check_lockout()
-    }
-
-    fn add_extension(&mut self, account_id: AccountId, actor: Actor<'_>) -> Result<()> {
-        if !self.extensions.insert(account_id.clone()) {
-            return Ok(());
-        }
-
-        WalletEvent::ExtensionAdded {
-            account_id: (&account_id).into(),
             by: actor,
         }
         .emit();
@@ -155,18 +145,31 @@ impl Contract {
         Ok(())
     }
 
-    fn remove_extension(&mut self, account_id: AccountId, actor: Actor<'_>) -> Result<()> {
-        if !self.extensions.remove(&account_id) {
-            return Ok(());
+    fn add_extension(&mut self, account_id: &AccountIdRef, actor: Actor<'_>) {
+        if !self.extensions.insert(account_id.to_owned()) {
+            return;
         }
 
+        WalletEvent::ExtensionAdded {
+            account_id: account_id.into(),
+            by: actor,
+        }
+        .emit();
+    }
+
+    fn remove_extension(&mut self, account_id: &AccountIdRef, actor: Actor<'_>) -> Result<()> {
+        if !self.extensions.remove(account_id) {
+            return Ok(());
+        }
+        self.check_lockout()?;
+
         WalletEvent::ExtensionRemoved {
-            account_id: (&account_id).into(),
+            account_id: account_id.into(),
             by: actor,
         }
         .emit();
 
-        self.check_lockout()
+        Ok(())
     }
 
     fn check_extension_enabled(&self, account_id: &AccountIdRef) -> Result<()> {
