@@ -8,9 +8,6 @@ pub enum Error {
     #[error("already executed")]
     AlreadyExecuted,
 
-    #[error("extension '{0}' is already enabled")]
-    ExtensionEnabled(AccountId),
-
     #[error("extension '{0}' is not enabled")]
     ExtensionNotEnabled(AccountId),
 
@@ -34,7 +31,4 @@ pub enum Error {
 
     #[error("signature is disabled")]
     SignatureDisabled,
-
-    #[error("this signature mode is already set")]
-    ThisSignatureModeAlreadySet,
 }
