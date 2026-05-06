@@ -7,6 +7,8 @@ use tokio::io::AsyncReadExt as _;
 use tokio_util::io::StreamReader;
 use url::Url;
 
+const INITIAL_CAP: usize = 1024 * 1024;
+
 pub struct HttpResolver {
     // TODO: caching?
     client: Client,
@@ -29,9 +31,10 @@ impl HttpResolver {
             .error_for_status()?;
 
         // Fast-reject on a declared Content-Length that doesn't fit in `usize` or
-        // already exceeds the limit, and pre-allocate to the declared length otherwise.
+        // already exceeds the limit. Otherwise pre-allocate up to a small cap to
+        // avoid attacker-controlled speculative allocations from a lying server.
         let mut buf = match resp.content_length().map(usize::try_from) {
-            Some(Ok(len)) if len <= self.max_len => Vec::with_capacity(len),
+            Some(Ok(len)) if len <= self.max_len => Vec::with_capacity(len.min(INITIAL_CAP)),
             Some(_) => {
                 return Err(Error::TooLarge {
                     limit: self.max_len,
@@ -45,6 +48,8 @@ impl HttpResolver {
         let mut stream = StreamReader::new(stream).take(limit);
         stream.read_to_end(&mut buf).await?;
 
+        // `take(limit)` succeeds on truncation; read from the underlying
+        // stream to verify it is actually exhausted at the cap.
         if stream.into_inner().read(&mut [0u8]).await? != 0 {
             return Err(Error::TooLarge {
                 limit: self.max_len,
