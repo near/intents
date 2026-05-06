@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use bytes::Bytes;
 use defuse_outlayer_vm_runner::{VmRuntime, wasmtime::component::Component};
 
 #[derive(Clone)]
@@ -11,7 +10,7 @@ impl Compiler {
         Self(runtime)
     }
 
-    pub fn compile(&self, wasm: Bytes) -> Result<Component, CompileError> {
+    pub fn compile(&self, wasm: impl AsRef<[u8]>) -> Result<Component, CompileError> {
         Ok(self.0.compile(wasm)?)
     }
 }
