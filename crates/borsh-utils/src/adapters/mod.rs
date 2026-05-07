@@ -528,7 +528,6 @@ pub struct Or<T1: ?Sized, T2: ?Sized>(PhantomData<T1>, PhantomData<T2>);
 /// use defuse_borsh_utils::adapters::{As, Remainder};
 /// use borsh::{BorshSerialize, BorshDeserialize};
 /// #[derive(BorshSerialize, BorshDeserialize)]
-/// #[borsh(crate = "::borsh")]
 /// struct S {
 ///     #[borsh(
 ///         serialize_with = "As::<Remainder>::serialize",
