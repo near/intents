@@ -6,22 +6,24 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+bs58 = { workspace = true, optional = true }
 derive_more = { workspace = true, features = ["from"] }
-near-sdk.workspace = true
+schemars = { workspace = true, optional = true }
+serde = { workspace = true, features = ["derive"] }
 serde_with.workspace = true
 tlb-ton = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
 
 [features]
 default = ["base58", "base64", "hex"]
 
-abi = ["near-sdk/abi"]
-base58 = []
+abi = ["schemars", "serde_with/schemars_0_8"]
+base58 = ["dep:bs58"]
 base64 = ["serde_with/base64"]
-hex = []
+hex = ["serde_with/hex"]
 tlb = ["dep:tlb-ton"]
-
-[dev-dependencies]
-near-sdk = { workspace = true, features = ["unit-testing"] }
 
 [lints]
 workspace = true

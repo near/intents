@@ -1401,10 +1401,11 @@ name = "defuse-borsh-utils"
 version = "0.1.0"
 dependencies = [
  "array-util",
+ "base64 0.22.1",
+ "borsh",
  "chrono",
  "defuse-io-utils",
  "impl-tools",
- "near-sdk",
 ]
 
 [[package]]
@@ -1793,8 +1794,11 @@ dependencies = [
 name = "defuse-serde-utils"
 version = "0.1.0"
 dependencies = [
+ "bs58 0.5.1",
  "derive_more",
- "near-sdk",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
  "serde_with",
  "tlb-ton",
 ]

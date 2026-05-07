@@ -8,11 +8,11 @@ use std::{
     sync::Arc,
 };
 
+#[cfg(feature = "abi")]
+use borsh::BorshSchema;
+use borsh::{self, BorshDeserialize, BorshSerialize};
 use defuse_io_utils::ReadExt;
 use impl_tools::autoimpl;
-#[cfg(feature = "abi")]
-use near_sdk::borsh::BorshSchema;
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
 #[cfg(feature = "abi")]
 mod schema;
@@ -526,9 +526,9 @@ pub struct Or<T1: ?Sized, T2: ?Sized>(PhantomData<T1>, PhantomData<T2>);
 /// # Example
 /// ```
 /// use defuse_borsh_utils::adapters::{As, Remainder};
-/// use near_sdk::borsh::{BorshSerialize, BorshDeserialize};
+/// use borsh::{BorshSerialize, BorshDeserialize};
 /// #[derive(BorshSerialize, BorshDeserialize)]
-/// #[borsh(crate = "::near_sdk::borsh")]
+/// #[borsh(crate = "::borsh")]
 /// struct S {
 ///     #[borsh(
 ///         serialize_with = "As::<Remainder>::serialize",

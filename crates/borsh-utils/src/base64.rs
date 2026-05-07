@@ -1,7 +1,5 @@
-use near_sdk::{
-    base64::engine::{Engine, general_purpose::STANDARD},
-    borsh::{self, BorshSerialize, io},
-};
+use base64::engine::{Engine, general_purpose::STANDARD};
+use borsh::{self, BorshSerialize, io};
 
 pub struct Base64;
 

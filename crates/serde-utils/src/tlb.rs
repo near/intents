@@ -1,9 +1,7 @@
 use std::marker::PhantomData;
 
-use near_sdk::{
-    serde::{self, Deserializer, Serializer},
-    serde_with::{DeserializeAs, SerializeAs},
-};
+use serde::{self, Deserializer, Serializer};
+use serde_with::{DeserializeAs, SerializeAs};
 use tlb_ton::{
     BagOfCellsArgs, BoC, Context, Same,
     bits::NoArgs,
@@ -61,10 +59,8 @@ where
 
 #[cfg(feature = "abi")]
 const _: () = {
-    use near_sdk::{
-        schemars::{SchemaGenerator, schema::Schema},
-        serde_with::schemars_0_8::JsonSchemaAs,
-    };
+    use schemars::{SchemaGenerator, schema::Schema};
+    use serde_with::schemars_0_8::JsonSchemaAs;
 
     impl<T, As, CellAs> JsonSchemaAs<T> for AsBoC<As, CellAs>
     where

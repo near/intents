@@ -1,5 +1,5 @@
 use super::As;
-use near_sdk::borsh::schema::{Declaration, Definition};
+use borsh::schema::{Declaration, Definition};
 use std::collections::BTreeMap;
 
 pub trait BorshSchemaAs<T: ?Sized> {
@@ -11,19 +11,19 @@ macro_rules! impl_borsh_schema_as {
     ($target:ty, $adapter:ident) => {
         impl<I> $crate::adapters::BorshSchemaAs<$target> for $adapter<I>
         where
-            I: near_sdk::borsh::BorshSchema,
+            I: borsh::BorshSchema,
         {
-            fn declaration_as() -> near_sdk::borsh::schema::Declaration {
-                <I as near_sdk::borsh::BorshSchema>::declaration()
+            fn declaration_as() -> borsh::schema::Declaration {
+                <I as borsh::BorshSchema>::declaration()
             }
 
             fn add_definitions_recursively_as(
                 definitions: &mut std::collections::BTreeMap<
-                    near_sdk::borsh::schema::Declaration,
-                    near_sdk::borsh::schema::Definition,
+                    borsh::schema::Declaration,
+                    borsh::schema::Definition,
                 >,
             ) {
-                <I as near_sdk::borsh::BorshSchema>::add_definitions_recursively(definitions);
+                <I as borsh::BorshSchema>::add_definitions_recursively(definitions);
             }
         }
     };
