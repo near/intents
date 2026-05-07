@@ -62,6 +62,13 @@ impl<'a> AppId<'a> {
             Self::Near(app_id) => Self::Near(Cow::Borrowed(app_id)),
         }
     }
+
+    #[inline]
+    pub fn into_owned(self) -> AppId<'static> {
+        match self {
+            Self::Near(account_id) => AppId::Near(account_id.into_owned().into()),
+        }
+    }
 }
 
 impl Debug for AppId<'_> {
@@ -102,4 +109,21 @@ pub enum ParseAppIdError {
     AccountId(#[from] ParseAccountError),
     #[error(transparent)]
     ParseError(#[from] strum::ParseError),
+}
+
+#[cfg(feature = "example")]
+impl AppId<'static> {
+    /// Generated via near-cli@0.26.1:
+    /// ```sh
+    /// near contract state-init \
+    ///   use-global-account-id 'test' \
+    ///   data-from-json "$(near oa -q \
+    ///       --admin-id 'test' \
+    ///       --code-hash /'0000000000000000000000000000000000000000000000000000000000000000' \
+    ///       --code-url 'data:application/wasm;base64,' \
+    ///   )" inspect account-id
+    /// ```
+    pub const EXAMPLE: Self = Self::Near(Cow::Borrowed(AccountIdRef::new_or_panic(
+        "0se1573c9dff58d4a57384dee048c9b1a809fb6839",
+    )));
 }

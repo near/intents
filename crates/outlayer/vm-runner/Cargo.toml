@@ -17,3 +17,18 @@ tracing.workspace = true
 
 wasmtime = { workspace = true, features = ["cranelift"] } # TODO: no JIT?
 wasmtime-wasi.workspace = true
+
+cfg_eval = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_with = { workspace = true, optional = true }
+
+[features]
+default = ["serde"]
+
+serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with"]
+wat = ["wasmtime/wat"]
+
+[dev-dependencies]
+defuse-outlayer-primitives = { workspace = true, features = ["example"] }
+defuse-outlayer-vm-runner = { path = ".", features = ["wat"] }
+tokio = { workspace = true, features = ["rt", "macros"] }
