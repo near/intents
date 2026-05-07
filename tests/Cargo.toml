@@ -68,7 +68,7 @@ defuse-global-deployer = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true }
 defuse-outlayer-app = { workspace = true, optional = true }
 defuse-randomness.workspace = true
-defuse-serde-utils = { workspace = true }
+defuse-serde-utils = { workspace = true, features = ["hex"] }
 defuse-test-utils.workspace = true
 
 near-contract-standards.workspace = true

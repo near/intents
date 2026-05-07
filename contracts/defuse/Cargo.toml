@@ -22,7 +22,7 @@ defuse-core.workspace = true
 defuse-map-utils = { workspace = true, optional = true }
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
-defuse-serde-utils.workspace = true
+defuse-serde-utils = { workspace = true, features = ["base64"] }
 defuse-wnear = { workspace = true, optional = true }
 
 bitflags = { workspace = true, optional = true }

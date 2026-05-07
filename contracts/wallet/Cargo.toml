@@ -16,7 +16,7 @@ workspace = true
 defuse-bitmap.workspace = true
 defuse-borsh-utils.workspace = true
 defuse-deadline.workspace = true
-defuse-serde-utils.workspace = true
+defuse-serde-utils = { workspace = true, features = ["base58"] }
 
 derive_more = { workspace = true, features = ["from"] }
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
