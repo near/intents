@@ -33,6 +33,7 @@ abi = [
 arbitrary = ["dep:arbitrary", "near-account-id/arbitrary"]
 borsh = ["dep:borsh", "near-account-id/borsh"]
 digest = ["borsh", "dep:digest", "dep:digest-io", "dep:sha3"]
+example = []
 serde = ["dep:serde", "dep:serde_with", "near-account-id/serde"]
 
 [dev-dependencies]
