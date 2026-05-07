@@ -26,19 +26,26 @@ impl HttpResolver {
             .await?
             .error_for_status()?;
 
-        // Fast-reject on a declared Content-Length that doesn't fit in `usize` or
-        // already exceeds the limit. Otherwise pre-allocate up to a small cap to
-        // avoid attacker-controlled speculative allocations from a lying server.
-        let cap = resp
-            .content_length()
-            .map(usize::try_from)
-            .transpose()
-            .map_err(|_| Error::TooLarge {
-                limit: self.max_len,
-            })?
-            .unwrap_or_default()
-            .min(INITIAL_CAP);
-        let mut buf = Vec::with_capacity(cap);
+        let mut buf = Vec::with_capacity({
+            // Fast-reject on a declared Content-Length that doesn't fit in
+            // `usize` or already exceeds the limit. Otherwise pre-allocate
+            // up to a small cap to avoid attacker-controlled speculative
+            // allocations from a lying server.
+            let cap = resp
+                .content_length()
+                .map(usize::try_from)
+                .transpose()
+                .map_err(|_| Error::TooLarge {
+                    limit: self.max_len,
+                })?
+                .unwrap_or_default();
+            if cap > self.max_len {
+                return Err(Error::TooLarge {
+                    limit: self.max_len,
+                });
+            }
+            cap.min(INITIAL_CAP)
+        });
 
         let limit = u64::try_from(self.max_len).expect("usize fits in u64");
         let stream = resp.bytes_stream().map_err(io::Error::other);
