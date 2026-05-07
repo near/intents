@@ -10,7 +10,7 @@ use near_sdk::{
     state_init::{StateInit, StateInitV1},
 };
 
-use crate::Nonces;
+use crate::{Nonces, hook::Noop};
 
 pub const STATE_KEY: &[u8] = b"";
 
@@ -40,7 +40,7 @@ pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60 * 60); // 1h
 /// State of the wallet-contract.
 #[near(serializers = [borsh])]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct State<PubKey> {
+pub struct State<PubKey, Hook = Noop> {
     /// Whether authentication by signature is allowed.
     pub signature_enabled: bool,
 
@@ -57,18 +57,30 @@ pub struct State<PubKey> {
 
     /// A set of enabled extensions.
     pub extensions: BTreeSet<AccountId>,
+
+    /// Hook state, specific to a particular implementation variant.
+    pub hook: Hook,
 }
 
 impl<PubKey> State<PubKey> {
     /// Create a default state with given public key.
     #[inline]
     pub const fn new(public_key: PubKey) -> Self {
+        Self::new_with_hook(public_key, Noop)
+    }
+}
+
+impl<PubKey, Hook> State<PubKey, Hook> {
+    /// Create a default state with given public key and extra state.
+    #[inline]
+    pub const fn new_with_hook(public_key: PubKey, hook: Hook) -> Self {
         Self {
             signature_enabled: true,
             wallet_id: DEFAULT_WALLET_ID,
             public_key,
             nonces: Nonces::new(DEFAULT_TIMEOUT),
             extensions: BTreeSet::new(),
+            hook,
         }
     }
 
@@ -122,7 +134,7 @@ impl<PubKey> State<PubKey> {
     #[inline]
     pub fn as_storage(&self) -> BTreeMap<Vec<u8>, Vec<u8>>
     where
-        PubKey: BorshSerialize,
+        Self: BorshSerialize,
     {
         [(
             STATE_KEY.to_vec(),
@@ -135,7 +147,7 @@ impl<PubKey> State<PubKey> {
     #[inline]
     pub fn state_init(&self, code: GlobalContractId) -> StateInit
     where
-        PubKey: BorshSerialize,
+        Self: BorshSerialize,
     {
         StateInit::V1(StateInitV1 {
             code,

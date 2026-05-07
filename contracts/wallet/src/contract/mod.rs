@@ -10,6 +10,7 @@ use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near};
 
 use crate::{
     Actor, Error, Request, RequestMessage, Result, Wallet, WalletEvent, WalletOp,
+    hook::{Hook, WalletHook},
     signature::SigningStandard,
 };
 
@@ -60,6 +61,13 @@ impl Wallet for Contract {
     }
 }
 
+#[near]
+impl WalletHook for Contract {
+    fn hook(&self) -> String {
+        self.hook.to_string()
+    }
+}
+
 impl Contract {
     fn execute_signed(&mut self, msg: RequestMessage, proof: &str) -> Result<()> {
         if !self.is_signature_allowed() {
@@ -107,6 +115,8 @@ impl Contract {
     }
 
     fn execute_request(&mut self, request: Request, actor: &Actor<'_>) -> Result<()> {
+        self.hook.on_request(&request, actor.as_ref());
+
         for op in request.ops {
             self.execute_op(op, actor.as_ref())?;
         }

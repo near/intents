@@ -6,6 +6,7 @@ mod arbitrary;
 mod contract;
 mod error;
 mod events;
+pub mod hook;
 mod nonces;
 mod request;
 pub mod signature;
