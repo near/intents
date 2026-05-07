@@ -56,20 +56,21 @@ outlayer = [
 long = []
 
 [dependencies]
-defuse = { workspace = true, features = ["contract", "arbitrary", "far"], optional = true }
-defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = true }
 defuse-sandbox = { workspace = true }
-defuse-wallet = { workspace = true, features = ["arbitrary", "concurrent", "ed25519"], optional = true }
-defuse-wallet-sdk = { workspace = true, features = ["ed25519"], optional = true }
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 
 defuse-fees.workspace = true
-defuse-global-deployer = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true }
-defuse-outlayer-app = { workspace = true, optional = true }
 defuse-randomness.workspace = true
 defuse-serde-utils = { workspace = true, features = ["hex"] }
 defuse-test-utils.workspace = true
+
+defuse = { workspace = true, features = ["contract", "arbitrary", "far"], optional = true }
+defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = true }
+defuse-global-deployer = { workspace = true, optional = true }
+defuse-outlayer-app = { workspace = true, optional = true }
+defuse-wallet = { workspace = true, features = ["arbitrary", "concurrent", "ed25519"], optional = true }
+defuse-wallet-sdk = { workspace = true, features = ["ed25519"], optional = true }
 
 near-contract-standards.workspace = true
 near-crypto.workspace = true

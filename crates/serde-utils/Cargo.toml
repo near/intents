@@ -6,11 +6,12 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-bs58 = { workspace = true, optional = true }
 derive_more = { workspace = true, features = ["from"] }
-schemars = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_with.workspace = true
+
+bs58 = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true }
 tlb-ton = { workspace = true, optional = true }
 
 [dev-dependencies]

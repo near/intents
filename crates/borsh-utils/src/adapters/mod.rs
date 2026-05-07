@@ -8,8 +8,6 @@ use std::{
     sync::Arc,
 };
 
-#[cfg(feature = "abi")]
-use borsh::BorshSchema;
 use borsh::{self, BorshDeserialize, BorshSerialize};
 use defuse_io_utils::ReadExt;
 use impl_tools::autoimpl;
@@ -152,9 +150,9 @@ where
 }
 
 #[cfg(feature = "abi")]
-impl<T, As> BorshSchema for AsWrap<T, As>
+impl<T, As> borsh::BorshSchema for AsWrap<T, As>
 where
-    T: BorshSchema,
+    T: borsh::BorshSchema,
     As: ?Sized,
 {
     fn declaration() -> borsh::schema::Declaration {
