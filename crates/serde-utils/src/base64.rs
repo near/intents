@@ -61,10 +61,7 @@ where
     derive(::schemars::JsonSchema),
     schemars(transparent)
 )]
-#[cfg_attr(
-    not(feature = "abi"),
-    serde_as(schemars = false)
-)]
+#[cfg_attr(not(feature = "abi"), serde_as(schemars = false))]
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, From)]
 #[serde(bound(serialize = "T: AsRef<[u8]>", deserialize = "T: TryFrom<Vec<u8>>"))]
 pub struct AsBase64<T>(#[serde_as(as = "Base64")] pub T);
