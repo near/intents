@@ -17,7 +17,7 @@ contract = []
 
 [dependencies]
 defuse-borsh-utils.workspace = true
-defuse-serde-utils.workspace = true
+defuse-serde-utils = { workspace = true, features = ["hex"] }
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 
 [dev-dependencies]

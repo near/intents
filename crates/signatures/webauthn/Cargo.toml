@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false }
-defuse-serde-utils.workspace = true
+defuse-serde-utils = { workspace = true, features = ["base64"] }
 
 near-sdk.workspace = true
 

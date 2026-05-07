@@ -1,7 +1,7 @@
 use super::BorshSerializeAs;
 use crate::adapters::BorshDeserializeAs;
+use borsh::{BorshDeserialize, BorshSerialize};
 use chrono::{DateTime, Utc};
-use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 use std::{fmt::Display, io, marker::PhantomData};
 
 pub struct TimestampSeconds<I = i64>(PhantomData<I>);

@@ -8,11 +8,9 @@ use std::{
     sync::Arc,
 };
 
+use borsh::{self, BorshDeserialize, BorshSerialize};
 use defuse_io_utils::ReadExt;
 use impl_tools::autoimpl;
-#[cfg(feature = "abi")]
-use near_sdk::borsh::BorshSchema;
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
 #[cfg(feature = "abi")]
 mod schema;
@@ -152,24 +150,24 @@ where
 }
 
 #[cfg(feature = "abi")]
-impl<T, As> BorshSchema for AsWrap<T, As>
-where
-    T: BorshSchema,
-    As: ?Sized,
-{
-    fn declaration() -> borsh::schema::Declaration {
-        T::declaration()
-    }
+const _: () = {
+    use borsh::schema::{Declaration, Definition};
+    use std::collections::BTreeMap;
 
-    fn add_definitions_recursively(
-        definitions: &mut std::collections::BTreeMap<
-            borsh::schema::Declaration,
-            borsh::schema::Definition,
-        >,
-    ) {
-        T::add_definitions_recursively(definitions);
+    impl<T, As> borsh::BorshSchema for AsWrap<T, As>
+    where
+        T: borsh::BorshSchema,
+        As: ?Sized,
+    {
+        fn declaration() -> Declaration {
+            T::declaration()
+        }
+
+        fn add_definitions_recursively(definitions: &mut BTreeMap<Declaration, Definition>) {
+            T::add_definitions_recursively(definitions);
+        }
     }
-}
+};
 
 impl<T, As> fmt::Debug for AsWrap<T, As>
 where
@@ -526,9 +524,8 @@ pub struct Or<T1: ?Sized, T2: ?Sized>(PhantomData<T1>, PhantomData<T2>);
 /// # Example
 /// ```
 /// use defuse_borsh_utils::adapters::{As, Remainder};
-/// use near_sdk::borsh::{BorshSerialize, BorshDeserialize};
+/// use borsh::{BorshSerialize, BorshDeserialize};
 /// #[derive(BorshSerialize, BorshDeserialize)]
-/// #[borsh(crate = "::near_sdk::borsh")]
 /// struct S {
 ///     #[borsh(
 ///         serialize_with = "As::<Remainder>::serialize",

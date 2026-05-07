@@ -1,5 +1,5 @@
 use crate::adapters::{BorshDeserializeAs, BorshSerializeAs};
-use near_sdk::borsh::{BorshDeserialize, BorshSerialize, io};
+use borsh::{BorshDeserialize, BorshSerialize, io};
 use std::{fmt::Display, marker::PhantomData, time::Duration};
 
 pub struct DurationSeconds<I = u64>(PhantomData<I>);

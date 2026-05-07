@@ -43,5 +43,5 @@ defuse-poa-factory = { workspace = true, optional = true, features = ["contract"
 defuse-wallet = { workspace = true, optional = true }
 
 defuse = { workspace = true, optional = true, features = ["contract"] }
-defuse-serde-utils = { workspace = true, optional = true }
+defuse-serde-utils = { workspace = true, optional = true, features = ["base64", "hex"] }
 defuse-test-utils = { workspace = true, optional = true }

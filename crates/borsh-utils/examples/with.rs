@@ -1,8 +1,7 @@
+use borsh::{self, BorshDeserialize, BorshSerialize};
 use defuse_borsh_utils::adapters::{As, TryFromInto};
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
 #[derive(Debug, Clone, PartialEq, BorshSerialize, BorshDeserialize)]
-#[borsh(crate = "::near_sdk::borsh")]
 struct MyInt(
     #[borsh(
         serialize_with = "As::<Option<TryFromInto<i64>>>::serialize",

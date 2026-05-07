@@ -12,14 +12,13 @@ workspace = true
 defuse-io-utils.workspace = true
 
 array-util.workspace = true
+borsh = { workspace = true, features = ["derive"] }
 impl-tools.workspace = true
-near-sdk.workspace = true
 
+base64 = { workspace = true, optional = true }
 chrono = { workspace = true, optional = true }
 
-[dev-dependencies]
-near-sdk = { workspace = true, features = ["unit-testing"] }
-
 [features]
-abi = ["near-sdk/abi"]
+abi = ["borsh/unstable__schema"]
+base64 = ["dep:base64"]
 chrono = ["dep:chrono"]
