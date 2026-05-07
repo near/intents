@@ -42,3 +42,7 @@ serde = [
   "dep:serde_with",
   "url/serde",
 ]
+
+[dev-dependencies]
+# TODO: remove
+near-sdk = { workspace = true, features = ["non-contract-usage"] }

@@ -20,3 +20,18 @@ pub enum Error {
     #[error(transparent)]
     Parse(#[from] DataUrlError),
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::AppCodeUrl;
+
+    use super::*;
+
+    #[test]
+    fn roundtrip() {
+        let code = (0..=u8::MAX).collect::<Vec<_>>();
+        let url = AppCodeUrl::from_code(&code).code_url;
+        let resolved = resolve(url).unwrap();
+        assert_eq!(resolved, code);
+    }
+}

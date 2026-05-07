@@ -1,4 +1,4 @@
-use base64::{Engine as _, engine::general_purpose::URL_SAFE};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use bytes::Bytes;
 use defuse_outlayer_primitives::AppId;
 use sha2::{Digest, Sha256};
@@ -63,7 +63,10 @@ impl AppCodeUrl {
 
         Self {
             code_hash: Sha256::digest(code).into(),
-            code_url: format!("data:application/wasm;base64,{}", URL_SAFE.encode(code))
+            // `data:[application/wasm][;base64],<data>`
+            //
+            // See <https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/data>
+            code_url: format!("data:application/wasm;base64,{}", STANDARD.encode(code))
                 .parse()
                 .expect("URL: parse"),
         }
