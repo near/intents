@@ -17,6 +17,7 @@ pub struct HttpResolver {
 
 impl HttpResolver {
     pub async fn resolve(&self, url: Url) -> Result<Bytes, Error> {
+        // TODO: have a whitelist or blacklist of domains?
         let resp = self
             .client
             .get(url)
