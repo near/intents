@@ -6,6 +6,7 @@ use url::Url;
 
 use self::http::HttpResolver;
 
+#[derive(Clone)]
 pub struct UrlResolver {
     http: HttpResolver,
 }

@@ -13,7 +13,6 @@ use url::Url;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Code<'a> {
     Ref(CodeRef<'a>),
-    // TODO: feature flag?
     Inline {
         #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::base64::Base64"))]
         code: Bytes,
@@ -24,14 +23,7 @@ impl Code<'_> {
     pub fn app_id(&self) -> AppId<'static> {
         match self {
             Self::Ref(app) => app.app_id(),
-            Self::Inline { code } => AppCodeUrl {
-                // See <https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/data>
-                code_url: format!("data:application/wasm;base64,{}", URL_SAFE.encode(code))
-                    .parse()
-                    .expect("URL: parse"),
-                code_hash: Sha256::digest(code).into(),
-            }
-            .app_id(),
+            Self::Inline { code } => AppCodeUrl::from_code(code).immutable_app_id(),
         }
     }
 }
@@ -47,7 +39,7 @@ impl CodeRef<'_> {
     pub fn app_id(&self) -> AppId<'static> {
         match self {
             Self::AppId(app_id) => app_id.clone().into_owned(),
-            Self::Url(url) => url.app_id(),
+            Self::Url(url) => url.immutable_app_id(),
         }
     }
 }
@@ -66,7 +58,18 @@ pub struct AppCodeUrl {
 }
 
 impl AppCodeUrl {
-    pub fn app_id(&self) -> AppId<'static> {
+    pub fn from_code(code: impl AsRef<[u8]>) -> Self {
+        let code = code.as_ref();
+
+        Self {
+            code_hash: Sha256::digest(code).into(),
+            code_url: format!("data:application/wasm;base64,{}", URL_SAFE.encode(code))
+                .parse()
+                .expect("URL: parse"),
+        }
+    }
+
+    pub fn immutable_app_id(&self) -> AppId<'static> {
         // TODO: derive from state_init
         todo!()
     }

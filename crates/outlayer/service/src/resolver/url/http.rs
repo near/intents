@@ -8,7 +8,7 @@ use tokio_util::io::StreamReader;
 use url::Url;
 
 const INITIAL_CAP: usize = 1024 * 1024;
-
+#[derive(Clone)]
 pub struct HttpResolver {
     // TODO: caching?
     client: Client,
