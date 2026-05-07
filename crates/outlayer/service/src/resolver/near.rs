@@ -19,6 +19,7 @@ impl NearResolver {
         let oa = self.client.contract::<OutlayerApp>(oa_contract_id.into());
         // TODO: finality or speicific block hash?
         let (code_url, code_hash) = try_join!(
+            // TODO: limit the length of fetched data URLs?
             oa.oa_code_url().into_future(),
             oa.oa_code_hash().into_future(),
         )?;
