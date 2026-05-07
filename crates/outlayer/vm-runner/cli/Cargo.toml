@@ -9,7 +9,6 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-outlayer-primitives = { workspace = true, features = ["example"] }
 defuse-outlayer-vm-runner = { workspace = true, features = ["wat"] }
 
 anyhow.workspace = true

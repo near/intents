@@ -26,8 +26,6 @@ sha2.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["io-util", "rt"] }
 tokio-util = { workspace = true, features = ["io"] }
-tower = { workspace = true, features = ["util"] }
-tracing.workspace = true
 url.workspace = true
 
 cfg_eval = { workspace = true, optional = true }

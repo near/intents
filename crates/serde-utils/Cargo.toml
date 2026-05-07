@@ -12,7 +12,6 @@ serde_with.workspace = true
 tlb-ton = { workspace = true, optional = true }
 
 bs58 = { workspace = true, optional = true }
-hex = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
 
 [features]
@@ -21,7 +20,7 @@ default = ["base58", "base64", "hex"]
 abi = ["dep:schemars"]
 base58 = ["dep:bs58"]
 base64 = ["serde_with/base64"]
-hex = ["dep:hex"]
+hex = ["serde_with/hex"]
 tlb = ["dep:tlb-ton"]
 
 [dev-dependencies]
