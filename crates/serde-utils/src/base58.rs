@@ -1,5 +1,8 @@
-use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
-use serde_with::{DeserializeAs, SerializeAs};
+use near_sdk::{
+    bs58,
+    serde::{Deserialize, Deserializer, Serialize, Serializer, de},
+    serde_with::{DeserializeAs, SerializeAs},
+};
 
 pub struct Base58;
 

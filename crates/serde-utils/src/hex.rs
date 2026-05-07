@@ -1,5 +1,5 @@
 use derive_more::From;
-use serde::{Deserialize, Serialize};
+use near_sdk::serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
 #[cfg_attr(
@@ -10,7 +10,10 @@ use serde_with::serde_as;
 )]
 #[cfg_attr(not(feature = "abi"), serde_as(schemars = false))]
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, From)]
-#[serde(bound(serialize = "T: AsRef<[u8]>", deserialize = "T: TryFrom<Vec<u8>>"))]
+#[serde(
+    crate = "::near_sdk::serde",
+    bound(serialize = "T: AsRef<[u8]>", deserialize = "T: TryFrom<Vec<u8>>")
+)]
 /// Helper type to implement `#[derive(Serialize, Deserialize)]`,
 /// as `#[near_bindgen]` doesn't support `#[serde(...)]` attributes on method arguments
 pub struct AsHex<T>(#[serde_as(as = "::serde_with::hex::Hex")] pub T);
@@ -25,6 +28,7 @@ impl<T> AsHex<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use near_sdk::serde_json;
 
     #[test]
     fn serialize_vec() {
