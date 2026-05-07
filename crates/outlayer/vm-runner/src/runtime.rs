@@ -1,9 +1,9 @@
 use anyhow::{Context as _, Result, anyhow};
-use defuse_outlayer_host::bindings::Imports;
+use defuse_outlayer_host as host;
 use tracing::instrument;
 use wasmtime::{
-    Config, Engine, Store, StoreLimitsBuilder,
-    component::{Component, HasSelf, Linker},
+    Config, Engine, Store, StoreLimits, StoreLimitsBuilder,
+    component::{Component, Linker},
 };
 use wasmtime_wasi::{
     WasiCtx,
@@ -12,100 +12,15 @@ use wasmtime_wasi::{
 };
 
 use crate::{
-    context::{HostCtx, HostFunctions},
+    Context, WasiContext,
     error::ExecutionError,
     outcome::{ExecutionDetails, ExecutionOutcome},
+    state::State,
 };
 
 /// Size of the guard region placed before linear memory to
 /// catch out-of-bounds accesses
 const MEMORY_GUARD_SIZE: u64 = 64 * 1024 * 1024; // 64 MiB
-
-/// Maximum fuel consumption allowed for a single component execution
-const MAX_FUEL_CONSUMPTION: u64 = u64::MAX;
-
-pub struct Context<I, O, E, H> {
-    stdin: I,
-    stdout: O,
-    stderr: E,
-    host_state: H,
-    fuel_limit: u64,
-    memory_limit: Option<usize>,
-}
-
-impl<I, O, E, H> Context<I, O, E, H>
-where
-    I: StdinStream + 'static,
-    O: StdoutStream + 'static,
-    E: StdoutStream + 'static,
-    H: HostFunctions,
-{
-    /// Creates a new execution context
-    /// By default, there are no fuel or memory limits
-    #[must_use]
-    pub const fn new(stdin: I, stdout: O, stderr: E, host_state: H) -> Self {
-        Self {
-            stdin,
-            stdout,
-            stderr,
-            host_state,
-            fuel_limit: MAX_FUEL_CONSUMPTION,
-            memory_limit: None,
-        }
-    }
-
-    /// Sets the maximum fuel the component may consume per execution
-    ///
-    /// Fuel roughly corresponds to the number of WebAssembly instructions
-    /// executed. Exceeding the limit raises [`ExecutionError::Trap`].
-    #[must_use]
-    pub const fn fuel_limit(mut self, fuel_limit: u64) -> Self {
-        self.fuel_limit = fuel_limit;
-        self
-    }
-
-    /// Sets the maximum physical memory the components linear memory may use
-    ///
-    /// Attempts to grow beyond this limit will trap. Defaults to
-    #[must_use]
-    pub const fn memory_limit(mut self, memory_limit: usize) -> Self {
-        self.memory_limit = Some(memory_limit);
-        self
-    }
-
-    pub(crate) fn into_store(self, engine: &Engine) -> Store<HostCtx<H>> {
-        let Self {
-            stdin,
-            stdout,
-            stderr,
-            host_state,
-            fuel_limit,
-            memory_limit,
-        } = self;
-
-        let wasi_ctx = WasiCtx::builder()
-            .stdin(stdin)
-            .stdout(stdout)
-            .stderr(stderr)
-            .allow_udp(false)
-            .allow_tcp(false)
-            // TODO: other settings, such as:
-            // * .secure_random()
-            .build();
-
-        let mut limits = StoreLimitsBuilder::new();
-        if let Some(memory_limit) = memory_limit {
-            limits = limits.memory_size(memory_limit);
-        }
-
-        let mut store = Store::new(engine, HostCtx::new(wasi_ctx, host_state, limits.build()));
-
-        store.limiter(|ctx| ctx.limits_mut());
-        store.set_fuel(fuel_limit).expect("fuel must be enabled");
-
-        store
-    }
-}
 
 /// A runtime for executing wasip2 components with a custom host
 /// environment.
@@ -113,11 +28,14 @@ where
 /// The host environment is defined by the `HostFunctions` trait,
 /// which must be implemented by the user and provided as a type
 /// parameter to the builder.
-pub struct VmRuntime<H: HostFunctions + 'static> {
-    linker: Linker<HostCtx<H>>,
+pub struct VmRuntime {
+    linker: Linker<State>,
+    store_limits: StoreLimits,
 }
 
-impl<H: HostFunctions + 'static> VmRuntime<H> {
+impl VmRuntime {
+    const MEMORY_LIMIT: usize = 100 * 1024 * 1024; // 100 MB
+
     /// Creates a new `VmRuntime` with default configuration.
     ///
     /// Async support and fuel metering are always enabled and cannot be
@@ -137,15 +55,49 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         // self.config
         //     .memory_reservation(self.memory_limit.try_into().unwrap());
 
-        let engine = Engine::new(&config)?;
-        let linker = create_linker::<H>(&engine)?;
+        let engine = Engine::new(&config).context("engine")?;
+        let linker = Self::make_linker(&engine).context("linker")?;
 
-        Ok(Self { linker })
+        Ok(Self {
+            linker,
+            store_limits: StoreLimitsBuilder::new()
+                .memory_size(Self::MEMORY_LIMIT)
+                // TODO: other?
+                .build(),
+        })
+    }
+
+    fn make_linker(engine: &Engine) -> anyhow::Result<Linker<State>> {
+        let mut linker = Linker::<State>::new(engine);
+
+        // Add WASI imports to the linker
+        wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+
+        // Add host function imports to the linker
+        host::add_to_linker(&mut linker)?;
+
+        Ok(linker)
+    }
+
+    /// Convenience method to compile and execute a component in one step. See
+    /// [`execute`](Self::execute) for details and examples.
+    pub async fn run<I, O, E>(
+        &self,
+        ctx: Context<I, O, E>,
+        binary: impl AsRef<[u8]>,
+    ) -> Result<ExecutionOutcome>
+    where
+        I: StdinStream + 'static,
+        O: StdoutStream + 'static,
+        E: StdoutStream + 'static,
+    {
+        let component = self.compile(binary).context("compile")?;
+        self.execute(ctx, &component).await
     }
 
     /// Compile wasip2 component from the given binary data
     pub fn compile(&self, binary: impl AsRef<[u8]>) -> Result<Component> {
-        Component::from_binary(self.linker.engine(), binary.as_ref())
+        Component::new(self.linker.engine(), binary.as_ref())
     }
 
     /// Executes the `wasi:cli/run` function of the given component.
@@ -162,31 +114,33 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     ///
     /// Using [`State`](crate::host::State) directly:
     ///
-    /// ```rust,no_run
-    /// use std::borrow::Cow;
-    /// use defuse_outlayer_vm_runner::{
-    ///     Context, VmRuntime,
-    ///     host::{AppContext, State},
-    /// };
-    /// use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
-    ///
-    /// # async fn example() -> anyhow::Result<()> {
-    /// # let app_id = todo!();
-    /// # let signer = todo!();
-    /// let state = State::new(AppContext { app_id }, Cow::Owned(signer));
+    /// ```rust
+    /// # use std::borrow::Cow;
+    /// # use defuse_outlayer_vm_runner::{
+    /// #     Context, VmRuntime, WasiContext,
+    /// #     host::{Context as HostContext, Host, InMemorySigner, primitives::AppId},
+    /// # };
+    /// # use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
+    /// # #[tokio::main]
+    /// # async fn main() -> anyhow::Result<()> {
+    /// # let app_id = AppId::EXAMPLE;
+    /// # let signer = InMemorySigner::from_seed(b"");
+    /// let host = Host::new(HostContext { app_id }, signer);
     ///
     /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024); // 4 MB
     /// let stderr = MemoryOutputPipe::new(64 * 1024);       // 64 KB
-    /// let ctx = Context::new(
-    ///     MemoryInputPipe::new(b"input".to_vec()),
-    ///     stdout.clone(),
-    ///     stderr.clone(),
-    ///     state,
-    /// );
+    /// let ctx = Context {
+    ///     wasi: WasiContext {
+    ///         stdin: MemoryInputPipe::new(b"input".to_vec()),
+    ///         stdout: stdout.clone(),
+    ///         stderr: stderr.clone(),
+    ///     },
+    ///     host,
+    ///     fuel: 1_000_000_000,
+    /// };
     ///
-    /// let runner = VmRuntime::<State>::new()?;
-    /// let wasm = std::fs::read("component.wasm")?;
-    /// let component = runner.compile(&wasm)?;
+    /// let runner = VmRuntime::new()?;
+    /// let component = runner.compile(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../sdk/examples/empty.wat")))?;
     /// runner.execute(ctx, &component).await?;
     ///
     /// let stdout = stdout.contents();
@@ -197,7 +151,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     #[instrument(skip_all)]
     pub async fn execute<I, O, E>(
         &self,
-        ctx: Context<I, O, E, H>,
+        ctx: Context<I, O, E>,
         component: &Component,
     ) -> Result<ExecutionOutcome>
     where
@@ -205,8 +159,8 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         O: StdoutStream + 'static,
         E: StdoutStream + 'static,
     {
-        let fuel_limit = ctx.fuel_limit;
-        let mut store = ctx.into_store(self.linker.engine());
+        let fuel_limit = ctx.fuel;
+        let mut store = self.make_store(ctx);
 
         let command = Command::instantiate_async(&mut store, component, &self.linker)
             .await
@@ -217,9 +171,11 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         Ok(ExecutionOutcome {
             error: match run_result {
                 Ok(Ok(())) => None,
-                Ok(Err(())) => Some(ExecutionError::Unknown(anyhow!("wasm component failed"))),
+                Ok(Err(())) => Some(ExecutionError::Custom(anyhow!("wasm component failed"))),
                 Err(trap) => ExecutionError::from_trap(trap),
-            },
+            }
+            .as_ref()
+            .map(ToString::to_string),
             details: ExecutionDetails {
                 fuel_consumed: fuel_limit
                     .saturating_sub(store.get_fuel().expect("fuel must be enabled")),
@@ -227,36 +183,45 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         })
     }
 
-    /// Convenience method to compile and execute a component in one step. See
-    /// [`execute`](Self::execute) for details and examples.
-    pub async fn run<I, O, E>(
-        &self,
-        ctx: Context<I, O, E, H>,
-        binary: impl AsRef<[u8]>,
-    ) -> Result<ExecutionOutcome>
+    fn make_store<I, O, E>(&self, ctx: Context<I, O, E>) -> Store<State>
     where
         I: StdinStream + 'static,
         O: StdoutStream + 'static,
         E: StdoutStream + 'static,
     {
-        let component = self.compile(binary).context("compile")?;
-        self.execute(ctx, &component).await
+        let mut store = Store::new(
+            self.linker.engine(),
+            State::new(
+                Self::make_wasi_ctx(ctx.wasi),
+                ctx.host,
+                self.store_limits.clone(),
+            ),
+        );
+        store.limiter(|ctx| ctx.limits_mut());
+        store.set_fuel(ctx.fuel).expect("fuel must be enabled");
+        store
     }
-}
 
-fn create_linker<H>(engine: &Engine) -> anyhow::Result<Linker<HostCtx<H>>>
-where
-    H: HostFunctions,
-{
-    let mut linker = Linker::new(engine);
+    fn make_wasi_ctx<I, O, E>(ctx: WasiContext<I, O, E>) -> WasiCtx
+    where
+        I: StdinStream + 'static,
+        O: StdoutStream + 'static,
+        E: StdoutStream + 'static,
+    {
+        let WasiContext {
+            stdin,
+            stdout,
+            stderr,
+        } = ctx;
 
-    // Add WASI imports to the linker
-    wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
-
-    // Add host function imports to the linker
-    Imports::add_to_linker::<HostCtx<H>, HasSelf<H>>(&mut linker, |ctx: &mut HostCtx<H>| {
-        ctx.host_state_mut()
-    })?;
-
-    Ok(linker)
+        WasiCtx::builder()
+            .stdin(stdin)
+            .stdout(stdout)
+            .stderr(stderr)
+            .allow_udp(false)
+            .allow_tcp(false)
+            // TODO: other settings, such as:
+            // * .secure_random()
+            .build()
+    }
 }
