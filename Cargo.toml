@@ -183,6 +183,7 @@ strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
 tlb-ton = { version = "0.8", default-features = false }
 tokio = { version = "1.45", default-features = false }
+tokio-util = { version = "0.7", default-features = false }
 tower = "0.5.3"
 tracing = "0.1"
 tracing-subscriber = "0.3"

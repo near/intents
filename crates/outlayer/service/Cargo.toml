@@ -21,12 +21,11 @@ derive_more = { workspace = true, features = ["from"] }
 futures.workspace = true
 moka = { workspace = true, features = ["future"] }
 near-kit.workspace = true
-reqwest.workspace = true
+reqwest = { workspace = true, features = ["stream"] }
 sha2.workspace = true
 thiserror.workspace = true
-tokio = { workspace = true, features = ["rt"] }
-tower = { workspace = true, features = ["util"] }
-tracing.workspace = true
+tokio = { workspace = true, features = ["io-util", "rt"] }
+tokio-util = { workspace = true, features = ["io"] }
 url.workspace = true
 
 cfg_eval = { workspace = true, optional = true }
