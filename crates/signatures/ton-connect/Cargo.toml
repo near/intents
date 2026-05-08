@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-crypto = { workspace = true, default-features = false, features = ["ed25519", "borsh", "serde"] }
+defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
 defuse-serde-utils = { workspace = true, features = ["base64", "tlb"] }
 
 chrono = { workspace = true, features = ["serde"] }
@@ -34,6 +34,7 @@ abi = [
 ]
 arbitrary = ["tlb-ton/arbitrary"]
 binary = []
+borsh = ["defuse-crypto/borsh"]
 cell = []
 near-contract = [
   "defuse-crypto/near-contract",
