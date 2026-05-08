@@ -50,8 +50,12 @@ webauthn = ["dep:defuse-webauthn"]
 contract = ["defuse-crypto?/near-contract"]
 
 # Webauthn (a.k.a passkey) variants:
-webauthn-ed25519 = ["defuse-webauthn/ed25519", "webauthn"]
-webauthn-p256 = ["defuse-webauthn/p256", "webauthn"]
+webauthn-ed25519 = [
+  "defuse-webauthn/borsh",
+  "defuse-webauthn/ed25519",
+  "webauthn",
+]
+webauthn-p256 = ["defuse-webauthn/borsh", "defuse-webauthn/p256", "webauthn"]
 
 # Raw ed25519 signature:
 ed25519 = [
