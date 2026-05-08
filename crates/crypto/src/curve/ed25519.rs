@@ -3,7 +3,6 @@ use std::str::FromStr;
 
 use crate::{CurveType, TypedCurve};
 use crate::{CurveTypes, ParseCurveError};
-use ed25519_dalek::VerifyingKey;
 
 pub struct Ed25519;
 
@@ -23,7 +22,7 @@ impl crate::Curve for Ed25519 {
         message: &Self::Message,
         public_key: &Self::VerifyingKey,
     ) -> Option<Self::PublicKey> {
-        if VerifyingKey::from_bytes(public_key).ok()?.is_weak() {
+        if ed25519_dalek::VerifyingKey::from_bytes(public_key).ok()?.is_weak() {
             // prevent using weak (i.e. low order) public keys, see
             // https://github.com/dalek-cryptography/ed25519-dalek#weak-key-forgery-and-verify_strict
             return None;

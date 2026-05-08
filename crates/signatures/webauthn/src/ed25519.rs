@@ -5,6 +5,7 @@ use crate::Algorithm;
 
 /// [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
 /// ed25519 curve
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[derive(Debug, Clone)]
 pub struct Ed25519;
 

@@ -13,10 +13,6 @@ mod p256;
 #[cfg(feature = "p256")]
 pub use self::p256::*;
 
-#[cfg(not(feature = "near-contract"))]
-use bs58::encode as bs58_encode;
-#[cfg(feature = "near-contract")]
-use near_sdk::bs58::encode as bs58_encode;
 
 pub trait CurveTypes {
     type PublicKey;
@@ -56,6 +52,11 @@ pub trait TypedCurve: CurveTypes {
 
     #[inline]
     fn to_base58(bytes: impl AsRef<[u8]>) -> String {
+        #[cfg(not(feature = "near-contract"))]
+        use bs58::encode as bs58_encode;
+        #[cfg(feature = "near-contract")]
+        use near_sdk::bs58::encode as bs58_encode;
+
         format!(
             "{}:{}",
             Self::CURVE_TYPE,

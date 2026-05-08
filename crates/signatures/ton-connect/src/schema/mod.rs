@@ -109,6 +109,8 @@ impl PayloadSchema for TonConnectPayloadSchema {
             Self::Binary(payload) => payload.hash_with_context(context),
             #[cfg(feature = "cell")]
             Self::Cell(payload) => payload.hash_with_context(context),
+            #[cfg(not(any(feature = "text", feature = "binary", feature = "cell")))]
+            _ => unreachable!(),
         }
     }
 }

@@ -39,7 +39,11 @@ arbitrary = { workspace = true, optional = true }
 abi = [
   "defuse-crypto/abi",
   "defuse-deadline/abi",
+  "defuse-erc191/abi",
+  "defuse-nep413/abi",
+  "defuse-sep53/abi",
   "defuse-serde-utils/abi",
+  "defuse-tip191/abi",
   "defuse-token-id/abi",
   "defuse-ton-connect/abi",
   "defuse-webauthn/abi",

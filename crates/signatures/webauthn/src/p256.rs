@@ -5,6 +5,7 @@ use crate::Algorithm;
 
 /// [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
 /// P256 (a.k.a secp256r1) over SHA-256
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[derive(Debug, Clone)]
 pub struct P256;
 
