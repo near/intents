@@ -11,27 +11,15 @@ pub use self::p256::*;
 #[cfg(feature = "serde")]
 use defuse_serde_utils::base64::{Base64, Unpadded, UrlSafe};
 
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
-    serde(bound(
-        serialize = "Sig: ::serde::Serialize",
-        deserialize = "Sig: ::serde::de::DeserializeOwned",
-    )),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Debug, Clone)]
-pub struct PayloadSignature<A: Algorithm + ?Sized, Sig = <A as Algorithm>::Signature> {
-    #[cfg_attr(feature = "serde", serde(skip))]
-    #[cfg_attr(
-        all(feature = "serde", feature = "abi", not(target_arch = "wasm32")),
-        schemars(skip)
-    )]
-    _phantom: core::marker::PhantomData<fn() -> A>,
-
+pub struct PayloadSignature<A: Algorithm + ?Sized> {
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
     #[cfg_attr(
         all(feature = "serde", feature = "abi", not(target_arch = "wasm32")),
@@ -44,11 +32,9 @@ pub struct PayloadSignature<A: Algorithm + ?Sized, Sig = <A as Algorithm>::Signa
 
     #[cfg_attr(
         all(feature = "serde", feature = "abi", not(target_arch = "wasm32")),
-        // schemars@0.8 does not respect it's `schemars(bound = "...")`
-        // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
-        schemars(with = "String"),
+        schemars(with = "String")
     )]
-    pub signature: Sig,
+    pub signature: A::Signature,
 }
 
 #[cfg(feature = "near-contract")]
