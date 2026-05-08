@@ -69,6 +69,8 @@ container_build_command = [
 abi = ["defuse-core/abi", "near-sdk/abi"]
 arbitrary = ["defuse-core/arbitrary", "dep:arbitrary"]
 contract = [
+  "defuse-bitmap/borsh",
+  "defuse-bitmap/serde",
   "dep:bitflags",
   "dep:defuse-bitmap",
   "dep:defuse-borsh-utils",

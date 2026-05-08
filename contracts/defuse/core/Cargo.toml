@@ -6,11 +6,11 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-bitmap.workspace = true
+defuse-bitmap = { workspace = true, features = ["borsh", "serde"] }
 defuse-crypto = { workspace = true, features = ["ed25519", "secp256k1", "p256"] }
 defuse-deadline.workspace = true
 defuse-erc191.workspace = true
-defuse-fees.workspace = true
+defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-map-utils.workspace = true
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
@@ -37,8 +37,10 @@ arbitrary = { workspace = true, optional = true }
 
 [features]
 abi = [
+  "defuse-bitmap/abi",
   "defuse-crypto/abi",
   "defuse-deadline/abi",
+  "defuse-fees/abi",
   "defuse-serde-utils/abi",
   "defuse-token-id/abi",
   "defuse-ton-connect/abi",
