@@ -26,7 +26,10 @@ use defuse_serde_utils::base64::{Base64, Unpadded, UrlSafe};
 #[derive(Debug, Clone)]
 pub struct PayloadSignature<A: Algorithm + ?Sized, Sig = <A as Algorithm>::Signature> {
     #[cfg_attr(feature = "serde", serde(skip))]
-    #[cfg_attr(all(feature = "serde", feature = "abi", not(target_arch = "wasm32")), schemars(skip))]
+    #[cfg_attr(
+        all(feature = "serde", feature = "abi", not(target_arch = "wasm32")),
+        schemars(skip)
+    )]
     _phantom: core::marker::PhantomData<fn() -> A>,
 
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)

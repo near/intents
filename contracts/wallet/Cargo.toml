@@ -40,7 +40,7 @@ abi = [
 ]
 arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
 concurrent = ["dep:rand_core"]
-webauthn = ["dep:defuse-webauthn", "defuse-webauthn/near-contract"]
+webauthn = ["defuse-webauthn/near-contract", "dep:defuse-webauthn"]
 
 ########## Contract variants ##########
 # When no features enabled, by default, always reject the signature.

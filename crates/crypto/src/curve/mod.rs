@@ -13,7 +13,6 @@ mod p256;
 #[cfg(feature = "p256")]
 pub use self::p256::*;
 
-
 pub trait CurveTypes {
     type PublicKey;
     type Signature;

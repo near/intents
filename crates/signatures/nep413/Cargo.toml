@@ -24,7 +24,12 @@ serde_with = { workspace = true, optional = true }
 default = ["borsh", "serde"]
 borsh = ["defuse-crypto/borsh", "dep:borsh"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
-abi = ["borsh/unstable__schema", "defuse-crypto/abi", "defuse-serde-utils/abi", "dep:schemars"]
+abi = [
+  "borsh/unstable__schema",
+  "defuse-crypto/abi",
+  "defuse-serde-utils/abi",
+  "dep:schemars",
+]
 near-contract = ["borsh", "defuse-crypto/near-contract", "dep:near-sdk"]
 near-api = ["dep:near-api"]
 
