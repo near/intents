@@ -15,17 +15,12 @@ workspace = true
 [dependencies]
 defuse-admin-utils.workspace = true
 defuse-auth-call.workspace = true
-defuse-bitmap = { workspace = true, optional = true }
-defuse-borsh-utils = { workspace = true, optional = true }
 defuse-controller.workspace = true
 defuse-core.workspace = true
-defuse-map-utils = { workspace = true, optional = true }
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-serde-utils = { workspace = true, features = ["base64"] }
-defuse-wnear = { workspace = true, optional = true }
 
-bitflags = { workspace = true, optional = true }
 impl-tools.workspace = true
 itertools.workspace = true
 near-contract-standards.workspace = true
@@ -34,6 +29,11 @@ near-sdk.workspace = true
 thiserror.workspace = true
 
 arbitrary = { workspace = true, optional = true }
+bitflags = { workspace = true, optional = true }
+defuse-bitmap = { workspace = true, optional = true }
+defuse-borsh-utils = { workspace = true, optional = true }
+defuse-map-utils = { workspace = true, optional = true }
+defuse-wnear = { workspace = true, optional = true }
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"

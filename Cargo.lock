@@ -1760,7 +1760,6 @@ dependencies = [
  "futures",
  "moka",
  "near-kit",
- "near-sdk",
  "reqwest 0.13.3",
  "serde",
  "serde_with",
