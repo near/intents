@@ -10,6 +10,11 @@ use crate::P256;
 #[cfg(feature = "secp256k1")]
 use crate::Secp256k1;
 
+#[cfg(not(feature = "near-contract"))]
+use bs58::encode as bs58_encode;
+#[cfg(feature = "near-contract")]
+use near_sdk::bs58::encode as bs58_encode;
+
 use crate::parse::checked_base58_decode_array;
 use crate::{CurveType, CurveTypes, ParseCurveError};
 
@@ -21,8 +26,7 @@ use crate::{CurveType, CurveTypes, ParseCurveError};
 )]
 #[cfg_attr(
     feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
-    serde_with(crate = "::serde_with")
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
 )]
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
@@ -65,16 +69,12 @@ impl Signature {
 impl Debug for Signature {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.curve_type(), {
-            #[cfg(not(feature = "near-contract"))]
-            {
-                bs58::encode(self.data()).into_string()
-            }
-            #[cfg(feature = "near-contract")]
-            {
-                near_sdk::bs58::encode(self.data()).into_string()
-            }
-        })
+        write!(
+            f,
+            "{}:{}",
+            self.curve_type(),
+            bs58_encode(self.data()).into_string()
+        )
     }
 }
 

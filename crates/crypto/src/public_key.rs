@@ -6,6 +6,11 @@ use core::{
 #[cfg(feature = "near-contract")]
 use near_account_id::AccountId;
 
+#[cfg(not(feature = "near-contract"))]
+use bs58::encode as bs58_encode;
+#[cfg(feature = "near-contract")]
+use near_sdk::bs58::encode as bs58_encode;
+
 use crate::parse::checked_base58_decode_array;
 use crate::{CurveType, ParseCurveError};
 
@@ -116,16 +121,12 @@ impl PublicKey {
 impl Debug for PublicKey {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.curve_type(), {
-            #[cfg(not(feature = "near-contract"))]
-            {
-                bs58::encode(self.data()).into_string()
-            }
-            #[cfg(feature = "near-contract")]
-            {
-                near_sdk::bs58::encode(self.data()).into_string()
-            }
-        })
+        write!(
+            f,
+            "{}:{}",
+            self.curve_type(),
+            bs58_encode(self.data()).into_string()
+        )
     }
 }
 

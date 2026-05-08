@@ -1,7 +1,7 @@
 use core::fmt::{self, Debug, Display};
 use std::str::FromStr;
 
-use crate::{CryptoHash, Curve, CurveTypes, ParseCurveError};
+use crate::{CryptoHash, Curve, CurveTypes, ParseCurveError, TypedCurve};
 use generic_array::GenericArray;
 use p256::{
     EncodedPoint,
@@ -60,13 +60,11 @@ impl crate::TypedCurve for P256 {
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    borsh(crate = "::borsh"),
     cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
 #[cfg_attr(
     feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
-    serde_with(crate = "::serde_with")
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
@@ -80,7 +78,7 @@ impl Debug for P256CompressedPublicKey {
 
 impl Display for P256CompressedPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<P256 as crate::TypedCurve>::to_base58(self.0))
+        f.write_str(&<P256 as TypedCurve>::to_base58(self.0))
     }
 }
 
@@ -98,13 +96,11 @@ impl FromStr for P256CompressedPublicKey {
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    borsh(crate = "::borsh"),
     cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
 #[cfg_attr(
     feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
-    serde_with(crate = "::serde_with")
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
@@ -118,7 +114,7 @@ impl Debug for P256UncompressedPublicKey {
 
 impl Display for P256UncompressedPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<P256 as crate::TypedCurve>::to_base58(self.0))
+        f.write_str(&<P256 as TypedCurve>::to_base58(self.0))
     }
 }
 
@@ -126,7 +122,6 @@ impl FromStr for P256UncompressedPublicKey {
     type Err = ParseCurveError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use crate::TypedCurve;
         P256::parse_base58(s).map(Self)
     }
 }
@@ -135,13 +130,11 @@ impl FromStr for P256UncompressedPublicKey {
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    borsh(crate = "::borsh"),
     cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
 #[cfg_attr(
     feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
-    serde_with(crate = "::serde_with")
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
@@ -155,7 +148,7 @@ impl Debug for P256Signature {
 
 impl Display for P256Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<P256 as crate::TypedCurve>::to_base58(self.0))
+        f.write_str(&<P256 as TypedCurve>::to_base58(self.0))
     }
 }
 
@@ -163,7 +156,6 @@ impl FromStr for P256Signature {
     type Err = ParseCurveError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use crate::TypedCurve;
         P256::parse_base58(s).map(Self)
     }
 }

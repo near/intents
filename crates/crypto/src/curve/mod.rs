@@ -13,7 +13,6 @@ mod p256;
 #[cfg(feature = "p256")]
 pub use self::p256::*;
 
-#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 pub trait CurveTypes {
     type PublicKey;
     type Signature;
@@ -25,7 +24,6 @@ pub trait CurveTypes {
     type VerifyingKey;
 }
 
-#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 pub trait Curve: CurveTypes {
     fn verify(
         signature: &Self::Signature,

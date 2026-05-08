@@ -1,3 +1,4 @@
+use crate::TypedCurve;
 use core::fmt::{self, Debug, Display};
 use std::str::FromStr;
 
@@ -26,29 +27,23 @@ impl CurveTypes for Secp256k1 {
 }
 
 #[cfg(feature = "near-contract")]
-mod near_contract {
-    use super::Secp256k1;
-    use crate::Curve;
-    use near_sdk::env;
-
-    impl Curve for Secp256k1 {
-        #[inline]
-        fn verify(
-            [signature @ .., v]: &Self::Signature,
-            hash: &Self::Message,
-            _verifying_key: &(),
-        ) -> Option<Self::PublicKey> {
-            env::ecrecover(
-                hash, signature, *v,
-                // Do not accept malleable signatures:
-                // https://github.com/near/nearcore/blob/d73041cc1d1a70af4456fceefaceb1bf7f684fde/core/crypto/src/signature.rs#L448-L455
-                true,
-            )
-        }
+impl crate::Curve for Secp256k1 {
+    #[inline]
+    fn verify(
+        [signature @ .., v]: &Self::Signature,
+        hash: &Self::Message,
+        _verifying_key: &(),
+    ) -> Option<Self::PublicKey> {
+        near_sdk::env::ecrecover(
+            hash, signature, *v,
+            // Do not accept malleable signatures:
+            // https://github.com/near/nearcore/blob/d73041cc1d1a70af4456fceefaceb1bf7f684fde/core/crypto/src/signature.rs#L448-L455
+            true,
+        )
     }
 }
 
-impl crate::TypedCurve for Secp256k1 {
+impl TypedCurve for Secp256k1 {
     const CURVE_TYPE: crate::CurveType = crate::CurveType::Secp256k1;
 }
 
@@ -56,13 +51,11 @@ impl crate::TypedCurve for Secp256k1 {
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    borsh(crate = "::borsh"),
     cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
 #[cfg_attr(
     feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
-    serde_with(crate = "::serde_with")
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
@@ -76,7 +69,6 @@ impl Debug for Secp256k1PublicKey {
 
 impl Display for Secp256k1PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use crate::TypedCurve;
         f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
     }
 }
@@ -85,7 +77,6 @@ impl FromStr for Secp256k1PublicKey {
     type Err = ParseCurveError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use crate::TypedCurve;
         Secp256k1::parse_base58(s).map(Self)
     }
 }
@@ -94,13 +85,11 @@ impl FromStr for Secp256k1PublicKey {
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    borsh(crate = "::borsh"),
     cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
 #[cfg_attr(
     feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
-    serde_with(crate = "::serde_with")
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
@@ -114,7 +103,6 @@ impl Debug for Secp256k1Signature {
 
 impl Display for Secp256k1Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use crate::TypedCurve;
         f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
     }
 }
@@ -123,7 +111,6 @@ impl FromStr for Secp256k1Signature {
     type Err = ParseCurveError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use crate::TypedCurve;
         Secp256k1::parse_base58(s).map(Self)
     }
 }

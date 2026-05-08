@@ -25,6 +25,7 @@ schemars = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true }
+static_assertions = { workspace = true, optional = true }
 
 [features]
 default = ["ed25519", "p256", "secp256k1"]
@@ -42,7 +43,7 @@ abi = [
   "serde",
   "serde_with/schemars_0_8",
 ]
-near-contract = ["dep:near-sdk"]
+near-contract = ["dep:near-sdk", "dep:static_assertions"]
 
 arbitrary = ["dep:arbitrary"]
 near-api-types = ["dep:near-api-types", "ed25519", "secp256k1"]

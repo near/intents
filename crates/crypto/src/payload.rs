@@ -10,6 +10,9 @@
 /// 32-byte cryptographic hash output.
 pub type CryptoHash = [u8; 32];
 
+#[cfg(feature = "near-contract")]
+static_assertions::assert_type_eq_all!(CryptoHash, near_sdk::CryptoHash);
+
 /// Data that can be deterministically hashed for signing or verification.
 ///
 /// Implementations of this trait typically represent a message formatted
