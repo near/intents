@@ -123,7 +123,7 @@ defuse-outlayer-vm-runner-cli.path = "crates/outlayer/vm-runner/cli"
 defuse-tests.path = "tests"
 
 cargo-near-build = "0.9.0"
-near-account-id = "2.4.0"
+near-account-id = "2.6.0"
 near-api = "0.8.6"
 near-api-types = "0.8.6"
 near-contract-standards = "5.24"

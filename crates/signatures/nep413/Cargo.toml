@@ -5,19 +5,28 @@ version.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
-[features]
-near-api = ["dep:near-api"]
-
 [dependencies]
-defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
-defuse-near-utils.workspace = true
+defuse-crypto = { workspace = true, default-features = false, features = ["ed25519", "borsh", "serde"] }
 defuse-nep461.workspace = true
 defuse-serde-utils = { workspace = true, features = ["base64"] }
 
 impl-tools.workspace = true
-near-sdk.workspace = true
 
+borsh = { workspace = true, optional = true }
+cfg_eval = { workspace = true, optional = true }
 near-api = { workspace = true, optional = true }
+near-sdk = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_with = { workspace = true, optional = true }
+
+[features]
+default = ["borsh", "serde"]
+borsh = ["dep:borsh"]
+serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
+abi = ["borsh/unstable__schema", "dep:schemars"]
+near-contract = ["borsh", "defuse-crypto/near-contract", "dep:near-sdk"]
+near-api = ["dep:near-api"]
 
 [lints]
 workspace = true

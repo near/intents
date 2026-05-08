@@ -1,9 +1,7 @@
 use core::marker::PhantomData;
 
-use near_sdk::{
-    serde::{Deserialize, Deserializer, Serialize, Serializer, de},
-    serde_with::{DeserializeAs, SerializeAs},
-};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
+use serde_with::{DeserializeAs, SerializeAs};
 
 use crate::TypedCurve;
 
@@ -30,14 +28,12 @@ impl<'de, C: TypedCurve, const N: usize> DeserializeAs<'de, [u8; N]> for AsCurve
 
 #[cfg(feature = "abi")]
 const _: () = {
-    use near_sdk::{
-        schemars::{
-            JsonSchema,
-            r#gen::SchemaGenerator,
-            schema::{InstanceType, Schema, SchemaObject, StringValidation},
-        },
-        serde_with::schemars_0_8::JsonSchemaAs,
+    use schemars::{
+        JsonSchema,
+        r#gen::SchemaGenerator,
+        schema::{InstanceType, Schema, SchemaObject, StringValidation},
     };
+    use serde_with::schemars_0_8::JsonSchemaAs;
 
     impl<C: TypedCurve, const N: usize> JsonSchemaAs<[u8; N]> for AsCurve<C> {
         fn schema_name() -> String {

@@ -1,16 +1,11 @@
 use core::fmt::{self, Debug, Display};
 use std::str::FromStr;
 
-use near_sdk::{
-    CryptoHash, env, near,
-    serde_with::{DeserializeFromStr, SerializeDisplay},
-};
-
-use crate::{Curve, CurveType, ParseCurveError, TypedCurve};
+use crate::{CryptoHash, CurveTypes, ParseCurveError};
 
 pub struct Secp256k1;
 
-impl Curve for Secp256k1 {
+impl CurveTypes for Secp256k1 {
     type PublicKey = [u8; 64];
 
     /// Concatenated `r`, `s` and `v` (recovery byte).
@@ -28,34 +23,50 @@ impl Curve for Secp256k1 {
 
     /// ECDSA signatures are recoverable, so you don't need a verifying key
     type VerifyingKey = ();
+}
 
-    #[inline]
-    fn verify(
-        [signature @ .., v]: &Self::Signature,
-        hash: &Self::Message,
-        _verifying_key: &(),
-    ) -> Option<Self::PublicKey> {
-        env::ecrecover(
-            hash, signature, *v,
-            // Do not accept malleable signatures:
-            // https://github.com/near/nearcore/blob/d73041cc1d1a70af4456fceefaceb1bf7f684fde/core/crypto/src/signature.rs#L448-L455
-            true,
-        )
+#[cfg(feature = "near-contract")]
+mod near_contract {
+    use super::Secp256k1;
+    use crate::Curve;
+    use near_sdk::env;
+
+    impl Curve for Secp256k1 {
+        #[inline]
+        fn verify(
+            [signature @ .., v]: &Self::Signature,
+            hash: &Self::Message,
+            _verifying_key: &(),
+        ) -> Option<Self::PublicKey> {
+            env::ecrecover(
+                hash, signature, *v,
+                // Do not accept malleable signatures:
+                // https://github.com/near/nearcore/blob/d73041cc1d1a70af4456fceefaceb1bf7f684fde/core/crypto/src/signature.rs#L448-L455
+                true,
+            )
+        }
     }
 }
 
-impl TypedCurve for Secp256k1 {
-    const CURVE_TYPE: CurveType = CurveType::Secp256k1;
+impl crate::TypedCurve for Secp256k1 {
+    const CURVE_TYPE: crate::CurveType = crate::CurveType::Secp256k1;
 }
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh])]
-#[derive(
-    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    borsh(crate = "::borsh"),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[serde_with(crate = "::near_sdk::serde_with")]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    serde_with(crate = "::serde_with")
+)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct Secp256k1PublicKey(pub <Secp256k1 as Curve>::PublicKey);
+pub struct Secp256k1PublicKey(pub <Secp256k1 as CurveTypes>::PublicKey);
 
 impl Debug for Secp256k1PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -65,6 +76,7 @@ impl Debug for Secp256k1PublicKey {
 
 impl Display for Secp256k1PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use crate::TypedCurve;
         f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
     }
 }
@@ -73,18 +85,26 @@ impl FromStr for Secp256k1PublicKey {
     type Err = ParseCurveError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use crate::TypedCurve;
         Secp256k1::parse_base58(s).map(Self)
     }
 }
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh])]
-#[derive(
-    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    borsh(crate = "::borsh"),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[serde_with(crate = "::near_sdk::serde_with")]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    serde_with(crate = "::serde_with")
+)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct Secp256k1Signature(pub <Secp256k1 as Curve>::Signature);
+pub struct Secp256k1Signature(pub <Secp256k1 as CurveTypes>::Signature);
 
 impl Debug for Secp256k1Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -94,6 +114,7 @@ impl Debug for Secp256k1Signature {
 
 impl Display for Secp256k1Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use crate::TypedCurve;
         f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
     }
 }
@@ -102,6 +123,7 @@ impl FromStr for Secp256k1Signature {
     type Err = ParseCurveError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use crate::TypedCurve;
         Secp256k1::parse_base58(s).map(Self)
     }
 }

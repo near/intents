@@ -1487,13 +1487,20 @@ name = "defuse-crypto"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "borsh",
+ "bs58 0.5.1",
  "ed25519-dalek",
  "generic-array 1.4.0",
  "hex",
+ "near-account-id",
  "near-api-types",
  "near-sdk",
  "p256",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
  "strum 0.27.2",
  "thiserror 2.0.18",
 ]
@@ -1523,12 +1530,18 @@ dependencies = [
 name = "defuse-erc191"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "cfg_eval",
  "defuse-crypto",
  "defuse-test-utils",
  "hex-literal",
  "impl-tools",
  "near-sdk",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
+ "sha3 0.11.0",
 ]
 
 [[package]]
@@ -1617,13 +1630,17 @@ dependencies = [
 name = "defuse-nep413"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "cfg_eval",
  "defuse-crypto",
- "defuse-near-utils",
  "defuse-nep461",
  "defuse-serde-utils",
  "impl-tools",
  "near-api",
  "near-sdk",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
 ]
 
 [[package]]
@@ -1856,6 +1873,8 @@ dependencies = [
 name = "defuse-sep53"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "cfg_eval",
  "defuse-crypto",
  "defuse-test-utils",
  "ed25519-dalek",
@@ -1863,6 +1882,9 @@ dependencies = [
  "near-crypto 0.35.1",
  "near-sdk",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
  "stellar-strkey",
 ]
 
@@ -1926,12 +1948,17 @@ dependencies = [
 name = "defuse-tip191"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "cfg_eval",
  "defuse-crypto",
  "defuse-test-utils",
  "hex-literal",
  "impl-tools",
  "near-sdk",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
 ]
 
 [[package]]
@@ -1955,6 +1982,7 @@ name = "defuse-ton-connect"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "cfg_eval",
  "chrono",
  "defuse-crypto",
  "defuse-near-utils",
@@ -1965,6 +1993,8 @@ dependencies = [
  "near-sdk",
  "rstest",
  "schemars 0.8.22",
+ "serde",
+ "serde_json",
  "serde_with",
  "tlb-ton",
 ]
@@ -2026,7 +2056,11 @@ version = "0.1.0"
 dependencies = [
  "defuse-crypto",
  "defuse-serde-utils",
- "near-sdk",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "sha2 0.11.0",
 ]
 
 [[package]]

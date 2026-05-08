@@ -1,10 +1,26 @@
-use defuse_crypto::{CryptoHash, Curve, Ed25519, Payload, SignedPayload, serde::AsCurve};
+#[cfg(feature = "serde")]
+use defuse_crypto::serde::AsCurve;
+#[cfg(feature = "near-contract")]
+use defuse_crypto::{CryptoHash, Curve, Payload, SignedPayload};
+use defuse_crypto::{CurveTypes, Ed25519};
 use impl_tools::autoimpl;
-use near_sdk::{env, near, serde_with::serde_as};
+#[cfg(feature = "near-contract")]
+use near_sdk::env;
 
 /// See [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
-#[near(serializers = [json])]
-#[serde(rename_all = "snake_case")]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+)]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    serde(rename_all = "snake_case"),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[derive(Debug, Clone)]
 pub struct Sep53Payload {
     pub payload: String,
@@ -22,6 +38,7 @@ impl Sep53Payload {
     }
 }
 
+#[cfg(feature = "near-contract")]
 impl Payload for Sep53Payload {
     #[inline]
     fn hash(&self) -> CryptoHash {
@@ -29,19 +46,31 @@ impl Payload for Sep53Payload {
     }
 }
 
-#[near(serializers = [json])]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+)]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone)]
 pub struct SignedSep53Payload {
-    #[serde(flatten)]
+    #[cfg_attr(feature = "serde", serde(flatten))]
     pub payload: Sep53Payload,
 
-    #[serde_as(as = "AsCurve<Ed25519>")]
-    pub public_key: <Ed25519 as Curve>::PublicKey,
-    #[serde_as(as = "AsCurve<Ed25519>")]
-    pub signature: <Ed25519 as Curve>::Signature,
+    #[cfg_attr(feature = "serde", serde_as(as = "AsCurve<Ed25519>"))]
+    pub public_key: <Ed25519 as CurveTypes>::PublicKey,
+    #[cfg_attr(feature = "serde", serde_as(as = "AsCurve<Ed25519>"))]
+    pub signature: <Ed25519 as CurveTypes>::Signature,
 }
 
+#[cfg(feature = "near-contract")]
 impl Payload for SignedSep53Payload {
     #[inline]
     fn hash(&self) -> CryptoHash {
@@ -49,8 +78,9 @@ impl Payload for SignedSep53Payload {
     }
 }
 
+#[cfg(feature = "near-contract")]
 impl SignedPayload for SignedSep53Payload {
-    type PublicKey = <Ed25519 as Curve>::PublicKey;
+    type PublicKey = <Ed25519 as CurveTypes>::PublicKey;
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
@@ -176,7 +206,7 @@ mod tests {
 
         let msg = gen_random_string(&mut rng, 100..1000);
 
-        // sign the “good” message
+        // sign the "good" message
         let payload = Sep53Payload::new(msg.clone());
         let hash = payload.hash();
         let sig = match sk.sign(hash.as_ref()) {

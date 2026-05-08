@@ -3,11 +3,6 @@ use core::{
     str::FromStr,
 };
 
-use near_sdk::{
-    bs58, near,
-    serde_with::{DeserializeFromStr, SerializeDisplay},
-};
-
 #[cfg(feature = "ed25519")]
 use crate::Ed25519;
 #[cfg(feature = "p256")]
@@ -15,21 +10,29 @@ use crate::P256;
 #[cfg(feature = "secp256k1")]
 use crate::Secp256k1;
 
-use crate::{Curve, CurveType, ParseCurveError, parse::checked_base58_decode_array};
+use crate::parse::checked_base58_decode_array;
+use crate::{CurveType, CurveTypes, ParseCurveError};
 
-#[near(serializers = [borsh(use_discriminant = true)])]
-#[derive(
-    Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, SerializeDisplay, DeserializeFromStr,
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    borsh(use_discriminant = true),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[serde_with(crate = "::near_sdk::serde_with")]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    serde_with(crate = "::serde_with")
+)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum Signature {
     #[cfg(feature = "ed25519")]
-    Ed25519(<Ed25519 as Curve>::Signature) = 0,
+    Ed25519(<Ed25519 as CurveTypes>::Signature) = 0,
     #[cfg(feature = "secp256k1")]
-    Secp256k1(<Secp256k1 as Curve>::Signature) = 1,
+    Secp256k1(<Secp256k1 as CurveTypes>::Signature) = 1,
     #[cfg(feature = "p256")]
-    P256(<P256 as Curve>::Signature) = 2,
+    P256(<P256 as CurveTypes>::Signature) = 2,
 }
 
 impl Signature {
@@ -62,12 +65,16 @@ impl Signature {
 impl Debug for Signature {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}:{}",
-            self.curve_type(),
-            bs58::encode(self.data()).into_string()
-        )
+        write!(f, "{}:{}", self.curve_type(), {
+            #[cfg(not(feature = "near-contract"))]
+            {
+                bs58::encode(self.data()).into_string()
+            }
+            #[cfg(feature = "near-contract")]
+            {
+                near_sdk::bs58::encode(self.data()).into_string()
+            }
+        })
     }
 }
 
@@ -108,14 +115,12 @@ impl FromStr for Signature {
 
 #[cfg(feature = "abi")]
 const _: () = {
-    use near_sdk::{
-        schemars::{
-            JsonSchema,
-            r#gen::SchemaGenerator,
-            schema::{InstanceType, Metadata, Schema, SchemaObject},
-        },
-        serde_json,
+    use schemars::{
+        JsonSchema,
+        r#gen::SchemaGenerator,
+        schema::{InstanceType, Metadata, Schema, SchemaObject},
     };
+    use serde_json;
 
     impl JsonSchema for Signature {
         fn schema_name() -> String {

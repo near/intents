@@ -1,6 +1,6 @@
 use defuse_crypto::Curve;
 pub use defuse_crypto::{P256CompressedPublicKey, P256Signature};
-use near_sdk::env;
+use sha2::Digest;
 
 use crate::Algorithm;
 
@@ -15,8 +15,7 @@ impl Algorithm for P256 {
 
     #[inline]
     fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
-        // Use host impl of SHA-256 here to reduce gas consumption
-        let prehashed = env::sha256_array(msg);
+        let prehashed: [u8; 32] = sha2::Sha256::digest(msg).into();
 
         defuse_crypto::P256::verify(&signature.0, &prehashed, &public_key.0).is_some()
     }

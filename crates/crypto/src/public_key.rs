@@ -3,25 +3,31 @@ use core::{
     str::FromStr,
 };
 
-use near_sdk::{
-    AccountId, bs58, near,
-    serde_with::{DeserializeFromStr, SerializeDisplay},
-};
+#[cfg(feature = "near-contract")]
+use near_account_id::AccountId;
 
-use crate::{CurveType, ParseCurveError, parse::checked_base58_decode_array};
+use crate::parse::checked_base58_decode_array;
+use crate::{CurveType, ParseCurveError};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh(use_discriminant = true)])]
-#[derive(
-    Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, SerializeDisplay, DeserializeFromStr,
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    borsh(use_discriminant = true),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[serde_with(crate = "::near_sdk::serde_with")]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    serde_with(crate = "::serde_with")
+)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum PublicKey {
     #[cfg(feature = "ed25519")]
-    Ed25519(<crate::Ed25519 as crate::Curve>::PublicKey) = 0,
+    Ed25519(<crate::Ed25519 as crate::CurveTypes>::PublicKey) = 0,
     #[cfg(feature = "secp256k1")]
-    Secp256k1(<crate::Secp256k1 as crate::Curve>::PublicKey) = 1,
+    Secp256k1(<crate::Secp256k1 as crate::CurveTypes>::PublicKey) = 1,
     #[cfg(feature = "p256")]
     P256(crate::P256UncompressedPublicKey) = 2,
 }
@@ -52,6 +58,7 @@ impl PublicKey {
         }
     }
 
+    #[cfg(feature = "near-contract")]
     #[inline]
     pub fn to_implicit_account_id(&self) -> AccountId {
         match self {
@@ -98,7 +105,7 @@ impl PublicKey {
 
     #[cfg(feature = "ed25519")]
     #[inline]
-    pub fn from_implicit_account_id(account_id: &near_sdk::AccountIdRef) -> Option<Self> {
+    pub fn from_implicit_account_id(account_id: &near_account_id::AccountIdRef) -> Option<Self> {
         let mut pk = [0; 32];
         // Only NearImplicitAccount can be reversed
         hex::decode_to_slice(account_id.as_str(), &mut pk).ok()?;
@@ -109,12 +116,16 @@ impl PublicKey {
 impl Debug for PublicKey {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}:{}",
-            self.curve_type(),
-            bs58::encode(self.data()).into_string()
-        )
+        write!(f, "{}:{}", self.curve_type(), {
+            #[cfg(not(feature = "near-contract"))]
+            {
+                bs58::encode(self.data()).into_string()
+            }
+            #[cfg(feature = "near-contract")]
+            {
+                near_sdk::bs58::encode(self.data()).into_string()
+            }
+        })
     }
 }
 
@@ -157,14 +168,12 @@ impl FromStr for PublicKey {
 
 #[cfg(feature = "abi")]
 const _: () = {
-    use near_sdk::{
-        schemars::{
-            JsonSchema,
-            r#gen::SchemaGenerator,
-            schema::{InstanceType, Metadata, Schema, SchemaObject},
-        },
-        serde_json,
+    use schemars::{
+        JsonSchema,
+        r#gen::SchemaGenerator,
+        schema::{InstanceType, Metadata, Schema, SchemaObject},
     };
+    use serde_json;
 
     impl JsonSchema for PublicKey {
         fn schema_name() -> String {
@@ -260,11 +269,13 @@ const _: () = {
 
 #[cfg(test)]
 mod tests {
-    use near_sdk::AccountIdRef;
+    #[cfg(feature = "near-contract")]
+    use near_account_id::AccountIdRef;
     use rstest::rstest;
 
     use super::*;
 
+    #[cfg(feature = "near-contract")]
     #[rstest]
     #[cfg_attr(
         feature = "ed25519",

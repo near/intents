@@ -7,20 +7,20 @@ repository.workspace = true
 
 [dependencies]
 defuse-bitmap.workspace = true
-defuse-crypto = { workspace = true, features = ["ed25519", "secp256k1", "p256"] }
+defuse-crypto = { workspace = true, features = ["ed25519", "secp256k1", "p256", "near-contract"] }
 defuse-deadline.workspace = true
-defuse-erc191.workspace = true
+defuse-erc191 = { workspace = true, features = ["near-contract"] }
 defuse-fees.workspace = true
 defuse-map-utils.workspace = true
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
-defuse-nep413.workspace = true
+defuse-nep413 = { workspace = true, features = ["near-contract"] }
 defuse-num-utils.workspace = true
-defuse-sep53.workspace = true
+defuse-sep53 = { workspace = true, features = ["near-contract"] }
 defuse-serde-utils = { workspace = true, features = ["base58", "base64"] }
-defuse-tip191.workspace = true
+defuse-tip191 = { workspace = true, features = ["near-contract"] }
 defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245"] }
-defuse-ton-connect.workspace = true
+defuse-ton-connect = { workspace = true, features = ["near-contract", "serde"] }
 defuse-webauthn = { workspace = true, features = ["ed25519", "p256"] }
 
 arbitrary = { workspace = true, optional = true }

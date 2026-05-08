@@ -1,4 +1,4 @@
-use defuse_crypto::{Curve, Ed25519, Payload, SignedPayload, serde::AsCurve};
+use defuse_crypto::{Curve, CurveTypes, Ed25519, Payload, SignedPayload, serde::AsCurve};
 use near_sdk::{env, near, serde::de::DeserializeOwned, serde_json};
 use serde_with::serde_as;
 
@@ -10,9 +10,9 @@ pub struct SignedRawEd25519Payload {
     pub payload: String,
 
     #[serde_as(as = "AsCurve<Ed25519>")]
-    pub public_key: <Ed25519 as Curve>::PublicKey,
+    pub public_key: <Ed25519 as CurveTypes>::PublicKey,
     #[serde_as(as = "AsCurve<Ed25519>")]
-    pub signature: <Ed25519 as Curve>::Signature,
+    pub signature: <Ed25519 as CurveTypes>::Signature,
 }
 
 impl Payload for SignedRawEd25519Payload {
@@ -23,7 +23,7 @@ impl Payload for SignedRawEd25519Payload {
 }
 
 impl SignedPayload for SignedRawEd25519Payload {
-    type PublicKey = <Ed25519 as Curve>::PublicKey;
+    type PublicKey = <Ed25519 as CurveTypes>::PublicKey;
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {

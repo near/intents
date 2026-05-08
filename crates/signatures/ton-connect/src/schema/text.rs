@@ -1,25 +1,31 @@
-use core::str;
 use std::fmt::Debug;
 
-use impl_tools::autoimpl;
-use near_sdk::near;
-use tlb_ton::StringError;
-
+#[cfg(feature = "near-contract")]
 use crate::schema::{PayloadSchema, TonConnectPayloadContext};
+use impl_tools::autoimpl;
+#[cfg(feature = "near-contract")]
+use tlb_ton::StringError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(test, derive(arbitrary::Arbitrary))]
-#[near(serializers = [json])]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[autoimpl(Deref using self.text)]
 pub struct TextPayload {
     pub text: String,
 }
 
+#[cfg(feature = "near-contract")]
 impl PayloadSchema for TextPayload {
     fn hash_with_context(
         &self,
         context: TonConnectPayloadContext,
-    ) -> Result<near_sdk::CryptoHash, StringError> {
+    ) -> Result<defuse_crypto::CryptoHash, StringError> {
         context.create_payload_hash(b"txt", self.as_bytes())
     }
 }

@@ -1,4 +1,3 @@
-use near_sdk::bs58;
 use thiserror::Error as ThisError;
 
 #[derive(Debug, ThisError, PartialEq, Eq)]
@@ -6,7 +5,11 @@ pub enum ParseCurveError {
     #[error("wrong curve type")]
     WrongCurveType,
     #[error("base58: {0}")]
+    #[cfg(not(feature = "near-contract"))]
     Base58(#[from] bs58::decode::Error),
+    #[error("base58: {0}")]
+    #[cfg(feature = "near-contract")]
+    Base58(#[from] near_sdk::bs58::decode::Error),
     #[error("invalid length")]
     InvalidLength,
 }
@@ -17,10 +20,17 @@ pub fn checked_base58_decode_array<const N: usize>(
     input: impl AsRef<[u8]>,
 ) -> Result<[u8; N], ParseCurveError> {
     let mut output = [0u8; N];
-    let n = bs58::decode(input.as_ref())
-        // NOTE: `.into_array_const()` doesn't return an error on insufficient
-        // input length and pads the array with zeros
-        .onto(&mut output)?;
+    #[cfg(not(feature = "near-contract"))]
+    // NOTE: `.into_array_const()` doesn't return an error on insufficient
+    // input length and pads the array with zeros
+    let n = bs58::decode(input.as_ref()).onto(&mut output)?;
+    #[cfg(feature = "near-contract")]
+    let n = {
+        let decoded = near_sdk::bs58::decode(input.as_ref()).into_vec()?;
+        let n = decoded.len();
+        output[..n.min(N)].copy_from_slice(&decoded[..n.min(N)]);
+        n
+    };
     (n == N)
         .then_some(output)
         .ok_or(ParseCurveError::InvalidLength)

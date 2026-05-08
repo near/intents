@@ -13,7 +13,8 @@ mod p256;
 #[cfg(feature = "p256")]
 pub use self::p256::*;
 
-pub trait Curve {
+#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
+pub trait CurveTypes {
     type PublicKey;
     type Signature;
 
@@ -22,7 +23,10 @@ pub trait Curve {
 
     /// Public key that should be known prior to verification
     type VerifyingKey;
+}
 
+#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
+pub trait Curve: CurveTypes {
     fn verify(
         signature: &Self::Signature,
         message: &Self::Message,
@@ -44,15 +48,19 @@ pub enum CurveType {
 }
 
 #[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
-pub trait TypedCurve: Curve {
+pub trait TypedCurve: CurveTypes {
     const CURVE_TYPE: CurveType;
 
     #[inline]
     fn to_base58(bytes: impl AsRef<[u8]>) -> String {
+        #[cfg(not(feature = "near-contract"))]
+        use bs58;
+        #[cfg(feature = "near-contract")]
+        use near_sdk::bs58;
         format!(
             "{}:{}",
             Self::CURVE_TYPE,
-            near_sdk::bs58::encode(bytes.as_ref()).into_string()
+            bs58::encode(bytes.as_ref()).into_string()
         )
     }
 

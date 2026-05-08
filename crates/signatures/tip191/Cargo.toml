@@ -6,16 +6,29 @@ version.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-defuse-crypto = { workspace = true, default-features = false, features = ["secp256k1"] }
+defuse-crypto = { workspace = true, default-features = false, features = ["secp256k1", "borsh", "serde"] }
 
 impl-tools.workspace = true
-near-sdk.workspace = true
+
+borsh = { workspace = true, optional = true }
+cfg_eval = { workspace = true, optional = true }
+near-sdk = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_with = { workspace = true, optional = true }
 
 [dev-dependencies]
 defuse-test-utils.workspace = true
 hex-literal.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
+
+[features]
+default = ["serde"]
+borsh = ["dep:borsh"]
+serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
+abi = ["borsh/unstable__schema", "dep:schemars"]
+near-contract = ["defuse-crypto/near-contract", "dep:near-sdk"]
 
 [lints]
 workspace = true

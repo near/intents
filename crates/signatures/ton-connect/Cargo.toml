@@ -9,32 +9,39 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
-defuse-near-utils = { workspace = true, features = ["digest"] }
+defuse-crypto = { workspace = true, default-features = false, features = ["ed25519", "borsh", "serde"] }
 defuse-serde-utils = { workspace = true, features = ["base64", "tlb"] }
 
 chrono = { workspace = true, features = ["serde"] }
 impl-tools.workspace = true
-near-sdk.workspace = true
-schemars = { workspace = true, features = ["chrono"] }
-serde_with = { workspace = true, features = ["chrono_0_4"] }
 tlb-ton = { workspace = true, features = ["serde"] }
 
+cfg_eval = { workspace = true, optional = true }
+defuse-near-utils = { workspace = true, features = ["digest"], optional = true }
+near-sdk = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["chrono"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_with = { workspace = true, features = ["chrono_0_4"], optional = true }
+
 [features]
-default = ["binary", "cell", "text"]
+default = ["binary", "cell", "serde", "text"]
 abi = [
   "defuse-crypto/abi",
   "defuse-serde-utils/abi",
-  "near-sdk/abi",
+  "dep:schemars",
+  "near-sdk?/abi",
   "tlb-ton/schemars_0_8",
 ]
 arbitrary = ["tlb-ton/arbitrary"]
 binary = []
 cell = []
+near-contract = [
+  "defuse-crypto/near-contract",
+  "dep:defuse-near-utils",
+  "dep:near-sdk",
+]
+serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 text = []
-
-[package.metadata.cargo-machete]
-ignored = ["schemars"] # used by #[near] macro for ABI generation
 
 [dev-dependencies]
 defuse-test-utils.workspace = true
@@ -43,4 +50,5 @@ arbitrary.workspace = true
 hex-literal.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
+serde_json.workspace = true
 tlb-ton = { workspace = true, features = ["arbitrary", "base64"] }

@@ -1,9 +1,25 @@
-use defuse_crypto::{CryptoHash, Curve, Payload, Secp256k1, SignedPayload, serde::AsCurve};
+#[cfg(feature = "serde")]
+use defuse_crypto::serde::AsCurve;
+#[cfg(feature = "near-contract")]
+use defuse_crypto::{CryptoHash, Curve, Payload, SignedPayload};
+use defuse_crypto::{CurveTypes, Secp256k1};
 use impl_tools::autoimpl;
-use near_sdk::{env, near, serde_with::serde_as};
+#[cfg(feature = "near-contract")]
+use near_sdk::env;
 
 /// See [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
-#[near(serializers = [json])]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+)]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[derive(Debug, Clone)]
 pub struct Tip191Payload(pub String);
 
@@ -20,6 +36,7 @@ impl Tip191Payload {
     }
 }
 
+#[cfg(feature = "near-contract")]
 impl Payload for Tip191Payload {
     #[inline]
     fn hash(&self) -> CryptoHash {
@@ -27,7 +44,18 @@ impl Payload for Tip191Payload {
     }
 }
 
-#[near(serializers = [json])]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+)]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone)]
 pub struct SignedTip191Payload {
@@ -35,10 +63,11 @@ pub struct SignedTip191Payload {
 
     /// There is no public key member because the public key can be recovered
     /// via `ecrecover()` knowing the data and the signature
-    #[serde_as(as = "AsCurve<Secp256k1>")]
-    pub signature: <Secp256k1 as Curve>::Signature,
+    #[cfg_attr(feature = "serde", serde_as(as = "AsCurve<Secp256k1>"))]
+    pub signature: <Secp256k1 as CurveTypes>::Signature,
 }
 
+#[cfg(feature = "near-contract")]
 impl Payload for SignedTip191Payload {
     #[inline]
     fn hash(&self) -> CryptoHash {
@@ -46,8 +75,9 @@ impl Payload for SignedTip191Payload {
     }
 }
 
+#[cfg(feature = "near-contract")]
 impl SignedPayload for SignedTip191Payload {
-    type PublicKey = <Secp256k1 as Curve>::PublicKey;
+    type PublicKey = <Secp256k1 as CurveTypes>::PublicKey;
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
