@@ -1,8 +1,8 @@
-use defuse_crypto::{Curve, Secp256k1};
 #[cfg(feature = "serde")]
 use defuse_crypto::serde::AsCurve;
 #[cfg(feature = "near-contract")]
 use defuse_crypto::{CryptoHash, Payload, SignedPayload};
+use defuse_crypto::{Curve, Secp256k1};
 use impl_tools::autoimpl;
 
 /// See [ERC-191](https://github.com/ethereum/ercs/blob/master/ERCS/erc-191.md)
@@ -129,7 +129,11 @@ mod tests {
     fn test_reference_signature_verification_works() {
         let payload = Erc191Payload(REFERENCE_MESSAGE.to_string());
         assert_eq!(
-            Secp256k1::verify(&fix_v_in_signature(REFERENCE_SIGNATURE), &hash(&payload), &()),
+            Secp256k1::verify(
+                &fix_v_in_signature(REFERENCE_SIGNATURE),
+                &hash(&payload),
+                &()
+            ),
             Some(REFERENCE_PUBKEY)
         );
     }
@@ -138,7 +142,11 @@ mod tests {
     fn test_invalid_reference_message_verification_fails() {
         let payload = Erc191Payload(INVALID_REFERENCE_MESSAGE.to_string());
         assert_ne!(
-            Secp256k1::verify(&fix_v_in_signature(REFERENCE_SIGNATURE), &hash(&payload), &()),
+            Secp256k1::verify(
+                &fix_v_in_signature(REFERENCE_SIGNATURE),
+                &hash(&payload),
+                &()
+            ),
             Some(REFERENCE_PUBKEY)
         );
     }
@@ -147,7 +155,11 @@ mod tests {
     fn test_invalid_reference_signature_verification_fails() {
         let payload = Erc191Payload(REFERENCE_MESSAGE.to_string());
         assert_ne!(
-            Secp256k1::verify(&fix_v_in_signature(INVALID_REFERENCE_SIGNATURE), &hash(&payload), &()),
+            Secp256k1::verify(
+                &fix_v_in_signature(INVALID_REFERENCE_SIGNATURE),
+                &hash(&payload),
+                &()
+            ),
             Some(REFERENCE_PUBKEY)
         );
     }
