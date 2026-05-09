@@ -22,7 +22,6 @@ rstest.workspace = true
 sha3.workspace = true
 
 [features]
-default = ["serde"]
 borsh = ["defuse-crypto/borsh", "dep:borsh"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 abi = ["borsh/unstable__schema", "defuse-crypto/abi", "dep:schemars"]
