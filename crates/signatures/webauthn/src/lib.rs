@@ -19,14 +19,9 @@ pub use self::p256::*;
 pub struct PayloadSignature<A: Algorithm + ?Sized> {
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
     #[cfg_attr(
-        all(feature = "serde", feature = "abi", not(target_arch = "wasm32")),
-        schemars(with = "String")
-    )]
-    #[cfg_attr(
         feature = "serde",
-        serde_as(
-            as = "defuse_serde_utils::base64::Base64<defuse_serde_utils::base64::UrlSafe, defuse_serde_utils::base64::Unpadded>"
-        )
+        serde_as(as = "defuse_serde_utils::base64::Base64<defuse_serde_utils::base64::UrlSafe, defuse_serde_utils::base64::Unpadded>"),
+        cfg_attr(feature = "abi", schemars(with = "String"))
     )]
     pub authenticator_data: Vec<u8>,
     /// Serialized [clientDataJSON](https://w3c.github.io/webauthn/#dom-authenticatorresponse-clientdatajson)
