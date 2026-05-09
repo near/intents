@@ -1,11 +1,11 @@
 mod borsh;
 mod domain;
-#[cfg(feature = "ed25519")]
+#[cfg(all(feature = "ed25519", feature = "contract"))]
 pub mod ed25519;
 mod hash;
 pub mod no_sign;
 
-#[cfg(feature = "webauthn")]
+#[cfg(all(feature = "webauthn", feature = "contract"))]
 pub mod webauthn;
 
 use std::time::Duration;

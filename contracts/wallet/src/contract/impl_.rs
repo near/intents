@@ -62,7 +62,7 @@ macro_rules! contract_impl {
     };
     ($(
         #[cfg_attr(
-            feature = $feature:literal,
+            $meta:meta,
             near(contract_metadata(
                 standard(standard = $s:literal, version = $v:literal)
             ))
@@ -71,7 +71,7 @@ macro_rules! contract_impl {
         contract_impl!{
             @meta $(
                 #[cfg_attr(
-                    feature = $feature,
+                    $meta,
                     near(contract_metadata(
                         standard(standard = $s, version = $v)
                     ))
@@ -83,7 +83,11 @@ macro_rules! contract_impl {
             // initialization stage (i.e. state_init). So only extensions
             // can execute requests via `w_execute_extension()`.
             #[cfg_attr(
-                not(any($(feature = $feature),+)),
+                not(all(feature = "contract", any(
+                    feature = "ed25519",
+                    feature = "webauthn-ed25519",
+                    feature = "webauthn-p256",
+                ))),
                 near(contract_metadata(
                     standard(standard = "wallet-no-sign", version = "1.0.0")
                 ))
@@ -101,7 +105,7 @@ macro_rules! contract_impl {
 
 contract_impl! {
     #[cfg_attr(
-        feature = "ed25519",
+        all(feature = "ed25519", feature = "contract"),
         near(contract_metadata(
             standard(standard = "wallet-ed25519", version = "1.0.0")
         ))
@@ -116,7 +120,7 @@ contract_impl! {
     }
 
     #[cfg_attr(
-        feature = "webauthn-ed25519",
+        all(feature = "webauthn-ed25519", feature = "contract"),
         near(contract_metadata(
             standard(standard = "wallet-webauthn-ed25519", version = "1.0.0")
         ))
@@ -139,7 +143,7 @@ contract_impl! {
     }
 
     #[cfg_attr(
-        feature = "webauthn-p256",
+        all(feature = "webauthn-p256", feature = "contract"),
         near(contract_metadata(
             standard(standard = "wallet-webauthn-p256", version = "1.0.0")
         ))
@@ -159,7 +163,6 @@ contract_impl! {
             /// 2. This reduces length of the `proof` submitted on-chain.
             type SigningStandard = Borsh<DomainPrefix<Sha256<Webauthn<P256>>>>;
         }
-
     }
 }
 
