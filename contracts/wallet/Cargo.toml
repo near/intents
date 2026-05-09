@@ -40,14 +40,14 @@ abi = [
 ]
 arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
 concurrent = ["dep:rand_core"]
-webauthn = ["defuse-webauthn/near-contract", "dep:defuse-webauthn"]
+webauthn = ["dep:defuse-webauthn"]
 
 ########## Contract variants ##########
 # When no features enabled, by default, always reject the signature.
 # This can be useful to deploy "1-of-M multisig"/"fan-out" wallet, where
 # extensions are pre-defined at the initialization stage (i.e. state_init).
 # So only extensions can execute requests via `w_execute_extension()`.
-contract = ["defuse-crypto?/near-contract"]
+contract = ["defuse-crypto?/near-contract", "defuse-webauthn?/near-contract"]
 
 # Webauthn (a.k.a passkey) variants:
 webauthn-ed25519 = [
@@ -61,7 +61,6 @@ webauthn-p256 = ["defuse-webauthn/borsh", "defuse-webauthn/p256", "webauthn"]
 ed25519 = [
   "defuse-crypto/borsh",
   "defuse-crypto/ed25519",
-  "defuse-crypto/near-contract",
 ]
 
 [package.metadata.near.reproducible_build]
