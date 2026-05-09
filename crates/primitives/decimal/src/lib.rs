@@ -13,7 +13,7 @@ use near_sdk::{
 /// Floating point unsigned decimal price, i.e. dst per 1 src
 /// always reduced (i.e. normalized)
 #[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
+    feature = "abi",
     derive(near_sdk::NearSchema),
     abi(json, borsh),
     schemars(with = "String")
