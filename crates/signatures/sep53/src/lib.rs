@@ -32,14 +32,6 @@ impl Sep53Payload {
     }
 }
 
-#[cfg(feature = "near-contract")]
-impl defuse_crypto::Payload for Sep53Payload {
-    #[inline]
-    fn hash(&self) -> defuse_crypto::CryptoHash {
-        near_sdk::env::sha256_array(self.prehash())
-    }
-}
-
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
@@ -58,39 +50,23 @@ pub struct SignedSep53Payload {
     #[cfg_attr(feature = "serde", serde(flatten))]
     pub payload: Sep53Payload,
 
-    #[cfg_attr(feature = "serde", serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
+    )]
     pub public_key: <Ed25519 as CurveTypes>::PublicKey,
-    #[cfg_attr(feature = "serde", serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
+    )]
     pub signature: <Ed25519 as CurveTypes>::Signature,
-}
-
-#[cfg(feature = "near-contract")]
-impl defuse_crypto::Payload for SignedSep53Payload {
-    #[inline]
-    fn hash(&self) -> defuse_crypto::CryptoHash {
-        defuse_crypto::Payload::hash(&self.payload)
-    }
-}
-
-#[cfg(feature = "near-contract")]
-impl defuse_crypto::SignedPayload for SignedSep53Payload {
-    type PublicKey = <Ed25519 as CurveTypes>::PublicKey;
-
-    #[inline]
-    fn verify(&self) -> Option<Self::PublicKey> {
-        <Ed25519 as defuse_crypto::Curve>::verify(
-            &self.signature,
-            &defuse_crypto::Payload::hash(self),
-            &self.public_key,
-        )
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{Sep53Payload, SignedSep53Payload};
     use base64::{Engine, engine::general_purpose::STANDARD};
-    use defuse_crypto::{Payload, SignedPayload};
+    use defuse_crypto::{Curve, Ed25519};
     use defuse_test_utils::random::{CryptoRng, gen_random_string, random_bytes, rng};
     use defuse_test_utils::tamper::{tamper_bytes, tamper_string};
     use ed25519_dalek::Verifier;
@@ -98,6 +74,18 @@ mod tests {
     use near_sdk::base64;
     use rstest::rstest;
     use stellar_strkey::Strkey;
+
+    fn sep53_hash(payload: &Sep53Payload) -> [u8; 32] {
+        near_sdk::env::sha256_array(payload.prehash())
+    }
+
+    fn sep53_verify(signed: &SignedSep53Payload) -> Option<[u8; 32]> {
+        Ed25519::verify(
+            &signed.signature,
+            &sep53_hash(&signed.payload),
+            &signed.public_key,
+        )
+    }
 
     #[test]
     fn reference_test_vectors() {
@@ -141,7 +129,7 @@ mod tests {
         for (msg, expected_sig_b64) in vectors {
             let payload = Sep53Payload::new(msg.to_string());
 
-            let hash = payload.hash();
+            let hash = sep53_hash(&payload);
             let secret_key = near_crypto::SecretKey::ED25519(near_crypto::ED25519SecretKey(
                 signing_key
                     .as_bytes()
@@ -170,7 +158,7 @@ mod tests {
             };
 
             assert_eq!(
-                signed_payload.verify(),
+                sep53_verify(&signed_payload),
                 Some(verifying_key.as_bytes().to_owned())
             );
         }
@@ -206,7 +194,7 @@ mod tests {
 
         // sign the "good" message
         let payload = Sep53Payload::new(msg.clone());
-        let hash = payload.hash();
+        let hash = sep53_hash(&payload);
         let sig = match sk.sign(hash.as_ref()) {
             near_crypto::Signature::ED25519(signature) => signature,
             near_crypto::Signature::SECP256K1(_) => unreachable!(),
@@ -218,7 +206,7 @@ mod tests {
                 public_key: pk.key_data().try_into().unwrap(),
                 signature: sig.to_bytes(),
             };
-            assert!(signed_good.verify().is_some());
+            assert!(sep53_verify(&signed_good).is_some());
         }
 
         // tamper with the message, and expect failure
@@ -232,7 +220,7 @@ mod tests {
                 public_key: pk.key_data().try_into().unwrap(),
                 signature: sig.to_bytes(),
             };
-            assert_eq!(signed_bad.verify(), None);
+            assert_eq!(sep53_verify(&signed_bad), None);
         }
     }
 
@@ -245,7 +233,7 @@ mod tests {
 
         // sign the canonical payload
         let payload = Sep53Payload::new(msg);
-        let hash = payload.hash();
+        let hash = sep53_hash(&payload);
         let sig = match sk.sign(hash.as_ref()) {
             near_crypto::Signature::ED25519(signature) => signature,
             near_crypto::Signature::SECP256K1(_) => unreachable!(),
@@ -257,7 +245,7 @@ mod tests {
                 public_key: pk.key_data().try_into().unwrap(),
                 signature: sig.into(),
             };
-            assert!(signed_good.verify().is_some());
+            assert!(sep53_verify(&signed_good).is_some());
         }
 
         // tamper with the signature, and expect failure
@@ -269,7 +257,7 @@ mod tests {
                 public_key: pk.key_data().try_into().unwrap(),
                 signature: bad_bytes.try_into().unwrap(),
             };
-            assert!(signed_bad.verify().is_none());
+            assert!(sep53_verify(&signed_bad).is_none());
         }
     }
 }

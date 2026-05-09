@@ -1,13 +1,12 @@
 use defuse_crypto::{
-    Ed25519PublicKey, Ed25519Signature, P256Signature, Payload, Signature, SignedPayload,
-    compress_public_key,
+    Ed25519PublicKey, Ed25519Signature, P256Signature, Signature, compress_public_key,
 };
 
 use crate::public_key::PublicKey;
 use defuse_webauthn::{Algorithm, Ed25519, P256, PayloadSignature, UserVerification};
 use near_sdk::{CryptoHash, env, near, serde::de::DeserializeOwned, serde_json};
 
-use super::{DefusePayload, ExtractDefusePayload};
+use super::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
 
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]

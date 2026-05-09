@@ -30,14 +30,6 @@ impl Tip191Payload {
     }
 }
 
-#[cfg(feature = "near-contract")]
-impl defuse_crypto::Payload for Tip191Payload {
-    #[inline]
-    fn hash(&self) -> defuse_crypto::CryptoHash {
-        near_sdk::env::keccak256_array(self.prehash())
-    }
-}
-
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
@@ -57,36 +49,17 @@ pub struct SignedTip191Payload {
 
     /// There is no public key member because the public key can be recovered
     /// via `ecrecover()` knowing the data and the signature
-    #[cfg_attr(feature = "serde", serde_as(as = "defuse_crypto::serde::AsCurve<Secp256k1>"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_crypto::serde::AsCurve<Secp256k1>")
+    )]
     pub signature: <Secp256k1 as CurveTypes>::Signature,
-}
-
-#[cfg(feature = "near-contract")]
-impl defuse_crypto::Payload for SignedTip191Payload {
-    #[inline]
-    fn hash(&self) -> defuse_crypto::CryptoHash {
-        defuse_crypto::Payload::hash(&self.payload)
-    }
-}
-
-#[cfg(feature = "near-contract")]
-impl defuse_crypto::SignedPayload for SignedTip191Payload {
-    type PublicKey = <Secp256k1 as CurveTypes>::PublicKey;
-
-    #[inline]
-    fn verify(&self) -> Option<Self::PublicKey> {
-        <Secp256k1 as defuse_crypto::Curve>::verify(
-            &self.signature,
-            &defuse_crypto::Payload::hash(&self.payload),
-            &(),
-        )
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use defuse_crypto::SignedPayload;
+    use defuse_crypto::{Curve, Secp256k1};
     use hex_literal::hex;
 
     const fn fix_v_in_signature(mut sig: [u8; 65]) -> [u8; 65] {
@@ -96,6 +69,14 @@ mod tests {
             *sig.last_mut().unwrap() -= 27;
         }
         sig
+    }
+
+    fn tip191_verify(signed: &SignedTip191Payload) -> Option<[u8; 64]> {
+        <Secp256k1 as Curve>::verify(
+            &signed.signature,
+            &near_sdk::env::keccak256_array(signed.payload.prehash()),
+            &(),
+        )
     }
 
     // NOTE: Public key can be derived using `ethers_signers` crate:
@@ -123,11 +104,10 @@ mod tests {
     #[test]
     fn test_reference_signature_verification_works() {
         assert_eq!(
-            SignedTip191Payload {
+            tip191_verify(&SignedTip191Payload {
                 payload: Tip191Payload(REFERENCE_MESSAGE.to_string()),
                 signature: fix_v_in_signature(REFERENCE_SIGNATURE),
-            }
-            .verify(),
+            }),
             Some(REFERENCE_PUBKEY)
         );
     }
@@ -135,11 +115,10 @@ mod tests {
     #[test]
     fn test_invalid_reference_message_verification_fails() {
         assert_ne!(
-            SignedTip191Payload {
+            tip191_verify(&SignedTip191Payload {
                 payload: Tip191Payload(INVALID_REFERENCE_MESSAGE.to_string()),
                 signature: fix_v_in_signature(REFERENCE_SIGNATURE),
-            }
-            .verify(),
+            }),
             Some(REFERENCE_PUBKEY)
         );
     }
@@ -147,11 +126,10 @@ mod tests {
     #[test]
     fn test_invalid_reference_signature_verification_fails() {
         assert_ne!(
-            SignedTip191Payload {
+            tip191_verify(&SignedTip191Payload {
                 payload: Tip191Payload(REFERENCE_MESSAGE.to_string()),
                 signature: fix_v_in_signature(INVALID_REFERENCE_SIGNATURE),
-            }
-            .verify(),
+            }),
             Some(REFERENCE_PUBKEY)
         );
     }

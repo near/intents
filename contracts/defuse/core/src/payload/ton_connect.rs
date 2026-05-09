@@ -1,10 +1,34 @@
+use defuse_crypto::{Curve, CurveTypes, Ed25519};
 use defuse_ton_connect::{SignedTonConnectPayload, TonConnectPayload, TonConnectPayloadSchema};
 use near_sdk::{
     serde::de::{DeserializeOwned, Error},
     serde_json,
 };
 
-use super::{DefusePayload, ExtractDefusePayload};
+use super::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
+
+impl Payload for TonConnectPayload {
+    #[inline]
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        self.hash()
+    }
+}
+
+impl Payload for SignedTonConnectPayload {
+    #[inline]
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        Payload::hash(&self.payload)
+    }
+}
+
+impl SignedPayload for SignedTonConnectPayload {
+    type PublicKey = <Ed25519 as CurveTypes>::PublicKey;
+
+    #[inline]
+    fn verify(&self) -> Option<Self::PublicKey> {
+        Ed25519::verify(&self.signature, &Payload::hash(self), &self.public_key)
+    }
+}
 
 impl<T> ExtractDefusePayload<T> for SignedTonConnectPayload
 where

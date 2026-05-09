@@ -15,7 +15,6 @@ impl-tools.workspace = true
 borsh = { workspace = true, optional = true }
 cfg_eval = { workspace = true, optional = true }
 near-api = { workspace = true, optional = true }
-near-sdk = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
@@ -30,7 +29,6 @@ abi = [
   "defuse-serde-utils/abi",
   "dep:schemars",
 ]
-near-contract = ["borsh", "defuse-crypto/near-contract", "dep:near-sdk"]
 near-api = ["dep:near-api"]
 
 [lints]

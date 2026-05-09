@@ -1,8 +1,8 @@
-use defuse_crypto::{Curve, CurveTypes, Ed25519, Payload, SignedPayload, serde::AsCurve};
+use defuse_crypto::{Curve, CurveTypes, Ed25519, serde::AsCurve};
 use near_sdk::{env, near, serde::de::DeserializeOwned, serde_json};
 use serde_with::serde_as;
 
-use super::ExtractDefusePayload;
+use super::{ExtractDefusePayload, Payload, SignedPayload};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]

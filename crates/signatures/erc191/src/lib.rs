@@ -29,14 +29,6 @@ impl Erc191Payload {
     }
 }
 
-#[cfg(feature = "near-contract")]
-impl defuse_crypto::Payload for Erc191Payload {
-    #[inline]
-    fn hash(&self) -> defuse_crypto::CryptoHash {
-        near_sdk::env::keccak256_array(self.prehash())
-    }
-}
-
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
@@ -56,103 +48,9 @@ pub struct SignedErc191Payload {
 
     /// There is no public key member because the public key can be recovered
     /// via `ecrecover()` knowing the data and the signature
-    #[cfg_attr(feature = "serde", serde_as(as = "defuse_crypto::serde::AsCurve<Secp256k1>"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_crypto::serde::AsCurve<Secp256k1>")
+    )]
     pub signature: <Secp256k1 as CurveTypes>::Signature,
-}
-
-#[cfg(feature = "near-contract")]
-impl defuse_crypto::Payload for SignedErc191Payload {
-    #[inline]
-    fn hash(&self) -> defuse_crypto::CryptoHash {
-        defuse_crypto::Payload::hash(&self.payload)
-    }
-}
-
-#[cfg(feature = "near-contract")]
-impl defuse_crypto::SignedPayload for SignedErc191Payload {
-    type PublicKey = <Secp256k1 as CurveTypes>::PublicKey;
-
-    #[inline]
-    fn verify(&self) -> Option<Self::PublicKey> {
-        <Secp256k1 as defuse_crypto::Curve>::verify(
-            &self.signature,
-            &defuse_crypto::Payload::hash(&self.payload),
-            &(),
-        )
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use defuse_crypto::SignedPayload;
-    use hex_literal::hex;
-
-    const fn fix_v_in_signature(mut sig: [u8; 65]) -> [u8; 65] {
-        if *sig.last().unwrap() >= 27 {
-            // Ethereum only uses uncompressed keys, with corresponding value v=27/28
-            // https://bitcoin.stackexchange.com/a/38909/58790
-            *sig.last_mut().unwrap() -= 27;
-        }
-        sig
-    }
-
-    // Signature constructed in Metamask, using private key: a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56
-    const REFERENCE_SIGNATURE: [u8; 65] = hex!(
-        "7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e471c"
-    );
-    const INVALID_REFERENCE_SIGNATURE: [u8; 65] = hex!(
-        "7900a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e471c"
-    );
-    const REFERENCE_MESSAGE: &str = "Hello world!";
-    const INVALID_REFERENCE_MESSAGE: &str = "Hello, NEAR!";
-
-    // Public key can be derived using `ethers_signers` crate:
-    // let wallet = LocalWallet::from_str(
-    //     "a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56",
-    // )?;
-    // let signing_key = wallet.signer();
-    // let verifying_key = signing_key.verifying_key();
-    // let public_key = verifying_key.to_encoded_point(false);
-    // // Notice that we skip the first byte, 0x04
-    // println!("Public key: 0x{}", hex::encode(public_key.as_bytes()[1..]));
-    const REFERENCE_PUBKEY: [u8; 64] = hex!(
-        "85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"
-    );
-
-    #[test]
-    fn test_reference_signature_verification_works() {
-        assert_eq!(
-            SignedErc191Payload {
-                payload: Erc191Payload(REFERENCE_MESSAGE.to_string()),
-                signature: fix_v_in_signature(REFERENCE_SIGNATURE),
-            }
-            .verify(),
-            Some(REFERENCE_PUBKEY)
-        );
-    }
-
-    #[test]
-    fn test_invalid_reference_message_verification_fails() {
-        assert_ne!(
-            SignedErc191Payload {
-                payload: Erc191Payload(INVALID_REFERENCE_MESSAGE.to_string()),
-                signature: fix_v_in_signature(REFERENCE_SIGNATURE),
-            }
-            .verify(),
-            Some(REFERENCE_PUBKEY)
-        );
-    }
-
-    #[test]
-    fn test_invalid_reference_signature_verification_fails() {
-        assert_ne!(
-            SignedErc191Payload {
-                payload: Erc191Payload(REFERENCE_MESSAGE.to_string()),
-                signature: fix_v_in_signature(INVALID_REFERENCE_SIGNATURE),
-            }
-            .verify(),
-            Some(REFERENCE_PUBKEY)
-        );
-    }
 }

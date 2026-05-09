@@ -17,6 +17,11 @@ impl Algorithm for P256 {
     fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
         // Use host impl of SHA-256 here to reduce gas consumption
         let prehashed = near_sdk::env::sha256_array(msg);
-        <defuse_crypto::P256 as defuse_crypto::Curve>::verify(&signature.0, &prehashed, &public_key.0).is_some()
+        <defuse_crypto::P256 as defuse_crypto::Curve>::verify(
+            &signature.0,
+            &prehashed,
+            &public_key.0,
+        )
+        .is_some()
     }
 }

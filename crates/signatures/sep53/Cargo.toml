@@ -12,7 +12,6 @@ impl-tools.workspace = true
 
 borsh = { workspace = true, optional = true }
 cfg_eval = { workspace = true, optional = true }
-near-sdk = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
@@ -30,7 +29,6 @@ default = ["serde"]
 borsh = ["defuse-crypto/borsh", "dep:borsh"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 abi = ["borsh/unstable__schema", "defuse-crypto/abi", "dep:schemars"]
-near-contract = ["defuse-crypto/near-contract", "dep:near-sdk"]
 
 [lints]
 workspace = true

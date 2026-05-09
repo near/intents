@@ -25,7 +25,10 @@ pub struct TonConnectPayload {
     /// dApp domain
     pub domain: String,
     /// UNIX timestamp (in seconds or RFC3339) at the time of singing
-    #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::PickFirst<(_, ::serde_with::TimestampSeconds)>"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "::serde_with::PickFirst<(_, ::serde_with::TimestampSeconds)>")
+    )]
     pub timestamp: DateTime<Utc>,
     pub payload: TonConnectPayloadSchema,
 }
@@ -44,14 +47,14 @@ impl<'a> arbitrary::Arbitrary<'a> for TonConnectPayload {
 
 #[cfg(feature = "near-contract")]
 const _: () = {
-    use std::borrow::Cow;
-    use defuse_crypto::{CryptoHash, Payload};
-    use defuse_near_utils::UnwrapOrPanicError;
-    use tlb_ton::{Error, StringError};
     use crate::schema::{PayloadSchema, TonConnectPayloadContext};
+    use defuse_crypto::CryptoHash;
+    use defuse_near_utils::UnwrapOrPanicError;
+    use std::borrow::Cow;
+    use tlb_ton::{Error, StringError};
 
     impl TonConnectPayload {
-        fn try_hash(&self) -> Result<CryptoHash, StringError> {
+        pub fn try_hash(&self) -> Result<CryptoHash, StringError> {
             let timestamp: u64 = self
                 .timestamp
                 .timestamp()
@@ -66,11 +69,8 @@ const _: () = {
 
             self.payload.hash_with_context(context)
         }
-    }
 
-    impl Payload for TonConnectPayload {
-        #[inline]
-        fn hash(&self) -> CryptoHash {
+        pub fn hash(&self) -> CryptoHash {
             self.try_hash().unwrap_or_panic_str()
         }
     }
@@ -90,38 +90,23 @@ pub struct SignedTonConnectPayload {
     #[cfg_attr(feature = "serde", serde(flatten))]
     pub payload: TonConnectPayload,
 
-    #[cfg_attr(feature = "serde", serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
+    )]
     pub public_key: <Ed25519 as CurveTypes>::PublicKey,
-    #[cfg_attr(feature = "serde", serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
+    )]
     pub signature: <Ed25519 as CurveTypes>::Signature,
 }
-
-#[cfg(feature = "near-contract")]
-const _: () = {
-    use defuse_crypto::{Curve, CryptoHash, Payload, SignedPayload};
-
-    impl Payload for SignedTonConnectPayload {
-        #[inline]
-        fn hash(&self) -> CryptoHash {
-            self.payload.hash()
-        }
-    }
-
-    impl SignedPayload for SignedTonConnectPayload {
-        type PublicKey = <Ed25519 as CurveTypes>::PublicKey;
-
-        #[inline]
-        fn verify(&self) -> Option<Self::PublicKey> {
-            <Ed25519 as Curve>::verify(&self.signature, &self.hash(), &self.public_key)
-        }
-    }
-};
 
 #[cfg(test)]
 #[allow(clippy::unreadable_literal)]
 mod tests {
     use super::*;
-    use defuse_crypto::SignedPayload;
+    use defuse_crypto::{Curve, Ed25519};
 
     use arbitrary::{Arbitrary, Unstructured};
     use defuse_test_utils::random::random_bytes;
@@ -211,6 +196,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "near-contract")]
     fn verify(signed: &SignedTonConnectPayload, random_bytes: &[u8]) {
         verify_ok(signed, true);
 
@@ -242,6 +228,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "near-contract")]
     #[rstest]
     fn arbitrary(random_bytes: Vec<u8>) {
         verify_ok(
@@ -250,12 +237,18 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "near-contract")]
     fn verify_ok(signed: &SignedTonConnectPayload, ok: bool) {
         let serialized = serde_json::to_string_pretty(signed).unwrap();
         println!("{}", &serialized);
         let deserialized: SignedTonConnectPayload = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(&deserialized, signed);
-        assert_eq!(deserialized.verify(), ok.then_some(deserialized.public_key));
+        let result = Ed25519::verify(
+            &deserialized.signature,
+            &deserialized.payload.hash(),
+            &deserialized.public_key,
+        );
+        assert_eq!(result, ok.then_some(deserialized.public_key));
     }
 }
