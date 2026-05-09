@@ -115,7 +115,6 @@ const _: () = {
         r#gen::SchemaGenerator,
         schema::{InstanceType, Metadata, Schema, SchemaObject},
     };
-    use serde_json;
 
     impl JsonSchema for Signature {
         fn schema_name() -> String {
