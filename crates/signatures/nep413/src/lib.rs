@@ -1,7 +1,7 @@
 use core::fmt::Display;
 
 use defuse_crypto::{CurveTypes, Ed25519};
-use defuse_nep461::{OffchainMessage, SignedMessageNep};
+use defuse_nep461::SignedMessageNep;
 use impl_tools::autoimpl;
 
 /// See [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)
@@ -73,9 +73,10 @@ impl Nep413Payload {
         self
     }
 
-    #[cfg(feature = "borsh")]
+    #[cfg(feature = "verify")]
     #[inline]
     pub fn prehash(&self) -> Vec<u8> {
+        use defuse_nep461::OffchainMessage;
         borsh::to_vec(&(Self::OFFCHAIN_PREFIX_TAG, self)).expect("infallible")
     }
 }

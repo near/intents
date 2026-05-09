@@ -20,7 +20,7 @@ outlayer = ["dep:defuse-outlayer-app", "dep:defuse-serde-utils"]
 [dependencies]
 defuse-core = { workspace = true, features = ["near-api-types"] }
 defuse-nep245.workspace = true
-defuse-nep413 = { workspace = true, features = ["near-api"] }
+defuse-nep413 = { workspace = true, features = ["near-api", "serde"] }
 rstest.workspace = true
 tokio.workspace = true
 
