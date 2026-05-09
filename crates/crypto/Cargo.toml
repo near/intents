@@ -36,10 +36,9 @@ p256 = ["dep:generic-array", "dep:p256"]
 borsh = ["dep:borsh"]
 serde = ["dep:serde", "dep:serde_with"]
 abi = [
-  "borsh/unstable__schema",
+  "borsh?/unstable__schema",
   "dep:schemars",
   "dep:serde_json",
-  "serde",
   "serde_with/schemars_0_8",
 ]
 near-contract = ["dep:near-sdk"]

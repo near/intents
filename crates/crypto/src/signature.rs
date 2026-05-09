@@ -141,8 +141,7 @@ const _: () = {
                             #[cfg(feature = "p256")]
                             Self::example_p256(),
                         ]
-                        .map(serde_json::to_value)
-                        .map(Result::unwrap)
+                        .map(|s: Self| serde_json::Value::String(s.to_string()))
                         .into(),
                         ..Default::default()
                     }
