@@ -108,3 +108,28 @@ impl FromStr for Ed25519Signature {
         Ed25519::parse_base58(s).map(Self)
     }
 }
+
+#[cfg(feature = "abi")]
+const _: () = {
+    use schemars::{JsonSchema, r#gen::SchemaGenerator, schema::Schema};
+
+    impl JsonSchema for Ed25519PublicKey {
+        fn schema_name() -> String {
+            "Ed25519PublicKey".to_owned()
+        }
+
+        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+            String::json_schema(_gen)
+        }
+    }
+
+    impl JsonSchema for Ed25519Signature {
+        fn schema_name() -> String {
+            "Ed25519Signature".to_owned()
+        }
+
+        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+            String::json_schema(_gen)
+        }
+    }
+};

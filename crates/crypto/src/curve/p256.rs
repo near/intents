@@ -160,6 +160,41 @@ impl FromStr for P256Signature {
     }
 }
 
+#[cfg(feature = "abi")]
+const _: () = {
+    use schemars::{JsonSchema, r#gen::SchemaGenerator, schema::Schema};
+
+    impl JsonSchema for P256CompressedPublicKey {
+        fn schema_name() -> String {
+            "P256CompressedPublicKey".to_owned()
+        }
+
+        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+            String::json_schema(_gen)
+        }
+    }
+
+    impl JsonSchema for P256UncompressedPublicKey {
+        fn schema_name() -> String {
+            "P256UncompressedPublicKey".to_owned()
+        }
+
+        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+            String::json_schema(_gen)
+        }
+    }
+
+    impl JsonSchema for P256Signature {
+        fn schema_name() -> String {
+            "P256Signature".to_owned()
+        }
+
+        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+            String::json_schema(_gen)
+        }
+    }
+};
+
 /// Converts from untagged uncompressed form (i.e. concatenated `x || y`
 /// coordinates with no leading SEC1 tag byte) into compressed form
 /// (i.e. `x` coordinate with leading SEC1 tag byte)

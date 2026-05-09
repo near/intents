@@ -114,3 +114,28 @@ impl FromStr for Secp256k1Signature {
         Secp256k1::parse_base58(s).map(Self)
     }
 }
+
+#[cfg(feature = "abi")]
+const _: () = {
+    use schemars::{JsonSchema, r#gen::SchemaGenerator, schema::Schema};
+
+    impl JsonSchema for Secp256k1PublicKey {
+        fn schema_name() -> String {
+            "Secp256k1PublicKey".to_owned()
+        }
+
+        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+            String::json_schema(_gen)
+        }
+    }
+
+    impl JsonSchema for Secp256k1Signature {
+        fn schema_name() -> String {
+            "Secp256k1Signature".to_owned()
+        }
+
+        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+            String::json_schema(_gen)
+        }
+    }
+};
