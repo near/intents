@@ -10,8 +10,9 @@ use defuse_randomness::{RngExt, make_true_rng};
 use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
     core::{
-        Deadline, Nonce, PublicKey,
+        Deadline, Nonce,
         intents::{DefuseIntents, Intent, account::AddPublicKey},
+        public_key::PublicKey,
         token_id::{TokenId, nep141::Nep141TokenId},
     },
     nep245::Token,

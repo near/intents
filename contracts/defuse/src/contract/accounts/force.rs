@@ -86,7 +86,7 @@ impl ForceAccountManager for Contract {
 #[cfg(feature = "far")]
 const _: () = {
     use crate::far::ForcePublicKeyManager;
-    use defuse_core::PublicKey;
+    use defuse_core::public_key::PublicKey;
     use std::collections::{HashMap, HashSet};
 
     #[near]

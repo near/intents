@@ -1,4 +1,3 @@
-use crate::PublicKey;
 use crate::{
     DefuseError, Nonce, NoncePrefix, Result, Salt,
     amounts::Amounts,
@@ -10,6 +9,7 @@ use crate::{
             FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
         },
     },
+    public_key::PublicKey,
     token_id::TokenId,
 };
 use defuse_map_utils::cleanup::DefaultMap;

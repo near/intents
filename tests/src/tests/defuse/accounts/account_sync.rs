@@ -6,10 +6,10 @@ use std::{
 use defuse::{
     contract::Role,
     core::{
-        PublicKey,
         accounts::{AccountEvent, PublicKeyEvent},
         events::DefuseEvent,
         intents::MaybeIntentEvent,
+        public_key::PublicKey,
     },
 };
 use defuse_randomness::{Rng, RngExt};

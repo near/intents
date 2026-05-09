@@ -1,6 +1,6 @@
 use crate::{
-    PublicKey,
     engine::deltas::InvariantViolated,
+    public_key::PublicKey,
     token_id::{TokenId, TokenIdError, nep171::Nep171TokenId},
     tokens::MAX_TOKEN_ID_LEN,
 };

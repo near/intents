@@ -3,7 +3,7 @@ use defuse_crypto::{
     compress_public_key,
 };
 
-use crate::PublicKey;
+use crate::public_key::PublicKey;
 use defuse_webauthn::{Algorithm, Ed25519, P256, PayloadSignature, UserVerification};
 use near_sdk::{CryptoHash, env, near, serde::de::DeserializeOwned, serde_json};
 

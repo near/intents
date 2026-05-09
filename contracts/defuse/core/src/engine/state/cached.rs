@@ -1,5 +1,5 @@
 use crate::{
-    DefuseError, Nonce, NoncePrefix, Nonces, PublicKey, Result, Salt,
+    DefuseError, Nonce, NoncePrefix, Nonces, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -8,6 +8,7 @@ use crate::{
             FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
         },
     },
+    public_key::PublicKey,
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
 };
 use defuse_bitmap::{U248, U256};

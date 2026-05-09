@@ -1,10 +1,10 @@
 use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
     core::{
-        PublicKey,
         amounts::Amounts,
         fees::Pips,
         intents::tokens::Transfer,
+        public_key::PublicKey,
         token_id::{TokenId, nep141::Nep141TokenId},
     },
     nep245::Token,

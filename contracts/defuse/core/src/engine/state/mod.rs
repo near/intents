@@ -2,7 +2,7 @@ pub mod cached;
 pub mod deltas;
 
 use crate::{
-    Nonce, NoncePrefix, PublicKey, Result, Salt,
+    Nonce, NoncePrefix, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -11,6 +11,7 @@ use crate::{
             FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
         },
     },
+    public_key::PublicKey,
     token_id::{TokenId, nep141::Nep141TokenId},
 };
 use cached::CachedState;

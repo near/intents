@@ -10,8 +10,7 @@ pub mod payload;
 pub mod public_key;
 pub mod tokens;
 
-//TODO: fix
-pub use self::{error::*, nonce::*, public_key::PublicKey};
+pub use self::{error::*, nonce::*};
 
 pub use defuse_crypto as crypto;
 pub use defuse_deadline::*;

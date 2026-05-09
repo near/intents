@@ -3,11 +3,12 @@ use std::borrow::Cow;
 use near_sdk::{AccountIdRef, CryptoHash, near};
 
 use crate::{
-    PublicKey, Result,
+    Result,
     accounts::{AccountEvent, PublicKeyEvent},
     engine::{Engine, Inspector, State},
     events::DefuseEvent,
     intents::MaybeIntentEvent,
+    public_key::PublicKey,
 };
 
 use super::ExecutableIntent;

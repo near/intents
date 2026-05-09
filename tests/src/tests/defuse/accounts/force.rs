@@ -9,8 +9,9 @@ use defuse_sandbox::assert_eq_event_logs;
 use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
     core::{
-        DefuseError, PublicKey,
+        DefuseError,
         intents::Intent,
+        public_key::PublicKey,
         token_id::{TokenId, nep141::Nep141TokenId},
     },
 };

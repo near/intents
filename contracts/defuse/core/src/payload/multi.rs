@@ -1,6 +1,6 @@
 use defuse_crypto::{Payload, SignedPayload};
 
-use crate::PublicKey;
+use crate::public_key::PublicKey;
 use defuse_erc191::SignedErc191Payload;
 use defuse_nep413::SignedNep413Payload;
 use defuse_sep53::SignedSep53Payload;

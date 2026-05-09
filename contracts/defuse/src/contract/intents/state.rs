@@ -1,5 +1,5 @@
 use defuse_core::{
-    DefuseError, Nonce, NoncePrefix, PublicKey, Result, Salt,
+    DefuseError, Nonce, NoncePrefix, Result, Salt,
     amounts::Amounts,
     engine::{State, StateView},
     fees::Pips,
@@ -9,6 +9,7 @@ use defuse_core::{
             FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
         },
     },
+    public_key::PublicKey,
     token_id::{TokenId, nep141::Nep141TokenId},
 };
 use defuse_near_utils::Lock;
