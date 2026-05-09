@@ -1,16 +1,8 @@
 use core::fmt::Display;
 
-#[cfg(feature = "serde")]
-use defuse_crypto::serde::AsCurve;
-#[cfg(feature = "near-contract")]
-use defuse_crypto::{CryptoHash, Curve, Payload, SignedPayload};
 use defuse_crypto::{CurveTypes, Ed25519};
 use defuse_nep461::{OffchainMessage, SignedMessageNep};
-#[cfg(feature = "serde")]
-use defuse_serde_utils::base64::Base64;
 use impl_tools::autoimpl;
-#[cfg(feature = "near-contract")]
-use near_sdk::env;
 
 /// See [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)
 #[cfg_attr(
@@ -30,7 +22,7 @@ use near_sdk::env;
 pub struct Nep413Payload {
     pub message: String,
 
-    #[cfg_attr(feature = "serde", serde_as(as = "Base64"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "defuse_serde_utils::base64::Base64"))]
     pub nonce: [u8; 32],
 
     pub recipient: String,
@@ -89,10 +81,10 @@ impl Nep413Payload {
 }
 
 #[cfg(feature = "near-contract")]
-impl Payload for Nep413Payload {
+impl defuse_crypto::Payload for Nep413Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
-        env::sha256_array(self.prehash())
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        near_sdk::env::sha256_array(self.prehash())
     }
 }
 
@@ -108,27 +100,31 @@ impl Payload for Nep413Payload {
 pub struct SignedNep413Payload {
     pub payload: Nep413Payload,
 
-    #[cfg_attr(feature = "serde", serde_as(as = "AsCurve<Ed25519>"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>"))]
     pub public_key: <Ed25519 as CurveTypes>::PublicKey,
-    #[cfg_attr(feature = "serde", serde_as(as = "AsCurve<Ed25519>"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>"))]
     pub signature: <Ed25519 as CurveTypes>::Signature,
 }
 
 #[cfg(feature = "near-contract")]
-impl Payload for SignedNep413Payload {
+impl defuse_crypto::Payload for SignedNep413Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
-        self.payload.hash()
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        defuse_crypto::Payload::hash(&self.payload)
     }
 }
 
 #[cfg(feature = "near-contract")]
-impl SignedPayload for SignedNep413Payload {
+impl defuse_crypto::SignedPayload for SignedNep413Payload {
     type PublicKey = <Ed25519 as CurveTypes>::PublicKey;
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        Ed25519::verify(&self.signature, &self.hash(), &self.public_key)
+        <Ed25519 as defuse_crypto::Curve>::verify(
+            &self.signature,
+            &defuse_crypto::Payload::hash(self),
+            &self.public_key,
+        )
     }
 }
 

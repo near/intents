@@ -8,8 +8,6 @@ mod p256;
 #[cfg(feature = "p256")]
 pub use self::p256::*;
 
-#[cfg(feature = "serde")]
-use defuse_serde_utils::base64::{Base64, Unpadded, UrlSafe};
 
 #[cfg_attr(
     feature = "serde",
@@ -25,7 +23,7 @@ pub struct PayloadSignature<A: Algorithm + ?Sized> {
         all(feature = "serde", feature = "abi", not(target_arch = "wasm32")),
         schemars(with = "String")
     )]
-    #[cfg_attr(feature = "serde", serde_as(as = "Base64<UrlSafe, Unpadded>"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "defuse_serde_utils::base64::Base64<defuse_serde_utils::base64::UrlSafe, defuse_serde_utils::base64::Unpadded>"))]
     pub authenticator_data: Vec<u8>,
     /// Serialized [clientDataJSON](https://w3c.github.io/webauthn/#dom-authenticatorresponse-clientdatajson)
     pub client_data_json: String,
@@ -152,7 +150,7 @@ pub struct CollectedClientData {
     #[cfg_attr(feature = "serde", serde(rename = "type"))]
     pub typ: ClientDataType,
 
-    #[cfg_attr(feature = "serde", serde_as(as = "Base64<UrlSafe, Unpadded>"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "defuse_serde_utils::base64::Base64<defuse_serde_utils::base64::UrlSafe, defuse_serde_utils::base64::Unpadded>"))]
     pub challenge: Vec<u8>,
 
     pub origin: String,

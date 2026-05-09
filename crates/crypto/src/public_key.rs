@@ -3,8 +3,6 @@ use core::{
     str::FromStr,
 };
 
-#[cfg(feature = "near-contract")]
-use near_account_id::AccountId;
 
 use crate::parse::checked_base58_decode_array;
 use crate::{CurveType, ParseCurveError};
@@ -60,7 +58,7 @@ impl PublicKey {
 
     #[cfg(feature = "near-contract")]
     #[inline]
-    pub fn to_implicit_account_id(&self) -> AccountId {
+    pub fn to_implicit_account_id(&self) -> near_account_id::AccountId {
         match self {
             #[cfg(feature = "ed25519")]
             Self::Ed25519(pk) => {

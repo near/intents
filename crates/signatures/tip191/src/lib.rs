@@ -1,11 +1,5 @@
-#[cfg(feature = "serde")]
-use defuse_crypto::serde::AsCurve;
-#[cfg(feature = "near-contract")]
-use defuse_crypto::{CryptoHash, Curve, Payload, SignedPayload};
 use defuse_crypto::{CurveTypes, Secp256k1};
 use impl_tools::autoimpl;
-#[cfg(feature = "near-contract")]
-use near_sdk::env;
 
 /// See [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
 #[cfg_attr(
@@ -37,10 +31,10 @@ impl Tip191Payload {
 }
 
 #[cfg(feature = "near-contract")]
-impl Payload for Tip191Payload {
+impl defuse_crypto::Payload for Tip191Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
-        env::keccak256_array(self.prehash())
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        near_sdk::env::keccak256_array(self.prehash())
     }
 }
 
@@ -63,31 +57,36 @@ pub struct SignedTip191Payload {
 
     /// There is no public key member because the public key can be recovered
     /// via `ecrecover()` knowing the data and the signature
-    #[cfg_attr(feature = "serde", serde_as(as = "AsCurve<Secp256k1>"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "defuse_crypto::serde::AsCurve<Secp256k1>"))]
     pub signature: <Secp256k1 as CurveTypes>::Signature,
 }
 
 #[cfg(feature = "near-contract")]
-impl Payload for SignedTip191Payload {
+impl defuse_crypto::Payload for SignedTip191Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
-        self.payload.hash()
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        defuse_crypto::Payload::hash(&self.payload)
     }
 }
 
 #[cfg(feature = "near-contract")]
-impl SignedPayload for SignedTip191Payload {
+impl defuse_crypto::SignedPayload for SignedTip191Payload {
     type PublicKey = <Secp256k1 as CurveTypes>::PublicKey;
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        Secp256k1::verify(&self.signature, &self.payload.hash(), &())
+        <Secp256k1 as defuse_crypto::Curve>::verify(
+            &self.signature,
+            &defuse_crypto::Payload::hash(&self.payload),
+            &(),
+        )
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use defuse_crypto::SignedPayload;
     use hex_literal::hex;
 
     const fn fix_v_in_signature(mut sig: [u8; 65]) -> [u8; 65] {

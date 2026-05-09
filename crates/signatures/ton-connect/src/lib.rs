@@ -1,29 +1,13 @@
 //! TON Connect [signData](https://github.com/ton-blockchain/ton-connect/blob/main/requests-responses.md#sign-data)
 mod schema;
 
-#[cfg(feature = "near-contract")]
-use std::borrow::Cow;
-
 use chrono::{DateTime, Utc};
-#[cfg(feature = "serde")]
-use defuse_crypto::serde::AsCurve;
-#[cfg(feature = "near-contract")]
-use defuse_crypto::{CryptoHash, Curve, Payload, SignedPayload};
 use defuse_crypto::{CurveTypes, Ed25519};
-#[cfg(feature = "near-contract")]
-use defuse_near_utils::UnwrapOrPanicError;
 use impl_tools::autoimpl;
-#[cfg(feature = "serde")]
-use serde_with::{PickFirst, TimestampSeconds};
 use tlb_ton::MsgAddress;
-#[cfg(feature = "near-contract")]
-use tlb_ton::{Error, StringError};
 
 pub use schema::TonConnectPayloadSchema;
 pub use tlb_ton;
-
-#[cfg(feature = "near-contract")]
-use crate::schema::{PayloadSchema, TonConnectPayloadContext};
 
 #[cfg_attr(
     feature = "serde",
@@ -41,7 +25,7 @@ pub struct TonConnectPayload {
     /// dApp domain
     pub domain: String,
     /// UNIX timestamp (in seconds or RFC3339) at the time of singing
-    #[cfg_attr(feature = "serde", serde_as(as = "PickFirst<(_, TimestampSeconds)>"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::PickFirst<(_, ::serde_with::TimestampSeconds)>"))]
     pub timestamp: DateTime<Utc>,
     pub payload: TonConnectPayloadSchema,
 }
@@ -59,31 +43,38 @@ impl<'a> arbitrary::Arbitrary<'a> for TonConnectPayload {
 }
 
 #[cfg(feature = "near-contract")]
-impl TonConnectPayload {
-    fn try_hash(&self) -> Result<CryptoHash, StringError> {
-        let timestamp: u64 = self
-            .timestamp
-            .timestamp()
-            .try_into()
-            .map_err(|_| Error::custom("negative timestamp"))?;
+const _: () = {
+    use std::borrow::Cow;
+    use defuse_crypto::{CryptoHash, Payload};
+    use defuse_near_utils::UnwrapOrPanicError;
+    use tlb_ton::{Error, StringError};
+    use crate::schema::{PayloadSchema, TonConnectPayloadContext};
 
-        let context = TonConnectPayloadContext {
-            address: self.address,
-            domain: Cow::Borrowed(self.domain.as_str()),
-            timestamp,
-        };
+    impl TonConnectPayload {
+        fn try_hash(&self) -> Result<CryptoHash, StringError> {
+            let timestamp: u64 = self
+                .timestamp
+                .timestamp()
+                .try_into()
+                .map_err(|_| Error::custom("negative timestamp"))?;
 
-        self.payload.hash_with_context(context)
+            let context = TonConnectPayloadContext {
+                address: self.address,
+                domain: Cow::Borrowed(self.domain.as_str()),
+                timestamp,
+            };
+
+            self.payload.hash_with_context(context)
+        }
     }
-}
 
-#[cfg(feature = "near-contract")]
-impl Payload for TonConnectPayload {
-    #[inline]
-    fn hash(&self) -> CryptoHash {
-        self.try_hash().unwrap_or_panic_str()
+    impl Payload for TonConnectPayload {
+        #[inline]
+        fn hash(&self) -> CryptoHash {
+            self.try_hash().unwrap_or_panic_str()
+        }
     }
-}
+};
 
 #[cfg_attr(test, derive(arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -99,34 +90,38 @@ pub struct SignedTonConnectPayload {
     #[cfg_attr(feature = "serde", serde(flatten))]
     pub payload: TonConnectPayload,
 
-    #[cfg_attr(feature = "serde", serde_as(as = "AsCurve<Ed25519>"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>"))]
     pub public_key: <Ed25519 as CurveTypes>::PublicKey,
-    #[cfg_attr(feature = "serde", serde_as(as = "AsCurve<Ed25519>"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>"))]
     pub signature: <Ed25519 as CurveTypes>::Signature,
 }
 
 #[cfg(feature = "near-contract")]
-impl Payload for SignedTonConnectPayload {
-    #[inline]
-    fn hash(&self) -> CryptoHash {
-        self.payload.hash()
-    }
-}
+const _: () = {
+    use defuse_crypto::{Curve, CryptoHash, Payload, SignedPayload};
 
-#[cfg(feature = "near-contract")]
-impl SignedPayload for SignedTonConnectPayload {
-    type PublicKey = <Ed25519 as CurveTypes>::PublicKey;
-
-    #[inline]
-    fn verify(&self) -> Option<Self::PublicKey> {
-        Ed25519::verify(&self.signature, &self.hash(), &self.public_key)
+    impl Payload for SignedTonConnectPayload {
+        #[inline]
+        fn hash(&self) -> CryptoHash {
+            self.payload.hash()
+        }
     }
-}
+
+    impl SignedPayload for SignedTonConnectPayload {
+        type PublicKey = <Ed25519 as CurveTypes>::PublicKey;
+
+        #[inline]
+        fn verify(&self) -> Option<Self::PublicKey> {
+            <Ed25519 as Curve>::verify(&self.signature, &self.hash(), &self.public_key)
+        }
+    }
+};
 
 #[cfg(test)]
 #[allow(clippy::unreadable_literal)]
 mod tests {
     use super::*;
+    use defuse_crypto::SignedPayload;
 
     use arbitrary::{Arbitrary, Unstructured};
     use defuse_test_utils::random::random_bytes;
