@@ -29,7 +29,6 @@ abi = [
   "defuse-crypto/abi",
   "defuse-serde-utils/abi",
   "dep:schemars",
-  "near-sdk?/abi",
   "tlb-ton/schemars_0_8",
 ]
 arbitrary = ["tlb-ton/arbitrary"]
