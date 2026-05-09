@@ -14,7 +14,8 @@ pub use tlb_ton;
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
+    cfg_attr(test, derive(::arbitrary::Arbitrary))
 )]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,24 +26,13 @@ pub struct TonConnectPayload {
     /// dApp domain
     pub domain: String,
     /// UNIX timestamp (in seconds or RFC3339) at the time of singing
+    #[cfg_attr(test, arbitrary(with = ::tlb_ton::UnixTimestamp::arbitrary))]
     #[cfg_attr(
         feature = "serde",
         serde_as(as = "::serde_with::PickFirst<(_, ::serde_with::TimestampSeconds)>")
     )]
     pub timestamp: DateTime<Utc>,
     pub payload: TonConnectPayloadSchema,
-}
-
-#[cfg(test)]
-impl<'a> arbitrary::Arbitrary<'a> for TonConnectPayload {
-    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-        Ok(Self {
-            address: u.arbitrary()?,
-            domain: u.arbitrary()?,
-            timestamp: ::tlb_ton::UnixTimestamp::arbitrary(u)?,
-            payload: u.arbitrary()?,
-        })
-    }
 }
 
 #[cfg(feature = "near-contract")]
