@@ -10,10 +10,6 @@ use crate::P256;
 #[cfg(feature = "secp256k1")]
 use crate::Secp256k1;
 
-#[cfg(not(feature = "near-contract"))]
-use bs58::encode as bs58_encode;
-#[cfg(feature = "near-contract")]
-use near_sdk::bs58::encode as bs58_encode;
 
 use crate::parse::checked_base58_decode_array;
 use crate::{CurveType, CurveTypes, ParseCurveError};
@@ -73,7 +69,7 @@ impl Debug for Signature {
             f,
             "{}:{}",
             self.curve_type(),
-            bs58_encode(self.data()).into_string()
+            bs58::encode(self.data()).into_string()
         )
     }
 }

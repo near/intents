@@ -51,15 +51,10 @@ pub trait TypedCurve: CurveTypes {
 
     #[inline]
     fn to_base58(bytes: impl AsRef<[u8]>) -> String {
-        #[cfg(not(feature = "near-contract"))]
-        use bs58::encode as bs58_encode;
-        #[cfg(feature = "near-contract")]
-        use near_sdk::bs58::encode as bs58_encode;
-
         format!(
             "{}:{}",
             Self::CURVE_TYPE,
-            bs58_encode(bytes.as_ref()).into_string()
+            bs58::encode(bytes.as_ref()).into_string()
         )
     }
 
