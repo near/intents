@@ -2,7 +2,7 @@ pub mod cached;
 pub mod deltas;
 
 use crate::{
-    Nonce, NoncePrefix, Result, Salt,
+    Nonce, NoncePrefix, PublicKey, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -14,7 +14,6 @@ use crate::{
     token_id::{TokenId, nep141::Nep141TokenId},
 };
 use cached::CachedState;
-use defuse_crypto::PublicKey;
 use impl_tools::autoimpl;
 use near_sdk::{AccountId, AccountIdRef};
 use std::borrow::Cow;

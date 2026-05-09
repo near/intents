@@ -18,7 +18,8 @@ wallet = ["dep:defuse-wallet"]
 outlayer = ["dep:defuse-outlayer-app", "dep:defuse-serde-utils"]
 
 [dependencies]
-defuse-crypto = { workspace = true, features = ["near-api-types"] }
+defuse-core = { workspace = true, features = ["near-api-types"] }
+defuse-crypto = { workspace = true }
 defuse-nep245.workspace = true
 defuse-nep413 = { workspace = true, features = ["near-api"] }
 rstest.workspace = true

@@ -1,5 +1,5 @@
 use crate::{
-    DefuseError, Nonce, NoncePrefix, Nonces, Result, Salt,
+    DefuseError, Nonce, NoncePrefix, Nonces, PublicKey, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -11,7 +11,6 @@ use crate::{
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
 };
 use defuse_bitmap::{U248, U256};
-use defuse_crypto::PublicKey;
 use defuse_near_utils::Lock;
 use near_sdk::{AccountId, AccountIdRef};
 use std::{

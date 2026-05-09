@@ -2,8 +2,8 @@ use std::borrow::Cow;
 
 use defuse::core::intents::MaybeIntentEvent;
 use defuse_sandbox::extensions::defuse::contract::core::{
+    PublicKey,
     accounts::{AccountEvent, PublicKeyEvent},
-    crypto::PublicKey,
     events::DefuseEvent,
 };
 use near_sdk::{AsNep297Event, NearToken, serde_json::json};

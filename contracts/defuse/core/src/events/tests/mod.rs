@@ -2,7 +2,7 @@ mod v0_4_1;
 
 use std::{borrow::Cow, collections::BTreeMap};
 
-use defuse_crypto::PublicKey;
+use crate::PublicKey;
 use defuse_fees::Pips;
 use defuse_token_id::TokenId;
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, json_types::U128, serde_json};

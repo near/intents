@@ -10,8 +10,6 @@ mod curve;
 mod parse;
 mod payload;
 #[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
-mod public_key;
-#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 mod signature;
 
 pub use near_account_id::{AccountId, AccountIdRef};
@@ -19,7 +17,7 @@ pub use near_account_id::{AccountId, AccountIdRef};
 pub use self::{curve::*, parse::ParseCurveError, payload::*};
 
 #[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
-pub use self::{public_key::*, signature::*};
+pub use self::signature::*;
 
 #[cfg(all(
     any(feature = "ed25519", feature = "secp256k1", feature = "p256"),

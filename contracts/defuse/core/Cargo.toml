@@ -23,6 +23,8 @@ defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245"] 
 defuse-ton-connect = { workspace = true, features = ["near-contract", "serde"] }
 defuse-webauthn = { workspace = true, features = ["ed25519", "p256"] }
 
+borsh.workspace = true
+bs58.workspace = true
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
 derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
@@ -34,6 +36,8 @@ serde_with.workspace = true
 thiserror.workspace = true
 
 arbitrary = { workspace = true, optional = true }
+near-api-types = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true }
 
 [features]
 abi = [
@@ -47,6 +51,7 @@ abi = [
   "defuse-token-id/abi",
   "defuse-ton-connect/abi",
   "defuse-webauthn/abi",
+  "dep:schemars",
   "near-sdk/abi",
 ]
 arbitrary = [
@@ -57,6 +62,7 @@ arbitrary = [
   "dep:arbitrary",
 ]
 imt = ["defuse-token-id/imt"]
+near-api-types = ["dep:near-api-types"]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 chrono = { workspace = true, features = ["now"] }

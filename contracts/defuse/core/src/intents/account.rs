@@ -1,10 +1,9 @@
 use std::borrow::Cow;
 
-use defuse_crypto::PublicKey;
 use near_sdk::{AccountIdRef, CryptoHash, near};
 
 use crate::{
-    Result,
+    PublicKey, Result,
     accounts::{AccountEvent, PublicKeyEvent},
     engine::{Engine, Inspector, State},
     events::DefuseEvent,

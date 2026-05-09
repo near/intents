@@ -1,3 +1,4 @@
+use crate::PublicKey;
 use crate::{
     DefuseError, Nonce, NoncePrefix, Result, Salt,
     amounts::Amounts,
@@ -11,7 +12,6 @@ use crate::{
     },
     token_id::TokenId,
 };
-use defuse_crypto::PublicKey;
 use defuse_map_utils::cleanup::DefaultMap;
 use defuse_nep245::{MtEvent, MtTransferEvent};
 use near_sdk::{AccountId, AccountIdRef, json_types::U128, near};

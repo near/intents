@@ -1451,6 +1451,8 @@ name = "defuse-core"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "borsh",
+ "bs58 0.5.1",
  "chrono",
  "defuse-bitmap",
  "defuse-borsh-utils",
@@ -1475,9 +1477,11 @@ dependencies = [
  "hex-literal",
  "impl-tools",
  "itertools",
+ "near-api-types",
  "near-contract-standards",
  "near-sdk",
  "rstest",
+ "schemars 0.8.22",
  "serde_with",
  "thiserror 2.0.18",
 ]
@@ -1845,6 +1849,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "defuse",
+ "defuse-core",
  "defuse-crypto",
  "defuse-escrow-swap",
  "defuse-global-deployer",
@@ -1905,6 +1910,7 @@ name = "defuse-test-utils"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "defuse-core",
  "defuse-crypto",
  "defuse-randomness",
  "rstest",

@@ -1,4 +1,4 @@
-use defuse_crypto::PublicKey;
+use crate::PublicKey;
 use defuse_serde_utils::base64::Base64;
 use near_sdk::{AccountIdRef, near};
 use serde_with::serde_as;
