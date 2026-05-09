@@ -6,7 +6,6 @@ use core::{
 #[cfg(feature = "near-contract")]
 use near_account_id::AccountId;
 
-
 use crate::parse::checked_base58_decode_array;
 use crate::{CurveType, ParseCurveError};
 

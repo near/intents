@@ -1,6 +1,6 @@
 mod borsh;
 mod domain;
-#[cfg(all(feature = "ed25519", feature = "contract"))]
+#[cfg(feature = "ed25519")]
 pub mod ed25519;
 mod hash;
 pub mod no_sign;

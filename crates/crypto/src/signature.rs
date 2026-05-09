@@ -10,7 +10,6 @@ use crate::P256;
 #[cfg(feature = "secp256k1")]
 use crate::Secp256k1;
 
-
 use crate::parse::checked_base58_decode_array;
 use crate::{CurveType, CurveTypes, ParseCurveError};
 
