@@ -7,7 +7,6 @@ repository.workspace = true
 
 [dependencies]
 bs58 = { workspace = true }
-hex.workspace = true
 near-account-id.workspace = true
 strum.workspace = true
 thiserror.workspace = true
@@ -17,7 +16,6 @@ generic-array = { workspace = true, features = ["compat-0_14"], optional = true 
 p256 = { workspace = true, optional = true, features = ["ecdsa"] }
 
 arbitrary = { workspace = true, optional = true }
-near-api-types = { workspace = true, optional = true }
 
 borsh = { workspace = true, optional = true, features = ["derive"] }
 near-sdk = { workspace = true, features = ["unstable"], optional = true }
@@ -44,7 +42,6 @@ abi = [
 near-contract = ["dep:near-sdk"]
 
 arbitrary = ["dep:arbitrary"]
-near-api-types = ["dep:near-api-types", "ed25519", "secp256k1"]
 
 
 [lints]
