@@ -5,19 +5,10 @@ use core::{
 
 use defuse_crypto::{
     CurveType, CurveTypes, Ed25519, P256UncompressedPublicKey, ParseCurveError, Secp256k1,
+    checked_base58_decode_array,
 };
 use near_sdk::{AccountId, AccountIdRef, bs58, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
-
-fn checked_base58_decode_array<const N: usize>(
-    input: impl AsRef<[u8]>,
-) -> Result<[u8; N], ParseCurveError> {
-    let mut output = [0u8; N];
-    let n = bs58::decode(input.as_ref()).onto(&mut output)?;
-    (n == N)
-        .then_some(output)
-        .ok_or(ParseCurveError::InvalidLength)
-}
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh(use_discriminant = true)])]
