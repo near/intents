@@ -11,7 +11,7 @@ workspace = true
 [features]
 borsh = ["dep:borsh"]
 serde = ["dep:cfg_eval", "dep:serde_with"]
-abi = ["borsh/unstable__schema", "dep:schemars"]
+abi = ["borsh?/unstable__schema", "dep:schemars"]
 arbitrary = ["dep:arbitrary"]
 
 [dependencies]
@@ -19,7 +19,7 @@ defuse-num-utils.workspace = true
 
 thiserror.workspace = true
 
-borsh = { workspace = true, optional = true }
+borsh = { workspace = true, features = ["derive"], optional = true }
 cfg_eval = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true }

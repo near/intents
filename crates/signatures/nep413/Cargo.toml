@@ -12,7 +12,7 @@ defuse-serde-utils = { workspace = true, features = ["base64"] }
 
 impl-tools.workspace = true
 
-borsh = { workspace = true, optional = true }
+borsh = { workspace = true, features = ["derive"], optional = true }
 cfg_eval = { workspace = true, optional = true }
 near-api = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
