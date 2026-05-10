@@ -6,7 +6,7 @@ version.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-defuse-crypto = { workspace = true, default-features = false, features = ["secp256k1", "borsh", "serde"] }
+defuse-crypto = { workspace = true, default-features = false, features = ["secp256k1"] }
 
 impl-tools.workspace = true
 
@@ -26,7 +26,7 @@ rstest.workspace = true
 default = ["serde"]
 borsh = ["defuse-crypto/borsh", "dep:borsh"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
-abi = ["borsh/unstable__schema", "defuse-crypto/abi", "dep:schemars"]
+abi = ["borsh?/unstable__schema", "defuse-crypto/abi", "dep:schemars"]
 
 [lints]
 workspace = true

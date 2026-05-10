@@ -6,7 +6,7 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-crypto = { workspace = true, default-features = false, features = ["ed25519", "borsh", "serde"] }
+defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
 defuse-nep461.workspace = true
 defuse-serde-utils = { workspace = true, features = ["base64"] }
 
@@ -24,7 +24,7 @@ borsh = ["defuse-crypto/borsh", "dep:borsh"]
 verify = ["borsh"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 abi = [
-  "borsh/unstable__schema",
+  "borsh?/unstable__schema",
   "defuse-crypto/abi",
   "defuse-serde-utils/abi",
   "dep:schemars",
