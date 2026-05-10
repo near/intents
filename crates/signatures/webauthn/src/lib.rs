@@ -33,7 +33,7 @@ pub struct PayloadSignature<A: Algorithm + ?Sized> {
     pub signature: A::Signature,
 }
 
-#[cfg(feature = "near-contract")]
+#[cfg(feature = "verify")]
 impl<A: Algorithm + ?Sized> PayloadSignature<A> {
     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
     ///
@@ -69,7 +69,11 @@ impl<A: Algorithm + ?Sized> PayloadSignature<A> {
 
         // 20. Let hash be the result of computing a hash over the cData using
         // SHA-256
-        let hash = near_sdk::env::sha256_array(self.client_data_json.as_bytes());
+        use sha2::Digest as _;
+        #[cfg(feature = "near-contract")]
+        let hash: [u8; 32] = defuse_near_utils::digest::Sha256::digest(self.client_data_json.as_bytes()).into();
+        #[cfg(not(feature = "near-contract"))]
+        let hash: [u8; 32] = sha2::Sha256::digest(self.client_data_json.as_bytes()).into();
 
         // 21. Using credentialRecord.publicKey, verify that sig is a valid
         // signature over the binary concatenation of authData and hash.
