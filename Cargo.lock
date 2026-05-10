@@ -1531,12 +1531,18 @@ dependencies = [
 name = "defuse-erc191"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "cfg_eval",
  "defuse-crypto",
  "defuse-test-utils",
  "hex-literal",
  "impl-tools",
  "near-sdk",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
+ "sha3 0.11.0",
 ]
 
 [[package]]
@@ -1937,12 +1943,18 @@ dependencies = [
 name = "defuse-tip191"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "cfg_eval",
  "defuse-crypto",
  "defuse-test-utils",
  "hex-literal",
  "impl-tools",
  "near-sdk",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
+ "sha3 0.11.0",
 ]
 
 [[package]]
