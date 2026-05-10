@@ -9,12 +9,17 @@ use defuse_borsh_utils::adapters::{
     BorshDeserializeAs, BorshSerializeAs, TimestampMicroSeconds, TimestampMilliSeconds,
     TimestampNanoSeconds, TimestampSeconds,
 };
-use near_sdk::near;
-
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[near(serializers = [json])]
 #[repr(transparent)]
-pub struct Deadline(#[cfg_attr(feature = "abi", schemars(with = "String"))] DateTime<Utc>);
+pub struct Deadline(
+    #[cfg_attr(all(feature = "serde", feature = "abi"), schemars(with = "String"))] DateTime<Utc>,
+);
 
 impl Deadline {
     pub const UNIX_EPOCH: Self = Self::new(DateTime::UNIX_EPOCH);
@@ -132,12 +137,11 @@ mod tests {
     #[test]
     fn schema_as_usage() {
         use super::*;
+        use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
         use chrono::TimeZone;
         use defuse_borsh_utils::adapters::As;
-        use near_sdk::borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 
         #[derive(BorshSerialize, BorshDeserialize, BorshSchema)]
-        #[borsh(crate = "::near_sdk::borsh")]
         struct S {
             #[borsh(
                 serialize_with = "As::<TimestampNanoSeconds>::serialize",
@@ -153,7 +157,7 @@ mod tests {
         let val = S {
             deadline: Deadline::new(Utc.timestamp_opt(1_600_000_000, 123_456_789).unwrap()),
         };
-        let bytes = near_sdk::borsh::to_vec(&val).unwrap();
+        let bytes = borsh::to_vec(&val).unwrap();
         let decoded = S::try_from_slice(&bytes).unwrap();
         assert_eq!(val.deadline, decoded.deadline);
     }

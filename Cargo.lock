@@ -1512,10 +1512,13 @@ dependencies = [
 name = "defuse-deadline"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "cfg_eval",
  "chrono",
  "defuse-borsh-utils",
  "defuse-near-utils",
- "near-sdk",
+ "schemars 0.8.22",
+ "serde",
 ]
 
 [[package]]
