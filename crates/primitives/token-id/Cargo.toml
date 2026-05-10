@@ -12,10 +12,14 @@ workspace = true
 defuse-nep245.workspace = true
 
 derive_more = { workspace = true, features = ["from"] }
-near-contract-standards.workspace = true
-near-sdk.workspace = true
+near-account-id.workspace = true
 strum.workspace = true
 thiserror.workspace = true
+
+borsh = { workspace = true, features = ["derive"], optional = true }
+cfg_eval = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true }
+serde_with = { workspace = true, optional = true }
 
 arbitrary = { workspace = true, optional = true }
 
@@ -27,12 +31,16 @@ nep171 = []
 nep245 = []
 imt = []
 
-abi = ["near-sdk/abi"]
-arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
+borsh = ["dep:borsh", "near-account-id/borsh"]
+serde = ["dep:cfg_eval", "dep:serde_with"]
+abi = ["borsh?/unstable__schema", "dep:schemars", "near-account-id/abi"]
+arbitrary = ["dep:arbitrary", "near-account-id/arbitrary"]
 
 [dev-dependencies]
 defuse-test-utils.workspace = true
 
 arbitrary.workspace = true
+borsh.workspace = true
 hex.workspace = true
 rstest.workspace = true
+serde_json.workspace = true

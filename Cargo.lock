@@ -1974,13 +1974,17 @@ name = "defuse-token-id"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "borsh",
+ "cfg_eval",
  "defuse-nep245",
  "defuse-test-utils",
  "derive_more",
  "hex",
- "near-contract-standards",
- "near-sdk",
+ "near-account-id",
  "rstest",
+ "schemars 0.8.22",
+ "serde_json",
+ "serde_with",
  "strum 0.27.2",
  "thiserror 2.0.18",
 ]

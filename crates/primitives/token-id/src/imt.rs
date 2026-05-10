@@ -2,18 +2,28 @@ pub use defuse_nep245::TokenId;
 
 use std::{fmt, str::FromStr};
 
-use near_sdk::{
-    AccountId, near,
-    serde_with::{DeserializeFromStr, SerializeDisplay},
-};
+use near_account_id::AccountId;
 
 use crate::{TokenIdType, error::TokenIdError};
 
 // Intent mintable token - can be minted only by intents 'ImtMint'
 #[cfg_attr(any(feature = "arbitrary", test), derive(::arbitrary::Arbitrary))]
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
-#[serde_with(crate = "::near_sdk::serde_with")]
-#[near(serializers = [borsh])]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+)]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    cfg_attr(
+        feature = "abi",
+        derive(::schemars::JsonSchema),
+        schemars(with = "String")
+    )
+)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ImtTokenId {
     pub minter_id: AccountId,
 
