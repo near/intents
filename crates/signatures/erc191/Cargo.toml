@@ -10,7 +10,7 @@ defuse-crypto = { workspace = true, default-features = false, features = ["secp2
 
 impl-tools.workspace = true
 
-borsh = { workspace = true, optional = true }
+borsh = { workspace = true, features = ["derive"], optional = true }
 cfg_eval = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
@@ -22,9 +22,9 @@ rstest.workspace = true
 sha3.workspace = true
 
 [features]
-borsh = ["defuse-crypto/borsh", "dep:borsh"]
+borsh = ["dep:borsh"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
-abi = ["borsh?/unstable__schema", "defuse-crypto/abi", "dep:schemars"]
+abi = ["borsh/unstable__schema", "defuse-crypto/abi", "dep:schemars"]
 
 [lints]
 workspace = true

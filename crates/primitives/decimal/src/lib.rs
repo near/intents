@@ -5,24 +5,28 @@ mod str;
 
 pub use self::str::*;
 
-use near_sdk::{
-    borsh::{BorshDeserialize, BorshSerialize, io},
-    serde_with::{DeserializeFromStr, SerializeDisplay},
-};
+#[cfg(feature = "borsh")]
+use ::borsh::io;
 
 /// Floating point unsigned decimal price, i.e. dst per 1 src
 /// always reduced (i.e. normalized)
 #[cfg_attr(
-    feature = "abi",
-    derive(near_sdk::NearSchema),
-    abi(json, borsh),
-    schemars(with = "String")
+    feature = "borsh",
+    derive(::borsh::BorshSerialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[derive(
-    Clone, Copy, PartialEq, Eq, Hash, BorshSerialize, SerializeDisplay, DeserializeFromStr,
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    cfg_attr(
+        feature = "abi",
+        derive(::schemars::JsonSchema),
+        schemars(with = "String")
+    )
 )]
-#[borsh(crate = "::near_sdk::borsh")]
-#[serde_with(crate = "::near_sdk::serde_with")]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct UD128(u8, u128);
 
 impl UD128 {
@@ -96,9 +100,10 @@ impl From<u128> for UD128 {
     }
 }
 
-impl BorshDeserialize for UD128 {
+#[cfg(feature = "borsh")]
+impl ::borsh::BorshDeserialize for UD128 {
     fn deserialize_reader<R: io::Read>(reader: &mut R) -> io::Result<Self> {
-        let (decimals, digits) = BorshDeserialize::deserialize_reader(reader)?;
+        let (decimals, digits) = ::borsh::BorshDeserialize::deserialize_reader(reader)?;
         Self::new(decimals, digits).ok_or_else(|| io::ErrorKind::InvalidData.into())
     }
 }

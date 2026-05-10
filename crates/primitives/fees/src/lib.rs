@@ -4,19 +4,23 @@ use core::{
 };
 
 use defuse_num_utils::{CheckedAdd, CheckedMulDiv, CheckedSub};
-use near_sdk::{
-    borsh::{BorshDeserialize, BorshSchema, BorshSerialize},
-    near,
-};
 use thiserror::Error as ThisError;
 
 /// 1 pip == 1/100th of bip == 0.0001%
-#[near(serializers = [json])]
-#[serde(try_from = "u32")]
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, BorshSerialize, BorshSchema,
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[borsh(crate = "::near_sdk::borsh")]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
+#[cfg_attr(feature = "serde", serde(try_from = "u32"))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Pips(u32);
 
 impl Pips {
@@ -198,7 +202,8 @@ impl TryFrom<u32> for Pips {
 #[error("out of range: 0..={}", Pips::MAX.as_pips())]
 pub struct PipsOutOfRange;
 
-impl BorshDeserialize for Pips {
+#[cfg(feature = "borsh")]
+impl ::borsh::BorshDeserialize for Pips {
     fn deserialize_reader<R: std::io::Read>(reader: &mut R) -> std::io::Result<Self> {
         let pips = u32::deserialize_reader(reader)?;
         Self::from_pips(pips).ok_or_else(|| {

@@ -1420,11 +1420,15 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "bnum",
+ "borsh",
+ "cfg_eval",
  "defuse-map-utils",
  "hex-literal",
- "near-sdk",
  "num-traits",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
 ]
 
 [[package]]
@@ -1519,9 +1523,12 @@ name = "defuse-decimal"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "borsh",
+ "cfg_eval",
  "defuse-num-utils",
- "near-sdk",
  "rstest",
+ "schemars 0.8.22",
+ "serde_with",
  "thiserror 2.0.18",
 ]
 
@@ -1573,8 +1580,12 @@ dependencies = [
 name = "defuse-fees"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "cfg_eval",
  "defuse-num-utils",
- "near-sdk",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
  "thiserror 2.0.18",
 ]
 
@@ -1951,11 +1962,11 @@ dependencies = [
  "defuse-test-utils",
  "hex-literal",
  "impl-tools",
- "near-sdk",
  "rstest",
  "schemars 0.8.22",
  "serde",
  "serde_with",
+ "sha3 0.11.0",
 ]
 
 [[package]]

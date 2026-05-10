@@ -1,3 +1,5 @@
+#[cfg(feature = "serde")]
+use defuse_crypto::serde::AsCurve;
 use defuse_crypto::{CurveTypes, Secp256k1};
 use impl_tools::autoimpl;
 
@@ -49,10 +51,7 @@ pub struct SignedTip191Payload {
 
     /// There is no public key member because the public key can be recovered
     /// via `ecrecover()` knowing the data and the signature
-    #[cfg_attr(
-        feature = "serde",
-        serde_as(as = "defuse_crypto::serde::AsCurve<Secp256k1>")
-    )]
+    #[cfg_attr(feature = "serde", serde_as(as = "AsCurve<Secp256k1>"))]
     pub signature: <Secp256k1 as CurveTypes>::Signature,
 }
 
@@ -61,6 +60,7 @@ mod tests {
     use super::*;
     use defuse_crypto::{Curve, Secp256k1};
     use hex_literal::hex;
+    use sha3::Digest as _;
 
     const fn fix_v_in_signature(mut sig: [u8; 65]) -> [u8; 65] {
         if *sig.last().unwrap() >= 27 {
@@ -71,12 +71,8 @@ mod tests {
         sig
     }
 
-    fn tip191_verify(signed: &SignedTip191Payload) -> Option<[u8; 64]> {
-        <Secp256k1 as Curve>::verify(
-            &signed.signature,
-            &near_sdk::env::keccak256_array(signed.payload.prehash()),
-            &(),
-        )
+    fn hash(payload: &Tip191Payload) -> [u8; 32] {
+        sha3::Keccak256::digest(payload.prehash()).into()
     }
 
     // NOTE: Public key can be derived using `ethers_signers` crate:
@@ -103,33 +99,39 @@ mod tests {
 
     #[test]
     fn test_reference_signature_verification_works() {
+        let payload = Tip191Payload(REFERENCE_MESSAGE.to_string());
         assert_eq!(
-            tip191_verify(&SignedTip191Payload {
-                payload: Tip191Payload(REFERENCE_MESSAGE.to_string()),
-                signature: fix_v_in_signature(REFERENCE_SIGNATURE),
-            }),
+            Secp256k1::verify(
+                &fix_v_in_signature(REFERENCE_SIGNATURE),
+                &hash(&payload),
+                &()
+            ),
             Some(REFERENCE_PUBKEY)
         );
     }
 
     #[test]
     fn test_invalid_reference_message_verification_fails() {
+        let payload = Tip191Payload(INVALID_REFERENCE_MESSAGE.to_string());
         assert_ne!(
-            tip191_verify(&SignedTip191Payload {
-                payload: Tip191Payload(INVALID_REFERENCE_MESSAGE.to_string()),
-                signature: fix_v_in_signature(REFERENCE_SIGNATURE),
-            }),
+            Secp256k1::verify(
+                &fix_v_in_signature(REFERENCE_SIGNATURE),
+                &hash(&payload),
+                &()
+            ),
             Some(REFERENCE_PUBKEY)
         );
     }
 
     #[test]
     fn test_invalid_reference_signature_verification_fails() {
+        let payload = Tip191Payload(REFERENCE_MESSAGE.to_string());
         assert_ne!(
-            tip191_verify(&SignedTip191Payload {
-                payload: Tip191Payload(REFERENCE_MESSAGE.to_string()),
-                signature: fix_v_in_signature(INVALID_REFERENCE_SIGNATURE),
-            }),
+            Secp256k1::verify(
+                &fix_v_in_signature(INVALID_REFERENCE_SIGNATURE),
+                &hash(&payload),
+                &()
+            ),
             Some(REFERENCE_PUBKEY)
         );
     }

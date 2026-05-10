@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
-defuse-bitmap.workspace = true
+defuse-bitmap = { workspace = true, features = ["borsh", "serde"] }
 defuse-borsh-utils.workspace = true
 defuse-deadline.workspace = true
 defuse-serde-utils = { workspace = true, features = ["base58"] }

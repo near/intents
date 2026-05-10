@@ -6,11 +6,11 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-bitmap.workspace = true
+defuse-bitmap = { workspace = true, features = ["borsh", "serde"] }
 defuse-crypto = { workspace = true, features = ["ed25519", "secp256k1", "p256", "near-contract"] }
 defuse-deadline.workspace = true
 defuse-erc191 = { workspace = true, features = ["borsh", "serde"] }
-defuse-fees.workspace = true
+defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-map-utils.workspace = true
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
@@ -18,7 +18,7 @@ defuse-nep413 = { workspace = true, features = ["verify", "serde"] }
 defuse-num-utils.workspace = true
 defuse-sep53 = { workspace = true }
 defuse-serde-utils = { workspace = true, features = ["base58", "base64"] }
-defuse-tip191 = { workspace = true }
+defuse-tip191 = { workspace = true, features = ["borsh", "serde"] }
 defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245"] }
 defuse-ton-connect = { workspace = true, features = ["near-contract", "serde"] }
 defuse-webauthn = { workspace = true, features = ["ed25519", "p256"] }
@@ -38,9 +38,11 @@ near-api-types = { workspace = true, optional = true }
 
 [features]
 abi = [
+  "defuse-bitmap/abi",
   "defuse-crypto/abi",
   "defuse-deadline/abi",
   "defuse-erc191/abi",
+  "defuse-fees/abi",
   "defuse-nep413/abi",
   "defuse-sep53/abi",
   "defuse-serde-utils/abi",
