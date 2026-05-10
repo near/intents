@@ -47,18 +47,19 @@ webauthn = ["dep:defuse-webauthn"]
 # This can be useful to deploy "1-of-M multisig"/"fan-out" wallet, where
 # extensions are pre-defined at the initialization stage (i.e. state_init).
 # So only extensions can execute requests via `w_execute_extension()`.
-contract = ["defuse-crypto?/near-contract", "defuse-webauthn?/near-contract"]
+contract = [
+  "defuse-crypto?/borsh",
+  "defuse-crypto?/near-contract",
+  "defuse-webauthn?/borsh",
+  "defuse-webauthn?/near-contract",
+]
 
 # Webauthn (a.k.a passkey) variants:
-webauthn-ed25519 = [
-  "defuse-webauthn/borsh",
-  "defuse-webauthn/ed25519",
-  "webauthn",
-]
-webauthn-p256 = ["defuse-webauthn/borsh", "defuse-webauthn/p256", "webauthn"]
+webauthn-ed25519 = ["defuse-webauthn/ed25519", "webauthn"]
+webauthn-p256 = ["defuse-webauthn/p256", "webauthn"]
 
 # Raw ed25519 signature:
-ed25519 = ["defuse-crypto/borsh", "defuse-crypto/ed25519"]
+ed25519 = ["defuse-crypto/ed25519"]
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
