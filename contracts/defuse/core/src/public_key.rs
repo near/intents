@@ -6,7 +6,7 @@ use core::{
 use defuse_crypto::{
     CurveType, CurveTypes, Ed25519, P256UncompressedPublicKey, ParseCurveError, Secp256k1,
 };
-use near_sdk::{AccountId, AccountIdRef, near};
+use near_sdk::{AccountId, AccountIdRef, bs58, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 fn checked_base58_decode_array<const N: usize>(
@@ -146,11 +146,13 @@ impl FromStr for PublicKey {
 
 #[cfg(feature = "abi")]
 const _: () = {
-    use near_sdk::serde_json;
-    use schemars::{
-        JsonSchema,
-        r#gen::SchemaGenerator,
-        schema::{InstanceType, Metadata, Schema, SchemaObject},
+    use near_sdk::{
+        schemars::{
+            JsonSchema,
+            r#gen::SchemaGenerator,
+            schema::{InstanceType, Metadata, Schema, SchemaObject},
+        },
+        serde_json,
     };
 
     impl JsonSchema for PublicKey {

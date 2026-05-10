@@ -1451,8 +1451,6 @@ name = "defuse-core"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
- "borsh",
- "bs58 0.5.1",
  "chrono",
  "defuse-bitmap",
  "defuse-borsh-utils",
@@ -1481,7 +1479,6 @@ dependencies = [
  "near-contract-standards",
  "near-sdk",
  "rstest",
- "schemars 0.8.22",
  "serde_with",
  "thiserror 2.0.18",
 ]
