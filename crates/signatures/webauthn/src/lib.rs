@@ -16,7 +16,7 @@ pub use self::p256::*;
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Debug, Clone)]
-pub struct PayloadSignature<A: Algorithm + ?Sized> {
+pub struct PayloadSignature<A: Algorithm + ?Sized, D: digest::Digest> {
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
     #[cfg_attr(
         feature = "serde",
@@ -31,10 +31,18 @@ pub struct PayloadSignature<A: Algorithm + ?Sized> {
 
     #[cfg_attr(all(feature = "serde", feature = "abi"), schemars(with = "String"))]
     pub signature: A::Signature,
+
+    #[cfg_attr(
+        feature = "serde",
+        serde(skip),
+        cfg_attr(feature = "abi", schemars(skip))
+    )]
+    _digest: std::marker::PhantomData<D>,
 }
 
 #[cfg(feature = "verify")]
-impl<A: Algorithm + ?Sized> PayloadSignature<A> {
+impl<A: Algorithm + ?Sized, D: digest::Digest> PayloadSignature<A, D> {
+
     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
     ///
     /// Credits to:
@@ -46,7 +54,6 @@ impl<A: Algorithm + ?Sized> PayloadSignature<A> {
         public_key: &A::PublicKey,
         user_verification: UserVerification,
     ) -> bool {
-        use sha2::Digest as _;
         // verify authData flags
         if self.authenticator_data.len() < 37
             || !Self::verify_flags(self.authenticator_data[32], user_verification)
@@ -68,18 +75,13 @@ impl<A: Algorithm + ?Sized> PayloadSignature<A> {
             return false;
         }
 
-        // 20. Let hash be the result of computing a hash over the cData using
-        // SHA-256
-        #[cfg(feature = "near-contract")]
-        let hash: [u8; 32] =
-            defuse_near_utils::digest::Sha256::digest(self.client_data_json.as_bytes()).into();
-        #[cfg(not(feature = "near-contract"))]
-        let hash: [u8; 32] = sha2::Sha256::digest(self.client_data_json.as_bytes()).into();
+        // 20. Let hash be the result of computing a hash over the cData using SHA-256
+        let hash = D::digest(self.client_data_json.as_bytes());
 
         // 21. Using credentialRecord.publicKey, verify that sig is a valid
         // signature over the binary concatenation of authData and hash.
         A::verify(
-            &[self.authenticator_data.as_slice(), hash.as_slice()].concat(),
+            &[self.authenticator_data.as_slice(), hash.as_ref()].concat(),
             public_key,
             &self.signature,
         )
@@ -138,6 +140,33 @@ pub trait Algorithm {
     type Signature;
 
     fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool;
+}
+
+/// Blanket-impl variant for algorithms that pre-hash the message before verifying.
+/// Implement this trait to get [`Algorithm`] for free.
+pub trait AlgorithmPrehash {
+    type PublicKey;
+    type Signature;
+    type Digest: digest::Digest;
+
+    fn verify_prehash(
+        prehash: &[u8],
+        public_key: &Self::PublicKey,
+        signature: &Self::Signature,
+    ) -> bool;
+}
+
+impl<T> Algorithm for T
+where
+    T: AlgorithmPrehash,
+{
+    type PublicKey = T::PublicKey;
+    type Signature = T::Signature;
+
+    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
+        let hash = <<T as AlgorithmPrehash>::Digest as digest::Digest>::digest(msg);
+        T::verify_prehash(hash.as_ref(), public_key, signature)
+    }
 }
 
 /// For more details, refer to [WebAuthn specification](https://w3c.github.io/webauthn/#dictdef-collectedclientdata).

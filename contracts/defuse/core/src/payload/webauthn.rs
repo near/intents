@@ -3,6 +3,7 @@ use defuse_crypto::{
 };
 
 use crate::public_key::PublicKey;
+use defuse_near_utils::digest::Sha256 as NearSha256;
 use defuse_webauthn::{Algorithm, Ed25519, P256, PayloadSignature, UserVerification};
 use near_sdk::{CryptoHash, env, near, serde::de::DeserializeOwned, serde_json};
 
@@ -17,7 +18,7 @@ pub struct SignedWebAuthnPayload {
     // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
     #[cfg_attr(feature = "abi", schemars(skip))]
     #[serde(flatten)]
-    pub signature: PayloadSignature<Ed25519OrP256>,
+    pub signature: PayloadSignature<Ed25519OrP256, NearSha256>,
 }
 
 impl Payload for SignedWebAuthnPayload {
@@ -44,11 +45,13 @@ impl Algorithm for Ed25519OrP256 {
                 &Ed25519Signature(*signature),
             ),
 
-            (PublicKey::P256(public_key), Signature::P256(signature)) => P256::verify(
-                msg,
-                &compress_public_key(*public_key),
-                &P256Signature(*signature),
-            ),
+            (PublicKey::P256(public_key), Signature::P256(signature)) => {
+                P256::<NearSha256>::verify(
+                    msg,
+                    &compress_public_key(*public_key),
+                    &P256Signature(*signature),
+                )
+            }
 
             _ => false,
         }

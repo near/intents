@@ -19,10 +19,12 @@ defuse-deadline = { workspace = true, features = ["serde"] }
 defuse-serde-utils = { workspace = true, features = ["base58"] }
 
 derive_more = { workspace = true, features = ["from"] }
+digest.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 thiserror.workspace = true
 
 defuse-crypto = { workspace = true, default-features = false, optional = true }
+defuse-near-utils = { workspace = true, features = ["digest"], optional = true }
 defuse-webauthn = { workspace = true, default-features = false, optional = true }
 
 arbitrary = { workspace = true, optional = true }
@@ -40,7 +42,7 @@ abi = [
 ]
 arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
 concurrent = ["dep:rand_core"]
-webauthn = ["dep:defuse-webauthn"]
+webauthn = ["defuse-webauthn/verify", "dep:defuse-webauthn"]
 
 ########## Contract variants ##########
 # When no features enabled, by default, always reject the signature.
@@ -51,7 +53,7 @@ contract = [
   "defuse-crypto?/borsh",
   "defuse-crypto?/near-contract",
   "defuse-webauthn?/borsh",
-  "defuse-webauthn?/near-contract",
+  "dep:defuse-near-utils",
 ]
 
 # Webauthn (a.k.a passkey) variants:
