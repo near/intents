@@ -35,36 +35,31 @@ pub struct TonConnectPayload {
     pub payload: TonConnectPayloadSchema,
 }
 
-#[cfg(feature = "near-contract")]
-const _: () = {
-    use crate::schema::{PayloadSchema, TonConnectPayloadContext};
-    use defuse_crypto::CryptoHash;
-    use defuse_near_utils::UnwrapOrPanicError;
-    use std::borrow::Cow;
-    use tlb_ton::{Error, StringError};
+impl TonConnectPayload {
+    pub fn try_hash(&self) -> Result<defuse_crypto::CryptoHash, tlb_ton::StringError> {
+        use crate::schema::{PayloadSchema, TonConnectPayloadContext};
+        use std::borrow::Cow;
+        use tlb_ton::Error;
 
-    impl TonConnectPayload {
-        pub fn try_hash(&self) -> Result<CryptoHash, StringError> {
-            let timestamp: u64 = self
-                .timestamp
-                .timestamp()
-                .try_into()
-                .map_err(|_| Error::custom("negative timestamp"))?;
+        let timestamp: u64 = self
+            .timestamp
+            .timestamp()
+            .try_into()
+            .map_err(|_| Error::custom("negative timestamp"))?;
 
-            let context = TonConnectPayloadContext {
-                address: self.address,
-                domain: Cow::Borrowed(self.domain.as_str()),
-                timestamp,
-            };
+        let context = TonConnectPayloadContext {
+            address: self.address,
+            domain: Cow::Borrowed(self.domain.as_str()),
+            timestamp,
+        };
 
-            self.payload.hash_with_context(context)
-        }
-
-        pub fn hash(&self) -> CryptoHash {
-            self.try_hash().unwrap_or_panic_str()
-        }
+        self.payload.hash_with_context(context)
     }
-};
+
+    pub fn hash(&self) -> defuse_crypto::CryptoHash {
+        self.try_hash().expect("ton-connect hash")
+    }
+}
 
 #[cfg_attr(test, derive(arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -104,7 +99,7 @@ mod tests {
     use rstest::rstest;
     use tlb_ton::UnixTimestamp;
 
-    #[cfg(feature = "text")]
+    #[cfg(all(feature = "text", feature = "serde"))]
     #[rstest]
     fn verify_text(random_bytes: Vec<u8>) {
         verify(
@@ -128,7 +123,7 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "binary")]
+    #[cfg(all(feature = "binary", feature = "serde"))]
     #[rstest]
     fn verify_binary(random_bytes: Vec<u8>) {
         verify(
@@ -152,7 +147,7 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "cell")]
+    #[cfg(all(feature = "cell", feature = "serde"))]
     #[rstest]
     fn verify_cell(random_bytes: Vec<u8>) {
         use tlb_ton::BagOfCells;
@@ -186,7 +181,7 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "near-contract")]
+    #[cfg(feature = "serde")]
     fn verify(signed: &SignedTonConnectPayload, random_bytes: &[u8]) {
         verify_ok(signed, true);
 
@@ -218,7 +213,7 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "near-contract")]
+    #[cfg(all(feature = "arbitrary", feature = "serde"))]
     #[rstest]
     fn arbitrary(random_bytes: Vec<u8>) {
         verify_ok(
@@ -227,7 +222,7 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "near-contract")]
+    #[cfg(feature = "serde")]
     fn verify_ok(signed: &SignedTonConnectPayload, ok: bool) {
         let serialized = serde_json::to_string_pretty(signed).unwrap();
         println!("{}", &serialized);

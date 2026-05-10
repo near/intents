@@ -8,9 +8,7 @@ use tlb_ton::{
     ser::{CellBuilder, CellBuilderError, CellSerialize, CellSerializeExt},
 };
 
-#[cfg(feature = "near-contract")]
-use crate::schema::PayloadSchema;
-use crate::schema::TonConnectPayloadContext;
+use crate::schema::{PayloadSchema, TonConnectPayloadContext};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(test, derive(arbitrary::Arbitrary))]
@@ -70,7 +68,6 @@ where
     }
 }
 
-#[cfg(feature = "near-contract")]
 impl PayloadSchema for CellPayload {
     fn hash_with_context(
         &self,
@@ -85,7 +82,9 @@ impl PayloadSchema for CellPayload {
         }
         .to_cell(())?;
 
-        // use host function for recursive hash calculation
-        Ok(cell.hash_digest::<defuse_near_utils::digest::Sha256>())
+        #[cfg(feature = "near-contract")]
+        { Ok(cell.hash_digest::<defuse_near_utils::digest::Sha256>()) }
+        #[cfg(not(feature = "near-contract"))]
+        { Ok(cell.hash_digest::<sha2::Sha256>()) }
     }
 }

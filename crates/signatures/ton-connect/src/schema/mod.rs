@@ -17,7 +17,6 @@ pub struct TonConnectPayloadContext<'a> {
     pub timestamp: u64,
 }
 
-#[cfg(feature = "near-contract")]
 impl TonConnectPayloadContext<'_> {
     // See https://docs.tonconsole.com/academy/sign-data#how-the-signature-is-built
     #[cfg(any(feature = "binary", feature = "text"))]
@@ -26,6 +25,8 @@ impl TonConnectPayloadContext<'_> {
         payload_prefix: &[u8],
         payload: &[u8],
     ) -> Result<defuse_crypto::CryptoHash, StringError> {
+        use sha2::Digest as _;
+
         let domain_len = u32::try_from(self.domain.len())
             .map_err(|_| tlb_ton::Error::custom("domain: overflow"))?;
         let payload_len = u32::try_from(payload.len())
@@ -45,11 +46,13 @@ impl TonConnectPayloadContext<'_> {
         ]
         .concat();
 
-        Ok(near_sdk::env::sha256_array(&bytes))
+        #[cfg(feature = "near-contract")]
+        { Ok(defuse_near_utils::digest::Sha256::digest(&bytes).into()) }
+        #[cfg(not(feature = "near-contract"))]
+        { Ok(sha2::Sha256::digest(&bytes).into()) }
     }
 }
 
-#[cfg(feature = "near-contract")]
 pub trait PayloadSchema {
     fn hash_with_context(
         &self,
@@ -96,7 +99,6 @@ impl TonConnectPayloadSchema {
     }
 }
 
-#[cfg(feature = "near-contract")]
 impl PayloadSchema for TonConnectPayloadSchema {
     fn hash_with_context(
         &self,

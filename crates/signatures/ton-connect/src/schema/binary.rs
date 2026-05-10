@@ -1,10 +1,8 @@
 use std::fmt::Debug;
 
-#[cfg(feature = "near-contract")]
 use crate::schema::{PayloadSchema, TonConnectPayloadContext};
 use defuse_serde_utils::base64::Base64;
 use impl_tools::autoimpl;
-#[cfg(feature = "near-contract")]
 use tlb_ton::StringError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,7 +20,6 @@ pub struct BinaryPayload {
     pub bytes: Vec<u8>,
 }
 
-#[cfg(feature = "near-contract")]
 impl PayloadSchema for BinaryPayload {
     fn hash_with_context(
         &self,

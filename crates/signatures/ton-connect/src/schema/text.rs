@@ -1,9 +1,7 @@
 use std::fmt::Debug;
 
-#[cfg(feature = "near-contract")]
 use crate::schema::{PayloadSchema, TonConnectPayloadContext};
 use impl_tools::autoimpl;
-#[cfg(feature = "near-contract")]
 use tlb_ton::StringError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -20,7 +18,6 @@ pub struct TextPayload {
     pub text: String,
 }
 
-#[cfg(feature = "near-contract")]
 impl PayloadSchema for TextPayload {
     fn hash_with_context(
         &self,
