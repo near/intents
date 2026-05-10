@@ -35,10 +35,7 @@ arbitrary = ["tlb-ton/arbitrary"]
 binary = []
 borsh = ["defuse-crypto/borsh"]
 cell = []
-near-contract = [
-  "defuse-crypto/near-contract",
-  "dep:defuse-near-utils",
-]
+near-contract = ["defuse-crypto/near-contract", "dep:defuse-near-utils"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 text = []
 

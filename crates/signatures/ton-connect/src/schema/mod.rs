@@ -47,9 +47,13 @@ impl TonConnectPayloadContext<'_> {
         .concat();
 
         #[cfg(feature = "near-contract")]
-        { Ok(defuse_near_utils::digest::Sha256::digest(&bytes).into()) }
+        {
+            Ok(defuse_near_utils::digest::Sha256::digest(&bytes).into())
+        }
         #[cfg(not(feature = "near-contract"))]
-        { Ok(sha2::Sha256::digest(&bytes).into()) }
+        {
+            Ok(sha2::Sha256::digest(&bytes).into())
+        }
     }
 }
 

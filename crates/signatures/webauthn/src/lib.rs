@@ -46,6 +46,7 @@ impl<A: Algorithm + ?Sized> PayloadSignature<A> {
         public_key: &A::PublicKey,
         user_verification: UserVerification,
     ) -> bool {
+        use sha2::Digest as _;
         // verify authData flags
         if self.authenticator_data.len() < 37
             || !Self::verify_flags(self.authenticator_data[32], user_verification)
@@ -69,9 +70,9 @@ impl<A: Algorithm + ?Sized> PayloadSignature<A> {
 
         // 20. Let hash be the result of computing a hash over the cData using
         // SHA-256
-        use sha2::Digest as _;
         #[cfg(feature = "near-contract")]
-        let hash: [u8; 32] = defuse_near_utils::digest::Sha256::digest(self.client_data_json.as_bytes()).into();
+        let hash: [u8; 32] =
+            defuse_near_utils::digest::Sha256::digest(self.client_data_json.as_bytes()).into();
         #[cfg(not(feature = "near-contract"))]
         let hash: [u8; 32] = sha2::Sha256::digest(self.client_data_json.as_bytes()).into();
 

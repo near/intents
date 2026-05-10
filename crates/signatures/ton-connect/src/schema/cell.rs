@@ -83,8 +83,12 @@ impl PayloadSchema for CellPayload {
         .to_cell(())?;
 
         #[cfg(feature = "near-contract")]
-        { Ok(cell.hash_digest::<defuse_near_utils::digest::Sha256>()) }
+        {
+            Ok(cell.hash_digest::<defuse_near_utils::digest::Sha256>())
+        }
         #[cfg(not(feature = "near-contract"))]
-        { Ok(cell.hash_digest::<sha2::Sha256>()) }
+        {
+            Ok(cell.hash_digest::<sha2::Sha256>())
+        }
     }
 }

@@ -26,7 +26,11 @@ default = ["ed25519", "p256"]
 
 abi = ["defuse-crypto/abi", "defuse-serde-utils?/abi", "dep:schemars"]
 arbitrary = ["defuse-crypto/arbitrary", "dep:arbitrary"]
-near-contract = ["defuse-crypto/near-contract", "dep:defuse-near-utils", "verify"]
+near-contract = [
+  "defuse-crypto/near-contract",
+  "dep:defuse-near-utils",
+  "verify",
+]
 borsh = ["defuse-crypto/borsh"]
 verify = ["serde"]
 serde = [
