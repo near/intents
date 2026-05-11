@@ -14,6 +14,7 @@ thiserror.workspace = true
 ed25519-dalek = { workspace = true, optional = true }
 generic-array = { workspace = true, features = ["compat-0_14"], optional = true }
 p256 = { workspace = true, optional = true, features = ["ecdsa"] }
+schnorrkel = { workspace = true, optional = true }
 
 arbitrary = { workspace = true, optional = true }
 near-api-types = { workspace = true, optional = true }
@@ -24,6 +25,7 @@ default = ["ed25519", "p256", "secp256k1"]
 ed25519 = ["dep:ed25519-dalek"]
 secp256k1 = []
 p256 = ["dep:generic-array", "dep:p256"]
+sr25519 = ["dep:schnorrkel"]
 
 abi = ["near-sdk/abi"]
 

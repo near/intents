@@ -161,6 +161,24 @@ contract_impl! {
         }
 
     }
+
+    #[cfg_attr(
+        feature = "sr25519",
+        near(contract_metadata(
+            standard(standard = "wallet-sr25519", version = "1.0.0")
+        ))
+    )] {
+        use crate::signature::sr25519::Sr25519;
+
+        impl ContractImpl for Contract {
+            /// Sr25519 (Schnorr on Ristretto255) — Polkadot/Substrate
+            /// signing standard. The `proof` is a JSON `SignedSr25519Payload`
+            /// whose inner `payload` is the JSON-encoded `RequestMessage`;
+            /// Polkadot.js et al. wrap that string in `<Bytes>...</Bytes>`
+            /// before signing.
+            type SigningStandard = Sr25519;
+        }
+    }
 }
 
 impl Deref for Contract {

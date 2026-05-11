@@ -11,7 +11,12 @@ pub enum ParseCurveError {
     InvalidLength,
 }
 
-#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
+#[cfg(any(
+    feature = "ed25519",
+    feature = "secp256k1",
+    feature = "p256",
+    feature = "sr25519"
+))]
 /// Decodes input as base58 into array and checks for its length
 pub fn checked_base58_decode_array<const N: usize>(
     input: impl AsRef<[u8]>,

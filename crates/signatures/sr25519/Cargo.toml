@@ -1,0 +1,26 @@
+[package]
+name = "defuse-sr25519"
+edition.workspace = true
+repository.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+defuse-crypto = { workspace = true, default-features = false, features = ["sr25519"] }
+
+impl-tools.workspace = true
+near-sdk.workspace = true
+
+[features]
+abi = ["defuse-crypto/abi", "near-sdk/abi"]
+
+[dev-dependencies]
+defuse-test-utils.workspace = true
+hex-literal.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
+rand = "0.8"                                                   # match schnorrkel's rand_core 0.6
+rstest.workspace = true
+schnorrkel = { workspace = true, features = ["std"] }
+
+[lints]
+workspace = true

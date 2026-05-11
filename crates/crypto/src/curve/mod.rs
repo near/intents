@@ -13,6 +13,11 @@ mod p256;
 #[cfg(feature = "p256")]
 pub use self::p256::*;
 
+#[cfg(feature = "sr25519")]
+mod sr25519;
+#[cfg(feature = "sr25519")]
+pub use self::sr25519::*;
+
 pub trait Curve {
     type PublicKey;
     type Signature;
@@ -30,7 +35,12 @@ pub trait Curve {
     ) -> Option<Self::PublicKey>;
 }
 
-#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
+#[cfg(any(
+    feature = "ed25519",
+    feature = "secp256k1",
+    feature = "p256",
+    feature = "sr25519"
+))]
 #[derive(strum::Display, strum::IntoStaticStr, strum::EnumString)]
 #[strum(serialize_all = "snake_case", ascii_case_insensitive)]
 #[repr(u8)]
@@ -41,9 +51,16 @@ pub enum CurveType {
     Secp256k1 = 1,
     #[cfg(feature = "p256")]
     P256 = 2,
+    #[cfg(feature = "sr25519")]
+    Sr25519 = 3,
 }
 
-#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
+#[cfg(any(
+    feature = "ed25519",
+    feature = "secp256k1",
+    feature = "p256",
+    feature = "sr25519"
+))]
 pub trait TypedCurve: Curve {
     const CURVE_TYPE: CurveType;
 
