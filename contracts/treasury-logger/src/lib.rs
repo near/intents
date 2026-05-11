@@ -9,7 +9,7 @@ mod event;
 
 #[near(
     contract_state,
-    contract_metadata(standard(standard = "logger", version = "0.1.0"),)
+    contract_metadata(standard(standard = "logger", version = "0.1.0"))
 )]
 #[derive(Default)]
 pub struct Contract {

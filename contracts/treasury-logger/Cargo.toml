@@ -27,7 +27,7 @@ container_build_command = [
 [dependencies]
 defuse-nep245.workspace = true
 
-near-sdk = { workspace = true, features = ["unstable"] }
+near-sdk.workspace = true
 serde_with.workspace = true
 
 [dev-dependencies]
