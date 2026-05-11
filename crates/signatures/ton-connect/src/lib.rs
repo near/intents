@@ -14,12 +14,13 @@ pub use tlb_ton;
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
+    serde(bound = ""),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
     cfg_attr(test, derive(::arbitrary::Arbitrary))
 )]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TonConnectPayload {
+pub struct TonConnectPayload<D> {
     /// Wallet address in either [Raw](https://docs.ton.org/v3/documentation/smart-contracts/addresses/address-formats#raw-address) representation
     /// or [user-friendly](https://docs.ton.org/v3/documentation/smart-contracts/addresses/address-formats#user-friendly-address) format
     pub address: MsgAddress,
@@ -32,10 +33,10 @@ pub struct TonConnectPayload {
         serde_as(as = "::serde_with::PickFirst<(_, ::serde_with::TimestampSeconds)>")
     )]
     pub timestamp: DateTime<Utc>,
-    pub payload: TonConnectPayloadSchema,
+    pub payload: TonConnectPayloadSchema<D>,
 }
 
-impl TonConnectPayload {
+impl<D: digest::Digest<OutputSize = digest::consts::U32>> TonConnectPayload<D> {
     pub fn try_hash(&self) -> Result<defuse_crypto::CryptoHash, tlb_ton::StringError> {
         use crate::schema::{PayloadSchema, TonConnectPayloadContext};
         use std::borrow::Cow;
@@ -67,13 +68,14 @@ impl TonConnectPayload {
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
+    serde(bound = ""),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SignedTonConnectPayload {
+pub struct SignedTonConnectPayload<D> {
     #[cfg_attr(feature = "serde", serde(flatten))]
-    pub payload: TonConnectPayload,
+    pub payload: TonConnectPayload<D>,
 
     #[cfg_attr(
         feature = "serde",
@@ -98,6 +100,40 @@ mod tests {
     use hex_literal::hex;
     use rstest::rstest;
     use tlb_ton::UnixTimestamp;
+
+    #[derive(Clone, Debug, Default, PartialEq, Eq)]
+    struct TestSha256 {
+        data: Vec<u8>,
+    }
+
+    impl<'a> arbitrary::Arbitrary<'a> for TestSha256 {
+        fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+            Ok(Self {
+                data: Vec::arbitrary(u)?,
+            })
+        }
+    }
+
+    impl sha2::digest::Update for TestSha256 {
+        fn update(&mut self, data: &[u8]) {
+            self.data.extend(data);
+        }
+    }
+
+    impl sha2::digest::OutputSizeUser for TestSha256 {
+        type OutputSize = sha2::digest::consts::U32;
+    }
+
+    impl sha2::digest::FixedOutput for TestSha256 {
+        fn finalize_into(self, out: &mut sha2::digest::Output<Self>) {
+            *out = <sha2::Sha256 as sha2::Digest>::digest(&self.data);
+        }
+    }
+
+    impl sha2::digest::HashMarker for TestSha256 {}
+
+    #[cfg(feature = "serde")]
+    type TestPayload = SignedTonConnectPayload<TestSha256>;
 
     #[cfg(all(feature = "text", feature = "serde"))]
     #[rstest]
@@ -182,7 +218,7 @@ mod tests {
     }
 
     #[cfg(feature = "serde")]
-    fn verify(signed: &SignedTonConnectPayload, random_bytes: &[u8]) {
+    fn verify(signed: &TestPayload, random_bytes: &[u8]) {
         verify_ok(signed, true);
 
         // tampering
@@ -223,10 +259,10 @@ mod tests {
     }
 
     #[cfg(feature = "serde")]
-    fn verify_ok(signed: &SignedTonConnectPayload, ok: bool) {
+    fn verify_ok(signed: &TestPayload, ok: bool) {
         let serialized = serde_json::to_string_pretty(signed).unwrap();
         println!("{}", &serialized);
-        let deserialized: SignedTonConnectPayload = serde_json::from_str(&serialized).unwrap();
+        let deserialized: TestPayload = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(&deserialized, signed);
         let result = Ed25519::verify(

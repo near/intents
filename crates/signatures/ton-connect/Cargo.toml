@@ -18,7 +18,7 @@ sha2.workspace = true
 tlb-ton = { workspace = true, features = ["serde"] }
 
 cfg_eval = { workspace = true, optional = true }
-defuse-near-utils = { workspace = true, features = ["digest"], optional = true }
+digest = { workspace = true }
 schemars = { workspace = true, features = ["chrono"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, features = ["chrono_0_4"], optional = true }
@@ -35,7 +35,7 @@ arbitrary = ["tlb-ton/arbitrary"]
 binary = []
 borsh = ["defuse-crypto/borsh"]
 cell = []
-near-contract = ["defuse-crypto/near-contract", "dep:defuse-near-utils"]
+near-contract = ["defuse-crypto/near-contract"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 text = []
 

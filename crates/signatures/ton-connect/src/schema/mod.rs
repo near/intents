@@ -2,6 +2,7 @@ use core::str;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
+use sha2::digest;
 use tlb_ton::{MsgAddress, StringError};
 
 #[cfg(feature = "binary")]
@@ -20,13 +21,11 @@ pub struct TonConnectPayloadContext<'a> {
 impl TonConnectPayloadContext<'_> {
     // See https://docs.tonconsole.com/academy/sign-data#how-the-signature-is-built
     #[cfg(any(feature = "binary", feature = "text"))]
-    pub fn create_payload_hash(
+    pub fn create_payload_hash<D: digest::Digest<OutputSize = digest::consts::U32>>(
         &self,
         payload_prefix: &[u8],
         payload: &[u8],
     ) -> Result<defuse_crypto::CryptoHash, StringError> {
-        use sha2::Digest as _;
-
         let domain_len = u32::try_from(self.domain.len())
             .map_err(|_| tlb_ton::Error::custom("domain: overflow"))?;
         let payload_len = u32::try_from(payload.len())
@@ -46,14 +45,7 @@ impl TonConnectPayloadContext<'_> {
         ]
         .concat();
 
-        #[cfg(feature = "near-contract")]
-        {
-            Ok(defuse_near_utils::digest::Sha256::digest(&bytes).into())
-        }
-        #[cfg(not(feature = "near-contract"))]
-        {
-            Ok(sha2::Sha256::digest(&bytes).into())
-        }
+        Ok(Into::<[u8; 32]>::into(D::digest(&bytes)))
     }
 }
 
@@ -72,38 +64,49 @@ pub trait PayloadSchema {
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     serde(tag = "type", rename_all = "snake_case"),
+    serde(bound = ""),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TonConnectPayloadSchema {
+pub enum TonConnectPayloadSchema<D> {
     #[cfg(feature = "text")]
-    Text(text::TextPayload),
+    Text(text::TextPayload<D>),
     #[cfg(feature = "binary")]
-    Binary(binary::BinaryPayload),
+    Binary(binary::BinaryPayload<D>),
     #[cfg(feature = "cell")]
-    Cell(cell::CellPayload),
+    Cell(cell::CellPayload<D>),
 }
 
-impl TonConnectPayloadSchema {
+impl<D: digest::Digest<OutputSize = digest::consts::U32>> TonConnectPayloadSchema<D> {
     #[cfg(feature = "text")]
     pub fn text(txt: impl Into<String>) -> Self {
-        Self::Text(text::TextPayload { text: txt.into() })
+        Self::Text(text::TextPayload {
+            text: txt.into(),
+            _phantom: std::marker::PhantomData::<D>,
+        })
     }
 
     #[cfg(feature = "binary")]
     pub fn binary(bytes: impl Into<Vec<u8>>) -> Self {
         Self::Binary(binary::BinaryPayload {
             bytes: bytes.into(),
+            _phantom: std::marker::PhantomData::<D>,
         })
     }
 
     #[cfg(feature = "cell")]
     pub const fn cell(schema_crc: u32, cell: tlb_ton::Cell) -> Self {
-        Self::Cell(cell::CellPayload { schema_crc, cell })
+        Self::Cell(cell::CellPayload {
+            schema_crc,
+            cell,
+            _phantom: std::marker::PhantomData::<D>,
+        })
     }
 }
 
-impl PayloadSchema for TonConnectPayloadSchema {
+impl<D: digest::Digest<OutputSize = digest::consts::U32>> PayloadSchema
+    for TonConnectPayloadSchema<D>
+{
     fn hash_with_context(
         &self,
         context: TonConnectPayloadContext,

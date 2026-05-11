@@ -48,7 +48,7 @@ pub enum MultiPayload {
 
     /// TonConnect: The standard for data signing in TON blockchain platform.
     /// For more details, refer to [TonConnect documentation](https://docs.tonconsole.com/academy/sign-data).
-    TonConnect(SignedTonConnectPayload),
+    TonConnect(SignedTonConnectPayload<defuse_near_utils::digest::Sha256>),
 
     /// SEP-53: The standard for signing data off-chain for Stellar accounts.
     /// See [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
