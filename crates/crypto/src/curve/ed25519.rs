@@ -49,11 +49,17 @@ impl TypedCurve for Ed25519 {
 )]
 #[cfg_attr(
     feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct Ed25519PublicKey(pub <Ed25519 as CurveTypes>::PublicKey);
+pub struct Ed25519PublicKey(
+    #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<Ed25519>"))]
+    pub  <Ed25519 as CurveTypes>::PublicKey,
+);
 
 impl Debug for Ed25519PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -83,11 +89,17 @@ impl FromStr for Ed25519PublicKey {
 )]
 #[cfg_attr(
     feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct Ed25519Signature(pub <Ed25519 as CurveTypes>::Signature);
+pub struct Ed25519Signature(
+    #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<Ed25519>"))]
+    pub  <Ed25519 as CurveTypes>::Signature,
+);
 
 impl Debug for Ed25519Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -108,28 +120,3 @@ impl FromStr for Ed25519Signature {
         Ed25519::parse_base58(s).map(Self)
     }
 }
-
-#[cfg(feature = "abi")]
-const _: () = {
-    use schemars::{JsonSchema, r#gen::SchemaGenerator, schema::Schema};
-
-    impl JsonSchema for Ed25519PublicKey {
-        fn schema_name() -> String {
-            "Ed25519PublicKey".to_owned()
-        }
-
-        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
-            String::json_schema(_gen)
-        }
-    }
-
-    impl JsonSchema for Ed25519Signature {
-        fn schema_name() -> String {
-            "Ed25519Signature".to_owned()
-        }
-
-        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
-            String::json_schema(_gen)
-        }
-    }
-};

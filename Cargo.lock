@@ -1494,6 +1494,7 @@ dependencies = [
  "arbitrary",
  "borsh",
  "bs58 0.5.1",
+ "cfg_eval",
  "ed25519-dalek",
  "generic-array 1.4.0",
  "near-account-id",

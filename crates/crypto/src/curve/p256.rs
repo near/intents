@@ -64,11 +64,17 @@ impl crate::TypedCurve for P256 {
 )]
 #[cfg_attr(
     feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct P256CompressedPublicKey(pub <P256 as CurveTypes>::PublicKey);
+pub struct P256CompressedPublicKey(
+    #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<P256>"))]
+    pub  <P256 as CurveTypes>::PublicKey,
+);
 
 impl Debug for P256CompressedPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -100,11 +106,16 @@ impl FromStr for P256CompressedPublicKey {
 )]
 #[cfg_attr(
     feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct P256UncompressedPublicKey(pub [u8; 64]);
+pub struct P256UncompressedPublicKey(
+    #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<P256>"))] pub [u8; 64],
+);
 
 impl Debug for P256UncompressedPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -134,11 +145,17 @@ impl FromStr for P256UncompressedPublicKey {
 )]
 #[cfg_attr(
     feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct P256Signature(pub <P256 as CurveTypes>::Signature);
+pub struct P256Signature(
+    #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<P256>"))]
+    pub  <P256 as CurveTypes>::Signature,
+);
 
 impl Debug for P256Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -159,41 +176,6 @@ impl FromStr for P256Signature {
         P256::parse_base58(s).map(Self)
     }
 }
-
-#[cfg(feature = "abi")]
-const _: () = {
-    use schemars::{JsonSchema, r#gen::SchemaGenerator, schema::Schema};
-
-    impl JsonSchema for P256CompressedPublicKey {
-        fn schema_name() -> String {
-            "P256CompressedPublicKey".to_owned()
-        }
-
-        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
-            String::json_schema(_gen)
-        }
-    }
-
-    impl JsonSchema for P256UncompressedPublicKey {
-        fn schema_name() -> String {
-            "P256UncompressedPublicKey".to_owned()
-        }
-
-        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
-            String::json_schema(_gen)
-        }
-    }
-
-    impl JsonSchema for P256Signature {
-        fn schema_name() -> String {
-            "P256Signature".to_owned()
-        }
-
-        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
-            String::json_schema(_gen)
-        }
-    }
-};
 
 /// Converts from untagged uncompressed form (i.e. concatenated `x || y`
 /// coordinates with no leading SEC1 tag byte) into compressed form

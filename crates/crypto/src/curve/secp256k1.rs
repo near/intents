@@ -55,11 +55,17 @@ impl TypedCurve for Secp256k1 {
 )]
 #[cfg_attr(
     feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct Secp256k1PublicKey(pub <Secp256k1 as CurveTypes>::PublicKey);
+pub struct Secp256k1PublicKey(
+    #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<Secp256k1>"))]
+    pub  <Secp256k1 as CurveTypes>::PublicKey,
+);
 
 impl Debug for Secp256k1PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -89,11 +95,17 @@ impl FromStr for Secp256k1PublicKey {
 )]
 #[cfg_attr(
     feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct Secp256k1Signature(pub <Secp256k1 as CurveTypes>::Signature);
+pub struct Secp256k1Signature(
+    #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<Secp256k1>"))]
+    pub  <Secp256k1 as CurveTypes>::Signature,
+);
 
 impl Debug for Secp256k1Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -114,28 +126,3 @@ impl FromStr for Secp256k1Signature {
         Secp256k1::parse_base58(s).map(Self)
     }
 }
-
-#[cfg(feature = "abi")]
-const _: () = {
-    use schemars::{JsonSchema, r#gen::SchemaGenerator, schema::Schema};
-
-    impl JsonSchema for Secp256k1PublicKey {
-        fn schema_name() -> String {
-            "Secp256k1PublicKey".to_owned()
-        }
-
-        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
-            String::json_schema(_gen)
-        }
-    }
-
-    impl JsonSchema for Secp256k1Signature {
-        fn schema_name() -> String {
-            "Secp256k1Signature".to_owned()
-        }
-
-        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
-            String::json_schema(_gen)
-        }
-    }
-};

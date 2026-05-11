@@ -14,11 +14,7 @@ mod signature;
 
 pub use near_account_id::{AccountId, AccountIdRef};
 
-pub use self::{
-    curve::*,
-    parse::ParseCurveError,
-    payload::*,
-};
+pub use self::{curve::*, parse::ParseCurveError, payload::*};
 
 #[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 pub use self::parse::checked_base58_decode_array;
