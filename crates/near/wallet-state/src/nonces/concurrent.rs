@@ -2,8 +2,6 @@ use rand_core::{Rng, SeedableRng};
 
 /// Endless [`Iterator`] for generating non-sequential nonces semi-sequentially,
 /// allowing for multiple concurrent clients while being optimized for storage.
-///
-/// See [`crate::RequestMessage`].
 #[derive(Debug)]
 pub struct ConcurrentNonces<R> {
     next: u32,
@@ -56,7 +54,6 @@ mod tests {
     use std::{collections::BTreeMap, time::Duration};
 
     use defuse_bitmap::BitMap;
-    use near_sdk::borsh;
     use rand::rng;
 
     use super::*;

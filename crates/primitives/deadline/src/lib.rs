@@ -29,13 +29,13 @@ impl Deadline {
         Self(d)
     }
 
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(feature = "near-contract")]
     #[must_use]
     pub fn now() -> Self {
         Self(defuse_near_utils::time::now())
     }
 
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(feature = "near-contract"))]
     #[must_use]
     #[inline]
     pub fn now() -> Self {

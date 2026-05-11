@@ -23,6 +23,7 @@ members = [
   "crates/near/controller",
   "crates/near/global-deployer-state",
   "crates/near/outlayer-app-state",
+  "crates/near/wallet-state",
   "crates/near/nep245",
   "crates/near/utils",
   "crates/near/wnear",
@@ -89,9 +90,10 @@ defuse-admin-utils.path = "crates/near/admin-utils"
 defuse-auth-call.path = "crates/near/auth-call"
 defuse-controller.path = "crates/near/controller"
 defuse-global-deployer-state = { path = "crates/near/global-deployer-state", default-features = false }
-defuse-outlayer-app-state = { path = "crates/near/outlayer-app-state", default-features = false }
 defuse-near-utils.path = "crates/near/utils"
 defuse-nep245.path = "crates/near/nep245"
+defuse-outlayer-app-state = { path = "crates/near/outlayer-app-state", default-features = false }
+defuse-wallet-state = { path = "crates/near/wallet-state", default-features = false }
 defuse-wnear.path = "crates/near/wnear"
 
 defuse-deadline.path = "crates/primitives/deadline"

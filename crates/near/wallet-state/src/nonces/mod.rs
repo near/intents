@@ -3,22 +3,27 @@ mod concurrent;
 #[cfg(feature = "concurrent")]
 pub use self::concurrent::*;
 
-use core::{mem, time::Duration};
+use core::time::Duration;
 use std::collections::BTreeMap;
 
 use defuse_bitmap::BitMap;
+#[cfg(feature = "borsh")]
 use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds, TimestampSeconds};
 use defuse_deadline::Deadline;
-use near_sdk::near;
 
-use crate::{Error, Result};
+use crate::NoncesError;
 
+//TODO: add json schema?
 /// Dual-timeout window nonces
-#[near(serializers = [borsh])]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+)]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Nonces {
     #[cfg_attr(
-        feature = "abi",
+        all(feature = "borsh", feature = "abi"),
         borsh(
             serialize_with = "As::<BorshDurationSeconds<u32>>::serialize",
             deserialize_with = "As::<BorshDurationSeconds<u32>>::deserialize",
@@ -29,17 +34,16 @@ pub struct Nonces {
         )
     )]
     #[cfg_attr(
-        not(feature = "abi"),
+        all(feature = "borsh", not(feature = "abi")),
         borsh(
             serialize_with = "As::<BorshDurationSeconds<u32>>::serialize",
             deserialize_with = "As::<BorshDurationSeconds<u32>>::deserialize",
         )
     )]
-    /// Fixed timeout, i.e. maximum validity timespan for each nonce.
     timeout: Duration,
 
     #[cfg_attr(
-        feature = "abi",
+        all(feature = "borsh", feature = "abi"),
         borsh(
             serialize_with = "As::<TimestampSeconds<u32>>::serialize",
             deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
@@ -50,7 +54,7 @@ pub struct Nonces {
         )
     )]
     #[cfg_attr(
-        not(feature = "abi"),
+        all(feature = "borsh", not(feature = "abi")),
         borsh(
             serialize_with = "As::<TimestampSeconds<u32>>::serialize",
             deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
@@ -76,17 +80,22 @@ impl Nonces {
         }
     }
 
-    pub fn commit(&mut self, nonce: u32, created_at: Deadline, timeout: Duration) -> Result<()> {
+    pub fn commit(
+        &mut self,
+        nonce: u32,
+        created_at: Deadline,
+        timeout: Duration,
+    ) -> Result<(), NoncesError> {
         self.check_cleanup();
 
         let now = Self::now();
         // check that `created_at` is in `[now - min(self.timeout, msg.timeout), now]`
         if !(now - self.timeout.min(timeout) <= created_at && created_at <= now) {
-            return Err(Error::ExpiredOrFuture);
+            return Err(NoncesError::ExpiredOrFuture);
         }
 
         if self.old_nonces.get_bit(nonce) || self.nonces.set_bit(nonce) {
-            return Err(Error::AlreadyExecuted);
+            return Err(NoncesError::AlreadyExecuted);
         }
 
         Ok(())
@@ -100,7 +109,7 @@ impl Nonces {
         // check if it's time to rotate
         if self.last_cleaned_at < last_valid_nonce_at {
             // rotate current -> old
-            self.old_nonces = mem::take(&mut self.nonces);
+            self.old_nonces = core::mem::take(&mut self.nonces);
             // check if `2 * timeout` has passed since last rotation
             if self.last_cleaned_at < last_valid_nonce_at - self.timeout {
                 // cleanup old nonces

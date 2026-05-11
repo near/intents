@@ -28,7 +28,7 @@ container_build_command = [
 
 [dependencies]
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
-defuse-deadline = { workspace = true, features = ["serde"] }
+defuse-deadline = { workspace = true, features = ["near-contract", "serde"] }
 defuse-decimal = { workspace = true, features = ["borsh", "serde"] }
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-nep245.workspace = true

@@ -79,4 +79,3 @@ pub enum Reason<'a> {
     Deploy(#[serde_as(as = "Hex")] [u8; 32]),
     By(Cow<'a, AccountIdRef>),
 }
-

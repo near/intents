@@ -42,7 +42,6 @@ pub struct PayloadSignature<A: Algorithm + ?Sized, D: digest::Digest> {
 
 #[cfg(feature = "verify")]
 impl<A: Algorithm + ?Sized, D: digest::Digest> PayloadSignature<A, D> {
-
     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
     ///
     /// Credits to:

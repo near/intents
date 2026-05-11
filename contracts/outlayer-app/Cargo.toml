@@ -12,7 +12,11 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [features]
-abi = ["defuse-serde-utils/abi", "near-sdk/abi", "defuse-outlayer-app-state/abi"]
+abi = [
+  "defuse-outlayer-app-state/abi",
+  "defuse-serde-utils/abi",
+  "near-sdk/abi",
+]
 contract = []
 
 [dependencies]

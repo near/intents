@@ -33,7 +33,7 @@ serde = [
   "dep:serde",
   "dep:serde_with",
 ]
-verify = ["serde", "dep:serde_json"]
+verify = ["dep:serde_json", "serde"]
 
 ed25519 = ["defuse-crypto/ed25519", "defuse-crypto/near-contract"]
 p256 = ["defuse-crypto/p256"]
