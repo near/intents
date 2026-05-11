@@ -2,12 +2,12 @@
 mod contract;
 pub mod error;
 
-use std::{borrow::Cow, collections::BTreeMap};
+use std::borrow::Cow;
 
+pub use defuse_outlayer_app_state::State;
 pub use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
-    AccountId, AccountIdRef, borsh, near,
-    serde::Serialize,
+    AccountId, AccountIdRef, near,
     serde_with::{hex::Hex, serde_as},
 };
 
@@ -57,35 +57,4 @@ pub enum Event<'a> {
         old_admin_id: Cow<'a, AccountIdRef>,
         new_admin_id: Cow<'a, AccountIdRef>,
     },
-}
-
-#[serde_as(crate = "near_sdk::serde_with")]
-#[near(serializers = [borsh])]
-#[derive(Debug, Serialize)]
-#[serde(crate = "near_sdk::serde")]
-pub struct State {
-    pub admin_id: AccountId,
-    #[serde_as(as = "Hex")]
-    pub code_hash: [u8; 32],
-    pub code_url: String,
-}
-
-impl State {
-    pub const STATE_KEY: &[u8] = b"";
-
-    pub fn new(admin_id: impl Into<AccountId>, code_hash: [u8; 32], code_url: String) -> Self {
-        Self {
-            admin_id: admin_id.into(),
-            code_hash,
-            code_url,
-        }
-    }
-
-    pub fn state_init(&self) -> BTreeMap<Vec<u8>, Vec<u8>> {
-        [(
-            Self::STATE_KEY.to_vec(),
-            borsh::to_vec(self).unwrap_or_else(|_| unreachable!()),
-        )]
-        .into()
-    }
 }

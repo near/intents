@@ -1,0 +1,28 @@
+[package]
+name = "defuse-outlayer-app-state"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+near-account-id.workspace = true
+
+borsh = { workspace = true, optional = true, features = ["derive"] }
+cfg_eval = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_with = { workspace = true, optional = true, features = ["hex"] }
+
+[features]
+borsh = ["dep:borsh", "near-account-id/borsh"]
+serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with", "near-account-id/serde"]
+abi = [
+  "borsh?/unstable__schema",
+  "dep:schemars",
+  "near-account-id/abi",
+  "serde_with?/schemars_0_8",
+]
