@@ -14,16 +14,15 @@ The contract implements one standard receiver interface:
   `mt_transfer_call`. Emits `mt_deposit` and returns a vector of zeros of
   the same length as `amounts` (keeps the full transferred amounts).
 
-The call panics with `"token_ids and amounts length mismatch"` when the
-two input vectors have different lengths. The nonce is incremented after
-the event is emitted; on `u128` overflow the call panics with
-`"nonce overflow"`.
+The call panics with `"invalid args"` when `amounts` is empty, with
+`"token_ids and amounts length mismatch"` when `token_ids` and `amounts`
+have different lengths, and with `"previous_owner_ids and amounts mismatch"`
+when `previous_owner_ids` does not match the others. On `u128` nonce
+overflow the call panics with `"nonce overflow"`.
 
-The original `sender_id` and `previous_owner_ids` are intentionally **not**
-stored or logged — the only identity recorded is the calling token contract
-(`env::predecessor_account_id()`), surfaced as the event's `token` field.
-Indexers that need the original sender must parse the accompanying `msg`
-payload or correlate against the token contract's own transfer event.
+The calling token contract (`env::predecessor_account_id()`) is surfaced
+as the event's `token` field, alongside the `sender_id` and
+`previous_owner_ids` passed in by the caller.
 
 Note that `mt_on_transfer` is a public method and can be invoked directly
 without going through `mt_transfer_call`. The contract performs no
@@ -40,8 +39,10 @@ pub struct Contract {
 }
 ```
 
-Initialized to `0` by `new()`. There is no owner, admin, or pause switch —
-the contract's only mutating entry point is the single receiver hook.
+Zero-initialized via `Default` — the contract has no explicit `new()`
+constructor and does not need to be initialized after deployment. There
+is no owner, admin, or pause switch; the contract's only mutating entry
+point is the single receiver hook.
 
 ## View methods
 
@@ -68,6 +69,8 @@ NEP-297 `EVENT_JSON:…` log format.
   "event": "mt_deposit",
   "data": {
     "token": "<mt-contract-account-id>",
+    "sender_id": "<account-that-initiated-mt_transfer_call>",
+    "previous_owner_ids": ["<account-id>", "..."],
     "token_ids": ["<token-id>", "..."],
     "amounts": ["<u128 as string>", "..."],
     "msg": "<string passed to mt_transfer_call>",
@@ -76,9 +79,9 @@ NEP-297 `EVENT_JSON:…` log format.
 }
 ```
 
-`token_ids` and `amounts` are positionally aligned and have equal length.
-`nonce` is serialized as a decimal string (NEAR's `U128` JSON
-representation), starting at `"0"` for the first emitted event.
+`previous_owner_ids`, `token_ids`, and `amounts` are positionally aligned
+and have equal length. `amounts` and `nonce` are serialized as decimal
+strings; `nonce` starts at `"0"` for the first emitted event.
 
 ## Building
 
