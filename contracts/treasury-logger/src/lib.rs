@@ -1,27 +1,23 @@
 use defuse_nep245::TokenId;
 use defuse_nep245::receiver::MultiTokenReceiver;
 use near_sdk::json_types::U128;
-use near_sdk::{AccountId, PanicOnDefault, PromiseOrValue, env, near, require};
+use near_sdk::{AccountId, PromiseOrValue, env, near, require};
 
 use crate::event::Event;
 
 mod event;
 
-#[near(contract_state)]
-#[derive(PanicOnDefault)]
+#[near(
+    contract_state,
+    contract_metadata(standard(standard = "logger", version = "0.1.0"),)
+)]
+#[derive(Default)]
 pub struct Contract {
     nonce: u128,
 }
 
 #[near]
 impl Contract {
-    /// Creates a new instance of the contract.
-    #[init]
-    #[allow(clippy::use_self)]
-    pub const fn new() -> Self {
-        Self { nonce: 0 }
-    }
-
     /// Returns the current nonce of the contract.
     pub fn get_nonce(&self) -> U128 {
         self.nonce.into()
@@ -43,31 +39,35 @@ impl MultiTokenReceiver for Contract {
             token_ids.len() == amounts.len(),
             "token_ids and amounts length mismatch"
         );
-
-        let _ = (sender_id, previous_owner_ids);
-        let result = vec![U128(0); amounts.len()];
-        let token = env::predecessor_account_id();
+        require!(
+            token_ids.len() == previous_owner_ids.len(),
+            "previous_owner_ids and amounts mismatch"
+        );
 
         Event::MtDeposit {
-            token,
-            token_ids,
-            amounts,
-            msg,
-            nonce: self.nonce.into(),
+            token: env::predecessor_account_id().into(),
+            sender_id: sender_id.into(),
+            previous_owner_ids: previous_owner_ids.iter().map(Into::into).collect(),
+            token_ids: token_ids.iter().map(Into::into).collect(),
+            amounts: amounts.iter().map(|a| a.0).collect(),
+            msg: msg.into(),
+            nonce: self.next_nonce(),
         }
         .emit();
 
-        self.inc_nonce();
-        PromiseOrValue::Value(result)
+        PromiseOrValue::Value(vec![U128(0); amounts.len()])
     }
 }
 
 impl Contract {
-    fn inc_nonce(&mut self) {
+    #[must_use]
+    fn next_nonce(&mut self) -> u128 {
+        let nonce = self.nonce;
         self.nonce = self
             .nonce
             .checked_add(1)
             .unwrap_or_else(|| env::panic_str("nonce overflow"));
+        nonce
     }
 }
 
@@ -86,7 +86,7 @@ mod tests {
             .build();
         testing_env!(context);
 
-        let mut contract = Contract::new();
+        let mut contract = Contract::default();
         let _ = contract.mt_on_transfer(
             "alice.near".parse().unwrap(),
             vec!["alice.near".parse().unwrap()],
@@ -104,6 +104,8 @@ mod tests {
                 "event": "mt_deposit",
                 "data": {
                     "token": "intents.near",
+                    "sender_id": "alice.near",
+                    "previous_owner_ids": ["alice.near"],
                     "token_ids": ["nep141:wrap.near"],
                     "amounts": ["100"],
                     "msg": "test",

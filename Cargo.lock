@@ -7149,6 +7149,7 @@ version = "0.1.0"
 dependencies = [
  "defuse-nep245",
  "near-sdk",
+ "serde_with",
 ]
 
 [[package]]
