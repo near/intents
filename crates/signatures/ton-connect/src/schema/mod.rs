@@ -65,7 +65,12 @@ pub trait PayloadSchema {
     derive(::serde::Serialize, ::serde::Deserialize),
     serde(tag = "type", rename_all = "snake_case"),
     serde(bound = ""),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+    cfg_attr(
+        feature = "abi",
+        schemars(bound = ""),
+        schemars(rename = "TonConnectPayloadSchema"),
+        derive(::schemars::JsonSchema)
+    )
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TonConnectPayloadSchema<D> {

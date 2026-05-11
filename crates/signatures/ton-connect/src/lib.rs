@@ -15,7 +15,12 @@ pub use tlb_ton;
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     serde(bound = ""),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
+    cfg_attr(
+        feature = "abi",
+        schemars(bound = ""),
+        schemars(rename = "TonConnectPayload"),
+        derive(::schemars::JsonSchema)
+    ),
     cfg_attr(test, derive(::arbitrary::Arbitrary))
 )]
 #[autoimpl(Deref using self.payload)]
@@ -69,7 +74,12 @@ impl<D: digest::Digest<OutputSize = digest::consts::U32>> TonConnectPayload<D> {
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     serde(bound = ""),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+    cfg_attr(
+        feature = "abi",
+        schemars(bound = ""),
+        schemars(rename = "SignedTonConnectPayload"),
+        derive(::schemars::JsonSchema)
+    )
 )]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone, PartialEq, Eq)]

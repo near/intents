@@ -12,7 +12,12 @@ use tlb_ton::StringError;
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     serde(bound = ""),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+    cfg_attr(
+        feature = "abi",
+        schemars(bound = ""),
+        schemars(rename = "TextPayload"),
+        derive(::schemars::JsonSchema)
+    )
 )]
 #[autoimpl(Deref using self.text)]
 pub struct TextPayload<D = ()> {

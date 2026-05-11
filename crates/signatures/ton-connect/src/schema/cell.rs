@@ -18,7 +18,12 @@ use crate::schema::{PayloadSchema, TonConnectPayloadContext};
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     serde(bound = ""),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+    cfg_attr(
+        feature = "abi",
+        schemars(bound = ""),
+        schemars(rename = "CellPayload"),
+        derive(::schemars::JsonSchema)
+    )
 )]
 pub struct CellPayload<D> {
     pub schema_crc: u32,
@@ -89,13 +94,6 @@ impl<D: digest::Digest<OutputSize = digest::consts::U32>> PayloadSchema for Cell
         }
         .to_cell(())?;
 
-        #[cfg(feature = "near-contract")]
-        {
-            Ok(cell.hash_digest::<defuse_near_utils::digest::Sha256>())
-        }
-        #[cfg(not(feature = "near-contract"))]
-        {
-            Ok(cell.hash_digest::<sha2::Sha256>())
-        }
+        Ok(cell.hash_digest::<D>())
     }
 }
