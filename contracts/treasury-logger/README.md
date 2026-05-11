@@ -64,18 +64,27 @@ NEP-297 `EVENT_JSON:…` log format.
 
 ```json
 {
-  "standard": "logger",
-  "version": "1.0.0",
-  "event": "mt_deposit",
-  "data": {
-    "token": "<mt-contract-account-id>",
-    "sender_id": "<account-that-initiated-mt_transfer_call>",
-    "previous_owner_ids": ["<account-id>", "..."],
-    "token_ids": ["<token-id>", "..."],
-    "amounts": ["<u128 as string>", "..."],
-    "msg": "<string passed to mt_transfer_call>",
-    "nonce": "<u128 as string>"
-  }
+    "standard": "logger",
+    "version": "1.0.0",
+    "event": "mt_deposit",
+    "data": {
+        "token": "<mt-contract-account-id>",
+        "sender_id": "<account-that-initiated-mt_transfer_call>",
+        "previous_owner_ids": [
+            "<account-id>",
+            "..."
+        ],
+        "token_ids": [
+            "<token-id>",
+            "..."
+        ],
+        "amounts": [
+            "<u128 as string>",
+            "..."
+        ],
+        "msg": "<string passed to mt_transfer_call>",
+        "nonce": "<u128 as string>"
+    }
 }
 ```
 
@@ -97,7 +106,7 @@ The build image and digest are pinned in `Cargo.toml` under
 ## Testing
 
 ```bash
-cargo test -p treasury-logger
+cargo test -p defuse-treasury-logger
 ```
 
 Unit tests in `src/lib.rs` assert the exact event JSON produced by the

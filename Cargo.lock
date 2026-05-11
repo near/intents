@@ -1969,6 +1969,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-treasury-logger"
+version = "0.1.0"
+dependencies = [
+ "defuse-nep245",
+ "near-sdk",
+ "serde_with",
+]
+
+[[package]]
 name = "defuse-wallet"
 version = "0.1.0"
 dependencies = [
@@ -7141,15 +7150,6 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
-]
-
-[[package]]
-name = "treasury-logger"
-version = "0.1.0"
-dependencies = [
- "defuse-nep245",
- "near-sdk",
- "serde_with",
 ]
 
 [[package]]
