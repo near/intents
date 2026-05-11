@@ -41,7 +41,7 @@ impl MultiTokenReceiver for Contract {
         );
         require!(
             token_ids.len() == previous_owner_ids.len(),
-            "previous_owner_ids and amounts mismatch"
+            "token_ids and previous_owner_ids length mismatch"
         );
 
         Event::MtDeposit {
