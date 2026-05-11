@@ -146,25 +146,28 @@ pub trait Algorithm {
 pub trait AlgorithmPrehash {
     type PublicKey;
     type Signature;
-    type Digest: digest::Digest;
+    type Digest: digest::Digest<OutputSize = digest::consts::U32>;
 
     fn verify_prehash(
-        prehash: &[u8],
+        prehash: [u8; 32],
         public_key: &Self::PublicKey,
         signature: &Self::Signature,
     ) -> bool;
 }
 
-impl<T> Algorithm for T
+//TODO: even more generic
+impl<T, D> Algorithm for T
 where
-    T: AlgorithmPrehash,
+    T: AlgorithmPrehash<Digest = D>,
+    D: digest::Digest<OutputSize = digest::consts::U32>,
 {
     type PublicKey = T::PublicKey;
     type Signature = T::Signature;
 
     fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
-        let hash = <<T as AlgorithmPrehash>::Digest as digest::Digest>::digest(msg);
-        T::verify_prehash(hash.as_ref(), public_key, signature)
+        let hash: [u8; 32] =
+            <<T as AlgorithmPrehash>::Digest as digest::Digest>::digest(msg).into();
+        T::verify_prehash(hash, public_key, signature)
     }
 }
 
