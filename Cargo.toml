@@ -30,6 +30,7 @@ members = [
 
   "crates/primitives/deadline",
   "crates/primitives/decimal",
+  "crates/primitives/digest",
   "crates/primitives/fees",
   "crates/primitives/token-id",
 
@@ -98,6 +99,7 @@ defuse-wnear.path = "crates/near/wnear"
 
 defuse-deadline.path = "crates/primitives/deadline"
 defuse-decimal.path = "crates/primitives/decimal"
+defuse-digest.path = "crates/primitives/digest"
 defuse-fees.path = "crates/primitives/fees"
 defuse-token-id = { path = "crates/primitives/token-id", default-features = false }
 

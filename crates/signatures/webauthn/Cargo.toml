@@ -19,8 +19,7 @@ schemars = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_json = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true }
-sha2 = { workspace = true, optional = true }
-defuse-near-utils = { workspace = true, optional = true , features = ["digest"] }
+defuse-digest = { workspace = true, optional = true }
 
 [features]
 default = ["ed25519", "p256"]
@@ -37,8 +36,8 @@ serde = [
 ]
 
 verify = ["dep:serde_json", "serde"]
-sha2 = ["dep:sha2"]
-near-contract = ["dep:defuse-near-utils"]
+sha2 = ["dep:defuse-digest", "defuse-digest/sha2", "verify"]
+near-contract = ["dep:defuse-digest", "defuse-digest/near-contract", "verify"]
 
 ed25519 = ["defuse-crypto/ed25519", "defuse-crypto/near-contract"]
 p256 = ["defuse-crypto/p256"]

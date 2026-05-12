@@ -1,0 +1,17 @@
+[package]
+name = "defuse-digest"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+defuse-near-utils = { workspace = true, optional = true, features = ["digest"] }
+sha2 = { workspace = true, optional = true }
+
+[features]
+near-contract = ["dep:defuse-near-utils"]
+sha2 = ["dep:sha2"]
+
+[lints]
+workspace = true
