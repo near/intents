@@ -2,6 +2,13 @@ use core::str;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
+
+#[cfg(all(feature = "verify", feature = "near-contract"))]
+type Sha256 = defuse_near_utils::digest::Sha256;
+
+#[cfg(all(feature = "verify", not(feature = "near-contract"), feature="sha2"))]
+type Sha256 = sha2::Sha256;
+
 use sha2::digest;
 use tlb_ton::{MsgAddress, StringError};
 
@@ -21,7 +28,7 @@ pub struct TonConnectPayloadContext<'a> {
 impl TonConnectPayloadContext<'_> {
     // See https://docs.tonconsole.com/academy/sign-data#how-the-signature-is-built
     #[cfg(any(feature = "binary", feature = "text"))]
-    pub fn create_payload_hash<D: digest::Digest<OutputSize = digest::consts::U32>>(
+    pub fn create_payload_hash(
         &self,
         payload_prefix: &[u8],
         payload: &[u8],
@@ -45,7 +52,8 @@ impl TonConnectPayloadContext<'_> {
         ]
         .concat();
 
-        Ok(Into::<[u8; 32]>::into(D::digest(&bytes)))
+        // Ok(Into::<[u8; 32]>::into(D::digest(&bytes)))
+        todo!()
     }
 }
 
@@ -67,51 +75,39 @@ pub trait PayloadSchema {
     serde(bound = ""),
     cfg_attr(
         feature = "abi",
-        schemars(bound = ""),
-        schemars(rename = "TonConnectPayloadSchema"),
         derive(::schemars::JsonSchema)
     )
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TonConnectPayloadSchema<D> {
+pub enum TonConnectPayloadSchema {
     #[cfg(feature = "text")]
-    Text(text::TextPayload<D>),
+    Text(text::TextPayload),
     #[cfg(feature = "binary")]
-    Binary(binary::BinaryPayload<D>),
+    Binary(binary::BinaryPayload),
     #[cfg(feature = "cell")]
-    Cell(cell::CellPayload<D>),
+    Cell(cell::CellPayload),
 }
 
-impl<D: digest::Digest<OutputSize = digest::consts::U32>> TonConnectPayloadSchema<D> {
+impl TonConnectPayloadSchema {
     #[cfg(feature = "text")]
     pub fn text(txt: impl Into<String>) -> Self {
-        Self::Text(text::TextPayload {
-            text: txt.into(),
-            _phantom: std::marker::PhantomData::<D>,
-        })
+        Self::Text(text::TextPayload { text: txt.into() })
     }
 
     #[cfg(feature = "binary")]
     pub fn binary(bytes: impl Into<Vec<u8>>) -> Self {
         Self::Binary(binary::BinaryPayload {
             bytes: bytes.into(),
-            _phantom: std::marker::PhantomData::<D>,
         })
     }
 
     #[cfg(feature = "cell")]
     pub const fn cell(schema_crc: u32, cell: tlb_ton::Cell) -> Self {
-        Self::Cell(cell::CellPayload {
-            schema_crc,
-            cell,
-            _phantom: std::marker::PhantomData::<D>,
-        })
+        Self::Cell(cell::CellPayload { schema_crc, cell })
     }
 }
 
-impl<D: digest::Digest<OutputSize = digest::consts::U32>> PayloadSchema
-    for TonConnectPayloadSchema<D>
-{
+impl PayloadSchema for TonConnectPayloadSchema {
     fn hash_with_context(
         &self,
         context: TonConnectPayloadContext,
@@ -123,8 +119,6 @@ impl<D: digest::Digest<OutputSize = digest::consts::U32>> PayloadSchema
             Self::Binary(payload) => payload.hash_with_context(context),
             #[cfg(feature = "cell")]
             Self::Cell(payload) => payload.hash_with_context(context),
-            #[cfg(not(any(feature = "text", feature = "binary", feature = "cell")))]
-            _ => unreachable!(),
         }
     }
 }

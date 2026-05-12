@@ -1,6 +1,5 @@
 use defuse_crypto::{Curve, CurveTypes, Ed25519};
 use defuse_ton_connect::{SignedTonConnectPayload, TonConnectPayload, TonConnectPayloadSchema};
-use digest::{Digest, consts::U32};
 use near_sdk::{
     serde::de::{DeserializeOwned, Error},
     serde_json,
@@ -8,21 +7,21 @@ use near_sdk::{
 
 use super::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
 
-impl<D: Digest<OutputSize = U32>> Payload for TonConnectPayload<D> {
+impl Payload for TonConnectPayload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {
         self.hash()
     }
 }
 
-impl<D: Digest<OutputSize = U32>> Payload for SignedTonConnectPayload<D> {
+impl Payload for SignedTonConnectPayload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {
         Payload::hash(&self.payload)
     }
 }
 
-impl<D: Digest<OutputSize = U32>> SignedPayload for SignedTonConnectPayload<D> {
+impl SignedPayload for SignedTonConnectPayload {
     type PublicKey = <Ed25519 as CurveTypes>::PublicKey;
 
     #[inline]
@@ -31,7 +30,7 @@ impl<D: Digest<OutputSize = U32>> SignedPayload for SignedTonConnectPayload<D> {
     }
 }
 
-impl<D: Digest<OutputSize = U32>, T> ExtractDefusePayload<T> for SignedTonConnectPayload<D>
+impl<T> ExtractDefusePayload<T> for SignedTonConnectPayload
 where
     T: DeserializeOwned,
 {
@@ -43,7 +42,7 @@ where
     }
 }
 
-impl<D: Digest<OutputSize = U32>, T> ExtractDefusePayload<T> for TonConnectPayload<D>
+impl<T> ExtractDefusePayload<T> for TonConnectPayload
 where
     T: DeserializeOwned,
 {

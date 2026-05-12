@@ -25,16 +25,10 @@ use crate::schema::{PayloadSchema, TonConnectPayloadContext};
         derive(::schemars::JsonSchema)
     )
 )]
-pub struct CellPayload<D> {
+pub struct CellPayload {
     pub schema_crc: u32,
     #[cfg_attr(feature = "serde", serde_as(as = "AsBoC<Base64>"))]
     pub cell: Cell,
-    #[cfg_attr(
-        feature = "serde",
-        serde(skip),
-        cfg_attr(feature = "abi", schemars(skip))
-    )]
-    pub _phantom: std::marker::PhantomData<D>,
 }
 
 /// ```tlb
@@ -80,7 +74,7 @@ where
     }
 }
 
-impl<D: digest::Digest<OutputSize = digest::consts::U32>> PayloadSchema for CellPayload<D> {
+impl PayloadSchema for CellPayload {
     fn hash_with_context(
         &self,
         context: TonConnectPayloadContext,
@@ -94,6 +88,7 @@ impl<D: digest::Digest<OutputSize = digest::consts::U32>> PayloadSchema for Cell
         }
         .to_cell(())?;
 
-        Ok(cell.hash_digest::<D>())
+        // use host function for recursive hash calculation
+        Ok(cell.hash_digest::<defuse_near_utils::digest::Sha256>())
     }
 }

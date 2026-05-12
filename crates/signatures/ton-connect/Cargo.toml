@@ -10,6 +10,7 @@ workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
+defuse-near-utils = { workspace = true, features = ["digest"] }
 defuse-serde-utils = { workspace = true, features = ["base64", "tlb"] }
 
 chrono = { workspace = true, features = ["serde"] }
@@ -18,7 +19,6 @@ sha2.workspace = true
 tlb-ton = { workspace = true, features = ["serde"] }
 
 cfg_eval = { workspace = true, optional = true }
-digest = { workspace = true }
 schemars = { workspace = true, features = ["chrono"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, features = ["chrono_0_4"], optional = true }
@@ -41,6 +41,7 @@ text = []
 
 [dev-dependencies]
 defuse-test-utils.workspace = true
+defuse-core.workspace = true
 
 arbitrary.workspace = true
 hex-literal.workspace = true

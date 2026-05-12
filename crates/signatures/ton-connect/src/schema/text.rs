@@ -14,27 +14,19 @@ use tlb_ton::StringError;
     serde(bound = ""),
     cfg_attr(
         feature = "abi",
-        schemars(bound = ""),
-        schemars(rename = "TextPayload"),
         derive(::schemars::JsonSchema)
     )
 )]
 #[autoimpl(Deref using self.text)]
-pub struct TextPayload<D = ()> {
+pub struct TextPayload {
     pub text: String,
-    #[cfg_attr(
-        feature = "serde",
-        serde(skip),
-        cfg_attr(feature = "abi", schemars(skip))
-    )]
-    pub _phantom: std::marker::PhantomData<D>,
 }
 
-impl<D: digest::Digest<OutputSize = digest::consts::U32>> PayloadSchema for TextPayload<D> {
+impl PayloadSchema for TextPayload {
     fn hash_with_context(
         &self,
         context: TonConnectPayloadContext,
     ) -> Result<defuse_crypto::CryptoHash, StringError> {
-        context.create_payload_hash::<D>(b"txt", self.as_bytes())
+        context.create_payload_hash(b"txt", self.as_bytes())
     }
 }
