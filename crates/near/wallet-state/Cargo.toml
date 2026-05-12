@@ -12,7 +12,7 @@ workspace = true
 near-account-id.workspace = true
 
 defuse-bitmap.workspace = true
-defuse-borsh-utils = { workspace = true, features = ["chrono"] }
+defuse-borsh-utils = { workspace = true, features = ["chrono"], optional = true }
 defuse-deadline.workspace = true
 
 borsh = { workspace = true, optional = true, features = ["derive"] }
@@ -21,7 +21,7 @@ thiserror.workspace = true
 rand_core = { workspace = true, optional = true }
 
 [features]
-borsh = ["defuse-bitmap/borsh", "dep:borsh", "near-account-id/borsh"]
+borsh = ["dep:defuse-borsh-utils", "defuse-bitmap/borsh", "dep:borsh", "near-account-id/borsh"]
 abi = [
   "borsh?/unstable__schema",
   "defuse-bitmap/abi",
