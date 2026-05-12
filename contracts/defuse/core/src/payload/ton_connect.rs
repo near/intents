@@ -17,7 +17,7 @@ impl Payload for TonConnectPayload {
 impl Payload for SignedTonConnectPayload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {
-        Payload::hash(&self.payload)
+        self.payload.hash()
     }
 }
 
@@ -26,7 +26,7 @@ impl SignedPayload for SignedTonConnectPayload {
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        Ed25519::verify(&self.signature, &Payload::hash(self), &self.public_key)
+        Ed25519::verify(&self.signature, &self.hash(), &self.public_key)
     }
 }
 

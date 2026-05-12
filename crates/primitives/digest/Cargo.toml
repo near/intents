@@ -6,8 +6,10 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-near-utils = { workspace = true, optional = true, features = ["digest"] }
+digest = { workspace = true }
+
 sha2 = { workspace = true, optional = true }
+defuse-near-utils = { workspace = true, optional = true, features = ["digest"] }
 
 [features]
 near-contract = ["dep:defuse-near-utils"]

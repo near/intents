@@ -2,18 +2,19 @@ use crate::payload::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload
 use defuse_crypto::{Curve, CurveTypes, Ed25519};
 use defuse_sep53::{Sep53Payload, SignedSep53Payload};
 use near_sdk::{serde::de::DeserializeOwned, serde_json};
+use defuse_digest::{Digest, Sha256};
 
 impl Payload for Sep53Payload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {
-        near_sdk::env::sha256_array(self.prehash())
+        Sha256::digest(self.prehash()).into()
     }
 }
 
 impl Payload for SignedSep53Payload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {
-        Payload::hash(&self.payload)
+        self.payload.hash()
     }
 }
 
@@ -22,7 +23,7 @@ impl SignedPayload for SignedSep53Payload {
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        Ed25519::verify(&self.signature, &Payload::hash(self), &self.public_key)
+        Ed25519::verify(&self.signature, &self.hash(), &self.public_key)
     }
 }
 

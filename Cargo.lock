@@ -1460,6 +1460,7 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-crypto",
  "defuse-deadline",
+ "defuse-digest",
  "defuse-erc191",
  "defuse-fees",
  "defuse-map-utils",
@@ -1542,6 +1543,7 @@ name = "defuse-digest"
 version = "0.1.0"
 dependencies = [
  "defuse-near-utils",
+ "digest 0.11.2",
  "sha2 0.11.0",
 ]
 

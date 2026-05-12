@@ -1,5 +1,6 @@
 use defuse_crypto::{Curve, CurveTypes, Ed25519, serde::AsCurve};
 use near_sdk::{env, near, serde::de::DeserializeOwned, serde_json};
+use defuse_digest::{Digest, Sha256};
 use serde_with::serde_as;
 
 use super::{ExtractDefusePayload, Payload, SignedPayload};
@@ -18,7 +19,7 @@ pub struct SignedRawEd25519Payload {
 impl Payload for SignedRawEd25519Payload {
     #[inline]
     fn hash(&self) -> [u8; 32] {
-        env::sha256_array(self.payload.as_bytes())
+        Sha256::digest(self.payload.as_bytes()).into()
     }
 }
 
