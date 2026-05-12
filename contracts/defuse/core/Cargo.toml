@@ -14,7 +14,7 @@ defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-map-utils.workspace = true
 defuse-near-utils = { workspace = true, features = ["digest"] }
 defuse-nep245.workspace = true
-defuse-nep413 = { workspace = true, features = ["verify", "serde"] }
+defuse-nep413 = { workspace = true, features = ["verify", "serde", "prehash"] }
 defuse-num-utils.workspace = true
 defuse-sep53 = { workspace = true }
 defuse-serde-utils = { workspace = true, features = ["base58", "base64"] }
