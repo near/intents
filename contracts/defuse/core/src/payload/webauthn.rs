@@ -1,11 +1,12 @@
 use defuse_crypto::{
     Ed25519PublicKey, Ed25519Signature, P256Signature, Signature, compress_public_key,
 };
+use digest::Digest;
 
 use crate::public_key::PublicKey;
 use defuse_near_utils::digest::Sha256 as NearSha256;
 use defuse_webauthn::{
-    Algorithm, AlgorithmPrehash, Ed25519, P256, PayloadSignature, UserVerification,
+    Algorithm, Ed25519, P256, PayloadSignature, UserVerification,
 };
 use near_sdk::{CryptoHash, env, near, serde::de::DeserializeOwned, serde_json};
 
@@ -20,7 +21,7 @@ pub struct SignedWebAuthnPayload {
     // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
     #[cfg_attr(feature = "abi", schemars(skip))]
     #[serde(flatten)]
-    pub signature: PayloadSignature<Ed25519OrP256, NearSha256>,
+    pub signature: PayloadSignature<Ed25519OrP256>,
 }
 
 impl Payload for SignedWebAuthnPayload {
@@ -35,20 +36,19 @@ pub struct Ed25519OrP256;
 
 impl Algorithm for Ed25519OrP256 {
     type PublicKey = PublicKey;
-
     type Signature = Signature;
 
     #[inline]
-    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
+    fn verify<D: Digest<OutputSize = digest::consts::U32>>(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
         match (public_key, signature) {
-            (PublicKey::Ed25519(public_key), Signature::Ed25519(signature)) => Ed25519::verify(
+            (PublicKey::Ed25519(public_key), Signature::Ed25519(signature)) => Ed25519::verify::<D>(
                 msg,
                 &Ed25519PublicKey(*public_key),
                 &Ed25519Signature(*signature),
             ),
 
             (PublicKey::P256(public_key), Signature::P256(signature)) => {
-                P256::verify_prehash::<NearSha256>(
+                P256::verify::<D>(
                     msg,
                     &compress_public_key(*public_key),
                     &P256Signature(*signature),
@@ -66,7 +66,7 @@ impl SignedPayload for SignedWebAuthnPayload {
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
         self.signature
-            .verify(self.hash(), &self.public_key, UserVerification::Ignore)
+            .verify::<NearSha256>(self.hash(), &self.public_key, UserVerification::Ignore)
             .then_some(&self.public_key)
             .copied()
     }

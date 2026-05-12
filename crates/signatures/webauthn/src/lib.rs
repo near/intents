@@ -8,6 +8,14 @@ mod p256;
 #[cfg(feature = "p256")]
 pub use self::p256::*;
 
+use digest::Digest;
+
+#[cfg(all(feature = "verify", feature = "near-contract"))]
+type Sha256 = defuse_near_utils::digest::Sha256;
+
+#[cfg(all(feature = "verify", not(feature = "near-contract"), feature="sha2"))]
+type Sha256 = sha2::Sha256;
+
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -16,7 +24,7 @@ pub use self::p256::*;
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Debug, Clone)]
-pub struct PayloadSignature<A: HasSignature + ?Sized> {
+pub struct PayloadSignature<A: Algorithm + ?Sized> {
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
     #[cfg_attr(
         feature = "serde",
@@ -33,16 +41,17 @@ pub struct PayloadSignature<A: HasSignature + ?Sized> {
     pub signature: A::Signature,
 }
 
-#[cfg(feature = "verify")]
-impl<A: HasSignature + ?Sized> PayloadSignature<A> {
+#[cfg(all(feature = "verify", any(feature = "near-contract", feature = "sha2")))]
+impl<A: Algorithm + ?Sized> PayloadSignature<A> {
     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
     ///
     /// Credits to:
     /// * [ERC-4337 Smart Wallet](https://github.com/passkeys-4337/smart-wallet/blob/f3aa9fd44646fde0316fc810e21cc553a9ed73e0/contracts/src/WebAuthn.sol#L75-L172)
     /// * [CAP-0051](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0051.md)
-    pub fn pre_verify(
+    pub fn verify(
         &self,
         message: impl AsRef<[u8]>,
+        public_key: &A::PublicKey,
         user_verification: UserVerification,
     ) -> bool {
         // verify authData flags
@@ -66,7 +75,17 @@ impl<A: HasSignature + ?Sized> PayloadSignature<A> {
             return false;
         }
 
-        true
+        // 20. Let hash be the result of computing a hash over the cData using
+        // SHA-256
+        let hash = Sha256::digest(self.client_data_json.as_bytes());
+
+        // 21. Using credentialRecord.publicKey, verify that sig is a valid
+        // signature over the binary concatenation of authData and hash.
+        A::verify(
+            &[self.authenticator_data.as_slice(), hash.as_ref()].concat(),
+            public_key,
+            &self.signature,
+        )
     }
 
     #[allow(clippy::identity_op)]
@@ -103,56 +122,6 @@ impl<A: HasSignature + ?Sized> PayloadSignature<A> {
     }
 }
 
-#[cfg(feature = "verify")]
-impl<A: Algorithm + ?Sized> PayloadSignature<A> {
-    pub fn verify<D: digest::Digest<OutputSize = digest::consts::U32>>(
-        &self,
-        message: impl AsRef<[u8]>,
-        public_key: &A::PublicKey,
-        user_verification: UserVerification,
-    ) -> bool {
-        if !self.pre_verify(message, user_verification) {
-            return false;
-        }
-
-        // 20. Let hash be the result of computing a hash over the cData using SHA-256
-        let hash = D::digest(self.client_data_json.as_bytes());
-
-        // 21. Using credentialRecord.publicKey, verify that sig is a valid
-        // signature over the binary concatenation of authData and hash.
-        A::verify(
-            &[self.authenticator_data.as_slice(), hash.as_ref()].concat(),
-            public_key,
-            &self.signature,
-        )
-    }
-}
-
-#[cfg(feature = "verify")]
-impl<A: AlgorithmPrehash + ?Sized> PayloadSignature<A> {
-    pub fn verify<D: digest::Digest<OutputSize = digest::consts::U32>>(
-        &self,
-        message: impl AsRef<[u8]>,
-        public_key: &A::PublicKey,
-        user_verification: UserVerification,
-    ) -> bool {
-        if !self.pre_verify(message, user_verification) {
-            return false;
-        }
-
-        // 20. Let hash be the result of computing a hash over the cData using SHA-256
-        let hash = D::digest(self.client_data_json.as_bytes());
-
-        // 21. Using credentialRecord.publicKey, verify that sig is a valid
-        // signature over the binary concatenation of authData and hash.
-        A::verify_prehash::<D>(
-            &[self.authenticator_data.as_slice(), hash.as_ref()].concat(),
-            public_key,
-            &self.signature,
-        )
-    }
-}
-
 #[derive(Debug, Clone, Copy)]
 pub enum UserVerification {
     Ignore,
@@ -166,37 +135,13 @@ impl UserVerification {
     }
 }
 
-pub trait HasSignature {
-    type Signature;
-}
-
 /// See <https://www.iana.org/assignments/cose/cose.xhtml#algorithms>
-pub trait Algorithm: HasSignature {
+pub trait Algorithm {
     type PublicKey;
+    type Signature;
 
-    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool;
-}
-
-/// Blanket-impl variant for algorithms that pre-hash the message before verifying.
-/// Implement this trait to get [`Algorithm`] for free.
-pub trait AlgorithmPrehash: HasSignature {
-    type PublicKey;
-
-    fn hash<D: digest::Digest<OutputSize = digest::consts::U32>>(msg: &[u8]) -> [u8; 32] {
-        D::digest(msg).into()
-    }
-
-    fn verify_prehash<D: digest::Digest<OutputSize = digest::consts::U32>>(
+    fn verify(
         msg: &[u8],
-        public_key: &Self::PublicKey,
-        signature: &Self::Signature,
-    ) -> bool {
-        let msg = Self::hash::<D>(msg);
-        Self::verify_digest(msg, public_key, signature)
-    }
-
-    fn verify_digest(
-        msg: [u8; 32],
         public_key: &Self::PublicKey,
         signature: &Self::Signature,
     ) -> bool;

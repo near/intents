@@ -163,7 +163,7 @@ contract_impl! {
             /// 1. Authenticators are general-purpose signers and they usually implement
             ///   blind singing.
             /// 2. This reduces length of the `proof` submitted on-chain.
-            type SigningStandard = Borsh<DomainPrefix<Sha256<Webauthn<P256, NearSha256>>>>;
+            type SigningStandard = Borsh<DomainPrefix<Sha256<Webauthn<P256>>>>;
         }
     }
 }
