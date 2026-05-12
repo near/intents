@@ -21,7 +21,7 @@ defuse-serde-utils = { workspace = true, features = ["base58", "base64"] }
 defuse-tip191 = { workspace = true, features = ["borsh", "serde"] }
 defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245", "borsh", "serde"] }
 defuse-ton-connect = { workspace = true, features = ["serde"] }
-defuse-webauthn = { workspace = true, features = ["ed25519", "p256", "verify"] }
+defuse-webauthn = { workspace = true, features = ["ed25519", "p256", "verify", "near-contract"] }
 digest.workspace = true
 
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }

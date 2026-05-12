@@ -36,24 +36,23 @@ pub struct Ed25519OrP256;
 
 impl Algorithm for Ed25519OrP256 {
     type PublicKey = PublicKey;
+
     type Signature = Signature;
 
     #[inline]
-    fn verify<D: Digest<OutputSize = digest::consts::U32>>(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
+    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
         match (public_key, signature) {
-            (PublicKey::Ed25519(public_key), Signature::Ed25519(signature)) => Ed25519::verify::<D>(
+            (PublicKey::Ed25519(public_key), Signature::Ed25519(signature)) => Ed25519::verify(
                 msg,
                 &Ed25519PublicKey(*public_key),
                 &Ed25519Signature(*signature),
             ),
 
-            (PublicKey::P256(public_key), Signature::P256(signature)) => {
-                P256::verify::<D>(
-                    msg,
-                    &compress_public_key(*public_key),
-                    &P256Signature(*signature),
-                )
-            }
+            (PublicKey::P256(public_key), Signature::P256(signature)) => P256::verify(
+                msg,
+                &compress_public_key(*public_key),
+                &P256Signature(*signature),
+            ),
 
             _ => false,
         }
@@ -66,7 +65,7 @@ impl SignedPayload for SignedWebAuthnPayload {
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
         self.signature
-            .verify::<NearSha256>(self.hash(), &self.public_key, UserVerification::Ignore)
+            .verify(self.hash(), &self.public_key, UserVerification::Ignore)
             .then_some(&self.public_key)
             .copied()
     }

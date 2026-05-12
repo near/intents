@@ -25,7 +25,7 @@ thiserror.workspace = true
 
 defuse-crypto = { workspace = true, default-features = false, optional = true }
 defuse-near-utils = { workspace = true, features = ["digest"], optional = true }
-defuse-webauthn = { workspace = true, default-features = false, optional = true }
+defuse-webauthn = { workspace = true, default-features = false, optional = true, features = ["near-contract", "verify"] }
 
 arbitrary = { workspace = true, optional = true }
 [features]
