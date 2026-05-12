@@ -73,6 +73,7 @@ impl Nep413Payload {
         self
     }
 
+    #[cfg(feature = "prehash")]
     #[inline]
     pub fn prehash(&self) -> Vec<u8> {
         use defuse_nep461::OffchainMessage;
