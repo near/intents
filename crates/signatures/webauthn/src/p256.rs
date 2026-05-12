@@ -3,23 +3,22 @@ use std::marker::PhantomData;
 pub use defuse_crypto::{P256CompressedPublicKey, P256Signature};
 use digest::Digest;
 
-use crate::AlgorithmPrehash;
+use crate::{AlgorithmPrehash, HasSignature};
 
 /// [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
 /// P256 (a.k.a secp256r1) over SHA-256
-pub struct CurveWithDigest<C: defuse_crypto::Curve, D: digest::Digest>(PhantomData<(D, C)>);
-pub type P256<T> = CurveWithDigest<defuse_crypto::P256, T>;
+#[derive(Debug, Clone)]
+pub struct P256;
 
-impl<D> AlgorithmPrehash for CurveWithDigest<defuse_crypto::P256, D>
-where
-    D: Digest<OutputSize = digest::consts::U32>,
-{
-    type PublicKey = P256CompressedPublicKey;
+impl HasSignature for P256 {
     type Signature = P256Signature;
-    type Digest = D;
+}
+
+impl AlgorithmPrehash for P256 {
+    type PublicKey = P256CompressedPublicKey;
 
     #[inline]
-    fn verify_prehash(
+    fn verify_digest(
         prehash: [u8; 32],
         public_key: &Self::PublicKey,
         signature: &Self::Signature,

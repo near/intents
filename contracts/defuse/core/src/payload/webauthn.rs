@@ -4,7 +4,9 @@ use defuse_crypto::{
 
 use crate::public_key::PublicKey;
 use defuse_near_utils::digest::Sha256 as NearSha256;
-use defuse_webauthn::{Algorithm, Ed25519, P256, PayloadSignature, UserVerification};
+use defuse_webauthn::{
+    Algorithm, AlgorithmPrehash, Ed25519, P256, PayloadSignature, UserVerification,
+};
 use near_sdk::{CryptoHash, env, near, serde::de::DeserializeOwned, serde_json};
 
 use super::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
@@ -46,7 +48,7 @@ impl Algorithm for Ed25519OrP256 {
             ),
 
             (PublicKey::P256(public_key), Signature::P256(signature)) => {
-                P256::<NearSha256>::verify(
+                P256::verify_prehash::<NearSha256>(
                     msg,
                     &compress_public_key(*public_key),
                     &P256Signature(*signature),

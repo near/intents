@@ -27,6 +27,19 @@ pub trait SigningStandard<M> {
     fn verify(msg: M, public_key: &Self::PublicKey, signature: &str) -> bool;
 }
 
+/// Signing standard, which defines the public key and how `signature` on
+/// `msg` is verified.
+pub trait SigningStandardPrehash<M> {
+    /// Public key used by the signing standard.
+    type PublicKey;
+
+    fn verify_prehash<D: digest::Digest<OutputSize = digest::consts::U32>>(
+        msg: M,
+        public_key: &Self::PublicKey,
+        signature: &str,
+    ) -> bool;
+}
+
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RequestMessage {

@@ -21,7 +21,12 @@ thiserror.workspace = true
 rand_core = { workspace = true, optional = true }
 
 [features]
-borsh = ["dep:defuse-borsh-utils", "defuse-bitmap/borsh", "dep:borsh", "near-account-id/borsh"]
+borsh = [
+  "defuse-bitmap/borsh",
+  "dep:borsh",
+  "dep:defuse-borsh-utils",
+  "near-account-id/borsh",
+]
 abi = [
   "borsh?/unstable__schema",
   "defuse-bitmap/abi",
