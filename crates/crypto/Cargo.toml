@@ -38,7 +38,7 @@ abi = [
   "borsh?/unstable__schema",
   "dep:schemars",
   "dep:serde_json",
-  "serde_with/schemars_0_8",
+  "serde_with?/schemars_0_8",
 ]
 near-contract = ["dep:near-sdk"]
 

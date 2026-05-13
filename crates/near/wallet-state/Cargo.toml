@@ -30,7 +30,7 @@ borsh = [
 abi = [
   "borsh?/unstable__schema",
   "defuse-bitmap/abi",
-  "defuse-borsh-utils/abi",
+  "defuse-borsh-utils?/abi",
   "near-account-id/abi",
 ]
 # Selects NEAR runtime clock (env::block_timestamp) for Deadline::now().
