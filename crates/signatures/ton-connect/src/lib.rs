@@ -2,7 +2,7 @@
 mod schema;
 
 use chrono::{DateTime, Utc};
-use defuse_crypto::{CurveTypes, Ed25519};
+use defuse_crypto::Ed25519;
 use impl_tools::autoimpl;
 use tlb_ton::MsgAddress;
 
@@ -93,8 +93,6 @@ pub struct SignedTonConnectPayload {
 #[allow(clippy::unreadable_literal)]
 mod tests {
     use super::*;
-    use defuse_core::payload::{Payload, SignedPayload};
-    use defuse_crypto::{Curve, Ed25519};
 
     use arbitrary::{Arbitrary, Unstructured};
     use defuse_test_utils::random::random_bytes;
@@ -226,7 +224,7 @@ mod tests {
     }
 
     #[cfg(feature = "serde")]
-    fn verify_ok(signed: &SignedTonConnectPayload, ok: bool) {
+    fn verify_ok(signed: &SignedTonConnectPayload, _ok: bool) {
         let serialized = serde_json::to_string_pretty(signed).unwrap();
         println!("{}", &serialized);
         let deserialized: SignedTonConnectPayload = serde_json::from_str(&serialized).unwrap();

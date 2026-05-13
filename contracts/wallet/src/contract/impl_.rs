@@ -125,7 +125,6 @@ contract_impl! {
             standard(standard = "wallet-webauthn-ed25519", version = "1.0.0")
         ))
     )] {
-        use defuse_near_utils::digest::Sha256 as NearSha256;
         use crate::signature::{
             Borsh, DomainPrefix, Sha256,
             webauthn::{Ed25519, Webauthn},
@@ -149,7 +148,6 @@ contract_impl! {
             standard(standard = "wallet-webauthn-p256", version = "1.0.0")
         ))
     )] {
-        use defuse_near_utils::digest::Sha256 as NearSha256;
         use crate::signature::{
             Borsh, DomainPrefix, Sha256,
             webauthn::{P256, Webauthn},

@@ -5,7 +5,7 @@ use defuse_crypto::{
 use crate::public_key::PublicKey;
 use defuse_digest::{Digest, Sha256};
 use defuse_webauthn::{Algorithm, Ed25519, P256, PayloadSignature, UserVerification};
-use near_sdk::{CryptoHash, env, near, serde::de::DeserializeOwned, serde_json};
+use near_sdk::{CryptoHash, near, serde::de::DeserializeOwned, serde_json};
 
 use super::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
 

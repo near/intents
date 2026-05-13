@@ -1,6 +1,6 @@
 use defuse_crypto::{Curve, CurveTypes, Ed25519, serde::AsCurve};
 use defuse_digest::{Digest, Sha256};
-use near_sdk::{env, near, serde::de::DeserializeOwned, serde_json};
+use near_sdk::{near, serde::de::DeserializeOwned, serde_json};
 use serde_with::serde_as;
 
 use super::{ExtractDefusePayload, Payload, SignedPayload};
