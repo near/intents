@@ -31,6 +31,36 @@ impl FixedOutput for Sha256 {
 
 impl HashMarker for Sha256 {}
 
+#[derive(Debug, Clone, Default)]
+pub struct Keccak256 {
+    data: Vec<u8>,
+}
+
+impl Update for Keccak256 {
+    #[inline]
+    fn update(&mut self, data: &[u8]) {
+        self.data.extend(data);
+    }
+}
+
+impl OutputSizeUser for Keccak256 {
+    type OutputSize = U32;
+}
+
+impl FixedOutput for Keccak256 {
+    #[inline]
+    fn finalize_into(self, out: &mut digest::Output<Self>) {
+        *out = self.finalize_fixed();
+    }
+
+    #[inline]
+    fn finalize_fixed(self) -> digest::Output<Self> {
+        env::keccak256_array(&self.data).into()
+    }
+}
+
+impl HashMarker for Keccak256 {}
+
 #[cfg(test)]
 mod tests {
     use defuse_test_utils::random::random_bytes;
@@ -41,8 +71,14 @@ mod tests {
     use super::*;
 
     #[rstest]
-    fn digest(random_bytes: Vec<u8>) {
+    fn sha256(random_bytes: Vec<u8>) {
         let got: CryptoHash = Sha256::digest(&random_bytes).into();
         assert_eq!(got, env::sha256_array(&random_bytes));
+    }
+
+    #[rstest]
+    fn keccak256(random_bytes: Vec<u8>) {
+        let got: CryptoHash = Keccak256::digest(&random_bytes).into();
+        assert_eq!(got, env::keccak256_array(&random_bytes));
     }
 }

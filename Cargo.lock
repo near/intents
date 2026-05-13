@@ -1543,8 +1543,8 @@ name = "defuse-digest"
 version = "0.1.0"
 dependencies = [
  "defuse-near-utils",
- "digest 0.11.2",
  "sha2 0.11.0",
+ "sha3 0.11.0",
 ]
 
 [[package]]
