@@ -1,13 +1,10 @@
 use defuse_crypto::{
     Ed25519PublicKey, Ed25519Signature, P256Signature, Signature, compress_public_key,
 };
-use digest::Digest;
 
 use crate::public_key::PublicKey;
-use defuse_near_utils::digest::Sha256 as NearSha256;
-use defuse_webauthn::{
-    Algorithm, Ed25519, P256, PayloadSignature, UserVerification,
-};
+use defuse_digest::{Digest, Sha256};
+use defuse_webauthn::{Algorithm, Ed25519, P256, PayloadSignature, UserVerification};
 use near_sdk::{CryptoHash, env, near, serde::de::DeserializeOwned, serde_json};
 
 use super::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
@@ -27,7 +24,7 @@ pub struct SignedWebAuthnPayload {
 impl Payload for SignedWebAuthnPayload {
     #[inline]
     fn hash(&self) -> CryptoHash {
-        env::sha256_array(self.payload.as_bytes())
+        Sha256::digest(self.payload.as_bytes()).into()
     }
 }
 

@@ -134,11 +134,7 @@ pub trait Algorithm {
     type PublicKey;
     type Signature;
 
-    fn verify(
-        msg: &[u8],
-        public_key: &Self::PublicKey,
-        signature: &Self::Signature,
-    ) -> bool;
+    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool;
 }
 
 /// For more details, refer to [WebAuthn specification](https://w3c.github.io/webauthn/#dictdef-collectedclientdata).

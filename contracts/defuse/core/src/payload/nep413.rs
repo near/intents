@@ -1,7 +1,7 @@
 use defuse_crypto::{Curve, CurveTypes, Ed25519};
+use defuse_digest::{Digest, Sha256};
 use defuse_nep413::{Nep413Payload, SignedNep413Payload};
 use impl_tools::autoimpl;
-use defuse_digest::{Digest, Sha256};
 use near_sdk::{
     AccountId, near,
     serde::de::{self, DeserializeOwned},
@@ -34,7 +34,6 @@ impl SignedPayload for SignedNep413Payload {
         Ed25519::verify(&self.signature, &self.hash(), &self.public_key)
     }
 }
-
 
 #[near(serializers = [json])]
 #[autoimpl(Deref using self.message)]

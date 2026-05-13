@@ -1,13 +1,13 @@
 use super::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
 use defuse_crypto::{Curve, CurveTypes, Secp256k1};
+use defuse_digest::{Digest, Sha256};
 use defuse_erc191::{Erc191Payload, SignedErc191Payload};
 use near_sdk::{serde::de::DeserializeOwned, serde_json};
-use defuse_digest::{Sha256, Digest};
 
 impl Payload for Erc191Payload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {
-        defuse_digest::Sha256::digest(self.prehash()).into()
+        defuse_digest::Keccak256::digest(self.prehash()).into()
     }
 }
 

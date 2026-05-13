@@ -2,14 +2,6 @@ use core::str;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-
-#[cfg(all(feature = "verify", feature = "near-contract"))]
-type Sha256 = defuse_near_utils::digest::Sha256;
-
-#[cfg(all(feature = "verify", not(feature = "near-contract"), feature="sha2"))]
-type Sha256 = sha2::Sha256;
-
-use sha2::digest;
 use tlb_ton::{MsgAddress, StringError};
 
 #[cfg(feature = "binary")]
@@ -33,6 +25,8 @@ impl TonConnectPayloadContext<'_> {
         payload_prefix: &[u8],
         payload: &[u8],
     ) -> Result<defuse_crypto::CryptoHash, StringError> {
+        use defuse_digest::Digest;
+
         let domain_len = u32::try_from(self.domain.len())
             .map_err(|_| tlb_ton::Error::custom("domain: overflow"))?;
         let payload_len = u32::try_from(payload.len())
@@ -52,8 +46,9 @@ impl TonConnectPayloadContext<'_> {
         ]
         .concat();
 
-        // Ok(Into::<[u8; 32]>::into(D::digest(&bytes)))
-        todo!()
+        Ok(Into::<[u8; 32]>::into(defuse_digest::Sha256::digest(
+            &bytes,
+        )))
     }
 }
 
@@ -73,10 +68,7 @@ pub trait PayloadSchema {
     derive(::serde::Serialize, ::serde::Deserialize),
     serde(tag = "type", rename_all = "snake_case"),
     serde(bound = ""),
-    cfg_attr(
-        feature = "abi",
-        derive(::schemars::JsonSchema)
-    )
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TonConnectPayloadSchema {

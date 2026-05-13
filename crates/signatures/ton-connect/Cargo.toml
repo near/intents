@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
-defuse-near-utils = { workspace = true, features = ["digest"] }
+defuse-digest = { workspace = true }
 defuse-serde-utils = { workspace = true, features = ["base64", "tlb"] }
 
 chrono = { workspace = true, features = ["serde"] }
@@ -35,13 +35,13 @@ arbitrary = ["tlb-ton/arbitrary"]
 binary = []
 borsh = ["defuse-crypto/borsh"]
 cell = []
-near-contract = ["defuse-crypto/near-contract"]
+near-contract = ["defuse-crypto/near-contract", "defuse-digest/near-contract"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 text = []
 
 [dev-dependencies]
-defuse-test-utils.workspace = true
 defuse-core.workspace = true
+defuse-test-utils.workspace = true
 
 arbitrary.workspace = true
 hex-literal.workspace = true

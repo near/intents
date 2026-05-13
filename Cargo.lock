@@ -1476,7 +1476,6 @@ dependencies = [
  "defuse-ton-connect",
  "defuse-webauthn",
  "derive_more",
- "digest 0.11.2",
  "hex",
  "hex-literal",
  "impl-tools",
@@ -1543,6 +1542,7 @@ name = "defuse-digest"
 version = "0.1.0"
 dependencies = [
  "defuse-near-utils",
+ "digest 0.11.2",
  "sha2 0.11.0",
  "sha3 0.11.0",
 ]
@@ -2039,7 +2039,7 @@ dependencies = [
  "chrono",
  "defuse-core",
  "defuse-crypto",
- "defuse-near-utils",
+ "defuse-digest",
  "defuse-serde-utils",
  "defuse-test-utils",
  "hex-literal",

@@ -7,10 +7,12 @@ repository.workspace = true
 
 [dependencies]
 defuse-near-utils = { workspace = true, optional = true, features = ["digest"] }
+digest = { workspace = true }
 sha2 = { workspace = true, optional = true }
 sha3 = { workspace = true, optional = true }
 
 [features]
+default = ["sha2", "sha3"]
 near-contract = ["dep:defuse-near-utils"]
 sha2 = ["dep:sha2"]
 sha3 = ["dep:sha3"]

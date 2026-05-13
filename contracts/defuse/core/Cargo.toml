@@ -13,7 +13,7 @@ defuse-digest = { workspace = true, features = ["near-contract"] }
 defuse-erc191 = { workspace = true, features = ["borsh", "serde"] }
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-map-utils.workspace = true
-defuse-near-utils = { workspace = true, features = ["digest"] }
+defuse-near-utils = { workspace = true }
 defuse-nep245.workspace = true
 defuse-nep413 = { workspace = true, features = ["verify", "serde", "prehash"] }
 defuse-num-utils.workspace = true
@@ -23,7 +23,6 @@ defuse-tip191 = { workspace = true, features = ["borsh", "serde"] }
 defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245", "borsh", "serde"] }
 defuse-ton-connect = { workspace = true, features = ["serde"] }
 defuse-webauthn = { workspace = true, features = ["ed25519", "p256", "verify", "near-contract"] }
-digest.workspace = true
 
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
 derive_more = { workspace = true, features = ["from"] }

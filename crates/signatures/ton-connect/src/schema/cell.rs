@@ -89,6 +89,6 @@ impl PayloadSchema for CellPayload {
         .to_cell(())?;
 
         // use host function for recursive hash calculation
-        Ok(cell.hash_digest::<defuse_near_utils::digest::Sha256>())
+        Ok(cell.hash_digest::<defuse_digest::Sha256>())
     }
 }

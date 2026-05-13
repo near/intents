@@ -1,8 +1,8 @@
 use crate::payload::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
 use defuse_crypto::{Curve, CurveTypes, Ed25519};
+use defuse_digest::{Digest, Sha256};
 use defuse_sep53::{Sep53Payload, SignedSep53Payload};
 use near_sdk::{serde::de::DeserializeOwned, serde_json};
-use defuse_digest::{Digest, Sha256};
 
 impl Payload for Sep53Payload {
     #[inline]

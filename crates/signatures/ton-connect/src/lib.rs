@@ -15,10 +15,7 @@ pub use tlb_ton;
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     serde(bound = ""),
-    cfg_attr(
-        feature = "abi",
-        derive(::schemars::JsonSchema)
-    ),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
     cfg_attr(test, derive(::arbitrary::Arbitrary))
 )]
 #[autoimpl(Deref using self.payload)]
@@ -72,10 +69,7 @@ impl TonConnectPayload {
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     serde(bound = ""),
-    cfg_attr(
-        feature = "abi",
-        derive(::schemars::JsonSchema)
-    )
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -99,8 +93,8 @@ pub struct SignedTonConnectPayload {
 #[allow(clippy::unreadable_literal)]
 mod tests {
     use super::*;
-    use defuse_crypto::{Curve, Ed25519};
     use defuse_core::payload::{Payload, SignedPayload};
+    use defuse_crypto::{Curve, Ed25519};
 
     use arbitrary::{Arbitrary, Unstructured};
     use defuse_test_utils::random::random_bytes;
