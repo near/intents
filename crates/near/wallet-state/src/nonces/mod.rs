@@ -13,7 +13,6 @@ use defuse_deadline::Deadline;
 
 use crate::NoncesError;
 
-//TODO: add json schema?
 /// Dual-timeout window nonces
 #[cfg_attr(
     feature = "borsh",
