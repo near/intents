@@ -15,7 +15,6 @@ defuse-serde-utils = { workspace = true, features = ["base64", "tlb"] }
 
 chrono = { workspace = true, features = ["serde"] }
 impl-tools.workspace = true
-sha2.workspace = true
 tlb-ton = { workspace = true, features = ["serde"] }
 
 cfg_eval = { workspace = true, optional = true }

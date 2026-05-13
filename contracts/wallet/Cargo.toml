@@ -48,8 +48,8 @@ webauthn = ["defuse-webauthn/verify", "dep:defuse-webauthn"]
 # extensions are pre-defined at the initialization stage (i.e. state_init).
 # So only extensions can execute requests via `w_execute_extension()`.
 contract = [
-  "defuse-crypto?/borsh",
-  "defuse-crypto?/near-contract",
+  "defuse-crypto/borsh",
+  "defuse-crypto/near-contract",
   "defuse-webauthn?/borsh",
   "dep:defuse-near-utils",
 ]

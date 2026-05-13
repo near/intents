@@ -12,7 +12,7 @@ defuse-deadline = { workspace = true, features = ["near-contract", "serde"] }
 defuse-digest = { workspace = true, features = ["near-contract"] }
 defuse-erc191 = { workspace = true, features = ["borsh", "serde"] }
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
-defuse-map-utils.workspace = true
+defuse-map-utils = { workspace = true, features = ["near"] }
 defuse-near-utils = { workspace = true }
 defuse-nep245.workspace = true
 defuse-nep413 = { workspace = true, features = ["verify", "serde", "prehash"] }
