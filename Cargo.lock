@@ -2097,6 +2097,8 @@ dependencies = [
 name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "defuse-digest",
  "defuse-wallet",
  "ed25519-dalek",
  "impl-tools",

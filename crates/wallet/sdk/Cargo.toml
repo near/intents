@@ -11,12 +11,14 @@ workspace = true
 [dependencies]
 defuse-wallet = { workspace = true, features = ["concurrent"] }
 impl-tools.workspace = true
-near-sdk = { workspace = true, features = ["non-contract-usage"] }
 rand.workspace = true
+near-sdk = { workspace = true, features = ["non-contract-usage"] }
 
+defuse-digest = { workspace = true, optional = true }
+borsh = {workspace = true, optional = true}
 ed25519-dalek = { workspace = true, optional = true }
 
 [features]
 default = ["ed25519"]
 
-ed25519 = ["defuse-wallet/ed25519", "dep:ed25519-dalek"]
+ed25519 = ["defuse-wallet/ed25519", "dep:ed25519-dalek", "dep:defuse-digest", "dep:borsh"]
