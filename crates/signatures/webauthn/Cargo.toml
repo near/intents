@@ -10,10 +10,10 @@ workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false }
+defuse-digest = { workspace = true }
 
 arbitrary = { workspace = true, optional = true }
 cfg_eval = { workspace = true, optional = true }
-defuse-digest = { workspace = true, optional = true }
 defuse-serde-utils = { workspace = true, features = ["base64"], optional = true }
 digest = { workspace = true }
 schemars = { workspace = true, optional = true }
@@ -36,8 +36,7 @@ serde = [
 ]
 
 verify = ["dep:serde_json", "serde"]
-sha2 = ["defuse-digest/sha2", "dep:defuse-digest", "verify"]
-near-contract = ["defuse-digest/near-contract", "dep:defuse-digest", "verify"]
+near-contract = ["defuse-digest/near-contract"]
 
 ed25519 = ["defuse-crypto/ed25519", "defuse-crypto/near-contract"]
 p256 = ["defuse-crypto/p256"]

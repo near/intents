@@ -35,7 +35,7 @@ pub struct PayloadSignature<A: Algorithm + ?Sized> {
     pub signature: A::Signature,
 }
 
-#[cfg(any(feature = "near-contract", feature = "sha2"))]
+#[cfg(feature = "verify")]
 impl<A: Algorithm + ?Sized> PayloadSignature<A> {
     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
     ///

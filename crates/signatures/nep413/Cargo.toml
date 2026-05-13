@@ -22,7 +22,6 @@ serde_with = { workspace = true, optional = true }
 [features]
 borsh = ["defuse-crypto/borsh", "dep:borsh"]
 prehash = ["borsh"]
-verify = ["borsh"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 abi = [
   "borsh?/unstable__schema",

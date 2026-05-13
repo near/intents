@@ -46,10 +46,22 @@ mod tests {
 
     const fn fix_v_in_signature(mut sig: [u8; 65]) -> [u8; 65] {
         if *sig.last().unwrap() >= 27 {
+            // Ethereum only uses uncompressed keys, with corresponding value v=27/28
+            // https://bitcoin.stackexchange.com/a/38909/58790
             *sig.last_mut().unwrap() -= 27;
         }
         sig
     }
+
+    // NOTE: Public key can be derived using `ethers_signers` crate:
+    // let wallet = LocalWallet::from_str(
+    //     "a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56",
+    // )?;
+    // let signing_key = wallet.signer();
+    // let verifying_key = signing_key.verifying_key();
+    // let public_key = verifying_key.to_encoded_point(false);
+    // // Notice that we skip the first byte, 0x04
+    // println!("Public key: 0x{}", hex::encode(public_key.as_bytes()[1..]));
 
     const REFERENCE_MESSAGE: &str = "Hello, TRON!";
     const INVALID_REFERENCE_MESSAGE: &str = "this is not TRON reference input message";

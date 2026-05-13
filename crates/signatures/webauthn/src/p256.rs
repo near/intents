@@ -9,7 +9,6 @@ use crate::Algorithm;
 #[derive(Debug, Clone)]
 pub struct P256;
 
-#[cfg(any(feature = "near-contract", feature = "sha2"))]
 impl Algorithm for P256 {
     type PublicKey = P256CompressedPublicKey;
     type Signature = P256Signature;
