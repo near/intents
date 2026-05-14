@@ -32,8 +32,8 @@ ed25519 = ["dep:ed25519-dalek"]
 secp256k1 = []
 p256 = ["dep:generic-array", "dep:p256"]
 
-borsh = ["dep:borsh"]
-serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with"]
+borsh = ["dep:borsh", "near-account-id/borsh"]
+serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with", "near-account-id/serde"]
 abi = [
   "borsh?/unstable__schema",
   "dep:schemars",
