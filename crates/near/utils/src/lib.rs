@@ -1,5 +1,3 @@
-#[cfg(feature = "digest")]
-pub mod digest;
 mod event;
 pub use event::{NearSdkLog, REFUND_MEMO, TOTAL_LOG_LENGTH_LIMIT};
 mod gas;

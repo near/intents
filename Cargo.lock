@@ -1541,8 +1541,10 @@ dependencies = [
 name = "defuse-digest"
 version = "0.1.0"
 dependencies = [
- "defuse-near-utils",
+ "defuse-test-utils",
  "digest 0.11.2",
+ "near-sdk",
+ "rstest",
  "sha2 0.11.0",
  "sha3 0.11.0",
 ]
@@ -1647,7 +1649,6 @@ dependencies = [
  "chrono",
  "defuse-borsh-utils",
  "defuse-test-utils",
- "digest 0.11.2",
  "impl-tools",
  "near-sdk",
  "rstest",

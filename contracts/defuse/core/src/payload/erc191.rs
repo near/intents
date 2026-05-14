@@ -23,7 +23,7 @@ impl SignedPayload for SignedErc191Payload {
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        <Secp256k1 as Curve>::verify(&self.signature, &Payload::hash(&self.payload), &())
+        <Secp256k1 as Curve>::verify(&self.signature, &self.payload.hash(), &())
     }
 }
 impl<T> ExtractDefusePayload<T> for SignedErc191Payload

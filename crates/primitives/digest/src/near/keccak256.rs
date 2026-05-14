@@ -30,3 +30,19 @@ impl FixedOutput for Keccak256 {
 }
 
 impl HashMarker for Keccak256 {}
+
+#[cfg(test)]
+mod tests {
+    use defuse_test_utils::random::random_bytes;
+    use digest::Digest;
+    use near_sdk::CryptoHash;
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    fn keccak256(random_bytes: Vec<u8>) {
+        let got: CryptoHash = Keccak256::digest(&random_bytes).into();
+        assert_eq!(got, env::keccak256_array(&random_bytes));
+    }
+}

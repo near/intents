@@ -2,6 +2,7 @@ use core::str;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
+use defuse_digest::Digest;
 use tlb_ton::{MsgAddress, StringError};
 
 #[cfg(feature = "binary")]
