@@ -66,7 +66,7 @@ pub struct SignedSep53Payload {
 mod tests {
     use crate::{Sep53Payload, SignedSep53Payload};
     use base64::{Engine, engine::general_purpose::STANDARD};
-    use defuse_crypto::{VerifiableCurve, Ed25519};
+    use defuse_crypto::{Ed25519, VerifiableCurve};
     use defuse_test_utils::random::{CryptoRng, gen_random_string, random_bytes, rng};
     use defuse_test_utils::tamper::{tamper_bytes, tamper_string};
     use ed25519_dalek::Verifier;

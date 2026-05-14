@@ -1,7 +1,7 @@
 use core::fmt::{self, Debug, Display};
 use std::str::FromStr;
 
-use crate::{CryptoHash, VerifiableCurve, Curve, ParseCurveError, TypedCurve};
+use crate::{CryptoHash, Curve, ParseCurveError, TypedCurve, VerifiableCurve};
 use generic_array::GenericArray;
 use p256::{
     EncodedPoint,

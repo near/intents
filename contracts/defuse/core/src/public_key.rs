@@ -4,7 +4,7 @@ use core::{
 };
 
 use defuse_crypto::{
-    CurveType, Curve, Ed25519, P256UncompressedPublicKey, ParseCurveError, Secp256k1,
+    Curve, CurveType, Ed25519, P256UncompressedPublicKey, ParseCurveError, Secp256k1,
     checked_base58_decode_array,
 };
 use near_sdk::{AccountId, AccountIdRef, bs58, near};

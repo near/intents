@@ -1,4 +1,4 @@
-use defuse_crypto::{VerifiableCurve, Curve, Ed25519, serde::AsCurve};
+use defuse_crypto::{Curve, Ed25519, VerifiableCurve, serde::AsCurve};
 use defuse_digest::{Digest, Sha256};
 use near_sdk::{near, serde::de::DeserializeOwned, serde_json};
 use serde_with::serde_as;

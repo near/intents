@@ -1,5 +1,5 @@
 use crate::payload::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
-use defuse_crypto::{VerifiableCurve, Curve, Ed25519};
+use defuse_crypto::{Curve, Ed25519, VerifiableCurve};
 use defuse_digest::{Digest, Sha256};
 use defuse_sep53::{Sep53Payload, SignedSep53Payload};
 use near_sdk::{serde::de::DeserializeOwned, serde_json};

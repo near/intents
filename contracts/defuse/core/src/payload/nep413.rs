@@ -1,4 +1,4 @@
-use defuse_crypto::{VerifiableCurve, Curve, Ed25519};
+use defuse_crypto::{Curve, Ed25519, VerifiableCurve};
 use defuse_digest::{Digest, Sha256};
 use defuse_nep413::{Nep413Payload, SignedNep413Payload};
 use impl_tools::autoimpl;

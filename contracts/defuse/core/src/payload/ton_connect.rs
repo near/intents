@@ -1,4 +1,4 @@
-use defuse_crypto::{VerifiableCurve, Curve, Ed25519};
+use defuse_crypto::{Curve, Ed25519, VerifiableCurve};
 use defuse_ton_connect::{SignedTonConnectPayload, TonConnectPayload, TonConnectPayloadSchema};
 use near_sdk::{
     serde::de::{DeserializeOwned, Error},

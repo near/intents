@@ -11,7 +11,7 @@ use crate::P256;
 use crate::Secp256k1;
 
 use crate::parse::checked_base58_decode_array;
-use crate::{CurveType, Curve, ParseCurveError};
+use crate::{Curve, CurveType, ParseCurveError};
 
 #[cfg_attr(
     feature = "borsh",

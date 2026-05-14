@@ -1,8 +1,8 @@
 use core::fmt::{self, Debug, Display};
 use std::str::FromStr;
 
-use crate::{CurveType, TypedCurve};
 use crate::{Curve, ParseCurveError};
+use crate::{CurveType, TypedCurve};
 
 pub struct Ed25519;
 
