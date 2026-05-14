@@ -13,7 +13,7 @@ impl crate::Algorithm for Ed25519 {
 
     #[inline]
     fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
-        use defuse_crypto::Curve;
+        use defuse_crypto::VerifiableCurve;
         defuse_crypto::Ed25519::verify(&signature.0, msg, &public_key.0).is_some()
     }
 }

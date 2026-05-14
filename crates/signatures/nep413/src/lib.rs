@@ -1,6 +1,6 @@
 use core::fmt::Display;
 
-use defuse_crypto::{CurveTypes, Ed25519};
+use defuse_crypto::{Curve, Ed25519};
 use defuse_nep461::SignedMessageNep;
 use impl_tools::autoimpl;
 
@@ -97,12 +97,12 @@ pub struct SignedNep413Payload {
         feature = "serde",
         serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
     )]
-    pub public_key: <Ed25519 as CurveTypes>::PublicKey,
+    pub public_key: <Ed25519 as Curve>::PublicKey,
     #[cfg_attr(
         feature = "serde",
         serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
     )]
-    pub signature: <Ed25519 as CurveTypes>::Signature,
+    pub signature: <Ed25519 as Curve>::Signature,
 }
 
 #[cfg(feature = "near-api")]

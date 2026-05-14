@@ -1,4 +1,4 @@
-use defuse_crypto::{CurveTypes, Secp256k1};
+use defuse_crypto::{Curve, Secp256k1};
 use impl_tools::autoimpl;
 
 /// See [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
@@ -53,5 +53,5 @@ pub struct SignedTip191Payload {
         feature = "serde",
         serde_as(as = "defuse_crypto::serde::AsCurve<Secp256k1>")
     )]
-    pub signature: <Secp256k1 as CurveTypes>::Signature,
+    pub signature: <Secp256k1 as Curve>::Signature,
 }

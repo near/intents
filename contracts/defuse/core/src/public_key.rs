@@ -4,7 +4,7 @@ use core::{
 };
 
 use defuse_crypto::{
-    CurveType, CurveTypes, Ed25519, P256UncompressedPublicKey, ParseCurveError, Secp256k1,
+    CurveType, Curve, Ed25519, P256UncompressedPublicKey, ParseCurveError, Secp256k1,
     checked_base58_decode_array,
 };
 use near_sdk::{AccountId, AccountIdRef, bs58, near};
@@ -18,8 +18,8 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 #[serde_with(crate = "::near_sdk::serde_with")]
 #[repr(u8)]
 pub enum PublicKey {
-    Ed25519(<Ed25519 as CurveTypes>::PublicKey) = 0,
-    Secp256k1(<Secp256k1 as CurveTypes>::PublicKey) = 1,
+    Ed25519(<Ed25519 as Curve>::PublicKey) = 0,
+    Secp256k1(<Secp256k1 as Curve>::PublicKey) = 1,
     P256(P256UncompressedPublicKey) = 2,
 }
 

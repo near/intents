@@ -1,4 +1,4 @@
-use defuse_crypto::{CurveTypes, Ed25519};
+use defuse_crypto::{Curve, Ed25519};
 use impl_tools::autoimpl;
 
 /// See [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
@@ -54,19 +54,19 @@ pub struct SignedSep53Payload {
         feature = "serde",
         serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
     )]
-    pub public_key: <Ed25519 as CurveTypes>::PublicKey,
+    pub public_key: <Ed25519 as Curve>::PublicKey,
     #[cfg_attr(
         feature = "serde",
         serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
     )]
-    pub signature: <Ed25519 as CurveTypes>::Signature,
+    pub signature: <Ed25519 as Curve>::Signature,
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{Sep53Payload, SignedSep53Payload};
     use base64::{Engine, engine::general_purpose::STANDARD};
-    use defuse_crypto::{Curve, Ed25519};
+    use defuse_crypto::{VerifiableCurve, Ed25519};
     use defuse_test_utils::random::{CryptoRng, gen_random_string, random_bytes, rng};
     use defuse_test_utils::tamper::{tamper_bytes, tamper_string};
     use ed25519_dalek::Verifier;

@@ -1,4 +1,4 @@
-use defuse_crypto::{Curve, CurveTypes, Ed25519};
+use defuse_crypto::{VerifiableCurve, Curve, Ed25519};
 use defuse_digest::{Digest, Sha256};
 use defuse_nep413::{Nep413Payload, SignedNep413Payload};
 use impl_tools::autoimpl;
@@ -27,7 +27,7 @@ impl Payload for SignedNep413Payload {
 }
 
 impl SignedPayload for SignedNep413Payload {
-    type PublicKey = <Ed25519 as CurveTypes>::PublicKey;
+    type PublicKey = <Ed25519 as Curve>::PublicKey;
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {

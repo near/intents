@@ -1,4 +1,4 @@
-use defuse_crypto::Curve;
+use defuse_crypto::VerifiableCurve;
 pub use defuse_crypto::{P256CompressedPublicKey, P256Signature};
 use digest::Digest;
 

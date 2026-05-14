@@ -2,11 +2,11 @@ use core::fmt::{self, Debug, Display};
 use std::str::FromStr;
 
 use crate::{CurveType, TypedCurve};
-use crate::{CurveTypes, ParseCurveError};
+use crate::{Curve, ParseCurveError};
 
 pub struct Ed25519;
 
-impl CurveTypes for Ed25519 {
+impl Curve for Ed25519 {
     type PublicKey = [u8; ed25519_dalek::PUBLIC_KEY_LENGTH];
     type Signature = [u8; ed25519_dalek::SIGNATURE_LENGTH];
 
@@ -15,7 +15,7 @@ impl CurveTypes for Ed25519 {
 }
 
 #[cfg(feature = "near-contract")]
-impl crate::Curve for Ed25519 {
+impl crate::VerifiableCurve for Ed25519 {
     #[inline]
     fn verify(
         signature: &Self::Signature,
@@ -58,7 +58,7 @@ impl TypedCurve for Ed25519 {
 #[repr(transparent)]
 pub struct Ed25519PublicKey(
     #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<Ed25519>"))]
-    pub  <Ed25519 as CurveTypes>::PublicKey,
+    pub  <Ed25519 as Curve>::PublicKey,
 );
 
 impl Debug for Ed25519PublicKey {
@@ -98,7 +98,7 @@ impl FromStr for Ed25519PublicKey {
 #[repr(transparent)]
 pub struct Ed25519Signature(
     #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<Ed25519>"))]
-    pub  <Ed25519 as CurveTypes>::Signature,
+    pub  <Ed25519 as Curve>::Signature,
 );
 
 impl Debug for Ed25519Signature {

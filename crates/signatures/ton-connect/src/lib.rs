@@ -82,12 +82,12 @@ pub struct SignedTonConnectPayload {
         feature = "serde",
         serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
     )]
-    pub public_key: <Ed25519 as defuse_crypto::CurveTypes>::PublicKey,
+    pub public_key: <Ed25519 as defuse_crypto::Curve>::PublicKey,
     #[cfg_attr(
         feature = "serde",
         serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
     )]
-    pub signature: <Ed25519 as defuse_crypto::CurveTypes>::Signature,
+    pub signature: <Ed25519 as defuse_crypto::Curve>::Signature,
 }
 
 #[cfg(test)]

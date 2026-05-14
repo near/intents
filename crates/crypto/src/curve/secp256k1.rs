@@ -2,11 +2,11 @@ use crate::TypedCurve;
 use core::fmt::{self, Debug, Display};
 use std::str::FromStr;
 
-use crate::{CryptoHash, CurveTypes, ParseCurveError};
+use crate::{CryptoHash, Curve, ParseCurveError};
 
 pub struct Secp256k1;
 
-impl CurveTypes for Secp256k1 {
+impl Curve for Secp256k1 {
     type PublicKey = [u8; 64];
 
     /// Concatenated `r`, `s` and `v` (recovery byte).
@@ -27,7 +27,7 @@ impl CurveTypes for Secp256k1 {
 }
 
 #[cfg(feature = "near-contract")]
-impl crate::Curve for Secp256k1 {
+impl crate::VerifiableCurve for Secp256k1 {
     #[inline]
     fn verify(
         [signature @ .., v]: &Self::Signature,
@@ -64,7 +64,7 @@ impl TypedCurve for Secp256k1 {
 #[repr(transparent)]
 pub struct Secp256k1PublicKey(
     #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<Secp256k1>"))]
-    pub  <Secp256k1 as CurveTypes>::PublicKey,
+    pub  <Secp256k1 as Curve>::PublicKey,
 );
 
 impl Debug for Secp256k1PublicKey {
@@ -104,7 +104,7 @@ impl FromStr for Secp256k1PublicKey {
 #[repr(transparent)]
 pub struct Secp256k1Signature(
     #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<Secp256k1>"))]
-    pub  <Secp256k1 as CurveTypes>::Signature,
+    pub  <Secp256k1 as Curve>::Signature,
 );
 
 impl Debug for Secp256k1Signature {

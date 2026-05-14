@@ -1,5 +1,5 @@
 use super::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
-use defuse_crypto::{Curve, CurveTypes, Secp256k1};
+use defuse_crypto::{VerifiableCurve, Curve, Secp256k1};
 use defuse_digest::{Digest, Keccak256};
 use defuse_tip191::{SignedTip191Payload, Tip191Payload};
 use near_sdk::{serde::de::DeserializeOwned, serde_json};
@@ -19,7 +19,7 @@ impl Payload for SignedTip191Payload {
 }
 
 impl SignedPayload for SignedTip191Payload {
-    type PublicKey = <Secp256k1 as CurveTypes>::PublicKey;
+    type PublicKey = <Secp256k1 as Curve>::PublicKey;
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {

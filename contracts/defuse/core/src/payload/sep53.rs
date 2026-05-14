@@ -1,5 +1,5 @@
 use crate::payload::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
-use defuse_crypto::{Curve, CurveTypes, Ed25519};
+use defuse_crypto::{VerifiableCurve, Curve, Ed25519};
 use defuse_digest::{Digest, Sha256};
 use defuse_sep53::{Sep53Payload, SignedSep53Payload};
 use near_sdk::{serde::de::DeserializeOwned, serde_json};
@@ -19,7 +19,7 @@ impl Payload for SignedSep53Payload {
 }
 
 impl SignedPayload for SignedSep53Payload {
-    type PublicKey = <Ed25519 as CurveTypes>::PublicKey;
+    type PublicKey = <Ed25519 as Curve>::PublicKey;
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {

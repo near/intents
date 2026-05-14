@@ -1,4 +1,4 @@
-use defuse_crypto::{Curve, CurveTypes, Ed25519};
+use defuse_crypto::{VerifiableCurve, Curve, Ed25519};
 use defuse_ton_connect::{SignedTonConnectPayload, TonConnectPayload, TonConnectPayloadSchema};
 use near_sdk::{
     serde::de::{DeserializeOwned, Error},
@@ -22,7 +22,7 @@ impl Payload for SignedTonConnectPayload {
 }
 
 impl SignedPayload for SignedTonConnectPayload {
-    type PublicKey = <Ed25519 as CurveTypes>::PublicKey;
+    type PublicKey = <Ed25519 as Curve>::PublicKey;
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {

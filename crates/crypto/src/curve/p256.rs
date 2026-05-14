@@ -1,7 +1,7 @@
 use core::fmt::{self, Debug, Display};
 use std::str::FromStr;
 
-use crate::{CryptoHash, Curve, CurveTypes, ParseCurveError, TypedCurve};
+use crate::{CryptoHash, VerifiableCurve, Curve, ParseCurveError, TypedCurve};
 use generic_array::GenericArray;
 use p256::{
     EncodedPoint,
@@ -11,7 +11,7 @@ use p256::{
 
 pub struct P256;
 
-impl CurveTypes for P256 {
+impl Curve for P256 {
     /// Compressed SEC1 encoded coordinates.
     type PublicKey = [u8; 33];
 
@@ -24,7 +24,7 @@ impl CurveTypes for P256 {
     type VerifyingKey = Self::PublicKey;
 }
 
-impl Curve for P256 {
+impl VerifiableCurve for P256 {
     fn verify(
         signature: &Self::Signature,
         prehashed: &Self::Message,
@@ -73,7 +73,7 @@ impl crate::TypedCurve for P256 {
 #[repr(transparent)]
 pub struct P256CompressedPublicKey(
     #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<P256>"))]
-    pub  <P256 as CurveTypes>::PublicKey,
+    pub  <P256 as Curve>::PublicKey,
 );
 
 impl Debug for P256CompressedPublicKey {
@@ -154,7 +154,7 @@ impl FromStr for P256UncompressedPublicKey {
 #[repr(transparent)]
 pub struct P256Signature(
     #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<P256>"))]
-    pub  <P256 as CurveTypes>::Signature,
+    pub  <P256 as Curve>::Signature,
 );
 
 impl Debug for P256Signature {

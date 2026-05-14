@@ -11,7 +11,7 @@ use crate::P256;
 use crate::Secp256k1;
 
 use crate::parse::checked_base58_decode_array;
-use crate::{CurveType, CurveTypes, ParseCurveError};
+use crate::{CurveType, Curve, ParseCurveError};
 
 #[cfg_attr(
     feature = "borsh",
@@ -27,11 +27,11 @@ use crate::{CurveType, CurveTypes, ParseCurveError};
 #[repr(u8)]
 pub enum Signature {
     #[cfg(feature = "ed25519")]
-    Ed25519(<Ed25519 as CurveTypes>::Signature) = 0,
+    Ed25519(<Ed25519 as Curve>::Signature) = 0,
     #[cfg(feature = "secp256k1")]
-    Secp256k1(<Secp256k1 as CurveTypes>::Signature) = 1,
+    Secp256k1(<Secp256k1 as Curve>::Signature) = 1,
     #[cfg(feature = "p256")]
-    P256(<P256 as CurveTypes>::Signature) = 2,
+    P256(<P256 as Curve>::Signature) = 2,
 }
 
 impl Signature {

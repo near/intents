@@ -13,7 +13,7 @@ mod p256;
 #[cfg(feature = "p256")]
 pub use self::p256::*;
 
-pub trait CurveTypes {
+pub trait Curve {
     type PublicKey;
     type Signature;
 
@@ -24,7 +24,7 @@ pub trait CurveTypes {
     type VerifyingKey;
 }
 
-pub trait Curve: CurveTypes {
+pub trait VerifiableCurve: Curve {
     fn verify(
         signature: &Self::Signature,
         message: &Self::Message,
@@ -46,7 +46,7 @@ pub enum CurveType {
 }
 
 #[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
-pub trait TypedCurve: CurveTypes {
+pub trait TypedCurve: Curve {
     const CURVE_TYPE: CurveType;
 
     #[inline]
