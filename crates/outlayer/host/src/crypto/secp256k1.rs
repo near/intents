@@ -23,7 +23,7 @@ impl crate::bindings::outlayer::crypto::secp256k1::Host for Host<'_> {
         let path = self.tweak(path);
 
         let (signature, recovery_id) =
-            DeriveSigner::<Secp256k1>::derive_sign(&self.signer, &path, &prehash);
+            DeriveSigner::<Secp256k1>::derive_sign_from_tweak(&self.signer, &path, &prehash);
 
         let mut sig = signature.to_vec();
         sig.push(recovery_id.to_byte());

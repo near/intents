@@ -1,84 +1,99 @@
-use curve25519_dalek::{EdwardsPoint, Scalar};
-#[cfg(feature = "signing")]
-pub use ed25519_dalek::SigningKey;
-pub use ed25519_dalek::{self, Signature, VerifyingKey};
+use curve25519_dalek::EdwardsPoint;
+pub use curve25519_dalek::{self, Scalar};
+pub use ed25519_dalek::{self, Signature, SigningKey, VerifyingKey};
 
-use crate::{DerivableCurve, DerivablePublicKey};
+use crate::{Curve, DerivableCurve, DeriveSigner};
 
 pub struct Ed25519;
 
-impl Ed25519 {
-    fn tweak(path: &[u8; 32]) -> Scalar {
-        // TODO: are we sure there is no need to clamp?
-        Scalar::from_bytes_mod_order(*path)
-    }
-}
-
-impl DerivableCurve for Ed25519 {
-    type Path = [u8; 32];
+impl Curve for Ed25519 {
     type PublicKey = VerifyingKey;
+
     type Message = [u8];
+
     type Signature = Signature;
 
-    fn verify(public_key: &VerifyingKey, msg: &[u8], signature: &Signature) -> bool {
+    fn verify(
+        public_key: &Self::PublicKey,
+        msg: &Self::Message,
+        signature: &Self::Signature,
+    ) -> bool {
+        // TODO: no strict?
         public_key.verify_strict(msg, signature).is_ok()
     }
 }
 
-impl DerivablePublicKey<Ed25519> for VerifyingKey {
-    fn derive(&self, path: &<Ed25519 as DerivableCurve>::Path) -> Self {
-        let tweak = Ed25519::tweak(path);
+impl DerivableCurve for Ed25519 {
+    type Tweak = Scalar;
 
+    fn derive_public_key(master_pk: &VerifyingKey, tweak: &Scalar) -> VerifyingKey {
         // pk' <- pk + G * tweak
-        let derived_point = self.to_edwards() + EdwardsPoint::mul_base(&tweak);
+        let derived_point = master_pk.to_edwards() + EdwardsPoint::mul_base(&tweak);
 
-        Self::from(derived_point)
+        VerifyingKey::from(derived_point)
     }
 }
 
 #[cfg(feature = "signing")]
 const _: () = {
     use ed25519_dalek::{
-        Sha512,
+        Digest, Sha512,
         hazmat::{ExpandedSecretKey, raw_sign},
     };
-    use rand::{RngExt, rand_core::UnwrapErr, rngs::SysRng};
 
-    use crate::DeriveSigner;
-
-    impl DeriveSigner<Ed25519> for SigningKey {
+    impl DeriveSigner for SigningKey {
+        type Curve = Ed25519;
+        
         fn public_key(&self) -> VerifyingKey {
             self.verifying_key()
         }
 
-        fn derive_sign(&self, path: &<Ed25519 as DerivableCurve>::Path, msg: &[u8]) -> Signature {
-            let tweak = Ed25519::tweak(path);
+        fn derive_sign(&self, tweak: &Scalar, msg: &[u8]) -> Signature {
+            let esk = ExpandedSecretKey::from(self.as_bytes());
 
-            let root_esk = ExpandedSecretKey::from(self.as_bytes());
+            debug_assert_eq!(
+                esk.public_key(),
+                self.public_key(),
+                "master public key mismatch",
+            );
 
-            let derived_esk = ExpandedSecretKey {
+            esk.derive_sign(tweak, msg)
+        }
+    }
+
+    impl DeriveSigner for ExpandedSecretKey {
+        type Curve = Ed25519;
+
+        fn public_key(&self) -> VerifyingKey {
+            self.into()
+        }
+
+        fn derive_sign(&self, tweak: &Scalar, msg: &[u8]) -> Signature {
+            let derived_esk = Self {
                 // sk' = sk + tweak
-                scalar: root_esk.scalar + tweak,
+                scalar: self.scalar + tweak,
 
-                // In ed25519-dalek implementation hash_prefix takes part in
+                // In ed25519-dalek implementation `hash_prefix` takes part in
                 // deterministic nonce generation. It's very important to not
                 // reuse the same nonce for different challenges, as it might
                 // lead to leaking the root private key.
-                //
-                // Here we generate the hash, and thus, the nonce randomly.
-                // As a result, signature will be different every time, even
-                // if the same message is singed with the same tweak.
-                //
-                // TODO: derive hash_prefix deterministically from
-                // `root_sk.hash_prefix` and `tweak`?
-                hash_prefix: UnwrapErr::<SysRng>::default().random(),
+                hash_prefix: {
+                    const DOMAIN_SEPARATOR: &[u8] = b"outlayer/ed25519/derive-hash_prefix/v1";
+
+                    Sha512::new_with_prefix(DOMAIN_SEPARATOR)
+                        .chain_update(self.hash_prefix)
+                        .chain_update(tweak.as_bytes())
+                        .finalize()[..32]
+                        .try_into()
+                        .expect("SHA-512 output is 64 bytes")
+                },
             };
 
             let derived_verifying_key = VerifyingKey::from(&derived_esk);
 
             debug_assert_eq!(
                 derived_verifying_key,
-                self.derive_public_key(path),
+                self.derive_public_key(tweak),
                 "derived public key mismatch",
             );
 
@@ -87,6 +102,100 @@ const _: () = {
     }
 };
 
+// impl AdditiveDerivationScheme<Ed25519, [u8; 32]> for Additive {
+//     fn derive_public_key(master_pk: &VerifyingKey, path: &[u8; 32]) -> VerifyingKey {
+//         // TODO: domain-separation hash
+//         let tweak = Scalar::from_bytes_mod_order(*path);
+
+//         // pk' <- pk + G * tweak
+//         let derived_point = master_pk.to_edwards() + EdwardsPoint::mul_base(&tweak);
+
+//         VerifyingKey::from(derived_point)
+//     }
+// }
+
+// impl PublicKeyDerivationScheme<[u8; 32]> for Ed25519AdditiveDerivation {
+//     type Curve = Ed25519;
+
+//     fn derive_public_key(master_pk: &VerifyingKey, path: &[u8; 32]) -> VerifyingKey {
+//         // TODO: domain-separation hash
+//         let tweak = Self::tweak(*path);
+
+//         // pk' <- pk + G * tweak
+//         let derived_point = master_pk.to_edwards() + EdwardsPoint::mul_base(&tweak);
+
+//         VerifyingKey::from(derived_point)
+//     }
+// }
+
+// impl DerivablePublicKey<Ed25519Derivation> for VerifyingKey {
+//     fn derive_from_tweak(&self, tweak: &<Ed25519Derivation as DerivationScheme>::Tweak) -> Self {
+//         todo!()
+//     }
+
+//     // fn derive(&self, path: &<Ed25519 as DerivableCurve>::Path) -> Self {
+//     //     let tweak = Ed25519::tweak(path);
+
+//     //     // pk' <- pk + G * tweak
+//     //     let derived_point = self.to_edwards() + EdwardsPoint::mul_base(&tweak);
+
+//     //     Self::from(derived_point)
+//     // }
+// }
+
+// #[cfg(feature = "signing")]
+// const _: () = {
+//     use ed25519_dalek::{
+//         Sha512,
+//         hazmat::{ExpandedSecretKey, raw_sign},
+//     };
+//     use rand::{RngExt, rand_core::UnwrapErr, rngs::SysRng};
+
+//     use crate::DeriveSigner;
+
+//     impl DeriveSigner<Ed25519, Additive, [u8; 32]> for SigningKey {
+//         fn public_key(&self) -> VerifyingKey {
+//             self.verifying_key()
+//         }
+
+//         fn derive_sign(&self, path: &[u8; 32], msg: &[u8]) -> Signature {
+//             let tweak = Scalar::from_bytes_mod_order(*path);
+
+//             let root_esk = ExpandedSecretKey::from(self.as_bytes());
+
+//             let derived_esk = ExpandedSecretKey {
+//                 // sk' = sk + tweak
+//                 scalar: root_esk.scalar + tweak,
+
+//                 // In ed25519-dalek implementation hash_prefix takes part in
+//                 // deterministic nonce generation. It's very important to not
+//                 // reuse the same nonce for different challenges, as it might
+//                 // lead to leaking the root private key.
+//                 //
+//                 // Here we generate the hash, and thus, the nonce randomly.
+//                 // As a result, signature will be different every time, even
+//                 // if the same message is singed with the same tweak.
+//                 //
+//                 // TODO: derive hash_prefix deterministically from
+//                 // `root_sk.hash_prefix` and `tweak`?
+//                 hash_prefix: UnwrapErr::<SysRng>::default().random(),
+//             };
+
+//             let derived_verifying_key = VerifyingKey::from(&derived_esk);
+
+//             debug_assert_eq!(
+//                 derived_verifying_key,
+//                 self.derive_public_key(path),
+//                 "derived public key mismatch",
+//             );
+
+//             raw_sign::<Sha512>(&derived_esk, msg, &derived_verifying_key)
+//         }
+//     }
+
+//     // TODO: impl for ExpandedSecretKey
+// };
+
 #[cfg(all(test, feature = "signing"))]
 mod tests {
     use ed25519_dalek::{PUBLIC_KEY_LENGTH, SecretKey, SigningKey, VerifyingKey};
@@ -94,6 +203,8 @@ mod tests {
     use rstest::rstest;
 
     use crate::tests::{assert_roundtrip, assert_roundtrip_expected};
+
+    use super::*;
 
     #[rstest]
     fn roundtrip(
@@ -104,10 +215,14 @@ mod tests {
         #[values(
             hex!("f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2"),
         )]
-        path: [u8; 32],
+        tweak: [u8; 32],
         #[values(b"", b"test", b"message")] msg: &[u8],
     ) {
-        assert_roundtrip(SigningKey::from_bytes(&root_sk), &path, msg);
+        assert_roundtrip(
+            &SigningKey::from_bytes(&root_sk),
+            &Scalar::from_bytes_mod_order(tweak),
+            msg,
+        );
     }
 
     #[rstest]
@@ -118,12 +233,12 @@ mod tests {
     )]
     fn derived_pk_has_not_changed(
         #[case] root_sk: SecretKey,
-        #[case] path: [u8; 32],
+        #[case] tweak: [u8; 32],
         #[case] expected_derived_pk: [u8; PUBLIC_KEY_LENGTH],
     ) {
         assert_roundtrip_expected(
-            SigningKey::from_bytes(&root_sk),
-            &path,
+            &SigningKey::from_bytes(&root_sk),
+            &Scalar::from_bytes_mod_order(tweak),
             b"message",
             &VerifyingKey::from_bytes(&expected_derived_pk).expect("invalid expected derived pk"),
         );

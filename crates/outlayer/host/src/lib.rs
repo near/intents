@@ -3,9 +3,9 @@ pub mod crypto;
 
 use std::sync::Arc;
 
-pub use defuse_outlayer_crypto::signer::InMemorySigner;
 pub use defuse_outlayer_primitives as primitives;
 use defuse_outlayer_primitives::AppId;
+pub use defuse_outlayer_signer::InMemorySigner;
 use wasmtime::component::{HasData, Linker};
 
 use crate::bindings::Imports;

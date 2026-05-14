@@ -1655,13 +1655,9 @@ dependencies = [
  "curve25519-dalek",
  "ed25519-dalek",
  "hex-literal",
- "hkdf",
  "impl-tools",
  "k256",
- "rand 0.10.1",
  "rstest",
- "sha3 0.11.0",
- "zeroize",
 ]
 
 [[package]]
@@ -1682,10 +1678,47 @@ name = "defuse-outlayer-host"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "defuse-outlayer-crypto",
+ "borsh",
  "defuse-outlayer-primitives",
+ "defuse-outlayer-signer",
+ "digest-io",
+ "sha3 0.11.0",
  "tracing",
  "wasmtime",
+]
+
+[[package]]
+name = "defuse-outlayer-kdf"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "borsh",
+ "defuse-outlayer-crypto",
+ "digest 0.11.2",
+ "hex",
+]
+
+[[package]]
+name = "defuse-outlayer-kdf-app"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "borsh",
+ "defuse-outlayer-crypto",
+ "defuse-outlayer-kdf",
+ "defuse-outlayer-primitives",
+ "digest-io",
+ "sha3 0.11.0",
+]
+
+[[package]]
+name = "defuse-outlayer-kdf-mpc"
+version = "0.1.0"
+dependencies = [
+ "defuse-outlayer-crypto",
+ "defuse-outlayer-kdf",
+ "near-account-id",
+ "near-mpc-crypto-types",
 ]
 
 [[package]]
@@ -1751,6 +1784,19 @@ dependencies = [
  "tokio",
  "tokio-util",
  "url",
+]
+
+[[package]]
+name = "defuse-outlayer-signer"
+version = "0.1.0"
+dependencies = [
+ "defuse-outlayer-crypto",
+ "defuse-outlayer-kdf",
+ "hex-literal",
+ "hkdf",
+ "rstest",
+ "sha3 0.11.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -3709,6 +3755,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "mpc-primitives"
+version = "3.9.0"
+source = "git+https://github.com/near/mpc?rev=2924956010abc3e76d904dca8cb68af17b1216a4#2924956010abc3e76d904dca8cb68af17b1216a4"
+dependencies = [
+ "borsh",
+ "derive_more",
+ "hex",
+ "near-account-id",
+ "schemars 0.8.22",
+ "serde",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "multi-token-receiver-stub"
 version = "0.1.0"
 dependencies = [
@@ -4074,6 +4134,35 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
+]
+
+[[package]]
+name = "near-mpc-bounded-collections"
+version = "0.0.1"
+source = "git+https://github.com/near/mpc?rev=2924956010abc3e76d904dca8cb68af17b1216a4#2924956010abc3e76d904dca8cb68af17b1216a4"
+dependencies = [
+ "borsh",
+ "derive_more",
+ "hex",
+ "serde",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "near-mpc-crypto-types"
+version = "0.0.1"
+source = "git+https://github.com/near/mpc?rev=2924956010abc3e76d904dca8cb68af17b1216a4#2924956010abc3e76d904dca8cb68af17b1216a4"
+dependencies = [
+ "borsh",
+ "bs58 0.5.1",
+ "derive_more",
+ "mpc-primitives",
+ "near-account-id",
+ "near-mpc-bounded-collections",
+ "serde",
+ "serde_with",
+ "sha3 0.10.9",
+ "thiserror 2.0.18",
 ]
 
 [[package]]

@@ -1,0 +1,25 @@
+[package]
+name = "defuse-outlayer-kdf"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-outlayer-crypto.workspace = true
+
+async-trait = { workspace = true, optional = true }
+borsh = { workspace = true, optional = true }
+digest = { workspace = true, optional = true }
+hex = { workspace = true, optional = true }
+
+[features]
+default = ["async", "borsh", "digest", "hex"] # TODO: remove
+
+async = ["dep:async-trait"]
+borsh = ["dep:borsh"]
+digest = ["dep:digest"]
+hex = ["dep:hex"]
