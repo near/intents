@@ -2,7 +2,6 @@ use core::str;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-use defuse_digest::Digest;
 use tlb_ton::{MsgAddress, StringError};
 
 #[cfg(feature = "binary")]
@@ -21,7 +20,7 @@ pub struct TonConnectPayloadContext<'a> {
 impl TonConnectPayloadContext<'_> {
     // See https://docs.tonconsole.com/academy/sign-data#how-the-signature-is-built
     #[cfg(any(feature = "binary", feature = "text"))]
-    pub fn create_payload_hash(
+    pub fn create_payload_hash<D: defuse_digest::Digest<OutputSize = defuse_digest::U32>>(
         &self,
         payload_prefix: &[u8],
         payload: &[u8],
@@ -47,14 +46,12 @@ impl TonConnectPayloadContext<'_> {
         ]
         .concat();
 
-        Ok(Into::<[u8; 32]>::into(defuse_digest::Sha256::digest(
-            &bytes,
-        )))
+        Ok(Into::<[u8; 32]>::into(D::digest(&bytes)))
     }
 }
 
 pub trait PayloadSchema {
-    fn hash_with_context(
+    fn hash_with_context<D: defuse_digest::Digest<OutputSize = defuse_digest::U32>>(
         &self,
         context: TonConnectPayloadContext,
     ) -> Result<defuse_crypto::CryptoHash, StringError>;
@@ -101,17 +98,17 @@ impl TonConnectPayloadSchema {
 }
 
 impl PayloadSchema for TonConnectPayloadSchema {
-    fn hash_with_context(
+    fn hash_with_context<D: defuse_digest::Digest<OutputSize = defuse_digest::U32>>(
         &self,
         context: TonConnectPayloadContext,
     ) -> Result<defuse_crypto::CryptoHash, StringError> {
         match self {
             #[cfg(feature = "text")]
-            Self::Text(payload) => payload.hash_with_context(context),
+            Self::Text(payload) => payload.hash_with_context::<D>(context),
             #[cfg(feature = "binary")]
-            Self::Binary(payload) => payload.hash_with_context(context),
+            Self::Binary(payload) => payload.hash_with_context::<D>(context),
             #[cfg(feature = "cell")]
-            Self::Cell(payload) => payload.hash_with_context(context),
+            Self::Cell(payload) => payload.hash_with_context::<D>(context),
         }
     }
 }

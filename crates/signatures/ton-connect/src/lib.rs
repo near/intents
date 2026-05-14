@@ -54,7 +54,8 @@ impl TonConnectPayload {
             timestamp,
         };
 
-        self.payload.hash_with_context(context)
+        self.payload
+            .hash_with_context::<defuse_digest::Sha256>(context)
     }
 
     pub fn hash(&self) -> defuse_crypto::CryptoHash {

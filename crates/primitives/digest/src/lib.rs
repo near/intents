@@ -11,3 +11,5 @@ pub use sha2::Sha256;
 pub use sha3::Keccak256;
 
 pub use digest::Digest;
+pub use digest::consts::U32;
+pub use digest::*;
