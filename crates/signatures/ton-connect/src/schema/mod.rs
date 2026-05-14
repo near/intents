@@ -25,8 +25,6 @@ impl TonConnectPayloadContext<'_> {
         payload_prefix: &[u8],
         payload: &[u8],
     ) -> Result<defuse_crypto::CryptoHash, StringError> {
-        use defuse_digest::Digest;
-
         let domain_len = u32::try_from(self.domain.len())
             .map_err(|_| tlb_ton::Error::custom("domain: overflow"))?;
         let payload_len = u32::try_from(payload.len())
@@ -61,8 +59,6 @@ pub trait PayloadSchema {
 #[cfg_attr(test, derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     serde(tag = "type", rename_all = "snake_case"),
     serde(bound = ""),

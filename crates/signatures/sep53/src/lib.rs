@@ -9,8 +9,6 @@ use impl_tools::autoimpl;
 )]
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     serde(rename_all = "snake_case"),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))

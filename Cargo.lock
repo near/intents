@@ -1421,14 +1421,12 @@ dependencies = [
  "arbitrary",
  "bnum",
  "borsh",
- "cfg_eval",
  "defuse-map-utils",
  "hex-literal",
  "num-traits",
  "rstest",
  "schemars 0.8.22",
  "serde",
- "serde_with",
 ]
 
 [[package]]
@@ -1529,7 +1527,6 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "borsh",
- "cfg_eval",
  "defuse-num-utils",
  "rstest",
  "schemars 0.8.22",
@@ -1598,11 +1595,9 @@ name = "defuse-fees"
 version = "0.1.0"
 dependencies = [
  "borsh",
- "cfg_eval",
  "defuse-num-utils",
  "schemars 0.8.22",
  "serde",
- "serde_with",
  "thiserror 2.0.18",
 ]
 
