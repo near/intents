@@ -4,7 +4,9 @@ members = [
   "contracts/defuse",
   "contracts/defuse/core",
   "contracts/global-deployer",
+  "contracts/global-deployer/core",
   "contracts/outlayer-app",
+  "contracts/outlayer-app/core",
   "contracts/escrow-swap",
   "contracts/poa/factory",
   "contracts/poa/token",
@@ -22,8 +24,6 @@ members = [
   "crates/near/admin-utils",
   "crates/near/auth-call",
   "crates/near/controller",
-  "contracts/global-deployer/core",
-  "crates/near/outlayer-app-state",
   "crates/near/wallet-state",
   "crates/near/nep245",
   "crates/near/utils",
@@ -75,7 +75,9 @@ defuse.path = "contracts/defuse"
 defuse-core.path = "contracts/defuse/core"
 defuse-escrow-swap.path = "contracts/escrow-swap"
 defuse-global-deployer.path = "contracts/global-deployer"
+defuse-global-deployer-core = { path = "contracts/global-deployer/core", default-features = false }
 defuse-outlayer-app.path = "contracts/outlayer-app"
+defuse-outlayer-app-core = { path = "contracts/outlayer-app/core", default-features = false }
 defuse-poa-factory.path = "contracts/poa/factory"
 defuse-poa-token.path = "contracts/poa/token"
 defuse-wallet.path = "contracts/wallet"
@@ -91,10 +93,8 @@ defuse-serde-utils.path = "crates/serde-utils"
 defuse-admin-utils.path = "crates/near/admin-utils"
 defuse-auth-call.path = "crates/near/auth-call"
 defuse-controller.path = "crates/near/controller"
-defuse-global-deployer-core = { path = "contracts/global-deployer/core", default-features = false }
 defuse-near-utils.path = "crates/near/utils"
 defuse-nep245.path = "crates/near/nep245"
-defuse-outlayer-app-state = { path = "crates/near/outlayer-app-state", default-features = false }
 defuse-wallet-state = { path = "crates/near/wallet-state", default-features = false }
 defuse-wnear.path = "crates/near/wnear"
 

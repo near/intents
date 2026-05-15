@@ -1,5 +1,5 @@
 [package]
-name = "defuse-outlayer-app-state"
+name = "defuse-outlayer-app-core"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

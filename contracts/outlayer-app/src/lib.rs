@@ -4,7 +4,7 @@ pub mod error;
 
 use std::borrow::Cow;
 
-pub use defuse_outlayer_app_state::State;
+pub use defuse_outlayer_app_core::State;
 pub use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
     AccountId, AccountIdRef, near,

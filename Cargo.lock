@@ -1691,7 +1691,7 @@ name = "defuse-outlayer-app"
 version = "0.1.0"
 dependencies = [
  "clap",
- "defuse-outlayer-app-state",
+ "defuse-outlayer-app-core",
  "defuse-serde-utils",
  "hex",
  "near-sdk",
@@ -1699,7 +1699,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-outlayer-app-state"
+name = "defuse-outlayer-app-core"
 version = "0.1.0"
 dependencies = [
  "borsh",
