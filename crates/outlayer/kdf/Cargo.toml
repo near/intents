@@ -10,16 +10,29 @@ workspace = true
 
 [dependencies]
 defuse-outlayer-crypto.workspace = true
+impl-tools.workspace = true
 
-async-trait = { workspace = true, optional = true }
 borsh = { workspace = true, optional = true }
+curve25519-dalek = { workspace = true, optional = true }
 digest = { workspace = true, optional = true }
+ed25519-dalek = { workspace = true, features = ["digest", "hazmat", "std"], optional = true }
 hex = { workspace = true, optional = true }
+k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"], optional = true }
 
 [features]
-default = ["async", "borsh", "digest", "hex"] # TODO: remove
+default = ["borsh", "digest", "ed25519", "hex", "secp256k1"] # TODO: remove
 
-async = ["dep:async-trait"]
+ed25519 = [
+  "defuse-outlayer-crypto/ed25519",
+  "dep:curve25519-dalek",
+  "dep:ed25519-dalek",
+]
+secp256k1 = ["defuse-outlayer-crypto/secp256k1", "dep:k256"]
+
 borsh = ["dep:borsh"]
 digest = ["dep:digest"]
 hex = ["dep:hex"]
+
+[dev-dependencies]
+hex-literal.workspace = true
+rstest.workspace = true

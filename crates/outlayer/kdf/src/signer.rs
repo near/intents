@@ -1,58 +1,76 @@
-use defuse_outlayer_crypto::{Curve, DerivableCurve};
+use std::{borrow::Cow, rc::Rc, sync::Arc};
 
-use crate::DerivationScheme;
+use impl_tools::autoimpl;
 
-pub trait DeriveSigner<C, S, P>
+use crate::{DerivableCurve, DerivationSchema};
+
+#[autoimpl(for<T: trait + ?Sized + ToOwned> Cow<'_, T>)]
+#[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
+pub trait DeriveSigner<C, P>
 where
     C: DerivableCurve + ?Sized,
-    S: DerivationScheme<C, P> + ?Sized,
 {
+    type Schema<'a>: DerivationSchema<C, P, Output = C::Tweak>
+    where
+        Self: 'a;
+
+    fn schema(&self) -> Self::Schema<'_>;
+
     fn public_key(&self) -> C::PublicKey;
 
     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature;
 
     fn derive_public_key(&self, path: P) -> C::PublicKey {
         let master_pk = self.public_key();
+        let tweak = self.schema().derive(path);
 
-        S::derive_public_key(&master_pk, path)
+        C::derive_public_key(&master_pk, &tweak)
     }
 }
 
-// TODO: wrap as PrivateKey<T>
-impl<S, T, P> DeriveSigner<T::Curve, S, P> for T
-where
-    T: defuse_outlayer_crypto::DeriveSigner,
-    S: DerivationScheme<T::Curve, P> + ?Sized,
-{
-    fn public_key(&self) -> <T::Curve as Curve>::PublicKey {
-        defuse_outlayer_crypto::DeriveSigner::public_key(self)
+#[cfg(test)]
+pub(crate) mod tests {
+    use std::fmt::Debug;
+
+    use super::*;
+
+    #[track_caller]
+    pub fn assert_roundtrip<S, C, P>(
+        root_sk: &S,
+        tweak: P,
+        msg: &C::Message,
+    ) -> (C::PublicKey, C::Signature)
+    where
+        S: DeriveSigner<C, P>,
+        C: DerivableCurve,
+        P: Clone,
+    {
+        let derived_pk = root_sk.derive_public_key(tweak.clone());
+        let signature = root_sk.derive_sign(tweak, msg);
+
+        assert!(C::verify(&derived_pk, msg, &signature), "invalid signature");
+
+        (derived_pk, signature)
     }
 
-    fn derive_sign(
-        &self,
-        path: P,
-        msg: &<T::Curve as Curve>::Message,
-    ) -> <T::Curve as Curve>::Signature {
-        let tweak = S::tweak(path);
-
-        defuse_outlayer_crypto::DeriveSigner::derive_sign(&self, &tweak, msg)
-    }
-}
-
-#[cfg(feature = "async")]
-#[async_trait::async_trait]
-pub trait AsyncDeriveSigner<C, S, P>
-where
-    C: DerivableCurve + ?Sized,
-    S: DerivationScheme<C, P> + ?Sized,
-{
-    fn public_key(&self) -> C::PublicKey;
-
-    async fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature;
-
-    fn derive_public_key(&self, path: P) -> C::PublicKey {
-        let master_pk = self.public_key();
-
-        S::derive_public_key(&master_pk, path)
+    #[track_caller]
+    pub fn assert_roundtrip_expected<S, C, P>(
+        root_sk: &S,
+        tweak: P,
+        msg: &C::Message,
+        expected_derived_pk: &C::PublicKey,
+    ) -> C::Signature
+    where
+        S: DeriveSigner<C, P>,
+        C: DerivableCurve,
+        C::PublicKey: PartialEq + Debug,
+        P: Clone,
+    {
+        let (derived_pk, signature) = assert_roundtrip(root_sk, tweak, msg);
+        assert_eq!(
+            &derived_pk, expected_derived_pk,
+            "derived public key has changed"
+        );
+        signature
     }
 }

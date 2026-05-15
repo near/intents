@@ -27,6 +27,7 @@ defuse-outlayer-sys.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 defuse-outlayer-host.workspace = true
+defuse-outlayer-signer.workspace = true
 defuse-outlayer-primitives = { workspace = true, features = [
   "borsh",
   "serde",

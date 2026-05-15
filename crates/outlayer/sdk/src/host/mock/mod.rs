@@ -1,7 +1,8 @@
 use std::cell::RefCell;
 
-use defuse_outlayer_host::{Context, Host, InMemorySigner};
+use defuse_outlayer_host::{Context, Host};
 use defuse_outlayer_primitives::AppId;
+use defuse_outlayer_signer::InMemorySigner;
 
 thread_local! {
     pub(crate) static HOST: RefCell<Host<'static>> =
@@ -9,6 +10,7 @@ thread_local! {
             Context {
                 app_id: AppId::EXAMPLE,
             },
+            // TODO
             InMemorySigner::from_seed(TEST_SEED),
         ));
 }

@@ -6,9 +6,7 @@ use std::sync::Arc;
 pub use defuse_outlayer_primitives as primitives;
 use defuse_outlayer_primitives::AppId;
 pub use defuse_outlayer_signer::InMemorySigner;
-use wasmtime::component::{HasData, Linker};
-
-use crate::bindings::Imports;
+use wasmtime::component::Linker;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Context<'a> {
@@ -29,6 +27,7 @@ pub struct Host<'a> {
 }
 
 impl<'a> Host<'a> {
+    #[inline]
     pub fn new(ctx: Context<'a>, signer: impl Into<Arc<InMemorySigner>>) -> Self {
         Self {
             ctx,
@@ -50,15 +49,9 @@ impl HostView for Host<'_> {
     }
 }
 
-struct HasHost;
-
-impl HasData for HasHost {
-    type Data<'a> = Host<'a>;
-}
-
 pub fn add_to_linker<T>(linker: &mut Linker<T>) -> wasmtime::Result<()>
 where
     T: HostView,
 {
-    Imports::add_to_linker::<T, HasHost>(linker, T::ctx)
+    crypto::add_crypto_to_linker::<T>(linker)
 }

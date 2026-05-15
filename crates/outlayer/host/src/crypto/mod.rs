@@ -1,33 +1,98 @@
 mod ed25519;
 mod secp256k1;
 
-use std::marker::PhantomData;
+use std::{borrow::Cow, sync::Arc};
 
-use borsh::BorshSerialize;
-use defuse_outlayer_crypto::{Curve, signer::InMemorySigner};
-use defuse_outlayer_primitives::{AppId, crypto::DerivationPath};
-use digest_io::IoWrapper;
-use sha3::{Digest, Sha3_256};
+use defuse_outlayer_kdf_app::{
+    DerivableCurve, DerivationSchema, DeriveSigner, WithAppId,
+    kdf::{ed25519::Ed25519, secp256k1::Secp256k1},
+};
+use defuse_outlayer_signer::InMemorySigner;
+use wasmtime::component::{HasData, Linker};
 
-use crate::Host;
+use crate::{Host, HostView, bindings};
 
-pub struct CryptoHost<'a> {
-    app_id: AppId<'a>,
-    signer: &'a InMemorySigner,
+// struct CryptoImpl<S>(S);
+
+// impl<C, P, S> DeriveSigner<C, P> for CryptoImpl<S>
+// where
+//     C: DerivableCurve + ?Sized + 'static,
+//     S: DeriveSigner<C, P>,
+//     P: 'static,
+// {
+//     type Schema<'a>
+//         = Box<dyn DerivationSchema<C, P, Output = C::Tweak> + 'a>
+//     where
+//         Self: 'a;
+
+//     fn schema(&self) -> Self::Schema<'_> {
+//         Box::new(self.0.schema())
+//     }
+
+//     fn public_key(&self) -> C::PublicKey {
+//         self.0.public_key()
+//     }
+
+//     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
+//         self.0.derive_sign(path, msg)
+//     }
+// }
+
+// trait BoxableDeriveSigner<'a, C: DerivableCurve, P>:
+//     DeriveSigner<C, P, Schema<'a> = Box<dyn DerivationSchema<C, P, Output = C::Tweak> + 'a>> + 'a
+// {
+// }
+
+// pub trait Signer<'a>:
+//     BoxableDeriveSigner<'a, Ed25519, [u8; 32]> + BoxableDeriveSigner<'a, Secp256k1, [u8; 32]>
+// {
+// }
+// impl<'a, T> Signer<'a> for T where
+//     T: BoxableDeriveSigner<'a, Ed25519, [u8; 32]> + BoxableDeriveSigner<'a, Secp256k1, [u8; 32]>
+// {
+// }
+
+struct HasSigner;
+
+impl HasData for HasSigner {
+    type Data<'a> = WithAppId<'a, Arc<InMemorySigner>>;
 }
 
-impl Host<'_> {
-    fn tweak(&self, prefix: &[u8], path: impl AsRef<str>) -> [u8; 32] {
-        let path = DerivationPath {
-            app_id: self.ctx.app_id.as_ref(),
-            path: path.as_ref().into(),
-        };
-
-        let mut hasher = IoWrapper(Sha3_256::new_with_prefix(prefix));
-        borsh::to_writer(&mut hasher, &path).expect("borsh");
-        hasher.0.finalize().into()
+impl<'a> Host<'a> {
+    #[inline]
+    pub fn signer(self) -> WithAppId<'a, Arc<InMemorySigner>> {
+        WithAppId::new(self.ctx.app_id, self.signer)
     }
 }
+
+pub(crate) fn add_crypto_to_linker<T>(linker: &mut Linker<T>) -> wasmtime::Result<()>
+where
+    T: HostView,
+{
+    bindings::outlayer::crypto::ed25519::add_to_linker::<T, HasSigner>(linker, |t| {
+        t.ctx().signer()
+    })?;
+    bindings::outlayer::crypto::secp256k1::add_to_linker::<T, HasSigner>(linker, |t| {
+        t.ctx().signer()
+    })?;
+    Ok(())
+}
+
+// pub trait SignerView<S>: Send {
+//     fn ctx(&mut self) -> WithAppId<'_, S>;
+// }
+
+// impl<'a> SignerView<&'a InMemorySigner> for Host<'a> {
+//     fn ctx(&mut self) -> WithAppId<'_, &'a InMemorySigner> {
+//         WithAppId::new(self.ctx.app_id.as_ref(), &self.signer)
+//     }
+// }
+
+// struct HasSigner<S>(PhantomData<S>);
+
+// impl<S> HasData for HasSigner<S> {
+//     type Data<'a> = WithAppId<'a, S>;
+// }
 
 // impl<C> DeriveSigner<C, str> for Host<'_>
 // where

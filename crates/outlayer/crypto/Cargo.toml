@@ -11,18 +11,12 @@ workspace = true
 [dependencies]
 impl-tools.workspace = true
 
-curve25519-dalek = { workspace = true, optional = true }
 ed25519-dalek = { workspace = true, features = ["std"], optional = true }
 k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"], optional = true }
 
 [features]
-ed25519 = ["dep:curve25519-dalek", "dep:ed25519-dalek"]
+ed25519 = ["dep:ed25519-dalek"]
 secp256k1 = ["dep:k256"]
-
-signing = ["ed25519-dalek?/digest", "ed25519-dalek?/hazmat"]
-
-fast = ["ed25519-dalek?/fast", "k256?/precomputed-tables"]
-zeroize = ["ed25519-dalek?/zeroize"]
 
 [dev-dependencies]
 ed25519-dalek = { workspace = true, features = ["std", "serde"] }

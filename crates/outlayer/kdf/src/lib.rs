@@ -1,12 +1,7 @@
-#[cfg(feature = "borsh")]
-pub mod borsh;
-#[cfg(feature = "digest")]
-pub mod digest;
-#[cfg(feature = "hex")]
-pub mod hex;
-mod scheme;
+mod curve;
+mod schema;
 mod signer;
 
-pub use self::{scheme::*, signer::*};
+pub use self::{curve::*, schema::*, signer::*};
 
-pub use defuse_outlayer_crypto::{self as crypto, Curve, DerivableCurve};
+pub use defuse_outlayer_crypto::{self as crypto, Curve};

@@ -1,8 +1,11 @@
-use defuse_outlayer_crypto::{
+use defuse_outlayer_kdf::{
+    self, Curve, DerivationSchema, DeriveSigner, SchemaFn,
     ed25519::{self, Ed25519, ed25519_dalek},
-    secp256k1::{self, Secp256k1},
+    secp256k1::{
+        self, Secp256k1,
+        k256::{U256, elliptic_curve::ops::Reduce},
+    },
 };
-use defuse_outlayer_kdf::{Curve, DerivationScheme, DeriveSigner};
 use hkdf::Hkdf;
 use sha3::Sha3_512;
 
@@ -32,44 +35,85 @@ impl InMemorySigner {
                 let mut sk = [0u8; ed25519_dalek::SECRET_KEY_LENGTH];
                 hk.expand(Self::HKDF_INFO_ED25519_ROOT_SK, &mut sk)
                     .expect("HKDF: ed25519");
-                crate::ed25519::SigningKey::from_bytes(&sk)
+                ed25519::SigningKey::from_bytes(&sk)
             },
             secp256k1_master_sk: {
                 let mut sk = [0u8; 32];
                 hk.expand(Self::HKDF_INFO_SECP256K1_ROOT_SK, &mut sk)
                     .expect("HKDF: secp256k1");
-                crate::secp256k1::SigningKey::from_bytes(&sk.into())
-                    .expect("secp256k1: zero scalar")
+                secp256k1::SigningKey::from_bytes(&sk.into()).expect("secp256k1: zero scalar")
             },
         }
     }
 }
 
-impl<S, P> DeriveSigner<Ed25519, S, P> for InMemorySigner
-where
-    S: DerivationScheme<Ed25519, P> + ?Sized,
-{
+impl DeriveSigner<Ed25519, [u8; 32]> for InMemorySigner {
+    type Schema<'a>
+        = SchemaFn<Ed25519, fn([u8; 32]) -> ed25519::Scalar>
+    where
+        Self: 'a;
+
+    fn schema(&self) -> Self::Schema<'_> {
+        SchemaFn::new(ed25519::Scalar::from_bytes_mod_order)
+    }
+
     fn public_key(&self) -> <Ed25519 as Curve>::PublicKey {
-        DeriveSigner::<Ed25519, S, P>::public_key(&self.ed25519_master_sk)
+        self.ed25519_master_sk.verifying_key()
     }
 
-    fn derive_sign(&self, path: P, msg: &[u8]) -> <Ed25519 as Curve>::Signature {
-        DeriveSigner::<Ed25519, S, P>::derive_sign(&self.ed25519_master_sk, path, msg)
+    fn derive_sign(&self, path: [u8; 32], msg: &[u8]) -> <Ed25519 as Curve>::Signature {
+        let tweak = DeriveSigner::<Ed25519, [u8; 32]>::schema(&self).derive(path);
+        self.ed25519_master_sk.derive_sign(tweak, msg)
     }
 }
 
-impl<S, P> DeriveSigner<Secp256k1, S, P> for InMemorySigner
-where
-    S: DerivationScheme<Secp256k1, P> + ?Sized,
-{
+impl DeriveSigner<Secp256k1, [u8; 32]> for InMemorySigner {
+    type Schema<'a>
+        = SchemaFn<Secp256k1, fn([u8; 32]) -> secp256k1::NonZeroScalar>
+    where
+        Self: 'a;
+
+    fn schema(&self) -> Self::Schema<'_> {
+        SchemaFn::new(|bytes| {
+            <secp256k1::NonZeroScalar as Reduce<U256>>::reduce_bytes(&bytes.into())
+        })
+    }
+
     fn public_key(&self) -> <Secp256k1 as Curve>::PublicKey {
-        DeriveSigner::<Secp256k1, S, P>::public_key(&self.secp256k1_master_sk)
+        *self.secp256k1_master_sk.verifying_key()
     }
 
-    fn derive_sign(&self, path: P, msg: &[u8; 32]) -> <Secp256k1 as Curve>::Signature {
-        DeriveSigner::<Secp256k1, S, P>::derive_sign(&self.secp256k1_master_sk, path, msg)
+    fn derive_sign(&self, path: [u8; 32], msg: &[u8; 32]) -> <Secp256k1 as Curve>::Signature {
+        let tweak = DeriveSigner::<Secp256k1, [u8; 32]>::schema(&self).derive(path);
+        self.secp256k1_master_sk.derive_sign(tweak, msg)
     }
 }
+
+// impl<S, P> DeriveSigner<Ed25519, S, P> for InMemorySigner
+// where
+//     S: DerivationScheme<Ed25519, P> + ?Sized,
+// {
+//     fn public_key(&self) -> <Ed25519 as Curve>::PublicKey {
+//         DeriveSigner::<Ed25519, S, P>::public_key(&self.ed25519_master_sk)
+//     }
+
+//     fn derive_sign(&self, path: P, msg: &[u8]) -> <Ed25519 as Curve>::Signature {
+//         DeriveSigner::<Ed25519, S, P>::derive_sign(&self.ed25519_master_sk, path, msg)
+//     }
+// }
+
+// impl<S, P> DeriveSigner<Secp256k1, S, P> for InMemorySigner
+// where
+//     S: DerivationScheme<Secp256k1, P> + ?Sized,
+// {
+//     fn public_key(&self) -> <Secp256k1 as Curve>::PublicKey {
+//         DeriveSigner::<Secp256k1, S, P>::public_key(&self.secp256k1_master_sk)
+//     }
+
+//     fn derive_sign(&self, path: P, msg: &[u8; 32]) -> <Secp256k1 as Curve>::Signature {
+//         DeriveSigner::<Secp256k1, S, P>::derive_sign(&self.secp256k1_master_sk, path, msg)
+//     }
+// }
 
 // const _: () = {
 //     use crate::ed25519::{Ed25519, VerifyingKey};
