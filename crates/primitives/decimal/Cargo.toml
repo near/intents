@@ -20,7 +20,7 @@ defuse-num-utils.workspace = true
 thiserror.workspace = true
 
 borsh = { workspace = true, features = ["derive"], optional = true }
-schemars = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true, features = ["derive"] }
 serde_with = { workspace = true, optional = true }
 
 arbitrary = { workspace = true, optional = true }

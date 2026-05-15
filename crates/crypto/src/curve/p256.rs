@@ -1,7 +1,7 @@
 use core::fmt::{self, Debug, Display};
 use std::str::FromStr;
 
-use crate::{CryptoHash, Curve, ParseCurveError, TypedCurve, VerifiableCurve};
+use crate::{CryptoHash, Curve, CurveType, ParseCurveError, TypedCurve, VerifiableCurve};
 use generic_array::GenericArray;
 use p256::{
     EncodedPoint,
@@ -51,30 +51,25 @@ impl VerifiableCurve for P256 {
     }
 }
 
-impl crate::TypedCurve for P256 {
-    const CURVE_TYPE: crate::CurveType = crate::CurveType::P256;
+impl TypedCurve for P256 {
+    const CURVE_TYPE: CurveType = CurveType::P256;
 }
 
 /// Compressed public key, i.e. `x` coordinate with leading SEC1 tag byte
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[cfg_attr(
+    feature = "serde",
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
+#[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[cfg_attr(
-    feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
-    derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
-)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct P256CompressedPublicKey(
-    #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<P256>"))]
-    pub  <P256 as Curve>::PublicKey,
-);
+pub struct P256CompressedPublicKey(pub <P256 as Curve>::PublicKey);
 
 impl Debug for P256CompressedPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -106,16 +101,12 @@ impl FromStr for P256CompressedPublicKey {
 )]
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
-    derive(::serde::Serialize, ::serde::Deserialize),
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct P256UncompressedPublicKey(
-    #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<P256>"))] pub [u8; 64],
-);
+pub struct P256UncompressedPublicKey(pub [u8; 64]);
 
 impl Debug for P256UncompressedPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -145,17 +136,12 @@ impl FromStr for P256UncompressedPublicKey {
 )]
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
-    derive(::serde::Serialize, ::serde::Deserialize),
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct P256Signature(
-    #[cfg_attr(feature = "serde", serde_as(as = "crate::serde::AsCurve<P256>"))]
-    pub  <P256 as Curve>::Signature,
-);
+pub struct P256Signature(pub <P256 as Curve>::Signature);
 
 impl Debug for P256Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
