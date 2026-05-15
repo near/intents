@@ -1607,14 +1607,14 @@ version = "0.2.0"
 dependencies = [
  "clap",
  "defuse-borsh-utils",
- "defuse-global-deployer-state",
+ "defuse-global-deployer-core",
  "defuse-serde-utils",
  "hex",
  "near-sdk",
 ]
 
 [[package]]
-name = "defuse-global-deployer-state"
+name = "defuse-global-deployer-core"
 version = "0.1.0"
 dependencies = [
  "borsh",

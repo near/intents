@@ -1,5 +1,5 @@
 [package]
-name = "defuse-global-deployer-state"
+name = "defuse-global-deployer-core"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
