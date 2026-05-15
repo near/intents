@@ -26,7 +26,7 @@ stellar-strkey.workspace = true
 [features]
 default = ["serde"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
-abi = ["defuse-crypto/abi", "dep:schemars"]
+abi = ["defuse-crypto/abi", "dep:schemars", "serde_with?/schemars_0_8"]
 
 [lints]
 workspace = true

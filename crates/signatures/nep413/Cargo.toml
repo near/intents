@@ -28,8 +28,12 @@ abi = [
   "defuse-crypto/abi",
   "defuse-serde-utils/abi",
   "dep:schemars",
+  "serde_with?/schemars_0_8",
 ]
 near-api = ["dep:near-api"]
+
+[dev-dependencies]
+serde_json.workspace = true
 
 [lints]
 workspace = true
