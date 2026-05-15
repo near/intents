@@ -8,6 +8,8 @@ use defuse_outlayer_primitives::AppId;
 pub use defuse_outlayer_signer::InMemorySigner;
 use wasmtime::component::Linker;
 
+use crate::crypto::Signer;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Context<'a> {
     pub app_id: AppId<'a>,
@@ -23,16 +25,13 @@ impl<'a> Context<'a> {
 
 pub struct Host<'a> {
     ctx: Context<'a>,
-    signer: Arc<InMemorySigner>,
+    signer: Arc<dyn Signer>,
 }
 
 impl<'a> Host<'a> {
     #[inline]
-    pub fn new(ctx: Context<'a>, signer: impl Into<Arc<InMemorySigner>>) -> Self {
-        Self {
-            ctx,
-            signer: signer.into(),
-        }
+    pub const fn new(ctx: Context<'a>, signer: Arc<dyn Signer>) -> Self {
+        Self { ctx, signer }
     }
 }
 
@@ -53,5 +52,5 @@ pub fn add_to_linker<T>(linker: &mut Linker<T>) -> wasmtime::Result<()>
 where
     T: HostView,
 {
-    crypto::add_crypto_to_linker::<T>(linker)
+    crypto::add_to_linker::<T>(linker)
 }

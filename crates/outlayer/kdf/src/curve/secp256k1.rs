@@ -2,7 +2,7 @@ pub use defuse_outlayer_crypto::secp256k1::*;
 pub use k256::{self, NonZeroScalar, ecdsa::SigningKey};
 use k256::{ProjectivePoint, elliptic_curve::ops::MulByGenerator};
 
-use crate::{DerivableCurve, DeriveSigner, Identity};
+use crate::{DerivableCurve, DerivationSchema, DeriveSigner, Identity};
 
 impl DerivableCurve for Secp256k1 {
     type Tweak = NonZeroScalar;
@@ -21,13 +21,23 @@ impl DerivableCurve for Secp256k1 {
 }
 
 impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
-    type Schema<'a>
-        = Identity
-    where
-        Self: 'a;
+    // type Schema<'a>
+    //     = Identity
+    // where
+    //     Self: 'a;
 
-    fn schema(&self) -> Self::Schema<'_> {
-        Identity
+    // fn schema(&self) -> Self::Schema<'_> {
+    //     Identity
+    // }
+
+    fn schema<'a>(
+        &'a self,
+    ) -> Box<dyn DerivationSchema<Secp256k1, NonZeroScalar, Output = NonZeroScalar> + 'a>
+    where
+        Secp256k1: 'a,
+        NonZeroScalar: 'a,
+    {
+        Box::new(Identity)
     }
 
     fn public_key(&self) -> VerifyingKey {

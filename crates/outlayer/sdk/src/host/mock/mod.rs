@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::{cell::RefCell, sync::Arc};
 
 use defuse_outlayer_host::{Context, Host};
 use defuse_outlayer_primitives::AppId;
@@ -11,7 +11,7 @@ thread_local! {
                 app_id: AppId::EXAMPLE,
             },
             // TODO
-            InMemorySigner::from_seed(TEST_SEED),
+            Arc::new(InMemorySigner::from_seed(TEST_SEED)),
         ));
 }
 
