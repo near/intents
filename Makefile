@@ -69,6 +69,7 @@ CONTRACT_CRATES := \
     defuse-poa-factory \
     defuse-poa-token \
     defuse-wallet \
+    defuse-treasury-logger \
     multi-token-receiver-stub
 
 ALL_TARGETS :=
@@ -113,4 +114,3 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
 
 .PHONY: all
 all: $(ALL_TARGETS)
-
