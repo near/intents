@@ -20,6 +20,7 @@ impl DerivableCurve for Ed25519 {
     }
 }
 
+#[derive(Default)]
 pub struct FromBytesModOrder;
 
 impl DerivationSchema<Ed25519, [u8; 32]> for FromBytesModOrder {
