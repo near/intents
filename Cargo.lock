@@ -1721,10 +1721,11 @@ dependencies = [
 name = "defuse-outlayer-kdf-mpc"
 version = "0.1.0"
 dependencies = [
- "defuse-outlayer-crypto",
  "defuse-outlayer-kdf",
+ "hex-literal",
  "near-account-id",
  "near-mpc-crypto-types",
+ "rstest",
 ]
 
 [[package]]
