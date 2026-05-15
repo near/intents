@@ -1,8 +1,11 @@
 pub use defuse_outlayer_crypto::secp256k1::*;
 pub use k256::{self, NonZeroScalar, ecdsa::SigningKey};
-use k256::{ProjectivePoint, elliptic_curve::ops::MulByGenerator};
+use k256::{
+    ProjectivePoint, U256,
+    elliptic_curve::{self, bigint::U512, ops::MulByGenerator},
+};
 
-use crate::{DerivableCurve, DerivationSchema, DeriveSigner, Identity};
+use crate::{DerivableCurve, DerivationSchema, DeriveSigner};
 
 impl DerivableCurve for Secp256k1 {
     type Tweak = NonZeroScalar;
@@ -17,6 +20,26 @@ impl DerivableCurve for Secp256k1 {
         // which happens with probability ≈ 2^-256 — treat as unreachable.
         VerifyingKey::from_affine(derived_point.to_affine())
             .expect("derived public key is the point at infinity")
+    }
+}
+
+pub struct Reduce;
+
+impl DerivationSchema<Secp256k1, [u8; 32]> for Reduce {
+    type Output = NonZeroScalar;
+
+    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
+        elliptic_curve::ops::Reduce::<U256>::reduce_bytes(&path.into())
+    }
+}
+
+pub struct ReduceWide;
+
+impl DerivationSchema<Secp256k1, [u8; 64]> for Reduce {
+    type Output = NonZeroScalar;
+
+    fn derive_path(&self, path: [u8; 64]) -> Self::Output {
+        elliptic_curve::ops::Reduce::<U512>::reduce_bytes(&path.into())
     }
 }
 

@@ -20,6 +20,26 @@ impl DerivableCurve for Ed25519 {
     }
 }
 
+pub struct FromBytesModOrder;
+
+impl DerivationSchema<Ed25519, [u8; 32]> for FromBytesModOrder {
+    type Output = Scalar;
+
+    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
+        Scalar::from_bytes_mod_order(path)
+    }
+}
+
+pub struct FromBytesModOrderWide;
+
+impl DerivationSchema<Ed25519, [u8; 64]> for FromBytesModOrder {
+    type Output = Scalar;
+
+    fn derive_path(&self, path: [u8; 64]) -> Self::Output {
+        Scalar::from_bytes_mod_order_wide(&path)
+    }
+}
+
 impl DerivationSchema<Ed25519, Scalar> for SigningKey {
     type Output = Scalar;
 

@@ -22,49 +22,6 @@ where
     }
 }
 
-// pub trait DynDeriveSigner<C, P>
-// where
-//     C: DerivableCurve + ?Sized,
-// {
-//     fn schema_dyn<'a>(&'a self) -> Box<dyn DerivationSchema<C, P, Output = C::Tweak> + 'a>
-//     where
-//         C: 'a,
-//         P: 'a;
-
-//     fn public_key_dyn(&self) -> C::PublicKey;
-
-//     fn derive_sign_dyn(&self, path: P, msg: &C::Message) -> C::Signature;
-
-//     fn derive_public_key_dyn(&self, path: P) -> C::PublicKey {
-//         let master_pk = self.public_key_dyn();
-//         let tweak = self.schema_dyn().derive(path);
-
-//         C::derive_public_key(&master_pk, &tweak)
-//     }
-// }
-
-// impl<C, P, S> DynDeriveSigner<C, P> for S
-// where
-//     C: DerivableCurve + ?Sized,
-//     S: DeriveSigner<C, P>,
-// {
-//     fn schema_dyn<'a>(&'a self) -> Box<dyn DerivationSchema<C, P, Output = C::Tweak> + 'a>
-//     where
-//         C: 'a,
-//         P: 'a,
-//     {
-//         Box::new(self.schema())
-//     }
-
-//     fn public_key_dyn(&self) -> C::PublicKey {
-//         self.public_key()
-//     }
-
-//     fn derive_sign_dyn(&self, path: P, msg: &C::Message) -> C::Signature {
-//         self.derive_sign(path, msg)
-//     }
-// }
-
 #[cfg(test)]
 pub(crate) mod tests {
     use std::fmt::Debug;
