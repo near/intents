@@ -1552,14 +1552,10 @@ version = "0.1.0"
 dependencies = [
  "cfg_eval",
  "defuse-crypto",
- "defuse-test-utils",
- "hex-literal",
  "impl-tools",
- "rstest",
  "schemars 0.8.22",
  "serde",
  "serde_with",
- "sha3 0.11.0",
 ]
 
 [[package]]
@@ -1993,14 +1989,10 @@ version = "0.1.0"
 dependencies = [
  "cfg_eval",
  "defuse-crypto",
- "defuse-test-utils",
- "hex-literal",
  "impl-tools",
- "rstest",
  "schemars 0.8.22",
  "serde",
  "serde_with",
- "sha3 0.11.0",
 ]
 
 [[package]]

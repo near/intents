@@ -15,12 +15,6 @@ schemars = { workspace = true, optional = true, features = ["derive"] }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
 
-[dev-dependencies]
-defuse-test-utils.workspace = true
-hex-literal.workspace = true
-rstest.workspace = true
-sha3.workspace = true
-
 [features]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 abi = ["defuse-crypto/abi", "dep:schemars"]
