@@ -3,6 +3,7 @@ pub mod ed25519;
 #[cfg(feature = "secp256k1")]
 pub mod secp256k1;
 
+/// An ellipitc curve.
 pub trait Curve: 'static {
     // /// A path to derive both [public](DerivablePublicKey::derive) and
     // /// [signing](DeriveSigner::derive_sign) keys for.
@@ -14,7 +15,7 @@ pub trait Curve: 'static {
 
     /// Message for signing.
     ///
-    /// This type can vary between different [`DerivableCurve`] implementations:
+    /// This type can vary between different curve implementations:
     /// some curves can sign arbitrary byte slices, while others might expect
     /// prehashed messages of a specific size.
     type Message: ?Sized;

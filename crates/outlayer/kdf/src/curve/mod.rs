@@ -6,6 +6,10 @@ pub mod secp256k1;
 use defuse_outlayer_crypto::Curve;
 
 pub trait DerivableCurve: Curve {
+    /// A tweak to derive both [public](DerivableCurve::derive_public_key) and
+    /// [signing](crate::DeriveSigner::derive_sign) keys for.
+    /// Typically, it should be constructed from an output of a cryptographic
+    /// hash function.
     type Tweak;
 
     #[must_use]

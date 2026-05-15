@@ -1,3 +1,4 @@
+use ed25519_dalek::Verifier;
 pub use ed25519_dalek::{self, Signature, VerifyingKey};
 
 use crate::Curve;
@@ -16,7 +17,6 @@ impl Curve for Ed25519 {
         msg: &Self::Message,
         signature: &Self::Signature,
     ) -> bool {
-        // TODO: no strict?
-        public_key.verify_strict(msg, signature).is_ok()
+        public_key.verify(msg, signature).is_ok()
     }
 }

@@ -30,10 +30,8 @@ where
     }
 }
 
-pub trait DerivationSchemaExt<C, P>: DerivationSchema<C, P>
-where
-    C: DerivableCurve,
-{
+// TODO: type params
+pub trait SchemaExt {
     #[inline]
     fn then<S>(self, then: S) -> Then<Self, S>
     where
@@ -43,12 +41,7 @@ where
     }
 }
 
-impl<C, P, S> DerivationSchemaExt<C, P> for S
-where
-    S: DerivationSchema<C, P>,
-    C: DerivableCurve,
-{
-}
+impl<S> SchemaExt for S {}
 
 #[derive(Default)]
 pub struct Identity;
@@ -68,6 +61,12 @@ where
 // TODO: implement DerivableSigner, too?
 #[derive(Default)]
 pub struct Then<A, B>(A, B);
+
+impl<A, B> Then<A, B> {
+    pub const fn new(first: A, second: B) -> Self {
+        Self(first, second)
+    }
+}
 
 impl<C, P, A, B> DerivationSchema<C, P> for Then<A, B>
 where

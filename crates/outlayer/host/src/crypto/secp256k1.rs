@@ -1,12 +1,12 @@
 use anyhow::anyhow;
-use defuse_outlayer_kdf_app::{DeriveSigner, WithAppId, kdf::secp256k1::Secp256k1};
+use defuse_outlayer_kdf_app::{AppSigner, DeriveSigner, kdf::secp256k1::Secp256k1};
 
-impl<S> crate::bindings::outlayer::crypto::secp256k1::Host for WithAppId<'_, S>
+impl<S> crate::bindings::outlayer::crypto::secp256k1::Host for AppSigner<'_, S>
 where
-    Self: DeriveSigner<Secp256k1, String>,
+    S: DeriveSigner<Secp256k1, [u8; 32]>,
 {
     fn derive_public_key(&mut self, path: String) -> wasmtime::Result<Vec<u8>> {
-        Ok(DeriveSigner::derive_public_key(&self, path)
+        Ok(DeriveSigner::<Secp256k1, _>::derive_public_key(&self, path)
             .to_encoded_point(false) // uncompressed
             .as_bytes()[1..] // trim leading SEC1 tag byte (0x04)
             .to_vec())
@@ -17,7 +17,8 @@ where
             .try_into()
             .map_err(|v: Vec<_>| anyhow!("prehash must be 32 bytes long, got: {}", v.len()))?;
 
-        let (signature, recovery_id) = DeriveSigner::derive_sign(&self, path, &prehash);
+        let (signature, recovery_id) =
+            DeriveSigner::<Secp256k1, _>::derive_sign(&self, path, &prehash);
 
         let mut sig = signature.to_vec();
         sig.push(recovery_id.to_byte());

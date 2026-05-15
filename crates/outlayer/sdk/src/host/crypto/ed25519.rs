@@ -27,7 +27,7 @@ pub fn derive_public_key(path: impl AsRef<str>) -> PublicKey {
     #[cfg(not(target_family = "wasm"))]
     let raw = mock::HOST
         // TODO
-        .with_borrow_mut(|h| h.ctx().signer().derive_public_key(path.to_string()))
+        .with_borrow_mut(|h| h.ctx().app_signer().derive_public_key(path.to_string()))
         .expect("host");
 
     raw.try_into().expect("invalid length")
@@ -48,7 +48,7 @@ pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Signature {
 
     #[cfg(not(target_family = "wasm"))]
     let raw = mock::HOST
-        .with_borrow_mut(|h| h.ctx().signer().sign(path.to_string(), msg.to_vec()))
+        .with_borrow_mut(|h| h.ctx().app_signer().sign(path.to_string(), msg.to_vec()))
         .expect("host");
 
     raw.try_into().expect("invalid length")
