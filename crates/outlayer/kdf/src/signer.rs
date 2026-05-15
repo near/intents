@@ -16,9 +16,7 @@ where
 
     fn derive_public_key(&self, path: P) -> C::PublicKey {
         let master_pk = self.public_key();
-        let tweak = self.derive_path(path);
-
-        C::derive_public_key(&master_pk, &tweak)
+        self.derive_public_key_from_master(&master_pk, path)
     }
 }
 

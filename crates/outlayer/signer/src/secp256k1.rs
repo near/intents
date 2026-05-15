@@ -1,14 +1,29 @@
 pub use defuse_outlayer_kdf::secp256k1::*;
 
-use defuse_outlayer_kdf::{Curve, DerivationSchema, DeriveSigner};
+use defuse_outlayer_kdf::{
+    Curve, DerivationSchema, DeriveSigner, SchemaFn,
+    secp256k1::k256::{U256, elliptic_curve::ops::Reduce},
+};
+use sha3::{Digest, Sha3_256};
 
 use crate::InMemorySigner;
+
+pub const SCHEMA: SchemaFn<Secp256k1, fn([u8; 32]) -> NonZeroScalar> = SchemaFn::new(|path| {
+    const HASH_PREFIX: &[u8] = b"outlayer/secp256k1/derive-tweak/v1";
+
+    let path: [u8; 32] = Sha3_256::new_with_prefix(HASH_PREFIX)
+        .chain_update(path)
+        .finalize()
+        .into();
+
+    Reduce::<U256>::reduce_bytes(&path.into())
+});
 
 impl DerivationSchema<Secp256k1, [u8; 32]> for InMemorySigner {
     type Output = NonZeroScalar;
 
     fn derive_path(&self, path: [u8; 32]) -> Self::Output {
-        Reduce.derive_path(path)
+        SCHEMA.derive_path(path)
     }
 }
 

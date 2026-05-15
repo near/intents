@@ -1,5 +1,5 @@
-mod ed25519;
-mod secp256k1;
+pub mod ed25519;
+pub mod secp256k1;
 
 pub use defuse_outlayer_kdf as kdf;
 

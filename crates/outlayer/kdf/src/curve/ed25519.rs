@@ -20,27 +20,6 @@ impl DerivableCurve for Ed25519 {
     }
 }
 
-#[derive(Default)]
-pub struct FromBytesModOrder;
-
-impl DerivationSchema<Ed25519, [u8; 32]> for FromBytesModOrder {
-    type Output = Scalar;
-
-    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
-        Scalar::from_bytes_mod_order(path)
-    }
-}
-
-pub struct FromBytesModOrderWide;
-
-impl DerivationSchema<Ed25519, [u8; 64]> for FromBytesModOrder {
-    type Output = Scalar;
-
-    fn derive_path(&self, path: [u8; 64]) -> Self::Output {
-        Scalar::from_bytes_mod_order_wide(&path)
-    }
-}
-
 impl DerivationSchema<Ed25519, Scalar> for SigningKey {
     type Output = Scalar;
 
@@ -213,9 +192,12 @@ mod tests {
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::signer::tests::assert_roundtrip;
+    use crate::{SchemaFn, signer::tests::assert_roundtrip};
 
     use super::*;
+
+    const SCHEMA: SchemaFn<Ed25519, fn([u8; 32]) -> Scalar> =
+        SchemaFn::new(Scalar::from_bytes_mod_order);
 
     #[rstest]
     fn roundtrip(
@@ -231,7 +213,7 @@ mod tests {
     ) {
         assert_roundtrip(
             &SigningKey::from_bytes(&root_sk),
-            FromBytesModOrder.derive_path(tweak),
+            SCHEMA.derive_path(tweak),
             msg,
         );
     }
@@ -249,7 +231,7 @@ mod tests {
     ) {
         let (derived_pk, _signature) = assert_roundtrip(
             &SigningKey::from_bytes(&root_sk),
-            FromBytesModOrder.derive_path(tweak),
+            SCHEMA.derive_path(tweak),
             b"message",
         );
         assert_eq!(

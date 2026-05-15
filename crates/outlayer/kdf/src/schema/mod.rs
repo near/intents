@@ -1,4 +1,4 @@
-use std::{borrow::Cow, rc::Rc, sync::Arc};
+use std::{borrow::Cow, marker::PhantomData, rc::Rc, sync::Arc};
 
 use impl_tools::autoimpl;
 
@@ -20,6 +20,14 @@ where
     type Output;
 
     fn derive_path(&self, path: P) -> Self::Output;
+
+    fn derive_public_key_from_master(&self, master_pk: &C::PublicKey, path: P) -> C::PublicKey
+    where
+        C: DerivableCurve<Tweak = Self::Output>,
+    {
+        let tweak = self.derive_path(path);
+        C::derive_public_key(master_pk, &tweak)
+    }
 }
 
 pub trait DerivationSchemaExt<C, P>: DerivationSchema<C, P>
@@ -74,16 +82,22 @@ where
     }
 }
 
-pub struct SchemaFn<F>(F);
+pub struct SchemaFn<C, F> {
+    f: F,
+    _curve: PhantomData<C>,
+}
 
-impl<F> SchemaFn<F> {
+impl<C, F> SchemaFn<C, F> {
     #[inline]
     pub const fn new(f: F) -> Self {
-        Self(f)
+        Self {
+            f,
+            _curve: PhantomData,
+        }
     }
 }
 
-impl<C, P, F, O> DerivationSchema<C, P> for SchemaFn<F>
+impl<C, P, F, O> DerivationSchema<C, P> for SchemaFn<C, F>
 where
     C: DerivableCurve,
     F: Fn(P) -> O,
@@ -91,6 +105,6 @@ where
     type Output = O;
 
     fn derive_path(&self, path: P) -> Self::Output {
-        (self.0)(path)
+        (self.f)(path)
     }
 }

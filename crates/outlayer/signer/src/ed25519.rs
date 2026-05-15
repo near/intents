@@ -1,25 +1,26 @@
 pub use defuse_outlayer_kdf::ed25519::*;
 
-use defuse_outlayer_kdf::{
-    Curve, DerivationSchema, DerivationSchemaExt, DeriveSigner, Identity, Then, digest::Digest,
-};
-use sha3::Sha3_256;
+use defuse_outlayer_kdf::{Curve, DerivationSchema, DeriveSigner, SchemaFn};
+use sha3::{Digest, Sha3_256};
 
 use crate::InMemorySigner;
 
-// type Schema = Then<Digest<Sha3_256>, FromBytesModOrder>;
+pub const SCHEMA: SchemaFn<Ed25519, fn([u8; 32]) -> Scalar> = SchemaFn::new(|path| {
+    const HASH_PREFIX: &[u8] = b"outlayer/ed25519/derive-tweak/v1";
 
-// type Schema = Then<Digest<Sha3_256>, FromBytesModOrder>;
+    let path: [u8; 32] = Sha3_256::new_with_prefix(HASH_PREFIX)
+        .chain_update(path)
+        .finalize()
+        .into();
 
-// TODO
-// const SCHEMA: SchemaFn<> = SchemaFn::new(|path: [u8; 32]| FromBytesModOrder.derive_path(path));
+    Scalar::from_bytes_mod_order(path)
+});
 
 impl DerivationSchema<Ed25519, [u8; 32]> for InMemorySigner {
     type Output = Scalar;
 
     fn derive_path(&self, path: [u8; 32]) -> Self::Output {
-        // TODO: hash
-        FromBytesModOrder.derive_path(path)
+        SCHEMA.derive_path(path)
     }
 }
 

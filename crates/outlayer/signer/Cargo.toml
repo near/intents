@@ -18,7 +18,7 @@ zeroize = { workspace = true, optional = true }
 
 [features]
 # fast = ["defuse-outlayer-crypto/fast"]
-# zeroize = ["defuse-outlayer-crypto/zeroize", "dep:zeroize"]
+zeroize = ["defuse-outlayer-kdf/zeroize", "dep:zeroize", "sha3/zeroize"]
 
 [dev-dependencies]
 hex-literal.workspace = true

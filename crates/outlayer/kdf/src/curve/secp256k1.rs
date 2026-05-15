@@ -1,9 +1,6 @@
 pub use defuse_outlayer_crypto::secp256k1::*;
 pub use k256::{self, NonZeroScalar, ecdsa::SigningKey};
-use k256::{
-    ProjectivePoint, U256,
-    elliptic_curve::{self, bigint::U512, ops::MulByGenerator},
-};
+use k256::{ProjectivePoint, elliptic_curve::ops::MulByGenerator};
 
 use crate::{DerivableCurve, DerivationSchema, DeriveSigner};
 
@@ -20,26 +17,6 @@ impl DerivableCurve for Secp256k1 {
         // which happens with probability ≈ 2^-256 — treat as unreachable.
         VerifyingKey::from_affine(derived_point.to_affine())
             .expect("derived public key is the point at infinity")
-    }
-}
-
-pub struct Reduce;
-
-impl DerivationSchema<Secp256k1, [u8; 32]> for Reduce {
-    type Output = NonZeroScalar;
-
-    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
-        elliptic_curve::ops::Reduce::<U256>::reduce_bytes(&path.into())
-    }
-}
-
-pub struct ReduceWide;
-
-impl DerivationSchema<Secp256k1, [u8; 64]> for Reduce {
-    type Output = NonZeroScalar;
-
-    fn derive_path(&self, path: [u8; 64]) -> Self::Output {
-        elliptic_curve::ops::Reduce::<U512>::reduce_bytes(&path.into())
     }
 }
 
@@ -80,11 +57,15 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
+    use k256::{U256, elliptic_curve::ops::Reduce};
     use rstest::rstest;
 
-    use crate::signer::tests::assert_roundtrip;
+    use crate::{SchemaFn, signer::tests::assert_roundtrip};
 
     use super::*;
+
+    const SCHEMA: SchemaFn<Secp256k1, fn([u8; 32]) -> NonZeroScalar> =
+        SchemaFn::new(|path| Reduce::<U256>::reduce_bytes(&path.into()));
 
     #[rstest]
     fn roundtrip(
@@ -104,7 +85,7 @@ mod tests {
     ) {
         let (derived_pk, (signature, recovery_id)) = assert_roundtrip(
             &SigningKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
-            Reduce.derive_path(tweak),
+            SCHEMA.derive_path(tweak),
             &prehash,
         );
 
@@ -127,7 +108,7 @@ mod tests {
     ) {
         let (derived_pk, _signature) = assert_roundtrip(
             &SigningKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
-            Reduce.derive_path(tweak),
+            SCHEMA.derive_path(tweak),
             &hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
         );
         assert_eq!(

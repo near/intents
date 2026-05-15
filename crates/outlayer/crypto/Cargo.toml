@@ -18,6 +18,8 @@ k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"], optional =
 ed25519 = ["dep:ed25519-dalek"]
 secp256k1 = ["dep:k256"]
 
+zeroize = ["ed25519-dalek?/zeroize"]
+
 [dev-dependencies]
 ed25519-dalek = { workspace = true, features = ["std", "serde"] }
 hex-literal.workspace = true
