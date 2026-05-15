@@ -1,13 +1,7 @@
+use chrono::{DateTime, SubsecRound, Utc};
 use core::{
     ops::{Add, AddAssign, Sub, SubAssign},
     time::Duration,
-};
-use std::io;
-
-use chrono::{DateTime, SubsecRound, Utc};
-use defuse_borsh_utils::adapters::{
-    BorshDeserializeAs, BorshSerializeAs, TimestampMicroSeconds, TimestampMilliSeconds,
-    TimestampNanoSeconds, TimestampSeconds,
 };
 #[cfg_attr(
     feature = "serde",
@@ -100,40 +94,50 @@ impl SubAssign<Duration> for Deadline {
     }
 }
 
+#[cfg(feature = "borsh")]
 macro_rules! impl_borsh_serde_as {
-    ($($a:ident,)+) => {$(
-        impl<I> BorshSerializeAs<Deadline> for $a<I>
-        where
-            $a<I>: BorshSerializeAs<DateTime<Utc>>,
-        {
-            fn serialize_as<W>(source: &Deadline, writer: &mut W) -> io::Result<()>
-            where
-                W: io::Write,
-            {
-                Self::serialize_as(&source.0, writer)
-            }
-        }
+    ($($a:ident,)+) => {
+        const _: () = {
+            use defuse_borsh_utils::adapters::{
+                BorshDeserializeAs, BorshSerializeAs,
+                TimestampMicroSeconds, TimestampMilliSeconds, TimestampNanoSeconds, TimestampSeconds,
+            };
+            $(
+                impl<I> BorshSerializeAs<Deadline> for $a<I>
+                where
+                    $a<I>: BorshSerializeAs<DateTime<Utc>>,
+                {
+                    fn serialize_as<W>(source: &Deadline, writer: &mut W) -> std::io::Result<()>
+                    where
+                        W: std::io::Write,
+                    {
+                        Self::serialize_as(&source.0, writer)
+                    }
+                }
 
-        impl<I> BorshDeserializeAs<Deadline> for $a<I>
-        where
-            $a<I>: BorshDeserializeAs<DateTime<Utc>>,
-        {
-            fn deserialize_as<R>(reader: &mut R) -> io::Result<Deadline>
-            where
-                R: io::Read,
-            {
-                Self::deserialize_as(reader).map(Deadline)
-            }
-        }
-    )*};
+                impl<I> BorshDeserializeAs<Deadline> for $a<I>
+                where
+                    $a<I>: BorshDeserializeAs<DateTime<Utc>>,
+                {
+                    fn deserialize_as<R>(reader: &mut R) -> std::io::Result<Deadline>
+                    where
+                        R: std::io::Read,
+                    {
+                        Self::deserialize_as(reader).map(Deadline)
+                    }
+                }
+            )*
+        };
+    };
 }
+#[cfg(feature = "borsh")]
 impl_borsh_serde_as! {
     TimestampSeconds, TimestampMilliSeconds, TimestampMicroSeconds, TimestampNanoSeconds,
 }
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "abi")]
+    #[cfg(all(feature = "abi", feature = "borsh"))]
     #[test]
     fn schema_as_usage() {
         use super::*;

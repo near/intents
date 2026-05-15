@@ -15,7 +15,7 @@ workspace = true
 [dependencies]
 defuse-bitmap = { workspace = true, features = ["borsh", "serde"] }
 defuse-borsh-utils.workspace = true
-defuse-deadline = { workspace = true, features = ["near-contract", "serde"] }
+defuse-deadline = { workspace = true, features = ["borsh", "near-contract", "serde"] }
 defuse-serde-utils = { workspace = true, features = ["base58"] }
 
 derive_more = { workspace = true, features = ["from"] }

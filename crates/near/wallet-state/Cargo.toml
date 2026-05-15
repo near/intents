@@ -23,6 +23,7 @@ rand_core = { workspace = true, optional = true }
 [features]
 borsh = [
   "defuse-bitmap/borsh",
+  "defuse-deadline/borsh",
   "dep:borsh",
   "dep:defuse-borsh-utils",
   "near-account-id/borsh",
