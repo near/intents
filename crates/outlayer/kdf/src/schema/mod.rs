@@ -15,7 +15,7 @@ pub mod hex;
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
 pub trait DerivationSchema<C, P>
 where
-    C: DerivableCurve + ?Sized,
+    C: DerivableCurve,
 {
     type Output;
 
@@ -27,7 +27,7 @@ pub struct Identity;
 
 impl<C, T> DerivationSchema<C, T> for Identity
 where
-    C: DerivableCurve + ?Sized,
+    C: DerivableCurve,
 {
     type Output = T;
 
@@ -54,7 +54,7 @@ impl<C: ?Sized, F> SchemaFn<C, F> {
 
 impl<C, P, F, O> DerivationSchema<C, P> for SchemaFn<C, F>
 where
-    C: DerivableCurve + ?Sized,
+    C: DerivableCurve,
     F: Fn(P) -> O,
 {
     type Output = O;

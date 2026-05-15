@@ -8,7 +8,7 @@ use crate::{DerivableCurve, DerivationSchema};
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
 pub trait DeriveSigner<C, P>: DerivationSchema<C, P, Output = C::Tweak>
 where
-    C: DerivableCurve + ?Sized,
+    C: DerivableCurve,
 {
     fn public_key(&self) -> C::PublicKey;
 
@@ -24,8 +24,6 @@ where
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use std::fmt::Debug;
-
     use super::*;
 
     #[track_caller]
@@ -45,26 +43,5 @@ pub(crate) mod tests {
         assert!(C::verify(&derived_pk, msg, &signature), "invalid signature");
 
         (derived_pk, signature)
-    }
-
-    #[track_caller]
-    pub fn assert_roundtrip_expected<S, C, P>(
-        root_sk: &S,
-        path: P,
-        msg: &C::Message,
-        expected_derived_pk: &C::PublicKey,
-    ) -> C::Signature
-    where
-        S: DeriveSigner<C, P>,
-        C: DerivableCurve,
-        C::PublicKey: PartialEq + Debug,
-        P: Clone,
-    {
-        let (derived_pk, signature) = assert_roundtrip(root_sk, path, msg);
-        assert_eq!(
-            &derived_pk, expected_derived_pk,
-            "derived public key has changed"
-        );
-        signature
     }
 }

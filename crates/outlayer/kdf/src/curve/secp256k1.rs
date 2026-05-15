@@ -80,10 +80,9 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
-    use k256::{EncodedPoint, U256, ecdsa::VerifyingKey, elliptic_curve::ops::Reduce};
     use rstest::rstest;
 
-    use crate::signer::tests::{assert_roundtrip, assert_roundtrip_expected};
+    use crate::signer::tests::assert_roundtrip;
 
     use super::*;
 
@@ -105,7 +104,7 @@ mod tests {
     ) {
         let (derived_pk, (signature, recovery_id)) = assert_roundtrip(
             &SigningKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
-            <NonZeroScalar as Reduce<U256>>::reduce_bytes(&tweak.into()),
+            Reduce.derive_path(tweak),
             &prehash,
         );
 
@@ -126,14 +125,16 @@ mod tests {
         #[case] tweak: [u8; 32],
         #[case] expected_derived_pk: [u8; 64],
     ) {
-        assert_roundtrip_expected(
+        let (derived_pk, _signature) = assert_roundtrip(
             &SigningKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
-            <NonZeroScalar as Reduce<U256>>::reduce_bytes(&tweak.into()),
+            Reduce.derive_path(tweak),
             &hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
-            &VerifyingKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
-                &expected_derived_pk.into(),
-            ))
-            .expect("invalid expected derived pk"),
+        );
+        assert_eq!(
+            // compress and skip tag byte
+            derived_pk.to_encoded_point(false).as_bytes()[1..],
+            expected_derived_pk,
+            "derived public key has changed"
         );
     }
 }

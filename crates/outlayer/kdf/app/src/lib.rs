@@ -119,7 +119,7 @@ impl<'a, S> WithAppId<'a, S> {
 
 impl<C, P, S> DerivationSchema<C, P> for WithAppId<'_, S>
 where
-    C: DerivableCurve + ?Sized,
+    C: DerivableCurve,
     P: AsRef<str>,
     S: DerivationSchema<C, [u8; 32]>,
 {
@@ -132,7 +132,7 @@ where
 
 impl<C, P, S> DeriveSigner<C, P> for WithAppId<'_, S>
 where
-    C: DerivableCurve + ?Sized,
+    C: DerivableCurve,
     P: AsRef<str>,
     S: DeriveSigner<C, [u8; 32]>,
 {
@@ -152,7 +152,7 @@ where
 
 // impl<'a, C, S, P, T> DeriveSigner<C, S, P> for AppSigner<'a, T>
 // where
-//     C: DerivableCurve + ?Sized,
+//     C: DerivableCurve,
 //     S: DerivationScheme<C, P> + ?Sized,
 //     T: DeriveSigner<C, App, AppDerivationPath<'a, P>>,
 // {

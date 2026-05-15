@@ -11,6 +11,7 @@ use wasmtime::component::{HasData, Linker};
 
 use crate::{Host, HostView, bindings};
 
+
 struct HasSigner<S>(PhantomData<S>);
 
 impl<S: 'static> HasData for HasSigner<S> {

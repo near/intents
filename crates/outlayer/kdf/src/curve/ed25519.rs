@@ -208,11 +208,11 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
 
 #[cfg(test)]
 mod tests {
-    use ed25519_dalek::{PUBLIC_KEY_LENGTH, SecretKey, SigningKey, VerifyingKey};
+    use ed25519_dalek::{PUBLIC_KEY_LENGTH, SecretKey};
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::signer::tests::{assert_roundtrip, assert_roundtrip_expected};
+    use crate::signer::tests::assert_roundtrip;
 
     use super::*;
 
@@ -230,7 +230,7 @@ mod tests {
     ) {
         assert_roundtrip(
             &SigningKey::from_bytes(&root_sk),
-            Scalar::from_bytes_mod_order(tweak),
+            FromBytesModOrder.derive_path(tweak),
             msg,
         );
     }
@@ -246,11 +246,15 @@ mod tests {
         #[case] tweak: [u8; 32],
         #[case] expected_derived_pk: [u8; PUBLIC_KEY_LENGTH],
     ) {
-        assert_roundtrip_expected(
+        let (derived_pk, _signature) = assert_roundtrip(
             &SigningKey::from_bytes(&root_sk),
-            Scalar::from_bytes_mod_order(tweak),
+            FromBytesModOrder.derive_path(tweak),
             b"message",
-            &VerifyingKey::from_bytes(&expected_derived_pk).expect("invalid expected derived pk"),
+        );
+        assert_eq!(
+            derived_pk.to_bytes(),
+            expected_derived_pk,
+            "derived public key has changed"
         );
     }
 }
