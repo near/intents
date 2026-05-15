@@ -75,7 +75,6 @@
 // }
 
 use borsh::BorshSerialize;
-use defuse_outlayer_kdf::SchemaFn;
 pub use defuse_outlayer_kdf::{self as kdf, DerivableCurve, DerivationSchema, DeriveSigner};
 pub use defuse_outlayer_primitives::AppId;
 use digest_io::IoWrapper;
@@ -126,8 +125,8 @@ where
 {
     type Output = S::Output;
 
-    fn derive(&self, path: P) -> Self::Output {
-        self.next.derive(self.wrap(path))
+    fn derive_path(&self, path: P) -> Self::Output {
+        self.next.derive_path(self.wrap(path))
     }
 }
 
@@ -137,23 +136,6 @@ where
     P: AsRef<str>,
     S: DeriveSigner<C, [u8; 32]>,
 {
-    // type Schema<'a>
-    //     = WithAppId<'a, S::Schema<'a>>
-    // where
-    //     Self: 'a;
-
-    // fn schema(&self) -> Self::Schema<'_> {
-    //     WithAppId::new(self.app_id.as_ref(), self.next.schema())
-    // }
-
-    fn schema<'a>(&'a self) -> Box<dyn DerivationSchema<C, P, Output = C::Tweak> + 'a>
-    where
-        C: 'a,
-        P: 'a,
-    {
-        Box::new(WithAppId::new(self.app_id.as_ref(), self.next.schema()))
-    }
-
     fn public_key(&self) -> C::PublicKey {
         self.next.public_key()
     }

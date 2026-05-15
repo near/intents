@@ -27,7 +27,7 @@ impl<T> Signer for T where
 }
 
 impl<'a> Host<'a> {
-    // TODO: no pub
+    // // TODO: no pub
     #[inline]
     pub fn signer(self) -> WithAppId<'a, Arc<dyn Signer>> {
         WithAppId::new(self.ctx.app_id, self.signer)

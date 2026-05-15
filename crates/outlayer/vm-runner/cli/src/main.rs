@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{Context as _, Error, Result};
 use clap::Parser;
@@ -69,7 +69,7 @@ async fn main() -> Result<()> {
             HostContext {
                 app_id: args.app_id,
             },
-            InMemorySigner::from_seed(&seed),
+            Arc::new(InMemorySigner::from_seed(&seed)),
         ),
         fuel: args.fuel,
     };

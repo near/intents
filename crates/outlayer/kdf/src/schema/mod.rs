@@ -19,7 +19,7 @@ where
 {
     type Output;
 
-    fn derive(&self, path: P) -> Self::Output;
+    fn derive_path(&self, path: P) -> Self::Output;
 }
 
 #[derive(Default)]
@@ -32,7 +32,7 @@ where
     type Output = T;
 
     #[inline]
-    fn derive(&self, path: T) -> T {
+    fn derive_path(&self, path: T) -> T {
         path
     }
 }
@@ -59,7 +59,7 @@ where
 {
     type Output = O;
 
-    fn derive(&self, path: P) -> Self::Output {
+    fn derive_path(&self, path: P) -> Self::Output {
         (self.f)(path)
     }
 }

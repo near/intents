@@ -18,7 +18,7 @@ where
 {
     type Output = S::Output;
 
-    fn derive(&self, path: P) -> Self::Output {
-        self.next.derive(D::digest(path))
+    fn derive_path(&self, path: P) -> Self::Output {
+        self.next.derive_path(D::digest(path))
     }
 }

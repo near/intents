@@ -7,7 +7,7 @@ use ed25519_dalek::{
     hazmat::{ExpandedSecretKey, raw_sign},
 };
 
-use crate::{DerivableCurve, DerivationSchema, DeriveSigner, Identity};
+use crate::{DerivableCurve, DerivationSchema, DeriveSigner};
 
 impl DerivableCurve for Ed25519 {
     type Tweak = Scalar;
@@ -20,24 +20,15 @@ impl DerivableCurve for Ed25519 {
     }
 }
 
-impl DeriveSigner<Ed25519, Scalar> for SigningKey {
-    // type Schema<'a>
-    //     = Identity
-    // where
-    //     Self: 'a;
+impl DerivationSchema<Ed25519, Scalar> for SigningKey {
+    type Output = Scalar;
 
-    // fn schema(&self) -> Self::Schema<'_> {
-    //     Identity
-    // }
-
-    fn schema<'a>(&'a self) -> Box<dyn DerivationSchema<Ed25519, Scalar, Output = Scalar> + 'a>
-    where
-        Ed25519: 'a,
-        Scalar: 'a,
-    {
-        Box::new(Identity)
+    fn derive_path(&self, path: Scalar) -> Self::Output {
+        path
     }
+}
 
+impl DeriveSigner<Ed25519, Scalar> for SigningKey {
     fn public_key(&self) -> VerifyingKey {
         self.verifying_key()
     }
@@ -55,24 +46,15 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
     }
 }
 
-impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
-    // type Schema<'a>
-    //     = Identity
-    // where
-    //     Self: 'a;
+impl DerivationSchema<Ed25519, Scalar> for ExpandedSecretKey {
+    type Output = Scalar;
 
-    // fn schema(&self) -> Self::Schema<'_> {
-    //     Identity
-    // }
-
-    fn schema<'a>(&'a self) -> Box<dyn DerivationSchema<Ed25519, Scalar, Output = Scalar> + 'a>
-    where
-        Ed25519: 'a,
-        Scalar: 'a,
-    {
-        Box::new(Identity)
+    fn derive_path(&self, path: Scalar) -> Self::Output {
+        path
     }
+}
 
+impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
     fn public_key(&self) -> VerifyingKey {
         self.into()
     }

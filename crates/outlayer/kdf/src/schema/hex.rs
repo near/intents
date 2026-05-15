@@ -17,7 +17,7 @@ where
 {
     type Output = S::Output;
 
-    fn derive(&self, path: P) -> Self::Output {
-        self.0.derive(hex::encode(path))
+    fn derive_path(&self, path: P) -> Self::Output {
+        self.0.derive_path(hex::encode(path))
     }
 }

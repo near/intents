@@ -12,7 +12,7 @@ where
 {
     type Output = S::Output;
 
-    fn derive(&self, path: P) -> Self::Output {
-        self.0.derive(borsh::to_vec(&path).expect("borsh"))
+    fn derive_path(&self, path: P) -> Self::Output {
+        self.0.derive_path(borsh::to_vec(&path).expect("borsh"))
     }
 }

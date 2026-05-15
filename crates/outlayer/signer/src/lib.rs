@@ -1,5 +1,5 @@
 use defuse_outlayer_kdf::{
-    self, Curve, DerivationSchema, DeriveSigner, SchemaFn,
+    self, Curve, DerivationSchema, DeriveSigner,
     ed25519::{self, Ed25519, ed25519_dalek},
     secp256k1::{
         self, Secp256k1,
@@ -47,69 +47,41 @@ impl InMemorySigner {
     }
 }
 
+impl DerivationSchema<Ed25519, [u8; 32]> for InMemorySigner {
+    type Output = ed25519::Scalar;
+
+    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
+        ed25519::Scalar::from_bytes_mod_order(path)
+    }
+}
+
 // TODO: path?
 impl DeriveSigner<Ed25519, [u8; 32]> for InMemorySigner {
-    // type Schema<'a>
-    //     = SchemaFn<Ed25519, fn([u8; 32]) -> ed25519::Scalar>
-    // where
-    //     Self: 'a;
-
-    // fn schema(&self) -> Self::Schema<'_> {
-    //     SchemaFn::new(ed25519::Scalar::from_bytes_mod_order)
-    // }
-
-    fn schema<'a>(
-        &'a self,
-    ) -> Box<dyn DerivationSchema<Ed25519, [u8; 32], Output = ed25519::Scalar> + 'a>
-    where
-        Ed25519: 'a,
-        [u8; 32]: 'a,
-    {
-        Box::new(SchemaFn::new(ed25519::Scalar::from_bytes_mod_order))
-        // Box::new(WithAppId::new(self.app_id.as_ref(), self.next.schema()))
-    }
-
     fn public_key(&self) -> <Ed25519 as Curve>::PublicKey {
         self.ed25519_master_sk.verifying_key()
     }
 
     fn derive_sign(&self, path: [u8; 32], msg: &[u8]) -> <Ed25519 as Curve>::Signature {
-        let tweak = DeriveSigner::<Ed25519, [u8; 32]>::schema(&self).derive(path);
+        let tweak = DerivationSchema::<Ed25519, [u8; 32]>::derive_path(self, path);
         self.ed25519_master_sk.derive_sign(tweak, msg)
     }
 }
 
-impl DeriveSigner<Secp256k1, [u8; 32]> for InMemorySigner {
-    // type Schema<'a>
-    //     = SchemaFn<Secp256k1, fn([u8; 32]) -> secp256k1::NonZeroScalar>
-    // where
-    //     Self: 'a;
+impl DerivationSchema<Secp256k1, [u8; 32]> for InMemorySigner {
+    type Output = secp256k1::NonZeroScalar;
 
-    // fn schema(&self) -> Self::Schema<'_> {
-    //     SchemaFn::new(|bytes| {
-    //         <secp256k1::NonZeroScalar as Reduce<U256>>::reduce_bytes(&bytes.into())
-    //     })
-    // }
-
-    fn schema<'a>(
-        &'a self,
-    ) -> Box<dyn DerivationSchema<Secp256k1, [u8; 32], Output = secp256k1::NonZeroScalar> + 'a>
-    where
-        Secp256k1: 'a,
-        [u8; 32]: 'a,
-    {
-        Box::new(SchemaFn::new(|bytes: [u8; 32]| {
-            <secp256k1::NonZeroScalar as Reduce<U256>>::reduce_bytes(&bytes.into())
-        }))
-        // Box::new(WithAppId::new(self.app_id.as_ref(), self.next.schema()))
+    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
+        <secp256k1::NonZeroScalar as Reduce<U256>>::reduce_bytes(&path.into())
     }
+}
 
+impl DeriveSigner<Secp256k1, [u8; 32]> for InMemorySigner {
     fn public_key(&self) -> <Secp256k1 as Curve>::PublicKey {
         *self.secp256k1_master_sk.verifying_key()
     }
 
     fn derive_sign(&self, path: [u8; 32], msg: &[u8; 32]) -> <Secp256k1 as Curve>::Signature {
-        let tweak = DeriveSigner::<Secp256k1, [u8; 32]>::schema(&self).derive(path);
+        let tweak = DerivationSchema::<Secp256k1, [u8; 32]>::derive_path(self, path);
         self.secp256k1_master_sk.derive_sign(tweak, msg)
     }
 }

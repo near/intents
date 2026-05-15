@@ -3,7 +3,7 @@ pub mod ed25519;
 #[cfg(feature = "secp256k1")]
 pub mod secp256k1;
 
-pub trait Curve {
+pub trait Curve: 'static {
     // /// A path to derive both [public](DerivablePublicKey::derive) and
     // /// [signing](DeriveSigner::derive_sign) keys for.
     // /// Typically, it should be an output of a cryptographic hash function.

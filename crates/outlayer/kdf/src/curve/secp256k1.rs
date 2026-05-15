@@ -20,26 +20,15 @@ impl DerivableCurve for Secp256k1 {
     }
 }
 
-impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
-    // type Schema<'a>
-    //     = Identity
-    // where
-    //     Self: 'a;
+impl DerivationSchema<Secp256k1, NonZeroScalar> for SigningKey {
+    type Output = NonZeroScalar;
 
-    // fn schema(&self) -> Self::Schema<'_> {
-    //     Identity
-    // }
-
-    fn schema<'a>(
-        &'a self,
-    ) -> Box<dyn DerivationSchema<Secp256k1, NonZeroScalar, Output = NonZeroScalar> + 'a>
-    where
-        Secp256k1: 'a,
-        NonZeroScalar: 'a,
-    {
-        Box::new(Identity)
+    fn derive_path(&self, path: NonZeroScalar) -> Self::Output {
+        path
     }
+}
 
+impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     fn public_key(&self) -> VerifyingKey {
         *self.verifying_key()
     }

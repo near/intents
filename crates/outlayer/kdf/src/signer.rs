@@ -6,22 +6,17 @@ use crate::{DerivableCurve, DerivationSchema};
 
 #[autoimpl(for<T: trait + ?Sized + ToOwned> Cow<'_, T>)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
-pub trait DeriveSigner<C, P>
+pub trait DeriveSigner<C, P>: DerivationSchema<C, P, Output = C::Tweak>
 where
     C: DerivableCurve + ?Sized,
 {
-    fn schema<'a>(&'a self) -> Box<dyn DerivationSchema<C, P, Output = C::Tweak> + 'a>
-    where
-        C: 'a,
-        P: 'a;
-
     fn public_key(&self) -> C::PublicKey;
 
     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature;
 
     fn derive_public_key(&self, path: P) -> C::PublicKey {
         let master_pk = self.public_key();
-        let tweak = self.schema().derive(path);
+        let tweak = self.derive_path(path);
 
         C::derive_public_key(&master_pk, &tweak)
     }
