@@ -39,9 +39,9 @@ pub(crate) type Nep245TokenId = String;
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema)),
+    borsh(use_discriminant = true)
 )]
-#[cfg_attr(feature = "borsh", borsh(use_discriminant = true))]
 #[cfg_attr(
     feature = "serde",
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
