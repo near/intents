@@ -5,10 +5,12 @@ use sha3::{Digest, Sha3_256};
 
 use crate::InMemorySigner;
 
+/// Final derivation schema to convert hash into the tweak
 pub const SCHEMA: SchemaFn<Ed25519, fn([u8; 32]) -> Scalar> = SchemaFn::new(|path| {
-    const HASH_PREFIX: &[u8] = b"outlayer/ed25519/derive-tweak/v1";
+    // avoid algebraic relations between derived keys
+    const DOMAIN_SEPARATOR: &[u8] = b"outlayer/ed25519/derive-tweak/v1";
 
-    let path: [u8; 32] = Sha3_256::new_with_prefix(HASH_PREFIX)
+    let path: [u8; 32] = Sha3_256::new_with_prefix(DOMAIN_SEPARATOR)
         .chain_update(path)
         .finalize()
         .into();
@@ -26,7 +28,7 @@ impl DerivationSchema<Ed25519, [u8; 32]> for InMemorySigner {
 
 impl DeriveSigner<Ed25519, [u8; 32]> for InMemorySigner {
     fn public_key(&self) -> <Ed25519 as Curve>::PublicKey {
-        self.ed25519_master_sk.verifying_key()
+        self.ed25519_master_sk.public_key()
     }
 
     fn derive_sign(&self, path: [u8; 32], msg: &[u8]) -> <Ed25519 as Curve>::Signature {
