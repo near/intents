@@ -32,6 +32,9 @@ use strum::{EnumDiscriminants, EnumIter, EnumString};
 
 pub use self::error::TokenIdError;
 
+// avoid dependency to nep_245::TokenId just to import String alias
+pub(crate) type Nep245TokenId = String;
+
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "borsh",

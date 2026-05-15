@@ -1,4 +1,4 @@
-pub use defuse_nep245::TokenId;
+use crate::Nep245TokenId as TokenId;
 
 use std::{fmt, str::FromStr};
 
@@ -14,7 +14,6 @@ use crate::{TokenIdType, error::TokenIdError};
 )]
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
     cfg_attr(
         feature = "abi",

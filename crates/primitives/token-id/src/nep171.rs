@@ -14,7 +14,6 @@ use crate::{TokenIdError, TokenIdType};
 )]
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
     cfg_attr(
         feature = "abi",
