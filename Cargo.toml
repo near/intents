@@ -95,7 +95,6 @@ defuse-auth-call.path = "crates/near/auth-call"
 defuse-controller.path = "crates/near/controller"
 defuse-near-utils.path = "crates/near/utils"
 defuse-nep245.path = "crates/near/nep245"
-# defuse-wallet-state = { path = "crates/near/wallet-state", default-features = false }
 defuse-wnear.path = "crates/near/wnear"
 
 defuse-deadline.path = "crates/primitives/deadline"

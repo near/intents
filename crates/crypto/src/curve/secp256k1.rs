@@ -60,7 +60,10 @@ impl TypedCurve for Secp256k1 {
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct Secp256k1PublicKey(pub <Secp256k1 as Curve>::PublicKey);
+pub struct Secp256k1PublicKey(
+    // schemars ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(feature = "abi", schemars(with = "String"))] pub <Secp256k1 as Curve>::PublicKey,
+);
 
 impl Debug for Secp256k1PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -95,7 +98,10 @@ impl FromStr for Secp256k1PublicKey {
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct Secp256k1Signature(pub <Secp256k1 as Curve>::Signature);
+pub struct Secp256k1Signature(
+    // schemars ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(feature = "abi", schemars(with = "String"))] pub <Secp256k1 as Curve>::Signature,
+);
 
 impl Debug for Secp256k1Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

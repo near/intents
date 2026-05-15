@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
-defuse-digest = { workspace = true }
+defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-serde-utils = { workspace = true, features = ["base64", "tlb"] }
 
 chrono = { workspace = true, features = ["serde"] }
@@ -41,6 +41,7 @@ text = []
 [dev-dependencies]
 defuse-core.workspace = true
 defuse-test-utils.workspace = true
+near-sdk = { workspace = true, features = ["non-contract-usage"] }
 
 arbitrary.workspace = true
 hex-literal.workspace = true

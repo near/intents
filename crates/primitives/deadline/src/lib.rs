@@ -143,7 +143,7 @@ mod tests {
         use super::*;
         use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
         use chrono::TimeZone;
-        use defuse_borsh_utils::adapters::As;
+        use defuse_borsh_utils::adapters::{As, TimestampNanoSeconds};
 
         #[derive(BorshSerialize, BorshDeserialize, BorshSchema)]
         struct S {

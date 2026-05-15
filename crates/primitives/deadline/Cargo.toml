@@ -29,3 +29,4 @@ chrono = { workspace = true, features = ["clock", "now", "serde"] }
 
 [dev-dependencies]
 borsh.workspace = true
+near-sdk = { workspace = true, features = ["non-contract-usage"] }

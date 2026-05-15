@@ -54,7 +54,10 @@ impl TypedCurve for Ed25519 {
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct Ed25519PublicKey(pub <Ed25519 as Curve>::PublicKey);
+pub struct Ed25519PublicKey(
+    // schemars ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(feature = "abi", schemars(with = "String"))] pub <Ed25519 as Curve>::PublicKey,
+);
 
 impl Debug for Ed25519PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -89,7 +92,10 @@ impl FromStr for Ed25519PublicKey {
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct Ed25519Signature(pub <Ed25519 as Curve>::Signature);
+pub struct Ed25519Signature(
+    // schemars ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(feature = "abi", schemars(with = "String"))] pub <Ed25519 as Curve>::Signature,
+);
 
 impl Debug for Ed25519Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

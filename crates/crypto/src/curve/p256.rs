@@ -69,7 +69,10 @@ impl TypedCurve for P256 {
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct P256CompressedPublicKey(pub <P256 as Curve>::PublicKey);
+pub struct P256CompressedPublicKey(
+    // schemars ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(feature = "abi", schemars(with = "String"))] pub <P256 as Curve>::PublicKey,
+);
 
 impl Debug for P256CompressedPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -106,7 +109,10 @@ impl FromStr for P256CompressedPublicKey {
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct P256UncompressedPublicKey(pub [u8; 64]);
+pub struct P256UncompressedPublicKey(
+    // schemars ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(feature = "abi", schemars(with = "String"))] pub [u8; 64],
+);
 
 impl Debug for P256UncompressedPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -141,7 +147,10 @@ impl FromStr for P256UncompressedPublicKey {
 )]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct P256Signature(pub <P256 as Curve>::Signature);
+pub struct P256Signature(
+    // schemars ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(feature = "abi", schemars(with = "String"))] pub <P256 as Curve>::Signature,
+);
 
 impl Debug for P256Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

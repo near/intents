@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false }
-defuse-digest = { workspace = true }
+defuse-digest = { workspace = true, features = ["sha2"] }
 
 arbitrary = { workspace = true, optional = true }
 cfg_eval = { workspace = true, optional = true }
@@ -43,3 +43,4 @@ p256 = ["defuse-crypto/p256"]
 
 [dev-dependencies]
 arbitrary.workspace = true
+near-sdk = { workspace = true, features = ["non-contract-usage"] }

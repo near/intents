@@ -41,4 +41,5 @@ concurrent = ["dep:rand_core"]
 
 [dev-dependencies]
 borsh.workspace = true
+near-sdk = { workspace = true, features = ["non-contract-usage"] }
 rand.workspace = true

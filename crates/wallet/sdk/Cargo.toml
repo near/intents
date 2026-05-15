@@ -22,6 +22,7 @@ ed25519-dalek = { workspace = true, optional = true }
 default = ["ed25519"]
 
 ed25519 = [
+  "defuse-digest/sha2",
   "defuse-wallet/ed25519",
   "dep:borsh",
   "dep:defuse-digest",
