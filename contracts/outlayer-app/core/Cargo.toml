@@ -14,7 +14,7 @@ near-account-id.workspace = true
 borsh = { workspace = true, optional = true, features = ["derive"] }
 cfg_eval = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
-serde = { workspace = true, optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true, features = ["hex"] }
 
 [features]
