@@ -6,9 +6,10 @@ mod arbitrary;
 mod contract;
 mod error;
 mod events;
+mod nonces;
 mod request;
 pub mod signature;
-mod state_ext;
+mod state;
 
 use std::collections::BTreeSet;
 
@@ -17,13 +18,7 @@ use near_sdk::{AccountId, ext_contract};
 
 use crate::signature::RequestMessage;
 
-#[cfg(feature = "concurrent")]
-pub use defuse_wallet_state::ConcurrentNonces;
-pub use defuse_wallet_state::{
-    DEFAULT_TIMEOUT, DEFAULT_WALLET_ID, Nonces, NoncesError, STATE_KEY, State,
-};
-
-pub use self::{error::*, events::*, request::*, state_ext::StateExt};
+pub use self::{error::*, events::*, nonces::*, request::*, state::*};
 
 /// Deterministic single-key Wallet Contract.
 #[ext_contract(ext_wallet)]

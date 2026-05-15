@@ -5,7 +5,7 @@ pub mod ed25519;
 mod hash;
 pub mod no_sign;
 
-#[cfg(all(feature = "webauthn", feature = "contract"))]
+#[cfg(feature = "webauthn")]
 pub mod webauthn;
 
 use std::time::Duration;

@@ -6,7 +6,7 @@ use std::time::Duration;
 pub use defuse_wallet as wallet;
 
 use defuse_wallet::{
-    ConcurrentNonces, Request, State, StateExt,
+    ConcurrentNonces, Request, State,
     signature::{Deadline, RequestMessage},
 };
 use impl_tools::autoimpl;

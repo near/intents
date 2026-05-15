@@ -1,4 +1,3 @@
-use defuse_wallet_state::NoncesError;
 use near_sdk::{AccountId, FunctionError};
 use thiserror::Error as ThisError;
 
@@ -38,13 +37,4 @@ pub enum Error {
 
     #[error("this signature mode is already set")]
     ThisSignatureModeAlreadySet,
-}
-
-impl From<NoncesError> for Error {
-    fn from(e: NoncesError) -> Self {
-        match e {
-            NoncesError::AlreadyExecuted => Self::AlreadyExecuted,
-            NoncesError::ExpiredOrFuture => Self::ExpiredOrFuture,
-        }
-    }
 }

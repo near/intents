@@ -2062,16 +2062,17 @@ name = "defuse-wallet"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "defuse-bitmap",
  "defuse-borsh-utils",
  "defuse-crypto",
  "defuse-deadline",
  "defuse-serde-utils",
  "defuse-test-utils",
- "defuse-wallet-state",
  "defuse-webauthn",
  "derive_more",
  "near-sdk",
  "rand 0.10.1",
+ "rand_core 0.10.1",
  "rstest",
  "thiserror 2.0.18",
 ]
