@@ -3,11 +3,6 @@ use impl_tools::autoimpl;
 
 /// See [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
 #[cfg_attr(
-    feature = "borsh",
-    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
-)]
-#[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
@@ -30,11 +25,6 @@ impl Tip191Payload {
     }
 }
 
-#[cfg_attr(
-    feature = "borsh",
-    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
-)]
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,

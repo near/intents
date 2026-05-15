@@ -10,7 +10,7 @@ defuse-bitmap = { workspace = true, features = ["borsh", "serde"] }
 defuse-crypto = { workspace = true, features = ["ed25519", "secp256k1", "p256", "near-contract", "borsh", "serde"] }
 defuse-deadline = { workspace = true, features = ["borsh", "near-contract", "serde"] }
 defuse-digest = { workspace = true, features = ["near-contract"] }
-defuse-erc191 = { workspace = true, features = ["borsh", "serde"] }
+defuse-erc191 = { workspace = true, features = ["serde"] }
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-map-utils = { workspace = true, features = ["near"] }
 defuse-near-utils = { workspace = true }
@@ -19,7 +19,7 @@ defuse-nep413 = { workspace = true, features = ["serde", "prehash"] }
 defuse-num-utils.workspace = true
 defuse-sep53 = { workspace = true }
 defuse-serde-utils = { workspace = true, features = ["base58", "base64"] }
-defuse-tip191 = { workspace = true, features = ["borsh", "serde"] }
+defuse-tip191 = { workspace = true, features = ["serde"] }
 defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245", "borsh", "serde"] }
 defuse-ton-connect = { workspace = true, features = ["serde"] }
 defuse-webauthn = { workspace = true, features = ["ed25519", "p256", "verify", "near-contract"] }

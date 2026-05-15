@@ -3,11 +3,6 @@ use impl_tools::autoimpl;
 
 /// See [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
 #[cfg_attr(
-    feature = "borsh",
-    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
-)]
-#[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
     serde(rename_all = "snake_case"),
@@ -30,11 +25,6 @@ impl Sep53Payload {
     }
 }
 
-#[cfg_attr(
-    feature = "borsh",
-    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
-)]
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,

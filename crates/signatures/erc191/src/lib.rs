@@ -3,11 +3,6 @@ use impl_tools::autoimpl;
 
 /// See [ERC-191](https://github.com/ethereum/ercs/blob/master/ERCS/erc-191.md)
 #[cfg_attr(
-    feature = "borsh",
-    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
-)]
-#[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
@@ -27,11 +22,6 @@ impl Erc191Payload {
     }
 }
 
-#[cfg_attr(
-    feature = "borsh",
-    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
-)]
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
