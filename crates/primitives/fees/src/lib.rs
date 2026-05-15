@@ -15,8 +15,8 @@ use thiserror::Error as ThisError;
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
-    serde(try_from = "u32"),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
+    serde(try_from = "u32")
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct Pips(u32);
