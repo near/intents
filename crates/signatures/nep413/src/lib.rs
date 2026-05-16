@@ -77,7 +77,7 @@ impl Nep413Payload {
     #[inline]
     pub fn prehash(&self) -> Vec<u8> {
         use defuse_nep461::OffchainMessage;
-        borsh::to_vec(&(Self::OFFCHAIN_PREFIX_TAG, self)).expect("infallible")
+        borsh::to_vec(&(Self::OFFCHAIN_PREFIX_TAG, self)).expect("borsh")
     }
 }
 
