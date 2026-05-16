@@ -79,4 +79,29 @@ mod tests {
 
         assert_eq!(*got.to_bytes(), expected_tweak, "derived tweak has changed");
     }
+
+    #[rstest]
+    #[case(
+        b"",
+        hex!("954787a5fb30c67cb33717beecc4c0378e76f1142b6d5b7f9d168baa3a02c166"),
+    )]
+    #[case(
+        b"test",
+        hex!("fe897ab00ec1763cde63c7d96ecb841402c8f62dbb5d2ff5f8fea8e500a92c2d"),
+    )]
+    #[case(
+        &hex!("f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2"),
+        hex!("64803a99628fd19eb82cc7cc8a41d9f1745eb7f7f1e2887058d3b922db93f74e"),
+    )]
+    fn seed_derivation_has_not_changed(
+        #[case] seed: &[u8],
+        #[case] expected_secp256k1_sk: [u8; 32],
+    ) {
+        let derived = InMemorySigner::from_seed(seed);
+        assert_eq!(
+            *derived.secp256k1_master_sk.to_bytes(),
+            expected_secp256k1_sk,
+            "secp256k1 derivation has changed"
+        );
+    }
 }

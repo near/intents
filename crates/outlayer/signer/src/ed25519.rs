@@ -75,4 +75,30 @@ mod tests {
 
         assert_eq!(got.to_bytes(), expected_tweak, "derived tweak has changed");
     }
+
+    #[rstest]
+    #[case(
+        b"",
+        hex!
+        ("87841790a661e9258a220a23598b1a15f54a8aaac9db0d160918153f8004c008"),
+    )]
+    #[case(
+        b"test",
+        hex!("7fef7fed7d4ef1f7b566c0d8eb25c979295279bf733c3e41aeb731a572f63a28"),
+    )]
+    #[case(
+        &hex!("f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2"),
+        hex!("c846458ca3667e46a7dc2814713b99ef4b441523bbe2d286808025b10dab07a0"),
+    )]
+    fn seed_derivation_has_not_changed(
+        #[case] seed: &[u8],
+        #[case] expected_ed25519_sk: [u8; ed25519_dalek::SECRET_KEY_LENGTH],
+    ) {
+        let derived = InMemorySigner::from_seed(seed);
+        assert_eq!(
+            derived.ed25519_master_sk.as_bytes(),
+            &expected_ed25519_sk,
+            "ed25519 derivation has changed"
+        );
+    }
 }

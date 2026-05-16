@@ -1681,7 +1681,6 @@ dependencies = [
  "borsh",
  "defuse-outlayer-kdf-app",
  "defuse-outlayer-primitives",
- "defuse-outlayer-signer",
  "digest-io",
  "sha3 0.11.0",
  "tracing",
@@ -1710,10 +1709,11 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "borsh",
- "defuse-outlayer-crypto",
  "defuse-outlayer-kdf",
  "defuse-outlayer-primitives",
  "digest-io",
+ "hex-literal",
+ "rstest",
  "sha3 0.11.0",
 ]
 
@@ -1837,6 +1837,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "defuse-outlayer-signer",
  "defuse-outlayer-vm-runner",
  "tokio",
 ]

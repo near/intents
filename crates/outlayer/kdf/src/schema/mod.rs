@@ -9,14 +9,14 @@ use std::{rc::Rc, sync::Arc};
 
 use impl_tools::autoimpl;
 
-/// A generic closure used for [tweak](crate::DerivableCurve::Tweak)
-/// derivation or its intermediary steps.
+/// A generic closure that can used for [tweak](crate::DerivableCurve::Tweak)
+/// derivation and its intermediary steps.
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
 pub trait DerivationSchema<P> {
     /// [Derivation](DerivationSchema::derive_path) output.
     type Output;
 
-    /// Derive output from given `path`.
+    /// Derive output for given `path`.
     fn derive_path(&self, path: P) -> Self::Output;
 }
 

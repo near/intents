@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 pub use defuse_outlayer_primitives as primitives;
 use defuse_outlayer_primitives::AppId;
-pub use defuse_outlayer_signer::InMemorySigner;
 use wasmtime::component::Linker;
 
 use crate::crypto::Signer;

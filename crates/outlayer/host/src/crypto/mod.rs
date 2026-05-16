@@ -5,9 +5,8 @@ use std::{marker::PhantomData, sync::Arc};
 
 use defuse_outlayer_kdf_app::{
     AppSigner, DerivableCurve, DerivationSchema, DeriveSigner,
-    kdf::{ed25519::Ed25519, secp256k1::Secp256k1},
+    kdf::{DynDeriveSigner, ed25519::Ed25519, secp256k1::Secp256k1},
 };
-use defuse_outlayer_signer::kdf::DynDeriveSigner;
 use wasmtime::component::{HasData, Linker};
 
 use crate::{Host, HostView, bindings};

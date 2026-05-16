@@ -86,3 +86,41 @@ where
         self.signer.derive_sign(path, msg)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case(
+        "near:test.near",
+        "",
+        hex!("f2ce50c4a56ffb40c9a7f60f6b3d677b92cbae4aae3311356b3048ce247acc50"),
+    )]
+    #[case(
+        "near:test.near",
+        "test",
+        hex!("d0d1b75f072ded2c6a495e2179f6d064e71c4d47ad909678b0ef0fb56ced2a56"),
+    )]
+    #[case(
+        "near:0s1234567890abcdef1234567890abcdef12345678",
+        "test",
+        hex!("93f51d34d69d988672ae0e979d96c1a7dec4239f2819839db89bbfaa2dbcc668"),
+    )]
+    fn derive_has_not_changed(
+        #[case] app_id: &str,
+        #[case] path: &str,
+        #[case] expected: [u8; 32],
+    ) {
+        let schema = AppDerivation::new(app_id.parse().expect("invalid app_id"));
+
+        assert_eq!(
+            schema.derive_path(path),
+            expected,
+            "derived hash has changed"
+        );
+    }
+}

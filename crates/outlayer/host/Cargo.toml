@@ -9,9 +9,8 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-outlayer-kdf-app = { workspace = true, features = ["ed25519", "secp256k1"] }
+defuse-outlayer-kdf-app.workspace = true
 defuse-outlayer-primitives = { workspace = true, features = ["digest"] }
-defuse-outlayer-signer = { workspace = true }
 
 anyhow.workspace = true
 borsh.workspace = true

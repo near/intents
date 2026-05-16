@@ -1,3 +1,4 @@
+// TODO: remove?
 use std::borrow::Cow;
 
 use crate::AppId;
@@ -48,38 +49,3 @@ const _: () = {
         }
     }
 };
-
-#[cfg(all(test, feature = "digest"))]
-mod tests {
-    use hex_literal::hex;
-    use near_account_id::AccountIdRef;
-    use rstest::rstest;
-
-    use super::*;
-
-    #[rstest]
-    #[case(
-        DerivationPath {
-            app_id: AccountIdRef::new_or_panic("test.near").into(),
-            path: "".into()
-        },
-        hex!("19662bc997912779e2f54550bb06b07006943eb106af0632a669e350d8faa245"),
-    )]
-    #[case(
-        DerivationPath {
-            app_id: AccountIdRef::new_or_panic("test.near").into(),
-            path: "test".into()
-        },
-        hex!("b581f6b4c6b43a673777747ea01d69891342ebd35625e927d3f12403631c33fb"),
-    )]
-    #[case(
-        DerivationPath {
-            app_id: AccountIdRef::new_or_panic("0s1234567890abcdef1234567890abcdef12345678").into(),
-            path: "test".into()
-        },
-        hex!("a1c48b73cf43f80611edeae5e1f809b776af00adde05195984573c2ab22c395f"),
-    )]
-    fn derive_has_not_changed(#[case] path: DerivationPath<'_>, #[case] hash: [u8; 32]) {
-        assert_eq!(path.hash(), hash, "derived hash has changed");
-    }
-}

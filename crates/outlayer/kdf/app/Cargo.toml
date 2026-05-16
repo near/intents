@@ -9,9 +9,8 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-outlayer-crypto.workspace = true
 defuse-outlayer-kdf.workspace = true
-defuse-outlayer-primitives.workspace = true
+defuse-outlayer-primitives = { workspace = true, features = ["borsh"] }
 
 borsh = { workspace = true, features = ["derive"] }
 digest-io.workspace = true
@@ -20,8 +19,10 @@ sha3.workspace = true
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-default = ["ed25519", "secp256k1"] # TODO: remove
-
 arbitrary = ["defuse-outlayer-primitives/arbitrary", "dep:arbitrary"]
-ed25519 = ["defuse-outlayer-crypto/ed25519"]
-secp256k1 = ["defuse-outlayer-crypto/secp256k1"]
+
+[dev-dependencies]
+hex-literal.workspace = true
+rstest.workspace = true
+
+# TODO: forward zeroize feature?
