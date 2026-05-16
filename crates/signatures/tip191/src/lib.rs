@@ -4,8 +4,6 @@ use impl_tools::autoimpl;
 /// See [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
