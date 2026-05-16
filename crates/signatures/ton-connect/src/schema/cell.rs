@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-use defuse_serde_utils::{base64::Base64, tlb::AsBoC};
 use tlb_ton::{
     Cell, MsgAddress, Ref, SnakeData, StringError,
     bits::{NoArgs, ser::BitWriterExt},
@@ -21,7 +20,10 @@ use crate::schema::{PayloadSchema, TonConnectPayloadContext};
 )]
 pub struct CellPayload {
     pub schema_crc: u32,
-    #[cfg_attr(feature = "serde", serde_as(as = "AsBoC<Base64>"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_serde_utils::tlb::AsBoC<defuse_serde_utils::base64::Base64>")
+    )]
     pub cell: Cell,
 }
 

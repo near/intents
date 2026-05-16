@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 
 use crate::schema::{PayloadSchema, TonConnectPayloadContext};
-use defuse_serde_utils::base64::Base64;
 use impl_tools::autoimpl;
 use tlb_ton::StringError;
 
@@ -16,7 +15,7 @@ use tlb_ton::StringError;
 )]
 #[autoimpl(Deref using self.bytes)]
 pub struct BinaryPayload {
-    #[cfg_attr(feature = "serde", serde_as(as = "Base64"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "defuse_serde_utils::base64::Base64"))]
     pub bytes: Vec<u8>,
 }
 
