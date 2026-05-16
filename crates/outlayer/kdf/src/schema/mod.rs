@@ -1,9 +1,3 @@
-use std::{borrow::Cow, marker::PhantomData, rc::Rc, sync::Arc};
-
-use impl_tools::autoimpl;
-
-use crate::DerivableCurve;
-
 #[cfg(feature = "borsh")]
 pub mod borsh;
 #[cfg(feature = "digest")]
@@ -11,45 +5,35 @@ pub mod digest;
 #[cfg(feature = "hex")]
 pub mod hex;
 
+use std::{borrow::Cow, rc::Rc, sync::Arc};
+
+use impl_tools::autoimpl;
+
 #[autoimpl(for<T: trait + ?Sized + ToOwned> Cow<'_, T>)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
-pub trait DerivationSchema<C, P>
-where
-    C: DerivableCurve,
-{
+pub trait DerivationSchema<P> {
     type Output;
 
     fn derive_path(&self, path: P) -> Self::Output;
-
-    fn derive_public_key_from_master(&self, master_pk: &C::PublicKey, path: P) -> C::PublicKey
-    where
-        C: DerivableCurve<Tweak = Self::Output>,
-    {
-        let tweak = self.derive_path(path);
-        C::derive_public_key(master_pk, &tweak)
-    }
 }
 
 // TODO: type params
-pub trait SchemaExt {
+pub trait DerivationSchemaExt<P>: DerivationSchema<P> {
     #[inline]
-    fn then<S>(self, then: S) -> Then<Self, S>
+    fn map<S>(self, then: S) -> Map<Self, S>
     where
         Self: Sized,
     {
-        Then(self, then)
+        Map(self, then)
     }
 }
 
-impl<S> SchemaExt for S {}
+impl<S, P> DerivationSchemaExt<P> for S where S: DerivationSchema<P> {}
 
 #[derive(Default)]
 pub struct Identity;
 
-impl<C, T> DerivationSchema<C, T> for Identity
-where
-    C: DerivableCurve,
-{
+impl<T> DerivationSchema<T> for Identity {
     type Output = T;
 
     #[inline]
@@ -60,19 +44,18 @@ where
 
 // TODO: implement DerivableSigner, too?
 #[derive(Default)]
-pub struct Then<A, B>(A, B);
+pub struct Map<A, B>(A, B);
 
-impl<A, B> Then<A, B> {
+impl<A, B> Map<A, B> {
     pub const fn new(first: A, second: B) -> Self {
         Self(first, second)
     }
 }
 
-impl<C, P, A, B> DerivationSchema<C, P> for Then<A, B>
+impl<P, A, B> DerivationSchema<P> for Map<A, B>
 where
-    C: DerivableCurve,
-    A: DerivationSchema<C, P>,
-    B: DerivationSchema<C, A::Output>,
+    A: DerivationSchema<P>,
+    B: DerivationSchema<A::Output>,
 {
     type Output = B::Output;
 
@@ -81,29 +64,22 @@ where
     }
 }
 
-pub struct SchemaFn<C, F> {
-    f: F,
-    _curve: PhantomData<C>,
-}
+pub struct SchemaFn<F>(F);
 
-impl<C, F> SchemaFn<C, F> {
+impl<F> SchemaFn<F> {
     #[inline]
     pub const fn new(f: F) -> Self {
-        Self {
-            f,
-            _curve: PhantomData,
-        }
+        Self(f)
     }
 }
 
-impl<C, P, F, O> DerivationSchema<C, P> for SchemaFn<C, F>
+impl<P, F, O> DerivationSchema<P> for SchemaFn<F>
 where
-    C: DerivableCurve,
     F: Fn(P) -> O,
 {
     type Output = O;
 
     fn derive_path(&self, path: P) -> Self::Output {
-        (self.f)(path)
+        (self.0)(path)
     }
 }

@@ -17,6 +17,7 @@ sha3.workspace = true
 zeroize = { workspace = true, optional = true }
 
 [features]
+# TODO
 # fast = ["defuse-outlayer-crypto/fast"]
 zeroize = ["defuse-outlayer-kdf/zeroize", "dep:zeroize", "sha3/zeroize"]
 

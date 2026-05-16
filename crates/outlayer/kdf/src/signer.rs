@@ -6,19 +6,100 @@ use crate::{DerivableCurve, DerivationSchema};
 
 #[autoimpl(for<T: trait + ?Sized + ToOwned> Cow<'_, T>)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
-pub trait DeriveSigner<C, P>: DerivationSchema<C, P, Output = C::Tweak>
+pub trait DeriveSigner<C, P>
 where
     C: DerivableCurve,
 {
+    type Schema<'a>: DerivationSchema<P, Output = C::Tweak>
+    where
+        Self: 'a;
+
+    fn schema(&self) -> Self::Schema<'_>;
+
     fn public_key(&self) -> C::PublicKey;
 
     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature;
 
+    fn derive_tweak(&self, path: P) -> C::Tweak {
+        self.schema().derive_path(path)
+    }
+
     fn derive_public_key(&self, path: P) -> C::PublicKey {
         let master_pk = self.public_key();
-        self.derive_public_key_from_master(&master_pk, path)
+        let tweak = self.derive_tweak(path);
+
+        C::derive_public_key(&master_pk, &tweak)
     }
 }
+
+pub trait DynDeriveSigner<C, P>
+where
+    C: DerivableCurve,
+{
+    fn schema_dyn<'a>(&'a self) -> Box<dyn DerivationSchema<P, Output = C::Tweak> + 'a>
+    where
+        P: 'a;
+
+    fn public_key(&self) -> C::PublicKey;
+
+    fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature;
+}
+
+impl<C, P, S> DynDeriveSigner<C, P> for S
+where
+    C: DerivableCurve,
+    S: DeriveSigner<C, P>,
+{
+    fn schema_dyn<'a>(&'a self) -> Box<dyn DerivationSchema<P, Output = C::Tweak> + 'a>
+    where
+        P: 'a,
+    {
+        Box::new(self.schema())
+    }
+
+    fn public_key(&self) -> C::PublicKey {
+        DeriveSigner::<C, P>::public_key(self)
+    }
+
+    fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
+        DeriveSigner::<C, P>::derive_sign(self, path, msg)
+    }
+}
+
+impl<'l, C, P> DeriveSigner<C, P> for dyn DynDeriveSigner<C, P> + 'l
+where
+    C: DerivableCurve,
+{
+    type Schema<'a>
+        = Box<dyn DerivationSchema<P, Output = C::Tweak> + 'a>
+    where
+        Self: 'a;
+
+    fn schema(&self) -> Self::Schema<'_> {
+        self.schema_dyn()
+    }
+
+    fn public_key(&self) -> C::PublicKey {
+        DynDeriveSigner::<C, P>::public_key(self)
+    }
+
+    fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
+        DynDeriveSigner::<C, P>::derive_sign(self, path, msg)
+    }
+}
+
+// #[autoimpl(for<T: trait + ?Sized + ToOwned> Cow<'_, T>)]
+// #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
+// pub trait DeriveSignerSchema<C, P>: DeriveSigner<C, P>
+// where
+//     C: DerivableCurve,
+// {
+//     type Schema<'a>: DerivationSchema<P, Output = C::Tweak>
+//     where
+//         Self: 'a;
+
+//     fn derivation_schema(&self) -> Self::Schema<'_>;
+// }
 
 #[cfg(test)]
 pub(crate) mod tests {

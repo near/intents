@@ -17,7 +17,7 @@ impl Sealed for Secp256k1 {}
 #[cfg(test)]
 mod tests {
     use defuse_outlayer_kdf::{
-        DerivationSchema,
+        DerivableCurve, DerivationSchema,
         secp256k1::{VerifyingKey, k256::EncodedPoint},
     };
     use hex_literal::hex;
@@ -59,12 +59,11 @@ mod tests {
             &SECP256K1_MPC_PK.into(),
         ))
         .unwrap();
+        let predecessor_id = AccountIdRef::new(predecessor_id).unwrap();
 
-        let schema = NearMpcDerivation::new(AccountIdRef::new(predecessor_id).unwrap());
-
-        let derived_pk = DerivationSchema::<Secp256k1, _>::derive_public_key_from_master(
-            &schema, &master_pk, path,
-        );
+        let schema = NearMpcDerivation::<Secp256k1>::new(predecessor_id);
+        let tweak = schema.derive_path(path);
+        let derived_pk = Secp256k1::derive_public_key(&master_pk, &tweak);
 
         assert_eq!(
             &derived_pk.to_encoded_point(false).as_bytes()[1..],

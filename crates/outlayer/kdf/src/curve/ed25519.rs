@@ -7,7 +7,7 @@ use ed25519_dalek::{
     hazmat::{ExpandedSecretKey, raw_sign},
 };
 
-use crate::{DerivableCurve, DerivationSchema, DeriveSigner};
+use crate::{DerivableCurve, DeriveSigner, Identity};
 
 impl DerivableCurve for Ed25519 {
     type Tweak = Scalar;
@@ -20,15 +20,16 @@ impl DerivableCurve for Ed25519 {
     }
 }
 
-impl DerivationSchema<Ed25519, Scalar> for SigningKey {
-    type Output = Scalar;
-
-    fn derive_path(&self, path: Scalar) -> Self::Output {
-        path
-    }
-}
-
 impl DeriveSigner<Ed25519, Scalar> for SigningKey {
+    type Schema<'a>
+        = Identity
+    where
+        Self: 'a;
+
+    fn schema(&self) -> Self::Schema<'_> {
+        Identity
+    }
+
     fn public_key(&self) -> VerifyingKey {
         self.verifying_key()
     }
@@ -46,15 +47,16 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
     }
 }
 
-impl DerivationSchema<Ed25519, Scalar> for ExpandedSecretKey {
-    type Output = Scalar;
-
-    fn derive_path(&self, path: Scalar) -> Self::Output {
-        path
-    }
-}
-
 impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
+    type Schema<'a>
+        = Identity
+    where
+        Self: 'a;
+
+    fn schema(&self) -> Self::Schema<'_> {
+        Identity
+    }
+
     fn public_key(&self) -> VerifyingKey {
         self.into()
     }
@@ -192,12 +194,11 @@ mod tests {
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::{SchemaFn, signer::tests::assert_roundtrip};
+    use crate::{DerivationSchema, SchemaFn, signer::tests::assert_roundtrip};
 
     use super::*;
 
-    const SCHEMA: SchemaFn<Ed25519, fn([u8; 32]) -> Scalar> =
-        SchemaFn::new(Scalar::from_bytes_mod_order);
+    const SCHEMA: SchemaFn<fn([u8; 32]) -> Scalar> = SchemaFn::new(Scalar::from_bytes_mod_order);
 
     #[rstest]
     fn roundtrip(

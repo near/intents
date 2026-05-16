@@ -1,42 +1,73 @@
 pub use defuse_outlayer_kdf::secp256k1::*;
 
 use defuse_outlayer_kdf::{
-    Curve, DerivationSchema, DeriveSigner, SchemaFn,
+    Curve, DeriveSigner,
     secp256k1::k256::{U256, elliptic_curve::ops::Reduce},
 };
-use sha3::{Digest, Sha3_256};
 
-use crate::InMemorySigner;
+use crate::{DomainCurve, InMemorySigner, Schema, sealed::Sealed};
 
-/// Final derivation schema to convert hash into the tweak
-pub const SCHEMA: SchemaFn<Secp256k1, fn([u8; 32]) -> NonZeroScalar> = SchemaFn::new(|path| {
-    // avoid algebraic relations between derived keys
-    const DOMAIN_SEPARATOR: &[u8] = b"outlayer/secp256k1/derive-tweak/v1";
+impl<P> DeriveSigner<Secp256k1, P> for InMemorySigner
+where
+    P: AsRef<[u8]>,
+{
+    type Schema<'a>
+        = Schema<Secp256k1>
+    where
+        Self: 'a;
 
-    let path: [u8; 32] = Sha3_256::new_with_prefix(DOMAIN_SEPARATOR)
-        .chain_update(path)
-        .finalize()
-        .into();
-
-    Reduce::<U256>::reduce_bytes(&path.into())
-});
-
-impl DerivationSchema<Secp256k1, [u8; 32]> for InMemorySigner {
-    type Output = NonZeroScalar;
-
-    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
-        SCHEMA.derive_path(path)
+    fn schema(&self) -> Self::Schema<'_> {
+        Schema::default()
     }
-}
 
-impl DeriveSigner<Secp256k1, [u8; 32]> for InMemorySigner {
     fn public_key(&self) -> <Secp256k1 as Curve>::PublicKey {
         self.secp256k1_master_sk.public_key()
     }
 
-    fn derive_sign(&self, path: [u8; 32], msg: &[u8; 32]) -> <Secp256k1 as Curve>::Signature {
-        let tweak = DerivationSchema::<Secp256k1, _>::derive_path(self, path);
+    fn derive_sign(&self, path: P, msg: &[u8; 32]) -> <Secp256k1 as Curve>::Signature {
+        let tweak = DeriveSigner::<Secp256k1, _>::derive_tweak(self, path);
 
         self.secp256k1_master_sk.derive_sign(tweak, msg)
+    }
+}
+
+impl DomainCurve for Secp256k1 {
+    const DOMAIN_SEPARATOR: &[u8] = b"outlayer/secp256k1/derive-tweak/v1";
+
+    fn tweak(path: [u8; 32]) -> Self::Tweak {
+        Reduce::<U256>::reduce_bytes(&path.into())
+    }
+}
+
+impl Sealed for Secp256k1 {}
+
+#[cfg(test)]
+mod tests {
+    use defuse_outlayer_kdf::DerivationSchema;
+    use hex_literal::hex;
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case(
+        b"",
+        hex!("e1795f919b6520cd07517f9baacb34f804e785363643ae7991732e2d2e93f99e")
+    )]
+    #[case(
+        b"test",
+        hex!("84be8d88cfae2c03949f9dea5c96d3cc6b6017274329cd7dc65d396660fce275")
+    )]
+    #[case(
+        b"5b74d49e83f4aff956284d5f74270e53d7c55dabc4c28f6ef923fbffc5bfdd1d",
+        hex!("f255d58f3ff729c23ed44f95f1e242e02600f9ffef479db79612659e7f9551e6")
+    )]
+    fn tweak_derivation_schema_has_not_changed(
+        #[case] path: impl AsRef<[u8]>,
+        #[case] expected_tweak: [u8; 32],
+    ) {
+        let got = Schema::<Secp256k1>::default().derive_path(path);
+
+        assert_eq!(*got.to_bytes(), expected_tweak, "derived tweak has changed");
     }
 }

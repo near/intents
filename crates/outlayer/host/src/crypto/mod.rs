@@ -4,9 +4,10 @@ mod secp256k1;
 use std::{marker::PhantomData, sync::Arc};
 
 use defuse_outlayer_kdf_app::{
-    AppSigner, DeriveSigner,
+    AppSigner, DerivableCurve, DerivationSchema, DeriveSigner,
     kdf::{ed25519::Ed25519, secp256k1::Secp256k1},
 };
+use defuse_outlayer_signer::kdf::DynDeriveSigner;
 use wasmtime::component::{HasData, Linker};
 
 use crate::{Host, HostView, bindings};
@@ -18,12 +19,35 @@ impl<S: 'static> HasData for HasSigner<S> {
 }
 
 pub trait Signer:
-    DeriveSigner<Ed25519, [u8; 32]> + DeriveSigner<Secp256k1, [u8; 32]> + Send + Sync
+    DynDeriveSigner<Ed25519, [u8; 32]> + DynDeriveSigner<Secp256k1, [u8; 32]> + Send + Sync
 {
 }
 impl<T> Signer for T where
     T: DeriveSigner<Ed25519, [u8; 32]> + DeriveSigner<Secp256k1, [u8; 32]> + Send + Sync
 {
+}
+
+impl<'l, C, P: 'l> DeriveSigner<C, P> for dyn Signer + 'l
+where
+    C: DerivableCurve,
+    Self: DynDeriveSigner<C, P>,
+{
+    type Schema<'a>
+        = Box<dyn DerivationSchema<P, Output = C::Tweak> + 'a>
+    where
+        Self: 'a;
+
+    fn schema(&self) -> Self::Schema<'_> {
+        DynDeriveSigner::<C, P>::schema_dyn(self)
+    }
+
+    fn public_key(&self) -> C::PublicKey {
+        DynDeriveSigner::<C, P>::public_key(self)
+    }
+
+    fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
+        DynDeriveSigner::<C, P>::derive_sign(self, path, msg)
+    }
 }
 
 impl<'a> Host<'a> {

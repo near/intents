@@ -15,7 +15,7 @@ impl Sealed for Ed25519 {}
 #[cfg(test)]
 mod tests {
     use defuse_outlayer_kdf::{
-        DerivationSchema,
+        DerivableCurve, DerivationSchema,
         ed25519::{VerifyingKey, ed25519_dalek},
     };
     use hex_literal::hex;
@@ -53,12 +53,11 @@ mod tests {
         #[case] expected_derived_pk: PublicKey,
     ) {
         let master_pk = VerifyingKey::from_bytes(&ED25519_MPC_PK).unwrap();
+        let predecessor_id = AccountIdRef::new(predecessor_id).unwrap();
 
-        let schema = NearMpcDerivation::new(AccountIdRef::new(predecessor_id).unwrap());
-
-        let derived_pk = DerivationSchema::<Ed25519, _>::derive_public_key_from_master(
-            &schema, &master_pk, path,
-        );
+        let schema = NearMpcDerivation::<Ed25519>::new(predecessor_id);
+        let tweak = schema.derive_path(path);
+        let derived_pk = Ed25519::derive_public_key(&master_pk, &tweak);
 
         assert_eq!(
             derived_pk.to_bytes(),

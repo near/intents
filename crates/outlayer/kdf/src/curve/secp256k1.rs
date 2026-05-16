@@ -2,7 +2,7 @@ pub use defuse_outlayer_crypto::secp256k1::*;
 pub use k256::{self, NonZeroScalar, ecdsa::SigningKey};
 use k256::{ProjectivePoint, elliptic_curve::ops::MulByGenerator};
 
-use crate::{DerivableCurve, DerivationSchema, DeriveSigner};
+use crate::{DerivableCurve, DeriveSigner, Identity};
 
 impl DerivableCurve for Secp256k1 {
     type Tweak = NonZeroScalar;
@@ -20,15 +20,16 @@ impl DerivableCurve for Secp256k1 {
     }
 }
 
-impl DerivationSchema<Secp256k1, NonZeroScalar> for SigningKey {
-    type Output = NonZeroScalar;
-
-    fn derive_path(&self, path: NonZeroScalar) -> Self::Output {
-        path
-    }
-}
-
 impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
+    type Schema<'a>
+        = Identity
+    where
+        Self: 'a;
+
+    fn schema(&self) -> Self::Schema<'_> {
+        Identity
+    }
+
     fn public_key(&self) -> VerifyingKey {
         *self.verifying_key()
     }
@@ -60,11 +61,11 @@ mod tests {
     use k256::{U256, elliptic_curve::ops::Reduce};
     use rstest::rstest;
 
-    use crate::{SchemaFn, signer::tests::assert_roundtrip};
+    use crate::{DerivationSchema, SchemaFn, signer::tests::assert_roundtrip};
 
     use super::*;
 
-    const SCHEMA: SchemaFn<Secp256k1, fn([u8; 32]) -> NonZeroScalar> =
+    const SCHEMA: SchemaFn<fn([u8; 32]) -> NonZeroScalar> =
         SchemaFn::new(|path| Reduce::<U256>::reduce_bytes(&path.into()));
 
     #[rstest]

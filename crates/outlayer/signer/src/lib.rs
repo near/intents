@@ -1,10 +1,13 @@
 pub mod ed25519;
 pub mod secp256k1;
 
+use std::marker::PhantomData;
+
 pub use defuse_outlayer_kdf as kdf;
+use defuse_outlayer_kdf::{DerivableCurve, DerivationSchema};
 
 use hkdf::Hkdf;
-use sha3::Sha3_512;
+use sha3::{Digest, Sha3_256, Sha3_512};
 
 #[cfg_attr(feature = "zeroize", derive(::zeroize::ZeroizeOnDrop))]
 #[derive(Clone, PartialEq, Eq)]
@@ -44,8 +47,45 @@ impl InMemorySigner {
     }
 }
 
+pub struct Schema<C>(PhantomData<C>);
+
+impl<C, P> DerivationSchema<P> for Schema<C>
+where
+    C: DomainCurve,
+    P: AsRef<[u8]>,
+{
+    type Output = C::Tweak;
+
+    fn derive_path(&self, path: P) -> Self::Output {
+        let path: [u8; 32] = Sha3_256::new_with_prefix(C::DOMAIN_SEPARATOR)
+            .chain_update(path)
+            .finalize()
+            .into();
+
+        C::tweak(path)
+    }
+}
+
+impl<C> Default for Schema<C> {
+    fn default() -> Self {
+        Self(PhantomData)
+    }
+}
+
+pub trait DomainCurve: DerivableCurve + sealed::Sealed {
+    /// Domain separator to avoid algebraic relations between derived keys
+    const DOMAIN_SEPARATOR: &[u8];
+
+    fn tweak(path: [u8; 32]) -> Self::Tweak;
+}
+
+mod sealed {
+    pub trait Sealed {}
+}
+
 #[cfg(test)]
 mod tests {
+
     use defuse_outlayer_kdf::ed25519::ed25519_dalek;
     use hex_literal::hex;
     use rstest::rstest;

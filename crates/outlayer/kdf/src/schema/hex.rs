@@ -1,11 +1,10 @@
-use crate::{DerivableCurve, DerivationSchema};
+use crate::DerivationSchema;
 
 #[derive(Default)]
 pub struct Hex;
 
-impl<C, P> DerivationSchema<C, P> for Hex
+impl<P> DerivationSchema<P> for Hex
 where
-    C: DerivableCurve,
     P: AsRef<[u8]>,
 {
     type Output = String;

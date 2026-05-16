@@ -1,4 +1,5 @@
 use borsh::BorshSerialize;
+use defuse_outlayer_kdf::Map;
 pub use defuse_outlayer_kdf::{self as kdf, DerivableCurve, DerivationSchema, DeriveSigner};
 pub use defuse_outlayer_primitives::AppId;
 use digest_io::IoWrapper;
@@ -23,9 +24,8 @@ impl<'a> AppDerivation<'a> {
     }
 }
 
-impl<C, P> DerivationSchema<C, P> for AppDerivation<'_>
+impl<P> DerivationSchema<P> for AppDerivation<'_>
 where
-    C: DerivableCurve,
     P: AsRef<str>,
 {
     type Output = [u8; 32];
@@ -57,34 +57,32 @@ impl<'a, S> AppSigner<'a, S> {
     }
 }
 
-impl<C, P, S> DerivationSchema<C, P> for AppSigner<'_, S>
-where
-    C: DerivableCurve,
-    P: AsRef<str>,
-    S: DerivationSchema<C, [u8; 32]>,
-{
-    type Output = S::Output;
-
-    fn derive_path(&self, path: P) -> Self::Output {
-        let schema = AppDerivation::new(self.app_id.as_ref());
-        let path = DerivationSchema::<C, _>::derive_path(&schema, path);
-        self.signer.derive_path(path)
-    }
-}
-
 impl<C, P, S> DeriveSigner<C, P> for AppSigner<'_, S>
 where
     C: DerivableCurve,
     P: AsRef<str>,
     S: DeriveSigner<C, [u8; 32]>,
 {
+    type Schema<'a>
+        = Map<AppDerivation<'a>, S::Schema<'a>>
+    where
+        Self: 'a;
+
+    fn schema(&self) -> Self::Schema<'_> {
+        // TODO
+        Map::new(
+            AppDerivation::new(self.app_id.as_ref()),
+            self.signer.schema(),
+        )
+    }
+
     fn public_key(&self) -> C::PublicKey {
         self.signer.public_key()
     }
 
     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
         let schema = AppDerivation::new(self.app_id.as_ref());
-        let path = DerivationSchema::<C, _>::derive_path(&schema, path);
+        let path = schema.derive_path(path);
         self.signer.derive_sign(path, msg)
     }
 }

@@ -1,13 +1,12 @@
 use borsh::BorshSerialize;
 
-use crate::{DerivableCurve, DerivationSchema};
+use crate::DerivationSchema;
 
 #[derive(Default)]
 pub struct Borsh;
 
-impl<C, P> DerivationSchema<C, P> for Borsh
+impl<P> DerivationSchema<P> for Borsh
 where
-    C: DerivableCurve,
     P: BorshSerialize,
 {
     type Output = Vec<u8>;

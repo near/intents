@@ -1,6 +1,6 @@
 use digest::Output;
 
-use crate::{DerivableCurve, DerivationSchema};
+use crate::DerivationSchema;
 
 #[derive(Default, Clone)]
 pub struct Digest<D>(D);
@@ -18,9 +18,9 @@ where
     }
 }
 
-impl<C, D, P> DerivationSchema<C, P> for Digest<D>
+impl<D, P> DerivationSchema<P> for Digest<D>
 where
-    C: DerivableCurve,
+    // TODO: clone?
     D: digest::Digest + Clone,
     P: AsRef<[u8]>,
 {
@@ -30,6 +30,3 @@ where
         self.0.clone().chain_update(path).finalize()
     }
 }
-
-// TODO
-pub trait Prefix<C: DerivableCurve> {}

@@ -3,25 +3,27 @@ mod ed25519;
 #[cfg(feature = "secp256k1")]
 mod secp256k1;
 
-use std::borrow::Cow;
+use std::{borrow::Cow, marker::PhantomData};
 
 use defuse_outlayer_kdf::{DerivableCurve, DerivationSchema};
 use near_account_id::AccountIdRef;
 use near_mpc_crypto_types::{Tweak, kdf::derive_tweak};
 
-pub struct NearMpcDerivation<'a> {
+pub struct NearMpcDerivation<'a, C> {
     predecessor_id: Cow<'a, AccountIdRef>,
+    _curve: PhantomData<C>,
 }
 
-impl<'a> NearMpcDerivation<'a> {
+impl<'a, C> NearMpcDerivation<'a, C> {
     pub fn new(predecessor_id: impl Into<Cow<'a, AccountIdRef>>) -> Self {
         Self {
             predecessor_id: predecessor_id.into(),
+            _curve: PhantomData,
         }
     }
 }
 
-impl<C, P> DerivationSchema<C, P> for NearMpcDerivation<'_>
+impl<C, P> DerivationSchema<P> for NearMpcDerivation<'_, C>
 where
     C: NearMpcCurve,
     P: AsRef<str>,
