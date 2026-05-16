@@ -71,7 +71,8 @@ impl TypedCurve for P256 {
 #[repr(transparent)]
 pub struct P256CompressedPublicKey(
     // schemars ignores `with` at struct level for newtypes; must be on the field
-    #[cfg_attr(feature = "abi", schemars(with = "String"))] pub <P256 as Curve>::PublicKey,
+    #[cfg_attr(all(feature = "abi", feature = "serde"), schemars(with = "String"))]
+    pub  <P256 as Curve>::PublicKey,
 );
 
 impl Debug for P256CompressedPublicKey {
@@ -111,7 +112,7 @@ impl FromStr for P256CompressedPublicKey {
 #[repr(transparent)]
 pub struct P256UncompressedPublicKey(
     // schemars ignores `with` at struct level for newtypes; must be on the field
-    #[cfg_attr(feature = "abi", schemars(with = "String"))] pub [u8; 64],
+    #[cfg_attr(all(feature = "abi", feature = "serde"), schemars(with = "String"))] pub [u8; 64],
 );
 
 impl Debug for P256UncompressedPublicKey {
@@ -149,7 +150,8 @@ impl FromStr for P256UncompressedPublicKey {
 #[repr(transparent)]
 pub struct P256Signature(
     // schemars ignores `with` at struct level for newtypes; must be on the field
-    #[cfg_attr(feature = "abi", schemars(with = "String"))] pub <P256 as Curve>::Signature,
+    #[cfg_attr(all(feature = "abi", feature = "serde"), schemars(with = "String"))]
+    pub  <P256 as Curve>::Signature,
 );
 
 impl Debug for P256Signature {

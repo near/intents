@@ -56,7 +56,8 @@ impl TypedCurve for Ed25519 {
 #[repr(transparent)]
 pub struct Ed25519PublicKey(
     // schemars ignores `with` at struct level for newtypes; must be on the field
-    #[cfg_attr(feature = "abi", schemars(with = "String"))] pub <Ed25519 as Curve>::PublicKey,
+    #[cfg_attr(all(feature = "abi", feature = "serde"), schemars(with = "String"))]
+    pub  <Ed25519 as Curve>::PublicKey,
 );
 
 impl Debug for Ed25519PublicKey {
@@ -94,7 +95,8 @@ impl FromStr for Ed25519PublicKey {
 #[repr(transparent)]
 pub struct Ed25519Signature(
     // schemars ignores `with` at struct level for newtypes; must be on the field
-    #[cfg_attr(feature = "abi", schemars(with = "String"))] pub <Ed25519 as Curve>::Signature,
+    #[cfg_attr(all(feature = "abi", feature = "serde"), schemars(with = "String"))]
+    pub  <Ed25519 as Curve>::Signature,
 );
 
 impl Debug for Ed25519Signature {

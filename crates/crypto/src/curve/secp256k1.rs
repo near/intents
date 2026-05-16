@@ -62,7 +62,8 @@ impl TypedCurve for Secp256k1 {
 #[repr(transparent)]
 pub struct Secp256k1PublicKey(
     // schemars ignores `with` at struct level for newtypes; must be on the field
-    #[cfg_attr(feature = "abi", schemars(with = "String"))] pub <Secp256k1 as Curve>::PublicKey,
+    #[cfg_attr(all(feature = "abi", feature = "serde"), schemars(with = "String"))]
+    pub  <Secp256k1 as Curve>::PublicKey,
 );
 
 impl Debug for Secp256k1PublicKey {
@@ -100,7 +101,8 @@ impl FromStr for Secp256k1PublicKey {
 #[repr(transparent)]
 pub struct Secp256k1Signature(
     // schemars ignores `with` at struct level for newtypes; must be on the field
-    #[cfg_attr(feature = "abi", schemars(with = "String"))] pub <Secp256k1 as Curve>::Signature,
+    #[cfg_attr(all(feature = "abi", feature = "serde"), schemars(with = "String"))]
+    pub  <Secp256k1 as Curve>::Signature,
 );
 
 impl Debug for Secp256k1Signature {
