@@ -10,7 +10,6 @@ workspace = true
 
 [dependencies]
 defuse-kdf = { workspace = true, features = ["digest"] } # TODO: digest?
-digest.workspace = true
 
 hkdf = { workspace = true, features = ["kdf"], optional = true }
 sha3 = { workspace = true, optional = true }

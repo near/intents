@@ -1,9 +1,9 @@
 pub use defuse_kdf::secp256k1::*;
 
-use defuse_kdf::{Curve, DeriveSigner};
+use defuse_kdf::{Curve, DerivationSchema, DeriveSigner, Reduce};
 use sha3::{Digest, Sha3_256};
 
-use crate::{DomainCurve, InMemorySigner, Schema, sealed::Sealed};
+use crate::{InMemorySigner, Schema};
 
 impl<P> DeriveSigner<Secp256k1, P> for InMemorySigner
 where
@@ -29,10 +29,15 @@ where
     }
 }
 
-impl DomainCurve for Secp256k1 {
-    type Digest = Sha3_256;
+impl<P> DerivationSchema<P> for Schema<Secp256k1>
+where
+    P: AsRef<[u8]>,
+{
+    type Output = NonZeroScalar;
 
-    fn domain_hasher() -> Sha3_256 {
+    fn derive_path(&self, path: P) -> Self::Output {
+        // use domain-separated hashers to avoid algebraic relations between
+        // derived keys
         const DOMAIN_SEPARATOR: &[u8] = b"outlayer/secp256k1/derive-tweak/v1";
 
         thread_local! {
@@ -40,11 +45,13 @@ impl DomainCurve for Secp256k1 {
             static HASHER: Sha3_256 = Sha3_256::new_with_prefix(DOMAIN_SEPARATOR);
         }
 
-        HASHER.with(Clone::clone)
+        let hasher = HASHER.with(Clone::clone);
+
+        let path: [u8; 32] = hasher.chain_update(path).finalize().into();
+
+        Reduce::<Secp256k1>::default().derive_path(path)
     }
 }
-
-impl Sealed for Secp256k1 {}
 
 #[cfg(test)]
 mod tests {
