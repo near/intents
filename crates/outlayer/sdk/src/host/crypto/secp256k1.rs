@@ -86,7 +86,6 @@ mod tests {
         hex!("a55d576618eaac125e3d747494ada0b1534d0ea222d0d99806b750686c24ae26d2f15d2c471d91c300e844c9e6d893a2b853f9ea8da359e7d67811f0001e3c75"),
     )]
     fn derived_pk_has_not_changed(#[case] path: &str, #[case] expected: PublicKey) {
-        println!("{}", hex::encode(derive_public_key(path)));
         assert_eq!(derive_public_key(path), expected);
     }
 }
