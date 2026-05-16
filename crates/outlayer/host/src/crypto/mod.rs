@@ -17,7 +17,7 @@ pub struct AppSigner<S>(S);
 
 impl<'a> Host<'a> {
     #[inline]
-    pub fn app_signer(self) -> AppSigner<Map<AppDerivation<'a>, Arc<dyn Signer>>> {
+    fn app_signer(self) -> AppSigner<Map<AppDerivation<'a>, Arc<dyn Signer>>> {
         AppSigner(AppDerivation::new(self.ctx.app_id).map(self.signer))
     }
 }

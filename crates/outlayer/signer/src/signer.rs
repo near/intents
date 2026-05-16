@@ -3,7 +3,6 @@ use std::marker::PhantomData;
 use hkdf::Hkdf;
 use sha3::Sha3_512;
 
-// TODO: docs
 #[cfg_attr(feature = "zeroize", derive(::zeroize::ZeroizeOnDrop))]
 #[derive(Clone, PartialEq, Eq)]
 pub struct InMemorySigner {

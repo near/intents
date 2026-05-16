@@ -1,9 +1,11 @@
 use anyhow::anyhow;
 use defuse_kdf::{DeriveSigner, secp256k1::Secp256k1};
 
-use crate::crypto::AppSigner;
+use crate::{
+    Host, HostView, bindings::outlayer::crypto::secp256k1::Host as HostTrait, crypto::AppSigner,
+};
 
-impl<S> crate::bindings::outlayer::crypto::secp256k1::Host for AppSigner<S>
+impl<S> HostTrait for AppSigner<S>
 where
     S: DeriveSigner<Secp256k1, String>,
 {
@@ -25,5 +27,15 @@ where
         let mut sig = signature.to_vec();
         sig.push(recovery_id.to_byte());
         Ok(sig)
+    }
+}
+
+impl HostTrait for Host<'_> {
+    fn derive_public_key(&mut self, path: String) -> wasmtime::Result<Vec<u8>> {
+        HostTrait::derive_public_key(&mut self.ctx().app_signer(), path)
+    }
+
+    fn sign(&mut self, path: String, msg: Vec<u8>) -> wasmtime::Result<Vec<u8>> {
+        HostTrait::sign(&mut self.ctx().app_signer(), path, msg)
     }
 }
