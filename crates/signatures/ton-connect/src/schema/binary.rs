@@ -12,7 +12,6 @@ use tlb_ton::StringError;
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
-    serde(bound = ""),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[autoimpl(Deref using self.bytes)]
