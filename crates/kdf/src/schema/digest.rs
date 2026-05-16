@@ -2,25 +2,22 @@ use digest::Output;
 
 use crate::DerivationSchema;
 
+/// Hashing adaptor [`DerivationSchema`]
 #[derive(Default, Clone)]
-pub struct Digest<D>(pub(crate) D);
+pub struct Digest<D>(D);
 
 impl<D> Digest<D>
 where
     D: digest::Digest,
 {
+    /// Create new with already created [`digest::Digest`] instance
     pub const fn new(digest: D) -> Self {
         Self(digest)
-    }
-
-    pub fn new_with_prefix(data: impl AsRef<[u8]>) -> Self {
-        Self::new(D::new_with_prefix(data))
     }
 }
 
 impl<D, P> DerivationSchema<P> for Digest<D>
 where
-    // TODO: clone?
     D: digest::Digest + Clone,
     P: AsRef<[u8]>,
 {

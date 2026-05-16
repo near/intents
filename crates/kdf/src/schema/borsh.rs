@@ -2,51 +2,67 @@ use borsh::{BorshSerialize, io};
 
 use crate::DerivationSchema;
 
-// TODO: docs
-#[derive(Default)]
-pub struct Borsh<W: WriteExtract = Vec<u8>>(W::Store);
+/// [Borsh](borsh)-serialization adapter for [`DerivationSchema`]
+///
+/// # Example
+///
+/// ```rust
+/// # use defuse_kdf::{borsh::Borsh, DerivationSchema};
+/// let schema = Borsh::<Vec<u8>>::default();
+/// let data = b"abc";
+/// let derived = schema.derive_path(data);
+/// assert_eq!(derived, [97, 98, 99]);
+/// ```
+#[derive(Default, Clone)]
+pub struct Borsh<W: WriteFinalizer = Vec<u8>>(W::Data);
 
-impl<W: WriteExtract> Borsh<W> {
+impl<W: WriteFinalizer> Borsh<W> {
     #[inline]
-    pub const fn new(store: W::Store) -> Self {
-        Self(store)
+    pub const fn new(data: W::Data) -> Self {
+        Self(data)
     }
 }
 
 impl<P, W> DerivationSchema<P> for Borsh<W>
 where
     P: BorshSerialize,
-    W: WriteExtract,
+    W: WriteFinalizer,
 {
     type Output = W::Output;
 
     fn derive_path(&self, path: P) -> Self::Output {
-        let mut w = W::new(self.0.clone());
-
+        let mut w = W::new(self.0.clone()); // branch a new writer
         borsh::to_writer(&mut w, &path).expect("borsh");
-
         w.finalize()
     }
 }
 
-// TODO: naming
-pub trait WriteExtract: io::Write {
-    type Store: Clone;
+/// Custom writer that can be used to avoid unnecessary allocations during
+/// serialization when possible (e.g. serializing directly to hasher)
+pub trait WriteFinalizer: io::Write {
+    /// Preprocessed data to store between invocations
+    type Data: Clone;
+    /// Extracted output after serialization
     type Output;
 
-    fn new(store: Self::Store) -> Self;
+    /// Initialize writer from pre-processed data
+    fn new(data: Self::Data) -> Self;
 
+    /// Finalize and extract output after serialization
     fn finalize(self) -> Self::Output;
 }
 
-impl WriteExtract for Vec<u8> {
-    type Store = ();
+/// Default implementation for serializing into byte vector
+impl WriteFinalizer for Vec<u8> {
+    type Data = ();
     type Output = Self;
 
-    fn new(_: Self::Store) -> Self {
+    #[inline]
+    fn new(_: Self::Data) -> Self {
         Vec::new()
     }
 
+    #[inline]
     fn finalize(self) -> Self::Output {
         self
     }
@@ -54,24 +70,26 @@ impl WriteExtract for Vec<u8> {
 
 #[cfg(feature = "digest")]
 const _: () = {
-    use ::digest::Output;
-    use digest::{Digest, Update};
+    use digest::{Digest, OutputSizeUser, Update, array::ArraySize};
     use digest_io::IoWrapper;
 
-    impl<D> WriteExtract for IoWrapper<D>
+    /// Optimized writer implementation to serialize directly to hasher
+    impl<D> WriteFinalizer for IoWrapper<D>
     where
         D: Update + Digest + Clone,
     {
-        type Store = D;
+        type Data = D;
 
-        type Output = Output<D>;
+        type Output = <<D as OutputSizeUser>::OutputSize as ArraySize>::ArrayType<u8>;
 
-        fn new(store: Self::Store) -> Self {
+        #[inline]
+        fn new(store: Self::Data) -> Self {
             IoWrapper(store)
         }
 
+        #[inline]
         fn finalize(self) -> Self::Output {
-            self.0.finalize()
+            self.0.finalize().into()
         }
     }
 };

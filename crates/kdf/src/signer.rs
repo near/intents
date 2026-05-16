@@ -77,7 +77,7 @@ where
     }
 }
 
-/// Object-safe adaptor for [`DeriveSigner`]
+/// Object-safe version of [`DeriveSigner`] trait.
 pub trait DynDeriveSigner<C, P>
 where
     C: DerivableCurve,

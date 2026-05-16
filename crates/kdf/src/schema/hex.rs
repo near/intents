@@ -1,6 +1,7 @@
 use crate::DerivationSchema;
 
-#[derive(Default)]
+/// Hex-encoding adaptor for [`DerivationSchema`]
+#[derive(Default, Clone)]
 pub struct Hex;
 
 impl<P> DerivationSchema<P> for Hex

@@ -15,6 +15,13 @@ use crate::{Host, HostView, bindings};
 
 pub struct AppSigner<S>(S);
 
+impl<'a> Host<'a> {
+    #[inline]
+    pub fn app_signer(self) -> AppSigner<Map<AppDerivation<'a>, Arc<dyn Signer>>> {
+        AppSigner(AppDerivation::new(self.ctx.app_id).map(self.signer))
+    }
+}
+
 impl<C, P, S> DeriveSigner<C, P> for AppSigner<S>
 where
     C: DerivableCurve,
@@ -36,12 +43,6 @@ where
     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
         self.0.derive_sign(path, msg)
     }
-}
-
-struct HasAppSigner<S>(PhantomData<S>);
-
-impl<S: 'static> HasData for HasAppSigner<S> {
-    type Data<'a> = AppSigner<Map<AppDerivation<'a>, S>>;
 }
 
 pub trait Signer:
@@ -76,12 +77,10 @@ where
     }
 }
 
-impl<'a> Host<'a> {
-    // // TODO: no pub
-    #[inline]
-    pub fn app_signer(self) -> AppSigner<Map<AppDerivation<'a>, Arc<dyn Signer>>> {
-        AppSigner(AppDerivation::new(self.ctx.app_id).map(self.signer))
-    }
+struct HasAppSigner<S>(PhantomData<S>);
+
+impl<S: 'static> HasData for HasAppSigner<S> {
+    type Data<'a> = AppSigner<Map<AppDerivation<'a>, S>>;
 }
 
 pub(super) fn add_to_linker<T>(linker: &mut Linker<T>) -> wasmtime::Result<()>
@@ -89,8 +88,7 @@ where
     T: HostView,
 {
     bindings::outlayer::crypto::ed25519::add_to_linker::<T, HasAppSigner<_>>(linker, |t| {
-        let ctx = t.ctx();
-        ctx.app_signer()
+        t.ctx().app_signer()
     })?;
     bindings::outlayer::crypto::secp256k1::add_to_linker::<T, HasAppSigner<_>>(linker, |t| {
         t.ctx().app_signer()
