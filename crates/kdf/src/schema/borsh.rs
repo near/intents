@@ -1,4 +1,6 @@
 use borsh::{BorshSerialize, io};
+#[cfg(feature = "digest")]
+pub use digest_io::IoWrapper;
 
 use crate::DerivationSchema;
 
@@ -80,7 +82,6 @@ impl WriteFinalizer for Vec<u8> {
 #[cfg(feature = "digest")]
 const _: () = {
     use digest::{Digest, OutputSizeUser, Update, array::ArraySize};
-    use digest_io::IoWrapper;
 
     /// Optimized writer implementation to serialize directly to hasher
     impl<D> WriteFinalizer for IoWrapper<D>

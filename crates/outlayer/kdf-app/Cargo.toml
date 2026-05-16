@@ -13,7 +13,6 @@ defuse-kdf = { workspace = true, features = ["borsh", "digest"] }
 defuse-outlayer-primitives = { workspace = true, features = ["borsh"] }
 
 borsh = { workspace = true, features = ["derive"] }
-digest-io.workspace = true
 sha3.workspace = true
 
 [dev-dependencies]

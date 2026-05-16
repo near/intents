@@ -1,14 +1,10 @@
 use borsh::BorshSerialize;
-use defuse_kdf::DerivationSchema;
+use defuse_kdf::{
+    DerivationSchema,
+    borsh::{Borsh, IoWrapper},
+};
 use defuse_outlayer_primitives::AppId;
-use digest_io::IoWrapper;
 use sha3::{Digest, Sha3_256};
-
-const DOMAIN_SEPARATOR: &[u8] = b"outlayer/app-derivation/v1";
-thread_local! {
-    // per-thread lazily-initialized hasher with pre-processed domain separator
-    static HASHER: Sha3_256 = Sha3_256::new_with_prefix(DOMAIN_SEPARATOR);
-}
 
 /// [`DerivationSchema`] for Outlayer applications
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -41,15 +37,20 @@ where
     type Output = [u8; 32];
 
     fn derive_path(&self, path: P) -> Self::Output {
+        const DOMAIN_SEPARATOR: &[u8] = b"outlayer/app-derivation/v1";
+
+        thread_local! {
+            // per-thread lazily-initialized hasher with pre-processed domain separator
+            static HASHER: Sha3_256 = Sha3_256::new_with_prefix(DOMAIN_SEPARATOR);
+        }
+
         let path = AppDerivationPath {
             app_id: self.0.as_ref(),
             path: path.as_ref(),
         };
 
         // serialize directly to hasher
-        let mut hasher = IoWrapper(HASHER.with(Clone::clone));
-        borsh::to_writer(&mut hasher, &path).expect("borsh");
-        hasher.0.finalize().into()
+        Borsh::<IoWrapper<_>>::new(HASHER.with(Clone::clone)).derive_path(path)
     }
 }
 
