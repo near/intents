@@ -2,7 +2,7 @@ use std::{borrow::Cow, rc::Rc, sync::Arc};
 
 use impl_tools::autoimpl;
 
-use crate::{DerivableCurve, DerivationSchema};
+use crate::{DerivableCurve, DerivationSchema, DeriveExt, Map};
 
 #[autoimpl(for<T: trait + ?Sized + ToOwned> Cow<'_, T>)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
@@ -33,6 +33,7 @@ where
 
     /// Helper method to derive [tweak](DerivableCurve::Tweak) for given `path`
     /// according to [`Schema`](DeriveSigner::Schema)
+    #[inline]
     fn derive_tweak(&self, path: P) -> C::Tweak {
         self.schema().derive_path(path)
     }
@@ -40,11 +41,39 @@ where
     /// Helper method to [derive](DerivableCurve::derive_public_key) public
     /// key from [master](DeriveSigner::public_key) for given `path` according
     /// to [`Schema`](DeriveSigner::Schema)
+    #[inline]
     fn derive_public_key(&self, path: P) -> C::PublicKey {
         let master_pk = self.public_key();
         let tweak = self.derive_tweak(path);
 
         C::derive_public_key(&master_pk, &tweak)
+    }
+}
+
+impl<C, P, D, S> DeriveSigner<C, P> for Map<D, S>
+where
+    C: DerivableCurve,
+    D: DerivationSchema<P>,
+    S: DeriveSigner<C, D::Output>,
+{
+    type Schema<'a>
+        = Map<&'a D, S::Schema<'a>>
+    where
+        Self: 'a;
+
+    #[inline]
+    fn schema(&self) -> Self::Schema<'_> {
+        self.0.as_ref().map(self.1.schema())
+    }
+
+    #[inline]
+    fn public_key(&self) -> C::PublicKey {
+        self.1.public_key()
+    }
+
+    #[inline]
+    fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
+        self.1.derive_sign(self.0.derive_path(path), msg)
     }
 }
 
@@ -67,6 +96,7 @@ where
     C: DerivableCurve,
     S: DeriveSigner<C, P>,
 {
+    #[inline]
     fn schema_dyn<'a>(&'a self) -> Box<dyn DerivationSchema<P, Output = C::Tweak> + 'a>
     where
         P: 'a,
@@ -74,10 +104,12 @@ where
         Box::new(self.schema())
     }
 
+    #[inline]
     fn public_key(&self) -> C::PublicKey {
         DeriveSigner::<C, P>::public_key(self)
     }
 
+    #[inline]
     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
         DeriveSigner::<C, P>::derive_sign(self, path, msg)
     }

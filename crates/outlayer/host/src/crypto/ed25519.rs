@@ -1,8 +1,10 @@
-use defuse_outlayer_kdf_app::{AppSigner, DeriveSigner, kdf::ed25519::Ed25519};
+use defuse_kdf::{DeriveSigner, ed25519::Ed25519};
 
-impl<S> crate::bindings::outlayer::crypto::ed25519::Host for AppSigner<'_, S>
+use crate::crypto::AppSigner;
+
+impl<S> crate::bindings::outlayer::crypto::ed25519::Host for AppSigner<S>
 where
-    S: DeriveSigner<Ed25519, [u8; 32]>,
+    S: DeriveSigner<Ed25519, String>,
 {
     fn derive_public_key(&mut self, path: String) -> wasmtime::Result<Vec<u8>> {
         Ok(DeriveSigner::<Ed25519, _>::derive_public_key(&self, path)

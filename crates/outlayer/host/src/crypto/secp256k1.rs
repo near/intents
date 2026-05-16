@@ -1,9 +1,11 @@
 use anyhow::anyhow;
-use defuse_outlayer_kdf_app::{AppSigner, DeriveSigner, kdf::secp256k1::Secp256k1};
+use defuse_kdf::{DeriveSigner, secp256k1::Secp256k1};
 
-impl<S> crate::bindings::outlayer::crypto::secp256k1::Host for AppSigner<'_, S>
+use crate::crypto::AppSigner;
+
+impl<S> crate::bindings::outlayer::crypto::secp256k1::Host for AppSigner<S>
 where
-    S: DeriveSigner<Secp256k1, [u8; 32]>,
+    S: DeriveSigner<Secp256k1, String>,
 {
     fn derive_public_key(&mut self, path: String) -> wasmtime::Result<Vec<u8>> {
         Ok(DeriveSigner::<Secp256k1, _>::derive_public_key(&self, path)

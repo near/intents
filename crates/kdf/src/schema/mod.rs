@@ -21,7 +21,7 @@ pub trait DerivationSchema<P> {
 }
 
 // TODO: type params
-pub trait DerivationSchemaExt<P>: DerivationSchema<P> {
+pub trait DeriveExt {
     #[inline]
     fn map<S>(self, then: S) -> Map<Self, S>
     where
@@ -29,10 +29,23 @@ pub trait DerivationSchemaExt<P>: DerivationSchema<P> {
     {
         Map(self, then)
     }
+
+    fn map_fn<F>(self, f: F) -> Map<Self, SchemaFn<F>>
+    where
+        Self: Sized,
+    {
+        Map(self, SchemaFn::new(f))
+    }
+
+    #[inline]
+    fn as_ref(&self) -> &Self {
+        self
+    }
 }
 
-impl<S, P> DerivationSchemaExt<P> for S where S: DerivationSchema<P> {}
+impl<S> DeriveExt for S {}
 
+// TODO: docs, derives
 #[derive(Default)]
 pub struct Identity;
 
@@ -45,15 +58,10 @@ impl<T> DerivationSchema<T> for Identity {
     }
 }
 
+// TODO: docs, derives
 // TODO: implement DerivableSigner, too?
 #[derive(Default)]
-pub struct Map<A, B>(A, B);
-
-impl<A, B> Map<A, B> {
-    pub const fn new(first: A, second: B) -> Self {
-        Self(first, second)
-    }
-}
+pub struct Map<A, B>(pub(crate) A, pub(crate) B);
 
 impl<P, A, B> DerivationSchema<P> for Map<A, B>
 where

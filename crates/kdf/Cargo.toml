@@ -15,6 +15,7 @@ impl-tools.workspace = true
 borsh = { workspace = true, optional = true }
 curve25519-dalek = { workspace = true, optional = true }
 digest = { workspace = true, optional = true }
+digest-io = { workspace = true, optional = true }
 ed25519-dalek = { workspace = true, features = ["digest", "hazmat", "std"], optional = true }
 hex = { workspace = true, optional = true }
 k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"], optional = true }
@@ -30,7 +31,7 @@ ed25519 = [
 secp256k1 = ["defuse-kdf-crypto/secp256k1", "dep:k256"]
 
 borsh = ["dep:borsh"]
-digest = ["dep:digest"]
+digest = ["dep:digest", "dep:digest-io"]
 hex = ["dep:hex"]
 
 zeroize = [

@@ -3,7 +3,7 @@ use digest::Output;
 use crate::DerivationSchema;
 
 #[derive(Default, Clone)]
-pub struct Digest<D>(D);
+pub struct Digest<D>(pub(crate) D);
 
 impl<D> Digest<D>
 where

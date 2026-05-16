@@ -3,18 +3,45 @@ mod secp256k1;
 
 use std::{marker::PhantomData, sync::Arc};
 
-use defuse_outlayer_kdf_app::{
-    AppSigner, DerivableCurve, DerivationSchema, DeriveSigner,
-    kdf::{DynDeriveSigner, ed25519::Ed25519, secp256k1::Secp256k1},
+use defuse_outlayer_kdf_app::AppDerivation;
+
+use defuse_kdf::{
+    DerivableCurve, DerivationSchema, DeriveExt, DeriveSigner, DynDeriveSigner, Map,
+    ed25519::Ed25519, secp256k1::Secp256k1,
 };
 use wasmtime::component::{HasData, Linker};
 
 use crate::{Host, HostView, bindings};
 
-struct HasSigner<S>(PhantomData<S>);
+pub struct AppSigner<S>(S);
 
-impl<S: 'static> HasData for HasSigner<S> {
-    type Data<'a> = AppSigner<'a, S>;
+impl<C, P, S> DeriveSigner<C, P> for AppSigner<S>
+where
+    C: DerivableCurve,
+    S: DeriveSigner<C, P>,
+{
+    type Schema<'a>
+        = S::Schema<'a>
+    where
+        Self: 'a;
+
+    fn schema(&self) -> Self::Schema<'_> {
+        self.0.schema()
+    }
+
+    fn public_key(&self) -> C::PublicKey {
+        self.0.public_key()
+    }
+
+    fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
+        self.0.derive_sign(path, msg)
+    }
+}
+
+struct HasAppSigner<S>(PhantomData<S>);
+
+impl<S: 'static> HasData for HasAppSigner<S> {
+    type Data<'a> = AppSigner<Map<AppDerivation<'a>, S>>;
 }
 
 pub trait Signer:
@@ -52,8 +79,8 @@ where
 impl<'a> Host<'a> {
     // // TODO: no pub
     #[inline]
-    pub fn app_signer(self) -> AppSigner<'a, Arc<dyn Signer>> {
-        AppSigner::new(self.ctx.app_id, self.signer.clone())
+    pub fn app_signer(self) -> AppSigner<Map<AppDerivation<'a>, Arc<dyn Signer>>> {
+        AppSigner(AppDerivation::new(self.ctx.app_id).map(self.signer))
     }
 }
 
@@ -61,10 +88,11 @@ pub(super) fn add_to_linker<T>(linker: &mut Linker<T>) -> wasmtime::Result<()>
 where
     T: HostView,
 {
-    bindings::outlayer::crypto::ed25519::add_to_linker::<T, HasSigner<_>>(linker, |t| {
-        t.ctx().app_signer()
+    bindings::outlayer::crypto::ed25519::add_to_linker::<T, HasAppSigner<_>>(linker, |t| {
+        let ctx = t.ctx();
+        ctx.app_signer()
     })?;
-    bindings::outlayer::crypto::secp256k1::add_to_linker::<T, HasSigner<_>>(linker, |t| {
+    bindings::outlayer::crypto::secp256k1::add_to_linker::<T, HasAppSigner<_>>(linker, |t| {
         t.ctx().app_signer()
     })?;
     Ok(())
