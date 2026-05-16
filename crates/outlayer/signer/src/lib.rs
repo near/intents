@@ -10,4 +10,4 @@ pub use self::schema::*;
 #[cfg(any(feature = "ed25519", feature = "secp256k1"))]
 pub use self::signer::*;
 
-pub use defuse_outlayer_kdf::{self as kdf, DerivableCurve, DerivationSchema};
+pub use defuse_kdf::{self as kdf, DerivableCurve, DerivationSchema};

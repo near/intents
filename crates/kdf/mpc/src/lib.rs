@@ -5,7 +5,7 @@ mod secp256k1;
 
 use std::{borrow::Cow, marker::PhantomData};
 
-use defuse_outlayer_kdf::{DerivableCurve, DerivationSchema};
+use defuse_kdf::{DerivableCurve, DerivationSchema};
 use near_account_id::AccountIdRef;
 use near_mpc_crypto_types::{Tweak, kdf::derive_tweak};
 

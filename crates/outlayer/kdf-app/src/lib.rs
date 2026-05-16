@@ -1,6 +1,6 @@
 use borsh::BorshSerialize;
-use defuse_outlayer_kdf::Map;
-pub use defuse_outlayer_kdf::{self as kdf, DerivableCurve, DerivationSchema, DeriveSigner};
+use defuse_kdf::Map;
+pub use defuse_kdf::{self as kdf, DerivableCurve, DerivationSchema, DeriveSigner};
 pub use defuse_outlayer_primitives::AppId;
 use digest_io::IoWrapper;
 use sha3::{Digest, Sha3_256};
@@ -15,6 +15,7 @@ struct AppDerivationPath<'a> {
     pub path: &'a str,
 }
 
+// TODO: docs
 pub struct AppDerivation<'a>(AppId<'a>);
 
 impl<'a> AppDerivation<'a> {

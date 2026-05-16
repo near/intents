@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-outlayer-kdf.workspace = true
+defuse-kdf.workspace = true
 defuse-outlayer-primitives = { workspace = true, features = ["borsh"] }
 
 borsh = { workspace = true, features = ["derive"] }
@@ -19,6 +19,7 @@ sha3.workspace = true
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 
 [features]
+# TODO: is it needed?
 arbitrary = ["defuse-outlayer-primitives/arbitrary", "dep:arbitrary"]
 
 [dev-dependencies]

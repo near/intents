@@ -1584,6 +1584,44 @@ name = "defuse-io-utils"
 version = "0.1.0"
 
 [[package]]
+name = "defuse-kdf"
+version = "0.1.0"
+dependencies = [
+ "borsh",
+ "curve25519-dalek",
+ "defuse-kdf-crypto",
+ "digest 0.11.2",
+ "ed25519-dalek",
+ "hex",
+ "hex-literal",
+ "impl-tools",
+ "k256",
+ "rstest",
+]
+
+[[package]]
+name = "defuse-kdf-crypto"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "hex-literal",
+ "impl-tools",
+ "k256",
+ "rstest",
+]
+
+[[package]]
+name = "defuse-kdf-mpc"
+version = "0.1.0"
+dependencies = [
+ "defuse-kdf",
+ "hex-literal",
+ "near-account-id",
+ "near-mpc-crypto-types",
+ "rstest",
+]
+
+[[package]]
 name = "defuse-map-utils"
 version = "0.1.0"
 dependencies = [
@@ -1650,17 +1688,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-outlayer-crypto"
-version = "0.1.0"
-dependencies = [
- "ed25519-dalek",
- "hex-literal",
- "impl-tools",
- "k256",
- "rstest",
-]
-
-[[package]]
 name = "defuse-outlayer-executor"
 version = "0.1.0"
 dependencies = [
@@ -1688,44 +1715,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-outlayer-kdf"
-version = "0.1.0"
-dependencies = [
- "borsh",
- "curve25519-dalek",
- "defuse-outlayer-crypto",
- "digest 0.11.2",
- "ed25519-dalek",
- "hex",
- "hex-literal",
- "impl-tools",
- "k256",
- "rstest",
-]
-
-[[package]]
 name = "defuse-outlayer-kdf-app"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
  "borsh",
- "defuse-outlayer-kdf",
+ "defuse-kdf",
  "defuse-outlayer-primitives",
  "digest-io",
  "hex-literal",
  "rstest",
  "sha3 0.11.0",
-]
-
-[[package]]
-name = "defuse-outlayer-kdf-mpc"
-version = "0.1.0"
-dependencies = [
- "defuse-outlayer-kdf",
- "hex-literal",
- "near-account-id",
- "near-mpc-crypto-types",
- "rstest",
 ]
 
 [[package]]
@@ -1798,7 +1798,7 @@ dependencies = [
 name = "defuse-outlayer-signer"
 version = "0.1.0"
 dependencies = [
- "defuse-outlayer-kdf",
+ "defuse-kdf",
  "hex-literal",
  "hkdf",
  "rstest",

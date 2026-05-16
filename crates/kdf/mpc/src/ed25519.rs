@@ -1,4 +1,4 @@
-use defuse_outlayer_kdf::{crypto::ed25519::Ed25519, ed25519::Scalar};
+use defuse_kdf::{crypto::ed25519::Ed25519, ed25519::Scalar};
 use near_mpc_crypto_types::Tweak;
 
 use crate::{NearMpcCurve, sealed::Sealed};
@@ -14,7 +14,7 @@ impl Sealed for Ed25519 {}
 
 #[cfg(test)]
 mod tests {
-    use defuse_outlayer_kdf::{
+    use defuse_kdf::{
         DerivableCurve, DerivationSchema,
         ed25519::{VerifyingKey, ed25519_dalek},
     };

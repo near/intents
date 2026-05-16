@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-outlayer-kdf = { workspace = true, features = ["digest"] }
+defuse-kdf = { workspace = true, features = ["digest"] } # TODO: digest?
 
 hkdf = { workspace = true, features = ["kdf"] }
 sha3.workspace = true
@@ -17,9 +17,9 @@ sha3.workspace = true
 zeroize = { workspace = true, optional = true }
 
 [features]
-ed25519 = ["defuse-outlayer-kdf/ed25519"]
-secp256k1 = ["defuse-outlayer-kdf/secp256k1"]
-zeroize = ["defuse-outlayer-kdf/zeroize", "dep:zeroize", "sha3/zeroize"]
+ed25519 = ["defuse-kdf/ed25519"]
+secp256k1 = ["defuse-kdf/secp256k1"]
+zeroize = ["defuse-kdf/zeroize", "dep:zeroize", "sha3/zeroize"]
 
 [dev-dependencies]
 hex-literal.workspace = true

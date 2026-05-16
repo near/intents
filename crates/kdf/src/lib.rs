@@ -4,4 +4,4 @@ mod signer;
 
 pub use self::{curve::*, schema::*, signer::*};
 
-pub use defuse_outlayer_crypto::{self as crypto, Curve};
+pub use defuse_kdf_crypto::{self as crypto, Curve};

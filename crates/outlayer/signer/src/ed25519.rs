@@ -1,6 +1,6 @@
-pub use defuse_outlayer_kdf::ed25519::*;
+pub use defuse_kdf::ed25519::*;
 
-use defuse_outlayer_kdf::{Curve, DerivationSchema, DeriveSigner};
+use defuse_kdf::{Curve, DerivationSchema, DeriveSigner};
 
 use crate::{DomainCurve, InMemorySigner, Schema, sealed::Sealed};
 
@@ -48,7 +48,7 @@ impl Sealed for Ed25519 {}
 
 #[cfg(test)]
 mod tests {
-    use defuse_outlayer_kdf::DerivationSchema;
+    use defuse_kdf::DerivationSchema;
     use hex_literal::hex;
     use rstest::rstest;
 

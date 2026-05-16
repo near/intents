@@ -1,6 +1,6 @@
-pub use defuse_outlayer_kdf::secp256k1::*;
+pub use defuse_kdf::secp256k1::*;
 
-use defuse_outlayer_kdf::{
+use defuse_kdf::{
     Curve, DerivationSchema, DeriveSigner,
     secp256k1::k256::{U256, elliptic_curve},
 };
@@ -52,7 +52,7 @@ impl Sealed for Secp256k1 {}
 
 #[cfg(test)]
 mod tests {
-    use defuse_outlayer_kdf::DerivationSchema;
+    use defuse_kdf::DerivationSchema;
     use hex_literal::hex;
     use rstest::rstest;
 

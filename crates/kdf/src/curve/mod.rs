@@ -3,7 +3,7 @@ pub mod ed25519;
 #[cfg(feature = "secp256k1")]
 pub mod secp256k1;
 
-use defuse_outlayer_crypto::Curve;
+use defuse_kdf_crypto::Curve;
 
 /// A [curve](Curve) with **non-hardened** public key derivation capabilities,
 /// i.e. when child public key can be [derived](DerivableCurve::derive_public_key)

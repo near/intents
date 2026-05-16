@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use defuse_outlayer_kdf::{DerivableCurve, DerivationSchema};
+use defuse_kdf::{DerivableCurve, DerivationSchema};
 use sha3::{Digest, Sha3_256};
 
 // TODO: maybe expose as combination of Then<Digest>, etc...?

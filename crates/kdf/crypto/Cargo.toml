@@ -1,5 +1,5 @@
 [package]
-name = "defuse-outlayer-crypto"
+name = "defuse-kdf-crypto"
 edition.workspace = true
 version.workspace = true
 rust-version.workspace = true

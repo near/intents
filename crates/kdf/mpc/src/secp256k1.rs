@@ -1,4 +1,4 @@
-use defuse_outlayer_kdf::{crypto::secp256k1::Secp256k1, secp256k1::NonZeroScalar};
+use defuse_kdf::{crypto::secp256k1::Secp256k1, secp256k1::NonZeroScalar};
 use near_mpc_crypto_types::Tweak;
 
 use crate::{NearMpcCurve, sealed::Sealed};
@@ -16,7 +16,7 @@ impl Sealed for Secp256k1 {}
 
 #[cfg(test)]
 mod tests {
-    use defuse_outlayer_kdf::{
+    use defuse_kdf::{
         DerivableCurve, DerivationSchema,
         secp256k1::{VerifyingKey, k256::EncodedPoint},
     };

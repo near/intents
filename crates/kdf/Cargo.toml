@@ -1,5 +1,5 @@
 [package]
-name = "defuse-outlayer-kdf"
+name = "defuse-kdf"
 edition.workspace = true
 version.workspace = true
 rust-version.workspace = true
@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-outlayer-crypto.workspace = true
+defuse-kdf-crypto.workspace = true
 impl-tools.workspace = true
 
 borsh = { workspace = true, optional = true }
@@ -23,11 +23,11 @@ k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"], optional =
 default = ["borsh", "digest", "ed25519", "hex", "secp256k1"] # TODO: remove
 
 ed25519 = [
-  "defuse-outlayer-crypto/ed25519",
+  "defuse-kdf-crypto/ed25519",
   "dep:curve25519-dalek",
   "dep:ed25519-dalek",
 ]
-secp256k1 = ["defuse-outlayer-crypto/secp256k1", "dep:k256"]
+secp256k1 = ["defuse-kdf-crypto/secp256k1", "dep:k256"]
 
 borsh = ["dep:borsh"]
 digest = ["dep:digest"]
@@ -35,7 +35,7 @@ hex = ["dep:hex"]
 
 zeroize = [
   "curve25519-dalek?/zeroize",
-  "defuse-outlayer-crypto/zeroize",
+  "defuse-kdf-crypto/zeroize",
   "ed25519-dalek?/zeroize",
 ]
 

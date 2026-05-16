@@ -1,5 +1,5 @@
 [package]
-name = "defuse-outlayer-kdf-mpc"
+name = "defuse-kdf-mpc"
 edition.workspace = true
 version.workspace = true
 rust-version.workspace = true
@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-outlayer-kdf.workspace = true
+defuse-kdf.workspace = true
 
 near-account-id.workspace = true
 near-mpc-crypto-types.workspace = true
@@ -17,8 +17,8 @@ near-mpc-crypto-types.workspace = true
 [features]
 default = ["ed25519", "secp256k1"]
 
-ed25519 = ["defuse-outlayer-kdf/ed25519"]
-secp256k1 = ["defuse-outlayer-kdf/secp256k1"]
+ed25519 = ["defuse-kdf/ed25519"]
+secp256k1 = ["defuse-kdf/secp256k1"]
 
 [dev-dependencies]
 hex-literal.workspace = true
