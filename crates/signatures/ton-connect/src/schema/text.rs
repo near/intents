@@ -5,11 +5,10 @@ use impl_tools::autoimpl;
 use tlb_ton::StringError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(test, derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
-    serde(bound = ""),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[autoimpl(Deref using self.text)]

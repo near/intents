@@ -14,9 +14,7 @@ pub use tlb_ton;
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
-    serde(bound = ""),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
-    cfg_attr(test, derive(::arbitrary::Arbitrary))
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -27,13 +25,27 @@ pub struct TonConnectPayload {
     /// dApp domain
     pub domain: String,
     /// UNIX timestamp (in seconds or RFC3339) at the time of singing
-    #[cfg_attr(test, arbitrary(with = ::tlb_ton::UnixTimestamp::arbitrary))]
     #[cfg_attr(
         feature = "serde",
         serde_as(as = "::serde_with::PickFirst<(_, ::serde_with::TimestampSeconds)>")
     )]
     pub timestamp: DateTime<Utc>,
     pub payload: TonConnectPayloadSchema,
+}
+
+// Per cfg_eval docs: "this macro, by default, only works on `struct`, `enum`, and `union`
+// definitions (i.e., on `#[derive]` input)", so `#[arbitrary(with = ...)]` on fields cannot
+// be used alongside `serde_as` which requires `cfg_eval`.
+#[cfg(feature = "arbitrary")]
+impl<'a> arbitrary::Arbitrary<'a> for TonConnectPayload {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self {
+            address: u.arbitrary()?,
+            domain: u.arbitrary()?,
+            timestamp: ::tlb_ton::UnixTimestamp::arbitrary(u)?,
+            payload: u.arbitrary()?,
+        })
+    }
 }
 
 impl TonConnectPayload {
@@ -62,13 +74,12 @@ impl TonConnectPayload {
     }
 }
 
-#[cfg_attr(test, derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
-    serde(bound = ""),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[autoimpl(Deref using self.payload)]

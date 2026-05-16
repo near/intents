@@ -57,13 +57,12 @@ pub trait PayloadSchema {
 }
 
 /// See <https://docs.tonconsole.com/academy/sign-data#choosing-the-right-format>
-#[cfg_attr(test, derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
-    serde(tag = "type", rename_all = "snake_case"),
-    serde(bound = ""),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
+    serde(tag = "type", rename_all = "snake_case")
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TonConnectPayloadSchema {

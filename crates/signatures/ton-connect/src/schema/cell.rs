@@ -11,19 +11,13 @@ use tlb_ton::{
 use crate::schema::{PayloadSchema, TonConnectPayloadContext};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(test, derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
-    serde(bound = ""),
-    cfg_attr(
-        feature = "abi",
-        schemars(bound = ""),
-        schemars(rename = "CellPayload"),
-        derive(::schemars::JsonSchema)
-    )
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 pub struct CellPayload {
     pub schema_crc: u32,
