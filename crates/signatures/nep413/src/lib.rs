@@ -15,8 +15,8 @@ use impl_tools::autoimpl;
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
-    serde(rename_all = "camelCase"),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
+    serde(rename_all = "camelCase")
 )]
 #[derive(Debug, Clone)]
 pub struct Nep413Payload {
