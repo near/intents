@@ -1,5 +1,5 @@
 pub use defuse_outlayer_crypto::secp256k1::*;
-pub use k256::{self, NonZeroScalar, ecdsa::SigningKey};
+pub use k256::{NonZeroScalar, ecdsa::SigningKey};
 use k256::{ProjectivePoint, elliptic_curve::ops::MulByGenerator};
 
 use crate::{DerivableCurve, DeriveSigner, Identity};

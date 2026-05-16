@@ -1,7 +1,7 @@
 use curve25519_dalek::EdwardsPoint;
 pub use curve25519_dalek::Scalar;
 pub use defuse_outlayer_crypto::ed25519::*;
-pub use ed25519_dalek::{self, SigningKey};
+pub use ed25519_dalek::SigningKey;
 use ed25519_dalek::{
     Digest, Sha512,
     hazmat::{ExpandedSecretKey, raw_sign},

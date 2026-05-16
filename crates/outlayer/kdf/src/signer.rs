@@ -15,19 +15,18 @@ where
     where
         Self: 'a;
 
-    // TODO
     /// Construct [`Schema`](Self::Schema) for public key derivation.
+    ///
+    /// See [`derive_public_key()`](DeriveSigner::derive_public_key) shorthand.
     fn schema(&self) -> Self::Schema<'_>;
 
-    // TODO
-    /// Returns []
+    /// Get master public key of the signer.
     fn public_key(&self) -> C::PublicKey;
 
-    // TODO
     /// Sign given message with a secret key **internally** derived
     /// for given `path` according to [`Self::Schema`](DeriveSigner::Schema).
     ///
-    /// NOTE: the returned signatures might be non-deterministic, i.e.
+    /// **NOTE**: the returned signatures MIGHT be non-deterministic, i.e.
     /// implementations MAY return different signatures for the same
     /// `path` and `msg`.
     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature;
@@ -49,6 +48,7 @@ where
     }
 }
 
+/// Object-safe adaptor for [`DeriveSigner`]
 pub trait DynDeriveSigner<C, P>
 where
     C: DerivableCurve,
@@ -104,19 +104,6 @@ where
         DynDeriveSigner::<C, P>::derive_sign(self, path, msg)
     }
 }
-
-// #[autoimpl(for<T: trait + ?Sized + ToOwned> Cow<'_, T>)]
-// #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
-// pub trait DeriveSignerSchema<C, P>: DeriveSigner<C, P>
-// where
-//     C: DerivableCurve,
-// {
-//     type Schema<'a>: DerivationSchema<P, Output = C::Tweak>
-//     where
-//         Self: 'a;
-
-//     fn derivation_schema(&self) -> Self::Schema<'_>;
-// }
 
 #[cfg(test)]
 pub(crate) mod tests {
