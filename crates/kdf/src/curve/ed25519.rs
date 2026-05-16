@@ -14,7 +14,7 @@ impl DerivableCurve for Ed25519 {
 
     fn derive_public_key(master_pk: &VerifyingKey, tweak: &Scalar) -> VerifyingKey {
         // pk' <- pk + G * tweak
-        let derived_point = master_pk.to_edwards() + EdwardsPoint::mul_base(&tweak);
+        let derived_point = master_pk.to_edwards() + EdwardsPoint::mul_base(tweak);
 
         // TODO: reject derived_point.is_torsion_free() || derived_point.is_small_order()?
 

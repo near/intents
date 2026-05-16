@@ -9,8 +9,6 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-impl-tools.workspace = true
-
 ed25519-dalek = { workspace = true, features = ["std"], optional = true }
 k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"], optional = true }
 

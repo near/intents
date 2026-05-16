@@ -115,7 +115,7 @@ where
     }
 }
 
-impl<'l, C, P> DeriveSigner<C, P> for dyn DynDeriveSigner<C, P> + 'l
+impl<C, P> DeriveSigner<C, P> for dyn DynDeriveSigner<C, P>
 where
     C: DerivableCurve,
 {
@@ -141,7 +141,7 @@ where
 }
 
 #[cfg(test)]
-pub(crate) mod tests {
+pub mod tests {
 
     use super::*;
 

@@ -5,7 +5,7 @@ use k256::{
     elliptic_curve::{self, bigint::U512, ops::MulByGenerator},
 };
 
-use crate::{DerivableCurve, Schema, DeriveSigner, Identity, Reduce};
+use crate::{DerivableCurve, DeriveSigner, Identity, Reduce, Schema};
 
 impl DerivableCurve for Secp256k1 {
     type Tweak = NonZeroScalar;

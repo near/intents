@@ -19,14 +19,14 @@ impl InMemorySigner {
     /// NOTE: `seed` is passed by reference, and the referenced value is
     /// recommended to be zeroized afterwards.
     pub fn from_seed(seed: &[u8]) -> Self {
-        const SALT: &'static [u8] = b"outlayer v0.1.0 signer seed:";
+        const SALT: &[u8] = b"outlayer v0.1.0 signer seed:";
 
         let hk = Hkdf::<Sha3_512>::new(Some(SALT), seed);
 
         Self {
             #[cfg(feature = "ed25519")]
             ed25519_master_sk: {
-                const INFO: &'static [u8] = b"ed25519/root_sk";
+                const INFO: &[u8] = b"ed25519/root_sk";
 
                 let mut sk = [0u8; crate::ed25519::ed25519_dalek::SECRET_KEY_LENGTH];
                 hk.expand(INFO, &mut sk).expect("HKDF: ed25519");
@@ -34,7 +34,7 @@ impl InMemorySigner {
             },
             #[cfg(feature = "secp256k1")]
             secp256k1_master_sk: {
-                const INFO: &'static [u8] = b"secp256k1/root_sk";
+                const INFO: &[u8] = b"secp256k1/root_sk";
 
                 let mut sk = [0u8; 32];
                 hk.expand(INFO, &mut sk).expect("HKDF: secp256k1");

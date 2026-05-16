@@ -30,7 +30,7 @@ struct AppDerivationPath<'a> {
     pub path: &'a str,
 }
 
-impl<'a, P> Schema<P> for AppDerivation<'a>
+impl<P> Schema<P> for AppDerivation<'_>
 where
     P: AsRef<str>,
 {

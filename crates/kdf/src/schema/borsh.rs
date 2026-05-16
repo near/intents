@@ -70,8 +70,8 @@ impl WriteFinalizer for Vec<u8> {
     type Output = Self;
 
     #[inline]
-    fn new(_: Self::Data) -> Self {
-        Vec::new()
+    fn new(_data: Self::Data) -> Self {
+        Self::new()
     }
 
     #[inline]
@@ -96,7 +96,7 @@ const _: () = {
 
         #[inline]
         fn new(data: Self::Data) -> Self {
-            IoWrapper(data)
+            Self(data)
         }
 
         #[inline]

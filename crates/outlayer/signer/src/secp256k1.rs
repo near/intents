@@ -1,9 +1,9 @@
 pub use defuse_kdf::secp256k1::*;
 
-use defuse_kdf::{Curve, Schema, DeriveSigner, Reduce};
+use defuse_kdf::{Curve, DeriveSigner, Reduce, Schema};
 use sha3::{Digest, Sha3_256};
 
-use crate::{InMemorySigner, CurveSchema};
+use crate::{CurveSchema, InMemorySigner};
 
 impl<P> DeriveSigner<Secp256k1, P> for InMemorySigner
 where
