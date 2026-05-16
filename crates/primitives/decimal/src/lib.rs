@@ -5,9 +5,6 @@ mod str;
 
 pub use self::str::*;
 
-#[cfg(feature = "borsh")]
-use ::borsh::io;
-
 /// Floating point unsigned decimal price, i.e. dst per 1 src
 /// always reduced (i.e. normalized)
 #[cfg_attr(
@@ -99,9 +96,15 @@ impl From<u128> for UD128 {
 }
 
 #[cfg(feature = "borsh")]
-impl ::borsh::BorshDeserialize for UD128 {
-    fn deserialize_reader<R: io::Read>(reader: &mut R) -> io::Result<Self> {
-        let (decimals, digits) = ::borsh::BorshDeserialize::deserialize_reader(reader)?;
-        Self::new(decimals, digits).ok_or_else(|| io::ErrorKind::InvalidData.into())
+const _: () = {
+    use borsh::{
+        BorshDeserialize,
+        io::{ErrorKind, Read, Result},
+    };
+    impl BorshDeserialize for UD128 {
+        fn deserialize_reader<R: Read>(reader: &mut R) -> Result<Self> {
+            let (decimals, digits) = BorshDeserialize::deserialize_reader(reader)?;
+            Self::new(decimals, digits).ok_or_else(|| ErrorKind::InvalidData.into())
+        }
     }
-}
+};

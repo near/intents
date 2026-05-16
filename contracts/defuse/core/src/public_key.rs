@@ -5,7 +5,7 @@ use core::{
 
 use defuse_crypto::{
     Curve, CurveType, Ed25519, P256UncompressedPublicKey, ParseCurveError, Secp256k1,
-    checked_base58_decode_array,
+    parse::checked_base58_decode_array,
 };
 use near_sdk::{AccountId, AccountIdRef, bs58, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
