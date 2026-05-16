@@ -22,6 +22,7 @@ impl<W: WriteFinalizer> Default for Borsh<W>
 where
     W::Data: Default,
 {
+    #[inline]
     fn default() -> Self {
         Self(Default::default())
     }
@@ -90,11 +91,12 @@ const _: () = {
     {
         type Data = D;
 
+        /// `[u8; N]`
         type Output = <<D as OutputSizeUser>::OutputSize as ArraySize>::ArrayType<u8>;
 
         #[inline]
-        fn new(store: Self::Data) -> Self {
-            IoWrapper(store)
+        fn new(data: Self::Data) -> Self {
+            IoWrapper(data)
         }
 
         #[inline]

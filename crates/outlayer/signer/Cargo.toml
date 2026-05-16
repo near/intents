@@ -9,16 +9,16 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-kdf = { workspace = true, features = ["digest"] } # TODO: digest?
+defuse-kdf.workspace = true
 
 hkdf = { workspace = true, features = ["kdf"], optional = true }
 sha3 = { workspace = true, optional = true }
 zeroize = { workspace = true, optional = true }
 
 [features]
-ed25519 = ["defuse-kdf/ed25519", "hash"]
-secp256k1 = ["defuse-kdf/secp256k1", "hash"]
-hash = ["dep:hkdf", "dep:sha3"]
+ed25519 = ["defuse-kdf/ed25519", "kdf"]
+secp256k1 = ["defuse-kdf/secp256k1", "kdf"]
+kdf = ["dep:hkdf", "dep:sha3"]
 zeroize = ["defuse-kdf/zeroize", "dep:zeroize", "sha3/zeroize"]
 
 [dev-dependencies]

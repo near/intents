@@ -28,10 +28,12 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
     where
         Self: 'a;
 
+    #[inline]
     fn schema(&self) -> Self::Schema<'_> {
         Identity
     }
 
+    #[inline]
     fn public_key(&self) -> VerifyingKey {
         self.verifying_key()
     }
@@ -56,10 +58,12 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
     where
         Self: 'a;
 
+    #[inline]
     fn schema(&self) -> Self::Schema<'_> {
         Identity
     }
 
+    #[inline]
     fn public_key(&self) -> VerifyingKey {
         self.into()
     }
@@ -106,6 +110,7 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
 impl DerivationSchema<[u8; 32]> for Reduce<Ed25519> {
     type Output = Scalar;
 
+    #[inline]
     fn derive_path(&self, path: [u8; 32]) -> Self::Output {
         Scalar::from_bytes_mod_order(path)
     }
@@ -114,6 +119,7 @@ impl DerivationSchema<[u8; 32]> for Reduce<Ed25519> {
 impl DerivationSchema<[u8; 64]> for Reduce<Ed25519> {
     type Output = Scalar;
 
+    #[inline]
     fn derive_path(&self, path: [u8; 64]) -> Self::Output {
         Scalar::from_bytes_mod_order_wide(&path)
     }
@@ -125,11 +131,11 @@ mod tests {
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::{DerivationSchema, SchemaFn, signer::tests::assert_roundtrip};
+    use crate::{DerivationSchema, signer::tests::assert_roundtrip};
 
     use super::*;
 
-    const SCHEMA: SchemaFn<fn([u8; 32]) -> Scalar> = SchemaFn::new(Scalar::from_bytes_mod_order);
+    const REDUCE: Reduce<Ed25519> = Reduce::new();
 
     #[rstest]
     fn roundtrip(
@@ -145,7 +151,7 @@ mod tests {
     ) {
         assert_roundtrip(
             &SigningKey::from_bytes(&root_sk),
-            SCHEMA.derive_path(tweak),
+            REDUCE.derive_path(tweak),
             msg,
         );
     }
@@ -163,7 +169,7 @@ mod tests {
     ) {
         let (derived_pk, _signature) = assert_roundtrip(
             &SigningKey::from_bytes(&root_sk),
-            SCHEMA.derive_path(tweak),
+            REDUCE.derive_path(tweak),
             b"message",
         );
         assert_eq!(

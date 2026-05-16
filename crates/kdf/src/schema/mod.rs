@@ -31,13 +31,6 @@ pub trait DeriveExt {
         Map(self, then)
     }
 
-    fn map_fn<F>(self, f: F) -> Map<Self, SchemaFn<F>>
-    where
-        Self: Sized,
-    {
-        Map(self, SchemaFn::new(f))
-    }
-
     #[inline]
     fn as_ref(&self) -> &Self {
         self
@@ -45,8 +38,7 @@ pub trait DeriveExt {
 }
 impl<S> DeriveExt for S {}
 
-// TODO: docs, derives
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Copy)]
 /// No-op identity adator for [`DerivationSchema`].
 ///
 /// ```rust
@@ -65,7 +57,7 @@ impl<T> DerivationSchema<T> for Identity {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Copy)]
 /// Mapping adaptor for [`DerivationSchema`] and [`crate::DeriveSigner`].
 ///
 /// ```rust
@@ -87,6 +79,7 @@ where
 {
     type Output = B::Output;
 
+    #[inline]
     fn derive_path(&self, path: P) -> Self::Output {
         self.1.derive_path(self.0.derive_path(path))
     }
@@ -101,7 +94,7 @@ where
 ///
 /// assert_eq!(schema.derive_path(3), 5);
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct SchemaFn<F>(F);
 
 impl<F> SchemaFn<F> {
@@ -117,6 +110,7 @@ where
 {
     type Output = O;
 
+    #[inline]
     fn derive_path(&self, path: P) -> Self::Output {
         (self.0)(path)
     }

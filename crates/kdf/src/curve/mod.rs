@@ -38,7 +38,15 @@ pub trait DerivableCurve: Curve {
 #[derive(Clone)]
 pub struct Reduce<C>(PhantomData<C>);
 
+impl<C> Reduce<C> {
+    #[inline]
+    pub const fn new() -> Self {
+        Self(PhantomData)
+    }
+}
+
 impl<C> Default for Reduce<C> {
+    #[inline]
     fn default() -> Self {
         Self(PhantomData)
     }

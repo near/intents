@@ -14,6 +14,7 @@ impl Curve for Secp256k1 {
     type Message = [u8; 32];
     type Signature = (Signature, RecoveryId);
 
+    #[inline]
     fn verify(
         public_key: &VerifyingKey,
         prehash: &[u8; 32],

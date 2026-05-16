@@ -12,6 +12,7 @@ impl Curve for Ed25519 {
 
     type Signature = Signature;
 
+    #[inline]
     fn verify(
         public_key: &Self::PublicKey,
         msg: &Self::Message,

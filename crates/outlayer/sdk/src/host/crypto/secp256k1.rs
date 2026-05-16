@@ -64,3 +64,33 @@ pub fn sign(path: impl AsRef<str>, prehash: &[u8; 32]) -> Signature {
 
     raw.try_into().expect("invalid length")
 }
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case(
+        "",
+        hex!("4511f00e3e70a9f3ccacb58af0dae770aca04670c30bcf3de93a93c8d967d5fbf13b788f4f8654bbb81f629c4b9d0d8b8070979d004ea0e27b9dbad675a99675"),
+    )]
+    #[case(
+        "test",
+        hex!("9c2567a8bdc4a5728050198d0fc991c53ebc375de0fa74c36f46a6d8d3361c400796972228d59351380c7c7bc221381ed4ea93af7a126a8bed8dfa0b0821cbaf"),
+    )]
+    #[case(
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        hex!("f024688b06bb178284e3249ecdf6fb962371bb4f3fb690f7030b6303a4954e1df0744e6747a5fa3e2ffd04eb9d5198b410a4cf1e4c93df30c53018110eee0306"),
+    )]
+    #[case(
+        ".",
+        hex!("a55d576618eaac125e3d747494ada0b1534d0ea222d0d99806b750686c24ae26d2f15d2c471d91c300e844c9e6d893a2b853f9ea8da359e7d67811f0001e3c75"),
+    )]
+    fn derived_pk_has_not_changed(#[case] path: &str, #[case] expected: PublicKey) {
+        println!("{}", hex::encode(derive_public_key(path)));
+        assert_eq!(derive_public_key(path), expected);
+    }
+}

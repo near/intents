@@ -29,10 +29,12 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     where
         Self: 'a;
 
+    #[inline]
     fn schema(&self) -> Self::Schema<'_> {
         Identity
     }
 
+    #[inline]
     fn public_key(&self) -> VerifyingKey {
         *self.verifying_key()
     }
@@ -61,6 +63,7 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
 impl DerivationSchema<[u8; 32]> for Reduce<Secp256k1> {
     type Output = NonZeroScalar;
 
+    #[inline]
     fn derive_path(&self, path: [u8; 32]) -> Self::Output {
         elliptic_curve::ops::Reduce::<U256>::reduce_bytes(&path.into())
     }
@@ -69,6 +72,7 @@ impl DerivationSchema<[u8; 32]> for Reduce<Secp256k1> {
 impl DerivationSchema<[u8; 64]> for Reduce<Secp256k1> {
     type Output = NonZeroScalar;
 
+    #[inline]
     fn derive_path(&self, path: [u8; 64]) -> Self::Output {
         elliptic_curve::ops::Reduce::<U512>::reduce_bytes(&path.into())
     }
@@ -77,15 +81,13 @@ impl DerivationSchema<[u8; 64]> for Reduce<Secp256k1> {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
-    use k256::{U256, elliptic_curve::ops::Reduce};
     use rstest::rstest;
 
-    use crate::{DerivationSchema, SchemaFn, signer::tests::assert_roundtrip};
+    use crate::{DerivationSchema, signer::tests::assert_roundtrip};
 
     use super::*;
 
-    const SCHEMA: SchemaFn<fn([u8; 32]) -> NonZeroScalar> =
-        SchemaFn::new(|path| Reduce::<U256>::reduce_bytes(&path.into()));
+    const REDUCE: Reduce<Secp256k1> = Reduce::new();
 
     #[rstest]
     fn roundtrip(
@@ -105,7 +107,7 @@ mod tests {
     ) {
         let (derived_pk, (signature, recovery_id)) = assert_roundtrip(
             &SigningKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
-            SCHEMA.derive_path(tweak),
+            REDUCE.derive_path(tweak),
             &prehash,
         );
 
@@ -128,7 +130,7 @@ mod tests {
     ) {
         let (derived_pk, _signature) = assert_roundtrip(
             &SigningKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
-            SCHEMA.derive_path(tweak),
+            REDUCE.derive_path(tweak),
             &hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
         );
         assert_eq!(

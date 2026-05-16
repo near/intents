@@ -124,14 +124,17 @@ where
     where
         Self: 'a;
 
+    #[inline]
     fn schema(&self) -> Self::Schema<'_> {
         self.schema_dyn()
     }
 
+    #[inline]
     fn public_key(&self) -> C::PublicKey {
         DynDeriveSigner::<C, P>::public_key(self)
     }
 
+    #[inline]
     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
         DynDeriveSigner::<C, P>::derive_sign(self, path, msg)
     }

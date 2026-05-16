@@ -2,7 +2,7 @@ use digest::Output;
 
 use crate::DerivationSchema;
 
-/// Hashing adaptor [`DerivationSchema`]
+/// Hashing adaptor for [`DerivationSchema`]
 #[derive(Default, Clone)]
 pub struct Digest<D>(D);
 
@@ -11,6 +11,7 @@ where
     D: digest::Digest,
 {
     /// Create new with already created [`digest::Digest`] instance
+    #[inline]
     pub const fn new(digest: D) -> Self {
         Self(digest)
     }
@@ -23,6 +24,7 @@ where
 {
     type Output = Output<D>;
 
+    #[inline]
     fn derive_path(&self, path: P) -> Self::Output {
         self.0.clone().chain_update(path).finalize()
     }
