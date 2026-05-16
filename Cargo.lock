@@ -1800,6 +1800,7 @@ name = "defuse-outlayer-signer"
 version = "0.1.0"
 dependencies = [
  "defuse-kdf",
+ "digest 0.11.2",
  "hex-literal",
  "hkdf",
  "rstest",

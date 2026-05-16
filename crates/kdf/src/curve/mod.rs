@@ -3,6 +3,8 @@ pub mod ed25519;
 #[cfg(feature = "secp256k1")]
 pub mod secp256k1;
 
+use std::marker::PhantomData;
+
 use defuse_kdf_crypto::Curve;
 
 /// A [curve](Curve) with **non-hardened** public key derivation capabilities,
@@ -28,4 +30,16 @@ pub trait DerivableCurve: Curve {
     /// for given [tweak](DerivableCurve::Tweak)
     #[must_use]
     fn derive_public_key(master_pk: &Self::PublicKey, tweak: &Self::Tweak) -> Self::PublicKey;
+}
+
+/// Final-step [`DerivationSchema`](crate::DerivationSchema) for converting
+/// fixed byte arrays into a scalar [tweak](DerivableCurve::Tweak) via modular
+/// reduction.
+#[derive(Clone)]
+pub struct Reduce<C>(PhantomData<C>);
+
+impl<C> Default for Reduce<C> {
+    fn default() -> Self {
+        Self(PhantomData)
+    }
 }

@@ -1,9 +1,7 @@
 pub use defuse_kdf::secp256k1::*;
 
-use defuse_kdf::{
-    Curve, DerivationSchema, DeriveSigner,
-    secp256k1::k256::{U256, elliptic_curve},
-};
+use defuse_kdf::{Curve, DeriveSigner};
+use sha3::{Digest, Sha3_256};
 
 use crate::{DomainCurve, InMemorySigner, Schema, sealed::Sealed};
 
@@ -31,21 +29,19 @@ where
     }
 }
 
-#[derive(Default)]
-pub struct Reduce;
-
-impl DerivationSchema<[u8; 32]> for Reduce {
-    type Output = NonZeroScalar;
-
-    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
-        elliptic_curve::ops::Reduce::<U256>::reduce_bytes(&path.into())
-    }
-}
-
 impl DomainCurve for Secp256k1 {
-    const DOMAIN_SEPARATOR: &[u8] = b"outlayer/secp256k1/derive-tweak/v1";
+    type Digest = Sha3_256;
 
-    type ToTweak = Reduce;
+    fn domain_hasher() -> Sha3_256 {
+        const DOMAIN_SEPARATOR: &[u8] = b"outlayer/secp256k1/derive-tweak/v1";
+
+        thread_local! {
+            // per-thread lazily-initialized hasher with pre-processed domain separator
+            static HASHER: Sha3_256 = Sha3_256::new_with_prefix(DOMAIN_SEPARATOR);
+        }
+
+        HASHER.with(Clone::clone)
+    }
 }
 
 impl Sealed for Secp256k1 {}

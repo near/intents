@@ -1,8 +1,11 @@
 pub use defuse_kdf_crypto::secp256k1::*;
 pub use k256::{NonZeroScalar, ecdsa::SigningKey};
-use k256::{ProjectivePoint, elliptic_curve::ops::MulByGenerator};
+use k256::{
+    ProjectivePoint, U256,
+    elliptic_curve::{self, bigint::U512, ops::MulByGenerator},
+};
 
-use crate::{DerivableCurve, DeriveSigner, Identity};
+use crate::{DerivableCurve, DerivationSchema, DeriveSigner, Identity, Reduce};
 
 impl DerivableCurve for Secp256k1 {
     type Tweak = NonZeroScalar;
@@ -52,6 +55,22 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
         derived_sk
             .sign_prehash_recoverable(prehash)
             .expect("invalid derived signing key")
+    }
+}
+
+impl DerivationSchema<[u8; 32]> for Reduce<Secp256k1> {
+    type Output = NonZeroScalar;
+
+    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
+        elliptic_curve::ops::Reduce::<U256>::reduce_bytes(&path.into())
+    }
+}
+
+impl DerivationSchema<[u8; 64]> for Reduce<Secp256k1> {
+    type Output = NonZeroScalar;
+
+    fn derive_path(&self, path: [u8; 64]) -> Self::Output {
+        elliptic_curve::ops::Reduce::<U512>::reduce_bytes(&path.into())
     }
 }
 

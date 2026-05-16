@@ -6,7 +6,7 @@ pub mod ed25519;
 pub mod secp256k1;
 
 /// An ellipitc curve.
-pub trait Curve: 'static {
+pub trait Curve: Sized + 'static {
     // /// A path to derive both [public](DerivablePublicKey::derive) and
     // /// [signing](DeriveSigner::derive_sign) keys for.
     // /// Typically, it should be an output of a cryptographic hash function.

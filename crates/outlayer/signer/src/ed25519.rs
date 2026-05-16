@@ -1,6 +1,7 @@
 pub use defuse_kdf::ed25519::*;
 
-use defuse_kdf::{Curve, DerivationSchema, DeriveSigner};
+use defuse_kdf::{Curve, DeriveSigner};
+use sha3::{Digest, Sha3_256};
 
 use crate::{DomainCurve, InMemorySigner, Schema, sealed::Sealed};
 
@@ -27,28 +28,26 @@ where
     }
 }
 
-#[derive(Default)]
-pub struct FromBytesModOrder;
-
-impl DerivationSchema<[u8; 32]> for FromBytesModOrder {
-    type Output = Scalar;
-
-    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
-        Scalar::from_bytes_mod_order(path)
-    }
-}
-
 impl DomainCurve for Ed25519 {
-    const DOMAIN_SEPARATOR: &[u8] = b"outlayer/ed25519/derive-tweak/v1";
+    type Digest = Sha3_256;
 
-    type ToTweak = FromBytesModOrder;
+    fn domain_hasher() -> Sha3_256 {
+        const DOMAIN_SEPARATOR: &[u8] = b"outlayer/ed25519/derive-tweak/v1";
+
+        thread_local! {
+            // per-thread lazily-initialized hasher with pre-processed domain separator
+            static HASHER: Sha3_256 = Sha3_256::new_with_prefix(DOMAIN_SEPARATOR);
+        }
+
+        HASHER.with(Clone::clone)
+    }
 }
 
 impl Sealed for Ed25519 {}
 
 #[cfg(test)]
 mod tests {
-    use defuse_kdf::DerivationSchema;
+    use defuse_kdf::{DerivationSchema, ed25519::ed25519_dalek::SecretKey};
     use hex_literal::hex;
     use rstest::rstest;
 
@@ -92,7 +91,7 @@ mod tests {
     )]
     fn seed_derivation_has_not_changed(
         #[case] seed: &[u8],
-        #[case] expected_ed25519_sk: [u8; ed25519_dalek::SECRET_KEY_LENGTH],
+        #[case] expected_ed25519_sk: SecretKey,
     ) {
         let derived = InMemorySigner::from_seed(seed);
         assert_eq!(

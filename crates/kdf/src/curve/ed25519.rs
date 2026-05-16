@@ -7,7 +7,7 @@ use ed25519_dalek::{
     hazmat::{ExpandedSecretKey, raw_sign},
 };
 
-use crate::{DerivableCurve, DeriveSigner, Identity};
+use crate::{DerivableCurve, DerivationSchema, DeriveSigner, Identity, Reduce};
 
 impl DerivableCurve for Ed25519 {
     type Tweak = Scalar;
@@ -76,7 +76,13 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
             hash_prefix: {
                 const DOMAIN_SEPARATOR: &[u8] = b"outlayer/ed25519/derive-hash_prefix/v1";
 
-                Sha512::new_with_prefix(DOMAIN_SEPARATOR)
+                thread_local! {
+                    // per-thread lazily-initialized hasher with pre-processed domain separator
+                    static HASHER: Sha512 = Sha512::new_with_prefix(DOMAIN_SEPARATOR);
+                }
+
+                HASHER
+                    .with(Clone::clone)
                     .chain_update(self.hash_prefix)
                     .chain_update(tweak.as_bytes())
                     .finalize()[..32]
@@ -94,6 +100,22 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
         );
 
         raw_sign::<Sha512>(&derived_esk, msg, &derived_verifying_key)
+    }
+}
+
+impl DerivationSchema<[u8; 32]> for Reduce<Ed25519> {
+    type Output = Scalar;
+
+    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
+        Scalar::from_bytes_mod_order(path)
+    }
+}
+
+impl DerivationSchema<[u8; 64]> for Reduce<Ed25519> {
+    type Output = Scalar;
+
+    fn derive_path(&self, path: [u8; 64]) -> Self::Output {
+        Scalar::from_bytes_mod_order_wide(&path)
     }
 }
 

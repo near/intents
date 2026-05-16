@@ -13,8 +13,17 @@ use crate::DerivationSchema;
 /// let derived = schema.derive_path(data);
 /// assert_eq!(derived, [97, 98, 99]);
 /// ```
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct Borsh<W: WriteFinalizer = Vec<u8>>(W::Data);
+
+impl<W: WriteFinalizer> Default for Borsh<W>
+where
+    W::Data: Default,
+{
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
 
 impl<W: WriteFinalizer> Borsh<W> {
     #[inline]
