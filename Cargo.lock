@@ -2123,7 +2123,6 @@ dependencies = [
  "defuse-digest",
  "defuse-serde-utils",
  "digest 0.11.2",
- "near-sdk",
  "schemars 0.8.22",
  "serde",
  "serde_json",
