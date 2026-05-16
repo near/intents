@@ -11,32 +11,22 @@ mod p256;
 #[cfg(feature = "p256")]
 pub use self::p256::*;
 
-#[cfg_attr(
-    feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
-    derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
-    serde(bound(
-        serialize = "<A as Algorithm>::Signature: ::serde::Serialize",
-        deserialize = "<A as Algorithm>::Signature: ::serde::de::DeserializeOwned",
-    ))
-)]
-#[derive(Debug, Clone)]
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[serde(bound(
+    serialize = "<A as Algorithm>::Signature: ::serde::Serialize",
+    deserialize = "<A as Algorithm>::Signature: ::serde::de::DeserializeOwned",
+))]
 pub struct PayloadSignature<A: Algorithm + ?Sized> {
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
-    #[cfg_attr(
-        feature = "serde",
-        serde_as(
-            as = "defuse_serde_utils::base64::Base64<defuse_serde_utils::base64::UrlSafe, defuse_serde_utils::base64::Unpadded>"
-        ),
-        cfg_attr(feature = "abi", schemars(with = "String"))
-    )]
+    #[serde_as(as = "defuse_serde_utils::base64::Base64<defuse_serde_utils::base64::UrlSafe, defuse_serde_utils::base64::Unpadded>")]
+    #[cfg_attr(feature = "abi", schemars(with = "String"))]
     pub authenticator_data: Vec<u8>,
     /// Serialized [clientDataJSON](https://w3c.github.io/webauthn/#dom-authenticatorresponse-clientdatajson)
     pub client_data_json: String,
 
-    #[cfg_attr(all(feature = "serde", feature = "abi"), schemars(with = "String"))]
+    #[cfg_attr(feature = "abi", schemars(with = "String"))]
     // schemars@0.8 does not respect it's `schemars(bound = "...")`
     // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
     pub signature: A::Signature,
