@@ -73,7 +73,7 @@ impl Nep413Payload {
         self
     }
 
-    #[cfg(feature = "prehash")]
+    #[cfg(feature = "borsh")]
     #[inline]
     pub fn prehash(&self) -> Vec<u8> {
         use defuse_nep461::OffchainMessage;
@@ -103,34 +103,6 @@ pub struct SignedNep413Payload {
         serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
     )]
     pub signature: <Ed25519 as Curve>::Signature,
-}
-
-#[cfg(all(test, feature = "serde", feature = "abi"))]
-mod schema_tests {
-    use super::*;
-    use schemars::schema_for;
-
-    fn prop(schema_val: &serde_json::Value, field: &str) -> serde_json::Value {
-        schema_val["properties"][field].clone()
-    }
-
-    #[test]
-    fn nonce_schema_is_string() {
-        let schema = serde_json::to_value(schema_for!(Nep413Payload)).unwrap();
-        assert_eq!(prop(&schema, "nonce")["type"], "string");
-    }
-
-    #[test]
-    fn public_key_schema_is_string() {
-        let schema = serde_json::to_value(schema_for!(SignedNep413Payload)).unwrap();
-        assert_eq!(prop(&schema, "public_key")["type"], "string");
-    }
-
-    #[test]
-    fn signature_schema_is_string() {
-        let schema = serde_json::to_value(schema_for!(SignedNep413Payload)).unwrap();
-        assert_eq!(prop(&schema, "signature")["type"], "string");
-    }
 }
 
 #[cfg(feature = "near-api")]

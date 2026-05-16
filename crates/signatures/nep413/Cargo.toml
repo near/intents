@@ -8,7 +8,8 @@ repository.workspace = true
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
 defuse-nep461.workspace = true
-defuse-serde-utils = { workspace = true, features = ["base64"] }
+
+defuse-serde-utils = { workspace = true, features = ["base64"], optional = true }
 
 impl-tools.workspace = true
 
@@ -21,12 +22,11 @@ serde_with = { workspace = true, optional = true }
 
 [features]
 borsh = ["defuse-crypto/borsh", "dep:borsh"]
-prehash = ["borsh"]
-serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
+serde = ["defuse-crypto/serde", "dep:defuse-serde-utils", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 abi = [
   "borsh?/unstable__schema",
   "defuse-crypto/abi",
-  "defuse-serde-utils/abi",
+  "defuse-serde-utils?/abi",
   "dep:schemars",
   "serde_with?/schemars_0_8",
 ]
