@@ -9,10 +9,10 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-crypto = { workspace = true, default-features = false, optional = true }
 defuse-digest = { workspace = true, features = ["sha2"] }
-
 defuse-serde-utils = { workspace = true, features = ["base64"] }
+
+defuse-crypto = { workspace = true, default-features = false, optional = true }
 
 digest = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
