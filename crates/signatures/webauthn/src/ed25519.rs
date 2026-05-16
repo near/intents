@@ -5,7 +5,7 @@ pub use defuse_crypto::{Ed25519PublicKey, Ed25519Signature};
 #[derive(Debug, Clone)]
 pub struct Ed25519;
 
-#[cfg(any(feature = "near-contract", feature = "verify"))]
+#[cfg(feature = "near-contract")]
 impl crate::Algorithm for Ed25519 {
     type PublicKey = Ed25519PublicKey;
     type Signature = Ed25519Signature;

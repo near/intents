@@ -1,3 +1,6 @@
+use serde_with::serde_as;
+use serde::{Deserialize, Serialize};
+
 #[cfg(feature = "ed25519")]
 mod ed25519;
 #[cfg(feature = "ed25519")]
@@ -8,14 +11,16 @@ mod p256;
 #[cfg(feature = "p256")]
 pub use self::p256::*;
 
-use digest::Digest;
-
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
+    serde(bound(
+        serialize = "<A as Algorithm>::Signature: ::serde::Serialize",
+        deserialize = "<A as Algorithm>::Signature: ::serde::de::DeserializeOwned",
+    ))
 )]
 #[derive(Debug, Clone)]
 pub struct PayloadSignature<A: Algorithm + ?Sized> {
@@ -32,10 +37,11 @@ pub struct PayloadSignature<A: Algorithm + ?Sized> {
     pub client_data_json: String,
 
     #[cfg_attr(all(feature = "serde", feature = "abi"), schemars(with = "String"))]
+    // schemars@0.8 does not respect it's `schemars(bound = "...")`
+    // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
     pub signature: A::Signature,
 }
 
-#[cfg(feature = "verify")]
 impl<A: Algorithm + ?Sized> PayloadSignature<A> {
     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
     ///
@@ -48,6 +54,7 @@ impl<A: Algorithm + ?Sized> PayloadSignature<A> {
         public_key: &A::PublicKey,
         user_verification: UserVerification,
     ) -> bool {
+        use defuse_digest::Digest;
         // verify authData flags
         if self.authenticator_data.len() < 37
             || !Self::verify_flags(self.authenticator_data[32], user_verification)
@@ -71,7 +78,7 @@ impl<A: Algorithm + ?Sized> PayloadSignature<A> {
 
         // 20. Let hash be the result of computing a hash over the cData using
         // SHA-256
-        let hash: [u8; 32] = defuse_digest::Sha256::digest(self.client_data_json.as_bytes()).into();
+        let hash = defuse_digest::Sha256::digest(self.client_data_json.as_bytes());
 
         // 21. Using credentialRecord.publicKey, verify that sig is a valid
         // signature over the binary concatenation of authData and hash.
@@ -138,41 +145,28 @@ pub trait Algorithm {
 }
 
 /// For more details, refer to [WebAuthn specification](https://w3c.github.io/webauthn/#dictdef-collectedclientdata).
-#[cfg_attr(
-    feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
-    derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
-)]
-#[derive(Debug, Clone)]
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 pub struct CollectedClientData {
-    #[cfg_attr(feature = "serde", serde(rename = "type"))]
+    #[serde(rename = "type")]
     pub typ: ClientDataType,
 
-    #[cfg_attr(
-        feature = "serde",
-        serde_as(
-            as = "defuse_serde_utils::base64::Base64<defuse_serde_utils::base64::UrlSafe, defuse_serde_utils::base64::Unpadded>"
-        )
-    )]
+    #[serde_as( as = "defuse_serde_utils::base64::Base64<defuse_serde_utils::base64::UrlSafe, defuse_serde_utils::base64::Unpadded>")]
     pub challenge: Vec<u8>,
 
     pub origin: String,
 }
 
-#[cfg_attr(
-    feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
-)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[serde_as]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 pub enum ClientDataType {
     /// Serializes to the string `"webauthn.create"`
-    #[cfg_attr(feature = "serde", serde(rename = "webauthn.create"))]
+    #[serde(rename = "webauthn.create")]
     Create,
 
     /// Serializes to the string `"webauthn.get"`
-    #[cfg_attr(feature = "serde", serde(rename = "webauthn.get"))]
+    #[serde(rename = "webauthn.get")]
     Get,
 }
