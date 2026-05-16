@@ -1,21 +1,21 @@
 pub use defuse_kdf::secp256k1::*;
 
-use defuse_kdf::{Curve, DerivationSchema, DeriveSigner, Reduce};
+use defuse_kdf::{Curve, Schema, DeriveSigner, Reduce};
 use sha3::{Digest, Sha3_256};
 
-use crate::{InMemorySigner, Schema};
+use crate::{InMemorySigner, CurveSchema};
 
 impl<P> DeriveSigner<Secp256k1, P> for InMemorySigner
 where
     P: AsRef<[u8]>,
 {
     type Schema<'a>
-        = Schema<Secp256k1>
+        = CurveSchema<Secp256k1>
     where
         Self: 'a;
 
     fn schema(&self) -> Self::Schema<'_> {
-        Schema::default()
+        CurveSchema::default()
     }
 
     fn public_key(&self) -> <Secp256k1 as Curve>::PublicKey {
@@ -29,7 +29,7 @@ where
     }
 }
 
-impl<P> DerivationSchema<P> for Schema<Secp256k1>
+impl<P> Schema<P> for CurveSchema<Secp256k1>
 where
     P: AsRef<[u8]>,
 {
@@ -55,7 +55,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use defuse_kdf::DerivationSchema;
+    use defuse_kdf::Schema;
     use hex_literal::hex;
     use rstest::rstest;
 
@@ -78,7 +78,7 @@ mod tests {
         #[case] path: impl AsRef<[u8]>,
         #[case] expected_tweak: [u8; 32],
     ) {
-        let got = Schema::<Secp256k1>::default().derive_path(path);
+        let got = CurveSchema::<Secp256k1>::default().derive_path(path);
 
         assert_eq!(*got.to_bytes(), expected_tweak, "derived tweak has changed");
     }

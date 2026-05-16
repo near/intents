@@ -2,14 +2,14 @@ use borsh::{BorshSerialize, io};
 #[cfg(feature = "digest")]
 pub use digest_io::IoWrapper;
 
-use crate::DerivationSchema;
+use crate::Schema;
 
-/// [Borsh](borsh)-serialization adapter for [`DerivationSchema`]
+/// [Borsh](borsh)-serialization adapter for [`Schema`]
 ///
 /// # Example
 ///
 /// ```rust
-/// # use defuse_kdf::{borsh::Borsh, DerivationSchema};
+/// # use defuse_kdf::{borsh::Borsh, Schema};
 /// let schema = Borsh::<Vec<u8>>::default();
 /// let data = b"abc";
 /// let derived = schema.derive_path(data);
@@ -35,7 +35,7 @@ impl<W: WriteFinalizer> Borsh<W> {
     }
 }
 
-impl<P, W> DerivationSchema<P> for Borsh<W>
+impl<P, W> Schema<P> for Borsh<W>
 where
     P: BorshSerialize,
     W: WriteFinalizer,

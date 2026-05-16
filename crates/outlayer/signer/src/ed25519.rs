@@ -1,21 +1,21 @@
 pub use defuse_kdf::ed25519::*;
 
-use defuse_kdf::{Curve, DerivationSchema, DeriveSigner, Reduce};
+use defuse_kdf::{Curve, DeriveSigner, Reduce, Schema};
 use sha3::{Digest, Sha3_256};
 
-use crate::{InMemorySigner, Schema};
+use crate::{CurveSchema, InMemorySigner};
 
 impl<P> DeriveSigner<Ed25519, P> for InMemorySigner
 where
     P: AsRef<[u8]>,
 {
     type Schema<'a>
-        = Schema<Ed25519>
+        = CurveSchema<Ed25519>
     where
         Self: 'a;
 
     fn schema(&self) -> Self::Schema<'_> {
-        Schema::default()
+        CurveSchema::default()
     }
 
     fn public_key(&self) -> <Ed25519 as Curve>::PublicKey {
@@ -28,7 +28,7 @@ where
     }
 }
 
-impl<P> DerivationSchema<P> for Schema<Ed25519>
+impl<P> Schema<P> for CurveSchema<Ed25519>
 where
     P: AsRef<[u8]>,
 {
@@ -54,7 +54,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use defuse_kdf::{DerivationSchema, ed25519::ed25519_dalek::SecretKey};
+    use defuse_kdf::{Schema, ed25519::ed25519_dalek::SecretKey};
     use hex_literal::hex;
     use rstest::rstest;
 
@@ -77,7 +77,7 @@ mod tests {
         #[case] path: impl AsRef<[u8]>,
         #[case] expected_tweak: [u8; 32],
     ) {
-        let got = Schema::<Ed25519>::default().derive_path(path);
+        let got = CurveSchema::<Ed25519>::default().derive_path(path);
 
         assert_eq!(got.to_bytes(), expected_tweak, "derived tweak has changed");
     }

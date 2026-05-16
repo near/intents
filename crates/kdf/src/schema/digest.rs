@@ -1,8 +1,8 @@
 use digest::Output;
 
-use crate::DerivationSchema;
+use crate::Schema;
 
-/// Hashing adaptor for [`DerivationSchema`]
+/// Hashing adaptor for [`Schema`]
 #[derive(Default, Clone)]
 pub struct Digest<D>(D);
 
@@ -17,7 +17,7 @@ where
     }
 }
 
-impl<D, P> DerivationSchema<P> for Digest<D>
+impl<D, P> Schema<P> for Digest<D>
 where
     D: digest::Digest + Clone,
     P: AsRef<[u8]>,

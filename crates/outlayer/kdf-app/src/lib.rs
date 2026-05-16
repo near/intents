@@ -1,12 +1,12 @@
 use borsh::BorshSerialize;
 use defuse_kdf::{
-    DerivationSchema,
+    Schema,
     borsh::{Borsh, IoWrapper},
 };
 use defuse_outlayer_primitives::AppId;
 use sha3::{Digest, Sha3_256};
 
-/// [`DerivationSchema`] for Outlayer applications
+/// [`Schema`] for Outlayer applications
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct AppDerivation<'a>(AppId<'a>);
 
@@ -30,7 +30,7 @@ struct AppDerivationPath<'a> {
     pub path: &'a str,
 }
 
-impl<'a, P> DerivationSchema<P> for AppDerivation<'a>
+impl<'a, P> Schema<P> for AppDerivation<'a>
 where
     P: AsRef<str>,
 {

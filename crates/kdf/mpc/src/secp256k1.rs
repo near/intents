@@ -17,7 +17,7 @@ impl Sealed for Secp256k1 {}
 #[cfg(test)]
 mod tests {
     use defuse_kdf::{
-        DerivableCurve, DerivationSchema,
+        DerivableCurve, Schema,
         secp256k1::{VerifyingKey, k256::EncodedPoint},
     };
     use hex_literal::hex;

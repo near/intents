@@ -45,17 +45,17 @@ impl InMemorySigner {
     }
 }
 
-/// [`DerivationSchema`](defuse_kdf::DerivationSchema) used by [`InMemorySigner`]
+/// [`Schema`](defuse_kdf::Schema) used by [`InMemorySigner`]
 #[derive(Copy)]
-pub struct Schema<C>(PhantomData<C>);
+pub struct CurveSchema<C>(PhantomData<C>);
 
-impl<C> Default for Schema<C> {
+impl<C> Default for CurveSchema<C> {
     fn default() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<C> Clone for Schema<C> {
+impl<C> Clone for CurveSchema<C> {
     fn clone(&self) -> Self {
         Self(PhantomData)
     }

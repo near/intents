@@ -5,7 +5,7 @@ use k256::{
     elliptic_curve::{self, bigint::U512, ops::MulByGenerator},
 };
 
-use crate::{DerivableCurve, DerivationSchema, DeriveSigner, Identity, Reduce};
+use crate::{DerivableCurve, Schema, DeriveSigner, Identity, Reduce};
 
 impl DerivableCurve for Secp256k1 {
     type Tweak = NonZeroScalar;
@@ -60,7 +60,7 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     }
 }
 
-impl DerivationSchema<[u8; 32]> for Reduce<Secp256k1> {
+impl Schema<[u8; 32]> for Reduce<Secp256k1> {
     type Output = NonZeroScalar;
 
     #[inline]
@@ -69,7 +69,7 @@ impl DerivationSchema<[u8; 32]> for Reduce<Secp256k1> {
     }
 }
 
-impl DerivationSchema<[u8; 64]> for Reduce<Secp256k1> {
+impl Schema<[u8; 64]> for Reduce<Secp256k1> {
     type Output = NonZeroScalar;
 
     #[inline]
@@ -83,7 +83,7 @@ mod tests {
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::{DerivationSchema, signer::tests::assert_roundtrip};
+    use crate::{Schema, signer::tests::assert_roundtrip};
 
     use super::*;
 

@@ -6,8 +6,8 @@ use std::{marker::PhantomData, sync::Arc};
 use defuse_outlayer_kdf_app::AppDerivation;
 
 use defuse_kdf::{
-    DerivableCurve, DerivationSchema, DeriveExt, DeriveSigner, DynDeriveSigner, Map,
-    ed25519::Ed25519, secp256k1::Secp256k1,
+    BoxSchema, DerivableCurve, DeriveExt, DeriveSigner, DynDeriveSigner, Map, ed25519::Ed25519,
+    secp256k1::Secp256k1,
 };
 use wasmtime::component::{HasData, Linker};
 
@@ -60,7 +60,7 @@ where
     Self: DynDeriveSigner<C, P>,
 {
     type Schema<'a>
-        = Box<dyn DerivationSchema<P, Output = C::Tweak> + 'a>
+        = BoxSchema<'a, P, C::Tweak>
     where
         Self: 'a;
 

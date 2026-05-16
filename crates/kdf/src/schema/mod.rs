@@ -12,15 +12,15 @@ use impl_tools::autoimpl;
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
 /// A generic closure that can used for [tweak](crate::DerivableCurve::Tweak)
 /// derivation and its intermediary steps.
-pub trait DerivationSchema<P> {
-    /// [Derivation](DerivationSchema::derive_path) output.
+pub trait Schema<P> {
+    /// [Derivation](Schema::derive_path) output.
     type Output;
 
     /// Derive output for given `path`.
     fn derive_path(&self, path: P) -> Self::Output;
 }
 
-/// Helper trait with extensions for [`DerivationSchema`] and
+/// Helper trait with extensions for [`Schema`] and
 /// [`crate::DeriveSigner`]
 pub trait DeriveExt {
     #[inline]
@@ -39,16 +39,16 @@ pub trait DeriveExt {
 impl<S> DeriveExt for S {}
 
 #[derive(Default, Clone, Copy)]
-/// No-op identity adator for [`DerivationSchema`].
+/// No-op identity adator for [`Schema`].
 ///
 /// ```rust
-/// use defuse_kdf::{DerivationSchema, Identity};
+/// use defuse_kdf::{Schema, Identity};
 ///
 /// assert_eq!(Identity.derive_path(42), 42);
 /// ```
 pub struct Identity;
 
-impl<T> DerivationSchema<T> for Identity {
+impl<T> Schema<T> for Identity {
     type Output = T;
 
     #[inline]
@@ -58,10 +58,10 @@ impl<T> DerivationSchema<T> for Identity {
 }
 
 #[derive(Default, Clone, Copy)]
-/// Mapping adaptor for [`DerivationSchema`] and [`crate::DeriveSigner`].
+/// Mapping adaptor for [`Schema`] and [`crate::DeriveSigner`].
 ///
 /// ```rust
-/// use defuse_kdf::{DeriveExt, DerivationSchema, SchemaFn};
+/// use defuse_kdf::{DeriveExt, Schema, SchemaFn};
 ///
 /// let schema_a = SchemaFn::new(|v| v * 2);
 /// let schema_b = SchemaFn::new(|v| v + 1);
@@ -72,10 +72,10 @@ impl<T> DerivationSchema<T> for Identity {
 /// ```
 pub struct Map<A, B>(pub(crate) A, pub(crate) B);
 
-impl<P, A, B> DerivationSchema<P> for Map<A, B>
+impl<P, A, B> Schema<P> for Map<A, B>
 where
-    A: DerivationSchema<P>,
-    B: DerivationSchema<A::Output>,
+    A: Schema<P>,
+    B: Schema<A::Output>,
 {
     type Output = B::Output;
 
@@ -85,10 +85,10 @@ where
     }
 }
 
-/// Adaptor for creating [`DerivationSchema`] from a closure.
+/// Adaptor for creating [`Schema`] from a closure.
 ///
 /// ```rust
-/// use defuse_kdf::{DerivationSchema, SchemaFn};
+/// use defuse_kdf::{Schema, SchemaFn};
 ///
 /// let schema = SchemaFn::new(|v| v + 2);
 ///
@@ -104,7 +104,7 @@ impl<F> SchemaFn<F> {
     }
 }
 
-impl<P, F, O> DerivationSchema<P> for SchemaFn<F>
+impl<P, F, O> Schema<P> for SchemaFn<F>
 where
     F: Fn(P) -> O,
 {
@@ -115,3 +115,5 @@ where
         (self.0)(path)
     }
 }
+
+pub type BoxSchema<'a, P, O> = Box<dyn Schema<P, Output = O> + 'a>;

@@ -2,7 +2,7 @@ use std::{borrow::Cow, rc::Rc, sync::Arc};
 
 use impl_tools::autoimpl;
 
-use crate::{DerivableCurve, DerivationSchema, DeriveExt, Map};
+use crate::{BoxSchema, DerivableCurve, DeriveExt, Map, Schema};
 
 #[autoimpl(for<T: trait + ?Sized + ToOwned> Cow<'_, T>)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
@@ -10,8 +10,8 @@ pub trait DeriveSigner<C, P>
 where
     C: DerivableCurve,
 {
-    /// [`DerivationSchema`] implemented by [`.derive_sign()`](DeriveSigner::derive_sign).
-    type Schema<'a>: DerivationSchema<P, Output = C::Tweak>
+    /// [`Schema`] implemented by [`.derive_sign()`](DeriveSigner::derive_sign).
+    type Schema<'a>: Schema<P, Output = C::Tweak>
     where
         Self: 'a;
 
@@ -53,7 +53,7 @@ where
 impl<C, P, D, S> DeriveSigner<C, P> for Map<D, S>
 where
     C: DerivableCurve,
-    D: DerivationSchema<P>,
+    D: Schema<P>,
     S: DeriveSigner<C, D::Output>,
 {
     type Schema<'a>
@@ -82,7 +82,7 @@ pub trait DynDeriveSigner<C, P>
 where
     C: DerivableCurve,
 {
-    fn schema_dyn<'a>(&'a self) -> Box<dyn DerivationSchema<P, Output = C::Tweak> + 'a>
+    fn schema_dyn<'a>(&'a self) -> BoxSchema<'a, P, C::Tweak>
     where
         P: 'a;
 
@@ -97,7 +97,7 @@ where
     S: DeriveSigner<C, P>,
 {
     #[inline]
-    fn schema_dyn<'a>(&'a self) -> Box<dyn DerivationSchema<P, Output = C::Tweak> + 'a>
+    fn schema_dyn<'a>(&'a self) -> BoxSchema<'a, P, C::Tweak>
     where
         P: 'a,
     {
@@ -120,7 +120,7 @@ where
     C: DerivableCurve,
 {
     type Schema<'a>
-        = Box<dyn DerivationSchema<P, Output = C::Tweak> + 'a>
+        = BoxSchema<'a, P, C::Tweak>
     where
         Self: 'a;
 

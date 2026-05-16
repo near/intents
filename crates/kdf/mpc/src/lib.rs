@@ -5,7 +5,7 @@ mod secp256k1;
 
 use std::{borrow::Cow, marker::PhantomData};
 
-use defuse_kdf::{DerivableCurve, DerivationSchema};
+use defuse_kdf::{DerivableCurve, Schema};
 use near_account_id::AccountIdRef;
 use near_mpc_crypto_types::{Tweak, kdf::derive_tweak};
 
@@ -23,7 +23,7 @@ impl<'a, C> NearMpcDerivation<'a, C> {
     }
 }
 
-impl<C, P> DerivationSchema<P> for NearMpcDerivation<'_, C>
+impl<C, P> Schema<P> for NearMpcDerivation<'_, C>
 where
     C: NearMpcCurve,
     P: AsRef<str>,

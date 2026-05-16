@@ -10,7 +10,6 @@ thread_local! {
             Context {
                 app_id: AppId::EXAMPLE,
             },
-            // TODO
             Arc::new(InMemorySigner::from_seed(TEST_SEED)),
         ));
 }

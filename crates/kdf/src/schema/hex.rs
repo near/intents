@@ -1,10 +1,10 @@
-use crate::DerivationSchema;
+use crate::Schema;
 
-/// Hex-encoding adaptor for [`DerivationSchema`]
+/// Hex-encoding adaptor for [`Schema`]
 #[derive(Default, Clone)]
 pub struct Hex;
 
-impl<P> DerivationSchema<P> for Hex
+impl<P> Schema<P> for Hex
 where
     P: AsRef<[u8]>,
 {

@@ -23,7 +23,7 @@ pub trait DerivableCurve: Curve {
     /// [signing](crate::DeriveSigner::derive_sign) keys for.
     ///
     /// Typically, it should be derived from an output of a cryptographic
-    /// hash function. See [`DerivationSchema`](crate::DerivationSchema).
+    /// hash function. See [`Schema`](crate::Schema).
     type Tweak;
 
     /// Derive public key from [master](crate::DeriveSigner::public_key)
@@ -32,7 +32,7 @@ pub trait DerivableCurve: Curve {
     fn derive_public_key(master_pk: &Self::PublicKey, tweak: &Self::Tweak) -> Self::PublicKey;
 }
 
-/// Final-step [`DerivationSchema`](crate::DerivationSchema) for converting
+/// Final-step [`Schema`](crate::Schema) for converting
 /// fixed byte arrays into a scalar [tweak](DerivableCurve::Tweak) via modular
 /// reduction.
 #[derive(Clone)]

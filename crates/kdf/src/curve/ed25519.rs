@@ -7,7 +7,7 @@ use ed25519_dalek::{
     hazmat::{ExpandedSecretKey, raw_sign},
 };
 
-use crate::{DerivableCurve, DerivationSchema, DeriveSigner, Identity, Reduce};
+use crate::{DerivableCurve, DeriveSigner, Identity, Reduce, Schema};
 
 impl DerivableCurve for Ed25519 {
     type Tweak = Scalar;
@@ -107,7 +107,7 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
     }
 }
 
-impl DerivationSchema<[u8; 32]> for Reduce<Ed25519> {
+impl Schema<[u8; 32]> for Reduce<Ed25519> {
     type Output = Scalar;
 
     #[inline]
@@ -116,7 +116,7 @@ impl DerivationSchema<[u8; 32]> for Reduce<Ed25519> {
     }
 }
 
-impl DerivationSchema<[u8; 64]> for Reduce<Ed25519> {
+impl Schema<[u8; 64]> for Reduce<Ed25519> {
     type Output = Scalar;
 
     #[inline]
@@ -131,7 +131,7 @@ mod tests {
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::{DerivationSchema, signer::tests::assert_roundtrip};
+    use crate::{Schema, signer::tests::assert_roundtrip};
 
     use super::*;
 

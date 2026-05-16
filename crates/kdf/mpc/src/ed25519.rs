@@ -15,7 +15,7 @@ impl Sealed for Ed25519 {}
 #[cfg(test)]
 mod tests {
     use defuse_kdf::{
-        DerivableCurve, DerivationSchema,
+        DerivableCurve, Schema,
         ed25519::{VerifyingKey, ed25519_dalek},
     };
     use hex_literal::hex;
