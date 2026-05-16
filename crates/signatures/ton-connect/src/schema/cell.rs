@@ -75,7 +75,7 @@ where
 }
 
 impl PayloadSchema for CellPayload {
-    fn hash_with_context<D: defuse_digest::Digest<OutputSize = defuse_digest::U32>>(
+    fn hash_with_context(
         &self,
         context: TonConnectPayloadContext,
     ) -> Result<defuse_crypto::CryptoHash, StringError> {

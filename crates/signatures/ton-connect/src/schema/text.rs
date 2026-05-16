@@ -18,10 +18,10 @@ pub struct TextPayload {
 }
 
 impl PayloadSchema for TextPayload {
-    fn hash_with_context<D: defuse_digest::Digest<OutputSize = defuse_digest::U32>>(
+    fn hash_with_context(
         &self,
         context: TonConnectPayloadContext,
     ) -> Result<defuse_crypto::CryptoHash, StringError> {
-        context.create_payload_hash::<D>(b"txt", self.as_bytes())
+        context.create_payload_hash(b"txt", self.as_bytes())
     }
 }

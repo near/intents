@@ -20,11 +20,12 @@ pub struct TonConnectPayloadContext<'a> {
 impl TonConnectPayloadContext<'_> {
     // See https://docs.tonconsole.com/academy/sign-data#how-the-signature-is-built
     #[cfg(any(feature = "binary", feature = "text"))]
-    pub fn create_payload_hash<D: defuse_digest::Digest<OutputSize = defuse_digest::U32>>(
+    pub fn create_payload_hash(
         &self,
         payload_prefix: &[u8],
         payload: &[u8],
     ) -> Result<defuse_crypto::CryptoHash, StringError> {
+        use defuse_digest::Digest;
         let domain_len = u32::try_from(self.domain.len())
             .map_err(|_| tlb_ton::Error::custom("domain: overflow"))?;
         let payload_len = u32::try_from(payload.len())
@@ -44,12 +45,12 @@ impl TonConnectPayloadContext<'_> {
         ]
         .concat();
 
-        Ok(Into::<[u8; 32]>::into(D::digest(&bytes)))
+        Ok(defuse_digest::Sha256::digest(&bytes).into())
     }
 }
 
 pub trait PayloadSchema {
-    fn hash_with_context<D: defuse_digest::Digest<OutputSize = defuse_digest::U32>>(
+    fn hash_with_context(
         &self,
         context: TonConnectPayloadContext,
     ) -> Result<defuse_crypto::CryptoHash, StringError>;
@@ -94,17 +95,17 @@ impl TonConnectPayloadSchema {
 }
 
 impl PayloadSchema for TonConnectPayloadSchema {
-    fn hash_with_context<D: defuse_digest::Digest<OutputSize = defuse_digest::U32>>(
+    fn hash_with_context(
         &self,
         context: TonConnectPayloadContext,
     ) -> Result<defuse_crypto::CryptoHash, StringError> {
         match self {
             #[cfg(feature = "text")]
-            Self::Text(payload) => payload.hash_with_context::<D>(context),
+            Self::Text(payload) => payload.hash_with_context(context),
             #[cfg(feature = "binary")]
-            Self::Binary(payload) => payload.hash_with_context::<D>(context),
+            Self::Binary(payload) => payload.hash_with_context(context),
             #[cfg(feature = "cell")]
-            Self::Cell(payload) => payload.hash_with_context::<D>(context),
+            Self::Cell(payload) => payload.hash_with_context(context),
         }
     }
 }

@@ -21,10 +21,10 @@ pub struct BinaryPayload {
 }
 
 impl PayloadSchema for BinaryPayload {
-    fn hash_with_context<D: defuse_digest::Digest<OutputSize = defuse_digest::U32>>(
+    fn hash_with_context(
         &self,
         context: TonConnectPayloadContext,
     ) -> Result<defuse_crypto::CryptoHash, StringError> {
-        context.create_payload_hash::<D>(b"bin", self.as_slice())
+        context.create_payload_hash(b"bin", self.as_slice())
     }
 }
