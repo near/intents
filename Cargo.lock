@@ -2119,7 +2119,6 @@ dependencies = [
 name = "defuse-webauthn"
 version = "0.1.0"
 dependencies = [
- "arbitrary",
  "cfg_eval",
  "defuse-crypto",
  "defuse-digest",

@@ -33,7 +33,6 @@ abi = [
 ]
 arbitrary = ["dep:arbitrary", "tlb-ton/arbitrary"]
 binary = []
-borsh = ["defuse-crypto/borsh"]
 cell = []
 near-contract = ["defuse-crypto/near-contract", "defuse-digest/near-contract"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
@@ -41,8 +40,9 @@ text = []
 
 [dev-dependencies]
 defuse-core.workspace = true
+defuse-crypto = { workspace = true, features = ["near-contract"] }
 defuse-test-utils.workspace = true
-near-sdk = { workspace = true, features = ["non-contract-usage"] }
+near-sdk = { workspace = true, features = ["non-contract-usage", "unit-testing"] }
 
 arbitrary.workspace = true
 hex-literal.workspace = true

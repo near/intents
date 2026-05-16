@@ -235,13 +235,19 @@ mod tests {
     }
 
     #[cfg(feature = "serde")]
-    fn verify_ok(signed: &SignedTonConnectPayload, _ok: bool) {
+    fn verify_ok(signed: &SignedTonConnectPayload, ok: bool) {
         let serialized = serde_json::to_string_pretty(signed).unwrap();
         println!("{}", &serialized);
         let deserialized: SignedTonConnectPayload = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(&deserialized, signed);
-        //TODO: fix
-        // assert_eq!(SignedTonConnectPayload::verify(deserialized), ok.then_some(deserialized.public_key));
+        assert_eq!(
+            <Ed25519 as defuse_crypto::VerifiableCurve>::verify(
+                &deserialized.signature,
+                &deserialized.hash(),
+                &deserialized.public_key,
+            ),
+            ok.then_some(deserialized.public_key)
+        );
     }
 }

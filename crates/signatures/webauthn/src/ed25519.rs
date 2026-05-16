@@ -2,7 +2,6 @@ pub use defuse_crypto::{Ed25519PublicKey, Ed25519Signature};
 
 /// [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
 /// ed25519 curve
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[derive(Debug, Clone)]
 pub struct Ed25519;
 

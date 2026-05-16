@@ -12,7 +12,6 @@ workspace = true
 defuse-crypto = { workspace = true, default-features = false }
 defuse-digest = { workspace = true, features = ["sha2"] }
 
-arbitrary = { workspace = true, optional = true }
 cfg_eval = { workspace = true, optional = true }
 defuse-serde-utils = { workspace = true, features = ["base64"], optional = true }
 digest = { workspace = true }
@@ -30,7 +29,6 @@ abi = [
   "dep:schemars",
   "serde_with?/schemars_0_8",
 ]
-arbitrary = ["defuse-crypto/arbitrary", "dep:arbitrary"]
 borsh = ["defuse-crypto/borsh"]
 serde = [
   "defuse-crypto/serde",
@@ -47,5 +45,4 @@ ed25519 = ["defuse-crypto/ed25519", "defuse-crypto/near-contract"]
 p256 = ["defuse-crypto/p256"]
 
 [dev-dependencies]
-arbitrary.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
