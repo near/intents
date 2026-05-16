@@ -1,8 +1,8 @@
 pub use defuse_outlayer_kdf::secp256k1::*;
 
 use defuse_outlayer_kdf::{
-    Curve, DeriveSigner,
-    secp256k1::k256::{U256, elliptic_curve::ops::Reduce},
+    Curve, DerivationSchema, DeriveSigner,
+    secp256k1::k256::{U256, elliptic_curve},
 };
 
 use crate::{DomainCurve, InMemorySigner, Schema, sealed::Sealed};
@@ -31,12 +31,21 @@ where
     }
 }
 
+#[derive(Default)]
+pub struct Reduce;
+
+impl DerivationSchema<[u8; 32]> for Reduce {
+    type Output = NonZeroScalar;
+
+    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
+        elliptic_curve::ops::Reduce::<U256>::reduce_bytes(&path.into())
+    }
+}
+
 impl DomainCurve for Secp256k1 {
     const DOMAIN_SEPARATOR: &[u8] = b"outlayer/secp256k1/derive-tweak/v1";
 
-    fn tweak(path: [u8; 32]) -> Self::Tweak {
-        Reduce::<U256>::reduce_bytes(&path.into())
-    }
+    type ToTweak = Reduce;
 }
 
 impl Sealed for Secp256k1 {}

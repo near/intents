@@ -10,20 +10,37 @@ pub trait DeriveSigner<C, P>
 where
     C: DerivableCurve,
 {
+    /// [`DerivationSchema`] implemented by [`.derive_sign()`](DeriveSigner::derive_sign).
     type Schema<'a>: DerivationSchema<P, Output = C::Tweak>
     where
         Self: 'a;
 
+    // TODO
+    /// Construct [`Schema`](Self::Schema) for public key derivation.
     fn schema(&self) -> Self::Schema<'_>;
 
+    // TODO
+    /// Returns []
     fn public_key(&self) -> C::PublicKey;
 
+    // TODO
+    /// Sign given message with a secret key **internally** derived
+    /// for given `path` according to [`Self::Schema`](DeriveSigner::Schema).
+    ///
+    /// NOTE: the returned signatures might be non-deterministic, i.e.
+    /// implementations MAY return different signatures for the same
+    /// `path` and `msg`.
     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature;
 
+    /// Helper method to derive [tweak](DerivableCurve::Tweak) for given `path`
+    /// according to [`Schema`](DeriveSigner::Schema)
     fn derive_tweak(&self, path: P) -> C::Tweak {
         self.schema().derive_path(path)
     }
 
+    /// Helper method to [derive](DerivableCurve::derive_public_key) public
+    /// key from [master](DeriveSigner::public_key) for given `path` according
+    /// to [`Schema`](DeriveSigner::Schema)
     fn derive_public_key(&self, path: P) -> C::PublicKey {
         let master_pk = self.public_key();
         let tweak = self.derive_tweak(path);

@@ -5,15 +5,18 @@ pub mod digest;
 #[cfg(feature = "hex")]
 pub mod hex;
 
-use std::{borrow::Cow, rc::Rc, sync::Arc};
+use std::{rc::Rc, sync::Arc};
 
 use impl_tools::autoimpl;
 
-#[autoimpl(for<T: trait + ?Sized + ToOwned> Cow<'_, T>)]
+/// A generic closure used for [tweak](crate::DerivableCurve::Tweak)
+/// derivation or its intermediary steps.
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
 pub trait DerivationSchema<P> {
+    /// [Derivation](DerivationSchema::derive_path) output.
     type Output;
 
+    /// Derive output from given `path`.
     fn derive_path(&self, path: P) -> Self::Output;
 }
 

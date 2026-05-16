@@ -9,6 +9,7 @@ use defuse_outlayer_kdf::{DerivableCurve, DerivationSchema};
 use hkdf::Hkdf;
 use sha3::{Digest, Sha3_256, Sha3_512};
 
+// TODO: docs
 #[cfg_attr(feature = "zeroize", derive(::zeroize::ZeroizeOnDrop))]
 #[derive(Clone, PartialEq, Eq)]
 pub struct InMemorySigner {
@@ -19,6 +20,7 @@ pub struct InMemorySigner {
 impl InMemorySigner {
     const HKDF_SEED_SALT: &'static [u8] = b"outlayer v0.1.0 signer seed:";
 
+    // TODO: features
     const HKDF_INFO_ED25519_ROOT_SK: &'static [u8] = b"ed25519/root_sk";
     const HKDF_INFO_SECP256K1_ROOT_SK: &'static [u8] = b"secp256k1/root_sk";
 
@@ -47,6 +49,7 @@ impl InMemorySigner {
     }
 }
 
+// TODO: docs
 pub struct Schema<C>(PhantomData<C>);
 
 impl<C, P> DerivationSchema<P> for Schema<C>
@@ -62,7 +65,7 @@ where
             .finalize()
             .into();
 
-        C::tweak(path)
+        C::ToTweak::default().derive_path(path)
     }
 }
 
@@ -72,11 +75,13 @@ impl<C> Default for Schema<C> {
     }
 }
 
+// TODO: docs
 pub trait DomainCurve: DerivableCurve + sealed::Sealed {
     /// Domain separator to avoid algebraic relations between derived keys
     const DOMAIN_SEPARATOR: &[u8];
 
-    fn tweak(path: [u8; 32]) -> Self::Tweak;
+    ///
+    type ToTweak: DerivationSchema<[u8; 32], Output = Self::Tweak> + Default;
 }
 
 mod sealed {

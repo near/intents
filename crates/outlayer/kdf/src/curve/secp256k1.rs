@@ -12,9 +12,9 @@ impl DerivableCurve for Secp256k1 {
         let derived_point =
             ProjectivePoint::from(master_pk.as_affine()) + ProjectivePoint::mul_by_generator(tweak);
 
-        // `PublicKey::from_affine` rejects the identity point for us.
-        // With a random `tweak`, `derived_point == 0` iff `tweak == -root_sk`,
-        // which happens with probability ≈ 2^-256 — treat as unreachable.
+        // `VerifyingKey::from_affine` rejects the identity point for us.
+        // With a random `tweak`, `derived_point == 0` iff `tweak == -master_sk`,
+        // which happens with probability of `2^-256` — treat as unreachable.
         VerifyingKey::from_affine(derived_point.to_affine())
             .expect("derived public key is the point at infinity")
     }

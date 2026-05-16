@@ -1,6 +1,6 @@
 pub use defuse_outlayer_kdf::ed25519::*;
 
-use defuse_outlayer_kdf::{Curve, DeriveSigner};
+use defuse_outlayer_kdf::{Curve, DerivationSchema, DeriveSigner};
 
 use crate::{DomainCurve, InMemorySigner, Schema, sealed::Sealed};
 
@@ -27,12 +27,21 @@ where
     }
 }
 
+#[derive(Default)]
+pub struct FromBytesModOrder;
+
+impl DerivationSchema<[u8; 32]> for FromBytesModOrder {
+    type Output = Scalar;
+
+    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
+        Scalar::from_bytes_mod_order(path)
+    }
+}
+
 impl DomainCurve for Ed25519 {
     const DOMAIN_SEPARATOR: &[u8] = b"outlayer/ed25519/derive-tweak/v1";
 
-    fn tweak(path: [u8; 32]) -> Self::Tweak {
-        Scalar::from_bytes_mod_order(path)
-    }
+    type ToTweak = FromBytesModOrder;
 }
 
 impl Sealed for Ed25519 {}

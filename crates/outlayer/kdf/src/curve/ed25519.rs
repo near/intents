@@ -16,6 +16,8 @@ impl DerivableCurve for Ed25519 {
         // pk' <- pk + G * tweak
         let derived_point = master_pk.to_edwards() + EdwardsPoint::mul_base(&tweak);
 
+        // TODO: reject derived_point.is_torsion_free() || derived_point.is_small_order()?
+
         VerifyingKey::from(derived_point)
     }
 }
@@ -43,6 +45,7 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
             "master public key mismatch",
         );
 
+        // delegate signing to expanded secret key
         esk.derive_sign(tweak, msg)
     }
 }
@@ -93,100 +96,6 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
         raw_sign::<Sha512>(&derived_esk, msg, &derived_verifying_key)
     }
 }
-
-// impl AdditiveDerivationScheme<Ed25519, [u8; 32]> for Additive {
-//     fn derive_public_key(master_pk: &VerifyingKey, path: &[u8; 32]) -> VerifyingKey {
-//         // TODO: domain-separation hash
-//         let tweak = Scalar::from_bytes_mod_order(*path);
-
-//         // pk' <- pk + G * tweak
-//         let derived_point = master_pk.to_edwards() + EdwardsPoint::mul_base(&tweak);
-
-//         VerifyingKey::from(derived_point)
-//     }
-// }
-
-// impl PublicKeyDerivationScheme<[u8; 32]> for Ed25519AdditiveDerivation {
-//     type Curve = Ed25519;
-
-//     fn derive_public_key(master_pk: &VerifyingKey, path: &[u8; 32]) -> VerifyingKey {
-//         // TODO: domain-separation hash
-//         let tweak = Self::tweak(*path);
-
-//         // pk' <- pk + G * tweak
-//         let derived_point = master_pk.to_edwards() + EdwardsPoint::mul_base(&tweak);
-
-//         VerifyingKey::from(derived_point)
-//     }
-// }
-
-// impl DerivablePublicKey<Ed25519Derivation> for VerifyingKey {
-//     fn derive_from_tweak(&self, tweak: &<Ed25519Derivation as DerivationScheme>::Tweak) -> Self {
-//         todo!()
-//     }
-
-//     // fn derive(&self, path: &<Ed25519 as DerivableCurve>::Path) -> Self {
-//     //     let tweak = Ed25519::tweak(path);
-
-//     //     // pk' <- pk + G * tweak
-//     //     let derived_point = self.to_edwards() + EdwardsPoint::mul_base(&tweak);
-
-//     //     Self::from(derived_point)
-//     // }
-// }
-
-// #[cfg(feature = "signing")]
-// const _: () = {
-//     use ed25519_dalek::{
-//         Sha512,
-//         hazmat::{ExpandedSecretKey, raw_sign},
-//     };
-//     use rand::{RngExt, rand_core::UnwrapErr, rngs::SysRng};
-
-//     use crate::DeriveSigner;
-
-//     impl DeriveSigner<Ed25519, Additive, [u8; 32]> for SigningKey {
-//         fn public_key(&self) -> VerifyingKey {
-//             self.verifying_key()
-//         }
-
-//         fn derive_sign(&self, path: &[u8; 32], msg: &[u8]) -> Signature {
-//             let tweak = Scalar::from_bytes_mod_order(*path);
-
-//             let root_esk = ExpandedSecretKey::from(self.as_bytes());
-
-//             let derived_esk = ExpandedSecretKey {
-//                 // sk' = sk + tweak
-//                 scalar: root_esk.scalar + tweak,
-
-//                 // In ed25519-dalek implementation hash_prefix takes part in
-//                 // deterministic nonce generation. It's very important to not
-//                 // reuse the same nonce for different challenges, as it might
-//                 // lead to leaking the root private key.
-//                 //
-//                 // Here we generate the hash, and thus, the nonce randomly.
-//                 // As a result, signature will be different every time, even
-//                 // if the same message is singed with the same tweak.
-//                 //
-//                 // TODO: derive hash_prefix deterministically from
-//                 // `root_sk.hash_prefix` and `tweak`?
-//                 hash_prefix: UnwrapErr::<SysRng>::default().random(),
-//             };
-
-//             let derived_verifying_key = VerifyingKey::from(&derived_esk);
-
-//             debug_assert_eq!(
-//                 derived_verifying_key,
-//                 self.derive_public_key(path),
-//                 "derived public key mismatch",
-//             );
-
-//             raw_sign::<Sha512>(&derived_esk, msg, &derived_verifying_key)
-//         }
-//     }
-
-//     // TODO: impl for ExpandedSecretKey
-// };
 
 #[cfg(test)]
 mod tests {
