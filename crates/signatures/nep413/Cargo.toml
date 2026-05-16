@@ -22,7 +22,13 @@ serde_with = { workspace = true, optional = true }
 
 [features]
 borsh = ["defuse-crypto/borsh", "dep:borsh"]
-serde = ["defuse-crypto/serde", "dep:defuse-serde-utils", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
+serde = [
+  "defuse-crypto/serde",
+  "dep:cfg_eval",
+  "dep:defuse-serde-utils",
+  "dep:serde",
+  "dep:serde_with",
+]
 abi = [
   "borsh?/unstable__schema",
   "defuse-crypto/abi",

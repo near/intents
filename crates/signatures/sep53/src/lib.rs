@@ -5,8 +5,8 @@ use impl_tools::autoimpl;
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
-    serde(rename_all = "snake_case"),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
+    serde(rename_all = "snake_case")
 )]
 #[derive(Debug, Clone)]
 pub struct Sep53Payload {

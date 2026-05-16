@@ -24,7 +24,12 @@ serde_with = { workspace = true, optional = true }
 [features]
 default = ["ed25519", "p256"]
 
-abi = ["defuse-crypto/abi", "defuse-serde-utils?/abi", "dep:schemars", "serde_with?/schemars_0_8"]
+abi = [
+  "defuse-crypto/abi",
+  "defuse-serde-utils?/abi",
+  "dep:schemars",
+  "serde_with?/schemars_0_8",
+]
 arbitrary = ["defuse-crypto/arbitrary", "dep:arbitrary"]
 borsh = ["defuse-crypto/borsh"]
 serde = [
