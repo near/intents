@@ -33,9 +33,9 @@ pub struct TonConnectPayload {
     pub payload: TonConnectPayloadSchema,
 }
 
-// Per cfg_eval docs: "this macro, by default, only works on `struct`, `enum`, and `union`
-// definitions (i.e., on `#[derive]` input)", so `#[arbitrary(with = ...)]` on fields cannot
-// be used alongside `serde_as` which requires `cfg_eval`.
+// `serde_as` requires `cfg_eval`, which pre-expands field `cfg_attr`s during derive
+// pre-processing — before the compiler resolves derive helper attributes in the re-emitted
+// item. This breaks fields that combine `serde_as` and `#[arbitrary(with = ...)]`.
 #[cfg(feature = "arbitrary")]
 impl<'a> arbitrary::Arbitrary<'a> for TonConnectPayload {
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
