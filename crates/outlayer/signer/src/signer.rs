@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use hkdf::Hkdf;
 use sha3::Sha3_512;
 
@@ -41,5 +43,21 @@ impl InMemorySigner {
                     .expect("secp256k1: derived scalar is zero or less than curve order")
             },
         }
+    }
+}
+
+/// [`DerivationSchema`](defuse_kdf::DerivationSchema) used by [`InMemorySigner`]
+#[derive(Copy)]
+pub struct Schema<C>(PhantomData<C>);
+
+impl<C> Default for Schema<C> {
+    fn default() -> Self {
+        Self(PhantomData)
+    }
+}
+
+impl<C> Clone for Schema<C> {
+    fn clone(&self) -> Self {
+        Self(PhantomData)
     }
 }
