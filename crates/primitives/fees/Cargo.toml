@@ -9,9 +9,9 @@ repository.workspace = true
 workspace = true
 
 [features]
+abi = ["borsh?/unstable__schema", "dep:schemars"]
 borsh = ["dep:borsh"]
 serde = ["dep:serde"]
-abi = ["borsh?/unstable__schema", "dep:schemars"]
 
 [dependencies]
 defuse-num-utils.workspace = true
@@ -19,5 +19,5 @@ defuse-num-utils.workspace = true
 thiserror.workspace = true
 
 borsh = { workspace = true, features = ["derive"], optional = true }
-schemars = { workspace = true, optional = true, features = ["derive"] }
+schemars = { workspace = true,  features = ["derive"], optional = true}
 serde = { workspace = true, features = ["derive"], optional = true }
