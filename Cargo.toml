@@ -24,7 +24,6 @@ members = [
   "crates/near/admin-utils",
   "crates/near/auth-call",
   "crates/near/controller",
-  "crates/near/wallet-state",
   "crates/near/nep245",
   "crates/near/utils",
   "crates/near/wnear",

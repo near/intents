@@ -16,8 +16,5 @@ near-sdk = { workspace = true, optional = true }
 
 near = ["dep:near-sdk"]
 
-[dev-dependencies]
-near-sdk = { workspace = true, features = ["non-contract-usage"] }
-
 [lints]
 workspace = true

@@ -9,17 +9,15 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-
-derive_more = { workspace = true, features = ["from"] }
 near-account-id.workspace = true
+derive_more = { workspace = true, features = ["from"] }
 strum.workspace = true
 thiserror.workspace = true
 
+arbitrary = { workspace = true, optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
 schemars = { workspace = true, optional = true, features = ["derive"] }
 serde_with = { workspace = true, optional = true }
-
-arbitrary = { workspace = true, optional = true }
 
 [features]
 default = ["nep141", "nep171", "nep245"]
@@ -29,10 +27,10 @@ nep171 = []
 nep245 = []
 imt = []
 
-borsh = ["dep:borsh", "near-account-id/borsh"]
-serde = ["dep:serde_with"]
 abi = ["borsh?/unstable__schema", "dep:schemars", "near-account-id/abi"]
 arbitrary = ["dep:arbitrary", "near-account-id/arbitrary"]
+borsh = ["dep:borsh", "near-account-id/borsh"]
+serde = ["dep:serde_with"]
 
 [dev-dependencies]
 defuse-test-utils.workspace = true

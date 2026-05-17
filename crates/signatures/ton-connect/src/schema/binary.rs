@@ -5,7 +5,7 @@ use impl_tools::autoimpl;
 use tlb_ton::StringError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(any(test, feature = "arbitrary"), derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,

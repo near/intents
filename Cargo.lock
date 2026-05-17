@@ -2100,21 +2100,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-wallet-state"
-version = "0.1.0"
-dependencies = [
- "borsh",
- "defuse-bitmap",
- "defuse-borsh-utils",
- "defuse-deadline",
- "near-account-id",
- "near-sdk",
- "rand 0.10.1",
- "rand_core 0.10.1",
- "thiserror 2.0.18",
-]
-
-[[package]]
 name = "defuse-webauthn"
 version = "0.1.0"
 dependencies = [

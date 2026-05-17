@@ -21,6 +21,13 @@ serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
 
 [features]
+abi = [
+  "borsh?/unstable__schema",
+  "defuse-crypto/abi",
+  "defuse-serde-utils?/abi",
+  "dep:schemars",
+  "serde_with?/schemars_0_8",
+]
 borsh = ["defuse-crypto/borsh", "dep:borsh"]
 serde = [
   "defuse-crypto/serde",
@@ -28,13 +35,6 @@ serde = [
   "dep:defuse-serde-utils",
   "dep:serde",
   "dep:serde_with",
-]
-abi = [
-  "borsh?/unstable__schema",
-  "defuse-crypto/abi",
-  "defuse-serde-utils?/abi",
-  "dep:schemars",
-  "serde_with?/schemars_0_8",
 ]
 near-api = ["dep:near-api"]
 
