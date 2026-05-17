@@ -1,4 +1,4 @@
-use defuse_kdf::{DeriveSigner, ed25519::Ed25519};
+use defuse_kdf::{DeriveSigner, Ed25519};
 
 use crate::{
     Host, HostView, bindings::outlayer::crypto::ed25519::Host as HostTrait, crypto::AppSigner,

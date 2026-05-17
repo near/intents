@@ -1,6 +1,8 @@
-pub use defuse_kdf::secp256k1::*;
-
-use defuse_kdf::{Curve, DeriveSigner, Reduce, Schema};
+use defuse_kdf::{
+    Curve, Derive, DeriveExt, DeriveSigner, Schema, Secp256k1,
+    additive::{Additive, ReduceScalar},
+    k256::NonZeroScalar,
+};
 use sha3::{Digest, Sha3_256};
 
 use crate::{CurveSchema, InMemorySigner};
@@ -10,21 +12,17 @@ where
     P: AsRef<[u8]>,
 {
     type Schema<'a>
-        = CurveSchema<Secp256k1>
+        = Derive<Additive<Secp256k1>, CurveSchema<Secp256k1>>
     where
         Self: 'a;
 
     fn schema(&self) -> Self::Schema<'_> {
-        CurveSchema::default()
-    }
-
-    fn public_key(&self) -> <Secp256k1 as Curve>::PublicKey {
-        self.secp256k1_master_sk.public_key()
+        Additive::new(*self.secp256k1_master_sk.verifying_key())
+            .derive(CurveSchema::new())
     }
 
     fn derive_sign(&self, path: P, msg: &[u8; 32]) -> <Secp256k1 as Curve>::Signature {
-        let tweak = DeriveSigner::<Secp256k1, _>::derive_tweak(self, path);
-
+        let tweak = CurveSchema::<Secp256k1>::new().derive_path(path);
         self.secp256k1_master_sk.derive_sign(tweak, msg)
     }
 }
@@ -49,7 +47,7 @@ where
 
         let path: [u8; 32] = hasher.chain_update(path).finalize().into();
 
-        Reduce::<Secp256k1>::default().derive_path(path)
+        ReduceScalar::<Secp256k1>::default().derive_path(path)
     }
 }
 

@@ -3,7 +3,7 @@ use digest::Output;
 use crate::Schema;
 
 /// Hashing adaptor for [`Schema`]
-#[derive(Default, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Digest<D>(D);
 
 impl<D> Digest<D>

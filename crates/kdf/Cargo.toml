@@ -32,11 +32,7 @@ borsh = ["dep:borsh"]
 digest = ["dep:digest", "dep:digest-io"]
 hex = ["dep:hex"]
 
-zeroize = [
-  "curve25519-dalek?/zeroize",
-  "defuse-kdf-crypto/zeroize",
-  "ed25519-dalek?/zeroize",
-]
+zeroize = ["curve25519-dalek?/zeroize", "ed25519-dalek?/zeroize"]
 
 [dev-dependencies]
 hex-literal.workspace = true

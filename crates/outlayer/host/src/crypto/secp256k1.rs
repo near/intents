@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use defuse_kdf::{DeriveSigner, secp256k1::Secp256k1};
+use defuse_kdf::{DeriveSigner, Secp256k1};
 
 use crate::{
     Host, HostView, bindings::outlayer::crypto::secp256k1::Host as HostTrait, crypto::AppSigner,

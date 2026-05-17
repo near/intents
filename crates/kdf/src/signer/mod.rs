@@ -1,112 +1,98 @@
+#[cfg(feature = "ed25519")]
+mod ed25519;
+#[cfg(feature = "secp256k1")]
+mod secp256k1;
+
 use std::{borrow::Cow, rc::Rc, sync::Arc};
 
+use defuse_kdf_crypto::Curve;
 use impl_tools::autoimpl;
 
-use crate::{BoxSchema, DerivableCurve, DeriveExt, Map, Schema};
+use crate::{BoxSchema, Derive, DeriveExt, Schema};
 
 #[autoimpl(for<T: trait + ?Sized + ToOwned> Cow<'_, T>)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
-pub trait DeriveSigner<C, P>
-where
-    C: DerivableCurve,
-{
-    /// [`Schema`] implemented by [`.derive_sign()`](DeriveSigner::derive_sign).
-    type Schema<'a>: Schema<P, Output = C::Tweak>
+/// A signer that can sign messages by **internally** deriving signing keys
+/// according to its public key derivation [schema](DeriveSigner::schema).
+pub trait DeriveSigner<C: Curve, P> {
+    /// [`Schema`] for public key derivation.
+    /// See [`.schema()`](DeriveSigner::schema) for details.
+    type Schema<'a>: Schema<P, Output = C::PublicKey>
     where
         Self: 'a;
 
-    /// Construct [`Schema`](Self::Schema) for public key derivation.
+    /// Construct [schema](Schema) for public key derivation.
     ///
-    /// See [`derive_public_key()`](DeriveSigner::derive_public_key) shorthand.
+    /// For _non-hardened_ (i.e. "public") derivaton, the returned schema
+    /// shoudn't contain any secret information, so that derivation can be
+    /// performed by clients fully offline, without any interactions with the
+    /// signer, since all parameters are public.
+    ///
+    /// For _hardened_ derivation, this would typically reference `self`, since
+    /// public keys can be only derived by knowing a master signing key.
+    ///
+    /// See [`.derive_public_key()`](DeriveSigner::derive_public_key)
+    /// shorthand.
     fn schema(&self) -> Self::Schema<'_>;
 
-    /// Get master public key of the signer.
-    fn public_key(&self) -> C::PublicKey;
-
     /// Sign given message with a secret key **internally** derived
-    /// for given `path` according to [`Self::Schema`](DeriveSigner::Schema).
+    /// for given `path` according to [`schema`](DeriveSigner::schema).
     ///
     /// **NOTE**: the returned signatures MIGHT be non-deterministic, i.e.
     /// implementations MAY return different signatures for the same
     /// `path` and `msg`.
     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature;
 
-    /// Helper method to derive [tweak](DerivableCurve::Tweak) for given `path`
-    /// according to [`Schema`](DeriveSigner::Schema)
-    #[inline]
-    fn derive_tweak(&self, path: P) -> C::Tweak {
-        self.schema().derive_path(path)
-    }
-
-    /// Helper method to [derive](DerivableCurve::derive_public_key) public
-    /// key from [master](DeriveSigner::public_key) for given `path` according
-    /// to [`Schema`](DeriveSigner::Schema)
+    /// Helper method to [derive](Schema::derive_path) public key for given
+    /// `path` via [`.schema()`](DeriveSigner::Schema)
     #[inline]
     fn derive_public_key(&self, path: P) -> C::PublicKey {
-        let master_pk = self.public_key();
-        let tweak = self.derive_tweak(path);
-
-        C::derive_public_key(&master_pk, &tweak)
+        self.schema().derive_path(path)
     }
 }
 
-impl<C, P, D, S> DeriveSigner<C, P> for Map<D, S>
+impl<C, P, S, D> DeriveSigner<C, P> for Derive<S, D>
 where
-    C: DerivableCurve,
+    C: Curve,
     D: Schema<P>,
     S: DeriveSigner<C, D::Output>,
 {
     type Schema<'a>
-        = Map<&'a D, S::Schema<'a>>
+        = Derive<S::Schema<'a>, &'a D>
     where
         Self: 'a;
 
     #[inline]
     fn schema(&self) -> Self::Schema<'_> {
-        self.0.as_ref().map(self.1.schema())
-    }
-
-    #[inline]
-    fn public_key(&self) -> C::PublicKey {
-        self.1.public_key()
+        self.0.schema().derive(&self.1)
     }
 
     #[inline]
     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
-        self.1.derive_sign(self.0.derive_path(path), msg)
+        self.0.derive_sign(self.1.derive_path(path), msg)
     }
 }
 
 /// Object-safe version of [`DeriveSigner`] trait.
-pub trait DynDeriveSigner<C, P>
-where
-    C: DerivableCurve,
-{
-    fn schema_dyn<'a>(&'a self) -> BoxSchema<'a, P, C::Tweak>
+pub trait DynDeriveSigner<C: Curve, P> {
+    fn schema_dyn<'a>(&'a self) -> BoxSchema<'a, P, C::PublicKey>
     where
         P: 'a;
-
-    fn public_key(&self) -> C::PublicKey;
 
     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature;
 }
 
 impl<C, P, S> DynDeriveSigner<C, P> for S
 where
-    C: DerivableCurve,
+    C: Curve,
     S: DeriveSigner<C, P>,
 {
     #[inline]
-    fn schema_dyn<'a>(&'a self) -> BoxSchema<'a, P, C::Tweak>
+    fn schema_dyn<'a>(&'a self) -> BoxSchema<'a, P, C::PublicKey>
     where
         P: 'a,
     {
         Box::new(self.schema())
-    }
-
-    #[inline]
-    fn public_key(&self) -> C::PublicKey {
-        DeriveSigner::<C, P>::public_key(self)
     }
 
     #[inline]
@@ -115,23 +101,15 @@ where
     }
 }
 
-impl<C, P> DeriveSigner<C, P> for dyn DynDeriveSigner<C, P>
-where
-    C: DerivableCurve,
-{
+impl<C: Curve, P> DeriveSigner<C, P> for dyn DynDeriveSigner<C, P> {
     type Schema<'a>
-        = BoxSchema<'a, P, C::Tweak>
+        = BoxSchema<'a, P, C::PublicKey>
     where
         Self: 'a;
 
     #[inline]
     fn schema(&self) -> Self::Schema<'_> {
         self.schema_dyn()
-    }
-
-    #[inline]
-    fn public_key(&self) -> C::PublicKey {
-        DynDeriveSigner::<C, P>::public_key(self)
     }
 
     #[inline]
@@ -152,8 +130,8 @@ pub mod tests {
         msg: &C::Message,
     ) -> (C::PublicKey, C::Signature)
     where
+        C: Curve,
         S: DeriveSigner<C, P>,
-        C: DerivableCurve,
         P: Clone,
     {
         let derived_pk = root_sk.derive_public_key(path.clone());

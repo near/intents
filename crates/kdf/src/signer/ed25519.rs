@@ -1,49 +1,29 @@
-use curve25519_dalek::EdwardsPoint;
-pub use curve25519_dalek::Scalar;
-pub use defuse_kdf_crypto::ed25519::*;
-pub use ed25519_dalek::SigningKey;
+use curve25519_dalek::Scalar;
+use defuse_kdf_crypto::Ed25519;
 use ed25519_dalek::{
-    Digest, Sha512,
+    Digest, Sha512, Signature, SigningKey, VerifyingKey,
     hazmat::{ExpandedSecretKey, raw_sign},
 };
 
-use crate::{DerivableCurve, DeriveSigner, Identity, Reduce, Schema};
-
-impl DerivableCurve for Ed25519 {
-    type Tweak = Scalar;
-
-    fn derive_public_key(master_pk: &VerifyingKey, tweak: &Scalar) -> VerifyingKey {
-        // pk' <- pk + G * tweak
-        let derived_point = master_pk.to_edwards() + EdwardsPoint::mul_base(tweak);
-
-        // TODO: reject derived_point.is_torsion_free() || derived_point.is_small_order()?
-
-        VerifyingKey::from(derived_point)
-    }
-}
+use crate::{DeriveSigner, additive::Additive};
 
 impl DeriveSigner<Ed25519, Scalar> for SigningKey {
     type Schema<'a>
-        = Identity
+        = Additive<Ed25519>
     where
         Self: 'a;
 
     #[inline]
     fn schema(&self) -> Self::Schema<'_> {
-        Identity
-    }
-
-    #[inline]
-    fn public_key(&self) -> VerifyingKey {
-        self.verifying_key()
+        Additive::new(self.verifying_key())
     }
 
     fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Signature {
         let esk = ExpandedSecretKey::from(self.as_bytes());
 
         debug_assert_eq!(
-            esk.public_key(),
-            self.public_key(),
+            esk.schema().public_key(),
+            self.schema().public_key(),
             "master public key mismatch",
         );
 
@@ -54,18 +34,13 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
 
 impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
     type Schema<'a>
-        = Identity
+        = Additive<Ed25519>
     where
         Self: 'a;
 
     #[inline]
     fn schema(&self) -> Self::Schema<'_> {
-        Identity
-    }
-
-    #[inline]
-    fn public_key(&self) -> VerifyingKey {
-        self.into()
+        Additive::new(VerifyingKey::from(self))
     }
 
     fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Signature {
@@ -107,35 +82,17 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
     }
 }
 
-impl Schema<[u8; 32]> for Reduce<Ed25519> {
-    type Output = Scalar;
-
-    #[inline]
-    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
-        Scalar::from_bytes_mod_order(path)
-    }
-}
-
-impl Schema<[u8; 64]> for Reduce<Ed25519> {
-    type Output = Scalar;
-
-    #[inline]
-    fn derive_path(&self, path: [u8; 64]) -> Self::Output {
-        Scalar::from_bytes_mod_order_wide(&path)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use ed25519_dalek::{PUBLIC_KEY_LENGTH, SecretKey};
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::{Schema, signer::tests::assert_roundtrip};
+    use crate::{Schema, additive::ReduceScalar, signer::tests::assert_roundtrip};
 
     use super::*;
 
-    const REDUCE: Reduce<Ed25519> = Reduce::new();
+    const REDUCE: ReduceScalar<Ed25519> = ReduceScalar::new();
 
     #[rstest]
     fn roundtrip(

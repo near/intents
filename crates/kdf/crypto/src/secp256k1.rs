@@ -1,7 +1,6 @@
-use k256::ecdsa::signature::hazmat::PrehashVerifier;
-pub use k256::{
+use k256::{
     self,
-    ecdsa::{RecoveryId, Signature, VerifyingKey},
+    ecdsa::{RecoveryId, Signature, VerifyingKey, signature::hazmat::PrehashVerifier},
 };
 
 use crate::Curve;

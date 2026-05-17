@@ -1,4 +1,4 @@
-use defuse_kdf::{crypto::secp256k1::Secp256k1, secp256k1::NonZeroScalar};
+use defuse_kdf::{Secp256k1, k256::NonZeroScalar};
 use near_mpc_crypto_types::Tweak;
 
 use crate::{NearMpcCurve, sealed::Sealed};
@@ -17,8 +17,9 @@ impl Sealed for Secp256k1 {}
 #[cfg(test)]
 mod tests {
     use defuse_kdf::{
-        DerivableCurve, Schema,
-        secp256k1::{VerifyingKey, k256::EncodedPoint},
+        DeriveExt, Schema,
+        additive::Additive,
+        k256::{EncodedPoint, ecdsa::VerifyingKey},
     };
     use hex_literal::hex;
     use near_account_id::AccountIdRef;
@@ -61,9 +62,10 @@ mod tests {
         .unwrap();
         let predecessor_id = AccountIdRef::new(predecessor_id).unwrap();
 
-        let schema = NearMpcDerivation::<Secp256k1>::new(predecessor_id);
-        let tweak = schema.derive_path(path);
-        let derived_pk = Secp256k1::derive_public_key(&master_pk, &tweak);
+        let schema = Additive::<Secp256k1>::new(master_pk)
+            .derive(NearMpcDerivation::<Secp256k1>::new(predecessor_id));
+
+        let derived_pk = schema.derive_path(path);
 
         assert_eq!(
             &derived_pk.to_encoded_point(false).as_bytes()[1..],

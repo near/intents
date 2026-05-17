@@ -1,5 +1,4 @@
-use ed25519_dalek::Verifier;
-pub use ed25519_dalek::{self, Signature, VerifyingKey};
+use ed25519_dalek::{self, Signature, Verifier, VerifyingKey};
 
 use crate::Curve;
 

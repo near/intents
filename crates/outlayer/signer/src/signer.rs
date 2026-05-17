@@ -1,15 +1,16 @@
 use std::marker::PhantomData;
 
 use hkdf::Hkdf;
+use impl_tools::autoimpl;
 use sha3::Sha3_512;
 
 #[cfg_attr(feature = "zeroize", derive(::zeroize::ZeroizeOnDrop))]
 #[derive(Clone, PartialEq, Eq)]
 pub struct InMemorySigner {
     #[cfg(feature = "ed25519")]
-    pub(crate) ed25519_master_sk: crate::ed25519::SigningKey,
+    pub(crate) ed25519_master_sk: defuse_kdf::ed25519_dalek::SigningKey,
     #[cfg(feature = "secp256k1")]
-    pub(crate) secp256k1_master_sk: crate::secp256k1::SigningKey,
+    pub(crate) secp256k1_master_sk: defuse_kdf::k256::ecdsa::SigningKey,
 }
 
 impl InMemorySigner {
@@ -28,9 +29,9 @@ impl InMemorySigner {
             ed25519_master_sk: {
                 const INFO: &[u8] = b"ed25519/root_sk";
 
-                let mut sk = [0u8; crate::ed25519::ed25519_dalek::SECRET_KEY_LENGTH];
+                let mut sk = [0u8; defuse_kdf::ed25519_dalek::SECRET_KEY_LENGTH];
                 hk.expand(INFO, &mut sk).expect("HKDF: ed25519");
-                crate::ed25519::SigningKey::from_bytes(&sk)
+                defuse_kdf::ed25519_dalek::SigningKey::from_bytes(&sk)
             },
             #[cfg(feature = "secp256k1")]
             secp256k1_master_sk: {
@@ -38,7 +39,7 @@ impl InMemorySigner {
 
                 let mut sk = [0u8; 32];
                 hk.expand(INFO, &mut sk).expect("HKDF: secp256k1");
-                crate::secp256k1::SigningKey::from_bytes(&sk.into())
+                defuse_kdf::k256::ecdsa::SigningKey::from_bytes(&sk.into())
                     .expect("secp256k1: derived scalar is zero or less than curve order")
             },
         }
@@ -46,17 +47,13 @@ impl InMemorySigner {
 }
 
 /// [`Schema`](defuse_kdf::Schema) used by [`InMemorySigner`]
+#[autoimpl(Clone, Default)]
 #[derive(Copy)]
 pub struct CurveSchema<C>(PhantomData<C>);
 
-impl<C> Default for CurveSchema<C> {
-    fn default() -> Self {
-        Self(PhantomData)
-    }
-}
-
-impl<C> Clone for CurveSchema<C> {
-    fn clone(&self) -> Self {
+impl<C> CurveSchema<C> {
+    #[inline]
+    pub const fn new() -> Self {
         Self(PhantomData)
     }
 }

@@ -1,3 +1,4 @@
+pub mod additive;
 #[cfg(feature = "borsh")]
 pub mod borsh;
 #[cfg(feature = "digest")]
@@ -10,8 +11,9 @@ use std::{rc::Rc, sync::Arc};
 use impl_tools::autoimpl;
 
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
-/// A generic closure that can used for [tweak](crate::DerivableCurve::Tweak)
-/// derivation and its intermediary steps.
+/// A generic closure that can used for public key
+/// [derivation](crate::DeriveSigner::derive_public_key) and its intermediary
+/// steps.
 pub trait Schema<P> {
     /// [Derivation](Schema::derive_path) output.
     type Output;
@@ -23,22 +25,34 @@ pub trait Schema<P> {
 /// Helper trait with extensions for [`Schema`] and
 /// [`crate::DeriveSigner`]
 pub trait DeriveExt {
+    /// Derive with given [schema](Schema).
+    ///
+    /// ```rust
+    /// use defuse_kdf::{DeriveExt, Schema, SchemaFn};
+    ///
+    /// let schema_a = SchemaFn::new(|v| v + 1);
+    /// let schema_b = SchemaFn::new(|v| v * 2);
+    ///
+    /// let schema_ab = schema_a.derive(schema_b);
+    ///
+    /// assert_eq!(schema_ab.derive_path(3), 7);
+    /// ```
     #[inline]
-    fn map<S>(self, then: S) -> Map<Self, S>
+    fn derive<D>(self, with: D) -> Derive<Self, D>
     where
         Self: Sized,
     {
-        Map(self, then)
+        Derive(self, with)
     }
 
+    /// Creates "by reference" adaptor.
     #[inline]
-    fn as_ref(&self) -> &Self {
+    fn by_ref(&self) -> &Self {
         self
     }
 }
 impl<S> DeriveExt for S {}
 
-#[derive(Default, Clone, Copy)]
 /// No-op identity adator for [`Schema`].
 ///
 /// ```rust
@@ -46,6 +60,7 @@ impl<S> DeriveExt for S {}
 ///
 /// assert_eq!(Identity.derive_path(42), 42);
 /// ```
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Identity;
 
 impl<T> Schema<T> for Identity {
@@ -57,31 +72,21 @@ impl<T> Schema<T> for Identity {
     }
 }
 
-#[derive(Default, Clone, Copy)]
-/// Mapping adaptor for [`Schema`] and [`crate::DeriveSigner`].
-///
-/// ```rust
-/// use defuse_kdf::{DeriveExt, Schema, SchemaFn};
-///
-/// let schema_a = SchemaFn::new(|v| v * 2);
-/// let schema_b = SchemaFn::new(|v| v + 1);
-///
-/// let schema_ab = schema_a.map(schema_b);
-///
-/// assert_eq!(schema_ab.derive_path(3), 7);
-/// ```
-pub struct Map<A, B>(pub(crate) A, pub(crate) B);
+/// Derive adaptor for [`Schema`] and [`crate::DeriveSigner`].
+/// See [`.derive()`](DeriveExt::derive).
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Derive<S, D>(pub(crate) S, pub(crate) D);
 
-impl<P, A, B> Schema<P> for Map<A, B>
+impl<P, S, D> Schema<P> for Derive<S, D>
 where
-    A: Schema<P>,
-    B: Schema<A::Output>,
+    D: Schema<P>,
+    S: Schema<D::Output>,
 {
-    type Output = B::Output;
+    type Output = S::Output;
 
     #[inline]
     fn derive_path(&self, path: P) -> Self::Output {
-        self.1.derive_path(self.0.derive_path(path))
+        self.0.derive_path(self.1.derive_path(path))
     }
 }
 
@@ -94,7 +99,7 @@ where
 ///
 /// assert_eq!(schema.derive_path(3), 5);
 /// ```
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct SchemaFn<F>(F);
 
 impl<F> SchemaFn<F> {
@@ -113,6 +118,47 @@ where
     #[inline]
     fn derive_path(&self, path: P) -> Self::Output {
         (self.0)(path)
+    }
+}
+
+/// [`Schema`] adaptor that always uses the same path by cloning it.
+///
+/// ```rust
+/// use defuse_kdf::{Path, Schema};
+///  
+/// let schema = Path::new("abc");
+///
+/// assert_eq!(schema.derive_path(()), "abc");
+/// ```
+#[derive(Debug, Clone, Copy)]
+pub struct Path<P>(P);
+
+impl<P> Path<P> {
+    #[inline]
+    pub const fn new(path: P) -> Self {
+        Self(path)
+    }
+
+    #[inline]
+    pub fn into_inner(self) -> P {
+        self.0
+    }
+}
+
+impl<P> Schema<()> for Path<P>
+where
+    P: Clone,
+{
+    type Output = P;
+
+    fn derive_path(&self, _path: ()) -> Self::Output {
+        self.0.clone()
+    }
+}
+
+impl<P> AsRef<P> for Path<P> {
+    fn as_ref(&self) -> &P {
+        &self.0
     }
 }
 

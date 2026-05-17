@@ -1,7 +1,9 @@
-mod curve;
 mod schema;
 mod signer;
 
-pub use self::{curve::*, schema::*, signer::*};
+pub use self::{schema::*, signer::*};
 
-pub use defuse_kdf_crypto::{self as crypto, Curve};
+// re-exorts
+#[cfg(feature = "ed25519")]
+pub use curve25519_dalek;
+pub use defuse_kdf_crypto::*;

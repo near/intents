@@ -6,8 +6,7 @@ use std::{marker::PhantomData, sync::Arc};
 use defuse_outlayer_kdf_app::AppDerivation;
 
 use defuse_kdf::{
-    BoxSchema, DerivableCurve, DeriveExt, DeriveSigner, DynDeriveSigner, Map, ed25519::Ed25519,
-    secp256k1::Secp256k1,
+    BoxSchema, Curve, Derive, DeriveExt, DeriveSigner, DynDeriveSigner, Ed25519, Secp256k1,
 };
 use wasmtime::component::{HasData, Linker};
 
@@ -17,14 +16,14 @@ pub struct AppSigner<S>(S);
 
 impl<'a> Host<'a> {
     #[inline]
-    fn app_signer(self) -> AppSigner<Map<AppDerivation<'a>, Arc<dyn Signer>>> {
-        AppSigner(AppDerivation::new(self.ctx.app_id).map(self.signer))
+    fn app_signer(self) -> AppSigner<Derive<Arc<dyn Signer>, AppDerivation<'a>>> {
+        AppSigner(self.signer.derive(AppDerivation::new(self.ctx.app_id)))
     }
 }
 
 impl<C, P, S> DeriveSigner<C, P> for AppSigner<S>
 where
-    C: DerivableCurve,
+    C: Curve,
     S: DeriveSigner<C, P>,
 {
     type Schema<'a>
@@ -36,15 +35,12 @@ where
         self.0.schema()
     }
 
-    fn public_key(&self) -> C::PublicKey {
-        self.0.public_key()
-    }
-
     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
         self.0.derive_sign(path, msg)
     }
 }
 
+// TODO: different signers?
 pub trait Signer:
     DynDeriveSigner<Ed25519, [u8; 32]> + DynDeriveSigner<Secp256k1, [u8; 32]> + Send + Sync
 {
@@ -56,20 +52,16 @@ impl<T> Signer for T where
 
 impl<'l, C, P: 'l> DeriveSigner<C, P> for dyn Signer + 'l
 where
-    C: DerivableCurve,
+    C: Curve,
     Self: DynDeriveSigner<C, P>,
 {
     type Schema<'a>
-        = BoxSchema<'a, P, C::Tweak>
+        = BoxSchema<'a, P, C::PublicKey>
     where
         Self: 'a;
 
     fn schema(&self) -> Self::Schema<'_> {
         DynDeriveSigner::<C, P>::schema_dyn(self)
-    }
-
-    fn public_key(&self) -> C::PublicKey {
-        DynDeriveSigner::<C, P>::public_key(self)
     }
 
     fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
@@ -80,7 +72,7 @@ where
 struct HasAppSigner<S>(PhantomData<S>);
 
 impl<S: 'static> HasData for HasAppSigner<S> {
-    type Data<'a> = AppSigner<Map<AppDerivation<'a>, S>>;
+    type Data<'a> = AppSigner<Derive<S, AppDerivation<'a>>>;
 }
 
 pub(super) fn add_to_linker<T>(linker: &mut Linker<T>) -> wasmtime::Result<()>

@@ -1,42 +1,18 @@
-pub use defuse_kdf_crypto::secp256k1::*;
+use defuse_kdf_crypto::Secp256k1;
+use k256::ecdsa::{RecoveryId, Signature};
 pub use k256::{NonZeroScalar, ecdsa::SigningKey};
-use k256::{
-    ProjectivePoint, U256,
-    elliptic_curve::{self, bigint::U512, ops::MulByGenerator},
-};
 
-use crate::{DerivableCurve, DeriveSigner, Identity, Reduce, Schema};
-
-impl DerivableCurve for Secp256k1 {
-    type Tweak = NonZeroScalar;
-
-    fn derive_public_key(master_pk: &VerifyingKey, tweak: &NonZeroScalar) -> VerifyingKey {
-        // pk' <- pk + G * tweak
-        let derived_point =
-            ProjectivePoint::from(master_pk.as_affine()) + ProjectivePoint::mul_by_generator(tweak);
-
-        // `VerifyingKey::from_affine` rejects the identity point for us.
-        // With a random `tweak`, `derived_point == 0` iff `tweak == -master_sk`,
-        // which happens with probability of `2^-256` — treat as unreachable.
-        VerifyingKey::from_affine(derived_point.to_affine())
-            .expect("derived public key is the point at infinity")
-    }
-}
+use crate::{DeriveSigner, additive::Additive};
 
 impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     type Schema<'a>
-        = Identity
+        = Additive<Secp256k1>
     where
         Self: 'a;
 
     #[inline]
     fn schema(&self) -> Self::Schema<'_> {
-        Identity
-    }
-
-    #[inline]
-    fn public_key(&self) -> VerifyingKey {
-        *self.verifying_key()
+        Additive::new(*self.verifying_key())
     }
 
     fn derive_sign(&self, tweak: NonZeroScalar, prehash: &[u8; 32]) -> (Signature, RecoveryId) {
@@ -60,34 +36,17 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     }
 }
 
-impl Schema<[u8; 32]> for Reduce<Secp256k1> {
-    type Output = NonZeroScalar;
-
-    #[inline]
-    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
-        elliptic_curve::ops::Reduce::<U256>::reduce_bytes(&path.into())
-    }
-}
-
-impl Schema<[u8; 64]> for Reduce<Secp256k1> {
-    type Output = NonZeroScalar;
-
-    #[inline]
-    fn derive_path(&self, path: [u8; 64]) -> Self::Output {
-        elliptic_curve::ops::Reduce::<U512>::reduce_bytes(&path.into())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
+    use k256::ecdsa::VerifyingKey;
     use rstest::rstest;
 
-    use crate::{Schema, signer::tests::assert_roundtrip};
+    use crate::{Schema, additive::ReduceScalar, signer::tests::assert_roundtrip};
 
     use super::*;
 
-    const REDUCE: Reduce<Secp256k1> = Reduce::new();
+    const REDUCE: ReduceScalar<Secp256k1> = ReduceScalar::new();
 
     #[rstest]
     fn roundtrip(

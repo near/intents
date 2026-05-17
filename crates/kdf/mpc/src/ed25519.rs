@@ -1,4 +1,4 @@
-use defuse_kdf::{crypto::ed25519::Ed25519, ed25519::Scalar};
+use defuse_kdf::{Ed25519, curve25519_dalek::Scalar};
 use near_mpc_crypto_types::Tweak;
 
 use crate::{NearMpcCurve, sealed::Sealed};
@@ -15,8 +15,9 @@ impl Sealed for Ed25519 {}
 #[cfg(test)]
 mod tests {
     use defuse_kdf::{
-        DerivableCurve, Schema,
-        ed25519::{VerifyingKey, ed25519_dalek},
+        DeriveExt, Schema,
+        additive::Additive,
+        ed25519_dalek::{self, VerifyingKey},
     };
     use hex_literal::hex;
     use near_account_id::AccountIdRef;
@@ -55,9 +56,10 @@ mod tests {
         let master_pk = VerifyingKey::from_bytes(&ED25519_MPC_PK).unwrap();
         let predecessor_id = AccountIdRef::new(predecessor_id).unwrap();
 
-        let schema = NearMpcDerivation::<Ed25519>::new(predecessor_id);
-        let tweak = schema.derive_path(path);
-        let derived_pk = Ed25519::derive_public_key(&master_pk, &tweak);
+        let schema = Additive::<Ed25519>::new(master_pk)
+            .derive(NearMpcDerivation::<Ed25519>::new(predecessor_id));
+
+        let derived_pk = schema.derive_path(path);
 
         assert_eq!(
             derived_pk.to_bytes(),

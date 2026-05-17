@@ -1,6 +1,7 @@
 use borsh::{BorshSerialize, io};
 #[cfg(feature = "digest")]
 pub use digest_io::IoWrapper;
+use impl_tools::autoimpl;
 
 use crate::Schema;
 
@@ -15,18 +16,9 @@ use crate::Schema;
 /// let derived = schema.derive_path(data);
 /// assert_eq!(derived, [97, 98, 99]);
 /// ```
-#[derive(Clone)]
+#[autoimpl(Debug, Clone, Default where W::Data: trait)]
+#[derive(Copy)]
 pub struct Borsh<W: WriteFinalizer = Vec<u8>>(W::Data);
-
-impl<W: WriteFinalizer> Default for Borsh<W>
-where
-    W::Data: Default,
-{
-    #[inline]
-    fn default() -> Self {
-        Self(Default::default())
-    }
-}
 
 impl<W: WriteFinalizer> Borsh<W> {
     #[inline]

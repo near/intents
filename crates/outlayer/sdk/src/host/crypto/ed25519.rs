@@ -11,7 +11,7 @@ pub type PublicKey = [u8; 32];
 /// Ed25519 signature
 pub type Signature = [u8; 64];
 
-/// Derive public key from root for given application-specific path.
+/// Derive public key for given application-specific path.
 ///
 /// The derivation is **non-hierarchical** (or "plain"): derived
 /// keys **do not** form a tree-like structure. Instead, child keys

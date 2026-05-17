@@ -1,7 +1,7 @@
 use crate::Schema;
 
 /// Hex-encoding adaptor for [`Schema`]
-#[derive(Default, Clone)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Hex;
 
 impl<P> Schema<P> for Hex

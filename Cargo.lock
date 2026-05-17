@@ -1794,6 +1794,7 @@ dependencies = [
  "defuse-kdf",
  "hex-literal",
  "hkdf",
+ "impl-tools",
  "rstest",
  "sha3 0.11.0",
  "zeroize",

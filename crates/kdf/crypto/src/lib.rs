@@ -1,34 +1,19 @@
 // TODO: merge with `defuse-crypto`
 
+mod curve;
 #[cfg(feature = "ed25519")]
-pub mod ed25519;
+mod ed25519;
 #[cfg(feature = "secp256k1")]
-pub mod secp256k1;
+mod secp256k1;
 
-/// An ellipitc curve.
-pub trait Curve: 'static {
-    // /// A path to derive both [public](DerivablePublicKey::derive) and
-    // /// [signing](DeriveSigner::derive_sign) keys for.
-    // /// Typically, it should be an output of a cryptographic hash function.
-    // type Path: ?Sized;
+pub use self::curve::*;
+#[cfg(feature = "ed25519")]
+pub use self::ed25519::*;
+#[cfg(feature = "secp256k1")]
+pub use self::secp256k1::*;
 
-    /// Public key of the curve
-    type PublicKey;
-
-    /// Message for signing.
-    ///
-    /// This type can vary between different curve implementations:
-    /// some curves can sign arbitrary byte slices, while others might expect
-    /// prehashed messages of a specific size.
-    type Message: ?Sized;
-
-    /// Signature of the curve
-    type Signature;
-
-    /// Verify the signature over the message for given public key
-    fn verify(
-        public_key: &Self::PublicKey,
-        msg: &Self::Message,
-        signature: &Self::Signature,
-    ) -> bool;
-}
+// re-exports
+#[cfg(feature = "ed25519")]
+pub use ed25519_dalek;
+#[cfg(feature = "secp256k1")]
+pub use k256;
