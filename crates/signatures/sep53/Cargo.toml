@@ -24,8 +24,8 @@ rstest.workspace = true
 stellar-strkey.workspace = true
 
 [features]
-serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 abi = ["defuse-crypto/abi", "dep:schemars", "serde_with?/schemars_0_8"]
+serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 
 [lints]
 workspace = true
