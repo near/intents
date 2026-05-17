@@ -5,7 +5,6 @@ use core::{
 };
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
