@@ -9,8 +9,8 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-near-account-id.workspace = true
 derive_more = { workspace = true, features = ["from"] }
+near-account-id.workspace = true
 strum.workspace = true
 thiserror.workspace = true
 
