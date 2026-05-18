@@ -13,7 +13,7 @@ impl CurveArithmetics for Ed25519 {
     type Point = EdwardsPoint;
 
     fn mul_by_generator(scalar: &Self::Scalar) -> Self::Point {
-        EdwardsPoint::mul_base(&scalar)
+        EdwardsPoint::mul_base(scalar)
     }
 
     fn pk2point(public_key: &Self::PublicKey) -> Self::Point {

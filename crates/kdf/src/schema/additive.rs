@@ -42,6 +42,7 @@ where
     }
 }
 
+// TODO: docs
 pub trait CurveArithmetics: Curve {
     type Scalar;
     type Point: Add<Output = Self::Point>;

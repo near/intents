@@ -115,7 +115,6 @@ impl<C: Curve, P> DeriveSigner<C, P> for dyn DynDeriveSigner<C, P> {
 
 #[cfg(test)]
 pub mod tests {
-
     use super::*;
 
     #[track_caller]
