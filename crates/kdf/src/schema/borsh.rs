@@ -74,7 +74,7 @@ impl WriteFinalizer for Vec<u8> {
 
 #[cfg(feature = "digest")]
 const _: () = {
-    use digest::{Digest, OutputSizeUser, Update, array::ArraySize};
+    use digest::{Digest, Update, array::ArraySize, common::OutputSize};
 
     /// Optimized writer implementation to serialize directly to hasher
     impl<D> WriteFinalizer for IoWrapper<D>
@@ -84,7 +84,7 @@ const _: () = {
         type Data = D;
 
         /// `[u8; N]`
-        type Output = <<D as OutputSizeUser>::OutputSize as ArraySize>::ArrayType<u8>;
+        type Output = <OutputSize<D> as ArraySize>::ArrayType<u8>;
 
         #[inline]
         fn new(data: Self::Data) -> Self {
