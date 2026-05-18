@@ -1,8 +1,3 @@
-#[cfg(feature = "ed25519")]
-mod ed25519;
-#[cfg(feature = "secp256k1")]
-mod secp256k1;
-
 use std::{borrow::Cow, rc::Rc, sync::Arc};
 
 use defuse_kdf_crypto::Curve;

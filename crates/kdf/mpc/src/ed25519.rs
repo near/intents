@@ -15,8 +15,7 @@ impl Sealed for Ed25519 {}
 #[cfg(test)]
 mod tests {
     use defuse_kdf::{
-        DeriveExt, Schema,
-        additive::Additive,
+        Additive, DeriveExt, Schema,
         ed25519_dalek::{self, VerifyingKey},
     };
     use hex_literal::hex;

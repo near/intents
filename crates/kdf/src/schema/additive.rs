@@ -1,9 +1,4 @@
-#[cfg(feature = "ed25519")]
-mod ed25519;
-#[cfg(feature = "secp256k1")]
-mod secp256k1;
-
-use core::{marker::PhantomData, ops::Add};
+use core::ops::Add;
 
 use defuse_kdf_crypto::Curve;
 use impl_tools::autoimpl;
@@ -54,18 +49,4 @@ pub trait CurveArithmetics: Curve {
     fn mul_by_generator(scalar: &Self::Scalar) -> Self::Point;
     fn pk2point(public_key: &Self::PublicKey) -> Self::Point;
     fn point2pk(point: Self::Point) -> Self::PublicKey;
-}
-
-/// Final-step [`Schema`](crate::Schema) for converting
-/// fixed byte arrays into a scalar [tweak](DerivableCurve::Tweak) via modular
-/// reduction.
-#[autoimpl(Debug, Clone, Default)]
-#[derive(Copy)]
-pub struct ReduceScalar<C>(PhantomData<C>);
-
-impl<C> ReduceScalar<C> {
-    #[inline]
-    pub const fn new() -> Self {
-        Self(PhantomData)
-    }
 }

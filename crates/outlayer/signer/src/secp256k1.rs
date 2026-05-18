@@ -1,6 +1,5 @@
 use defuse_kdf::{
-    Curve, Derive, DeriveExt, DeriveSigner, Schema, Secp256k1,
-    additive::{Additive, ReduceScalar},
+    Additive, Curve, Derive, DeriveExt, DeriveSigner, ReduceScalar, Schema, Secp256k1,
     k256::NonZeroScalar,
 };
 use sha3::{Digest, Sha3_256};
@@ -17,8 +16,7 @@ where
         Self: 'a;
 
     fn schema(&self) -> Self::Schema<'_> {
-        Additive::new(*self.secp256k1_master_sk.verifying_key())
-            .derive(CurveSchema::new())
+        Additive::new(*self.secp256k1_master_sk.verifying_key()).derive(CurveSchema::new())
     }
 
     fn derive_sign(&self, path: P, msg: &[u8; 32]) -> <Secp256k1 as Curve>::Signature {

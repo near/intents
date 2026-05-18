@@ -1,10 +1,13 @@
-pub mod additive;
+mod additive;
 #[cfg(feature = "borsh")]
 pub mod borsh;
 #[cfg(feature = "digest")]
 pub mod digest;
 #[cfg(feature = "hex")]
 pub mod hex;
+mod reduce;
+
+pub use self::{additive::*, reduce::*};
 
 use std::{rc::Rc, sync::Arc};
 

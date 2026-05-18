@@ -5,7 +5,7 @@ mod secp256k1;
 
 use std::{borrow::Cow, marker::PhantomData};
 
-use defuse_kdf::{Schema, additive::CurveArithmetics};
+use defuse_kdf::{CurveArithmetics, Schema};
 use near_account_id::AccountIdRef;
 use near_mpc_crypto_types::{Tweak, kdf::derive_tweak};
 
@@ -46,5 +46,3 @@ pub trait NearMpcCurve: CurveArithmetics + sealed::Sealed {
 mod sealed {
     pub trait Sealed {}
 }
-
-// TODO: near-kit signer?...

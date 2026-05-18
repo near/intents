@@ -1,8 +1,33 @@
 use defuse_kdf_crypto::Secp256k1;
-use k256::ecdsa::{RecoveryId, Signature};
-pub use k256::{NonZeroScalar, ecdsa::SigningKey};
+use k256::{
+    NonZeroScalar, ProjectivePoint, U256,
+    ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey},
+    elliptic_curve::{
+        bigint::U512,
+        ops::{MulByGenerator, Reduce},
+    },
+};
 
-use crate::{DeriveSigner, additive::Additive};
+use crate::{Additive, CurveArithmetics, DeriveSigner, ReduceScalar, Schema};
+
+impl CurveArithmetics for Secp256k1 {
+    type Scalar = NonZeroScalar;
+
+    type Point = ProjectivePoint;
+
+    fn mul_by_generator(scalar: &Self::Scalar) -> Self::Point {
+        ProjectivePoint::mul_by_generator(scalar)
+    }
+
+    fn pk2point(public_key: &Self::PublicKey) -> Self::Point {
+        public_key.as_affine().into()
+    }
+
+    fn point2pk(point: Self::Point) -> Self::PublicKey {
+        VerifyingKey::from_affine(point.to_affine())
+            .expect("derived public key is the point at infinity")
+    }
+}
 
 impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     type Schema<'a>
@@ -36,17 +61,33 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     }
 }
 
+impl Schema<[u8; 32]> for ReduceScalar<Secp256k1> {
+    type Output = NonZeroScalar;
+
+    #[inline]
+    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
+        Reduce::<U256>::reduce_bytes(&path.into())
+    }
+}
+
+impl Schema<[u8; 64]> for ReduceScalar<Secp256k1> {
+    type Output = NonZeroScalar;
+
+    #[inline]
+    fn derive_path(&self, path: [u8; 64]) -> Self::Output {
+        Reduce::<U512>::reduce_bytes(&path.into())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
     use k256::ecdsa::VerifyingKey;
     use rstest::rstest;
 
-    use crate::{Schema, additive::ReduceScalar, signer::tests::assert_roundtrip};
+    use crate::{DeriveExt, signer::tests::assert_roundtrip};
 
     use super::*;
-
-    const REDUCE: ReduceScalar<Secp256k1> = ReduceScalar::new();
 
     #[rstest]
     fn roundtrip(
@@ -65,8 +106,10 @@ mod tests {
         prehash: [u8; 32],
     ) {
         let (derived_pk, (signature, recovery_id)) = assert_roundtrip(
-            &SigningKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
-            REDUCE.derive_path(tweak),
+            &SigningKey::from_bytes(&root_sk.into())
+                .expect("invalid root sk")
+                .derive(ReduceScalar::<Secp256k1>::new()),
+            tweak,
             &prehash,
         );
 
@@ -88,8 +131,10 @@ mod tests {
         #[case] expected_derived_pk: [u8; 64],
     ) {
         let (derived_pk, _signature) = assert_roundtrip(
-            &SigningKey::from_bytes(&root_sk.into()).expect("invalid root sk"),
-            REDUCE.derive_path(tweak),
+            &SigningKey::from_bytes(&root_sk.into())
+                .expect("invalid root sk")
+                .derive(ReduceScalar::<Secp256k1>::new()),
+            tweak,
             &hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
         );
         assert_eq!(

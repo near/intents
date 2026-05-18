@@ -1,6 +1,5 @@
 use defuse_kdf::{
-    Curve, Derive, DeriveExt, DeriveSigner, Ed25519, Schema,
-    additive::{Additive, ReduceScalar},
+    Additive, Curve, Derive, DeriveExt, DeriveSigner, Ed25519, ReduceScalar, Schema,
     curve25519_dalek::Scalar,
 };
 use sha3::{Digest, Sha3_256};
