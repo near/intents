@@ -1,8 +1,10 @@
 mod compiler;
 mod error;
+mod config;
 
-pub use self::{compiler::*, error::*};
+pub use self::{compiler::*, config::*, error::*};
 
+use config::ExecutorLimits;
 use std::sync::Arc;
 
 pub use defuse_outlayer_vm_runner::host::Context as HostContext;
@@ -20,6 +22,7 @@ use bytes::Bytes;
 pub struct Executor {
     runtime: Arc<VmRuntime>,
     signer: Arc<InMemorySigner>,
+    limits: ExecutorLimits,
 }
 
 pub struct Context {
@@ -50,12 +53,19 @@ impl Outcome {
     }
 }
 
-// TODO: maybe read from config?
-const STDIN_LIMIT: usize = 4 * 1024 * 1024; // 4 MB
-const STDOUT_LIMIT: usize = 4 * 1024 * 1024; // 4 MB
-const STDERR_LIMIT: usize = 16 * 1024; // 16 KB
-
 impl Executor {
+    pub fn new(
+        runtime: impl Into<Arc<VmRuntime>>,
+        signer: impl Into<Arc<InMemorySigner>>,
+        limits: ExecutorLimits,
+    ) -> Self {
+        Self {
+            runtime: runtime.into(),
+            signer: signer.into(),
+            limits,
+        }
+    }
+
     pub fn compiler(&self) -> Compiler {
         Compiler::new(self.runtime.clone())
     }
@@ -66,12 +76,12 @@ impl Executor {
         component: &Component,
         fuel: u64,
     ) -> Result<Outcome, Error> {
-        if ctx.input.len() > STDIN_LIMIT {
+        if ctx.input.len() > self.limits.stdin {
             return Err(Error::InputTooLong);
         }
 
-        let stdout = MemoryOutputPipe::new(STDOUT_LIMIT);
-        let stderr = MemoryOutputPipe::new(STDERR_LIMIT);
+        let stdout = MemoryOutputPipe::new(self.limits.stdout);
+        let stderr = MemoryOutputPipe::new(self.limits.stderr);
         let ctx = VmContext {
             wasi: WasiContext {
                 stdin: MemoryInputPipe::new(ctx.input),

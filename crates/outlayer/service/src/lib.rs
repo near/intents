@@ -3,7 +3,7 @@ mod cache;
 mod code;
 mod resolver;
 
-pub use self::resolver::Resolver;
+pub use self::resolver::{HttpResolver, NearResolver, Resolver, ResolverConfig, UrlResolver};
 pub use self::{builder::*, cache::*, code::*};
 
 use std::{convert, sync::Arc};

@@ -1,12 +1,51 @@
 mod near;
 mod url;
 
+#[cfg(feature = "serde")]
+struct Clamp<const MIN: i64, const MAX: i64>;
+
+#[cfg(feature = "serde")]
+impl<'de, const MIN: i64, const MAX: i64> ::serde_with::DeserializeAs<'de, usize>
+    for Clamp<MIN, MAX>
+{
+    fn deserialize_as<D: ::serde::Deserializer<'de>>(d: D) -> Result<usize, D::Error> {
+        use ::serde::Deserialize as _;
+        let v = i64::deserialize(d)?.clamp(MIN, MAX);
+        usize::try_from(v).map_err(::serde::de::Error::custom)
+    }
+}
+
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize)
+)]
+pub struct ResolverConfig {
+    pub near_rpc_url: String,
+    pub near_chain_id: String,
+
+    #[cfg_attr(feature = "serde", serde_as(deserialize_as = "Clamp<1, { 100 * 1024 * 1024 }>"))]
+    pub http_max_len: usize,
+}
+
+impl Default for ResolverConfig {
+    fn default() -> Self {
+        Self {
+            near_rpc_url: "https://rpc.mainnet.near.org".to_owned(),
+            near_chain_id: "mainnet".to_owned(),
+            http_max_len: 10 * 1024 * 1024,
+        }
+    }
+}
+
 use crate::{AppCodeUrl, CodeRef};
 use bytes::Bytes;
 use defuse_outlayer_primitives::AppId;
 use sha2::{Digest, Sha256};
 
-use self::{near::NearResolver, url::UrlResolver};
+pub use self::near::NearResolver;
+pub use self::url::{HttpResolver, UrlResolver};
 
 #[derive(Clone)]
 pub struct Resolver {
@@ -15,6 +54,10 @@ pub struct Resolver {
 }
 
 impl Resolver {
+    pub const fn new(near: NearResolver, url: UrlResolver) -> Self {
+        Self { near, url }
+    }
+
     pub async fn resolve_code_url(&self, code: CodeRef<'_>) -> Result<AppCodeUrl> {
         match code {
             CodeRef::AppId(app_id) => match app_id {

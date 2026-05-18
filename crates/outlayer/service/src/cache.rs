@@ -3,6 +3,45 @@ use std::time::Duration;
 use defuse_outlayer_executor::Component;
 use moka::future::Cache;
 
+#[cfg(feature = "serde")]
+struct Clamp<const MIN: i64, const MAX: i64>;
+
+#[cfg(feature = "serde")]
+impl<'de, const MIN: i64, const MAX: i64> ::serde_with::DeserializeAs<'de, u64>
+    for Clamp<MIN, MAX>
+{
+    fn deserialize_as<D: ::serde::Deserializer<'de>>(d: D) -> Result<u64, D::Error> {
+        use ::serde::Deserialize as _;
+        let v = i64::deserialize(d)?.clamp(MIN, MAX);
+        u64::try_from(v).map_err(::serde::de::Error::custom)
+    }
+}
+
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize)
+)]
+pub struct CacheConfig {
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(deserialize_as = "Clamp<{ 1024 * 1024 }, { 10 * 1024 * 1024 * 1024 }>")
+    )]
+    pub max_capacity: u64,
+
+    pub tti_secs: Option<u64>,
+}
+
+impl Default for CacheConfig {
+    fn default() -> Self {
+        Self {
+            max_capacity: 100 * 1024 * 1024,
+            tti_secs: None,
+        }
+    }
+}
+
 const DEFAULT_MAX_CAPACITY: u64 = 100 * 1024 * 1024; // 100MB
 
 #[must_use = "use .build()"]

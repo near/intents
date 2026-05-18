@@ -1,0 +1,31 @@
+[package]
+name = "defuse-outlayer-bin"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "outlayer"
+path = "src/main.rs"
+
+[dependencies]
+defuse-outlayer-executor.workspace = true
+defuse-outlayer-service.workspace = true
+defuse-outlayer-vm-runner.workspace = true
+
+anyhow.workspace = true
+bytes.workspace = true
+dotenvy.workspace = true
+figment.workspace = true
+hex.workspace = true
+near-kit.workspace = true
+serde = { workspace = true, features = ["derive"] }
+tokio = { workspace = true, features = ["full"] }
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+tower = { workspace = true, features = ["util"] }

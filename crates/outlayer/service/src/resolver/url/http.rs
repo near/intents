@@ -16,6 +16,13 @@ pub struct HttpResolver {
 }
 
 impl HttpResolver {
+    pub fn new(max_len: usize) -> Self {
+        Self {
+            client: Client::new(),
+            max_len,
+        }
+    }
+
     pub async fn resolve(&self, url: Url) -> Result<Bytes, Error> {
         // TODO: have a whitelist or blacklist of domains?
         let resp = self
