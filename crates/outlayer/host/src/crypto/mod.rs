@@ -12,35 +12,6 @@ use wasmtime::component::{HasData, Linker};
 
 use crate::{Host, HostView, bindings};
 
-pub struct AppSigner<S>(S);
-
-impl<'a> Host<'a> {
-    #[inline]
-    fn app_signer(self) -> AppSigner<Derive<Arc<dyn Signer>, AppDerivation<'a>>> {
-        AppSigner(self.signer.derive(AppDerivation::new(self.ctx.app_id)))
-    }
-}
-
-impl<C, P, S> DeriveSigner<C, P> for AppSigner<S>
-where
-    C: Curve,
-    S: DeriveSigner<C, P>,
-{
-    type Schema<'a>
-        = S::Schema<'a>
-    where
-        Self: 'a;
-
-    fn schema(&self) -> Self::Schema<'_> {
-        self.0.schema()
-    }
-
-    fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
-        self.0.derive_sign(path, msg)
-    }
-}
-
-// TODO: different signers?
 pub trait Signer:
     DynDeriveSigner<Ed25519, [u8; 32]> + DynDeriveSigner<Secp256k1, [u8; 32]> + Send + Sync
 {
@@ -69,10 +40,38 @@ where
     }
 }
 
+struct AppSigner<S>(S);
+
+impl<C, P, S> DeriveSigner<C, P> for AppSigner<S>
+where
+    C: Curve,
+    S: DeriveSigner<C, P>,
+{
+    type Schema<'a>
+        = S::Schema<'a>
+    where
+        Self: 'a;
+
+    fn schema(&self) -> Self::Schema<'_> {
+        self.0.schema()
+    }
+
+    fn derive_sign(&self, path: P, msg: &C::Message) -> C::Signature {
+        self.0.derive_sign(path, msg)
+    }
+}
+
 struct HasAppSigner<S>(PhantomData<S>);
 
 impl<S: 'static> HasData for HasAppSigner<S> {
     type Data<'a> = AppSigner<Derive<S, AppDerivation<'a>>>;
+}
+
+impl<'a> Host<'a> {
+    #[inline]
+    fn app_signer(self) -> AppSigner<Derive<Arc<dyn Signer>, AppDerivation<'a>>> {
+        AppSigner(self.signer.derive(AppDerivation::new(self.ctx.app_id)))
+    }
 }
 
 pub(super) fn add_to_linker<T>(linker: &mut Linker<T>) -> wasmtime::Result<()>
