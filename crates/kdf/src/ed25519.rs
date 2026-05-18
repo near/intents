@@ -5,9 +5,9 @@ use ed25519_dalek::{
     hazmat::{ExpandedSecretKey, raw_sign},
 };
 
-use crate::{Additive, CurveArithmetics, DeriveSigner, ReduceScalar, Schema};
+use crate::{Additive, CurveArithmetic, DeriveSigner, ReduceScalar, Schema};
 
-impl CurveArithmetics for Ed25519 {
+impl CurveArithmetic for Ed25519 {
     type Scalar = Scalar;
 
     type Point = EdwardsPoint;

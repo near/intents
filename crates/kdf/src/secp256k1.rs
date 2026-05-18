@@ -8,9 +8,9 @@ use k256::{
     },
 };
 
-use crate::{Additive, CurveArithmetics, DeriveSigner, ReduceScalar, Schema};
+use crate::{Additive, CurveArithmetic, DeriveSigner, ReduceScalar, Schema};
 
-impl CurveArithmetics for Secp256k1 {
+impl CurveArithmetic for Secp256k1 {
     type Scalar = NonZeroScalar;
 
     type Point = ProjectivePoint;

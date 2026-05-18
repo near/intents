@@ -5,7 +5,7 @@ mod secp256k1;
 
 use std::{borrow::Cow, marker::PhantomData};
 
-use defuse_kdf::{CurveArithmetics, Schema};
+use defuse_kdf::{CurveArithmetic, Schema};
 use near_account_id::AccountIdRef;
 use near_mpc_crypto_types::{Tweak, kdf::derive_tweak};
 
@@ -39,7 +39,7 @@ where
     }
 }
 
-pub trait NearMpcCurve: CurveArithmetics + sealed::Sealed {
+pub trait NearMpcCurve: CurveArithmetic + sealed::Sealed {
     fn tweak(tweak: Tweak) -> Self::Scalar;
 }
 
