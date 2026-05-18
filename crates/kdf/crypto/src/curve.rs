@@ -1,10 +1,5 @@
 /// An ellipitc curve.
 pub trait Curve: 'static {
-    // /// A path to derive both [public](DerivablePublicKey::derive) and
-    // /// [signing](DeriveSigner::derive_sign) keys for.
-    // /// Typically, it should be an output of a cryptographic hash function.
-    // type Path: ?Sized;
-
     /// Public key of the curve
     type PublicKey;
 
