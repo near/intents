@@ -28,9 +28,9 @@ pub struct PayloadSignature<A: Algorithm + ?Sized> {
     /// Serialized [clientDataJSON](https://w3c.github.io/webauthn/#dom-authenticatorresponse-clientdatajson)
     pub client_data_json: String,
 
-    #[cfg_attr(feature = "abi", schemars(with = "String"))]
     // schemars@0.8 does not respect it's `schemars(bound = "...")`
     // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
+    #[cfg_attr(feature = "abi", schemars(with = "String"))]
     pub signature: A::Signature,
 }
 
