@@ -18,7 +18,7 @@ where
         self.secp256k1_master_sk
             .schema()
             .derive(ReduceScalar::<Secp256k1>::new())
-            .derive(CurveSchema::new())
+            .derive(CurveSchema::<Secp256k1>::new())
     }
 
     fn derive_sign(&self, path: P, msg: &[u8; 32]) -> <Secp256k1 as Curve>::Signature {

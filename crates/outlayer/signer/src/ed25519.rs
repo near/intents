@@ -16,7 +16,7 @@ where
         self.ed25519_master_sk
             .schema()
             .derive(ReduceScalar::<Ed25519>::new())
-            .derive(CurveSchema::new())
+            .derive(CurveSchema::<Ed25519>::new())
     }
 
     fn derive_sign(&self, path: P, msg: &[u8]) -> <Ed25519 as Curve>::Signature {
