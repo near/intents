@@ -46,6 +46,8 @@ serde = [
 text = []
 
 [dev-dependencies]
+defuse-ton-connect = { path = ".", features = ["serde", "arbitrary"] }
+
 defuse-core.workspace = true
 defuse-crypto = { workspace = true, features = ["near-contract"] }
 defuse-test-utils.workspace = true

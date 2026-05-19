@@ -2022,6 +2022,7 @@ dependencies = [
  "defuse-digest",
  "defuse-serde-utils",
  "defuse-test-utils",
+ "defuse-ton-connect",
  "hex-literal",
  "impl-tools",
  "near-sdk",
