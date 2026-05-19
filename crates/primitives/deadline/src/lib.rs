@@ -94,13 +94,15 @@ impl SubAssign<Duration> for Deadline {
 }
 
 #[cfg(feature = "borsh")]
-macro_rules! impl_borsh_serde_as {
+const _: () = {
+    use defuse_borsh_utils::adapters::{
+        BorshDeserializeAs, BorshSerializeAs, TimestampMicroSeconds, TimestampMilliSeconds,
+        TimestampNanoSeconds, TimestampSeconds,
+    };
+
+    macro_rules! impl_borsh_serde_as {
     ($($a:ident,)+) => {
         const _: () = {
-            use defuse_borsh_utils::adapters::{
-                BorshDeserializeAs, BorshSerializeAs,
-                TimestampMicroSeconds, TimestampMilliSeconds, TimestampNanoSeconds, TimestampSeconds,
-            };
             $(
                 impl<I> BorshSerializeAs<Deadline> for $a<I>
                 where
@@ -129,10 +131,11 @@ macro_rules! impl_borsh_serde_as {
         };
     };
 }
-#[cfg(feature = "borsh")]
-impl_borsh_serde_as! {
-    TimestampSeconds, TimestampMilliSeconds, TimestampMicroSeconds, TimestampNanoSeconds,
-}
+
+    impl_borsh_serde_as! {
+        TimestampSeconds, TimestampMilliSeconds, TimestampMicroSeconds, TimestampNanoSeconds,
+    }
+};
 
 #[cfg(test)]
 mod tests {
