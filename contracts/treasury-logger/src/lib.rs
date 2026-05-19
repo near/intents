@@ -34,6 +34,12 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
+        let token = env::predecessor_account_id();
+
+        require!(
+            token != env::current_account_id(),
+            "self-deposits are forbidden",
+        );
         require!(!amounts.is_empty(), "invalid args");
         require!(
             token_ids.len() == amounts.len(),
@@ -45,7 +51,7 @@ impl MultiTokenReceiver for Contract {
         );
 
         Event::MtDeposit {
-            token: env::predecessor_account_id().into(),
+            token: token.into(),
             sender_id: sender_id.into(),
             previous_owner_ids: previous_owner_ids.iter().map(Into::into).collect(),
             token_ids: token_ids.iter().map(Into::into).collect(),
@@ -81,12 +87,39 @@ mod tests {
     use defuse_nep245::receiver::MultiTokenReceiver;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::{VMContextBuilder, get_logs};
-    use near_sdk::{AccountId, testing_env};
+    use near_sdk::{AccountId, AccountIdRef, testing_env};
     use rstest::rstest;
+
+    const CURRENT_ACCOUNT_ID: &AccountIdRef = AccountIdRef::new_or_panic("treasury.near");
 
     #[rstest]
     #[case(
         "intents.near",
+        "alice.near",
+        ["alice.near"],
+        ["nep141:wrap.near"],
+        [1],
+        "test"
+    )]
+    #[case(
+        "intents.near",
+        "alice.near",
+        ["alice.near"],
+        ["nep141:wrap.near"],
+        [100],
+        "test"
+    )]
+    #[case(
+        "intents.near",
+        "alice.near",
+        ["alice.near"],
+        ["nep141:wrap.near"],
+        [u128::MAX],
+        "test"
+    )]
+    #[should_panic = "self-deposit"]
+    #[case::self_deposit_panics(
+        CURRENT_ACCOUNT_ID,
         "alice.near",
         ["alice.near"],
         ["nep141:wrap.near"],
@@ -103,15 +136,15 @@ mod tests {
         "test"
     )]
     fn test_mt_deposit_event<'a>(
-        #[case] token: &'a str,
-        #[case] sender_id: &'a str,
+        #[case] token: impl AsRef<str>,
+        #[case] sender_id: impl AsRef<str>,
         #[case] previous_owner_ids: impl IntoIterator<Item = &'a str>,
         #[case] token_ids: impl IntoIterator<Item = &'a str>,
         #[case] amounts: impl IntoIterator<Item = u128>,
-        #[case] msg: &'a str,
+        #[case] msg: &str,
     ) {
-        let token: AccountId = token.parse().unwrap();
-        let sender_id: AccountId = sender_id.parse().unwrap();
+        let token: AccountId = token.as_ref().parse().unwrap();
+        let sender_id: AccountId = sender_id.as_ref().parse().unwrap();
         let previous_owner_ids: Vec<AccountId> = previous_owner_ids
             .into_iter()
             .map(|a| a.parse().unwrap())
@@ -121,6 +154,7 @@ mod tests {
         let amounts: Vec<_> = amounts.into_iter().map(U128).collect();
 
         let context = VMContextBuilder::new()
+            .current_account_id(CURRENT_ACCOUNT_ID.into())
             .predecessor_account_id(token.clone())
             .build();
         testing_env!(context);
