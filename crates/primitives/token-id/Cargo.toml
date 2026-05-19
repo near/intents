@@ -34,10 +34,10 @@ serde = ["dep:serde_with"]
 
 [dev-dependencies]
 defuse-test-utils.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
 
 arbitrary.workspace = true
 borsh.workspace = true
 hex.workspace = true
+near-account-id = { workspace = true, features = ["arbitrary"] }
 rstest.workspace = true
 serde_json.workspace = true

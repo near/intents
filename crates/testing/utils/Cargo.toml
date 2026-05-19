@@ -14,11 +14,13 @@ defuse = []
 escrow = []
 wallet = []
 outlayer = []
+near-contract = ["dep:defuse-core", "dep:defuse-crypto"]
 
 [dependencies]
-defuse-core = { workspace = true, features = ["arbitrary"] }
-defuse-crypto = { workspace = true, features = ["arbitrary", "ed25519", "secp256k1", "p256"] }
 defuse-randomness.workspace = true
+
+defuse-core = { workspace = true, features = ["arbitrary"], optional = true }
+defuse-crypto = { workspace = true, features = ["arbitrary", "ed25519", "secp256k1", "p256"], optional = true }
 
 arbitrary.workspace = true
 rstest.workspace = true

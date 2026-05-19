@@ -2002,7 +2002,6 @@ dependencies = [
  "derive_more",
  "hex",
  "near-account-id",
- "near-sdk",
  "rstest",
  "schemars 0.8.22",
  "serde_json",
