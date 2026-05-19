@@ -1,20 +1,28 @@
-use defuse_nep245::TokenId;
-use defuse_nep245::receiver::MultiTokenReceiver;
+mod event;
+mod state;
+
+use defuse_borsh_utils::adapters::As;
+use defuse_nep245::{TokenId, receiver::MultiTokenReceiver};
+use impl_tools::autoimpl;
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, PromiseOrValue, env, near, require};
 
-use crate::event::Event;
-
-mod event;
+use self::{event::*, state::*};
 
 #[near(
     contract_state,
     contract_metadata(standard(standard = "logger", version = "0.1.0"))
 )]
+#[autoimpl(Deref using self.0)]
+#[autoimpl(DerefMut using self.0)]
 #[derive(Default)]
-pub struct Contract {
-    nonce: u128,
-}
+pub struct Contract(
+    #[borsh(
+        deserialize_with = "As::<VersionedState>::deserialize",
+        serialize_with = "As::<VersionedState>::serialize"
+    )]
+    State,
+);
 
 #[near]
 impl Contract {
@@ -83,12 +91,16 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
-    use crate::Contract;
     use defuse_nep245::receiver::MultiTokenReceiver;
-    use near_sdk::json_types::U128;
-    use near_sdk::test_utils::{VMContextBuilder, get_logs};
-    use near_sdk::{AccountId, AccountIdRef, testing_env};
+    use near_sdk::{
+        AccountId, AccountIdRef,
+        json_types::U128,
+        test_utils::{VMContextBuilder, get_logs},
+        testing_env,
+    };
     use rstest::rstest;
+
+    use super::*;
 
     const CURRENT_ACCOUNT_ID: &AccountIdRef = AccountIdRef::new_or_panic("treasury.near");
 
