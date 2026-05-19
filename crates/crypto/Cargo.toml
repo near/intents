@@ -7,7 +7,6 @@ repository.workspace = true
 
 [dependencies]
 bs58 = { workspace = true }
-near-account-id.workspace = true
 strum.workspace = true
 thiserror.workspace = true
 
@@ -30,8 +29,8 @@ ed25519 = ["dep:ed25519-dalek"]
 secp256k1 = []
 p256 = ["dep:generic-array", "dep:p256"]
 
-borsh = ["dep:borsh", "near-account-id/borsh"]
-serde = ["dep:serde", "dep:serde_with", "near-account-id/serde"]
+borsh = ["dep:borsh"]
+serde = ["dep:serde", "dep:serde_with"]
 abi = [
   "borsh?/unstable__schema",
   "dep:schemars",

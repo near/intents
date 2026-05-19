@@ -11,8 +11,6 @@ pub mod parse;
 #[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 mod signature;
 
-pub use near_account_id::{AccountId, AccountIdRef};
-
 /// 32-byte cryptographic hash output.
 pub type CryptoHash = [u8; 32];
 
