@@ -10,7 +10,7 @@ workspace = true
 
 [features]
 abi = ["defuse-borsh-utils?/abi", "dep:schemars"]
-borsh = ["defuse-borsh-utils"]
+borsh = ["dep:defuse-borsh-utils"]
 near-contract = ["dep:defuse-near-utils"]
 serde = ["dep:serde"]
 
