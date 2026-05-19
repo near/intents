@@ -39,7 +39,7 @@ pub trait GlobalDeployer {
     fn gd_transfer_ownership(&mut self, receiver_id: AccountId);
 
     /// Returns the current owner's account ID.
-    fn gd_owner_id(&self) -> AccountId;
+    fn gd_owner_id(&self) -> Cow<'_, AccountIdRef>;
 
     /// Returns the SHA-256 hash of the currently deployed code, or `0000..000` if none.
     fn gd_code_hash(&self) -> AsHex<[u8; 32]>;

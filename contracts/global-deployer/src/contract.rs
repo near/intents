@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
     AccountId, AccountIdRef, Gas, NearToken, PanicOnDefault, Promise, assert_one_yocto, env, near,
@@ -20,7 +22,7 @@ const GD_POST_DEPLOY_MIN_GAS: Gas = Gas::from_tgas(15);
     )
 )]
 #[derive(PanicOnDefault)]
-pub struct Contract(State);
+pub struct Contract(State<'static>);
 
 #[near]
 impl GlobalDeployer for Contract {
@@ -73,8 +75,8 @@ impl GlobalDeployer for Contract {
         self.transfer_ownership(receiver_id);
     }
 
-    fn gd_owner_id(&self) -> AccountId {
-        self.0.owner_id.clone()
+    fn gd_owner_id(&self) -> Cow<'_, AccountIdRef> {
+        self.0.owner_id.as_ref().into()
     }
 
     fn gd_code_hash(&self) -> AsHex<[u8; 32]> {
@@ -125,16 +127,18 @@ impl Contract {
 
     fn transfer_ownership(&mut self, new_owner_id: AccountId) {
         Event::Transfer {
-            old_owner_id: (&self.0.owner_id).into(),
+            old_owner_id: self.0.owner_id.as_ref().into(),
             new_owner_id: (&new_owner_id).into(),
         }
         .emit();
 
-        self.0.owner_id = new_owner_id;
-        self.approve(
-            State::DEFAULT_HASH,
-            Reason::By(self.0.owner_id.clone().into()),
-        );
+        self.0.owner_id = new_owner_id.into();
+        self.0.approved_hash = State::DEFAULT_HASH;
+        Event::Approve {
+            code_hash: State::DEFAULT_HASH,
+            reason: Reason::By(self.0.owner_id.as_ref().into()),
+        }
+        .emit();
     }
 
     fn is_approved(&self, hash: &[u8; 32]) -> bool {
@@ -146,6 +150,6 @@ impl Contract {
     }
 
     fn is_owner(&self, account_id: &AccountIdRef) -> bool {
-        account_id == self.0.owner_id
+        self.0.owner_id.as_ref() == account_id
     }
 }

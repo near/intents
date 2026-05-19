@@ -45,7 +45,7 @@ fn main() {
     let approved_hash = args.approve.unwrap_or([0u8; 32]);
 
     let state = State {
-        owner_id: args.owner_id,
+        owner_id: args.owner_id.into(),
         code_hash,
         approved_hash,
     };

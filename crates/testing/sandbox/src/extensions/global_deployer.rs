@@ -13,7 +13,7 @@ pub trait DeployerExt {
     async fn deploy_instance(
         &self,
         deployer_code_hash_id: GlobalContractId,
-        state: DeployerState,
+        state: DeployerState<'static>,
     ) -> anyhow::Result<Account>;
 
     async fn gd_deploy(
@@ -54,7 +54,7 @@ impl DeployerExt for SigningAccount {
     async fn deploy_instance(
         &self,
         global_contract_id: GlobalContractId,
-        state: DeployerState,
+        state: DeployerState<'static>,
     ) -> anyhow::Result<Account> {
         let account_id = self
             .state_init(

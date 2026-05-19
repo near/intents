@@ -1,7 +1,6 @@
-#[cfg(feature = "borsh")]
-use std::collections::BTreeMap;
+use std::borrow::Cow;
 
-pub use near_account_id::AccountId;
+use near_account_id::AccountIdRef;
 
 #[cfg_attr(
     feature = "borsh",
@@ -16,19 +15,19 @@ pub use near_account_id::AccountId;
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct State {
-    pub owner_id: AccountId,
+pub struct State<'a> {
+    pub owner_id: Cow<'a, AccountIdRef>,
     #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::hex::Hex"))]
     pub code_hash: [u8; 32],
     #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::hex::Hex"))]
     pub approved_hash: [u8; 32],
 }
 
-impl State {
-    pub const STATE_KEY: &[u8] = b"";
+impl<'a> State<'a> {
+    pub const STATE_KEY: &'static [u8] = b"";
     pub const DEFAULT_HASH: [u8; 32] = [0; 32];
 
-    pub fn new(owner: impl Into<AccountId>) -> Self {
+    pub fn new(owner: impl Into<Cow<'a, AccountIdRef>>) -> Self {
         Self {
             owner_id: owner.into(),
             code_hash: Self::DEFAULT_HASH,
@@ -51,7 +50,7 @@ impl State {
     }
 
     #[cfg(feature = "borsh")]
-    pub fn state_init(&self) -> BTreeMap<Vec<u8>, Vec<u8>> {
+    pub fn state_init(&self) -> std::collections::BTreeMap<Vec<u8>, Vec<u8>> {
         [(
             Self::STATE_KEY.to_vec(),
             ::borsh::to_vec(self).unwrap_or_else(|_| unreachable!()),
