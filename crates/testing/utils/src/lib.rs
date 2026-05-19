@@ -1,5 +1,5 @@
 pub mod asserts;
-#[cfg(feature = "crypto")]
+#[cfg(feature = "near-contract")]
 pub mod fixtures;
 pub mod random;
 pub mod tamper;
