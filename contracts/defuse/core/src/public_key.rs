@@ -4,8 +4,8 @@ use core::{
 };
 
 use defuse_crypto::{
-    Curve, CurveType, Ed25519, P256UncompressedPublicKey, ParseCurveError, Secp256k1,
-    parse::checked_base58_decode_array,
+    Curve, CurveType, Ed25519, P256, P256UncompressedPublicKey, ParseCurveError, Secp256k1,
+    TypedCurve,
 };
 use near_sdk::{AccountId, AccountIdRef, bs58, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
@@ -126,9 +126,9 @@ impl FromStr for PublicKey {
         };
 
         match curve {
-            CurveType::Ed25519 => checked_base58_decode_array(data).map(Self::Ed25519),
-            CurveType::Secp256k1 => checked_base58_decode_array(data).map(Self::Secp256k1),
-            CurveType::P256 => checked_base58_decode_array(data)
+            CurveType::Ed25519 => Ed25519::parse_base58(data).map(Self::Ed25519),
+            CurveType::Secp256k1 => Secp256k1::parse_base58(data).map(Self::Secp256k1),
+            CurveType::P256 => P256::parse_base58(data)
                 .map(P256UncompressedPublicKey)
                 .map(Self::P256),
         }

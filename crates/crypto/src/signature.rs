@@ -10,8 +10,7 @@ use crate::P256;
 #[cfg(feature = "secp256k1")]
 use crate::Secp256k1;
 
-use crate::parse::checked_base58_decode_array;
-use crate::{Curve, CurveType, ParseCurveError};
+use crate::{Curve, CurveType, ParseCurveError, TypedCurve};
 
 #[cfg_attr(
     feature = "borsh",
@@ -99,11 +98,11 @@ impl FromStr for Signature {
 
         match curve {
             #[cfg(feature = "ed25519")]
-            CurveType::Ed25519 => checked_base58_decode_array(data).map(Self::Ed25519),
+            CurveType::Ed25519 => Ed25519::parse_base58(data).map(Self::Ed25519),
             #[cfg(feature = "secp256k1")]
-            CurveType::Secp256k1 => checked_base58_decode_array(data).map(Self::Secp256k1),
+            CurveType::Secp256k1 => Secp256k1::parse_base58(data).map(Self::Secp256k1),
             #[cfg(feature = "p256")]
-            CurveType::P256 => checked_base58_decode_array(data).map(Self::P256),
+            CurveType::P256 => P256::parse_base58(data).map(Self::P256),
         }
     }
 }
