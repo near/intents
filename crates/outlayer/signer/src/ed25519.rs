@@ -1,7 +1,4 @@
-use defuse_kdf::{
-    Additive, Curve, Derive, DeriveExt, DeriveSigner, Ed25519, ReduceScalar, Schema,
-    curve25519_dalek::Scalar,
-};
+use defuse_kdf::{Additive, Curve, Derive, DeriveExt, DeriveSigner, Ed25519, ReduceScalar, Schema};
 use sha3::{Digest, Sha3_256};
 
 use crate::{CurveSchema, InMemorySigner};
@@ -11,17 +8,23 @@ where
     P: AsRef<[u8]>,
 {
     type Schema<'a>
-        = Derive<Additive<Ed25519>, CurveSchema<Ed25519>>
+        = Derive<Derive<Additive<Ed25519>, ReduceScalar<Ed25519>>, CurveSchema<Ed25519>>
     where
         Self: 'a;
 
     fn schema(&self) -> Self::Schema<'_> {
-        Additive::new(self.ed25519_master_sk.verifying_key()).derive(CurveSchema::new())
+        self.ed25519_master_sk
+            .schema()
+            .derive(ReduceScalar::<Ed25519>::new())
+            .derive(CurveSchema::new())
     }
 
     fn derive_sign(&self, path: P, msg: &[u8]) -> <Ed25519 as Curve>::Signature {
-        let tweak = CurveSchema::<Ed25519>::new().derive_path(path);
-        self.ed25519_master_sk.derive_sign(tweak, msg)
+        self.ed25519_master_sk
+            .by_ref()
+            .derive(ReduceScalar::<Ed25519>::new())
+            .derive(CurveSchema::<Ed25519>::new())
+            .derive_sign(path, msg)
     }
 }
 
@@ -29,7 +32,7 @@ impl<P> Schema<P> for CurveSchema<Ed25519>
 where
     P: AsRef<[u8]>,
 {
-    type Output = Scalar;
+    type Output = [u8; 32];
 
     fn derive_path(&self, path: P) -> Self::Output {
         // use domain-separated hashers to avoid algebraic relations between
@@ -43,9 +46,7 @@ where
 
         let hasher = HASHER.with(Clone::clone);
 
-        let path: [u8; 32] = hasher.chain_update(path).finalize().into();
-
-        ReduceScalar::<Ed25519>::default().derive_path(path)
+        hasher.chain_update(path).finalize().into()
     }
 }
 
@@ -76,7 +77,7 @@ mod tests {
     ) {
         let got = CurveSchema::<Ed25519>::default().derive_path(path);
 
-        assert_eq!(got.to_bytes(), expected_tweak, "derived tweak has changed");
+        assert_eq!(got, expected_tweak, "derived tweak has changed");
     }
 
     #[rstest]
