@@ -2,7 +2,7 @@
 mod near;
 
 #[cfg(feature = "near-contract")]
-pub use near::*;
+pub use near::{Keccak256, Sha256};
 
 #[cfg(all(feature = "sha2", not(feature = "near-contract")))]
 pub use sha2::Sha256;
