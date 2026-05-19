@@ -16,8 +16,8 @@ serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
 
 [dev-dependencies]
+defuse-crypto = { workspace = true, features = ["near-contract"] }
 defuse-test-utils.workspace = true
-defuse-crypto = {workspace = true, features = ["near-contract"] }
 ed25519-dalek.workspace = true
 near-crypto.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
