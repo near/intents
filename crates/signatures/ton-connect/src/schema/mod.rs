@@ -2,7 +2,6 @@ use core::str;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-use near_sdk::near;
 use tlb_ton::{MsgAddress, StringError};
 
 #[cfg(feature = "binary")]
@@ -25,7 +24,8 @@ impl TonConnectPayloadContext<'_> {
         &self,
         payload_prefix: &[u8],
         payload: &[u8],
-    ) -> Result<near_sdk::CryptoHash, StringError> {
+    ) -> Result<defuse_crypto::CryptoHash, StringError> {
+        use defuse_digest::Digest;
         let domain_len = u32::try_from(self.domain.len())
             .map_err(|_| tlb_ton::Error::custom("domain: overflow"))?;
         let payload_len = u32::try_from(payload.len())
@@ -45,7 +45,7 @@ impl TonConnectPayloadContext<'_> {
         ]
         .concat();
 
-        Ok(near_sdk::env::sha256_array(&bytes))
+        Ok(defuse_digest::Sha256::digest(&bytes).into())
     }
 }
 
@@ -53,13 +53,17 @@ pub trait PayloadSchema {
     fn hash_with_context(
         &self,
         context: TonConnectPayloadContext,
-    ) -> Result<near_sdk::CryptoHash, StringError>;
+    ) -> Result<defuse_crypto::CryptoHash, StringError>;
 }
 
 /// See <https://docs.tonconsole.com/academy/sign-data#choosing-the-right-format>
-#[cfg_attr(test, derive(arbitrary::Arbitrary))]
-#[near(serializers = [json])]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
+    serde(tag = "type", rename_all = "snake_case")
+)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TonConnectPayloadSchema {
     #[cfg(feature = "text")]
@@ -93,7 +97,7 @@ impl PayloadSchema for TonConnectPayloadSchema {
     fn hash_with_context(
         &self,
         context: TonConnectPayloadContext,
-    ) -> Result<near_sdk::CryptoHash, StringError> {
+    ) -> Result<defuse_crypto::CryptoHash, StringError> {
         match self {
             #[cfg(feature = "text")]
             Self::Text(payload) => payload.hash_with_context(context),

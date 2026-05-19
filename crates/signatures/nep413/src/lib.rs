@@ -1,25 +1,36 @@
 use core::fmt::Display;
 
-use defuse_crypto::{CryptoHash, Curve, Ed25519, Payload, SignedPayload, serde::AsCurve};
-use defuse_near_utils::UnwrapOrPanicError;
-use defuse_nep461::{OffchainMessage, SignedMessageNep};
-use defuse_serde_utils::base64::Base64;
+use defuse_crypto::{Curve, Ed25519};
+use defuse_nep461::SignedMessageNep;
 use impl_tools::autoimpl;
-use near_sdk::{borsh, env, near, serde_with::serde_as};
 
 /// See [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)
-#[near(serializers = [borsh, json])]
-#[serde(rename_all = "camelCase")]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+)]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
+    serde(rename_all = "camelCase")
+)]
 #[derive(Debug, Clone)]
 pub struct Nep413Payload {
     pub message: String,
 
-    #[serde_as(as = "Base64")]
+    #[cfg_attr(feature = "serde", serde_as(as = "defuse_serde_utils::base64::Base64"))]
     pub nonce: [u8; 32],
 
     pub recipient: String,
 
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
     pub callback_url: Option<String>,
 }
 
@@ -62,45 +73,36 @@ impl Nep413Payload {
         self
     }
 
+    #[cfg(feature = "borsh")]
     #[inline]
     pub fn prehash(&self) -> Vec<u8> {
-        borsh::to_vec(&(Self::OFFCHAIN_PREFIX_TAG, self)).unwrap_or_panic_display()
+        use defuse_nep461::OffchainMessage;
+        borsh::to_vec(&(Self::OFFCHAIN_PREFIX_TAG, self)).expect("borsh")
     }
 }
 
-impl Payload for Nep413Payload {
-    #[inline]
-    fn hash(&self) -> CryptoHash {
-        env::sha256_array(self.prehash())
-    }
-}
-
-#[near(serializers = [json])]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone)]
 pub struct SignedNep413Payload {
     pub payload: Nep413Payload,
 
-    #[serde_as(as = "AsCurve<Ed25519>")]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
+    )]
     pub public_key: <Ed25519 as Curve>::PublicKey,
-    #[serde_as(as = "AsCurve<Ed25519>")]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
+    )]
     pub signature: <Ed25519 as Curve>::Signature,
-}
-
-impl Payload for SignedNep413Payload {
-    #[inline]
-    fn hash(&self) -> CryptoHash {
-        self.payload.hash()
-    }
-}
-
-impl SignedPayload for SignedNep413Payload {
-    type PublicKey = <Ed25519 as Curve>::PublicKey;
-
-    #[inline]
-    fn verify(&self) -> Option<Self::PublicKey> {
-        Ed25519::verify(&self.signature, &self.hash(), &self.public_key)
-    }
 }
 
 #[cfg(feature = "near-api")]

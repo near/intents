@@ -7,6 +7,7 @@ pub mod fees;
 pub mod intents;
 mod nonce;
 pub mod payload;
+pub mod public_key;
 pub mod tokens;
 
 pub use self::{error::*, nonce::*};

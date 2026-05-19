@@ -9,17 +9,23 @@ repository.workspace = true
 workspace = true
 
 [features]
-abi = ["defuse-borsh-utils/abi", "near-sdk/abi"]
+abi = ["defuse-borsh-utils?/abi", "dep:schemars"]
+borsh = ["dep:defuse-borsh-utils"]
+near-contract = ["dep:defuse-near-utils"]
+serde = ["dep:serde"]
 
 [dependencies]
-defuse-borsh-utils = { workspace = true, features = ["chrono"] }
-defuse-near-utils = { workspace = true, features = ["time"] }
+defuse-borsh-utils = { workspace = true, features = ["chrono"], optional = true }
+defuse-near-utils = { workspace = true, features = ["time"], optional = true }
 
 chrono = { workspace = true, features = ["serde"] }
-near-sdk.workspace = true
+
+schemars = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 chrono = { workspace = true, features = ["clock", "now", "serde"] }
 
 [dev-dependencies]
-near-sdk = { workspace = true, features = ["unit-testing"] }
+borsh.workspace = true
+near-sdk = { workspace = true, features = ["non-contract-usage"] }

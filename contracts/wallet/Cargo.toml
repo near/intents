@@ -13,21 +13,20 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
-defuse-bitmap.workspace = true
+defuse-bitmap = { workspace = true, features = ["borsh"] }
 defuse-borsh-utils.workspace = true
-defuse-deadline.workspace = true
+defuse-deadline = { workspace = true, features = ["borsh", "serde"] }
 defuse-serde-utils = { workspace = true, features = ["base58"] }
 
 derive_more = { workspace = true, features = ["from"] }
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 thiserror.workspace = true
 
-defuse-crypto = { workspace = true, default-features = false, optional = true }
-defuse-webauthn = { workspace = true, default-features = false, optional = true }
+defuse-crypto = { workspace = true, default-features = false, features = ["borsh"], optional = true }
+defuse-webauthn = { workspace = true, default-features = false, features = ["borsh"], optional = true }
 
 arbitrary = { workspace = true, optional = true }
 rand_core = { workspace = true, optional = true }
-
 [features]
 abi = [
   "defuse-bitmap/abi",
@@ -47,7 +46,11 @@ webauthn = ["dep:defuse-webauthn"]
 # This can be useful to deploy "1-of-M multisig"/"fan-out" wallet, where
 # extensions are pre-defined at the initialization stage (i.e. state_init).
 # So only extensions can execute requests via `w_execute_extension()`.
-contract = []
+contract = [
+  "defuse-crypto?/near-contract",
+  "defuse-deadline/near-contract",
+  "defuse-webauthn?/near-contract",
+]
 
 # Webauthn (a.k.a passkey) variants:
 webauthn-ed25519 = ["defuse-webauthn/ed25519", "webauthn"]

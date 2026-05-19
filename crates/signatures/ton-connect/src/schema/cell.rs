@@ -1,10 +1,6 @@
-use core::str;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-use defuse_serde_utils::{base64::Base64, tlb::AsBoC};
-use near_sdk::near;
-use serde_with::serde_as;
 use tlb_ton::{
     Cell, MsgAddress, Ref, SnakeData, StringError,
     bits::{NoArgs, ser::BitWriterExt},
@@ -14,11 +10,20 @@ use tlb_ton::{
 use crate::schema::{PayloadSchema, TonConnectPayloadContext};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(test, derive(arbitrary::Arbitrary))]
-#[near(serializers = [json])]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 pub struct CellPayload {
     pub schema_crc: u32,
-    #[serde_as(as = "AsBoC<Base64>")]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_serde_utils::tlb::AsBoC<defuse_serde_utils::base64::Base64>")
+    )]
     pub cell: Cell,
 }
 
@@ -69,7 +74,7 @@ impl PayloadSchema for CellPayload {
     fn hash_with_context(
         &self,
         context: TonConnectPayloadContext,
-    ) -> Result<near_sdk::CryptoHash, StringError> {
+    ) -> Result<defuse_crypto::CryptoHash, StringError> {
         let cell = TonConnectCellMessage {
             schema_crc: self.schema_crc,
             timestamp: context.timestamp,
@@ -80,6 +85,6 @@ impl PayloadSchema for CellPayload {
         .to_cell(())?;
 
         // use host function for recursive hash calculation
-        Ok(cell.hash_digest::<defuse_near_utils::digest::Sha256>())
+        Ok(cell.hash_digest::<defuse_digest::Sha256>())
     }
 }

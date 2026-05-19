@@ -1,25 +1,21 @@
 //! TON Connect [signData](https://github.com/ton-blockchain/ton-connect/blob/main/requests-responses.md#sign-data)
 mod schema;
 
-use std::borrow::Cow;
-
 use chrono::{DateTime, Utc};
-use defuse_crypto::{Curve, Ed25519, Payload, SignedPayload, serde::AsCurve};
-use defuse_near_utils::UnwrapOrPanicError;
+use defuse_crypto::Ed25519;
 use impl_tools::autoimpl;
-use near_sdk::{
-    near,
-    serde_with::{PickFirst, TimestampSeconds, serde_as},
-};
-use tlb_ton::{Error, MsgAddress, StringError};
+use tlb_ton::MsgAddress;
 
 pub use schema::TonConnectPayloadSchema;
 pub use tlb_ton;
 
-use crate::schema::{PayloadSchema, TonConnectPayloadContext};
-
-#[cfg_attr(test, derive(arbitrary::Arbitrary))]
-#[near(serializers = [json])]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TonConnectPayload {
@@ -29,14 +25,35 @@ pub struct TonConnectPayload {
     /// dApp domain
     pub domain: String,
     /// UNIX timestamp (in seconds or RFC3339) at the time of singing
-    #[cfg_attr(test, arbitrary(with = ::tlb_ton::UnixTimestamp::arbitrary))]
-    #[serde_as(as = "PickFirst<(_, TimestampSeconds)>")]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "::serde_with::PickFirst<(_, ::serde_with::TimestampSeconds)>")
+    )]
     pub timestamp: DateTime<Utc>,
     pub payload: TonConnectPayloadSchema,
 }
 
+// `serde_as` requires `cfg_eval`, which pre-expands field `cfg_attr`s during derive
+// pre-processing — before the compiler resolves derive helper attributes in the re-emitted
+// item. This breaks fields that combine `serde_as` and `#[arbitrary(with = ...)]`.
+#[cfg(feature = "arbitrary")]
+impl<'a> arbitrary::Arbitrary<'a> for TonConnectPayload {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+        Ok(Self {
+            address: u.arbitrary()?,
+            domain: u.arbitrary()?,
+            timestamp: ::tlb_ton::UnixTimestamp::arbitrary(u)?,
+            payload: u.arbitrary()?,
+        })
+    }
+}
+
 impl TonConnectPayload {
-    fn try_hash(&self) -> Result<near_sdk::CryptoHash, StringError> {
+    pub fn try_hash(&self) -> Result<defuse_crypto::CryptoHash, tlb_ton::StringError> {
+        use crate::schema::{PayloadSchema, TonConnectPayloadContext};
+        use std::borrow::Cow;
+        use tlb_ton::Error;
+
         let timestamp: u64 = self
             .timestamp
             .timestamp()
@@ -51,43 +68,36 @@ impl TonConnectPayload {
 
         self.payload.hash_with_context(context)
     }
-}
 
-impl Payload for TonConnectPayload {
-    #[inline]
-    fn hash(&self) -> near_sdk::CryptoHash {
-        self.try_hash().unwrap_or_panic_str()
+    pub fn hash(&self) -> defuse_crypto::CryptoHash {
+        self.try_hash().expect("ton-connect hash")
     }
 }
 
-#[cfg_attr(test, derive(arbitrary::Arbitrary))]
-#[near(serializers = [json])]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SignedTonConnectPayload {
-    #[serde(flatten)]
+    #[cfg_attr(feature = "serde", serde(flatten))]
     pub payload: TonConnectPayload,
 
-    #[serde_as(as = "AsCurve<Ed25519>")]
-    pub public_key: <Ed25519 as Curve>::PublicKey,
-    #[serde_as(as = "AsCurve<Ed25519>")]
-    pub signature: <Ed25519 as Curve>::Signature,
-}
-
-impl Payload for SignedTonConnectPayload {
-    #[inline]
-    fn hash(&self) -> near_sdk::CryptoHash {
-        self.payload.hash()
-    }
-}
-
-impl SignedPayload for SignedTonConnectPayload {
-    type PublicKey = <Ed25519 as Curve>::PublicKey;
-
-    #[inline]
-    fn verify(&self) -> Option<Self::PublicKey> {
-        Ed25519::verify(&self.signature, &self.hash(), &self.public_key)
-    }
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
+    )]
+    pub public_key: <Ed25519 as defuse_crypto::Curve>::PublicKey,
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
+    )]
+    pub signature: <Ed25519 as defuse_crypto::Curve>::Signature,
 }
 
 #[cfg(test)]
@@ -98,11 +108,10 @@ mod tests {
     use arbitrary::{Arbitrary, Unstructured};
     use defuse_test_utils::random::random_bytes;
     use hex_literal::hex;
-    use near_sdk::serde_json;
     use rstest::rstest;
     use tlb_ton::UnixTimestamp;
 
-    #[cfg(feature = "text")]
+    #[cfg(all(feature = "text", feature = "serde"))]
     #[rstest]
     fn verify_text(random_bytes: Vec<u8>) {
         verify(
@@ -126,7 +135,7 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "binary")]
+    #[cfg(all(feature = "binary", feature = "serde"))]
     #[rstest]
     fn verify_binary(random_bytes: Vec<u8>) {
         verify(
@@ -150,7 +159,7 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "cell")]
+    #[cfg(all(feature = "cell", feature = "serde"))]
     #[rstest]
     fn verify_cell(random_bytes: Vec<u8>) {
         use tlb_ton::BagOfCells;
@@ -184,6 +193,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "serde")]
     fn verify(signed: &SignedTonConnectPayload, random_bytes: &[u8]) {
         verify_ok(signed, true);
 
@@ -215,6 +225,7 @@ mod tests {
         }
     }
 
+    #[cfg(all(feature = "arbitrary", feature = "serde"))]
     #[rstest]
     fn arbitrary(random_bytes: Vec<u8>) {
         verify_ok(
@@ -223,12 +234,20 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "serde")]
     fn verify_ok(signed: &SignedTonConnectPayload, ok: bool) {
         let serialized = serde_json::to_string_pretty(signed).unwrap();
         println!("{}", &serialized);
         let deserialized: SignedTonConnectPayload = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(&deserialized, signed);
-        assert_eq!(deserialized.verify(), ok.then_some(deserialized.public_key));
+        assert_eq!(
+            <Ed25519 as defuse_crypto::VerifiableCurve>::verify(
+                &deserialized.signature,
+                &deserialized.hash(),
+                &deserialized.public_key,
+            ),
+            ok.then_some(deserialized.public_key)
+        );
     }
 }

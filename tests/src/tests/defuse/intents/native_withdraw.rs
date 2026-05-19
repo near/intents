@@ -3,8 +3,8 @@ use defuse_sandbox::{
     extensions::defuse::{
         contract::{
             core::{
-                crypto::PublicKey,
                 intents::tokens::NativeWithdraw,
+                public_key::PublicKey,
                 token_id::{TokenId, nep141::Nep141TokenId},
             },
             tokens::DepositMessage,

@@ -9,10 +9,10 @@ use std::{borrow::Cow, collections::HashSet};
 use defuse_core::{
     DefuseError, Nonce, Result,
     accounts::{AccountEvent, PublicKeyEvent},
-    crypto::PublicKey,
     engine::{State, StateView},
     events::DefuseEvent,
     intents::{MaybeIntentEvent, account::SetAuthByPredecessorId},
+    public_key::PublicKey,
 };
 
 use defuse_near_utils::{Lock, NestPrefix, UnwrapOrPanic};

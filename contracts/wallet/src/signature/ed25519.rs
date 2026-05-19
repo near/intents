@@ -1,4 +1,4 @@
-use defuse_crypto::Curve;
+use defuse_crypto::VerifiableCurve;
 pub use defuse_crypto::{Ed25519, Ed25519PublicKey, Ed25519Signature};
 
 use crate::signature::SigningStandard;
@@ -14,6 +14,6 @@ where
         let Ok(sig) = signature.parse::<Ed25519Signature>() else {
             return false;
         };
-        <Self as Curve>::verify(&sig.0, msg.as_ref(), &public_key.0).is_some()
+        <Self as VerifiableCurve>::verify(&sig.0, msg.as_ref(), &public_key.0).is_some()
     }
 }

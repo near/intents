@@ -6,7 +6,6 @@ use defuse_sandbox::extensions::defuse::{
     account_manager::{AccountManagerExt, AccountViewExt},
     contract::core::{
         amounts::Amounts,
-        crypto::PublicKey,
         fees::{FeesConfig, Pips},
         intents::{
             Intent,
@@ -17,6 +16,7 @@ use defuse_sandbox::extensions::defuse::{
                 FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer,
             },
         },
+        public_key::PublicKey,
         token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
     },
     deployer::DefuseExt,

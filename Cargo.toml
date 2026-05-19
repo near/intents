@@ -4,7 +4,9 @@ members = [
   "contracts/defuse",
   "contracts/defuse/core",
   "contracts/global-deployer",
+  "contracts/global-deployer/core",
   "contracts/outlayer-app",
+  "contracts/outlayer-app/core",
   "contracts/escrow-swap",
   "contracts/poa/factory",
   "contracts/poa/token",
@@ -28,6 +30,7 @@ members = [
 
   "crates/primitives/deadline",
   "crates/primitives/decimal",
+  "crates/primitives/digest",
   "crates/primitives/fees",
   "crates/primitives/token-id",
 
@@ -71,7 +74,9 @@ defuse.path = "contracts/defuse"
 defuse-core.path = "contracts/defuse/core"
 defuse-escrow-swap.path = "contracts/escrow-swap"
 defuse-global-deployer.path = "contracts/global-deployer"
+defuse-global-deployer-core = { path = "contracts/global-deployer/core", default-features = false }
 defuse-outlayer-app.path = "contracts/outlayer-app"
+defuse-outlayer-app-core = { path = "contracts/outlayer-app/core", default-features = false }
 defuse-poa-factory.path = "contracts/poa/factory"
 defuse-poa-token.path = "contracts/poa/token"
 defuse-wallet.path = "contracts/wallet"
@@ -93,6 +98,7 @@ defuse-wnear.path = "crates/near/wnear"
 
 defuse-deadline.path = "crates/primitives/deadline"
 defuse-decimal.path = "crates/primitives/decimal"
+defuse-digest.path = "crates/primitives/digest"
 defuse-fees.path = "crates/primitives/fees"
 defuse-token-id = { path = "crates/primitives/token-id", default-features = false }
 
@@ -124,7 +130,7 @@ defuse-outlayer-vm-runner-cli.path = "crates/outlayer/vm-runner/cli"
 defuse-tests.path = "tests"
 
 cargo-near-build = "0.9.0"
-near-account-id = "2.4.0"
+near-account-id = "2.6.0"
 near-api = "0.8.6"
 near-api-types = "0.8.6"
 near-contract-standards = "5.24"
@@ -173,7 +179,7 @@ rand = "0.10"
 rand_core = "0.10"
 reqwest = "0.13.3"
 rstest = "0.25"
-schemars = "0.8"
+schemars = { version = "0.8", default-features = false }
 serde = "1"
 serde_json = "1"
 serde_with = "3.17"

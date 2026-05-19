@@ -7,10 +7,10 @@ use defuse::core::intents::tokens::{
     FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer,
 };
 use defuse::core::intents::{Intent, MaybeIntentEvent};
+use defuse::core::payload::Payload;
 use defuse::core::payload::{DefusePayload, ExtractDefusePayload};
 use defuse::core::tokens::TransferEvent;
 use defuse::core::{intents::DefuseIntents, payload::multi::MultiPayload};
-use defuse_crypto::Payload;
 use near_sdk::{AccountId, AsNep297Event, CryptoHash};
 use std::borrow::Cow;
 

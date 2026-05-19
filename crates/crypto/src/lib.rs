@@ -7,17 +7,20 @@
 //! intended for internal use.
 
 mod curve;
-mod parse;
-mod payload;
-#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
-mod public_key;
+mod error;
 #[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 mod signature;
 
-pub use self::{curve::*, parse::ParseCurveError, payload::*};
+/// 32-byte cryptographic hash output.
+pub type CryptoHash = [u8; 32];
+
+pub use self::{curve::*, error::ParseCurveError};
 
 #[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
-pub use self::{public_key::*, signature::*};
+pub use self::signature::*;
 
-#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
+#[cfg(all(
+    any(feature = "ed25519", feature = "secp256k1", feature = "p256"),
+    feature = "serde"
+))]
 pub mod serde;

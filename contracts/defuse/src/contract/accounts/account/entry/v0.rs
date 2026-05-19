@@ -6,7 +6,7 @@ use near_sdk::{
     store::{IterableSet, LookupMap},
 };
 
-use defuse_core::{Nonces, crypto::PublicKey};
+use defuse_core::{Nonces, public_key::PublicKey};
 
 use crate::contract::accounts::{
     Account, AccountState, MaybeLegacyAccountNonces,

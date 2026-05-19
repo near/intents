@@ -2,9 +2,9 @@ use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
     core::{
         amounts::Amounts,
-        crypto::PublicKey,
         fees::Pips,
         intents::tokens::Transfer,
+        public_key::PublicKey,
         token_id::{TokenId, nep141::Nep141TokenId},
     },
     nep245::Token,

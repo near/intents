@@ -1,5 +1,5 @@
 use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
-use defuse::core::{Nonce, crypto::PublicKey};
+use defuse::core::{Nonce, public_key::PublicKey};
 use defuse_serde_utils::base64::AsBase64;
 use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, serde_json::json};

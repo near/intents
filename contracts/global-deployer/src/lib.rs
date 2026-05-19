@@ -2,12 +2,13 @@
 mod contract;
 pub mod error;
 
-use std::{borrow::Cow, collections::BTreeMap};
+use std::borrow::Cow;
 
 pub use defuse_borsh_utils::adapters::{AsWrap, Remainder};
+pub use defuse_global_deployer_core::State;
 pub use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
-    AccountId, AccountIdRef, Promise, borsh, ext_contract, near,
+    AccountId, AccountIdRef, Promise, ext_contract, near,
     serde_with::{hex::Hex, serde_as},
 };
 
@@ -77,52 +78,4 @@ pub enum Event<'a> {
 pub enum Reason<'a> {
     Deploy(#[serde_as(as = "Hex")] [u8; 32]),
     By(Cow<'a, AccountIdRef>),
-}
-
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct State {
-    /// Owner's account ID.
-    pub owner_id: AccountId,
-    /// Currently deployed code hash, or zeros otherwise.
-    #[serde_as(as = "Hex")]
-    pub code_hash: [u8; 32],
-    /// Hash of the approved next deployment, or zeros if none.
-    #[serde_as(as = "Hex")]
-    pub approved_hash: [u8; 32],
-}
-
-impl State {
-    pub const STATE_KEY: &[u8] = b"";
-    pub const DEFAULT_HASH: [u8; 32] = [0; 32];
-
-    pub fn new(owner: impl Into<AccountId>) -> Self {
-        Self {
-            owner_id: owner.into(),
-            code_hash: Self::DEFAULT_HASH,
-            approved_hash: Self::DEFAULT_HASH,
-        }
-    }
-
-    #[must_use]
-    pub fn with_index(mut self, index: u32) -> Self {
-        let mut hash = [0u8; 32];
-        hash[32 - 4..].copy_from_slice(&index.to_be_bytes());
-        self.code_hash = hash;
-        self
-    }
-
-    #[must_use]
-    pub const fn pre_approve(mut self, hash: [u8; 32]) -> Self {
-        self.approved_hash = hash;
-        self
-    }
-
-    pub fn state_init(&self) -> BTreeMap<Vec<u8>, Vec<u8>> {
-        [(
-            Self::STATE_KEY.to_vec(),
-            borsh::to_vec(self).unwrap_or_else(|_| unreachable!()),
-        )]
-        .into()
-    }
 }

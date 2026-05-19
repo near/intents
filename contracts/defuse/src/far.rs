@@ -1,6 +1,6 @@
 /// Extensions defined in this module should be used only in FAR chain
 /// and are not expected to be supported on the main chain
-use defuse_core::crypto::PublicKey;
+use defuse_core::public_key::PublicKey;
 use near_plugins::AccessControllable;
 use near_sdk::{AccountId, ext_contract};
 use std::collections::HashMap;

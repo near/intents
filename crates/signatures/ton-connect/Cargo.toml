@@ -10,37 +10,51 @@ workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
-defuse-near-utils = { workspace = true, features = ["digest"] }
-defuse-serde-utils = { workspace = true, features = ["base64", "tlb"] }
+defuse-digest = { workspace = true, features = ["sha2"] }
+
+defuse-serde-utils = { workspace = true, features = ["base64", "tlb"], optional = true }
 
 chrono = { workspace = true, features = ["serde"] }
 impl-tools.workspace = true
-near-sdk.workspace = true
-schemars = { workspace = true, features = ["chrono"] }
-serde_with = { workspace = true, features = ["chrono_0_4"] }
 tlb-ton = { workspace = true, features = ["serde"] }
+
+arbitrary = { workspace = true, optional = true }
+cfg_eval = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["chrono"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_with = { workspace = true, features = ["chrono_0_4"], optional = true }
 
 [features]
 default = ["binary", "cell", "text"]
 abi = [
   "defuse-crypto/abi",
   "defuse-serde-utils/abi",
-  "near-sdk/abi",
+  "dep:schemars",
   "tlb-ton/schemars_0_8",
 ]
-arbitrary = ["tlb-ton/arbitrary"]
+arbitrary = ["dep:arbitrary", "tlb-ton/arbitrary"]
 binary = []
 cell = []
+near-contract = ["defuse-crypto/near-contract", "defuse-digest/near-contract"]
+serde = [
+  "defuse-crypto/serde",
+  "dep:cfg_eval",
+  "dep:defuse-serde-utils",
+  "dep:serde",
+  "dep:serde_with",
+]
 text = []
 
-[package.metadata.cargo-machete]
-ignored = ["schemars"] # used by #[near] macro for ABI generation
-
 [dev-dependencies]
+defuse-ton-connect = { path = ".", features = ["serde", "arbitrary"] }
+
+defuse-core.workspace = true
+defuse-crypto = { workspace = true, features = ["near-contract"] }
 defuse-test-utils.workspace = true
+near-sdk = { workspace = true, features = ["non-contract-usage", "unit-testing"] }
 
 arbitrary.workspace = true
 hex-literal.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
+serde_json.workspace = true
 tlb-ton = { workspace = true, features = ["arbitrary", "base64"] }

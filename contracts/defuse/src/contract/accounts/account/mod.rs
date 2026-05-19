@@ -5,7 +5,7 @@ pub use self::{entry::*, nonces::MaybeLegacyAccountNonces};
 
 use bitflags::bitflags;
 use defuse_bitmap::U256;
-use defuse_core::{NoncePrefix, Result, crypto::PublicKey};
+use defuse_core::{NoncePrefix, Result, public_key::PublicKey};
 
 use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;

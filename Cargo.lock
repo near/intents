@@ -1420,9 +1420,9 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "bnum",
+ "borsh",
  "defuse-map-utils",
  "hex-literal",
- "near-sdk",
  "num-traits",
  "rstest",
 ]
@@ -1456,6 +1456,7 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-crypto",
  "defuse-deadline",
+ "defuse-digest",
  "defuse-erc191",
  "defuse-fees",
  "defuse-map-utils",
@@ -1475,6 +1476,7 @@ dependencies = [
  "hex-literal",
  "impl-tools",
  "itertools",
+ "near-api-types",
  "near-contract-standards",
  "near-sdk",
  "rstest",
@@ -1487,13 +1489,17 @@ name = "defuse-crypto"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "borsh",
+ "bs58 0.5.1",
  "ed25519-dalek",
  "generic-array 1.4.0",
- "hex",
- "near-api-types",
  "near-sdk",
  "p256",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
  "strum 0.27.2",
  "thiserror 2.0.18",
 ]
@@ -1502,10 +1508,13 @@ dependencies = [
 name = "defuse-deadline"
 version = "0.1.0"
 dependencies = [
+ "borsh",
  "chrono",
  "defuse-borsh-utils",
  "defuse-near-utils",
  "near-sdk",
+ "schemars 0.8.22",
+ "serde",
 ]
 
 [[package]]
@@ -1513,22 +1522,36 @@ name = "defuse-decimal"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "borsh",
  "defuse-num-utils",
+ "rstest",
+ "schemars 0.8.22",
+ "serde_with",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "defuse-digest"
+version = "0.1.0"
+dependencies = [
+ "defuse-test-utils",
+ "digest 0.11.2",
  "near-sdk",
  "rstest",
- "thiserror 2.0.18",
+ "sha2 0.11.0",
+ "sha3 0.11.0",
 ]
 
 [[package]]
 name = "defuse-erc191"
 version = "0.1.0"
 dependencies = [
+ "cfg_eval",
  "defuse-crypto",
- "defuse-test-utils",
- "hex-literal",
  "impl-tools",
- "near-sdk",
- "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
 ]
 
 [[package]]
@@ -1562,8 +1585,10 @@ dependencies = [
 name = "defuse-fees"
 version = "0.1.0"
 dependencies = [
+ "borsh",
  "defuse-num-utils",
- "near-sdk",
+ "schemars 0.8.22",
+ "serde",
  "thiserror 2.0.18",
 ]
 
@@ -1573,9 +1598,22 @@ version = "0.2.0"
 dependencies = [
  "clap",
  "defuse-borsh-utils",
+ "defuse-global-deployer-core",
  "defuse-serde-utils",
  "hex",
  "near-sdk",
+]
+
+[[package]]
+name = "defuse-global-deployer-core"
+version = "0.1.0"
+dependencies = [
+ "borsh",
+ "cfg_eval",
+ "near-account-id",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
 ]
 
 [[package]]
@@ -1597,7 +1635,6 @@ dependencies = [
  "chrono",
  "defuse-borsh-utils",
  "defuse-test-utils",
- "digest 0.11.2",
  "impl-tools",
  "near-sdk",
  "rstest",
@@ -1617,13 +1654,17 @@ dependencies = [
 name = "defuse-nep413"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "cfg_eval",
  "defuse-crypto",
- "defuse-near-utils",
  "defuse-nep461",
  "defuse-serde-utils",
  "impl-tools",
  "near-api",
- "near-sdk",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
 ]
 
 [[package]]
@@ -1642,10 +1683,23 @@ name = "defuse-outlayer-app"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "defuse-outlayer-app-core",
  "defuse-serde-utils",
  "hex",
  "near-sdk",
  "url",
+]
+
+[[package]]
+name = "defuse-outlayer-app-core"
+version = "0.1.0"
+dependencies = [
+ "borsh",
+ "cfg_eval",
+ "near-account-id",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
 ]
 
 [[package]]
@@ -1828,7 +1882,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "defuse",
- "defuse-crypto",
+ "defuse-core",
  "defuse-escrow-swap",
  "defuse-global-deployer",
  "defuse-nep245",
@@ -1855,6 +1909,7 @@ dependencies = [
 name = "defuse-sep53"
 version = "0.1.0"
 dependencies = [
+ "cfg_eval",
  "defuse-crypto",
  "defuse-test-utils",
  "ed25519-dalek",
@@ -1862,6 +1917,9 @@ dependencies = [
  "near-crypto 0.35.1",
  "near-sdk",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
  "stellar-strkey",
 ]
 
@@ -1883,6 +1941,7 @@ name = "defuse-test-utils"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "defuse-core",
  "defuse-crypto",
  "defuse-randomness",
  "rstest",
@@ -1925,12 +1984,12 @@ dependencies = [
 name = "defuse-tip191"
 version = "0.1.0"
 dependencies = [
+ "cfg_eval",
  "defuse-crypto",
- "defuse-test-utils",
- "hex-literal",
  "impl-tools",
- "near-sdk",
- "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
 ]
 
 [[package]]
@@ -1938,13 +1997,15 @@ name = "defuse-token-id"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
- "defuse-nep245",
+ "borsh",
  "defuse-test-utils",
  "derive_more",
  "hex",
- "near-contract-standards",
- "near-sdk",
+ "near-account-id",
  "rstest",
+ "schemars 0.8.22",
+ "serde_json",
+ "serde_with",
  "strum 0.27.2",
  "thiserror 2.0.18",
 ]
@@ -1954,16 +2015,21 @@ name = "defuse-ton-connect"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "cfg_eval",
  "chrono",
+ "defuse-core",
  "defuse-crypto",
- "defuse-near-utils",
+ "defuse-digest",
  "defuse-serde-utils",
  "defuse-test-utils",
+ "defuse-ton-connect",
  "hex-literal",
  "impl-tools",
  "near-sdk",
  "rstest",
  "schemars 0.8.22",
+ "serde",
+ "serde_json",
  "serde_with",
  "tlb-ton",
 ]
@@ -2025,6 +2091,8 @@ dependencies = [
 name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "defuse-digest",
  "defuse-wallet",
  "ed25519-dalek",
  "impl-tools",
@@ -2037,8 +2105,12 @@ name = "defuse-webauthn"
 version = "0.1.0"
 dependencies = [
  "defuse-crypto",
+ "defuse-digest",
  "defuse-serde-utils",
- "near-sdk",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
 ]
 
 [[package]]

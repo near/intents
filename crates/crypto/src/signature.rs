@@ -3,11 +3,6 @@ use core::{
     str::FromStr,
 };
 
-use near_sdk::{
-    bs58, near,
-    serde_with::{DeserializeFromStr, SerializeDisplay},
-};
-
 #[cfg(feature = "ed25519")]
 use crate::Ed25519;
 #[cfg(feature = "p256")]
@@ -15,13 +10,19 @@ use crate::P256;
 #[cfg(feature = "secp256k1")]
 use crate::Secp256k1;
 
-use crate::{Curve, CurveType, ParseCurveError, parse::checked_base58_decode_array};
+use crate::{Curve, CurveType, ParseCurveError, TypedCurve};
 
-#[near(serializers = [borsh(use_discriminant = true)])]
-#[derive(
-    Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, SerializeDisplay, DeserializeFromStr,
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    borsh(use_discriminant = true),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[serde_with(crate = "::near_sdk::serde_with")]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
+)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 pub enum Signature {
     #[cfg(feature = "ed25519")]
@@ -97,24 +98,21 @@ impl FromStr for Signature {
 
         match curve {
             #[cfg(feature = "ed25519")]
-            CurveType::Ed25519 => checked_base58_decode_array(data).map(Self::Ed25519),
+            CurveType::Ed25519 => Ed25519::parse_base58(data).map(Self::Ed25519),
             #[cfg(feature = "secp256k1")]
-            CurveType::Secp256k1 => checked_base58_decode_array(data).map(Self::Secp256k1),
+            CurveType::Secp256k1 => Secp256k1::parse_base58(data).map(Self::Secp256k1),
             #[cfg(feature = "p256")]
-            CurveType::P256 => checked_base58_decode_array(data).map(Self::P256),
+            CurveType::P256 => P256::parse_base58(data).map(Self::P256),
         }
     }
 }
 
 #[cfg(feature = "abi")]
 const _: () = {
-    use near_sdk::{
-        schemars::{
-            JsonSchema,
-            r#gen::SchemaGenerator,
-            schema::{InstanceType, Metadata, Schema, SchemaObject},
-        },
-        serde_json,
+    use schemars::{
+        JsonSchema,
+        r#gen::SchemaGenerator,
+        schema::{InstanceType, Metadata, Schema, SchemaObject},
     };
 
     impl JsonSchema for Signature {
@@ -142,8 +140,7 @@ const _: () = {
                             #[cfg(feature = "p256")]
                             Self::example_p256(),
                         ]
-                        .map(serde_json::to_value)
-                        .map(Result::unwrap)
+                        .map(|s: Self| serde_json::Value::String(s.to_string()))
                         .into(),
                         ..Default::default()
                     }

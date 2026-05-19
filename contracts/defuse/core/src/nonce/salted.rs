@@ -182,7 +182,6 @@ mod tests {
     use arbitrary::Unstructured;
     use defuse_test_utils::random::{Rng, RngExt, random_bytes, rng};
     use near_sdk::{test_utils::VMContextBuilder, testing_env};
-
     use rstest::rstest;
 
     impl From<&[u8]> for Salt {

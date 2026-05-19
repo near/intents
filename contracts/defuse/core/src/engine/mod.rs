@@ -3,7 +3,7 @@ mod state;
 
 pub use self::{inspector::*, state::*};
 
-use defuse_crypto::{Payload, SignedPayload};
+use crate::payload::{Payload, SignedPayload};
 
 use crate::{
     Deadline, DefuseError, ExpirableNonce, Nonce, Result, SaltedNonce, VersionedNonce,

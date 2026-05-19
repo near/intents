@@ -1,4 +1,4 @@
-use defuse::core::{crypto::Payload, intents::MaybeIntentEvent};
+use defuse::core::{intents::MaybeIntentEvent, payload::Payload};
 use defuse_sandbox::extensions::defuse::event::ToEventLog;
 use defuse_sandbox::extensions::defuse::{
     intents::ExecuteIntentsExt, nonce::ExtractNonceExt, signer::DefaultDefuseSignerExt,
@@ -7,9 +7,9 @@ use defuse_sandbox::{
     assert_eq_defuse_event_logs,
     extensions::defuse::contract::core::{
         accounts::{AccountEvent, PublicKeyEvent},
-        crypto::PublicKey,
         events::DefuseEvent,
         intents::account::{AddPublicKey, RemovePublicKey},
+        public_key::PublicKey,
     },
 };
 use near_sdk::AsNep297Event;

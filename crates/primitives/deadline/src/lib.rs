@@ -1,20 +1,18 @@
+use chrono::{DateTime, SubsecRound, Utc};
 use core::{
     ops::{Add, AddAssign, Sub, SubAssign},
     time::Duration,
 };
-use std::io;
-
-use chrono::{DateTime, SubsecRound, Utc};
-use defuse_borsh_utils::adapters::{
-    BorshDeserializeAs, BorshSerializeAs, TimestampMicroSeconds, TimestampMilliSeconds,
-    TimestampNanoSeconds, TimestampSeconds,
-};
-use near_sdk::near;
-
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[near(serializers = [json])]
 #[repr(transparent)]
-pub struct Deadline(#[cfg_attr(feature = "abi", schemars(with = "String"))] DateTime<Utc>);
+pub struct Deadline(
+    #[cfg_attr(all(feature = "serde", feature = "abi"), schemars(with = "String"))] DateTime<Utc>,
+);
 
 impl Deadline {
     pub const UNIX_EPOCH: Self = Self::new(DateTime::UNIX_EPOCH);
@@ -95,49 +93,61 @@ impl SubAssign<Duration> for Deadline {
     }
 }
 
-macro_rules! impl_borsh_serde_as {
-    ($($a:ident,)+) => {$(
-        impl<I> BorshSerializeAs<Deadline> for $a<I>
-        where
-            $a<I>: BorshSerializeAs<DateTime<Utc>>,
-        {
-            fn serialize_as<W>(source: &Deadline, writer: &mut W) -> io::Result<()>
-            where
-                W: io::Write,
-            {
-                Self::serialize_as(&source.0, writer)
-            }
-        }
+#[cfg(feature = "borsh")]
+const _: () = {
+    use defuse_borsh_utils::adapters::{
+        BorshDeserializeAs, BorshSerializeAs, TimestampMicroSeconds, TimestampMilliSeconds,
+        TimestampNanoSeconds, TimestampSeconds,
+    };
 
-        impl<I> BorshDeserializeAs<Deadline> for $a<I>
-        where
-            $a<I>: BorshDeserializeAs<DateTime<Utc>>,
-        {
-            fn deserialize_as<R>(reader: &mut R) -> io::Result<Deadline>
-            where
-                R: io::Read,
-            {
-                Self::deserialize_as(reader).map(Deadline)
-            }
-        }
-    )*};
+    macro_rules! impl_borsh_serde_as {
+    ($($a:ident,)+) => {
+        const _: () = {
+            $(
+                impl<I> BorshSerializeAs<Deadline> for $a<I>
+                where
+                    $a<I>: BorshSerializeAs<DateTime<Utc>>,
+                {
+                    fn serialize_as<W>(source: &Deadline, writer: &mut W) -> std::io::Result<()>
+                    where
+                        W: std::io::Write,
+                    {
+                        Self::serialize_as(&source.0, writer)
+                    }
+                }
+
+                impl<I> BorshDeserializeAs<Deadline> for $a<I>
+                where
+                    $a<I>: BorshDeserializeAs<DateTime<Utc>>,
+                {
+                    fn deserialize_as<R>(reader: &mut R) -> std::io::Result<Deadline>
+                    where
+                        R: std::io::Read,
+                    {
+                        Self::deserialize_as(reader).map(Deadline)
+                    }
+                }
+            )*
+        };
+    };
 }
-impl_borsh_serde_as! {
-    TimestampSeconds, TimestampMilliSeconds, TimestampMicroSeconds, TimestampNanoSeconds,
-}
+
+    impl_borsh_serde_as! {
+        TimestampSeconds, TimestampMilliSeconds, TimestampMicroSeconds, TimestampNanoSeconds,
+    }
+};
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "abi")]
+    #[cfg(all(feature = "abi", feature = "borsh"))]
     #[test]
     fn schema_as_usage() {
         use super::*;
+        use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
         use chrono::TimeZone;
-        use defuse_borsh_utils::adapters::As;
-        use near_sdk::borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
+        use defuse_borsh_utils::adapters::{As, TimestampNanoSeconds};
 
         #[derive(BorshSerialize, BorshDeserialize, BorshSchema)]
-        #[borsh(crate = "::near_sdk::borsh")]
         struct S {
             #[borsh(
                 serialize_with = "As::<TimestampNanoSeconds>::serialize",
@@ -153,7 +163,7 @@ mod tests {
         let val = S {
             deadline: Deadline::new(Utc.timestamp_opt(1_600_000_000, 123_456_789).unwrap()),
         };
-        let bytes = near_sdk::borsh::to_vec(&val).unwrap();
+        let bytes = borsh::to_vec(&val).unwrap();
         let decoded = S::try_from_slice(&bytes).unwrap();
         assert_eq!(val.deadline, decoded.deadline);
     }

@@ -1,16 +1,16 @@
 use std::{fmt, str::FromStr};
 
-use near_sdk::{
-    AccountId, near,
-    serde_with::{DeserializeFromStr, SerializeDisplay},
-};
+use near_account_id::AccountId;
 
 use crate::{TokenIdType, error::TokenIdError};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(::arbitrary::Arbitrary))]
-#[near(serializers = [borsh])]
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
-#[serde_with(crate = "::near_sdk::serde_with")]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Nep141TokenId {
     pub contract_id: AccountId,
 }

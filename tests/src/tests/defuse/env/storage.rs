@@ -11,8 +11,8 @@ use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
     core::{
         Deadline, Nonce,
-        crypto::PublicKey,
         intents::{DefuseIntents, Intent, account::AddPublicKey},
+        public_key::PublicKey,
         token_id::{TokenId, nep141::Nep141TokenId},
     },
     nep245::Token,

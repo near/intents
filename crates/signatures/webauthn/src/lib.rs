@@ -1,3 +1,8 @@
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde_with::serde_as;
+
+use defuse_serde_utils::base64::{Base64, Unpadded, UrlSafe};
+
 #[cfg(feature = "ed25519")]
 mod ed25519;
 #[cfg(feature = "ed25519")]
@@ -8,36 +13,24 @@ mod p256;
 #[cfg(feature = "p256")]
 pub use self::p256::*;
 
-use defuse_serde_utils::base64::{Base64, Unpadded, UrlSafe};
-use near_sdk::{
-    env, near,
-    serde::{Serialize, de::DeserializeOwned},
-    serde_json,
-};
-
-#[near(serializers = [json])]
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[serde(bound(
     serialize = "<A as Algorithm>::Signature: Serialize",
     deserialize = "<A as Algorithm>::Signature: DeserializeOwned",
 ))]
-#[derive(Debug, Clone)]
 pub struct PayloadSignature<A: Algorithm + ?Sized> {
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
-    #[cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
-        schemars(with = "String")
-    )]
     #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
+    #[cfg_attr(feature = "abi", schemars(with = "String"))]
     pub authenticator_data: Vec<u8>,
     /// Serialized [clientDataJSON](https://w3c.github.io/webauthn/#dom-authenticatorresponse-clientdatajson)
     pub client_data_json: String,
 
-    #[cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
-        // schemars@0.8 does not respect it's `schemars(bound = "...")`
-        // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
-        schemars(with = "String"),
-    )]
+    // schemars@0.8 does not respect it's `schemars(bound = "...")`
+    // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
+    #[cfg_attr(feature = "abi", schemars(with = "String"))]
     pub signature: A::Signature,
 }
 
@@ -53,6 +46,7 @@ impl<A: Algorithm + ?Sized> PayloadSignature<A> {
         public_key: &A::PublicKey,
         user_verification: UserVerification,
     ) -> bool {
+        use defuse_digest::Digest;
         // verify authData flags
         if self.authenticator_data.len() < 37
             || !Self::verify_flags(self.authenticator_data[32], user_verification)
@@ -76,12 +70,12 @@ impl<A: Algorithm + ?Sized> PayloadSignature<A> {
 
         // 20. Let hash be the result of computing a hash over the cData using
         // SHA-256
-        let hash = env::sha256_array(self.client_data_json.as_bytes());
+        let hash = defuse_digest::Sha256::digest(self.client_data_json.as_bytes());
 
         // 21. Using credentialRecord.publicKey, verify that sig is a valid
         // signature over the binary concatenation of authData and hash.
         A::verify(
-            &[self.authenticator_data.as_slice(), hash.as_slice()].concat(),
+            &[self.authenticator_data.as_slice(), hash.as_ref()].concat(),
             public_key,
             &self.signature,
         )
@@ -143,8 +137,9 @@ pub trait Algorithm {
 }
 
 /// For more details, refer to [WebAuthn specification](https://w3c.github.io/webauthn/#dictdef-collectedclientdata).
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 pub struct CollectedClientData {
     #[serde(rename = "type")]
     pub typ: ClientDataType,
@@ -155,8 +150,9 @@ pub struct CollectedClientData {
     pub origin: String,
 }
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[serde_as]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 pub enum ClientDataType {
     /// Serializes to the string `"webauthn.create"`
     #[serde(rename = "webauthn.create")]

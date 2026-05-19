@@ -7,9 +7,9 @@ use defuse::{
     contract::Role,
     core::{
         accounts::{AccountEvent, PublicKeyEvent},
-        crypto::PublicKey,
         events::DefuseEvent,
         intents::MaybeIntentEvent,
+        public_key::PublicKey,
     },
 };
 use defuse_randomness::{Rng, RngExt};
