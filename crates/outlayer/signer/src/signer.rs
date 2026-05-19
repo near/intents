@@ -46,12 +46,13 @@ impl InMemorySigner {
     }
 }
 
-/// [`Schema`](defuse_kdf::Schema) used by [`InMemorySigner`]
+/// Curve-specific domain-separated [`Schema`](defuse_kdf::Schema)
+/// used by [`InMemorySigner`]
 #[autoimpl(Clone, Default)]
 #[derive(Copy)]
-pub struct CurveSchema<C>(PhantomData<C>);
+pub struct CurveDomain<C>(PhantomData<C>);
 
-impl<C> CurveSchema<C> {
+impl<C> CurveDomain<C> {
     #[inline]
     pub const fn new() -> Self {
         Self(PhantomData)

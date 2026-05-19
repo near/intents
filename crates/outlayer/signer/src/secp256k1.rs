@@ -3,14 +3,14 @@ use defuse_kdf::{
 };
 use sha3::{Digest, Sha3_256};
 
-use crate::{CurveSchema, InMemorySigner};
+use crate::{CurveDomain, InMemorySigner};
 
 impl<P> DeriveSigner<Secp256k1, P> for InMemorySigner
 where
     P: AsRef<[u8]>,
 {
     type Schema<'a>
-        = Derive<Derive<Additive<Secp256k1>, ReduceScalar<Secp256k1>>, CurveSchema<Secp256k1>>
+        = Derive<Derive<Additive<Secp256k1>, ReduceScalar<Secp256k1>>, CurveDomain<Secp256k1>>
     where
         Self: 'a;
 
@@ -18,19 +18,19 @@ where
         self.secp256k1_master_sk
             .schema()
             .derive(ReduceScalar::<Secp256k1>::new())
-            .derive(CurveSchema::<Secp256k1>::new())
+            .derive(CurveDomain::<Secp256k1>::new())
     }
 
     fn derive_sign(&self, path: P, msg: &[u8; 32]) -> <Secp256k1 as Curve>::Signature {
         self.secp256k1_master_sk
             .by_ref()
             .derive(ReduceScalar::<Secp256k1>::new())
-            .derive(CurveSchema::<Secp256k1>::new())
+            .derive(CurveDomain::<Secp256k1>::new())
             .derive_sign(path, msg)
     }
 }
 
-impl<P> Schema<P> for CurveSchema<Secp256k1>
+impl<P> Schema<P> for CurveDomain<Secp256k1>
 where
     P: AsRef<[u8]>,
 {
@@ -77,7 +77,7 @@ mod tests {
         #[case] path: impl AsRef<[u8]>,
         #[case] expected_tweak: [u8; 32],
     ) {
-        let got = CurveSchema::<Secp256k1>::default().derive_path(path);
+        let got = CurveDomain::<Secp256k1>::default().derive_path(path);
 
         assert_eq!(got, expected_tweak, "derived tweak has changed");
     }
