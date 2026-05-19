@@ -7,14 +7,14 @@
 //! intended for internal use.
 
 mod curve;
-pub mod parse;
+mod error;
 #[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 mod signature;
 
 /// 32-byte cryptographic hash output.
 pub type CryptoHash = [u8; 32];
 
-pub use self::{curve::*, parse::ParseCurveError};
+pub use self::{curve::*, error::ParseCurveError};
 
 #[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 pub use self::signature::*;

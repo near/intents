@@ -68,6 +68,20 @@ pub trait TypedCurve: Curve {
         } else {
             s
         };
-        crate::parse::checked_base58_decode_array(data)
+        checked_base58_decode_array(data)
     }
+}
+
+#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
+fn checked_base58_decode_array<const N: usize>(
+    input: impl AsRef<[u8]>,
+) -> Result<[u8; N], crate::ParseCurveError> {
+    let mut output = [0u8; N];
+    let n = bs58::decode(input.as_ref())
+        // NOTE: `.into_array_const()` doesn't return an error on insufficient
+        // input length and pads the array with zeros
+        .onto(&mut output)?;
+    (n == N)
+        .then_some(output)
+        .ok_or(crate::ParseCurveError::InvalidLength)
 }
