@@ -1425,7 +1425,6 @@ dependencies = [
  "hex-literal",
  "num-traits",
  "rstest",
- "schemars 0.8.22",
 ]
 
 [[package]]
