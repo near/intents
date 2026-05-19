@@ -56,7 +56,6 @@ members = [
   "crates/outlayer/sys",
   "crates/outlayer/vm-runner",
   "crates/outlayer/vm-runner/cli",
-  "crates/outlayer/exploit-bench",
 
   "tests",
 ]

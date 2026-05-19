@@ -34,6 +34,8 @@ pub struct VmRuntime {
 }
 
 impl VmRuntime {
+    pub const MEMORY_LIMIT: usize = 100 * 1024 * 1024; // 100 MiB
+
     /// Creates a new `VmRuntime`.
     ///
     /// Async support and fuel metering are always enabled and cannot be

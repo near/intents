@@ -1,4 +1,30 @@
-use defuse_outlayer_vm_runner::VmRuntime;
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize)
+)]
+#[derive(Debug, Clone, Copy)]
+pub struct ExecutorLimits {
+    #[cfg_attr(feature = "serde", serde_as(as = "Clamp<1, { 64 * 1024 * 1024 }, usize>"))]
+    pub stdin: usize,
+
+    #[cfg_attr(feature = "serde", serde_as(as = "Clamp<1, { 64 * 1024 * 1024 }, usize>"))]
+    pub stdout: usize,
+
+    #[cfg_attr(feature = "serde", serde_as(as = "Clamp<1, { 1024 * 1024 }, usize>"))]
+    pub stderr: usize,
+}
+
+impl Default for ExecutorLimits {
+    fn default() -> Self {
+        Self {
+            stdin: 4 * 1024 * 1024,
+            stdout: 4 * 1024 * 1024,
+            stderr: 16 * 1024,
+        }
+    }
+}
 
 #[cfg_attr(
     feature = "serde",
@@ -6,35 +32,22 @@ use defuse_outlayer_vm_runner::VmRuntime;
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize)
 )]
-pub struct ExecutorConfig {
+pub struct Config {
     #[cfg_attr(
         feature = "serde",
         serde_as(as = "Clamp<{ 1024 * 1024 }, { 4 * 1024 * 1024 * 1024 }, usize>")
     )]
     pub memory_limit: usize,
 
-    #[cfg_attr(feature = "serde", serde_as(as = "Clamp<1, { 64 * 1024 * 1024 }, usize>"))]
-    pub stdin_limit: usize,
-
-    #[cfg_attr(feature = "serde", serde_as(as = "Clamp<1, { 64 * 1024 * 1024 }, usize>"))]
-    pub stdout_limit: usize,
-
-    #[cfg_attr(feature = "serde", serde_as(as = "Clamp<1, { 1024 * 1024 }, usize>"))]
-    pub stderr_limit: usize,
+    #[cfg_attr(feature = "serde", serde(flatten))]
+    pub limits: ExecutorLimits,
 }
 
-impl Default for ExecutorConfig {
+impl Default for Config {
     fn default() -> Self {
-        const STDIN_LIMIT: usize = 4 * 1024 * 1024; // 4 MB
-        const STDOUT_LIMIT: usize = 4 * 1024 * 1024; // 4 MB
-        const STDERR_LIMIT: usize = 16 * 1024; // 16 KB
-        const MEMORY_LIMIT: usize = 100 * 1024 * 1024; // 100 MB
-
         Self {
-            stdin_limit: STDIN_LIMIT,
-            stdout_limit: STDOUT_LIMIT,
-            stderr_limit: STDERR_LIMIT,
-            memory_limit: MEMORY_LIMIT,
+            memory_limit: 100 * 1024 * 1024,
+            limits: ExecutorLimits::default(),
         }
     }
 }

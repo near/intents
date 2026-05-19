@@ -9,7 +9,7 @@ use figment::{
 use serde::{Deserialize, Serialize};
 use tower::service_fn;
 
-use defuse_outlayer_executor::{Executor, ExecutorConfig, ExecutorLimits};
+use defuse_outlayer_executor::{Executor, Config as ExecutorConfig, ExecutorLimits};
 use defuse_outlayer_service::{
     CacheBuilder, CacheConfig, Code, HttpResolver, NearResolver, Outlayer, Resolver,
     ResolverConfig, UrlResolver,

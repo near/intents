@@ -1,10 +1,9 @@
 mod compiler;
-mod error;
 mod config;
+mod error;
 
 pub use self::{compiler::*, config::*, error::*};
 
-use config::ExecutorLimits;
 use std::sync::Arc;
 
 pub use defuse_outlayer_vm_runner::host::Context as HostContext;
@@ -55,15 +54,14 @@ impl Outcome {
 
 impl Executor {
     pub fn new(
-        runtime: impl Into<Arc<VmRuntime>>,
         signer: impl Into<Arc<InMemorySigner>>,
-        limits: ExecutorLimits,
-    ) -> Self {
-        Self {
-            runtime: runtime.into(),
+        config: Config,
+    ) -> anyhow::Result<Self> {
+        Ok(Self {
+            runtime: Arc::new(VmRuntime::new(config.memory_limit)?),
             signer: signer.into(),
-            limits,
-        }
+            limits: config.limits,
+        })
     }
 
     pub fn compiler(&self) -> Compiler {
