@@ -30,13 +30,13 @@ pub trait OutlayerApp {
     fn oa_transfer_admin(&mut self, new_admin_id: AccountId);
 
     /// Returns the current admin's account ID.
-    fn oa_admin_id(&self) -> Cow<'_, AccountIdRef>;
+    fn oa_admin_id(&self) -> AccountId;
 
     /// Returns the approved code hash
     fn oa_code_hash(&self) -> AsHex<[u8; 32]>;
 
     /// Returns where the code binary can be found.
-    fn oa_code_url(&self) -> Cow<'_, str>;
+    fn oa_code_url(&self) -> String;
 }
 
 use near_sdk::ext_contract;

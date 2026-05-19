@@ -60,16 +60,16 @@ impl OutlayerApp for Contract {
         self.transfer_admin(new_admin_id);
     }
 
-    fn oa_admin_id(&self) -> Cow<'_, AccountIdRef> {
-        self.0.admin_id.as_ref().into()
+    fn oa_admin_id(&self) -> AccountId {
+        self.0.admin_id.as_ref().to_owned()
     }
 
     fn oa_code_hash(&self) -> AsHex<[u8; 32]> {
         self.0.code_hash.into()
     }
 
-    fn oa_code_url(&self) -> Cow<'_, str> {
-        self.0.code_url.as_ref().into()
+    fn oa_code_url(&self) -> String {
+        self.0.code_url.as_ref().to_owned()
     }
 }
 
