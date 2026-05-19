@@ -52,14 +52,14 @@ pub(crate) type Nep245TokenId = String;
     derive(strum::Display, EnumString, EnumIter,),
     cfg_attr(
         feature = "serde",
-        derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
+        derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+        cfg_attr(
+            feature = "abi",
+            derive(::schemars::JsonSchema),
+            schemars(with = "String"),
+        )
     ),
     strum(serialize_all = "snake_case"),
-    cfg_attr(
-        feature = "abi",
-        derive(::schemars::JsonSchema),
-        schemars(with = "String"),
-    ),
     vis(pub)
 )]
 #[repr(u8)]
