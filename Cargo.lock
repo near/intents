@@ -2020,8 +2020,12 @@ dependencies = [
 name = "defuse-treasury-logger"
 version = "0.1.0"
 dependencies = [
+ "defuse-borsh-utils",
+ "defuse-near-utils",
  "defuse-nep245",
+ "impl-tools",
  "near-sdk",
+ "rstest",
  "serde_with",
 ]
 
