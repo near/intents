@@ -10,15 +10,6 @@ use crate::{TokenIdType, error::TokenIdError};
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[cfg_attr(
-    feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
-    cfg_attr(
-        feature = "abi",
-        derive(::schemars::JsonSchema),
-        schemars(with = "String")
-    )
-)]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Nep141TokenId {
     pub contract_id: AccountId,
