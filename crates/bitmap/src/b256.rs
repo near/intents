@@ -11,11 +11,6 @@ pub type U248 = [u8; 31];
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[cfg_attr(
-    feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
-)]
 #[derive(Debug, Clone, Default)]
 #[repr(transparent)]
 pub struct BitMap256<T: Map<K = U248, V = U256>>(T);

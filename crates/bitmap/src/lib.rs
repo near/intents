@@ -13,11 +13,6 @@ use num_traits::{One, PrimInt, Zero};
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[cfg_attr(
-    feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
-)]
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct BitMap<M>(M);

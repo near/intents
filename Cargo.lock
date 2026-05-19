@@ -1426,7 +1426,6 @@ dependencies = [
  "num-traits",
  "rstest",
  "schemars 0.8.22",
- "serde",
 ]
 
 [[package]]
