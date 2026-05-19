@@ -49,7 +49,11 @@ impl MultiTokenReceiver for Contract {
             sender_id: sender_id.into(),
             previous_owner_ids: previous_owner_ids.iter().map(Into::into).collect(),
             token_ids: token_ids.iter().map(Into::into).collect(),
-            amounts: amounts.iter().map(|a| a.0).collect(),
+            amounts: amounts
+                .iter()
+                .map(|a| a.0)
+                .inspect(|a| require!(*a > 0, "zero amount"))
+                .collect(),
             msg: msg.into(),
             nonce: self.next_nonce(),
         }
@@ -77,22 +81,57 @@ mod tests {
     use defuse_nep245::receiver::MultiTokenReceiver;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::{VMContextBuilder, get_logs};
-    use near_sdk::testing_env;
+    use near_sdk::{AccountId, testing_env};
+    use rstest::rstest;
 
-    #[test]
-    fn test_mt_deposit_event() {
+    #[rstest]
+    #[case(
+        "intents.near",
+        "alice.near",
+        ["alice.near"],
+        ["nep141:wrap.near"],
+        [100],
+        "test"
+    )]
+    #[should_panic = "zero amount"]
+    #[case::zero_amount_panics(
+        "intents.near",
+        "alice.near",
+        ["alice.near"],
+        ["nep141:wrap.near"],
+        [0],
+        "test"
+    )]
+    fn test_mt_deposit_event<'a>(
+        #[case] token: &'a str,
+        #[case] sender_id: &'a str,
+        #[case] previous_owner_ids: impl IntoIterator<Item = &'a str>,
+        #[case] token_ids: impl IntoIterator<Item = &'a str>,
+        #[case] amounts: impl IntoIterator<Item = u128>,
+        #[case] msg: &'a str,
+    ) {
+        let token: AccountId = token.parse().unwrap();
+        let sender_id: AccountId = sender_id.parse().unwrap();
+        let previous_owner_ids: Vec<AccountId> = previous_owner_ids
+            .into_iter()
+            .map(|a| a.parse().unwrap())
+            .collect();
+
+        let token_ids: Vec<_> = token_ids.into_iter().map(ToString::to_string).collect();
+        let amounts: Vec<_> = amounts.into_iter().map(U128).collect();
+
         let context = VMContextBuilder::new()
-            .predecessor_account_id("intents.near".parse().unwrap())
+            .predecessor_account_id(token.clone())
             .build();
         testing_env!(context);
 
         let mut contract = Contract::default();
         let _ = contract.mt_on_transfer(
-            "alice.near".parse().unwrap(),
-            vec!["alice.near".parse().unwrap()],
-            vec!["nep141:wrap.near".to_string()],
-            vec![U128(100)],
-            "test".to_string(),
+            sender_id.clone(),
+            previous_owner_ids.clone(),
+            token_ids.clone(),
+            amounts.clone(),
+            msg.to_string(),
         );
 
         let actual = get_logs();
@@ -103,12 +142,12 @@ mod tests {
                 "version": "1.0.0",
                 "event": "mt_deposit",
                 "data": {
-                    "token": "intents.near",
-                    "sender_id": "alice.near",
-                    "previous_owner_ids": ["alice.near"],
-                    "token_ids": ["nep141:wrap.near"],
-                    "amounts": ["100"],
-                    "msg": "test",
+                    "token": token,
+                    "sender_id": sender_id,
+                    "previous_owner_ids": previous_owner_ids,
+                    "token_ids": token_ids,
+                    "amounts": amounts,
+                    "msg": msg,
                     "nonce": "0"
                 }
             })
