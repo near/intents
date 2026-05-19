@@ -96,7 +96,7 @@ impl Contract {
 mod tests {
     use defuse_nep245::receiver::MultiTokenReceiver;
     use near_sdk::{
-        AccountId, AccountIdRef,
+        AccountId, AccountIdRef, AsNep297Event,
         json_types::U128,
         test_utils::{VMContextBuilder, get_logs},
         testing_env,
@@ -111,62 +111,61 @@ mod tests {
     #[case(
         "intents.near",
         "alice.near",
-        ["alice.near"],
-        ["nep141:wrap.near"],
-        [1],
+       vec!["alice.near"],
+       vec!["nep141:wrap.near"],
+       vec![1],
         "test"
     )]
     #[case(
         "intents.near",
         "alice.near",
-        ["alice.near"],
-        ["nep141:wrap.near"],
-        [100],
+        vec!["alice.near", "alice.near"],
+        vec!["nep141:wrap.near", "nep141:wrap.near"],
+        vec![123, 456],
         "test"
     )]
     #[case(
         "intents.near",
         "alice.near",
-        ["alice.near"],
-        ["nep141:wrap.near"],
-        [u128::MAX],
+        vec!["alice.near"],
+        vec!["nep141:wrap.near"],
+        vec![u128::MAX],
         "test"
     )]
     #[should_panic = "self-deposit"]
     #[case::self_deposit_panics(
         CURRENT_ACCOUNT_ID,
         "alice.near",
-        ["alice.near"],
-        ["nep141:wrap.near"],
-        [100],
+        vec!["alice.near"],
+        vec!["nep141:wrap.near"],
+        vec![100],
         "test"
     )]
     #[should_panic = "zero amount"]
     #[case::zero_amount_panics(
         "intents.near",
         "alice.near",
-        ["alice.near"],
-        ["nep141:wrap.near"],
-        [0],
+        vec!["alice.near", "alice.near"],
+        vec!["nep141:wrap.near", "nep141:wrap.near"],
+        vec![123, 0],
         "test"
     )]
     fn test_mt_deposit_event<'a>(
         #[case] token: impl AsRef<str>,
-        #[case] sender_id: impl AsRef<str>,
-        #[case] previous_owner_ids: impl IntoIterator<Item = &'a str>,
-        #[case] token_ids: impl IntoIterator<Item = &'a str>,
-        #[case] amounts: impl IntoIterator<Item = u128>,
+        #[case] sender_id: &str,
+        #[case] previous_owner_ids: Vec<&'a str>,
+        #[case] token_ids: Vec<&'a str>,
+        #[case] amounts: Vec<u128>,
         #[case] msg: &str,
     ) {
         let token: AccountId = token.as_ref().parse().unwrap();
-        let sender_id: AccountId = sender_id.as_ref().parse().unwrap();
+        let sender_id: AccountId = sender_id.parse().unwrap();
         let previous_owner_ids: Vec<AccountId> = previous_owner_ids
             .into_iter()
             .map(|a| a.parse().unwrap())
             .collect();
 
-        let token_ids: Vec<_> = token_ids.into_iter().map(ToString::to_string).collect();
-        let amounts: Vec<_> = amounts.into_iter().map(U128).collect();
+        let token_ids: Vec<_> = token_ids.iter().map(ToString::to_string).collect();
 
         let context = VMContextBuilder::new()
             .current_account_id(CURRENT_ACCOUNT_ID.into())
@@ -179,31 +178,26 @@ mod tests {
             sender_id.clone(),
             previous_owner_ids.clone(),
             token_ids.clone(),
-            amounts.clone(),
+            amounts.iter().copied().map(U128).collect(),
             msg.to_string(),
         );
 
         let actual = get_logs();
-        let expected = vec![format!(
-            "EVENT_JSON:{}",
-            near_sdk::serde_json::json!({
-                "standard": "logger",
-                "version": "1.0.0",
-                "event": "mt_deposit",
-                "data": {
-                    "token": token,
-                    "sender_id": sender_id,
-                    "previous_owner_ids": previous_owner_ids,
-                    "token_ids": token_ids,
-                    "amounts": amounts,
-                    "msg": msg,
-                    "nonce": "0"
-                }
-            })
-            .to_string()
-        )];
 
-        assert_eq!(actual, expected);
+        assert_eq!(
+            actual,
+            [Event::MtDeposit {
+                token: token.into(),
+                sender_id: sender_id.into(),
+                previous_owner_ids: previous_owner_ids.into_iter().map(Into::into).collect(),
+                token_ids: token_ids.iter().map(Into::into).collect(),
+                amounts: amounts.into(),
+                msg: msg.into(),
+                nonce: 0,
+            }]
+            .map(|e| e.to_nep297_event().to_event_log())
+            .to_vec(),
+        );
         assert_eq!(contract.get_nonce(), U128(1));
     }
 }
