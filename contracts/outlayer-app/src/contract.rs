@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use defuse_serde_utils::hex::AsHex;
 use near_sdk::{AccountId, AccountIdRef, NearToken, PanicOnDefault, env, near, require};
 
@@ -17,7 +19,7 @@ use crate::{
 )]
 #[derive(PanicOnDefault)]
 #[repr(transparent)]
-pub struct Contract(State);
+pub struct Contract(State<'static>);
 
 #[near]
 impl OutlayerApp for Contract {
@@ -58,37 +60,37 @@ impl OutlayerApp for Contract {
         self.transfer_admin(new_admin_id);
     }
 
-    fn oa_admin_id(&self) -> AccountId {
-        self.0.admin_id.clone()
+    fn oa_admin_id(&self) -> Cow<'_, AccountIdRef> {
+        self.0.admin_id.as_ref().into()
     }
 
     fn oa_code_hash(&self) -> AsHex<[u8; 32]> {
         self.0.code_hash.into()
     }
 
-    fn oa_code_url(&self) -> String {
-        self.0.code_url.clone()
+    fn oa_code_url(&self) -> Cow<'_, str> {
+        self.0.code_url.as_ref().into()
     }
 }
 
 impl Contract {
     fn set_code(&mut self, code_hash: [u8; 32], url: String) {
         self.0.code_hash = code_hash;
-        self.0.code_url.clone_from(&url);
+        self.0.code_url = url.into();
         Event::SetCode {
             hash: code_hash,
-            url,
+            url: self.0.code_url.as_ref().into(),
         }
         .emit();
     }
 
     fn transfer_admin(&mut self, new_admin_id: AccountId) {
         Event::TransferAdmin {
-            old_admin_id: (&self.0.admin_id).into(),
+            old_admin_id: self.0.admin_id.as_ref().into(),
             new_admin_id: (&new_admin_id).into(),
         }
         .emit();
-        self.0.admin_id = new_admin_id;
+        self.0.admin_id = Cow::Owned(new_admin_id);
     }
 
     fn is_current_code_hash(&self, hash: &[u8; 32]) -> bool {
@@ -96,6 +98,6 @@ impl Contract {
     }
 
     fn is_admin(&self, account_id: &AccountIdRef) -> bool {
-        account_id == self.0.admin_id
+        self.0.admin_id.as_ref() == account_id
     }
 }

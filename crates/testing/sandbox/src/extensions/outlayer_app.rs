@@ -14,7 +14,7 @@ pub trait OutlayerAppExt {
     async fn deploy_outlayer_app(
         &self,
         global_contract_id: GlobalContractId,
-        state: OutlayerState,
+        state: OutlayerState<'static>,
     ) -> anyhow::Result<Account>;
 
     async fn oa_set_code(
@@ -43,7 +43,7 @@ impl OutlayerAppExt for SigningAccount {
     async fn deploy_outlayer_app(
         &self,
         global_contract_id: GlobalContractId,
-        state: OutlayerState,
+        state: OutlayerState<'static>,
     ) -> anyhow::Result<Account> {
         let account_id = self
             .state_init(

@@ -30,13 +30,13 @@ pub trait OutlayerApp {
     fn oa_transfer_admin(&mut self, new_admin_id: AccountId);
 
     /// Returns the current admin's account ID.
-    fn oa_admin_id(&self) -> AccountId;
+    fn oa_admin_id(&self) -> Cow<'_, AccountIdRef>;
 
     /// Returns the approved code hash
     fn oa_code_hash(&self) -> AsHex<[u8; 32]>;
 
     /// Returns where the code binary can be found.
-    fn oa_code_url(&self) -> String;
+    fn oa_code_url(&self) -> Cow<'_, str>;
 }
 
 use near_sdk::ext_contract;
@@ -49,7 +49,7 @@ pub enum Event<'a> {
     SetCode {
         #[serde_as(as = "Hex")]
         hash: [u8; 32],
-        url: String,
+        url: Cow<'a, str>,
     },
 
     #[event_version("1.0.0")]
