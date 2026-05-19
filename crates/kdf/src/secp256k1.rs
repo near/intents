@@ -85,7 +85,7 @@ mod tests {
     use k256::ecdsa::VerifyingKey;
     use rstest::rstest;
 
-    use crate::{DeriveExt, signer::tests::assert_roundtrip};
+    use crate::{DeriveExt, signer::tests::assert_verify_signer};
 
     use super::*;
 
@@ -105,7 +105,7 @@ mod tests {
         )]
         prehash: [u8; 32],
     ) {
-        let (derived_pk, (signature, recovery_id)) = assert_roundtrip(
+        let (derived_pk, (signature, recovery_id)) = assert_verify_signer(
             &SigningKey::from_bytes(&root_sk.into())
                 .expect("invalid root sk")
                 .derive(ReduceScalar::<Secp256k1>::new()),
@@ -130,7 +130,7 @@ mod tests {
         #[case] tweak: [u8; 32],
         #[case] expected_derived_pk: [u8; 64],
     ) {
-        let (derived_pk, _signature) = assert_roundtrip(
+        let (derived_pk, _signature) = assert_verify_signer(
             &SigningKey::from_bytes(&root_sk.into())
                 .expect("invalid root sk")
                 .derive(ReduceScalar::<Secp256k1>::new()),

@@ -1,5 +1,7 @@
 #[cfg(not(target_family = "wasm"))]
 use crate::host::mock;
+#[cfg(feature = "kdf")]
+pub use defuse_kdf::k256;
 #[cfg(not(target_family = "wasm"))]
 use defuse_outlayer_host::bindings::outlayer::crypto::secp256k1::Host;
 
@@ -61,10 +63,65 @@ pub fn sign(path: impl AsRef<str>, prehash: &[u8; 32]) -> Signature {
     raw.try_into().expect("invalid length")
 }
 
+#[cfg(any(feature = "kdf", test))]
+const _: () = {
+    use defuse_kdf::{
+        DeriveSigner, Schema, Secp256k1,
+        k256::{
+            EncodedPoint,
+            ecdsa::{RecoveryId, Signature, VerifyingKey},
+        },
+    };
+
+    use super::{HostSchema, Signer};
+
+    impl<P> Schema<P> for HostSchema<Secp256k1>
+    where
+        P: AsRef<str>,
+    {
+        type Output = VerifyingKey;
+
+        #[inline]
+        fn derive_path(&self, path: P) -> Self::Output {
+            let pk = derive_public_key(path);
+
+            VerifyingKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(&pk.into()))
+                .expect("invalid secp256k1 verifying key")
+        }
+    }
+
+    impl<P> DeriveSigner<Secp256k1, P> for Signer
+    where
+        P: AsRef<str>,
+    {
+        type Schema<'a>
+            = HostSchema<Secp256k1>
+        where
+            Self: 'a;
+
+        #[inline]
+        fn schema(&self) -> Self::Schema<'_> {
+            HostSchema::<Secp256k1>::default()
+        }
+
+        fn derive_sign(&self, path: P, prehash: &[u8; 32]) -> (Signature, RecoveryId) {
+            let [sig @ .., v] = sign(path, prehash);
+
+            (
+                Signature::from_bytes(&sig.into()).expect("invalid secp256k1 signature"),
+                RecoveryId::from_byte(v).expect("invalid secp256k1 recovery id"),
+            )
+        }
+    }
+};
+
 #[cfg(test)]
 mod tests {
+    use defuse_kdf::{Secp256k1, tests::assert_verify_signer};
     use hex_literal::hex;
     use rstest::rstest;
+
+    use crate::host::crypto::Signer;
 
     use super::*;
 
@@ -87,5 +144,22 @@ mod tests {
     )]
     fn derived_pk_has_not_changed(#[case] path: &str, #[case] expected: PublicKey) {
         assert_eq!(derive_public_key(path), expected);
+    }
+
+    #[rstest]
+    #[case(
+        "",
+        hex!("0000000000000000000000000000000000000000000000000000000000000000"),
+    )]
+    #[case(
+        "test",
+        hex!("5b74d49e83f4aff956284d5f74270e53d7c55dabc4c28f6ef923fbffc5bfdd1d"),
+    )]
+    #[case(
+        ".",
+        hex!("f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2"),
+    )]
+    fn verify_signer(#[case] path: &str, #[case] prehash: [u8; 32]) {
+        assert_verify_signer::<Secp256k1, _, _>(&Signer, path, &prehash);
     }
 }

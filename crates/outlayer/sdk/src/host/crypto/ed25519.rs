@@ -1,5 +1,7 @@
 #[cfg(not(target_family = "wasm"))]
 use crate::host::mock;
+#[cfg(feature = "kdf")]
+pub use defuse_kdf::ed25519_dalek;
 #[cfg(not(target_family = "wasm"))]
 use defuse_outlayer_host::bindings::outlayer::crypto::ed25519::Host;
 
@@ -53,10 +55,57 @@ pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Signature {
     raw.try_into().expect("invalid length")
 }
 
+#[cfg(any(feature = "kdf", test))]
+const _: () = {
+    use defuse_kdf::{
+        DeriveSigner, Ed25519, Schema,
+        ed25519_dalek::{Signature, VerifyingKey},
+    };
+
+    use super::{HostSchema, Signer};
+
+    impl<P> Schema<P> for HostSchema<Ed25519>
+    where
+        P: AsRef<str>,
+    {
+        type Output = VerifyingKey;
+
+        #[inline]
+        fn derive_path(&self, path: P) -> Self::Output {
+            let pk = derive_public_key(path);
+            VerifyingKey::from_bytes(&pk).expect("invalid ed25519 verifying key")
+        }
+    }
+
+    impl<P> DeriveSigner<Ed25519, P> for Signer
+    where
+        P: AsRef<str>,
+    {
+        type Schema<'a>
+            = HostSchema<Ed25519>
+        where
+            Self: 'a;
+
+        #[inline]
+        fn schema(&self) -> Self::Schema<'_> {
+            HostSchema::<Ed25519>::default()
+        }
+
+        #[inline]
+        fn derive_sign(&self, path: P, msg: &[u8]) -> Signature {
+            let sig = sign(path, msg);
+            Signature::from_bytes(&sig)
+        }
+    }
+};
+
 #[cfg(test)]
 mod tests {
+    use defuse_kdf::{Ed25519, tests::assert_verify_signer};
     use hex_literal::hex;
     use rstest::rstest;
+
+    use crate::host::crypto::Signer;
 
     use super::*;
 
@@ -79,5 +128,13 @@ mod tests {
     )]
     fn derived_pk_has_not_changed(#[case] path: &str, #[case] expected: PublicKey) {
         assert_eq!(derive_public_key(path), expected);
+    }
+
+    #[rstest]
+    #[case("", b"")]
+    #[case("test", b"test")]
+    #[case(".", b"message")]
+    fn verify_signer(#[case] path: &str, #[case] msg: &[u8]) {
+        assert_verify_signer::<Ed25519, _, _>(&Signer, path, msg);
     }
 }
