@@ -1,7 +1,5 @@
 #[cfg(not(target_family = "wasm"))]
 use crate::host::mock;
-#[cfg(feature = "kdf")]
-pub use defuse_kdf::ed25519_dalek;
 #[cfg(not(target_family = "wasm"))]
 use defuse_outlayer_host::bindings::outlayer::crypto::ed25519::Host;
 
