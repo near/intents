@@ -7,7 +7,10 @@ use impl_tools::autoimpl;
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, PromiseOrValue, env, near, require};
 
-use self::{event::*, state::*};
+use self::{
+    event::Event,
+    state::{State, VersionedState},
+};
 
 #[near(
     contract_state,

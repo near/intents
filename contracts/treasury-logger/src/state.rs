@@ -31,7 +31,7 @@ impl BorshSerializeAs<State> for VersionedState<'_> {
 impl From<VersionedState<'_>> for State {
     fn from(state: VersionedState) -> Self {
         match state {
-            VersionedState::V1(state) => state.into_owned().into_inner().into(),
+            VersionedState::V1(state) => state.into_owned().into_inner(),
         }
     }
 }
