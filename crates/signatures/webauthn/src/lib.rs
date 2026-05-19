@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
+use defuse_serde_utils::base64::{Base64, UrlSafe, Unpadded};
+
 #[cfg(feature = "ed25519")]
 mod ed25519;
 #[cfg(feature = "ed25519")]
@@ -21,7 +23,7 @@ pub use self::p256::*;
 pub struct PayloadSignature<A: Algorithm + ?Sized> {
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
     #[serde_as(
-        as = "defuse_serde_utils::base64::Base64<defuse_serde_utils::base64::UrlSafe, defuse_serde_utils::base64::Unpadded>"
+        as = "Base64<UrlSafe, Unpadded>"
     )]
     #[cfg_attr(feature = "abi", schemars(with = "String"))]
     pub authenticator_data: Vec<u8>,
@@ -145,7 +147,7 @@ pub struct CollectedClientData {
     pub typ: ClientDataType,
 
     #[serde_as(
-        as = "defuse_serde_utils::base64::Base64<defuse_serde_utils::base64::UrlSafe, defuse_serde_utils::base64::Unpadded>"
+        as = "Base64<UrlSafe, Unpadded>"
     )]
     pub challenge: Vec<u8>,
 
