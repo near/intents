@@ -81,7 +81,7 @@ impl Nep413Payload {
     }
 }
 
-#[cfg(feature = "borsh")]
+#[cfg(all(any(feature = "near-contract", feature = "sha2"), feature = "borsh"))]
 impl defuse_crypto::Payload for Nep413Payload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {
@@ -114,7 +114,7 @@ pub struct SignedNep413Payload {
     pub signature: <Ed25519 as Curve>::Signature,
 }
 
-#[cfg(feature = "borsh")]
+#[cfg(all(any(feature = "near-contract", feature = "sha2"), feature = "borsh"))]
 impl defuse_crypto::Payload for SignedNep413Payload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {
