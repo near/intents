@@ -1,18 +1,10 @@
-use core::fmt::{self, Debug, Display};
-use std::str::FromStr;
-
+use crate::{CryptoHash, Curve, CurveType, TypedCurve, VerifiableCurve};
 use generic_array::GenericArray;
-use near_sdk::{
-    CryptoHash, near,
-    serde_with::{DeserializeFromStr, SerializeDisplay},
-};
 use p256::{
     EncodedPoint,
     ecdsa::{Signature, VerifyingKey, signature::hazmat::PrehashVerifier},
     elliptic_curve::scalar::IsHigh,
 };
-
-use crate::{Curve, CurveType, ParseCurveError, TypedCurve};
 
 pub struct P256;
 
@@ -27,7 +19,9 @@ impl Curve for P256 {
     type Message = CryptoHash;
 
     type VerifyingKey = Self::PublicKey;
+}
 
+impl VerifiableCurve for P256 {
     fn verify(
         signature: &Self::Signature,
         prehashed: &Self::Message,
@@ -60,92 +54,142 @@ impl TypedCurve for P256 {
 
 /// Compressed public key, i.e. `x` coordinate with leading SEC1 tag byte
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh])]
-#[derive(
-    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
-#[serde_with(crate = "::near_sdk::serde_with")]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct P256CompressedPublicKey(pub <P256 as Curve>::PublicKey);
+pub struct P256CompressedPublicKey(
+    // schemars ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(all(feature = "abi", feature = "serde"), schemars(with = "String"))]
+    pub  <P256 as Curve>::PublicKey,
+);
 
-impl Debug for P256CompressedPublicKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt(self, f)
+#[cfg(feature = "parse")]
+const _: () = {
+    use crate::ParseCurveError;
+    use core::fmt::{self, Debug, Display};
+    use std::str::FromStr;
+
+    impl Debug for P256CompressedPublicKey {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
+        }
     }
-}
 
-impl Display for P256CompressedPublicKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<P256 as TypedCurve>::to_base58(self.0))
+    impl Display for P256CompressedPublicKey {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str(&<P256 as TypedCurve>::to_base58(self.0))
+        }
     }
-}
 
-impl FromStr for P256CompressedPublicKey {
-    type Err = ParseCurveError;
+    impl FromStr for P256CompressedPublicKey {
+        type Err = ParseCurveError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        P256::parse_base58(s).map(Self)
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            P256::parse_base58(s).map(Self)
+        }
     }
-}
+};
 
 /// Concatenated `x || y` coordinates with no leading SEC1 tag byte
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh])]
-#[derive(
-    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[serde_with(crate = "::near_sdk::serde_with")]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct P256UncompressedPublicKey(pub [u8; 64]);
+pub struct P256UncompressedPublicKey(
+    // schemars ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(all(feature = "abi", feature = "serde"), schemars(with = "String"))] pub [u8; 64],
+);
 
-impl Debug for P256UncompressedPublicKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt(self, f)
+#[cfg(feature = "parse")]
+const _: () = {
+    use crate::ParseCurveError;
+    use core::fmt::{self, Debug, Display};
+    use std::str::FromStr;
+
+    impl Debug for P256UncompressedPublicKey {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
+        }
     }
-}
 
-impl Display for P256UncompressedPublicKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<P256 as TypedCurve>::to_base58(self.0))
+    impl Display for P256UncompressedPublicKey {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str(&<P256 as TypedCurve>::to_base58(self.0))
+        }
     }
-}
 
-impl FromStr for P256UncompressedPublicKey {
-    type Err = ParseCurveError;
+    impl FromStr for P256UncompressedPublicKey {
+        type Err = ParseCurveError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        P256::parse_base58(s).map(Self)
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            P256::parse_base58(s).map(Self)
+        }
     }
-}
+};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh])]
-#[derive(
-    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[serde_with(crate = "::near_sdk::serde_with")]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct P256Signature(pub <P256 as Curve>::Signature);
+pub struct P256Signature(
+    // schemars ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(all(feature = "abi", feature = "serde"), schemars(with = "String"))]
+    pub  <P256 as Curve>::Signature,
+);
 
-impl Debug for P256Signature {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt(self, f)
+#[cfg(feature = "parse")]
+const _: () = {
+    use crate::ParseCurveError;
+    use core::fmt::{self, Debug, Display};
+    use std::str::FromStr;
+
+    impl Debug for P256Signature {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
+        }
     }
-}
 
-impl Display for P256Signature {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<P256 as TypedCurve>::to_base58(self.0))
+    impl Display for P256Signature {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str(&<P256 as TypedCurve>::to_base58(self.0))
+        }
     }
-}
 
-impl FromStr for P256Signature {
-    type Err = ParseCurveError;
+    impl FromStr for P256Signature {
+        type Err = ParseCurveError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        P256::parse_base58(s).map(Self)
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            P256::parse_base58(s).map(Self)
+        }
     }
-}
+};
 
 /// Converts from untagged uncompressed form (i.e. concatenated `x || y`
 /// coordinates with no leading SEC1 tag byte) into compressed form

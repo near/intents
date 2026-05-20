@@ -1,9 +1,12 @@
-use defuse_crypto::{CryptoHash, Curve, Payload, Secp256k1, SignedPayload, serde::AsCurve};
+use defuse_crypto::{Curve, Secp256k1};
 use impl_tools::autoimpl;
-use near_sdk::{env, near, serde_with::serde_as};
 
 /// See [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
-#[near(serializers = [json])]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[derive(Debug, Clone)]
 pub struct Tip191Payload(pub String);
 
@@ -20,14 +23,22 @@ impl Tip191Payload {
     }
 }
 
-impl Payload for Tip191Payload {
+#[cfg(any(test, feature = "sha3", feature = "near-contract"))]
+impl defuse_crypto::Payload for Tip191Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
-        env::keccak256_array(self.prehash())
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        use defuse_digest::{Digest, Keccak256};
+        Keccak256::digest(self.prehash()).into()
     }
 }
 
-#[near(serializers = [json])]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone)]
 pub struct SignedTip191Payload {
@@ -35,22 +46,28 @@ pub struct SignedTip191Payload {
 
     /// There is no public key member because the public key can be recovered
     /// via `ecrecover()` knowing the data and the signature
-    #[serde_as(as = "AsCurve<Secp256k1>")]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_crypto::serde::AsCurve<Secp256k1>")
+    )]
     pub signature: <Secp256k1 as Curve>::Signature,
 }
 
-impl Payload for SignedTip191Payload {
+#[cfg(any(test, feature = "sha3", feature = "near-contract"))]
+impl defuse_crypto::Payload for SignedTip191Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> defuse_crypto::CryptoHash {
         self.payload.hash()
     }
 }
 
-impl SignedPayload for SignedTip191Payload {
+#[cfg(any(test, feature = "near-contract"))]
+impl defuse_crypto::SignedPayload for SignedTip191Payload {
     type PublicKey = <Secp256k1 as Curve>::PublicKey;
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
+        use defuse_crypto::{Payload, VerifiableCurve};
         Secp256k1::verify(&self.signature, &self.payload.hash(), &())
     }
 }
@@ -58,6 +75,7 @@ impl SignedPayload for SignedTip191Payload {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use defuse_crypto::SignedPayload;
     use hex_literal::hex;
 
     const fn fix_v_in_signature(mut sig: [u8; 65]) -> [u8; 65] {

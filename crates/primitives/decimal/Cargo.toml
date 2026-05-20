@@ -9,17 +9,21 @@ repository.workspace = true
 workspace = true
 
 [features]
-abi = ["near-sdk/abi"]
+borsh = ["dep:borsh"]
+serde = ["dep:serde_with"]
+abi = ["borsh?/unstable__schema", "dep:schemars"]
 arbitrary = ["dep:arbitrary"]
 
 [dependencies]
 defuse-num-utils.workspace = true
 
-near-sdk.workspace = true
 thiserror.workspace = true
 
 arbitrary = { workspace = true, optional = true }
+borsh = { workspace = true, features = ["derive"], optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
+serde_with = { workspace = true, optional = true }
+
 
 [dev-dependencies]
-near-sdk = { workspace = true, features = ["non-contract-usage"] }
 rstest.workspace = true

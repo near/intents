@@ -1,9 +1,12 @@
-use defuse_crypto::{CryptoHash, Curve, Payload, Secp256k1, SignedPayload, serde::AsCurve};
+use defuse_crypto::{Curve, Secp256k1};
 use impl_tools::autoimpl;
-use near_sdk::{env, near, serde_with::serde_as};
 
 /// See [ERC-191](https://github.com/ethereum/ercs/blob/master/ERCS/erc-191.md)
-#[near(serializers = [json])]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[derive(Debug, Clone)]
 pub struct Erc191Payload(pub String);
 
@@ -19,14 +22,22 @@ impl Erc191Payload {
     }
 }
 
-impl Payload for Erc191Payload {
+#[cfg(any(test, feature = "sha3", feature = "near-contract"))]
+impl defuse_crypto::Payload for Erc191Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
-        env::keccak256_array(self.prehash())
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        use defuse_digest::{Digest, Keccak256};
+        Keccak256::digest(self.prehash().as_slice()).into()
     }
 }
 
-#[near(serializers = [json])]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone)]
 pub struct SignedErc191Payload {
@@ -34,29 +45,38 @@ pub struct SignedErc191Payload {
 
     /// There is no public key member because the public key can be recovered
     /// via `ecrecover()` knowing the data and the signature
-    #[serde_as(as = "AsCurve<Secp256k1>")]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_crypto::serde::AsCurve<Secp256k1>")
+    )]
     pub signature: <Secp256k1 as Curve>::Signature,
 }
 
-impl Payload for SignedErc191Payload {
+#[cfg(any(test, feature = "sha3", feature = "near-contract"))]
+impl defuse_crypto::Payload for SignedErc191Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> defuse_crypto::CryptoHash {
         self.payload.hash()
     }
 }
 
-impl SignedPayload for SignedErc191Payload {
-    type PublicKey = <Secp256k1 as Curve>::PublicKey;
+#[cfg(any(test, feature = "near-contract"))]
+const _: () = {
+    use defuse_crypto::{Payload, SignedPayload, VerifiableCurve};
+    impl SignedPayload for SignedErc191Payload {
+        type PublicKey = <Secp256k1 as Curve>::PublicKey;
 
-    #[inline]
-    fn verify(&self) -> Option<Self::PublicKey> {
-        Secp256k1::verify(&self.signature, &self.payload.hash(), &())
+        #[inline]
+        fn verify(&self) -> Option<Self::PublicKey> {
+            Secp256k1::verify(&self.signature, &self.payload.hash(), &())
+        }
     }
-}
+};
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use defuse_crypto::SignedPayload;
     use hex_literal::hex;
 
     const fn fix_v_in_signature(mut sig: [u8; 65]) -> [u8; 65] {

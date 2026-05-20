@@ -5,11 +5,14 @@ pub use self::b256::*;
 use core::ops::{DerefMut, RangeInclusive, Shl};
 
 use defuse_map_utils::{IterableMap, Map, cleanup::DefaultMap};
-use near_sdk::near;
 use num_traits::{One, PrimInt, Zero};
 
 /// Bitmap for primitive types
-#[near(serializers = [borsh, json])]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+)]
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct BitMap<M>(M);

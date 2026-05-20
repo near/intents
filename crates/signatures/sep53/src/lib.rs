@@ -1,10 +1,13 @@
-use defuse_crypto::{CryptoHash, Curve, Ed25519, Payload, SignedPayload, serde::AsCurve};
+use defuse_crypto::{Curve, Ed25519};
 use impl_tools::autoimpl;
-use near_sdk::{env, near, serde_with::serde_as};
 
 /// See [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
-#[near(serializers = [json])]
-#[serde(rename_all = "snake_case")]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
+    serde(rename_all = "snake_case")
+)]
 #[derive(Debug, Clone)]
 pub struct Sep53Payload {
     pub payload: String,
@@ -22,38 +25,55 @@ impl Sep53Payload {
     }
 }
 
-impl Payload for Sep53Payload {
+#[cfg(any(test, feature = "near-contract", feature = "sha2"))]
+impl defuse_crypto::Payload for Sep53Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
-        env::sha256_array(self.prehash())
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        use defuse_digest::{Digest, Sha256};
+        Sha256::digest(self.prehash()).into()
     }
 }
 
-#[near(serializers = [json])]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone)]
 pub struct SignedSep53Payload {
-    #[serde(flatten)]
+    #[cfg_attr(feature = "serde", serde(flatten))]
     pub payload: Sep53Payload,
 
-    #[serde_as(as = "AsCurve<Ed25519>")]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
+    )]
     pub public_key: <Ed25519 as Curve>::PublicKey,
-    #[serde_as(as = "AsCurve<Ed25519>")]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
+    )]
     pub signature: <Ed25519 as Curve>::Signature,
 }
 
-impl Payload for SignedSep53Payload {
+#[cfg(any(test, feature = "near-contract", feature = "sha2"))]
+impl defuse_crypto::Payload for SignedSep53Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> defuse_crypto::CryptoHash {
         self.payload.hash()
     }
 }
 
-impl SignedPayload for SignedSep53Payload {
+#[cfg(any(test, feature = "near-contract"))]
+impl defuse_crypto::SignedPayload for SignedSep53Payload {
     type PublicKey = <Ed25519 as Curve>::PublicKey;
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
+        use defuse_crypto::{Payload, VerifiableCurve};
         Ed25519::verify(&self.signature, &self.hash(), &self.public_key)
     }
 }

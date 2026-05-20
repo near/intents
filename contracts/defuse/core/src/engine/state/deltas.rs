@@ -9,9 +9,9 @@ use crate::{
             FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
         },
     },
+    public_key::PublicKey,
     token_id::TokenId,
 };
-use defuse_crypto::PublicKey;
 use defuse_map_utils::cleanup::DefaultMap;
 use defuse_nep245::{MtEvent, MtTransferEvent};
 use near_sdk::{AccountId, AccountIdRef, json_types::U128, near};

@@ -1,5 +1,6 @@
 use arbitrary::Unstructured;
-use defuse_crypto::{P256UncompressedPublicKey, PublicKey};
+use defuse_core::PublicKey;
+use defuse_crypto::P256UncompressedPublicKey;
 use rstest::fixture;
 
 use super::random::{Rng, RngExt, rng};

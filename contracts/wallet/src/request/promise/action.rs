@@ -92,10 +92,7 @@ pub struct StateInitAction {
 pub struct FunctionCallAction {
     pub function_name: String,
 
-    #[cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
-        schemars(with = "String")
-    )]
+    #[cfg_attr(feature = "abi", schemars(with = "String"))]
     #[serde_as(as = "Base64")]
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub args: Vec<u8>,
@@ -190,5 +187,5 @@ fn is_default_gas_weight(gas_weight: &u64) -> bool {
 }
 
 // fix JsonSchema macro bug
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+#[cfg(feature = "abi")]
 use near_sdk::serde;

@@ -102,11 +102,11 @@ async fn test_deploy_controller_instance(
 
     assert_eq!(
         controller_instance.gd_owner_id().await.unwrap(),
-        state.owner_id
+        *state.owner_id
     );
     assert_eq!(
         mutable_controller_instance.gd_owner_id().await.unwrap(),
-        upgradeable_instance_state.owner_id
+        *upgradeable_instance_state.owner_id
     );
 
     assert_eq!(
@@ -203,7 +203,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
 
     assert_eq!(
         controller_instance.gd_owner_id().await.unwrap(),
-        storage.owner_id
+        *storage.owner_id
     );
 
     // Non-owner cannot approve

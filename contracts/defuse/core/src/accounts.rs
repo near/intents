@@ -1,10 +1,9 @@
-use defuse_crypto::PublicKey;
 use defuse_serde_utils::base64::Base64;
 use near_sdk::{AccountIdRef, near};
 use serde_with::serde_as;
 use std::{borrow::Cow, collections::BTreeSet};
 
-use crate::{Nonce, Salt};
+use crate::{Nonce, Salt, public_key::PublicKey};
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
