@@ -15,7 +15,7 @@ near-sdk = { workspace = true, features = ["non-contract-usage"] }
 rand.workspace = true
 
 borsh = { workspace = true, optional = true }
-defuse-digest = { workspace = true, optional = true }
+defuse-digest = { workspace = true, features = ["sha2"], optional = true }
 ed25519-dalek = { workspace = true, optional = true }
 
 [features]
