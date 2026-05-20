@@ -1535,7 +1535,7 @@ name = "defuse-digest"
 version = "0.1.0"
 dependencies = [
  "defuse-test-utils",
- "digest 0.11.2",
+ "digest 0.11.3",
  "near-sdk",
  "rstest",
  "sha2 0.11.0",
@@ -1754,7 +1754,7 @@ dependencies = [
  "arbitrary",
  "borsh",
  "derive_more",
- "digest 0.11.2",
+ "digest 0.11.3",
  "digest-io",
  "hex-literal",
  "near-account-id",
@@ -2240,9 +2240,9 @@ dependencies = [
 
 [[package]]
 name = "digest"
-version = "0.11.2"
+version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4850db49bf08e663084f7fb5c87d202ef91a3907271aff24a94eb97ff039153c"
+checksum = "f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2"
 dependencies = [
  "block-buffer 0.12.0",
  "const-oid 0.10.2",
@@ -2256,7 +2256,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2de63d600bc7fab91180bc17385f29b342468dc8ef2af09dceba450a293de3da"
 dependencies = [
- "digest 0.11.2",
+ "digest 0.11.3",
 ]
 
 [[package]]
@@ -3013,7 +3013,7 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6303bc9732ae41b04cb554b844a762b4115a61bfaa81e3e83050991eeb56863f"
 dependencies = [
- "digest 0.11.2",
+ "digest 0.11.3",
 ]
 
 [[package]]
@@ -6292,7 +6292,7 @@ checksum = "446ba717509524cb3f22f17ecc096f10f4822d76ab5c0b9822c5f9c284e825f4"
 dependencies = [
  "cfg-if 1.0.4",
  "cpufeatures 0.3.0",
- "digest 0.11.2",
+ "digest 0.11.3",
 ]
 
 [[package]]
@@ -6311,7 +6311,7 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be176f1a57ce4e3d31c1a166222d9768de5954f811601fb7ca06fc8203905ce1"
 dependencies = [
- "digest 0.11.2",
+ "digest 0.11.3",
  "keccak 0.2.0",
 ]
 
@@ -6887,7 +6887,7 @@ dependencies = [
  "base64 0.21.7",
  "bitvec",
  "crc",
- "digest 0.11.2",
+ "digest 0.11.3",
  "hex",
  "impl-tools",
  "sha2 0.11.0",
@@ -6904,7 +6904,7 @@ dependencies = [
  "base64 0.21.7",
  "chrono",
  "crc",
- "digest 0.11.2",
+ "digest 0.11.3",
  "hex",
  "impl-tools",
  "lazy_static",
