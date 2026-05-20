@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use defuse_serde_utils::hex::AsHex;
 use near_sdk::{AccountId, AccountIdRef, NearToken, PanicOnDefault, env, near, require};
 
@@ -90,7 +88,7 @@ impl Contract {
             new_admin_id: (&new_admin_id).into(),
         }
         .emit();
-        self.0.admin_id = Cow::Owned(new_admin_id);
+        self.0.admin_id = new_admin_id.into();
     }
 
     fn is_current_code_hash(&self, hash: &[u8; 32]) -> bool {
@@ -98,6 +96,6 @@ impl Contract {
     }
 
     fn is_admin(&self, account_id: &AccountIdRef) -> bool {
-        self.0.admin_id.as_ref() == account_id
+        &self.0.admin_id == account_id
     }
 }
