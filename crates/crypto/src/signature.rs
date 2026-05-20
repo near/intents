@@ -1,8 +1,3 @@
-use core::{
-    fmt::{self, Debug, Display},
-    str::FromStr,
-};
-
 #[cfg(feature = "ed25519")]
 use crate::Ed25519;
 #[cfg(feature = "p256")]
@@ -10,7 +5,7 @@ use crate::P256;
 #[cfg(feature = "secp256k1")]
 use crate::Secp256k1;
 
-use crate::{Curve, CurveType, ParseCurveError, TypedCurve};
+use crate::{Curve, CurveType};
 
 #[cfg_attr(
     feature = "borsh",
@@ -46,6 +41,7 @@ impl Signature {
         }
     }
 
+    #[cfg(feature = "parse")]
     #[inline]
     const fn data(&self) -> &[u8] {
         #[allow(clippy::match_same_arms)]
@@ -60,52 +56,59 @@ impl Signature {
     }
 }
 
-impl Debug for Signature {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}:{}",
-            self.curve_type(),
-            bs58::encode(self.data()).into_string()
-        )
-    }
-}
+#[cfg(feature = "parse")]
+const _: () = {
+    use crate::{ParseCurveError, TypedCurve};
+    use core::fmt::{self, Debug, Display};
+    use std::str::FromStr;
 
-impl Display for Signature {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(self, f)
-    }
-}
-
-impl FromStr for Signature {
-    type Err = ParseCurveError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (curve, data) = if let Some((curve, data)) = s.split_once(':') {
-            (
-                curve.parse().map_err(|_| ParseCurveError::WrongCurveType)?,
-                data,
+    impl Debug for Signature {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(
+                f,
+                "{}:{}",
+                self.curve_type(),
+                bs58::encode(self.data()).into_string()
             )
-        } else {
-            #[cfg(not(feature = "ed25519"))]
-            return Err(ParseCurveError::WrongCurveType);
-
-            #[cfg(feature = "ed25519")]
-            (CurveType::Ed25519, s)
-        };
-
-        match curve {
-            #[cfg(feature = "ed25519")]
-            CurveType::Ed25519 => Ed25519::parse_base58(data).map(Self::Ed25519),
-            #[cfg(feature = "secp256k1")]
-            CurveType::Secp256k1 => Secp256k1::parse_base58(data).map(Self::Secp256k1),
-            #[cfg(feature = "p256")]
-            CurveType::P256 => P256::parse_base58(data).map(Self::P256),
         }
     }
-}
+
+    impl Display for Signature {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            fmt::Debug::fmt(self, f)
+        }
+    }
+
+    impl FromStr for Signature {
+        type Err = ParseCurveError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            let (curve, data) = if let Some((curve, data)) = s.split_once(':') {
+                (
+                    curve.parse().map_err(|_| ParseCurveError::WrongCurveType)?,
+                    data,
+                )
+            } else {
+                #[cfg(not(feature = "ed25519"))]
+                return Err(ParseCurveError::WrongCurveType);
+
+                #[cfg(feature = "ed25519")]
+                (CurveType::Ed25519, s)
+            };
+
+            match curve {
+                #[cfg(feature = "ed25519")]
+                CurveType::Ed25519 => Ed25519::parse_base58(data).map(Self::Ed25519),
+                #[cfg(feature = "secp256k1")]
+                CurveType::Secp256k1 => Secp256k1::parse_base58(data).map(Self::Secp256k1),
+                #[cfg(feature = "p256")]
+                CurveType::P256 => P256::parse_base58(data).map(Self::P256),
+            }
+        }
+    }
+};
 
 #[cfg(feature = "abi")]
 const _: () = {
@@ -181,6 +184,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
+    use crate::ParseCurveError;
 
     #[rstest]
     #[cfg_attr(

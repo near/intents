@@ -1,8 +1,4 @@
-use crate::TypedCurve;
-use core::fmt::{self, Debug, Display};
-use std::str::FromStr;
-
-use crate::{CryptoHash, Curve, ParseCurveError};
+use crate::{CryptoHash, Curve};
 
 pub struct Secp256k1;
 
@@ -43,7 +39,7 @@ impl crate::VerifiableCurve for Secp256k1 {
     }
 }
 
-impl TypedCurve for Secp256k1 {
+impl crate::TypedCurve for Secp256k1 {
     const CURVE_TYPE: crate::CurveType = crate::CurveType::Secp256k1;
 }
 
@@ -66,25 +62,32 @@ pub struct Secp256k1PublicKey(
     pub  <Secp256k1 as Curve>::PublicKey,
 );
 
-impl Debug for Secp256k1PublicKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt(self, f)
-    }
-}
+#[cfg(feature = "parse")]
+const _: () = {
+    use crate::{ParseCurveError, TypedCurve};
+    use core::fmt::{self, Debug, Display};
+    use std::str::FromStr;
 
-impl Display for Secp256k1PublicKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
+    impl Debug for Secp256k1PublicKey {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
+        }
     }
-}
 
-impl FromStr for Secp256k1PublicKey {
-    type Err = ParseCurveError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Secp256k1::parse_base58(s).map(Self)
+    impl Display for Secp256k1PublicKey {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
+        }
     }
-}
+
+    impl FromStr for Secp256k1PublicKey {
+        type Err = ParseCurveError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Secp256k1::parse_base58(s).map(Self)
+        }
+    }
+};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -105,22 +108,29 @@ pub struct Secp256k1Signature(
     pub  <Secp256k1 as Curve>::Signature,
 );
 
-impl Debug for Secp256k1Signature {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt(self, f)
-    }
-}
+#[cfg(feature = "parse")]
+const _: () = {
+    use crate::{ParseCurveError, TypedCurve};
+    use core::fmt::{self, Debug, Display};
+    use std::str::FromStr;
 
-impl Display for Secp256k1Signature {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
+    impl Debug for Secp256k1Signature {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
+        }
     }
-}
 
-impl FromStr for Secp256k1Signature {
-    type Err = ParseCurveError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Secp256k1::parse_base58(s).map(Self)
+    impl Display for Secp256k1Signature {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
+        }
     }
-}
+
+    impl FromStr for Secp256k1Signature {
+        type Err = ParseCurveError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Secp256k1::parse_base58(s).map(Self)
+        }
+    }
+};

@@ -6,7 +6,7 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-bs58 = { workspace = true }
+bs58 = { workspace = true, optional = true }
 strum.workspace = true
 thiserror.workspace = true
 
@@ -28,13 +28,15 @@ serde_with = { workspace = true, optional = true }
 ed25519 = ["dep:ed25519-dalek"]
 secp256k1 = []
 p256 = ["dep:generic-array", "dep:p256"]
+parse = ["dep:bs58"]
 
 borsh = ["dep:borsh"]
-serde = ["dep:serde", "dep:serde_with"]
+serde = ["dep:serde", "dep:serde_with", "parse"]
 abi = [
   "borsh?/unstable__schema",
   "dep:schemars",
   "dep:serde_json",
+  "parse",
   "serde_with?/schemars_0_8",
 ]
 near-contract = ["dep:near-sdk"]

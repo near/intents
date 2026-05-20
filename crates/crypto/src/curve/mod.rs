@@ -49,6 +49,7 @@ pub enum CurveType {
 pub trait TypedCurve: Curve {
     const CURVE_TYPE: CurveType;
 
+    #[cfg(feature = "parse")]
     #[inline]
     fn to_base58(bytes: impl AsRef<[u8]>) -> String {
         format!(
@@ -58,6 +59,7 @@ pub trait TypedCurve: Curve {
         )
     }
 
+    #[cfg(feature = "parse")]
     fn parse_base58<const N: usize>(s: impl AsRef<str>) -> Result<[u8; N], crate::ParseCurveError> {
         let s = s.as_ref();
         let data = if let Some((curve, data)) = s.split_once(':') {
@@ -72,7 +74,7 @@ pub trait TypedCurve: Curve {
     }
 }
 
-#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
+#[cfg(feature = "parse")]
 fn checked_base58_decode_array<const N: usize>(
     input: impl AsRef<[u8]>,
 ) -> Result<[u8; N], crate::ParseCurveError> {

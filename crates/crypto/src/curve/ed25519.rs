@@ -1,7 +1,4 @@
-use core::fmt::{self, Debug, Display};
-use std::str::FromStr;
-
-use crate::{Curve, CurveType, ParseCurveError, TypedCurve};
+use crate::{Curve, CurveType, TypedCurve};
 
 pub struct Ed25519;
 
@@ -59,25 +56,32 @@ pub struct Ed25519PublicKey(
     pub  <Ed25519 as Curve>::PublicKey,
 );
 
-impl Debug for Ed25519PublicKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt(self, f)
-    }
-}
+#[cfg(feature = "parse")]
+const _: () = {
+    use crate::ParseCurveError;
+    use core::fmt::{self, Debug, Display};
+    use std::str::FromStr;
 
-impl Display for Ed25519PublicKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<Ed25519 as TypedCurve>::to_base58(self.0))
+    impl Debug for Ed25519PublicKey {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
+        }
     }
-}
 
-impl FromStr for Ed25519PublicKey {
-    type Err = ParseCurveError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ed25519::parse_base58(s).map(Self)
+    impl Display for Ed25519PublicKey {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str(&<Ed25519 as TypedCurve>::to_base58(self.0))
+        }
     }
-}
+
+    impl FromStr for Ed25519PublicKey {
+        type Err = ParseCurveError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ed25519::parse_base58(s).map(Self)
+        }
+    }
+};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -98,22 +102,29 @@ pub struct Ed25519Signature(
     pub  <Ed25519 as Curve>::Signature,
 );
 
-impl Debug for Ed25519Signature {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt(self, f)
-    }
-}
+#[cfg(feature = "parse")]
+const _: () = {
+    use crate::ParseCurveError;
+    use core::fmt::{self, Debug, Display};
+    use std::str::FromStr;
 
-impl Display for Ed25519Signature {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<Ed25519 as TypedCurve>::to_base58(self.0))
+    impl Debug for Ed25519Signature {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
+        }
     }
-}
 
-impl FromStr for Ed25519Signature {
-    type Err = ParseCurveError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ed25519::parse_base58(s).map(Self)
+    impl Display for Ed25519Signature {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str(&<Ed25519 as TypedCurve>::to_base58(self.0))
+        }
     }
-}
+
+    impl FromStr for Ed25519Signature {
+        type Err = ParseCurveError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ed25519::parse_base58(s).map(Self)
+        }
+    }
+};
