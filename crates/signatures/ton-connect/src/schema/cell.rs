@@ -7,8 +7,6 @@ use tlb_ton::{
     ser::{CellBuilder, CellBuilderError, CellSerialize, CellSerializeExt},
 };
 
-use crate::schema::{PayloadSchema, TonConnectPayloadContext};
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -70,10 +68,11 @@ where
     }
 }
 
-impl PayloadSchema for CellPayload {
+#[cfg(any(feature = "near-contract", feature = "sha2"))]
+impl crate::schema::PayloadSchema for CellPayload {
     fn hash_with_context(
         &self,
-        context: TonConnectPayloadContext,
+        context: crate::schema::TonConnectPayloadContext,
     ) -> Result<defuse_crypto::CryptoHash, StringError> {
         let cell = TonConnectCellMessage {
             schema_crc: self.schema_crc,

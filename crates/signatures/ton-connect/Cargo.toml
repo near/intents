@@ -10,8 +10,8 @@ workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
-defuse-digest = { workspace = true, features = ["sha2"] }
 
+defuse-digest = { workspace = true, features = ["sha2"], optional = true }
 defuse-serde-utils = { workspace = true, features = ["base64", "tlb"], optional = true }
 
 chrono = { workspace = true, features = ["serde"] }
@@ -44,6 +44,7 @@ serde = [
   "dep:serde_with",
 ]
 text = []
+sha2 = ["defuse-digest/sha2"]
 
 [dev-dependencies]
 defuse-crypto = { workspace = true, features = ["near-contract"] }

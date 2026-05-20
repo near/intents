@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 
-use crate::schema::{PayloadSchema, TonConnectPayloadContext};
 use impl_tools::autoimpl;
 use tlb_ton::StringError;
 
@@ -19,10 +18,11 @@ pub struct BinaryPayload {
     pub bytes: Vec<u8>,
 }
 
-impl PayloadSchema for BinaryPayload {
+#[cfg(any(feature = "near-contract", feature = "sha2"))]
+impl crate::schema::PayloadSchema for BinaryPayload {
     fn hash_with_context(
         &self,
-        context: TonConnectPayloadContext,
+        context: crate::schema::TonConnectPayloadContext,
     ) -> Result<defuse_crypto::CryptoHash, StringError> {
         context.create_payload_hash(b"bin", self.as_slice())
     }

@@ -19,7 +19,10 @@ pub struct TonConnectPayloadContext<'a> {
 
 impl TonConnectPayloadContext<'_> {
     // See https://docs.tonconsole.com/academy/sign-data#how-the-signature-is-built
-    #[cfg(any(feature = "binary", feature = "text"))]
+    #[cfg(all(
+        any(feature = "near-contract", feature = "sha2"),
+        any(feature = "binary", feature = "text")
+    ))]
     pub fn create_payload_hash(
         &self,
         payload_prefix: &[u8],
@@ -49,6 +52,7 @@ impl TonConnectPayloadContext<'_> {
     }
 }
 
+#[cfg(any(feature = "near-contract", feature = "sha2"))]
 pub trait PayloadSchema {
     fn hash_with_context(
         &self,
@@ -93,6 +97,7 @@ impl TonConnectPayloadSchema {
     }
 }
 
+#[cfg(any(feature = "near-contract", feature = "sha2"))]
 impl PayloadSchema for TonConnectPayloadSchema {
     fn hash_with_context(
         &self,
