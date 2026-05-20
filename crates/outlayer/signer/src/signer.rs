@@ -1,7 +1,4 @@
-use std::marker::PhantomData;
-
 use hkdf::Hkdf;
-use impl_tools::autoimpl;
 use sha3::Sha3_512;
 
 #[cfg_attr(feature = "zeroize", derive(::zeroize::ZeroizeOnDrop))]
@@ -43,18 +40,5 @@ impl InMemorySigner {
                     .expect("secp256k1: derived scalar is zero or less than curve order")
             },
         }
-    }
-}
-
-/// Curve-specific domain-separated [`Schema`](defuse_kdf::Schema)
-/// used by [`InMemorySigner`]
-#[autoimpl(Clone, Default)]
-#[derive(Copy)]
-pub struct CurveDomain<C>(PhantomData<C>);
-
-impl<C> CurveDomain<C> {
-    #[inline]
-    pub const fn new() -> Self {
-        Self(PhantomData)
     }
 }

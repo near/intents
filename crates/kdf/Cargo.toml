@@ -35,5 +35,7 @@ hex = ["dep:hex"]
 zeroize = ["curve25519-dalek?/zeroize", "ed25519-dalek?/zeroize"]
 
 [dev-dependencies]
+defuse-kdf = { path = ".", features = ["borsh", "digest", "ed25519", "secp256k1", "hex"] }
 hex-literal.workspace = true
 rstest.workspace = true
+sha3.workspace = true

@@ -1,55 +1,42 @@
 use defuse_kdf::{
-    Additive, Curve, Derive, DeriveExt, DeriveSigner, ReduceScalar, Schema, Secp256k1,
+    Additive, Curve, Derive, DeriveExt, DeriveSigner, ReduceScalar, Secp256k1, digest::Digest,
 };
-use sha3::{Digest, Sha3_256};
+use sha3::{Digest as _, Sha3_256};
 
-use crate::{CurveDomain, InMemorySigner};
+use crate::InMemorySigner;
 
 impl<P> DeriveSigner<Secp256k1, P> for InMemorySigner
 where
     P: AsRef<[u8]>,
 {
     type Schema<'a>
-        = Derive<Derive<Additive<Secp256k1>, ReduceScalar<Secp256k1>>, CurveDomain<Secp256k1>>
+        = Derive<Additive<Secp256k1>, Derive<ReduceScalar<Secp256k1>, Digest<Sha3_256>>>
     where
         Self: 'a;
 
     fn schema(&self) -> Self::Schema<'_> {
-        self.secp256k1_master_sk
-            .schema()
-            .derive(ReduceScalar::<Secp256k1>::new())
-            .derive(CurveDomain::<Secp256k1>::new())
+        self.secp256k1_master_sk.schema().derive(make_schema())
     }
 
     fn derive_sign(&self, path: P, msg: &[u8; 32]) -> <Secp256k1 as Curve>::Signature {
         self.secp256k1_master_sk
             .by_ref()
-            .derive(ReduceScalar::<Secp256k1>::new())
-            .derive(CurveDomain::<Secp256k1>::new())
+            .derive(make_schema())
             .derive_sign(path, msg)
     }
 }
 
-impl<P> Schema<P> for CurveDomain<Secp256k1>
-where
-    P: AsRef<[u8]>,
-{
-    type Output = [u8; 32];
+fn make_schema() -> Derive<ReduceScalar<Secp256k1>, Digest<Sha3_256>> {
+    // use domain-separated hashers to avoid algebraic relations between
+    // derived keys
+    const DOMAIN_SEPARATOR: &[u8] = b"outlayer/secp256k1/derive-tweak/v1";
 
-    fn derive_path(&self, path: P) -> Self::Output {
-        // use domain-separated hashers to avoid algebraic relations between
-        // derived keys
-        const DOMAIN_SEPARATOR: &[u8] = b"outlayer/secp256k1/derive-tweak/v1";
-
-        thread_local! {
-            // per-thread lazily-initialized hasher with pre-processed domain separator
-            static HASHER: Sha3_256 = Sha3_256::new_with_prefix(DOMAIN_SEPARATOR);
-        }
-
-        let hasher = HASHER.with(Clone::clone);
-
-        hasher.chain_update(path).finalize().into()
+    thread_local! {
+        // per-thread lazily-initialized hasher with pre-processed domain separator
+        static HASHER: Sha3_256 = Sha3_256::new_with_prefix(DOMAIN_SEPARATOR);
     }
+
+    ReduceScalar::<Secp256k1>::new().derive(Digest::new(HASHER.with(Clone::clone)))
 }
 
 #[cfg(test)]
@@ -77,9 +64,13 @@ mod tests {
         #[case] path: impl AsRef<[u8]>,
         #[case] expected_tweak: [u8; 32],
     ) {
-        let got = CurveDomain::<Secp256k1>::default().derive_path(path);
+        let got = make_schema().derive_path(path);
 
-        assert_eq!(got, expected_tweak, "derived tweak has changed");
+        assert_eq!(
+            &*got.to_bytes(),
+            expected_tweak,
+            "derived tweak has changed"
+        );
     }
 
     #[rstest]

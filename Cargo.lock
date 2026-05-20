@@ -1589,6 +1589,7 @@ version = "0.1.0"
 dependencies = [
  "borsh",
  "curve25519-dalek",
+ "defuse-kdf",
  "defuse-kdf-crypto",
  "digest 0.11.2",
  "digest-io",
@@ -1598,6 +1599,7 @@ dependencies = [
  "impl-tools",
  "k256",
  "rstest",
+ "sha3 0.11.0",
 ]
 
 [[package]]
@@ -1794,7 +1796,6 @@ dependencies = [
  "defuse-kdf",
  "hex-literal",
  "hkdf",
- "impl-tools",
  "rstest",
  "sha3 0.11.0",
  "zeroize",

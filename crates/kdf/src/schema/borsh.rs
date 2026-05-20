@@ -7,8 +7,6 @@ use crate::Schema;
 
 /// [Borsh](borsh)-serialization adapter for [`Schema`]
 ///
-/// # Example
-///
 /// ```rust
 /// # use defuse_kdf::{borsh::Borsh, Schema};
 /// let schema = Borsh::<Vec<u8>>::default();
@@ -77,6 +75,18 @@ const _: () = {
     use digest::{Digest, Update, array::ArraySize, common::OutputSize};
 
     /// Optimized writer implementation to serialize directly to hasher
+    ///
+    /// ```rust
+    /// use defuse_kdf::{borsh::{Borsh, IoWrapper}, Schema};
+    /// # use hex_literal::hex;
+    /// use sha3::{Digest, Sha3_256};
+    ///
+    /// let schema = Borsh::<IoWrapper<Sha3_256>>::default();
+    /// assert_eq!(
+    ///     schema.derive_path(vec!["test"]),
+    ///     hex!("d6a8690f047eb598dc2999da0a16254a18be2f59883932a26e057efbc209a15a"),
+    /// );
+    /// ```
     impl<D> WriteFinalizer for IoWrapper<D>
     where
         D: Update + Digest + Clone,
