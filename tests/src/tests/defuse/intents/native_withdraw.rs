@@ -4,7 +4,7 @@ use defuse_sandbox::{
         contract::{
             core::{
                 intents::tokens::NativeWithdraw,
-                public_key::PublicKey,
+                PublicKey,
                 token_id::{TokenId, nep141::Nep141TokenId},
             },
             tokens::DepositMessage,

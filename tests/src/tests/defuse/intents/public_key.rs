@@ -9,7 +9,7 @@ use defuse_sandbox::{
         accounts::{AccountEvent, PublicKeyEvent},
         events::DefuseEvent,
         intents::account::{AddPublicKey, RemovePublicKey},
-        public_key::PublicKey,
+        PublicKey,
     },
 };
 use near_sdk::AsNep297Event;

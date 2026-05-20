@@ -4,7 +4,7 @@ use defuse_sandbox::extensions::defuse::contract::{
         amounts::Amounts,
         fees::Pips,
         intents::tokens::Transfer,
-        public_key::PublicKey,
+        PublicKey,
         token_id::{TokenId, nep141::Nep141TokenId},
     },
     nep245::Token,

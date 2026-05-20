@@ -4,7 +4,7 @@ use defuse::core::intents::MaybeIntentEvent;
 use defuse_sandbox::extensions::defuse::contract::core::{
     accounts::{AccountEvent, PublicKeyEvent},
     events::DefuseEvent,
-    public_key::PublicKey,
+    PublicKey,
 };
 use near_sdk::{AsNep297Event, NearToken, serde_json::json};
 use rstest::rstest;

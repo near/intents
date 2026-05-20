@@ -9,7 +9,7 @@ use defuse::{
         accounts::{AccountEvent, PublicKeyEvent},
         events::DefuseEvent,
         intents::MaybeIntentEvent,
-        public_key::PublicKey,
+        PublicKey,
     },
 };
 use defuse_randomness::{Rng, RngExt};

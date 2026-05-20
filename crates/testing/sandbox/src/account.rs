@@ -165,7 +165,7 @@ impl SigningAccount {
                     let near_api::PublicKey::ED25519(ed25519_pk) = secret_key.public_key() else {
                         unreachable!("generate_secret_key() always returns Ed25519");
                     };
-                    defuse_core::public_key::PublicKey::Ed25519(ed25519_pk.0)
+                    defuse_core::PublicKey::Ed25519(ed25519_pk.0)
                         .to_implicit_account_id()
                 },
                 network_config,

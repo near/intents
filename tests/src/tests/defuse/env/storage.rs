@@ -12,7 +12,7 @@ use defuse_sandbox::extensions::defuse::contract::{
     core::{
         Deadline, Nonce,
         intents::{DefuseIntents, Intent, account::AddPublicKey},
-        public_key::PublicKey,
+        PublicKey,
         token_id::{TokenId, nep141::Nep141TokenId},
     },
     nep245::Token,

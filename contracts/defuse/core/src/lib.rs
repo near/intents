@@ -7,9 +7,10 @@ pub mod fees;
 pub mod intents;
 mod nonce;
 pub mod payload;
-pub mod public_key;
+mod public_key;
 pub mod tokens;
 
+pub use self::public_key::*;
 pub use self::{error::*, nonce::*};
 
 pub use defuse_crypto as crypto;

@@ -12,7 +12,7 @@ use defuse_core::{
     engine::{State, StateView},
     events::DefuseEvent,
     intents::{MaybeIntentEvent, account::SetAuthByPredecessorId},
-    public_key::PublicKey,
+    PublicKey,
 };
 
 use defuse_near_utils::{Lock, NestPrefix, UnwrapOrPanic};

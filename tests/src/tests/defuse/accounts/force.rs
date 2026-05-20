@@ -11,7 +11,7 @@ use defuse_sandbox::extensions::defuse::contract::{
     core::{
         DefuseError,
         intents::Intent,
-        public_key::PublicKey,
+        PublicKey,
         token_id::{TokenId, nep141::Nep141TokenId},
     },
 };
