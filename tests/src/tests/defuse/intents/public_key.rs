@@ -6,10 +6,10 @@ use defuse_sandbox::extensions::defuse::{
 use defuse_sandbox::{
     assert_eq_defuse_event_logs,
     extensions::defuse::contract::core::{
+        PublicKey,
         accounts::{AccountEvent, PublicKeyEvent},
         events::DefuseEvent,
         intents::account::{AddPublicKey, RemovePublicKey},
-        PublicKey,
     },
 };
 use near_sdk::AsNep297Event;

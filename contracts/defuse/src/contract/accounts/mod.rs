@@ -7,12 +7,11 @@ pub use self::{account::*, state::*};
 use std::{borrow::Cow, collections::HashSet};
 
 use defuse_core::{
-    DefuseError, Nonce, Result,
+    DefuseError, Nonce, PublicKey, Result,
     accounts::{AccountEvent, PublicKeyEvent},
     engine::{State, StateView},
     events::DefuseEvent,
     intents::{MaybeIntentEvent, account::SetAuthByPredecessorId},
-    PublicKey,
 };
 
 use defuse_near_utils::{Lock, NestPrefix, UnwrapOrPanic};

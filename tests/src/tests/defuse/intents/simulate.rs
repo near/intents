@@ -5,6 +5,7 @@ use defuse_sandbox::extensions::defuse::event::ToEventLog;
 use defuse_sandbox::extensions::defuse::{
     account_manager::{AccountManagerExt, AccountViewExt},
     contract::core::{
+        PublicKey,
         amounts::Amounts,
         fees::{FeesConfig, Pips},
         intents::{
@@ -16,7 +17,6 @@ use defuse_sandbox::extensions::defuse::{
                 FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer,
             },
         },
-        PublicKey,
         token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
     },
     deployer::DefuseExt,
