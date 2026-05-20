@@ -8,10 +8,10 @@ use crate::{
             FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
         },
     },
+    public_key::PublicKey,
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
 };
 use defuse_bitmap::{U248, U256};
-use defuse_crypto::PublicKey;
 use defuse_near_utils::Lock;
 use near_sdk::{AccountId, AccountIdRef};
 use std::{

@@ -1,4 +1,4 @@
-use defuse_crypto::{Payload, PublicKey, SignedPayload};
+use defuse_crypto::{Payload, SignedPayload};
 use defuse_erc191::SignedErc191Payload;
 use defuse_nep413::SignedNep413Payload;
 use defuse_sep53::SignedSep53Payload;
@@ -6,6 +6,8 @@ use defuse_tip191::SignedTip191Payload;
 use defuse_ton_connect::SignedTonConnectPayload;
 use derive_more::derive::From;
 use near_sdk::{CryptoHash, near, serde::de::DeserializeOwned, serde_json};
+
+use crate::public_key::PublicKey;
 
 use super::{
     DefusePayload, ExtractDefusePayload, raw::SignedRawEd25519Payload,

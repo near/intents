@@ -1,9 +1,9 @@
 use crate::{
     engine::deltas::InvariantViolated,
+    public_key::PublicKey,
     token_id::{TokenId, TokenIdError, nep171::Nep171TokenId},
     tokens::MAX_TOKEN_ID_LEN,
 };
-use defuse_crypto::PublicKey;
 use defuse_nep245::ErrorLogTooLong;
 use near_sdk::{AccountId, FunctionError, serde_json};
 use thiserror::Error as ThisError;

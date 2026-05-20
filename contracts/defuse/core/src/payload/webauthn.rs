@@ -1,9 +1,11 @@
 use defuse_crypto::{
-    Ed25519PublicKey, Ed25519Signature, P256Signature, Payload, PublicKey, Signature,
-    SignedPayload, compress_public_key,
+    Ed25519PublicKey, Ed25519Signature, P256Signature, Payload, SignedPayload, compress_public_key,
 };
+use defuse_digest::{Digest, Sha256};
 use defuse_webauthn::{Algorithm, Ed25519, P256, PayloadSignature, UserVerification};
-use near_sdk::{CryptoHash, env, near, serde::de::DeserializeOwned, serde_json};
+use near_sdk::{CryptoHash, near, serde::de::DeserializeOwned, serde_json};
+
+use crate::{PublicKey, Signature};
 
 use super::{DefusePayload, ExtractDefusePayload};
 
@@ -14,7 +16,7 @@ pub struct SignedWebAuthnPayload {
     pub public_key: PublicKey,
     // schemars@0.8 does not respect it's `schemars(bound = "...")`
     // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
-    #[cfg_attr(all(feature = "abi", not(target_arch = "wasm32")), schemars(skip))]
+    #[cfg_attr(feature = "abi", schemars(skip))]
     #[serde(flatten)]
     pub signature: PayloadSignature<Ed25519OrP256>,
 }
@@ -22,7 +24,7 @@ pub struct SignedWebAuthnPayload {
 impl Payload for SignedWebAuthnPayload {
     #[inline]
     fn hash(&self) -> CryptoHash {
-        env::sha256_array(self.payload.as_bytes())
+        Sha256::digest(self.payload.as_bytes()).into()
     }
 }
 

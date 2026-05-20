@@ -20,7 +20,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 serde_with = { workspace = true, features = ["hex", "base64"] }
 
-schemars = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true, features = ["derive"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 defuse-outlayer-sys.workspace = true

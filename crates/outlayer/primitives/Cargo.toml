@@ -16,7 +16,7 @@ thiserror.workspace = true
 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
-schemars = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true, features = ["derive"] }
 serde_with = { workspace = true, optional = true }
 
 [features]

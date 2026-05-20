@@ -1,7 +1,6 @@
 use defuse_core::{
-    DefuseError, Nonce, NoncePrefix, Result, Salt,
+    DefuseError, Nonce, NoncePrefix, PublicKey, Result, Salt,
     amounts::Amounts,
-    crypto::PublicKey,
     engine::{State, StateView},
     fees::Pips,
     intents::{

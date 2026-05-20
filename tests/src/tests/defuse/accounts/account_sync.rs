@@ -6,8 +6,8 @@ use std::{
 use defuse::{
     contract::Role,
     core::{
+        PublicKey,
         accounts::{AccountEvent, PublicKeyEvent},
-        crypto::PublicKey,
         events::DefuseEvent,
         intents::MaybeIntentEvent,
     },
