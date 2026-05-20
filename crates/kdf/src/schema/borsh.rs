@@ -13,8 +13,7 @@ use crate::Schema;
 /// let schema = Borsh::<Vec<u8>>::default();
 /// assert_eq!(schema.derive_path(b"abc"), [97, 98, 99]);
 /// ```
-#[autoimpl(Debug, Clone, Default where W::Data: trait)]
-#[derive(Copy)]
+#[autoimpl(Debug, Clone, Copy, Default where W::Data: trait)]
 pub struct Borsh<W: WriteFinalizer = Vec<u8>>(W::Data);
 
 impl<W: WriteFinalizer> Borsh<W> {

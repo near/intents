@@ -4,8 +4,7 @@ use impl_tools::autoimpl;
 
 /// [`Schema`](crate::Schema) for converting fixed byte arrays into a scalar
 /// via modular reduction.
-#[autoimpl(Debug, Clone, Default)]
-#[derive(Copy)]
+#[autoimpl(Debug, Clone, Copy, Default)]
 pub struct ReduceScalar<C>(PhantomData<C>);
 
 impl<C> ReduceScalar<C> {

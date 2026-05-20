@@ -113,26 +113,22 @@ impl<C: Curve, P> DeriveSigner<C, P> for dyn DynDeriveSigner<C, P> {
     }
 }
 
-#[cfg(test)]
-pub mod tests {
-    use super::*;
+#[cfg(any(test, feature = "testing"))]
+#[track_caller]
+pub fn assert_signer_roundtrip<C, S, P>(
+    signer: &S,
+    path: P,
+    msg: &C::Message,
+) -> (C::PublicKey, C::Signature)
+where
+    C: Curve,
+    S: DeriveSigner<C, P>,
+    P: Clone,
+{
+    let derived_pk = signer.derive_public_key(path.clone());
+    let signature = signer.derive_sign(path, msg);
 
-    #[track_caller]
-    pub fn assert_roundtrip<S, C, P>(
-        root_sk: &S,
-        path: P,
-        msg: &C::Message,
-    ) -> (C::PublicKey, C::Signature)
-    where
-        C: Curve,
-        S: DeriveSigner<C, P>,
-        P: Clone,
-    {
-        let derived_pk = root_sk.derive_public_key(path.clone());
-        let signature = root_sk.derive_sign(path, msg);
+    assert!(C::verify(&derived_pk, msg, &signature), "invalid signature");
 
-        assert!(C::verify(&derived_pk, msg, &signature), "invalid signature");
-
-        (derived_pk, signature)
-    }
+    (derived_pk, signature)
 }

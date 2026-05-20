@@ -5,43 +5,47 @@ use sha3::{Digest as _, Sha3_256};
 
 use crate::InMemorySigner;
 
+// use domain-separated hashers to avoid algebraic relations between
+// derived keys
+pub const DOMAIN_SEPARATOR: &[u8] = b"outlayer/ed25519/derive-tweak/v1";
+
 impl<P> DeriveSigner<Ed25519, P> for InMemorySigner
 where
     P: AsRef<[u8]>,
 {
     type Schema<'a>
-        = Derive<Additive<Ed25519>, Derive<ReduceScalar<Ed25519>, Digest<Sha3_256>>>
+        = Derive<Derive<Additive<Ed25519>, ReduceScalar<Ed25519>>, Digest<Sha3_256>>
     where
         Self: 'a;
 
     fn schema(&self) -> Self::Schema<'_> {
-        self.ed25519_master_sk.schema().derive(make_schema())
+        self.ed25519_master_sk
+            .schema()
+            .derive(ReduceScalar::<Ed25519>::new())
+            .derive(domain_schema())
     }
 
     fn derive_sign(&self, path: P, msg: &[u8]) -> <Ed25519 as Curve>::Signature {
         self.ed25519_master_sk
             .by_ref()
-            .derive(make_schema())
+            .derive(ReduceScalar::<Ed25519>::new())
+            .derive(domain_schema())
             .derive_sign(path, msg)
     }
 }
 
-fn make_schema() -> Derive<ReduceScalar<Ed25519>, Digest<Sha3_256>> {
-    // use domain-separated hashers to avoid algebraic relations between
-    // derived keys
-    const DOMAIN_SEPARATOR: &[u8] = b"outlayer/ed25519/derive-tweak/v1";
-
+pub fn domain_schema() -> Digest<Sha3_256> {
     thread_local! {
         // per-thread lazily-initialized hasher with pre-processed domain separator
         static HASHER: Sha3_256 = Sha3_256::new_with_prefix(DOMAIN_SEPARATOR);
     }
 
-    ReduceScalar::<Ed25519>::new().derive(Digest::new(HASHER.with(Clone::clone)))
+    Digest::new(HASHER.with(Clone::clone))
 }
 
 #[cfg(test)]
 mod tests {
-    use defuse_kdf::{Schema, ed25519_dalek::SecretKey};
+    use defuse_kdf::{Schema, assert_signer_roundtrip, ed25519_dalek::SecretKey};
     use hex_literal::hex;
     use rstest::rstest;
 
@@ -50,23 +54,20 @@ mod tests {
     #[rstest]
     #[case(
         b"",
-        hex!("3b23f008ada264aa8d80cb56d3e7b852bd87956fe0fee6d57315ae021f782d0e")
+        hex!("a3c29ef07fbbf76a4067886ec8b6b0f9bd87956fe0fee6d57315ae021f782d8e")
     )]
     #[case(
         b"test",
-        hex!("82e90e99953d32d97d98affe0d5e41e28e6253d4511ab2f4662c4d6bb6b5470d")
+        hex!("5c91fa52ca0357892ad29e44cb51ff0b8f6253d4511ab2f4662c4d6bb6b5472d")
     )]
     #[case(
         b"5b74d49e83f4aff956284d5f74270e53d7c55dabc4c28f6ef923fbffc5bfdd1d",
-        hex!("a64f77d0cba6207685fb450bd0a409815489c1d31c4b6165fc0d060b29faaf08")
+        hex!("211b305b845ca1de61450b80e67922135589c1d31c4b6165fc0d060b29faaf78")
     )]
-    fn tweak_derivation_schema_has_not_changed(
-        #[case] path: impl AsRef<[u8]>,
-        #[case] expected_tweak: [u8; 32],
-    ) {
-        let got = make_schema().derive_path(path);
+    fn domain_schema_has_not_changed(#[case] path: impl AsRef<[u8]>, #[case] expected: [u8; 32]) {
+        let got = domain_schema().derive_path(path);
 
-        assert_eq!(got.to_bytes(), expected_tweak, "derived tweak has changed");
+        assert_eq!(got, expected, "derived hash has changed");
     }
 
     #[rstest]
@@ -93,5 +94,12 @@ mod tests {
             &expected_ed25519_sk,
             "ed25519 derivation has changed"
         );
+    }
+
+    #[rstest]
+    #[case(b"", b"", b"")]
+    #[case(b"seed", b"path", b"message")]
+    fn roundtrip(#[case] seed: &[u8], #[case] path: &[u8], #[case] msg: &[u8]) {
+        assert_signer_roundtrip::<Ed25519, _, _>(&InMemorySigner::from_seed(seed), path, msg);
     }
 }

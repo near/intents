@@ -11,8 +11,7 @@ use crate::Schema;
 /// keys **do not** form a tree-like structure. Instead, child keys
 /// are all derived from a single root key and can be considered as
 /// "peers" to each other.
-#[autoimpl(Debug, Clone where C::PublicKey: trait)]
-#[derive(Copy)]
+#[autoimpl(Debug, Clone, Copy where C::PublicKey: trait)]
 pub struct Additive<C: Curve> {
     master_pk: C::PublicKey,
 }

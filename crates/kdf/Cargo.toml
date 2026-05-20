@@ -31,11 +31,11 @@ secp256k1 = ["defuse-kdf-crypto/secp256k1", "dep:k256"]
 borsh = ["dep:borsh"]
 digest = ["dep:digest", "dep:digest-io"]
 hex = ["dep:hex"]
-
+testing = []
 zeroize = ["curve25519-dalek?/zeroize", "ed25519-dalek?/zeroize"]
 
 [dev-dependencies]
-defuse-kdf = { path = ".", features = ["borsh", "digest", "ed25519", "secp256k1", "hex"] }
+defuse-kdf = { workspace = true, features = ["borsh", "digest", "ed25519", "secp256k1", "hex"] }
 hex-literal.workspace = true
 rstest.workspace = true
 sha3.workspace = true
