@@ -23,6 +23,7 @@ near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 thiserror.workspace = true
 
 defuse-crypto = { workspace = true, default-features = false, optional = true }
+defuse-erc191 = { workspace = true, optional = true }
 defuse-webauthn = { workspace = true, default-features = false, optional = true }
 
 arbitrary = { workspace = true, optional = true }
@@ -34,6 +35,7 @@ abi = [
   "defuse-borsh-utils/abi",
   "defuse-crypto?/abi",
   "defuse-deadline/abi",
+  "defuse-erc191?/abi",
   "defuse-serde-utils/abi",
   "defuse-webauthn?/abi",
   "near-sdk/abi",
@@ -49,12 +51,15 @@ webauthn = ["dep:defuse-webauthn"]
 # So only extensions can execute requests via `w_execute_extension()`.
 contract = []
 
+# Raw ed25519 signature:
+ed25519 = ["defuse-crypto/ed25519"]
+
 # Webauthn (a.k.a passkey) variants:
 webauthn-ed25519 = ["defuse-webauthn/ed25519", "webauthn"]
 webauthn-p256 = ["defuse-webauthn/p256", "webauthn"]
 
-# Raw ed25519 signature:
-ed25519 = ["defuse-crypto/ed25519"]
+# ERC-191 (a.k.a. `personal_sign`)
+erc191 = ["defuse-crypto/secp256k1", "defuse-erc191"]
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
@@ -99,6 +104,21 @@ container_build_command = [
   "--no-default-features",
   "--features=contract,webauthn-p256",
   "--abi-features=abi,contract,webauthn-p256",
+]
+
+[package.metadata.near.reproducible_build.variant.erc191]
+image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
+image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+passed_env = []
+container_build_command = [
+  "cargo",
+  "near",
+  "build",
+  "non-reproducible-wasm",
+  "--locked",
+  "--no-default-features",
+  "--features=contract,erc191",
+  "--abi-features=abi,contract,erc191",
 ]
 
 [package.metadata.near.reproducible_build.variant.no-auth]

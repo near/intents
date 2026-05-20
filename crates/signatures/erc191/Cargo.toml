@@ -11,6 +11,9 @@ defuse-crypto = { workspace = true, default-features = false, features = ["secp2
 impl-tools.workspace = true
 near-sdk.workspace = true
 
+[features]
+abi = ["defuse-crypto/abi", "near-sdk/abi"]
+
 [dev-dependencies]
 defuse-test-utils.workspace = true
 hex-literal.workspace = true
