@@ -7,9 +7,7 @@ rust-version.workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
-
-defuse-digest = { workspace = true, features = ["sha2"], optional = true }
-
+defuse-digest.workspace = true
 impl-tools.workspace = true
 
 cfg_eval = { workspace = true, optional = true }

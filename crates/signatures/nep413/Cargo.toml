@@ -7,15 +7,13 @@ repository.workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
+defuse-digest.workspace = true
 defuse-nep461.workspace = true
-
-defuse-digest = { workspace = true, features = ["sha2"], optional = true }
-defuse-serde-utils = { workspace = true, features = ["base64"], optional = true }
-
 impl-tools.workspace = true
 
 borsh = { workspace = true, features = ["derive"], optional = true }
 cfg_eval = { workspace = true, optional = true }
+defuse-serde-utils = { workspace = true, features = ["base64"], optional = true }
 near-api = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true, features = ["derive"] }
 serde = { workspace = true, features = ["derive"], optional = true }
@@ -43,7 +41,7 @@ serde = [
   "dep:serde_with",
 ]
 near-api = ["dep:near-api"]
-sha2 = ["dep:defuse-digest"]
+sha2 = ["defuse-digest/sha2"]
 
 [dev-dependencies]
 serde_json.workspace = true

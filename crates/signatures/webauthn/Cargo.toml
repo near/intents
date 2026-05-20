@@ -9,16 +9,13 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-
+defuse-digest.workspace = true
 defuse-serde-utils = { workspace = true, features = ["base64"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+serde_with.workspace = true
 
 defuse-crypto = { workspace = true, default-features = false, features = ["serde"], optional = true }
-defuse-digest = { workspace = true, features = ["sha2"], optional = true }
-
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-serde_with = { workspace = true }
-
 schemars = { workspace = true, optional = true }
 
 [features]
