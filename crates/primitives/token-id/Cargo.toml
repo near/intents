@@ -34,6 +34,7 @@ serde = ["dep:serde_with"]
 
 [dev-dependencies]
 defuse-test-utils.workspace = true
+defuse-token-id = { workspace = true, features = ["borsh"] }
 
 arbitrary.workspace = true
 borsh.workspace = true

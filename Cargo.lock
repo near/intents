@@ -2010,6 +2010,7 @@ dependencies = [
  "arbitrary",
  "borsh",
  "defuse-test-utils",
+ "defuse-token-id",
  "derive_more",
  "hex",
  "near-account-id",
