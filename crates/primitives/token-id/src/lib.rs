@@ -49,7 +49,6 @@ pub(crate) type Nep245TokenId = String;
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, EnumDiscriminants, derive_more::From)]
 #[strum_discriminants(
     name(TokenIdType),
-    derive(strum::Display, EnumString, EnumIter,),
     cfg_attr(
         feature = "serde",
         derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
@@ -59,6 +58,7 @@ pub(crate) type Nep245TokenId = String;
             schemars(with = "String"),
         )
     ),
+    derive(strum::Display, EnumString, EnumIter),
     strum(serialize_all = "snake_case"),
     vis(pub)
 )]
