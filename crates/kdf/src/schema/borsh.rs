@@ -8,11 +8,10 @@ use crate::Schema;
 /// [Borsh](borsh)-serialization adapter for [`Schema`]
 ///
 /// ```rust
-/// # use defuse_kdf::{borsh::Borsh, Schema};
+/// use defuse_kdf::{borsh::Borsh, Schema};
+///
 /// let schema = Borsh::<Vec<u8>>::default();
-/// let data = b"abc";
-/// let derived = schema.derive_path(data);
-/// assert_eq!(derived, [97, 98, 99]);
+/// assert_eq!(schema.derive_path(b"abc"), [97, 98, 99]);
 /// ```
 #[autoimpl(Debug, Clone, Default where W::Data: trait)]
 #[derive(Copy)]
