@@ -146,6 +146,6 @@ impl Contract {
     }
 
     fn is_owner(&self, account_id: &AccountIdRef) -> bool {
-        *account_id == *self.0.owner_id
+        *self.0.owner_id == *account_id
     }
 }

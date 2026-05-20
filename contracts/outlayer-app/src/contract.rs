@@ -96,6 +96,6 @@ impl Contract {
     }
 
     fn is_admin(&self, account_id: &AccountIdRef) -> bool {
-        &self.0.admin_id == account_id
+        *self.0.admin_id == *account_id
     }
 }
