@@ -34,6 +34,7 @@ members = [
   "crates/signatures/erc191",
   "crates/signatures/nep413",
   "crates/signatures/nep461",
+  "crates/signatures/sr25519",
   "crates/signatures/webauthn",
   "crates/signatures/sep53",
   "crates/signatures/tip191",
@@ -100,6 +101,7 @@ defuse-erc191.path = "crates/signatures/erc191"
 defuse-nep413.path = "crates/signatures/nep413"
 defuse-nep461.path = "crates/signatures/nep461"
 defuse-sep53.path = "crates/signatures/sep53"
+defuse-sr25519.path = "crates/signatures/sr25519"
 defuse-tip191.path = "crates/signatures/tip191"
 defuse-ton-connect = { path = "crates/signatures/ton-connect", default-features = false, features = ["text"] }
 defuse-webauthn = { path = "crates/signatures/webauthn", default-features = false }
@@ -174,6 +176,7 @@ rand_core = "0.10"
 reqwest = "0.13.3"
 rstest = "0.25"
 schemars = "0.8"
+schnorrkel = { version = "0.11.5", default-features = false }
 serde = "1"
 serde_json = "1"
 serde_with = "3.17"

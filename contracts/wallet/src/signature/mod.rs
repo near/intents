@@ -4,6 +4,8 @@ mod domain;
 pub mod ed25519;
 mod hash;
 pub mod no_sign;
+#[cfg(feature = "sr25519")]
+pub mod sr25519;
 
 #[cfg(feature = "webauthn")]
 pub mod webauthn;

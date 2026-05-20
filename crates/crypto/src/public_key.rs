@@ -24,6 +24,8 @@ pub enum PublicKey {
     Secp256k1(<crate::Secp256k1 as crate::Curve>::PublicKey) = 1,
     #[cfg(feature = "p256")]
     P256(crate::P256UncompressedPublicKey) = 2,
+    #[cfg(feature = "sr25519")]
+    Sr25519(<crate::Sr25519 as crate::Curve>::PublicKey) = 3,
 }
 
 impl PublicKey {
@@ -36,6 +38,8 @@ impl PublicKey {
             Self::Secp256k1(_) => CurveType::Secp256k1,
             #[cfg(feature = "p256")]
             Self::P256(_) => CurveType::P256,
+            #[cfg(feature = "sr25519")]
+            Self::Sr25519(_) => CurveType::Sr25519,
         }
     }
 
@@ -49,6 +53,8 @@ impl PublicKey {
             Self::Secp256k1(data) => data,
             #[cfg(feature = "p256")]
             Self::P256(data) => &data.0,
+            #[cfg(feature = "sr25519")]
+            Self::Sr25519(data) => data,
         }
     }
 
@@ -87,6 +93,19 @@ impl PublicKey {
                     "0x{}",
                     hex::encode(
                         &::near_sdk::env::keccak256_array([b"p256".as_slice(), pk].concat())
+                            [12..32]
+                    )
+                )
+            }
+            #[cfg(feature = "sr25519")]
+            Self::Sr25519(pk) => {
+                // Same Eth-Implicit-style schema as P256, with a distinct
+                // "sr25519" prefix to avoid collisions across curves:
+                // "0x" .. hex(keccak256("sr25519" .. pk)[12..32])
+                format!(
+                    "0x{}",
+                    hex::encode(
+                        &::near_sdk::env::keccak256_array([b"sr25519".as_slice(), pk].concat())
                             [12..32]
                     )
                 )
@@ -151,6 +170,8 @@ impl FromStr for PublicKey {
             CurveType::P256 => checked_base58_decode_array(data)
                 .map(crate::P256UncompressedPublicKey)
                 .map(Self::P256),
+            #[cfg(feature = "sr25519")]
+            CurveType::Sr25519 => checked_base58_decode_array(data).map(Self::Sr25519),
         }
     }
 }
@@ -190,6 +211,8 @@ const _: () = {
                             Self::example_secp256k1(),
                             #[cfg(feature = "p256")]
                             Self::example_p256(),
+                            #[cfg(feature = "sr25519")]
+                            Self::example_sr25519(),
                         ]
                         .map(serde_json::to_value)
                         .map(Result::unwrap)
@@ -222,6 +245,13 @@ const _: () = {
         #[cfg(feature = "p256")]
         pub(super) fn example_p256() -> Self {
             "p256:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3"
+                .parse()
+                .unwrap()
+        }
+
+        #[cfg(feature = "sr25519")]
+        pub(super) fn example_sr25519() -> Self {
+            "sr25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJugxm"
                 .parse()
                 .unwrap()
         }

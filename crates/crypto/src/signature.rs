@@ -14,6 +14,8 @@ use crate::Ed25519;
 use crate::P256;
 #[cfg(feature = "secp256k1")]
 use crate::Secp256k1;
+#[cfg(feature = "sr25519")]
+use crate::Sr25519;
 
 use crate::{Curve, CurveType, ParseCurveError, parse::checked_base58_decode_array};
 
@@ -30,6 +32,8 @@ pub enum Signature {
     Secp256k1(<Secp256k1 as Curve>::Signature) = 1,
     #[cfg(feature = "p256")]
     P256(<P256 as Curve>::Signature) = 2,
+    #[cfg(feature = "sr25519")]
+    Sr25519(<Sr25519 as Curve>::Signature) = 3,
 }
 
 impl Signature {
@@ -42,6 +46,8 @@ impl Signature {
             Self::Secp256k1(_) => CurveType::Secp256k1,
             #[cfg(feature = "p256")]
             Self::P256(_) => CurveType::P256,
+            #[cfg(feature = "sr25519")]
+            Self::Sr25519(_) => CurveType::Sr25519,
         }
     }
 
@@ -55,6 +61,8 @@ impl Signature {
             Self::Secp256k1(data) => data,
             #[cfg(feature = "p256")]
             Self::P256(data) => data,
+            #[cfg(feature = "sr25519")]
+            Self::Sr25519(data) => data,
         }
     }
 }
@@ -102,6 +110,8 @@ impl FromStr for Signature {
             CurveType::Secp256k1 => checked_base58_decode_array(data).map(Self::Secp256k1),
             #[cfg(feature = "p256")]
             CurveType::P256 => checked_base58_decode_array(data).map(Self::P256),
+            #[cfg(feature = "sr25519")]
+            CurveType::Sr25519 => checked_base58_decode_array(data).map(Self::Sr25519),
         }
     }
 }
@@ -141,6 +151,8 @@ const _: () = {
                             Self::example_secp256k1(),
                             #[cfg(feature = "p256")]
                             Self::example_p256(),
+                            #[cfg(feature = "sr25519")]
+                            Self::example_sr25519(),
                         ]
                         .map(serde_json::to_value)
                         .map(Result::unwrap)
@@ -173,6 +185,13 @@ const _: () = {
         #[cfg(feature = "p256")]
         pub(super) fn example_p256() -> Self {
             "p256:DNxoVu7L7sHr9pcHGWQoJtPsrwheB8akht1JxaGpc9hGrpehdycXBMLJg4ph1bQ9bXdfoxJCbbwxj3Bdrda52eF"
+                .parse()
+                .unwrap()
+        }
+
+        #[cfg(feature = "sr25519")]
+        pub(super) fn example_sr25519() -> Self {
+            "sr25519:4nrYPT9gQbagzC1c7gSRnSkjZukXqjFxnPVp6wjmH1QgsBB1xzsbHB3piY7eHBnofUVS4WRRHpSfTVaqYq9KM265"
                 .parse()
                 .unwrap()
         }
