@@ -18,8 +18,8 @@ serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
 
 [dev-dependencies]
-defuse-digest = { workspace = true, features = ["near-contract"] }
 defuse-crypto = { workspace = true, features = ["near-contract"] }
+defuse-digest = { workspace = true, features = ["near-contract"] }
 hex-literal.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true

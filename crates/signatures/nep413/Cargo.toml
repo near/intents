@@ -30,8 +30,11 @@ abi = [
   "serde_with?/schemars_0_8",
 ]
 borsh = ["defuse-crypto/borsh", "dep:borsh"]
-near-contract = ["borsh", "defuse-crypto/near-contract", "defuse-digest/near-contract"]
-sha2 = ["dep:defuse-digest"]
+near-contract = [
+  "borsh",
+  "defuse-crypto/near-contract",
+  "defuse-digest/near-contract",
+]
 serde = [
   "defuse-crypto/serde",
   "dep:cfg_eval",
@@ -40,6 +43,7 @@ serde = [
   "dep:serde_with",
 ]
 near-api = ["dep:near-api"]
+sha2 = ["dep:defuse-digest"]
 
 [dev-dependencies]
 serde_json.workspace = true
