@@ -32,6 +32,7 @@ borsh = ["dep:borsh"]
 digest = ["dep:digest", "dep:digest-io"]
 hex = ["dep:hex"]
 
+testing = []
 zeroize = ["curve25519-dalek?/zeroize", "ed25519-dalek?/zeroize"]
 
 [dev-dependencies]

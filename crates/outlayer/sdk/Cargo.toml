@@ -16,10 +16,12 @@ borsh = { workspace = true, features = ["derive"] }
 bs58.workspace = true
 hex.workspace = true
 hex-literal.workspace = true
+impl-tools.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 serde_with = { workspace = true, features = ["hex", "base64"] }
 
+defuse-kdf = { workspace = true, features = ["ed25519", "secp256k1"], optional = true }
 schemars = { workspace = true, optional = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
@@ -41,13 +43,17 @@ defuse-outlayer-primitives = { workspace = true, features = [
 anyhow.workspace = true
 
 [features]
+default = ["kdf"]
+
 abi = [
   "borsh/unstable__schema",
   "defuse-outlayer-primitives/abi",
   "dep:schemars",
   "serde_with/schemars_0_8",
 ]
+kdf = ["dep:defuse-kdf"]
 
 [dev-dependencies]
+defuse-kdf = { workspace = true, features = ["ed25519", "secp256k1", "testing"] }
 hex.workspace = true
 rstest.workspace = true

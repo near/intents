@@ -124,7 +124,7 @@ mod tests {
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::{DeriveExt, signer::tests::assert_roundtrip};
+    use crate::{DeriveExt, signer::tests::assert_verify_signer};
 
     use super::*;
 
@@ -140,7 +140,7 @@ mod tests {
         tweak: [u8; 32],
         #[values(b"", b"test", b"message")] msg: &[u8],
     ) {
-        assert_roundtrip(
+        assert_verify_signer(
             &SigningKey::from_bytes(&root_sk).derive(ReduceScalar::<Ed25519>::new()),
             tweak,
             msg,
@@ -158,7 +158,7 @@ mod tests {
         #[case] tweak: [u8; 32],
         #[case] expected_derived_pk: [u8; PUBLIC_KEY_LENGTH],
     ) {
-        let (derived_pk, _signature) = assert_roundtrip(
+        let (derived_pk, _signature) = assert_verify_signer(
             &SigningKey::from_bytes(&root_sk).derive(ReduceScalar::<Ed25519>::new()),
             tweak,
             b"message",
