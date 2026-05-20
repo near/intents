@@ -36,6 +36,7 @@ thiserror.workspace = true
 
 arbitrary = { workspace = true, optional = true }
 near-api-types = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
 
 [features]
 abi = [
@@ -51,6 +52,7 @@ abi = [
   "defuse-token-id/abi",
   "defuse-ton-connect/abi",
   "defuse-webauthn/abi",
+  "dep:serde_json",
   "near-sdk/abi",
 ]
 arbitrary = [
