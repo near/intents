@@ -20,7 +20,6 @@ borsh = { workspace = true, features = ["derive"], optional = true }
 near-sdk = { workspace = true, features = ["unstable"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
-serde_json = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true }
 
 [features]
@@ -35,7 +34,6 @@ serde = ["dep:serde", "dep:serde_with", "parse"]
 abi = [
   "borsh?/unstable__schema",
   "dep:schemars",
-  "dep:serde_json",
   "parse",
   "serde_with?/schemars_0_8",
 ]

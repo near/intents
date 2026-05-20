@@ -8,10 +8,10 @@ pub mod intents;
 mod nonce;
 pub mod payload;
 mod public_key;
+mod signature;
 pub mod tokens;
 
-pub use self::public_key::*;
-pub use self::{error::*, nonce::*};
+pub use self::{error::*, nonce::*, public_key::*, signature::*};
 
 pub use defuse_crypto as crypto;
 pub use defuse_deadline::*;
