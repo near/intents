@@ -6,6 +6,8 @@ use defuse_crypto::Ed25519;
 use impl_tools::autoimpl;
 use tlb_ton::MsgAddress;
 
+use defuse_crypto::Payload;
+
 pub use schema::TonConnectPayloadSchema;
 pub use tlb_ton;
 
@@ -74,6 +76,13 @@ impl TonConnectPayload {
     }
 }
 
+impl Payload for TonConnectPayload {
+    #[inline]
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        Self::hash(self)
+    }
+}
+
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
@@ -100,12 +109,31 @@ pub struct SignedTonConnectPayload {
     pub signature: <Ed25519 as defuse_crypto::Curve>::Signature,
 }
 
+impl Payload for SignedTonConnectPayload {
+    #[inline]
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        self.payload.hash()
+    }
+}
+
+#[cfg(feature = "near-contract")]
+impl defuse_crypto::SignedPayload for SignedTonConnectPayload {
+    type PublicKey = <Ed25519 as defuse_crypto::Curve>::PublicKey;
+
+    #[inline]
+    fn verify(&self) -> Option<Self::PublicKey> {
+        use defuse_crypto::VerifiableCurve;
+        Ed25519::verify(&self.signature, &self.hash(), &self.public_key)
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unreadable_literal)]
 mod tests {
     use super::*;
 
     use arbitrary::{Arbitrary, Unstructured};
+    use defuse_crypto::SignedPayload;
     use defuse_test_utils::random::random_bytes;
     use hex_literal::hex;
     use rstest::rstest;
@@ -241,13 +269,6 @@ mod tests {
         let deserialized: SignedTonConnectPayload = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(&deserialized, signed);
-        assert_eq!(
-            <Ed25519 as defuse_crypto::VerifiableCurve>::verify(
-                &deserialized.signature,
-                &deserialized.hash(),
-                &deserialized.public_key,
-            ),
-            ok.then_some(deserialized.public_key)
-        );
+        assert_eq!(deserialized.verify(), ok.then_some(deserialized.public_key));
     }
 }

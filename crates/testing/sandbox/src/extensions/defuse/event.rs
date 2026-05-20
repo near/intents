@@ -1,5 +1,6 @@
 use defuse::core::accounts::{AccountEvent, NonceEvent, PublicKeyEvent};
 use defuse::core::amounts::Amounts;
+use defuse::core::crypto::Payload;
 use defuse::core::events::DefuseEvent;
 use defuse::core::intents::account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId};
 use defuse::core::intents::token_diff::{TokenDiff, TokenDiffEvent};
@@ -7,7 +8,6 @@ use defuse::core::intents::tokens::{
     FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer,
 };
 use defuse::core::intents::{Intent, MaybeIntentEvent};
-use defuse::core::payload::Payload;
 use defuse::core::payload::{DefusePayload, ExtractDefusePayload};
 use defuse::core::tokens::TransferEvent;
 use defuse::core::{intents::DefuseIntents, payload::multi::MultiPayload};

@@ -23,7 +23,7 @@ near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 thiserror.workspace = true
 
 defuse-crypto = { workspace = true, default-features = false, features = ["borsh"], optional = true }
-defuse-webauthn = { workspace = true, default-features = false, features = ["borsh"], optional = true }
+defuse-webauthn = { workspace = true, default-features = false, optional = true }
 
 arbitrary = { workspace = true, optional = true }
 rand_core = { workspace = true, optional = true }

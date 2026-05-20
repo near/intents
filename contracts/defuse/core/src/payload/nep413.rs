@@ -1,5 +1,3 @@
-use defuse_crypto::{Curve, Ed25519, VerifiableCurve};
-use defuse_digest::{Digest, Sha256};
 use defuse_nep413::{Nep413Payload, SignedNep413Payload};
 use impl_tools::autoimpl;
 use near_sdk::{
@@ -10,30 +8,7 @@ use near_sdk::{
 
 use crate::Deadline;
 
-use super::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
-
-impl Payload for Nep413Payload {
-    #[inline]
-    fn hash(&self) -> defuse_crypto::CryptoHash {
-        Sha256::digest(self.prehash()).into()
-    }
-}
-
-impl Payload for SignedNep413Payload {
-    #[inline]
-    fn hash(&self) -> defuse_crypto::CryptoHash {
-        self.payload.hash()
-    }
-}
-
-impl SignedPayload for SignedNep413Payload {
-    type PublicKey = <Ed25519 as Curve>::PublicKey;
-
-    #[inline]
-    fn verify(&self) -> Option<Self::PublicKey> {
-        Ed25519::verify(&self.signature, &self.hash(), &self.public_key)
-    }
-}
+use super::{DefusePayload, ExtractDefusePayload};
 
 #[near(serializers = [json])]
 #[autoimpl(Deref using self.message)]

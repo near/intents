@@ -7,6 +7,7 @@ rust-version.workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
+defuse-digest = { workspace = true, features = ["sha2"] }
 
 impl-tools.workspace = true
 
@@ -26,6 +27,7 @@ stellar-strkey.workspace = true
 
 [features]
 abi = ["defuse-crypto/abi", "dep:schemars", "serde_with?/schemars_0_8"]
+near-contract = ["defuse-crypto/near-contract"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 
 [lints]

@@ -4,9 +4,9 @@ use defuse_sandbox::extensions::defuse::contract::core::{
     Deadline, Nonce,
     accounts::{AccountEvent, NonceEvent},
     amounts::Amounts,
+    crypto::Payload,
     events::DefuseEvent,
     intents::{DefuseIntents, tokens::Transfer},
-    payload::Payload,
     token_id::{TokenId, nep141::Nep141TokenId},
     tokens::TransferEvent,
 };

@@ -81,6 +81,15 @@ impl Nep413Payload {
     }
 }
 
+#[cfg(feature = "borsh")]
+impl defuse_crypto::Payload for Nep413Payload {
+    #[inline]
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        use defuse_digest::{Digest, Sha256};
+        Sha256::digest(self.prehash()).into()
+    }
+}
+
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -103,6 +112,25 @@ pub struct SignedNep413Payload {
         serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
     )]
     pub signature: <Ed25519 as Curve>::Signature,
+}
+
+#[cfg(feature = "borsh")]
+impl defuse_crypto::Payload for SignedNep413Payload {
+    #[inline]
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        self.payload.hash()
+    }
+}
+
+#[cfg(feature = "near-contract")]
+impl defuse_crypto::SignedPayload for SignedNep413Payload {
+    type PublicKey = <Ed25519 as Curve>::PublicKey;
+
+    #[inline]
+    fn verify(&self) -> Option<Self::PublicKey> {
+        use defuse_crypto::{Payload, VerifiableCurve};
+        Ed25519::verify(&self.signature, &self.hash(), &self.public_key)
+    }
 }
 
 #[cfg(feature = "near-api")]

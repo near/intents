@@ -10,19 +10,19 @@ defuse-bitmap = { workspace = true, features = ["borsh"] }
 defuse-crypto = { workspace = true, features = ["borsh", "ed25519", "secp256k1", "p256", "near-contract", "serde"] }
 defuse-deadline = { workspace = true, features = ["borsh", "near-contract", "serde"] }
 defuse-digest = { workspace = true, features = ["near-contract"] }
-defuse-erc191 = { workspace = true, features = ["serde"] }
+defuse-erc191 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-map-utils = { workspace = true, features = ["near"] }
 defuse-near-utils = { workspace = true }
 defuse-nep245.workspace = true
-defuse-nep413 = { workspace = true, features = ["serde", "borsh"] }
+defuse-nep413 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-num-utils.workspace = true
-defuse-sep53 = { workspace = true, features = ["serde"] }
+defuse-sep53 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-serde-utils = { workspace = true, features = ["base58", "base64"] }
-defuse-tip191 = { workspace = true, features = ["serde"] }
+defuse-tip191 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245", "borsh", "serde"] }
 defuse-ton-connect = { workspace = true, features = ["near-contract", "serde"] }
-defuse-webauthn = { workspace = true, features = ["borsh", "near-contract", "ed25519", "p256"] }
+defuse-webauthn = { workspace = true, features = ["near-contract", "ed25519", "p256"] }
 
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
 derive_more = { workspace = true, features = ["from"] }

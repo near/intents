@@ -9,18 +9,6 @@ pub mod webauthn;
 
 use core::convert::Infallible;
 
-pub use defuse_crypto::CryptoHash;
-
-pub trait Payload {
-    fn hash(&self) -> CryptoHash;
-}
-
-pub trait SignedPayload: Payload {
-    type PublicKey;
-
-    fn verify(&self) -> Option<Self::PublicKey>;
-}
-
 use defuse_serde_utils::base64::Base64;
 use impl_tools::autoimpl;
 use near_sdk::{AccountId, near};

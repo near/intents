@@ -1,4 +1,4 @@
-use super::{Payload, SignedPayload};
+use defuse_crypto::{Payload, SignedPayload};
 
 use crate::public_key::PublicKey;
 use defuse_erc191::SignedErc191Payload;

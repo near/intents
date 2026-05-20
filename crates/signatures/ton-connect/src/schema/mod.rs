@@ -57,7 +57,7 @@ pub trait PayloadSchema {
 }
 
 /// See <https://docs.tonconsole.com/academy/sign-data#choosing-the-right-format>
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(any(test, feature = "arbitrary"), derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),

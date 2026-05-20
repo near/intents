@@ -8,13 +8,11 @@
 
 mod curve;
 mod error;
+mod payload;
 #[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 mod signature;
 
-/// 32-byte cryptographic hash output.
-pub type CryptoHash = [u8; 32];
-
-pub use self::{curve::*, error::ParseCurveError};
+pub use self::{curve::*, error::ParseCurveError, payload::*};
 
 #[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 pub use self::signature::*;

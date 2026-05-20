@@ -1,4 +1,4 @@
-use defuse::core::{intents::MaybeIntentEvent, payload::Payload};
+use defuse::core::{crypto::Payload, intents::MaybeIntentEvent};
 use defuse_sandbox::extensions::defuse::event::ToEventLog;
 use defuse_sandbox::extensions::defuse::{
     intents::ExecuteIntentsExt, nonce::ExtractNonceExt, signer::DefaultDefuseSignerExt,

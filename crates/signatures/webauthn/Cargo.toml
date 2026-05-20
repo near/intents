@@ -29,7 +29,11 @@ abi = [
   "dep:schemars",
   "serde_with/schemars_0_8",
 ]
-borsh = ["defuse-crypto?/borsh"]
-ed25519 = ["defuse-crypto/ed25519", "defuse-crypto/serde", "near-contract"]
+ed25519 = [
+  "defuse-crypto/borsh",
+  "defuse-crypto/ed25519",
+  "defuse-crypto/serde",
+  "near-contract",
+]
 near-contract = ["defuse-crypto?/near-contract", "defuse-digest/near-contract"]
-p256 = ["defuse-crypto/p256", "defuse-crypto/serde"]
+p256 = ["defuse-crypto/borsh", "defuse-crypto/p256", "defuse-crypto/serde"]
