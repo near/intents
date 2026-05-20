@@ -1,8 +1,5 @@
 use defuse_crypto::{Curve, Secp256k1};
-use defuse_digest::{Digest, Keccak256};
 use impl_tools::autoimpl;
-
-use defuse_crypto::{CryptoHash, Payload};
 
 /// See [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
 #[cfg_attr(
@@ -26,9 +23,11 @@ impl Tip191Payload {
     }
 }
 
-impl Payload for Tip191Payload {
+#[cfg(any(test, feature = "sha3", feature = "near-contract"))]
+impl defuse_crypto::Payload for Tip191Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        use defuse_digest::{Digest, Keccak256};
         Keccak256::digest(self.prehash()).into()
     }
 }
@@ -54,9 +53,10 @@ pub struct SignedTip191Payload {
     pub signature: <Secp256k1 as Curve>::Signature,
 }
 
-impl Payload for SignedTip191Payload {
+#[cfg(any(test, feature = "sha3", feature = "near-contract"))]
+impl defuse_crypto::Payload for SignedTip191Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> defuse_crypto::CryptoHash {
         self.payload.hash()
     }
 }
@@ -67,7 +67,7 @@ impl defuse_crypto::SignedPayload for SignedTip191Payload {
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        use defuse_crypto::VerifiableCurve;
+        use defuse_crypto::{Payload, VerifiableCurve};
         Secp256k1::verify(&self.signature, &self.payload.hash(), &())
     }
 }

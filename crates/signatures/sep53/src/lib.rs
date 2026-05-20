@@ -1,8 +1,5 @@
 use defuse_crypto::{Curve, Ed25519};
-use defuse_digest::{Digest, Sha256};
 use impl_tools::autoimpl;
-
-use defuse_crypto::{CryptoHash, Payload};
 
 /// See [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
 #[cfg_attr(
@@ -28,9 +25,11 @@ impl Sep53Payload {
     }
 }
 
-impl Payload for Sep53Payload {
+#[cfg(any(test, feature = "near-contract", feature = "sha2"))]
+impl defuse_crypto::Payload for Sep53Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        use defuse_digest::{Digest, Sha256};
         Sha256::digest(self.prehash()).into()
     }
 }
@@ -60,9 +59,10 @@ pub struct SignedSep53Payload {
     pub signature: <Ed25519 as Curve>::Signature,
 }
 
-impl Payload for SignedSep53Payload {
+#[cfg(any(test, feature = "near-contract", feature = "sha2"))]
+impl defuse_crypto::Payload for SignedSep53Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> defuse_crypto::CryptoHash {
         self.payload.hash()
     }
 }
@@ -73,7 +73,7 @@ impl defuse_crypto::SignedPayload for SignedSep53Payload {
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        use defuse_crypto::VerifiableCurve;
+        use defuse_crypto::{Payload, VerifiableCurve};
         Ed25519::verify(&self.signature, &self.hash(), &self.public_key)
     }
 }
