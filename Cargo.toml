@@ -20,6 +20,9 @@ members = [
   "crates/map-utils",
   "crates/num-utils",
   "crates/serde-utils",
+  "crates/kdf",
+  "crates/kdf/crypto",
+  "crates/kdf/mpc",
 
   "crates/near/admin-utils",
   "crates/near/auth-call",
@@ -49,12 +52,14 @@ members = [
   "crates/testing/randomness",
   "crates/testing/sandbox",
 
-  "crates/outlayer/crypto",
   "crates/outlayer/executor",
   "crates/outlayer/host",
+
+  "crates/outlayer/kdf-app",
   "crates/outlayer/primitives",
   "crates/outlayer/sdk",
   "crates/outlayer/service",
+  "crates/outlayer/signer",
   "crates/outlayer/sys",
   "crates/outlayer/vm-runner",
   "crates/outlayer/vm-runner/cli",
@@ -85,6 +90,9 @@ defuse-bitmap.path = "crates/bitmap"
 defuse-borsh-utils.path = "crates/borsh-utils"
 defuse-crypto = { path = "crates/crypto", default-features = false }
 defuse-io-utils.path = "crates/io-utils"
+defuse-kdf = { path = "crates/kdf", default-features = false }
+defuse-kdf-crypto = { path = "crates/kdf/crypto", default-features = false }
+defuse-kdf-mpc = { path = "crates/kdf/mpc", default-features = false }
 defuse-map-utils.path = "crates/map-utils"
 defuse-num-utils.path = "crates/num-utils"
 defuse-serde-utils.path = "crates/serde-utils"
@@ -117,12 +125,13 @@ defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
-defuse-outlayer-crypto = { path = "crates/outlayer/crypto", default-features = false }
 defuse-outlayer-executor.path = "crates/outlayer/executor"
 defuse-outlayer-host.path = "crates/outlayer/host"
+defuse-outlayer-kdf-app = { path = "crates/outlayer/kdf-app", default-features = false }
 defuse-outlayer-primitives.path = "crates/outlayer/primitives"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
 defuse-outlayer-service.path = "crates/outlayer/service"
+defuse-outlayer-signer.path = "crates/outlayer/signer"
 defuse-outlayer-sys.path = "crates/outlayer/sys"
 defuse-outlayer-vm-runner.path = "crates/outlayer/vm-runner"
 defuse-outlayer-vm-runner-cli.path = "crates/outlayer/vm-runner/cli"
@@ -136,6 +145,7 @@ near-api-types = "0.8.6"
 near-contract-standards = "5.24"
 near-crypto = "0.35.0"
 near-kit = { version = "0.9.0", default-features = false }
+near-mpc-crypto-types = { git = "https://github.com/near/mpc", rev = "2924956010abc3e76d904dca8cb68af17b1216a4", version = "0.0.1", default-features = false }
 near-openapi-types = "0.8.0"
 near-plugins = "0.5.1"
 near-sandbox = "0.3.9"

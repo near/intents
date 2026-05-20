@@ -1,21 +1,30 @@
-use defuse_outlayer_crypto::{DeriveSigner, ed25519::Ed25519};
+use defuse_kdf::{DeriveSigner, Ed25519};
 
-use crate::Host;
+use crate::{
+    Host, HostView, bindings::outlayer::crypto::ed25519::Host as HostTrait, crypto::AppSigner,
+};
 
-impl crate::bindings::outlayer::crypto::ed25519::Host for Host<'_> {
+impl<S> HostTrait for AppSigner<S>
+where
+    S: DeriveSigner<Ed25519, String>,
+{
     fn derive_public_key(&mut self, path: String) -> wasmtime::Result<Vec<u8>> {
-        let path = self.tweak(path);
-
-        let derived_pk = DeriveSigner::<Ed25519>::derive_public_key(&self.signer, &path);
-
-        Ok(derived_pk.to_bytes().to_vec())
+        Ok(DeriveSigner::<Ed25519, _>::derive_public_key(&self, path)
+            .to_bytes()
+            .to_vec())
     }
 
     fn sign(&mut self, path: String, msg: Vec<u8>) -> wasmtime::Result<Vec<u8>> {
-        let tweak = self.tweak(path);
+        Ok(DeriveSigner::<Ed25519, _>::derive_sign(&self, path, &msg).to_vec())
+    }
+}
 
-        let signature = DeriveSigner::<Ed25519>::derive_sign(&self.signer, &tweak, &msg);
+impl HostTrait for Host<'_> {
+    fn derive_public_key(&mut self, path: String) -> wasmtime::Result<Vec<u8>> {
+        HostTrait::derive_public_key(&mut self.ctx().app_signer(), path)
+    }
 
-        Ok(signature.to_vec())
+    fn sign(&mut self, path: String, msg: Vec<u8>) -> wasmtime::Result<Vec<u8>> {
+        HostTrait::sign(&mut self.ctx().app_signer(), path, msg)
     }
 }

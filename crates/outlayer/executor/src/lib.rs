@@ -10,7 +10,7 @@ pub use defuse_outlayer_vm_runner::wasmtime::component::Component;
 
 use defuse_outlayer_vm_runner::{
     Context as VmContext, ExecutionOutcome, VmRuntime, WasiContext,
-    host::{Host, InMemorySigner},
+    host::{Host, crypto::Signer},
     wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe},
 };
 
@@ -19,7 +19,7 @@ use bytes::Bytes;
 #[derive(Clone)]
 pub struct Executor {
     runtime: Arc<VmRuntime>,
-    signer: Arc<InMemorySigner>,
+    signer: Arc<dyn Signer>,
 }
 
 pub struct Context {

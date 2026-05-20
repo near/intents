@@ -389,6 +389,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdd35008169921d80bc60d3d0ab416eecb028c4cd653352907921d95084790be"
 dependencies = [
  "hybrid-array",
+ "zeroize",
 ]
 
 [[package]]
@@ -1625,6 +1626,46 @@ name = "defuse-io-utils"
 version = "0.1.0"
 
 [[package]]
+name = "defuse-kdf"
+version = "0.1.0"
+dependencies = [
+ "borsh",
+ "curve25519-dalek",
+ "defuse-kdf",
+ "defuse-kdf-crypto",
+ "digest 0.11.3",
+ "digest-io",
+ "ed25519-dalek",
+ "hex",
+ "hex-literal",
+ "impl-tools",
+ "k256",
+ "rstest",
+ "sha3 0.11.0",
+]
+
+[[package]]
+name = "defuse-kdf-crypto"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "hex-literal",
+ "k256",
+ "rstest",
+]
+
+[[package]]
+name = "defuse-kdf-mpc"
+version = "0.1.0"
+dependencies = [
+ "defuse-kdf",
+ "hex-literal",
+ "near-account-id",
+ "near-mpc-crypto-types",
+ "rstest",
+]
+
+[[package]]
 name = "defuse-map-utils"
 version = "0.1.0"
 dependencies = [
@@ -1708,22 +1749,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-outlayer-crypto"
-version = "0.1.0"
-dependencies = [
- "curve25519-dalek",
- "ed25519-dalek",
- "hex-literal",
- "hkdf",
- "impl-tools",
- "k256",
- "rand 0.10.1",
- "rstest",
- "sha3 0.11.0",
- "zeroize",
-]
-
-[[package]]
 name = "defuse-outlayer-executor"
 version = "0.1.0"
 dependencies = [
@@ -1741,10 +1766,23 @@ name = "defuse-outlayer-host"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "defuse-outlayer-crypto",
+ "defuse-kdf",
+ "defuse-outlayer-kdf-app",
  "defuse-outlayer-primitives",
  "tracing",
  "wasmtime",
+]
+
+[[package]]
+name = "defuse-outlayer-kdf-app"
+version = "0.1.0"
+dependencies = [
+ "borsh",
+ "defuse-kdf",
+ "defuse-outlayer-primitives",
+ "hex-literal",
+ "rstest",
+ "sha3 0.11.0",
 ]
 
 [[package]]
@@ -1754,15 +1792,11 @@ dependencies = [
  "arbitrary",
  "borsh",
  "derive_more",
- "digest 0.11.3",
- "digest-io",
  "hex-literal",
  "near-account-id",
  "rstest",
  "schemars 0.8.22",
- "serde",
  "serde_with",
- "sha3 0.11.0",
  "strum 0.27.2",
  "thiserror 2.0.18",
 ]
@@ -1777,9 +1811,11 @@ dependencies = [
  "bs58 0.5.1",
  "defuse-outlayer-host",
  "defuse-outlayer-primitives",
+ "defuse-outlayer-signer",
  "defuse-outlayer-sys",
  "hex",
  "hex-literal",
+ "rstest",
  "schemars 0.8.22",
  "serde",
  "serde_json",
@@ -1813,6 +1849,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-outlayer-signer"
+version = "0.1.0"
+dependencies = [
+ "defuse-kdf",
+ "defuse-outlayer-signer",
+ "hex-literal",
+ "hkdf",
+ "rstest",
+ "sha3 0.11.0",
+ "zeroize",
+]
+
+[[package]]
 name = "defuse-outlayer-sys"
 version = "0.1.0"
 dependencies = [
@@ -1843,6 +1892,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "defuse-outlayer-signer",
  "defuse-outlayer-vm-runner",
  "tokio",
 ]
@@ -2248,6 +2298,7 @@ dependencies = [
  "const-oid 0.10.2",
  "crypto-common 0.2.1",
  "ctutils",
+ "zeroize",
 ]
 
 [[package]]
@@ -3805,6 +3856,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "mpc-primitives"
+version = "3.9.0"
+source = "git+https://github.com/near/mpc?rev=2924956010abc3e76d904dca8cb68af17b1216a4#2924956010abc3e76d904dca8cb68af17b1216a4"
+dependencies = [
+ "borsh",
+ "derive_more",
+ "hex",
+ "near-account-id",
+ "schemars 0.8.22",
+ "serde",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "multi-token-receiver-stub"
 version = "0.1.0"
 dependencies = [
@@ -4170,6 +4235,35 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
+]
+
+[[package]]
+name = "near-mpc-bounded-collections"
+version = "0.0.1"
+source = "git+https://github.com/near/mpc?rev=2924956010abc3e76d904dca8cb68af17b1216a4#2924956010abc3e76d904dca8cb68af17b1216a4"
+dependencies = [
+ "borsh",
+ "derive_more",
+ "hex",
+ "serde",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "near-mpc-crypto-types"
+version = "0.0.1"
+source = "git+https://github.com/near/mpc?rev=2924956010abc3e76d904dca8cb68af17b1216a4#2924956010abc3e76d904dca8cb68af17b1216a4"
+dependencies = [
+ "borsh",
+ "bs58 0.5.1",
+ "derive_more",
+ "mpc-primitives",
+ "near-account-id",
+ "near-mpc-bounded-collections",
+ "serde",
+ "serde_with",
+ "sha3 0.10.9",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
