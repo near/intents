@@ -15,8 +15,8 @@ use crate::{Curve, CurveType, ParseCurveError, TypedCurve};
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    borsh(use_discriminant = true),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema)),
+    borsh(use_discriminant = true)
 )]
 #[cfg_attr(
     feature = "serde",
