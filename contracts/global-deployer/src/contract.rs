@@ -130,11 +130,8 @@ impl Contract {
         }
         .emit();
 
-        self.approve(
-            State::DEFAULT_HASH,
-            Reason::By(std::borrow::Cow::Borrowed(&new_owner_id)),
-        );
-        self.0.owner_id = new_owner_id.into();
+        self.0.owner_id = new_owner_id.clone().into();
+        self.approve(State::DEFAULT_HASH, Reason::By(new_owner_id.into()));
     }
 
     fn is_approved(&self, hash: &[u8; 32]) -> bool {
