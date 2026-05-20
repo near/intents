@@ -93,7 +93,7 @@ impl SubAssign<Duration> for Deadline {
     }
 }
 
-#[cfg(feature = "borsh")]
+#[cfg(any(test, feature = "borsh"))]
 const _: () = {
     use defuse_borsh_utils::adapters::{
         BorshDeserializeAs, BorshSerializeAs, TimestampMicroSeconds, TimestampMilliSeconds,
@@ -139,7 +139,6 @@ const _: () = {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(all(feature = "abi", feature = "borsh"))]
     #[test]
     fn schema_as_usage() {
         use super::*;

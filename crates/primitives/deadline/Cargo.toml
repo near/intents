@@ -27,5 +27,6 @@ serde = { workspace = true, features = ["derive"], optional = true }
 chrono = { workspace = true, features = ["clock", "now", "serde"] }
 
 [dev-dependencies]
-borsh.workspace = true
+borsh = { workspace = true, features = ["unstable__schema"] }
+defuse-borsh-utils = { workspace = true, features = ["chrono", "abi"] }
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
