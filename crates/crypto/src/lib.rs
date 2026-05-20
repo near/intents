@@ -17,5 +17,8 @@ pub use self::{curve::*, error::ParseCurveError, payload::*};
 #[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 pub use self::signature::*;
 
-#[cfg(feature = "serde")]
+#[cfg(all(
+    any(feature = "ed25519", feature = "secp256k1", feature = "p256"),
+    feature = "serde"
+))]
 pub mod serde;
