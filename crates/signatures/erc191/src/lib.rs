@@ -1,10 +1,6 @@
 use defuse_crypto::{Curve, Secp256k1};
 use impl_tools::autoimpl;
 
-use defuse_crypto::{CryptoHash, Payload};
-
-use defuse_digest::{Digest, Keccak256};
-
 /// See [ERC-191](https://github.com/ethereum/ercs/blob/master/ERCS/erc-191.md)
 #[cfg_attr(
     feature = "serde",
@@ -26,9 +22,11 @@ impl Erc191Payload {
     }
 }
 
-impl Payload for Erc191Payload {
+#[cfg(any(test, feature = "sha3", feature = "near-contract"))]
+impl defuse_crypto::Payload for Erc191Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> defuse_crypto::CryptoHash {
+        use defuse_digest::{Digest, Keccak256};
         Keccak256::digest(self.prehash().as_slice()).into()
     }
 }
@@ -54,16 +52,17 @@ pub struct SignedErc191Payload {
     pub signature: <Secp256k1 as Curve>::Signature,
 }
 
-impl Payload for SignedErc191Payload {
+#[cfg(any(test, feature = "sha3", feature = "near-contract"))]
+impl defuse_crypto::Payload for SignedErc191Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> defuse_crypto::CryptoHash {
         self.payload.hash()
     }
 }
 
 #[cfg(any(test, feature = "near-contract"))]
 const _: () = {
-    use defuse_crypto::{SignedPayload, VerifiableCurve};
+    use defuse_crypto::{Payload, SignedPayload, VerifiableCurve};
     impl SignedPayload for SignedErc191Payload {
         type PublicKey = <Secp256k1 as Curve>::PublicKey;
 
