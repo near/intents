@@ -12,7 +12,6 @@ defuse-digest = { workspace = true, features = ["sha3"] }
 impl-tools.workspace = true
 
 cfg_eval = { workspace = true, optional = true }
-near-sdk = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true, features = ["derive"] }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
@@ -26,7 +25,7 @@ rstest.workspace = true
 
 [features]
 abi = ["defuse-crypto/abi", "dep:schemars", "serde_with?/schemars_0_8"]
-near-contract = ["defuse-crypto/near-contract", "dep:near-sdk"]
+near-contract = ["defuse-crypto/near-contract"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 
 [lints]
