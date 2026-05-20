@@ -34,34 +34,34 @@ impl<F: DigestFn> FixedOutput for VecDigest<F> {
 impl<F: DigestFn> HashMarker for VecDigest<F> {}
 
 #[derive(Default, Clone)]
-pub struct Keccak256Fn;
+pub struct NearKeccak256;
 
-impl OutputSizeUser for Keccak256Fn {
+impl OutputSizeUser for NearKeccak256 {
     type OutputSize = U32;
 }
 
-impl DigestFn for Keccak256Fn {
+impl DigestFn for NearKeccak256 {
     fn digest(bytes: &[u8]) -> Output<Self> {
         env::keccak256_array(bytes).into()
     }
 }
 
-pub type Keccak256 = VecDigest<Keccak256Fn>;
+pub type Keccak256 = VecDigest<NearKeccak256>;
 
 #[derive(Default, Clone)]
-pub struct Sha256Fn;
+pub struct NearSha256;
 
-impl OutputSizeUser for Sha256Fn {
+impl OutputSizeUser for NearSha256 {
     type OutputSize = U32;
 }
 
-impl DigestFn for Sha256Fn {
+impl DigestFn for NearSha256 {
     fn digest(bytes: &[u8]) -> Output<Self> {
         env::sha256_array(bytes).into()
     }
 }
 
-pub type Sha256 = VecDigest<Sha256Fn>;
+pub type Sha256 = VecDigest<NearSha256>;
 
 #[cfg(test)]
 mod tests {
