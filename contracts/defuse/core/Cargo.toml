@@ -22,7 +22,7 @@ defuse-serde-utils = { workspace = true, features = ["base58", "base64"] }
 defuse-tip191 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245", "borsh", "serde"] }
 defuse-ton-connect = { workspace = true, features = ["near-contract", "serde"] }
-defuse-webauthn = { workspace = true, features = ["near-contract", "ed25519", "p256"] }
+defuse-webauthn = { workspace = true, features = ["borsh", "near-contract", "ed25519", "p256"] }
 
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
 derive_more = { workspace = true, features = ["from"] }

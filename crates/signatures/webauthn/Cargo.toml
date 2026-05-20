@@ -27,7 +27,8 @@ abi = [
   "dep:schemars",
   "serde_with/schemars_0_8",
 ]
-ed25519 = ["defuse-crypto/borsh", "defuse-crypto/ed25519", "near-contract"]
+ed25519 = ["defuse-crypto/ed25519", "near-contract"]
 near-contract = ["defuse-crypto?/near-contract", "defuse-digest/near-contract"]
-p256 = ["defuse-crypto/borsh", "defuse-crypto/p256"]
+borsh = ["defuse-crypto?/borsh"]
+p256 = ["defuse-crypto/p256"]
 sha2 = ["defuse-digest/sha2"]
