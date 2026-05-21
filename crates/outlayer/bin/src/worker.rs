@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use tower::Service;
 
 #[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields, default)]
 pub struct WorkerPoolConfig {
     pub buffer: NonZeroUsize,
     pub concurrency: usize,

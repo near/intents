@@ -4,7 +4,7 @@
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize)
 )]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields, default))]
 #[derive(Debug, Clone, Copy)]
 pub struct ExecutorLimits {
     #[cfg_attr(feature = "serde", serde_as(as = "Clamp<1, { 64 * 1024 * 1024 }, usize>"))]
@@ -33,7 +33,7 @@ impl Default for ExecutorLimits {
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize)
 )]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields, default))]
 pub struct Config {
     #[cfg_attr(
         feature = "serde",

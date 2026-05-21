@@ -14,6 +14,7 @@ use worker::WorkerPoolBuilder;
 
 #[serde_with::serde_as]
 #[derive(Deserialize, Serialize)]
+#[serde(default)]
 struct AppConfig {
     #[serde(rename = "service")]
     outlayer: OutlayerConfig,
@@ -48,10 +49,12 @@ async fn main() -> Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_env("RUST_LOG"))
         .init();
 
-    let defaults = serde_json::to_string(&AppConfig::default()).context("default config")?;
     let config: AppConfig = Config::builder()
-        .add_source(config::File::from_str(&defaults, config::FileFormat::Json))
-        .add_source(Environment::with_prefix("WORKER").prefix_separator("__").separator("__"))
+        .add_source(
+            Environment::with_prefix("WORKER")
+                .prefix_separator("__")
+                .separator("__"),
+        )
         .build()
         .and_then(|c| c.try_deserialize())
         .context("config")?;
@@ -69,7 +72,13 @@ async fn main() -> Result<()> {
         .with_config(config.outlayer)
         .build(signer)
         .context("outlayer")?;
-    let mut svc = WorkerPoolBuilder::new(config.worker).build(outlayer);
+
+    let mut svc = tower::ServiceBuilder::new()
+        .buffer(config.worker.buffer.get())
+        .concurrency_limit(config.worker.concurrency)
+        .service(outlayer);
+
+    // let mut svc = WorkerPoolBuilder::new(config.worker).build(outlayer);
 
     let (_requests_tx, mut requests_rx) = mpsc::channel::<Request>(100);
     let (result_tx, mut _result_rx) = mpsc::channel(100);

@@ -10,7 +10,7 @@ use defuse_outlayer_utils::Clamp;
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize)
 )]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields, default))]
 pub struct ResolverConfig {
     pub near_rpc_url: String,
     pub near_chain_id: String,
