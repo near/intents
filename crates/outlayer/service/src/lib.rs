@@ -128,4 +128,6 @@ impl From<resolver::Error> for Error {
 }
 
 #[cfg(feature = "tower")]
-mod tower;
+pub mod tower;
+#[cfg(feature = "tower")]
+pub use self::tower::WorkerPoolConfig;

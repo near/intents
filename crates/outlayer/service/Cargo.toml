@@ -32,7 +32,7 @@ url.workspace = true
 cfg_eval = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true, features = ["hex"] }
-tower = { workspace = true, optional = true, features = ["util"] }
+tower = { workspace = true, optional = true, features = ["util", "buffer", "limit"] }
 
 [features]
 default = ["serde"]

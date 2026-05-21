@@ -1,5 +1,4 @@
 mod cli;
-mod worker;
 
 use anyhow::{Context as _, Result};
 use config::{Config, Environment};
@@ -7,10 +6,9 @@ use serde::{Deserialize, Serialize};
 use serde_with::hex::Hex;
 
 use defuse_outlayer_executor::InMemorySigner;
-use defuse_outlayer_service::{Outlayer, OutlayerConfig};
+use defuse_outlayer_service::{Outlayer, OutlayerConfig, WorkerPoolConfig};
 use tokio::sync::mpsc;
 use tower::{Service as _, ServiceExt as _};
-use worker::WorkerPoolBuilder;
 
 #[serde_with::serde_as]
 #[derive(Deserialize, Serialize)]
@@ -19,7 +17,7 @@ struct AppConfig {
     #[serde(rename = "service")]
     outlayer: OutlayerConfig,
     #[serde(rename = "tower")]
-    worker: worker::WorkerPoolConfig,
+    worker: WorkerPoolConfig,
     #[serde_as(as = "Option<Hex>")]
     signer_seed: Option<Vec<u8>>,
 }
@@ -28,7 +26,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             outlayer: OutlayerConfig::default(),
-            worker: worker::WorkerPoolConfig::default(),
+            worker: WorkerPoolConfig::default(),
             signer_seed: None,
         }
     }
@@ -68,17 +66,10 @@ async fn main() -> Result<()> {
         None => unimplemented!("signer seed must be provided until CKD integration is complete"),
     };
 
-    let outlayer = Outlayer::builder()
+    let mut svc = Outlayer::builder()
         .with_config(config.outlayer)
-        .build(signer)
+        .build_service(signer, config.worker)
         .context("outlayer")?;
-
-    let mut svc = tower::ServiceBuilder::new()
-        .buffer(config.worker.buffer.get())
-        .concurrency_limit(config.worker.concurrency)
-        .service(outlayer);
-
-    // let mut svc = WorkerPoolBuilder::new(config.worker).build(outlayer);
 
     let (_requests_tx, mut requests_rx) = mpsc::channel::<Request>(100);
     let (result_tx, mut _result_rx) = mpsc::channel(100);

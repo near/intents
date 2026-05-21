@@ -34,4 +34,32 @@ impl OutlayerBuilder {
         ))
     }
 
+    #[cfg(feature = "tower")]
+    pub fn build_service(
+        self,
+        signer: impl Into<Arc<InMemorySigner>>,
+        pool_config: crate::tower::WorkerPoolConfig,
+    ) -> anyhow::Result<
+        tower::util::BoxCloneService<
+            (crate::Code<'static>, bytes::Bytes),
+            defuse_outlayer_executor::Outcome,
+            Box<dyn std::error::Error + Send + Sync>,
+        >,
+    > {
+        let outlayer = self.build(signer)?;
+        let svc = tower::service_fn(
+            move |(app, input): (crate::Code<'static>, bytes::Bytes)| {
+                let outlayer = outlayer.clone();
+                async move {
+                    outlayer
+                        .execute(app, input, None)
+                        .await
+                        .map_err(|e: crate::Error| {
+                            Box::new(e) as Box<dyn std::error::Error + Send + Sync>
+                        })
+                }
+            },
+        );
+        Ok(crate::tower::wrap_with_pool(svc, pool_config))
+    }
 }
