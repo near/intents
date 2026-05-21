@@ -15,7 +15,9 @@ use worker::WorkerPoolBuilder;
 #[serde_with::serde_as]
 #[derive(Deserialize, Serialize)]
 struct AppConfig {
+    #[serde(rename = "service")]
     outlayer: OutlayerConfig,
+    #[serde(rename = "tower")]
     worker: worker::WorkerPoolConfig,
     #[serde_as(as = "Option<Hex>")]
     signer_seed: Option<Vec<u8>>,

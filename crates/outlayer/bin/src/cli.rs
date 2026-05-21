@@ -4,7 +4,7 @@ use super::AppConfig;
 
 pub fn print_env_vars() {
     let defaults = serde_json::to_value(AppConfig::default()).unwrap();
-    print_value("OUTLAYER", &defaults);
+    print_value("WORKER", &defaults);
 }
 
 fn print_value(prefix: &str, value: &Value) {
