@@ -1,43 +1,50 @@
-use std::{sync::Arc, time::Duration};
+mod cli;
+mod worker;
 
 use anyhow::{Context as _, Result};
-use bytes::Bytes;
 use figment::{
     Figment,
     providers::{Env, Serialized},
 };
 use serde::{Deserialize, Serialize};
-use tower::service_fn;
+use serde_with::hex::Hex;
 
-use defuse_outlayer_executor::{Executor, Config as ExecutorConfig, ExecutorLimits};
-use defuse_outlayer_service::{
-    CacheBuilder, CacheConfig, Code, HttpResolver, NearResolver, Outlayer, Resolver,
-    ResolverConfig, UrlResolver,
-};
-use defuse_outlayer_vm_runner::{VmRuntime, host::InMemorySigner};
-use near_kit::Near;
+use defuse_outlayer_executor::InMemorySigner;
+use defuse_outlayer_service::{Outlayer, OutlayerConfig};
+use tokio::sync::mpsc;
+use tower::{Service as _, ServiceExt as _};
+use worker::WorkerPoolBuilder;
 
+#[serde_with::serde_as]
 #[derive(Deserialize, Serialize)]
 struct AppConfig {
-    executor: ExecutorConfig,
-    cache: CacheConfig,
-    resolver: ResolverConfig,
-    default_fuel: u64,
+    #[serde(flatten)]
+    outlayer: OutlayerConfig,
+    worker: worker::WorkerPoolConfig,
+    #[serde_as(as = "Option<Hex>")]
+    signer_seed: Option<Vec<u8>>,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            executor: ExecutorConfig::default(),
-            cache: CacheConfig::default(),
-            resolver: ResolverConfig::default(),
-            default_fuel: u64::MAX,
+            outlayer: OutlayerConfig::default(),
+            worker: worker::WorkerPoolConfig::default(),
+            signer_seed: None,
         }
     }
 }
 
+type Request = (defuse_outlayer_service::Code<'static>, bytes::Bytes);
+
 #[tokio::main]
 async fn main() -> Result<()> {
+    //TODO: is it that helpfful? 
+    if std::env::args().any(|a| a == "--print-config") {
+        cli::print_env_vars();
+        return Ok(());
+    }
+
     dotenvy::dotenv().ok();
 
     tracing_subscriber::fmt()
@@ -50,43 +57,31 @@ async fn main() -> Result<()> {
         .extract()
         .context("config")?;
 
-    let seed = match config.executor.signer_seed {
-        Some(ref s) => hex::decode(s).context("OUTLAYER__EXECUTOR__SIGNER_SEED: invalid hex")?,
-        None => b"test".to_vec(),
+    let signer = match config.signer_seed {
+        Some(ref seed) => {
+            tracing::warn!("using custom signer seed — not intended for production use");
+            InMemorySigner::from_seed(seed)
+        }
+        // TODO: derive seed from CKD
+        None => unimplemented!("signer seed must be provided until CKD integration is complete"),
     };
 
-    let executor = {
-        let signer = InMemorySigner::from_seed(&seed);
-        let limits = ExecutorLimits {
-            stdin: config.executor.stdin_limit,
-            stdout: config.executor.stdout_limit,
-            stderr: config.executor.stderr_limit,
-        };
-        let runtime =
-            Arc::new(VmRuntime::new(config.executor.memory_limit).context("VmRuntime")?);
-        Executor::new(runtime, signer, limits)
-    };
+    let outlayer = Outlayer::builder()
+        .with_config(config.outlayer)
+        .build(signer)
+        .context("outlayer")?;
+    let mut svc = WorkerPoolBuilder::new(config.worker).build(outlayer);
 
-    let resolver = {
-        let near =
-            Near::custom(config.resolver.near_rpc_url, config.resolver.near_chain_id).build();
-        Resolver::new(
-            NearResolver::new(near),
-            UrlResolver::new(HttpResolver::new(config.resolver.http_max_len)),
-        )
-    };
-
-    let mut cache = CacheBuilder::default().max_capacity(config.cache.max_capacity);
-    if let Some(tti) = config.cache.tti_secs {
-        cache = cache.time_to_idle(Duration::from_secs(tti));
+    let (_requests_tx, mut requests_rx) = mpsc::channel::<Request>(100);
+    let (result_tx, mut _result_rx) = mpsc::channel(100);
+    loop {
+        svc.ready().await.map_err(|e| anyhow::anyhow!(e))?;
+        let req = requests_rx.recv().await.expect("should be infinite");
+        let fut = svc.call(req); // future is 'static, svc stays here
+        let result_tx = result_tx.clone();
+        tokio::spawn(async move {
+            let resp = fut.await;
+            result_tx.send(resp).await.ok();
+        });
     }
-
-    let outlayer = Outlayer::builder().with_cache(cache).build(resolver, executor);
-
-    let default_fuel = config.default_fuel;
-    let _svc = service_fn(move |(app, input): (Code<'static>, Bytes)| {
-        let outlayer = outlayer.clone();
-        async move { outlayer.execute(app, input, default_fuel).await }
-    });
-    Ok(())
 }

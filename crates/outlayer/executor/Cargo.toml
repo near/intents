@@ -15,11 +15,16 @@ anyhow.workspace = true
 bytes.workspace = true
 thiserror.workspace = true
 
+defuse-outlayer-utils = { workspace = true, optional = true }
+
 cfg_eval = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 serde_with = { workspace = true, features = ["base64"], optional = true }
 
+[dev-dependencies]
+serde_json.workspace = true
+
 [features]
 default = ["serde"]
 
-serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with"]
+serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with", "dep:defuse-outlayer-utils", "defuse-outlayer-utils/serde"]

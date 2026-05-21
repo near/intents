@@ -2,18 +2,7 @@ mod near;
 mod url;
 
 #[cfg(feature = "serde")]
-struct Clamp<const MIN: i64, const MAX: i64>;
-
-#[cfg(feature = "serde")]
-impl<'de, const MIN: i64, const MAX: i64> ::serde_with::DeserializeAs<'de, usize>
-    for Clamp<MIN, MAX>
-{
-    fn deserialize_as<D: ::serde::Deserializer<'de>>(d: D) -> Result<usize, D::Error> {
-        use ::serde::Deserialize as _;
-        let v = i64::deserialize(d)?.clamp(MIN, MAX);
-        usize::try_from(v).map_err(::serde::de::Error::custom)
-    }
-}
+use defuse_outlayer_utils::Clamp;
 
 #[cfg_attr(
     feature = "serde",
@@ -21,11 +10,12 @@ impl<'de, const MIN: i64, const MAX: i64> ::serde_with::DeserializeAs<'de, usize
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize)
 )]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct ResolverConfig {
     pub near_rpc_url: String,
     pub near_chain_id: String,
 
-    #[cfg_attr(feature = "serde", serde_as(deserialize_as = "Clamp<1, { 100 * 1024 * 1024 }>"))]
+    #[cfg_attr(feature = "serde", serde_as(deserialize_as = "Clamp<1, { 100 * 1024 * 1024 }, usize>"))]
     pub http_max_len: usize,
 }
 

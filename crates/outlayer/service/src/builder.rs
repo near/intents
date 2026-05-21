@@ -1,24 +1,36 @@
-use defuse_outlayer_executor::Executor;
+use std::sync::Arc;
 
-use crate::{CacheBuilder, Outlayer, Resolver};
+use defuse_outlayer_executor::{Executor, InMemorySigner};
+use near_kit::Near;
 
-#[must_use = "use .build()"]
+use crate::{HttpResolver, NearResolver, Outlayer, OutlayerConfig, Resolver, UrlResolver};
+
 #[derive(Default)]
 pub struct OutlayerBuilder {
-    cache: CacheBuilder,
+    config: OutlayerConfig,
 }
 
 impl OutlayerBuilder {
-    pub const fn with_cache(mut self, cache: CacheBuilder) -> Self {
-        self.cache = cache;
+    pub fn with_config(mut self, config: OutlayerConfig) -> Self {
+        self.config = config;
         self
     }
 
-    pub fn build(self, resolver: Resolver, executor: Executor) -> Outlayer {
-        Outlayer {
+    pub fn build(self, signer: impl Into<Arc<InMemorySigner>>) -> anyhow::Result<Outlayer> {
+        let executor = Executor::new(signer, self.config.executor)?;
+        let near =
+            Near::custom(self.config.resolver.near_rpc_url, self.config.resolver.near_chain_id)
+                .build();
+        let resolver = Resolver::new(
+            NearResolver::new(near),
+            UrlResolver::new(HttpResolver::new(self.config.resolver.http_max_len)),
+        );
+        Ok(Outlayer::new(
             resolver,
             executor,
-            runtime_cache: self.cache.build(),
-        }
+            self.config.cache,
+            self.config.default_fuel,
+        ))
     }
+
 }

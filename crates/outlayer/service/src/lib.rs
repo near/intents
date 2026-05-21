@@ -1,18 +1,19 @@
 mod builder;
 mod cache;
 mod code;
+mod config;
 mod resolver;
 
+pub use self::builder::OutlayerBuilder;
+pub use self::config::OutlayerConfig;
 pub use self::resolver::{HttpResolver, NearResolver, Resolver, ResolverConfig, UrlResolver};
-pub use self::{builder::*, cache::*, code::*};
+pub use self::{cache::*, code::*};
 
 use std::{convert, sync::Arc};
 
 use anyhow::Context as _;
 use bytes::Bytes;
-use defuse_outlayer_executor::{
-    self as executor, Component, Context, Executor, HostContext, Outcome,
-};
+use defuse_outlayer_executor::{self as executor, Component, Context, Executor, HostContext, Outcome};
 use defuse_outlayer_primitives::AppId;
 use moka::future::Cache;
 
@@ -21,9 +22,24 @@ pub struct Outlayer {
     resolver: Resolver,
     executor: Executor,
     runtime_cache: Cache<[u8; 32], Component>,
+    default_fuel: u64,
 }
 
 impl Outlayer {
+    pub fn new(
+        resolver: Resolver,
+        executor: Executor,
+        cache: CacheConfig,
+        default_fuel: u64,
+    ) -> Self {
+        Self {
+            resolver,
+            executor,
+            runtime_cache: cache.build(),
+            default_fuel,
+        }
+    }
+
     pub fn builder() -> OutlayerBuilder {
         OutlayerBuilder::default()
     }
@@ -64,7 +80,12 @@ impl Outlayer {
         Ok((app_id, component))
     }
 
-    pub async fn execute(&self, app: Code<'_>, input: Bytes, fuel: u64) -> Result<Outcome, Error> {
+    pub async fn execute(
+        &self,
+        app: Code<'_>,
+        input: Bytes,
+        fuel: Option<u64>,
+    ) -> Result<Outcome, Error> {
         let (app_id, component) = self.resolve_app(app).await?;
 
         self.executor
@@ -74,12 +95,13 @@ impl Outlayer {
                     host: HostContext { app_id },
                 },
                 &component,
-                fuel,
+                fuel.unwrap_or(self.default_fuel),
             )
             .await
             .map_err(Into::into)
     }
 }
+
 
 #[derive(derive_more::From, thiserror::Error, Debug)]
 pub enum Error {
@@ -104,3 +126,6 @@ impl From<resolver::Error> for Error {
         Self::Prepare(PrepareError::Resolve(err).into())
     }
 }
+
+#[cfg(feature = "tower")]
+mod tower;

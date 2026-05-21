@@ -7,11 +7,12 @@ pub use self::{compiler::*, config::*, error::*};
 use std::sync::Arc;
 
 pub use defuse_outlayer_vm_runner::host::Context as HostContext;
+pub use defuse_outlayer_vm_runner::host::InMemorySigner;
 pub use defuse_outlayer_vm_runner::wasmtime::component::Component;
 
 use defuse_outlayer_vm_runner::{
     Context as VmContext, ExecutionOutcome, VmRuntime, WasiContext,
-    host::{Host, InMemorySigner},
+    host::Host,
     wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe},
 };
 

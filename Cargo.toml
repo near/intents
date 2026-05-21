@@ -51,6 +51,7 @@ members = [
   "crates/outlayer/executor",
   "crates/outlayer/host",
   "crates/outlayer/primitives",
+  "crates/outlayer/utils",
   "crates/outlayer/sdk",
   "crates/outlayer/service",
   "crates/outlayer/sys",
@@ -117,6 +118,7 @@ defuse-outlayer-crypto = { path = "crates/outlayer/crypto", default-features = f
 defuse-outlayer-executor.path = "crates/outlayer/executor"
 defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-primitives.path = "crates/outlayer/primitives"
+defuse-outlayer-utils.path = "crates/outlayer/utils"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
 defuse-outlayer-service.path = "crates/outlayer/service"
 defuse-outlayer-sys.path = "crates/outlayer/sys"

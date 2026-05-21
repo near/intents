@@ -11,6 +11,7 @@ workspace = true
 [dependencies]
 defuse-outlayer-executor.workspace = true
 defuse-outlayer-primitives.workspace = true
+defuse-outlayer-utils = { workspace = true, optional = true }
 defuse-serde-utils = { workspace = true, features = ["hex"] }
 
 anyhow.workspace = true
@@ -31,14 +32,19 @@ url.workspace = true
 cfg_eval = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true, features = ["hex"] }
+tower = { workspace = true, optional = true, features = ["util"] }
 
 [features]
 default = ["serde"]
 
+tower = ["dep:tower"]
 serde = [
+  "defuse-outlayer-executor/serde",
   "defuse-outlayer-primitives/serde",
   "dep:cfg_eval",
   "dep:serde",
   "dep:serde_with",
+  "dep:defuse-outlayer-utils",
+  "defuse-outlayer-utils/serde",
   "url/serde",
 ]
