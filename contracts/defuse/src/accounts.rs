@@ -1,4 +1,4 @@
-use defuse_core::{Nonce, crypto::PublicKey};
+use defuse_core::{Nonce, PublicKey};
 use defuse_serde_utils::base64::AsBase64;
 use near_plugins::AccessControllable;
 use near_sdk::{AccountId, ext_contract};

@@ -1,0 +1,24 @@
+use k256::{
+    self,
+    ecdsa::{RecoveryId, Signature, VerifyingKey, signature::hazmat::PrehashVerifier},
+};
+
+use crate::Curve;
+
+pub struct Secp256k1;
+
+impl Curve for Secp256k1 {
+    type PublicKey = VerifyingKey;
+    /// Prehash, i.e. output of a cryptographic hash function
+    type Message = [u8; 32];
+    type Signature = (Signature, RecoveryId);
+
+    #[inline]
+    fn verify(
+        public_key: &VerifyingKey,
+        prehash: &[u8; 32],
+        (signature, _recovery_id): &Self::Signature,
+    ) -> bool {
+        public_key.verify_prehash(prehash, signature).is_ok()
+    }
+}

@@ -1,28 +1,29 @@
-use core::str;
 use std::fmt::Debug;
 
-use defuse_serde_utils::base64::Base64;
 use impl_tools::autoimpl;
-use near_sdk::near;
-use serde_with::serde_as;
 use tlb_ton::StringError;
 
-use crate::schema::{PayloadSchema, TonConnectPayloadContext};
-
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(test, derive(arbitrary::Arbitrary))]
-#[near(serializers = [json])]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
 #[autoimpl(Deref using self.bytes)]
 pub struct BinaryPayload {
-    #[serde_as(as = "Base64")]
+    #[cfg_attr(feature = "serde", serde_as(as = "defuse_serde_utils::base64::Base64"))]
     pub bytes: Vec<u8>,
 }
 
-impl PayloadSchema for BinaryPayload {
+#[cfg(any(feature = "near-contract", feature = "sha2"))]
+impl crate::schema::PayloadSchema for BinaryPayload {
     fn hash_with_context(
         &self,
-        context: TonConnectPayloadContext,
-    ) -> Result<near_sdk::CryptoHash, StringError> {
+        context: crate::schema::TonConnectPayloadContext,
+    ) -> Result<defuse_crypto::CryptoHash, StringError> {
         context.create_payload_hash(b"bin", self.as_slice())
     }
 }

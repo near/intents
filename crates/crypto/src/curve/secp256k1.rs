@@ -1,12 +1,4 @@
-use core::fmt::{self, Debug, Display};
-use std::str::FromStr;
-
-use near_sdk::{
-    CryptoHash, env, near,
-    serde_with::{DeserializeFromStr, SerializeDisplay},
-};
-
-use crate::{Curve, CurveType, ParseCurveError, TypedCurve};
+use crate::{CryptoHash, Curve};
 
 pub struct Secp256k1;
 
@@ -28,14 +20,17 @@ impl Curve for Secp256k1 {
 
     /// ECDSA signatures are recoverable, so you don't need a verifying key
     type VerifyingKey = ();
+}
 
+#[cfg(feature = "near-contract")]
+impl crate::VerifiableCurve for Secp256k1 {
     #[inline]
     fn verify(
         [signature @ .., v]: &Self::Signature,
         hash: &Self::Message,
         _verifying_key: &(),
     ) -> Option<Self::PublicKey> {
-        env::ecrecover(
+        near_sdk::env::ecrecover(
             hash, signature, *v,
             // Do not accept malleable signatures:
             // https://github.com/near/nearcore/blob/d73041cc1d1a70af4456fceefaceb1bf7f684fde/core/crypto/src/signature.rs#L448-L455
@@ -44,64 +39,98 @@ impl Curve for Secp256k1 {
     }
 }
 
-impl TypedCurve for Secp256k1 {
-    const CURVE_TYPE: CurveType = CurveType::Secp256k1;
+impl crate::TypedCurve for Secp256k1 {
+    const CURVE_TYPE: crate::CurveType = crate::CurveType::Secp256k1;
 }
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh])]
-#[derive(
-    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[serde_with(crate = "::near_sdk::serde_with")]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct Secp256k1PublicKey(pub <Secp256k1 as Curve>::PublicKey);
+pub struct Secp256k1PublicKey(
+    // schemars ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(all(feature = "abi", feature = "serde"), schemars(with = "String"))]
+    pub  <Secp256k1 as Curve>::PublicKey,
+);
 
-impl Debug for Secp256k1PublicKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt(self, f)
+#[cfg(feature = "parse")]
+const _: () = {
+    use crate::{ParseCurveError, TypedCurve};
+    use core::fmt::{self, Debug, Display};
+    use std::str::FromStr;
+
+    impl Debug for Secp256k1PublicKey {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
+        }
     }
-}
 
-impl Display for Secp256k1PublicKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
+    impl Display for Secp256k1PublicKey {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
+        }
     }
-}
 
-impl FromStr for Secp256k1PublicKey {
-    type Err = ParseCurveError;
+    impl FromStr for Secp256k1PublicKey {
+        type Err = ParseCurveError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Secp256k1::parse_base58(s).map(Self)
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Secp256k1::parse_base58(s).map(Self)
+        }
     }
-}
+};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh])]
-#[derive(
-    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
 )]
-#[serde_with(crate = "::near_sdk::serde_with")]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct Secp256k1Signature(pub <Secp256k1 as Curve>::Signature);
+pub struct Secp256k1Signature(
+    // schemars ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(all(feature = "abi", feature = "serde"), schemars(with = "String"))]
+    pub  <Secp256k1 as Curve>::Signature,
+);
 
-impl Debug for Secp256k1Signature {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt(self, f)
+#[cfg(feature = "parse")]
+const _: () = {
+    use crate::{ParseCurveError, TypedCurve};
+    use core::fmt::{self, Debug, Display};
+    use std::str::FromStr;
+
+    impl Debug for Secp256k1Signature {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
+        }
     }
-}
 
-impl Display for Secp256k1Signature {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
+    impl Display for Secp256k1Signature {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
+        }
     }
-}
 
-impl FromStr for Secp256k1Signature {
-    type Err = ParseCurveError;
+    impl FromStr for Secp256k1Signature {
+        type Err = ParseCurveError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Secp256k1::parse_base58(s).map(Self)
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Secp256k1::parse_base58(s).map(Self)
+        }
     }
-}
+};

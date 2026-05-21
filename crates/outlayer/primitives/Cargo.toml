@@ -16,12 +16,8 @@ thiserror.workspace = true
 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
-digest = { workspace = true, optional = true }
-digest-io = { workspace = true, optional = true }
-schemars = { workspace = true, optional = true }
-serde = { workspace = true, features = ["derive"], optional = true }
+schemars = { workspace = true, optional = true, features = ["derive"] }
 serde_with = { workspace = true, optional = true }
-sha3 = { workspace = true, optional = true }
 
 [features]
 abi = [
@@ -32,9 +28,8 @@ abi = [
 ]
 arbitrary = ["dep:arbitrary", "near-account-id/arbitrary"]
 borsh = ["dep:borsh", "near-account-id/borsh"]
-digest = ["borsh", "dep:digest", "dep:digest-io", "dep:sha3"]
 example = []
-serde = ["dep:serde", "dep:serde_with", "near-account-id/serde"]
+serde = ["dep:serde_with", "near-account-id/serde"]
 
 [dev-dependencies]
 hex-literal.workspace = true

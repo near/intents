@@ -1,15 +1,16 @@
 use anyhow::anyhow;
-use defuse_outlayer_crypto::{DeriveSigner, secp256k1::Secp256k1};
+use defuse_kdf::{DeriveSigner, Secp256k1};
 
-use crate::Host;
+use crate::{
+    Host, HostView, bindings::outlayer::crypto::secp256k1::Host as HostTrait, crypto::AppSigner,
+};
 
-impl crate::bindings::outlayer::crypto::secp256k1::Host for Host<'_> {
+impl<S> HostTrait for AppSigner<S>
+where
+    S: DeriveSigner<Secp256k1, String>,
+{
     fn derive_public_key(&mut self, path: String) -> wasmtime::Result<Vec<u8>> {
-        let path = self.tweak(path);
-
-        let derived_pk = DeriveSigner::<Secp256k1>::derive_public_key(&self.signer, &path);
-
-        Ok(derived_pk
+        Ok(DeriveSigner::<Secp256k1, _>::derive_public_key(&self, path)
             .to_encoded_point(false) // uncompressed
             .as_bytes()[1..] // trim leading SEC1 tag byte (0x04)
             .to_vec())
@@ -20,13 +21,21 @@ impl crate::bindings::outlayer::crypto::secp256k1::Host for Host<'_> {
             .try_into()
             .map_err(|v: Vec<_>| anyhow!("prehash must be 32 bytes long, got: {}", v.len()))?;
 
-        let path = self.tweak(path);
-
         let (signature, recovery_id) =
-            DeriveSigner::<Secp256k1>::derive_sign(&self.signer, &path, &prehash);
+            DeriveSigner::<Secp256k1, _>::derive_sign(&self, path, &prehash);
 
         let mut sig = signature.to_vec();
         sig.push(recovery_id.to_byte());
         Ok(sig)
+    }
+}
+
+impl HostTrait for Host<'_> {
+    fn derive_public_key(&mut self, path: String) -> wasmtime::Result<Vec<u8>> {
+        HostTrait::derive_public_key(&mut self.ctx().app_signer(), path)
+    }
+
+    fn sign(&mut self, path: String, msg: Vec<u8>) -> wasmtime::Result<Vec<u8>> {
+        HostTrait::sign(&mut self.ctx().app_signer(), path, msg)
     }
 }

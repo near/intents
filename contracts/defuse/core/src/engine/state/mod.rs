@@ -11,10 +11,10 @@ use crate::{
             FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
         },
     },
+    public_key::PublicKey,
     token_id::{TokenId, nep141::Nep141TokenId},
 };
 use cached::CachedState;
-use defuse_crypto::PublicKey;
 use impl_tools::autoimpl;
 use near_sdk::{AccountId, AccountIdRef};
 use std::borrow::Cow;

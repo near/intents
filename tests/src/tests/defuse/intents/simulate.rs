@@ -5,8 +5,8 @@ use defuse_sandbox::extensions::defuse::event::ToEventLog;
 use defuse_sandbox::extensions::defuse::{
     account_manager::{AccountManagerExt, AccountViewExt},
     contract::core::{
+        PublicKey,
         amounts::Amounts,
-        crypto::PublicKey,
         fees::{FeesConfig, Pips},
         intents::{
             Intent,

@@ -29,7 +29,7 @@ impl<M> SigningStandard<M> for NoSign {
 
 /// [`SigningStandard::PublicKey`] for `NoSign`
 #[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
+    feature = "abi",
     derive(near_sdk::schemars::JsonSchema),
     schemars(crate = "::near_sdk::schemars", with = "String")
 )]

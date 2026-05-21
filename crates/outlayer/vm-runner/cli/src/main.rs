@@ -1,12 +1,13 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{Context as _, Error, Result};
 use clap::Parser;
+use defuse_outlayer_signer::InMemorySigner;
 use tokio::{fs, io};
 
 use defuse_outlayer_vm_runner::{
     Context as VmContext, VmRuntime, WasiContext,
-    host::{Context as HostContext, Host, InMemorySigner, primitives::AppId},
+    host::{Context as HostContext, Host, primitives::AppId},
 };
 
 // matches mocked default in SDK
@@ -69,7 +70,7 @@ async fn main() -> Result<()> {
             HostContext {
                 app_id: args.app_id,
             },
-            InMemorySigner::from_seed(&seed),
+            Arc::new(InMemorySigner::from_seed(&seed)),
         ),
         fuel: args.fuel,
     };

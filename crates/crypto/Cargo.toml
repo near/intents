@@ -6,8 +6,7 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-hex.workspace = true
-near-sdk = { workspace = true, features = ["unstable"] }
+bs58 = { workspace = true, optional = true }
 strum.workspace = true
 thiserror.workspace = true
 
@@ -16,19 +15,31 @@ generic-array = { workspace = true, features = ["compat-0_14"], optional = true 
 p256 = { workspace = true, optional = true, features = ["ecdsa"] }
 
 arbitrary = { workspace = true, optional = true }
-near-api-types = { workspace = true, optional = true }
+
+borsh = { workspace = true, features = ["derive"], optional = true }
+near-sdk = { workspace = true, features = ["unstable"], optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_with = { workspace = true, optional = true }
 
 [features]
-default = ["ed25519", "p256", "secp256k1"]
 
 ed25519 = ["dep:ed25519-dalek"]
 secp256k1 = []
 p256 = ["dep:generic-array", "dep:p256"]
+parse = ["dep:bs58"]
 
-abi = ["near-sdk/abi"]
+borsh = ["dep:borsh"]
+serde = ["dep:serde", "dep:serde_with", "parse"]
+abi = [
+  "borsh?/unstable__schema",
+  "dep:schemars",
+  "parse",
+  "serde_with?/schemars_0_8",
+]
+near-contract = ["dep:near-sdk"]
 
 arbitrary = ["dep:arbitrary"]
-near-api-types = ["dep:near-api-types", "ed25519", "secp256k1"]
 
 
 [lints]

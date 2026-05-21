@@ -1,13 +1,16 @@
 use defuse_map_utils::{IterableMap, Map};
-use near_sdk::near;
 
 pub type U256 = [u8; 32];
 pub type U248 = [u8; 31];
 
-/// 256-bit map.  
+/// 256-bit map.
 /// See [permit2 nonce schema](https://docs.uniswap.org/contracts/permit2/reference/signature-transfer#nonce-schema)
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh, json])]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+)]
 #[derive(Debug, Clone, Default)]
 #[repr(transparent)]
 pub struct BitMap256<T: Map<K = U248, V = U256>>(T);

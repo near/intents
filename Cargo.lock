@@ -194,15 +194,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "atomic"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a89cbf775b137e9b968e67227ef7f775587cde3fd31b0d8599dbd0f598a48340"
-dependencies = [
- "bytemuck",
-]
-
-[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -398,6 +389,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdd35008169921d80bc60d3d0ab416eecb028c4cd653352907921d95084790be"
 dependencies = [
  "hybrid-array",
+ "zeroize",
 ]
 
 [[package]]
@@ -569,12 +561,6 @@ checksum = "5d20789868f4b01b2f2caec9f5c4e0213b41e3e5702a50157d699ae31ced2fcb"
 dependencies = [
  "allocator-api2",
 ]
-
-[[package]]
-name = "bytemuck"
-version = "1.25.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8efb64bd706a16a1bdde310ae86b351e4d21550d98d056f22f8a7f7a2183fec"
 
 [[package]]
 name = "byteorder"
@@ -1435,9 +1421,9 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "bnum",
+ "borsh",
  "defuse-map-utils",
  "hex-literal",
- "near-sdk",
  "num-traits",
  "rstest",
 ]
@@ -1471,6 +1457,7 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-crypto",
  "defuse-deadline",
+ "defuse-digest",
  "defuse-erc191",
  "defuse-fees",
  "defuse-map-utils",
@@ -1490,9 +1477,11 @@ dependencies = [
  "hex-literal",
  "impl-tools",
  "itertools",
+ "near-api-types",
  "near-contract-standards",
  "near-sdk",
  "rstest",
+ "serde_json",
  "serde_with",
  "thiserror 2.0.18",
 ]
@@ -1502,13 +1491,16 @@ name = "defuse-crypto"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "borsh",
+ "bs58 0.5.1",
  "ed25519-dalek",
  "generic-array 1.4.0",
- "hex",
- "near-api-types",
  "near-sdk",
  "p256",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
  "strum 0.27.2",
  "thiserror 2.0.18",
 ]
@@ -1517,10 +1509,13 @@ dependencies = [
 name = "defuse-deadline"
 version = "0.1.0"
 dependencies = [
+ "borsh",
  "chrono",
  "defuse-borsh-utils",
  "defuse-near-utils",
  "near-sdk",
+ "schemars 0.8.22",
+ "serde",
 ]
 
 [[package]]
@@ -1528,22 +1523,40 @@ name = "defuse-decimal"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "borsh",
  "defuse-num-utils",
+ "rstest",
+ "schemars 0.8.22",
+ "serde_with",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "defuse-digest"
+version = "0.1.0"
+dependencies = [
+ "defuse-test-utils",
+ "digest 0.11.3",
  "near-sdk",
  "rstest",
- "thiserror 2.0.18",
+ "sha2 0.11.0",
+ "sha3 0.11.0",
 ]
 
 [[package]]
 name = "defuse-erc191"
 version = "0.1.0"
 dependencies = [
+ "cfg_eval",
  "defuse-crypto",
- "defuse-test-utils",
+ "defuse-digest",
  "hex-literal",
  "impl-tools",
  "near-sdk",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
 ]
 
 [[package]]
@@ -1577,8 +1590,10 @@ dependencies = [
 name = "defuse-fees"
 version = "0.1.0"
 dependencies = [
+ "borsh",
  "defuse-num-utils",
- "near-sdk",
+ "schemars 0.8.22",
+ "serde",
  "thiserror 2.0.18",
 ]
 
@@ -1588,14 +1603,67 @@ version = "0.2.0"
 dependencies = [
  "clap",
  "defuse-borsh-utils",
+ "defuse-global-deployer-core",
  "defuse-serde-utils",
  "hex",
  "near-sdk",
 ]
 
 [[package]]
+name = "defuse-global-deployer-core"
+version = "0.1.0"
+dependencies = [
+ "borsh",
+ "cfg_eval",
+ "near-account-id",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
+]
+
+[[package]]
 name = "defuse-io-utils"
 version = "0.1.0"
+
+[[package]]
+name = "defuse-kdf"
+version = "0.1.0"
+dependencies = [
+ "borsh",
+ "curve25519-dalek",
+ "defuse-kdf",
+ "defuse-kdf-crypto",
+ "digest 0.11.3",
+ "digest-io",
+ "ed25519-dalek",
+ "hex",
+ "hex-literal",
+ "impl-tools",
+ "k256",
+ "rstest",
+ "sha3 0.11.0",
+]
+
+[[package]]
+name = "defuse-kdf-crypto"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "hex-literal",
+ "k256",
+ "rstest",
+]
+
+[[package]]
+name = "defuse-kdf-mpc"
+version = "0.1.0"
+dependencies = [
+ "defuse-kdf",
+ "hex-literal",
+ "near-account-id",
+ "near-mpc-crypto-types",
+ "rstest",
+]
 
 [[package]]
 name = "defuse-map-utils"
@@ -1612,7 +1680,6 @@ dependencies = [
  "chrono",
  "defuse-borsh-utils",
  "defuse-test-utils",
- "digest 0.11.2",
  "impl-tools",
  "near-sdk",
  "rstest",
@@ -1632,13 +1699,18 @@ dependencies = [
 name = "defuse-nep413"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "cfg_eval",
  "defuse-crypto",
- "defuse-near-utils",
+ "defuse-digest",
  "defuse-nep461",
  "defuse-serde-utils",
  "impl-tools",
  "near-api",
- "near-sdk",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
 ]
 
 [[package]]
@@ -1657,6 +1729,7 @@ name = "defuse-outlayer-app"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "defuse-outlayer-app-core",
  "defuse-serde-utils",
  "hex",
  "near-sdk",
@@ -1664,40 +1737,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-outlayer-bin"
+name = "defuse-outlayer-app-core"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "bytes",
- "defuse-outlayer-executor",
- "defuse-outlayer-service",
- "defuse-outlayer-vm-runner",
- "dotenvy",
- "figment",
- "near-kit",
+ "borsh",
+ "cfg_eval",
+ "near-account-id",
+ "schemars 0.8.22",
  "serde",
- "serde_json",
  "serde_with",
- "tokio",
- "tower",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "defuse-outlayer-crypto"
-version = "0.1.0"
-dependencies = [
- "curve25519-dalek",
- "ed25519-dalek",
- "hex-literal",
- "hkdf",
- "impl-tools",
- "k256",
- "rand 0.10.1",
- "rstest",
- "sha3 0.11.0",
- "zeroize",
 ]
 
 [[package]]
@@ -1707,10 +1755,8 @@ dependencies = [
  "anyhow",
  "bytes",
  "cfg_eval",
- "defuse-outlayer-utils",
  "defuse-outlayer-vm-runner",
  "serde",
- "serde_json",
  "serde_with",
  "thiserror 2.0.18",
 ]
@@ -1720,10 +1766,23 @@ name = "defuse-outlayer-host"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "defuse-outlayer-crypto",
+ "defuse-kdf",
+ "defuse-outlayer-kdf-app",
  "defuse-outlayer-primitives",
  "tracing",
  "wasmtime",
+]
+
+[[package]]
+name = "defuse-outlayer-kdf-app"
+version = "0.1.0"
+dependencies = [
+ "borsh",
+ "defuse-kdf",
+ "defuse-outlayer-primitives",
+ "hex-literal",
+ "rstest",
+ "sha3 0.11.0",
 ]
 
 [[package]]
@@ -1733,15 +1792,11 @@ dependencies = [
  "arbitrary",
  "borsh",
  "derive_more",
- "digest 0.11.2",
- "digest-io",
  "hex-literal",
  "near-account-id",
  "rstest",
  "schemars 0.8.22",
- "serde",
  "serde_with",
- "sha3 0.11.0",
  "strum 0.27.2",
  "thiserror 2.0.18",
 ]
@@ -1756,9 +1811,11 @@ dependencies = [
  "bs58 0.5.1",
  "defuse-outlayer-host",
  "defuse-outlayer-primitives",
+ "defuse-outlayer-signer",
  "defuse-outlayer-sys",
  "hex",
  "hex-literal",
+ "rstest",
  "schemars 0.8.22",
  "serde",
  "serde_json",
@@ -1776,7 +1833,6 @@ dependencies = [
  "data-url",
  "defuse-outlayer-executor",
  "defuse-outlayer-primitives",
- "defuse-outlayer-utils",
  "defuse-serde-utils",
  "derive_more",
  "futures",
@@ -1789,8 +1845,20 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tokio-util",
- "tower",
  "url",
+]
+
+[[package]]
+name = "defuse-outlayer-signer"
+version = "0.1.0"
+dependencies = [
+ "defuse-kdf",
+ "defuse-outlayer-signer",
+ "hex-literal",
+ "hkdf",
+ "rstest",
+ "sha3 0.11.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -1798,14 +1866,6 @@ name = "defuse-outlayer-sys"
 version = "0.1.0"
 dependencies = [
  "wit-bindgen 0.49.0",
-]
-
-[[package]]
-name = "defuse-outlayer-utils"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_with",
 ]
 
 [[package]]
@@ -1832,6 +1892,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "defuse-outlayer-signer",
  "defuse-outlayer-vm-runner",
  "tokio",
 ]
@@ -1876,7 +1937,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "defuse",
- "defuse-crypto",
+ "defuse-core",
  "defuse-escrow-swap",
  "defuse-global-deployer",
  "defuse-nep245",
@@ -1903,13 +1964,18 @@ dependencies = [
 name = "defuse-sep53"
 version = "0.1.0"
 dependencies = [
+ "cfg_eval",
  "defuse-crypto",
+ "defuse-digest",
  "defuse-test-utils",
  "ed25519-dalek",
  "impl-tools",
  "near-crypto 0.35.1",
  "near-sdk",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
  "stellar-strkey",
 ]
 
@@ -1931,6 +1997,7 @@ name = "defuse-test-utils"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "defuse-core",
  "defuse-crypto",
  "defuse-randomness",
  "rstest",
@@ -1973,12 +2040,17 @@ dependencies = [
 name = "defuse-tip191"
 version = "0.1.0"
 dependencies = [
+ "cfg_eval",
  "defuse-crypto",
+ "defuse-digest",
  "defuse-test-utils",
  "hex-literal",
  "impl-tools",
  "near-sdk",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
 ]
 
 [[package]]
@@ -1986,13 +2058,16 @@ name = "defuse-token-id"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
- "defuse-nep245",
+ "borsh",
  "defuse-test-utils",
+ "defuse-token-id",
  "derive_more",
  "hex",
- "near-contract-standards",
- "near-sdk",
+ "near-account-id",
  "rstest",
+ "schemars 0.8.22",
+ "serde_json",
+ "serde_with",
  "strum 0.27.2",
  "thiserror 2.0.18",
 ]
@@ -2002,16 +2077,20 @@ name = "defuse-ton-connect"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "cfg_eval",
  "chrono",
  "defuse-crypto",
- "defuse-near-utils",
+ "defuse-digest",
  "defuse-serde-utils",
  "defuse-test-utils",
+ "defuse-ton-connect",
  "hex-literal",
  "impl-tools",
  "near-sdk",
  "rstest",
  "schemars 0.8.22",
+ "serde",
+ "serde_json",
  "serde_with",
  "tlb-ton",
 ]
@@ -2020,8 +2099,12 @@ dependencies = [
 name = "defuse-treasury-logger"
 version = "0.1.0"
 dependencies = [
+ "defuse-borsh-utils",
+ "defuse-near-utils",
  "defuse-nep245",
+ "impl-tools",
  "near-sdk",
+ "rstest",
  "serde_with",
 ]
 
@@ -2069,6 +2152,8 @@ dependencies = [
 name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "defuse-digest",
  "defuse-wallet",
  "ed25519-dalek",
  "impl-tools",
@@ -2081,8 +2166,12 @@ name = "defuse-webauthn"
 version = "0.1.0"
 dependencies = [
  "defuse-crypto",
+ "defuse-digest",
  "defuse-serde-utils",
- "near-sdk",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
 ]
 
 [[package]]
@@ -2201,14 +2290,15 @@ dependencies = [
 
 [[package]]
 name = "digest"
-version = "0.11.2"
+version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4850db49bf08e663084f7fb5c87d202ef91a3907271aff24a94eb97ff039153c"
+checksum = "f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2"
 dependencies = [
  "block-buffer 0.12.0",
  "const-oid 0.10.2",
  "crypto-common 0.2.1",
  "ctutils",
+ "zeroize",
 ]
 
 [[package]]
@@ -2217,7 +2307,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2de63d600bc7fab91180bc17385f29b342468dc8ef2af09dceba450a293de3da"
 dependencies = [
- "digest 0.11.2",
+ "digest 0.11.3",
 ]
 
 [[package]]
@@ -2277,12 +2367,6 @@ checksum = "d4b8a88685455ed29a21542a33abd9cb6510b6b129abadabdcef0f4c55bc8f61"
 dependencies = [
  "litrs",
 ]
-
-[[package]]
-name = "dotenvy"
-version = "0.15.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
 name = "dunce"
@@ -2505,19 +2589,6 @@ name = "fiat-crypto"
 version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28dea519a9695b9977216879a3ebfddf92f1c08c05d984f8996aecd6ecdc811d"
-
-[[package]]
-name = "figment"
-version = "0.10.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8cb01cd46b0cf372153850f4c6c272d9cbea2da513e07538405148f95bd789f3"
-dependencies = [
- "atomic",
- "pear",
- "serde",
- "uncased",
- "version_check",
-]
 
 [[package]]
 name = "filetime"
@@ -2993,7 +3064,7 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6303bc9732ae41b04cb554b844a762b4115a61bfaa81e3e83050991eeb56863f"
 dependencies = [
- "digest 0.11.2",
+ "digest 0.11.3",
 ]
 
 [[package]]
@@ -3371,12 +3442,6 @@ dependencies = [
  "serde",
  "serde_core",
 ]
-
-[[package]]
-name = "inlinable_string"
-version = "0.1.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8fae54786f62fb2918dcfae3d568594e50eb9b5c25bf04371af6fe7516452fb"
 
 [[package]]
 name = "io-extras"
@@ -3791,6 +3856,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "mpc-primitives"
+version = "3.9.0"
+source = "git+https://github.com/near/mpc?rev=2924956010abc3e76d904dca8cb68af17b1216a4#2924956010abc3e76d904dca8cb68af17b1216a4"
+dependencies = [
+ "borsh",
+ "derive_more",
+ "hex",
+ "near-account-id",
+ "schemars 0.8.22",
+ "serde",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "multi-token-receiver-stub"
 version = "0.1.0"
 dependencies = [
@@ -4156,6 +4235,35 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
+]
+
+[[package]]
+name = "near-mpc-bounded-collections"
+version = "0.0.1"
+source = "git+https://github.com/near/mpc?rev=2924956010abc3e76d904dca8cb68af17b1216a4#2924956010abc3e76d904dca8cb68af17b1216a4"
+dependencies = [
+ "borsh",
+ "derive_more",
+ "hex",
+ "serde",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "near-mpc-crypto-types"
+version = "0.0.1"
+source = "git+https://github.com/near/mpc?rev=2924956010abc3e76d904dca8cb68af17b1216a4#2924956010abc3e76d904dca8cb68af17b1216a4"
+dependencies = [
+ "borsh",
+ "bs58 0.5.1",
+ "derive_more",
+ "mpc-primitives",
+ "near-account-id",
+ "near-mpc-bounded-collections",
+ "serde",
+ "serde_with",
+ "sha3 0.10.9",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -5063,29 +5171,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pear"
-version = "0.2.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdeeaa00ce488657faba8ebf44ab9361f9365a97bd39ffb8a60663f57ff4b467"
-dependencies = [
- "inlinable_string",
- "pear_codegen",
- "yansi",
-]
-
-[[package]]
-name = "pear_codegen"
-version = "0.2.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bab5b985dc082b345f812b7df84e1bef27e7207b39e448439ba8bd69c93f147"
-dependencies = [
- "proc-macro2",
- "proc-macro2-diagnostics",
- "quote",
- "syn 2.0.117",
-]
-
-[[package]]
 name = "percent-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5272,19 +5357,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fd00f0bb2e90d81d1044c2b32617f68fcb9fa3bb7640c23e9c748e53fb30934"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "proc-macro2-diagnostics"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af066a9c399a26e020ada66a034357a868728e72cd426f3adcd35f80d88d88c8"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
- "version_check",
- "yansi",
 ]
 
 [[package]]
@@ -6314,7 +6386,7 @@ checksum = "446ba717509524cb3f22f17ecc096f10f4822d76ab5c0b9822c5f9c284e825f4"
 dependencies = [
  "cfg-if 1.0.4",
  "cpufeatures 0.3.0",
- "digest 0.11.2",
+ "digest 0.11.3",
 ]
 
 [[package]]
@@ -6333,7 +6405,7 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be176f1a57ce4e3d31c1a166222d9768de5954f811601fb7ca06fc8203905ce1"
 dependencies = [
- "digest 0.11.2",
+ "digest 0.11.3",
  "keccak 0.2.0",
 ]
 
@@ -6909,7 +6981,7 @@ dependencies = [
  "base64 0.21.7",
  "bitvec",
  "crc",
- "digest 0.11.2",
+ "digest 0.11.3",
  "hex",
  "impl-tools",
  "sha2 0.11.0",
@@ -6926,7 +6998,7 @@ dependencies = [
  "base64 0.21.7",
  "chrono",
  "crc",
- "digest 0.11.2",
+ "digest 0.11.3",
  "hex",
  "impl-tools",
  "lazy_static",
@@ -7300,15 +7372,6 @@ name = "unarray"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eaea85b334db583fe3274d12b4cd1880032beab409c0d774be044d4480ab9a94"
-
-[[package]]
-name = "uncased"
-version = "0.9.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1b88fcfe09e89d3866a5c11019378088af2d24c3fbd4f0543f96b479ec90697"
-dependencies = [
- "version_check",
-]
 
 [[package]]
 name = "unicode-ident"
@@ -8730,12 +8793,6 @@ dependencies = [
  "libc",
  "rustix 1.1.4",
 ]
-
-[[package]]
-name = "yansi"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
 
 [[package]]
 name = "yoke"

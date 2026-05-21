@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-use defuse_crypto::PublicKey;
 use near_sdk::{AccountIdRef, CryptoHash, near};
 
 use crate::{
@@ -9,6 +8,7 @@ use crate::{
     engine::{Engine, Inspector, State},
     events::DefuseEvent,
     intents::MaybeIntentEvent,
+    public_key::PublicKey,
 };
 
 use super::ExecutableIntent;

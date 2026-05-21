@@ -7,7 +7,8 @@
 //! Intents engine can compute message hashes and verify signatures without
 //! knowing the concrete standard.
 
-pub use near_sdk::CryptoHash;
+/// 32-byte cryptographic hash output.
+pub type CryptoHash = [u8; 32];
 
 /// Data that can be deterministically hashed for signing or verification.
 ///

@@ -20,7 +20,7 @@ const GD_POST_DEPLOY_MIN_GAS: Gas = Gas::from_tgas(15);
     )
 )]
 #[derive(PanicOnDefault)]
-pub struct Contract(State);
+pub struct Contract(State<'static>);
 
 #[near]
 impl GlobalDeployer for Contract {
@@ -74,7 +74,7 @@ impl GlobalDeployer for Contract {
     }
 
     fn gd_owner_id(&self) -> AccountId {
-        self.0.owner_id.clone()
+        self.0.owner_id.as_ref().to_owned()
     }
 
     fn gd_code_hash(&self) -> AsHex<[u8; 32]> {
@@ -125,16 +125,13 @@ impl Contract {
 
     fn transfer_ownership(&mut self, new_owner_id: AccountId) {
         Event::Transfer {
-            old_owner_id: (&self.0.owner_id).into(),
+            old_owner_id: self.0.owner_id.as_ref().into(),
             new_owner_id: (&new_owner_id).into(),
         }
         .emit();
 
-        self.0.owner_id = new_owner_id;
-        self.approve(
-            State::DEFAULT_HASH,
-            Reason::By(self.0.owner_id.clone().into()),
-        );
+        self.0.owner_id = new_owner_id.clone().into();
+        self.approve(State::DEFAULT_HASH, Reason::By(new_owner_id.into()));
     }
 
     fn is_approved(&self, hash: &[u8; 32]) -> bool {
@@ -146,6 +143,6 @@ impl Contract {
     }
 
     fn is_owner(&self, account_id: &AccountIdRef) -> bool {
-        account_id == self.0.owner_id
+        *self.0.owner_id == *account_id
     }
 }

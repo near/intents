@@ -111,7 +111,7 @@ async fn test_event_set_code(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
         vec![
             Event::SetCode {
                 hash: new_hash,
-                url: new_url,
+                url: new_url.into(),
             }
             .to_nep297_event()
             .to_event_log()

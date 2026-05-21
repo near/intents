@@ -161,7 +161,12 @@ impl SigningAccount {
 
         Self::new(
             Account::new(
-                defuse_crypto::PublicKey::from(secret_key.public_key()).to_implicit_account_id(),
+                {
+                    let near_api::PublicKey::ED25519(ed25519_pk) = secret_key.public_key() else {
+                        unreachable!("generate_secret_key() always returns Ed25519");
+                    };
+                    defuse_core::PublicKey::Ed25519(ed25519_pk.0).to_implicit_account_id()
+                },
                 network_config,
             ),
             Signer::from_secret_key(secret_key).unwrap(),

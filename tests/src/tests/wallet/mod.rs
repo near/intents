@@ -8,10 +8,7 @@ use defuse_sandbox::{
 use defuse_test_utils::wasms::WALLET_WASM;
 use defuse_wallet::{
     self, FunctionCallAction, PromiseSingle, Request, State, WalletOp,
-    signature::{
-        Borsh, RequestMessage, SigningStandard,
-        ed25519::{Ed25519, Ed25519PublicKey},
-    },
+    signature::ed25519::Ed25519PublicKey,
 };
 use defuse_wallet_sdk::{
     WalletSigner,
@@ -27,8 +24,7 @@ use near_sdk::{
 use rstest::{fixture, rstest};
 use serde_json::json;
 
-type S = Borsh<Ed25519>;
-type PublicKey = <S as SigningStandard<RequestMessage>>::PublicKey;
+type PublicKey = Ed25519PublicKey;
 
 #[rstest]
 #[awt]

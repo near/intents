@@ -4,7 +4,9 @@ members = [
   "contracts/defuse",
   "contracts/defuse/core",
   "contracts/global-deployer",
+  "contracts/global-deployer/core",
   "contracts/outlayer-app",
+  "contracts/outlayer-app/core",
   "contracts/escrow-swap",
   "contracts/poa/factory",
   "contracts/poa/token",
@@ -18,6 +20,9 @@ members = [
   "crates/map-utils",
   "crates/num-utils",
   "crates/serde-utils",
+  "crates/kdf",
+  "crates/kdf/crypto",
+  "crates/kdf/mpc",
 
   "crates/near/admin-utils",
   "crates/near/auth-call",
@@ -28,6 +33,7 @@ members = [
 
   "crates/primitives/deadline",
   "crates/primitives/decimal",
+  "crates/primitives/digest",
   "crates/primitives/fees",
   "crates/primitives/token-id",
 
@@ -46,14 +52,14 @@ members = [
   "crates/testing/randomness",
   "crates/testing/sandbox",
 
-  "crates/outlayer/bin",
-  "crates/outlayer/crypto",
   "crates/outlayer/executor",
   "crates/outlayer/host",
+
+  "crates/outlayer/kdf-app",
   "crates/outlayer/primitives",
-  "crates/outlayer/utils",
   "crates/outlayer/sdk",
   "crates/outlayer/service",
+  "crates/outlayer/signer",
   "crates/outlayer/sys",
   "crates/outlayer/vm-runner",
   "crates/outlayer/vm-runner/cli",
@@ -73,7 +79,9 @@ defuse.path = "contracts/defuse"
 defuse-core.path = "contracts/defuse/core"
 defuse-escrow-swap.path = "contracts/escrow-swap"
 defuse-global-deployer.path = "contracts/global-deployer"
+defuse-global-deployer-core = { path = "contracts/global-deployer/core", default-features = false }
 defuse-outlayer-app.path = "contracts/outlayer-app"
+defuse-outlayer-app-core = { path = "contracts/outlayer-app/core", default-features = false }
 defuse-poa-factory.path = "contracts/poa/factory"
 defuse-poa-token.path = "contracts/poa/token"
 defuse-wallet.path = "contracts/wallet"
@@ -82,6 +90,9 @@ defuse-bitmap.path = "crates/bitmap"
 defuse-borsh-utils.path = "crates/borsh-utils"
 defuse-crypto = { path = "crates/crypto", default-features = false }
 defuse-io-utils.path = "crates/io-utils"
+defuse-kdf = { path = "crates/kdf", default-features = false }
+defuse-kdf-crypto = { path = "crates/kdf/crypto", default-features = false }
+defuse-kdf-mpc = { path = "crates/kdf/mpc", default-features = false }
 defuse-map-utils.path = "crates/map-utils"
 defuse-num-utils.path = "crates/num-utils"
 defuse-serde-utils.path = "crates/serde-utils"
@@ -95,6 +106,7 @@ defuse-wnear.path = "crates/near/wnear"
 
 defuse-deadline.path = "crates/primitives/deadline"
 defuse-decimal.path = "crates/primitives/decimal"
+defuse-digest.path = "crates/primitives/digest"
 defuse-fees.path = "crates/primitives/fees"
 defuse-token-id = { path = "crates/primitives/token-id", default-features = false }
 
@@ -113,14 +125,13 @@ defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
-defuse-outlayer-bin.path = "crates/outlayer/bin"
-defuse-outlayer-crypto = { path = "crates/outlayer/crypto", default-features = false }
 defuse-outlayer-executor.path = "crates/outlayer/executor"
 defuse-outlayer-host.path = "crates/outlayer/host"
+defuse-outlayer-kdf-app = { path = "crates/outlayer/kdf-app", default-features = false }
 defuse-outlayer-primitives.path = "crates/outlayer/primitives"
-defuse-outlayer-utils.path = "crates/outlayer/utils"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
 defuse-outlayer-service.path = "crates/outlayer/service"
+defuse-outlayer-signer.path = "crates/outlayer/signer"
 defuse-outlayer-sys.path = "crates/outlayer/sys"
 defuse-outlayer-vm-runner.path = "crates/outlayer/vm-runner"
 defuse-outlayer-vm-runner-cli.path = "crates/outlayer/vm-runner/cli"
@@ -128,12 +139,13 @@ defuse-outlayer-vm-runner-cli.path = "crates/outlayer/vm-runner/cli"
 defuse-tests.path = "tests"
 
 cargo-near-build = "0.9.0"
-near-account-id = "2.4.0"
+near-account-id = "2.6.0"
 near-api = "0.8.6"
 near-api-types = "0.8.6"
 near-contract-standards = "5.24"
 near-crypto = "0.35.0"
 near-kit = { version = "0.9.0", default-features = false }
+near-mpc-crypto-types = { git = "https://github.com/near/mpc", rev = "2924956010abc3e76d904dca8cb68af17b1216a4", version = "0.0.1", default-features = false }
 near-openapi-types = "0.8.0"
 near-plugins = "0.5.1"
 near-sandbox = "0.3.9"
@@ -160,15 +172,10 @@ data-url = "0.3"
 derive_more = "2.0"
 digest = { version = "0.11", default-features = false }
 digest-io = "0.1.0"
-dotenvy = "0.15.7"
 ed25519-dalek = { version = "2.1", default-features = false }
-figment = { version = "0.10.19", features = ["env"] }
 futures = "0.3"
 generic-array = "1"
 hex = "0.4"
-http-body-util = "0.1"
-hyper = { version = "1", default-features = false }
-hyper-util = { version = "0.1", default-features = false }
 hex-literal = "1.0"
 hkdf = "0.13"
 impl-tools = "0.11"
@@ -182,7 +189,7 @@ rand = "0.10"
 rand_core = "0.10"
 reqwest = "0.13.3"
 rstest = "0.25"
-schemars = "0.8"
+schemars = { version = "0.8", default-features = false }
 serde = "1"
 serde_json = "1"
 serde_with = "3.17"

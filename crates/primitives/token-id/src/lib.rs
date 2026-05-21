@@ -28,47 +28,40 @@ use core::{
     fmt::{self, Debug, Display},
     str::FromStr,
 };
-use near_sdk::{
-    near,
-    serde_with::{DeserializeFromStr, SerializeDisplay},
-};
 use strum::{EnumDiscriminants, EnumIter, EnumString};
 
 pub use self::error::TokenIdError;
 
+// avoid dependency to nep_245::TokenId just to import String alias
+pub(crate) type Nep245TokenId = String;
+
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[derive(
-    Clone,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    EnumDiscriminants,
-    SerializeDisplay,
-    DeserializeFromStr,
-    derive_more::From,
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "abi", derive(::borsh::BorshSchema)),
+    borsh(use_discriminant = true)
 )]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
+)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, EnumDiscriminants, derive_more::From)]
 #[strum_discriminants(
     name(TokenIdType),
-    derive(
-        strum::Display,
-        EnumString,
-        EnumIter,
-        SerializeDisplay,
-        DeserializeFromStr
-    ),
-    strum(serialize_all = "snake_case"),
     cfg_attr(
-        feature = "abi",
-        derive(::near_sdk::NearSchema),
-        schemars(with = "String"),
+        feature = "serde",
+        derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+        cfg_attr(
+            feature = "abi",
+            derive(::schemars::JsonSchema),
+            schemars(with = "String"),
+        )
     ),
-    serde_with(crate = "::near_sdk::serde_with"),
+    derive(strum::Display, EnumString, EnumIter),
+    strum(serialize_all = "snake_case"),
     vis(pub)
 )]
-#[near(serializers = [borsh(use_discriminant=true)])]
-#[serde_with(crate = "::near_sdk::serde_with")]
 #[repr(u8)]
 // Private: Because we need construction to go through the TokenId struct to check for length
 pub enum TokenId {
@@ -136,7 +129,7 @@ impl FromStr for TokenId {
 
 #[cfg(feature = "abi")]
 const _: () = {
-    use near_sdk::schemars::{
+    use schemars::{
         JsonSchema,
         r#gen::SchemaGenerator,
         schema::{InstanceType, Schema, SchemaObject},
@@ -148,7 +141,7 @@ const _: () = {
         }
 
         fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
-            use near_sdk::AccountId;
+            use near_account_id::AccountId;
 
             SchemaObject {
                 instance_type: Some(InstanceType::String.into()),
@@ -192,9 +185,9 @@ const _: () = {
 mod tests {
     use super::*;
     use defuse_test_utils::random::make_arbitrary;
-    use near_sdk::{borsh, serde_json};
     use rstest::rstest;
 
+    #[cfg(feature = "borsh")]
     #[rstest]
     #[trace]
     #[cfg_attr(feature = "nep141", case("nep141:abc", "0003000000616263"))]
@@ -219,6 +212,7 @@ mod tests {
         assert_eq!(got.to_string(), token_id_str);
     }
 
+    #[cfg(feature = "borsh")]
     #[rstest]
     #[trace]
     fn borsh_roundtrip(#[from(make_arbitrary)] token_id: TokenId) {
@@ -235,6 +229,7 @@ mod tests {
         assert_eq!(got, token_id);
     }
 
+    #[cfg(feature = "serde")]
     #[rstest]
     #[trace]
     fn serde_roundtrip(#[from(make_arbitrary)] token_id: TokenId) {
