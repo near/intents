@@ -17,6 +17,7 @@ impl OutlayerBuilder {
     }
 
     pub fn build(self, signer: impl Into<Arc<InMemorySigner>>) -> anyhow::Result<Outlayer> {
+        let signer: Arc<InMemorySigner> = signer.into();
         let executor = Executor::new(signer, self.config.executor)?;
         let near =
             Near::custom(self.config.resolver.near_rpc_url, self.config.resolver.near_chain_id)

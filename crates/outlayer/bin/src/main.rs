@@ -2,10 +2,7 @@ mod cli;
 mod worker;
 
 use anyhow::{Context as _, Result};
-use figment::{
-    Figment,
-    providers::{Env, Serialized},
-};
+use config::{Config, Environment};
 use serde::{Deserialize, Serialize};
 use serde_with::hex::Hex;
 
@@ -18,7 +15,6 @@ use worker::WorkerPoolBuilder;
 #[serde_with::serde_as]
 #[derive(Deserialize, Serialize)]
 struct AppConfig {
-    #[serde(flatten)]
     outlayer: OutlayerConfig,
     worker: worker::WorkerPoolConfig,
     #[serde_as(as = "Option<Hex>")]
@@ -39,7 +35,6 @@ type Request = (defuse_outlayer_service::Code<'static>, bytes::Bytes);
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    //TODO: is it that helpfful? 
     if std::env::args().any(|a| a == "--print-config") {
         cli::print_env_vars();
         return Ok(());
@@ -51,10 +46,12 @@ async fn main() -> Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_env("RUST_LOG"))
         .init();
 
-    let config: AppConfig = Figment::new()
-        .merge(Serialized::defaults(AppConfig::default()))
-        .merge(Env::prefixed("OUTLAYER__").split("__"))
-        .extract()
+    let defaults = serde_json::to_string(&AppConfig::default()).context("default config")?;
+    let config: AppConfig = Config::builder()
+        .add_source(config::File::from_str(&defaults, config::FileFormat::Json))
+        .add_source(Environment::with_prefix("WORKER").prefix_separator("__").separator("__"))
+        .build()
+        .and_then(|c| c.try_deserialize())
         .context("config")?;
 
     let signer = match config.signer_seed {

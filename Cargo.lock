@@ -882,6 +882,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "config"
+version = "0.15.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f316c6237b2d38be61949ecd15268a4c6ca32570079394a2444d9ce2c72a72d8"
+dependencies = [
+ "pathdiff",
+ "serde_core",
+ "serde_json",
+ "winnow",
+]
+
+[[package]]
 name = "conquer-once"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1749,14 +1761,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-outlayer-bin"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "config",
+ "defuse-outlayer-executor",
+ "defuse-outlayer-service",
+ "defuse-outlayer-vm-runner",
+ "dotenvy",
+ "near-kit",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "tokio",
+ "tower",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "defuse-outlayer-executor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytes",
  "cfg_eval",
+ "defuse-outlayer-signer",
+ "defuse-outlayer-utils",
  "defuse-outlayer-vm-runner",
  "serde",
+ "serde_json",
  "serde_with",
  "thiserror 2.0.18",
 ]
@@ -1833,6 +1869,7 @@ dependencies = [
  "data-url",
  "defuse-outlayer-executor",
  "defuse-outlayer-primitives",
+ "defuse-outlayer-utils",
  "defuse-serde-utils",
  "derive_more",
  "futures",
@@ -1845,6 +1882,7 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tokio-util",
+ "tower",
  "url",
 ]
 
@@ -1866,6 +1904,14 @@ name = "defuse-outlayer-sys"
 version = "0.1.0"
 dependencies = [
  "wit-bindgen 0.49.0",
+]
+
+[[package]]
+name = "defuse-outlayer-utils"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_with",
 ]
 
 [[package]]
@@ -2367,6 +2413,12 @@ checksum = "d4b8a88685455ed29a21542a33abd9cb6510b6b129abadabdcef0f4c55bc8f61"
 dependencies = [
  "litrs",
 ]
+
+[[package]]
+name = "dotenvy"
+version = "0.15.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
 name = "dunce"

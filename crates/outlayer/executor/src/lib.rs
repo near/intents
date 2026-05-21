@@ -7,7 +7,7 @@ pub use self::{compiler::*, config::*, error::*};
 use std::sync::Arc;
 
 pub use defuse_outlayer_vm_runner::host::Context as HostContext;
-pub use defuse_outlayer_vm_runner::host::InMemorySigner;
+pub use defuse_outlayer_signer::InMemorySigner;
 pub use defuse_outlayer_vm_runner::wasmtime::component::Component;
 
 use defuse_outlayer_vm_runner::{
@@ -22,6 +22,7 @@ use bytes::Bytes;
 pub struct Executor {
     runtime: Arc<VmRuntime>,
     signer: Arc<dyn Signer>,
+    limits: ExecutorLimits,
 }
 
 pub struct Context {
@@ -54,7 +55,7 @@ impl Outcome {
 
 impl Executor {
     pub fn new(
-        signer: impl Into<Arc<InMemorySigner>>,
+        signer: Arc<dyn Signer>,
         config: Config,
     ) -> anyhow::Result<Self> {
         Ok(Self {
