@@ -12,7 +12,7 @@ impl Default for TowerConfig {
     fn default() -> Self {
         Self {
             buffer: NonZeroUsize::new(1).unwrap(),
-            concurrency: 3,
+            concurrency: 1,
         }
     }
 }
@@ -38,14 +38,18 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::sync::{atomic::{AtomicUsize, Ordering}, Arc};
+
     use super::*;
+    use tokio::time::{Duration, timeout};
     use tower::{Service as _, ServiceExt as _};
+
+    const TIMEOUT: Duration = Duration::from_millis(50);
 
     #[tokio::test]
     async fn wrap_with_pool_calls_inner_service() {
-        let svc = tower::service_fn(|x: i32| async move {
-            Ok::<i32, std::convert::Infallible>(x * 2)
-        });
+        let svc =
+            tower::service_fn(|x: i32| async move { Ok::<i32, std::convert::Infallible>(x * 2) });
         let mut wrapped = wrap_with_pool(
             svc,
             TowerConfig {
@@ -58,27 +62,61 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn wrap_with_pool_handles_multiple_calls() {
-        let counter = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-        let counter2 = counter.clone();
-        let svc = tower::service_fn(move |x: usize| {
-            let counter = counter2.clone();
-            async move {
-                counter.fetch_add(x, std::sync::atomic::Ordering::SeqCst);
-                Ok::<_, std::convert::Infallible>(())
-            }
-        });
-        let wrapped = wrap_with_pool(
-            svc,
+    async fn test_wrapper_properly_allocates_slots() {
+        let service = wrap_with_pool(
+            tower::service_fn(|_: ()| async move { Ok::<_, std::convert::Infallible>(()) }),
+            Default::default(),
+        );
+
+        let mut svc_handle1 = service.clone();
+        let mut svc_handle2 = service.clone();
+
+        svc_handle1.ready().await.unwrap();
+
+ 
+        assert!(timeout(TIMEOUT, svc_handle2.ready()).await.is_err());
+  }
+
+    #[tokio::test]
+    async fn test_concurency_is_handled_properly() {
+        let counter = Arc::new(AtomicUsize::new(0));
+        let counter_handle = Arc::clone(&counter);
+        let service = wrap_with_pool(
+            tower::service_fn(move |_: ()| {
+                let counter = counter.clone();
+                async move {
+                    counter.fetch_add(1, Ordering::SeqCst);
+                    tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                    Ok::<_, std::convert::Infallible>(())
+                }
+            }),
             TowerConfig {
                 buffer: NonZeroUsize::new(4).unwrap(),
                 concurrency: 2,
             },
         );
-        // Three sequential calls via oneshot
-        tower::ServiceExt::oneshot(wrapped.clone(), 1).await.unwrap();
-        tower::ServiceExt::oneshot(wrapped.clone(), 2).await.unwrap();
-        tower::ServiceExt::oneshot(wrapped.clone(), 3).await.unwrap();
-        assert_eq!(counter.load(std::sync::atomic::Ordering::SeqCst), 6);
+
+        let mut svc_handle1 = service.clone();
+        let mut svc_handle2 = service.clone();
+        let mut svc_handle3 = service.clone();
+        let mut svc_handle4 = service.clone();
+        let mut svc_handle5 = service.clone();
+
+        svc_handle1.ready().await.unwrap();
+        svc_handle2.ready().await.unwrap();
+        svc_handle3.ready().await.unwrap();
+        svc_handle4.ready().await.unwrap();
+        assert!(timeout(TIMEOUT, svc_handle5.ready()).await.is_err());
+
+        let _ = tokio::spawn(async move { svc_handle1.call(()).await.unwrap(); });
+        let _ = tokio::spawn(async move { svc_handle2.call(()).await.unwrap(); });
+        let _ = tokio::spawn(async move { svc_handle3.call(()).await.unwrap(); });
+        let _ = tokio::spawn(async move { svc_handle4.call(()).await.unwrap(); });
+
+        tokio::time::sleep(TIMEOUT).await;
+        assert_eq!(counter_handle.load(std::sync::atomic::Ordering::SeqCst), 2);
+
+
+
     }
 }
