@@ -45,15 +45,16 @@ async fn main() -> Result<()> {
                 .separator("__"),
         )
         .build()
-        .and_then(|c| c.try_deserialize())
+        .and_then(config::Config::try_deserialize)
         .context("config")?;
 
+    // TODO: derive seed from CKD
+    #[allow(clippy::option_if_let_else)]
     let signer = match config.signer_seed {
         Some(ref seed) => {
             tracing::warn!("using custom signer seed — not intended for production use");
             InMemorySigner::from_seed(seed)
         }
-        // TODO: derive seed from CKD
         None => unimplemented!("signer seed must be provided until CKD integration is complete"),
     };
 

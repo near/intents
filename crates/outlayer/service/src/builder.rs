@@ -10,6 +10,7 @@ pub struct OutlayerBuilder {
 }
 
 impl OutlayerBuilder {
+    #[must_use]
     pub fn with_config(mut self, config: OutlayerConfig) -> Self {
         self.config = config;
         self
@@ -28,6 +29,7 @@ impl OutlayerBuilder {
     }
 
     #[cfg(feature = "tower")]
+    #[allow(clippy::type_complexity)]
     pub fn build_service(
         self,
         signer: impl Into<Arc<InMemorySigner>>,
@@ -48,8 +50,8 @@ impl OutlayerBuilder {
                     outlayer
                         .execute(app, input, None)
                         .await
-                        .map_err(|e: crate::Error| {
-                            Box::new(e) as Box<dyn std::error::Error + Send + Sync>
+                        .map_err(|e: crate::Error| -> Box<dyn std::error::Error + Send + Sync> {
+                            e.into()
                         })
                 }
             },

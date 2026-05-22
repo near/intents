@@ -60,7 +60,7 @@ impl Executor {
     ) -> anyhow::Result<Self> {
         Ok(Self {
             runtime: Arc::new(VmRuntime::new(config.memory_limit)?),
-            signer: signer.into(),
+            signer,
             limits: config.limits,
         })
     }
