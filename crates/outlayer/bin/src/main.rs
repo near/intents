@@ -1,17 +1,19 @@
-mod cli;
+use defuse_outlayer_executor::InMemorySigner;
+use defuse_outlayer_service::{Outlayer, OutlayerConfig};
 
 use anyhow::{Context as _, Result};
 use config::{Config, Environment};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use serde_with::hex::Hex;
-
-use defuse_outlayer_executor::InMemorySigner;
-use defuse_outlayer_service::{Outlayer, OutlayerConfig};
 use tokio::sync::mpsc;
 use tower::{Service as _, ServiceExt as _};
 
+
+const PREFIX: &str = "WORKER";
+
 #[serde_with::serde_as]
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Default)]
 #[serde(default)]
 struct AppConfig {
     #[serde(rename = "service")]
@@ -20,27 +22,18 @@ struct AppConfig {
     signer_seed: Option<Vec<u8>>,
 }
 
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            outlayer: OutlayerConfig::default(),
-            signer_seed: None,
-        }
-    }
-}
-
 type Request = (defuse_outlayer_service::Code<'static>, bytes::Bytes);
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    //TODO: remove
+    //TODO: is that even needed?
     if std::env::args().any(|a| a == "--print-config") {
-        cli::print_env_vars();
+        let defaults = serde_json::to_value(AppConfig::default()).unwrap();
+        print_value("WORKER", &defaults);
         return Ok(());
     }
 
     dotenvy::dotenv().ok();
-
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_env("RUST_LOG"))
         .init();
@@ -80,5 +73,17 @@ async fn main() -> Result<()> {
             let resp = fut.await;
             result_tx.send(resp).await.ok();
         });
+    }
+}
+
+fn print_value(prefix: &str, value: &Value) {
+    match value {
+        Value::Object(map) => {
+            for (key, val) in map {
+                print_value(&format!("{prefix}__{}", key.to_uppercase()), val);
+            }
+        }
+        Value::Null => println!("# {prefix}="),
+        other => println!("{prefix}={other}"),
     }
 }
