@@ -88,17 +88,24 @@ impl Outlayer {
     ) -> Result<Outcome, Error> {
         let (app_id, component) = self.resolve_app(app).await?;
 
-        self.executor
-            .execute(
+        let executor = self.executor.clone();
+        let default_fuel = self.default_fuel;
+        // WASM execution is CPU-bound and wasmtime doesn't yield between instructions
+        // without epoch interruption, which would block the tokio scheduler.
+        // Run on the blocking thread pool to keep the async runtime responsive.
+        tokio::task::spawn_blocking(move || {
+            tokio::runtime::Handle::current().block_on(executor.execute(
                 Context {
                     input,
                     host: HostContext { app_id },
                 },
                 &component,
-                fuel.unwrap_or(self.default_fuel),
-            )
-            .await
-            .map_err(Into::into)
+                fuel.unwrap_or(default_fuel),
+            ))
+        })
+        .await
+        .expect("execute panicked")
+        .map_err(Into::into)
     }
 }
 
