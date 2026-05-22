@@ -39,6 +39,7 @@ impl OutlayerBuilder {
         self,
         signer: impl Into<Arc<InMemorySigner>>,
     ) -> anyhow::Result<
+        //TODO: simplify and maybe get rid of BoxClone ?
         tower::util::BoxCloneService<
             (crate::Code<'static>, bytes::Bytes),
             defuse_outlayer_executor::Outcome,
