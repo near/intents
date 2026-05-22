@@ -1441,6 +1441,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-ckd"
+version = "0.1.0"
+
+[[package]]
 name = "defuse-controller"
 version = "0.1.0"
 dependencies = [
@@ -1660,9 +1664,10 @@ version = "0.1.0"
 dependencies = [
  "defuse-kdf",
  "hex-literal",
+ "impl-tools",
  "near-account-id",
- "near-mpc-crypto-types",
  "rstest",
+ "sha3 0.11.0",
 ]
 
 [[package]]
@@ -3856,20 +3861,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mpc-primitives"
-version = "3.9.0"
-source = "git+https://github.com/near/mpc?rev=2924956010abc3e76d904dca8cb68af17b1216a4#2924956010abc3e76d904dca8cb68af17b1216a4"
-dependencies = [
- "borsh",
- "derive_more",
- "hex",
- "near-account-id",
- "schemars 0.8.22",
- "serde",
- "thiserror 2.0.18",
-]
-
-[[package]]
 name = "multi-token-receiver-stub"
 version = "0.1.0"
 dependencies = [
@@ -4235,35 +4226,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
-]
-
-[[package]]
-name = "near-mpc-bounded-collections"
-version = "0.0.1"
-source = "git+https://github.com/near/mpc?rev=2924956010abc3e76d904dca8cb68af17b1216a4#2924956010abc3e76d904dca8cb68af17b1216a4"
-dependencies = [
- "borsh",
- "derive_more",
- "hex",
- "serde",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "near-mpc-crypto-types"
-version = "0.0.1"
-source = "git+https://github.com/near/mpc?rev=2924956010abc3e76d904dca8cb68af17b1216a4#2924956010abc3e76d904dca8cb68af17b1216a4"
-dependencies = [
- "borsh",
- "bs58 0.5.1",
- "derive_more",
- "mpc-primitives",
- "near-account-id",
- "near-mpc-bounded-collections",
- "serde",
- "serde_with",
- "sha3 0.10.9",
- "thiserror 2.0.18",
 ]
 
 [[package]]

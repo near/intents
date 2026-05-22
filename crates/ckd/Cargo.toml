@@ -1,0 +1,8 @@
+lints.workspace = true
+
+[package]
+name = "defuse-ckd"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
