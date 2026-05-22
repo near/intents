@@ -15,7 +15,10 @@ pub struct ResolverConfig {
     pub near_rpc_url: String,
     pub near_chain_id: String,
 
-    #[cfg_attr(feature = "serde", serde_as(deserialize_as = "Clamp<1, { 100 * 1024 * 1024 }, usize>"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(deserialize_as = "Clamp<1, { 100 * 1024 * 1024 }, usize>")
+    )]
     pub http_max_len: usize,
 }
 
@@ -44,7 +47,10 @@ pub struct Resolver {
 }
 
 impl Resolver {
-    pub const fn new(near: NearResolver, url: UrlResolver) -> Self {
+    pub fn new(config: ResolverConfig) -> Self {
+        let near = near_kit::Near::custom(config.near_rpc_url, config.near_chain_id).build();
+        let near = NearResolver::new(near);
+        let url = UrlResolver::new(HttpResolver::new(config.http_max_len));
         Self { near, url }
     }
 
