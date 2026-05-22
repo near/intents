@@ -29,7 +29,7 @@ async fn main() -> Result<()> {
     //TODO: is that even needed?
     if std::env::args().any(|a| a == "--print-config") {
         let defaults = serde_json::to_value(AppConfig::default()).unwrap();
-        print_value("WORKER", &defaults);
+        print_value(PREFIX, &defaults);
         return Ok(());
     }
 
@@ -40,7 +40,7 @@ async fn main() -> Result<()> {
 
     let config: AppConfig = Config::builder()
         .add_source(
-            Environment::with_prefix("WORKER")
+            Environment::with_prefix(PREFIX)
                 .prefix_separator("__")
                 .separator("__"),
         )

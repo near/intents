@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use defuse_outlayer_executor::{Executor, InMemorySigner};
 
-use crate::{HttpResolver, NearResolver, Outlayer, OutlayerConfig, Resolver, UrlResolver};
+use crate::{Outlayer, OutlayerConfig, Resolver};
 
 #[derive(Default)]
 pub struct OutlayerBuilder {
