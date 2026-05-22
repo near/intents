@@ -9,6 +9,7 @@ use serde_with::hex::Hex;
 use tokio::sync::mpsc;
 use tower::{Service as _, ServiceExt as _};
 
+mod nats;
 
 const PREFIX: &str = "WORKER";
 
@@ -16,6 +17,8 @@ const PREFIX: &str = "WORKER";
 #[derive(Deserialize, Serialize, Default)]
 #[serde(default)]
 struct AppConfig {
+    #[serde(rename = "nats")]
+    nats: nats::NatsConfig,
     #[serde(rename = "service")]
     outlayer: OutlayerConfig,
     #[serde_as(as = "Option<Hex>")]
@@ -62,6 +65,8 @@ async fn main() -> Result<()> {
         .with_config(config.outlayer)
         .build_service(signer)
         .context("outlayer")?;
+
+    let nats = nats::NatsConnector::connect(config.nats).await?;
 
     let (_requests_tx, mut requests_rx) = mpsc::channel::<Request>(100);
     let (result_tx, mut _result_rx) = mpsc::channel(100);

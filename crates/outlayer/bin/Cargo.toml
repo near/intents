@@ -19,6 +19,8 @@ defuse-outlayer-service = { workspace = true, features = ["tower"] }
 defuse-outlayer-vm-runner.workspace = true
 
 anyhow.workspace = true
+async-nats.workspace = true
+futures.workspace = true
 bytes.workspace = true
 config.workspace = true
 dotenvy.workspace = true
