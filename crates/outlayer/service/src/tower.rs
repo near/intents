@@ -1,13 +1,14 @@
 use std::{error::Error, num::NonZeroUsize};
 
+#[derive(Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields, default))]
-pub struct WorkerPoolConfig {
+pub struct TowerConfig {
     pub buffer: NonZeroUsize,
     pub concurrency: usize,
 }
 
-impl Default for WorkerPoolConfig {
+impl Default for TowerConfig {
     fn default() -> Self {
         Self {
             buffer: NonZeroUsize::new(1).unwrap(),
@@ -18,7 +19,7 @@ impl Default for WorkerPoolConfig {
 
 pub fn wrap_with_pool<S, Req>(
     svc: S,
-    config: WorkerPoolConfig,
+    config: TowerConfig,
 ) -> tower::util::BoxCloneService<Req, S::Response, Box<dyn Error + Send + Sync>>
 where
     S: tower::Service<Req> + Clone + Send + 'static,
@@ -47,7 +48,7 @@ mod tests {
         });
         let mut wrapped = wrap_with_pool(
             svc,
-            WorkerPoolConfig {
+            TowerConfig {
                 buffer: NonZeroUsize::new(4).unwrap(),
                 concurrency: 2,
             },
@@ -69,7 +70,7 @@ mod tests {
         });
         let wrapped = wrap_with_pool(
             svc,
-            WorkerPoolConfig {
+            TowerConfig {
                 buffer: NonZeroUsize::new(4).unwrap(),
                 concurrency: 2,
             },

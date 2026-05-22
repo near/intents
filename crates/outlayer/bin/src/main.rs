@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::hex::Hex;
 
 use defuse_outlayer_executor::InMemorySigner;
-use defuse_outlayer_service::{Outlayer, OutlayerConfig, WorkerPoolConfig};
+use defuse_outlayer_service::{Outlayer, OutlayerConfig};
 use tokio::sync::mpsc;
 use tower::{Service as _, ServiceExt as _};
 
@@ -16,8 +16,6 @@ use tower::{Service as _, ServiceExt as _};
 struct AppConfig {
     #[serde(rename = "service")]
     outlayer: OutlayerConfig,
-    #[serde(rename = "tower")]
-    worker: WorkerPoolConfig,
     #[serde_as(as = "Option<Hex>")]
     signer_seed: Option<Vec<u8>>,
 }
@@ -26,7 +24,6 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             outlayer: OutlayerConfig::default(),
-            worker: WorkerPoolConfig::default(),
             signer_seed: None,
         }
     }
@@ -36,6 +33,7 @@ type Request = (defuse_outlayer_service::Code<'static>, bytes::Bytes);
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    //TODO: remove
     if std::env::args().any(|a| a == "--print-config") {
         cli::print_env_vars();
         return Ok(());
@@ -68,7 +66,7 @@ async fn main() -> Result<()> {
 
     let mut svc = Outlayer::builder()
         .with_config(config.outlayer)
-        .build_service(signer, config.worker)
+        .build_service(signer)
         .context("outlayer")?;
 
     let (_requests_tx, mut requests_rx) = mpsc::channel::<Request>(100);
