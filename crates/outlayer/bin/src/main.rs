@@ -22,6 +22,8 @@ struct AppConfig {
     signer_seed: Option<Vec<u8>>,
 }
 
+//TODO: probably to be removed, but lets keep it until configs
+//are more stable
 fn print_value(prefix: &str, value: &Value) {
     match value {
         Value::Object(map) => {
