@@ -106,7 +106,7 @@ impl Outlayer {
             ))
         })
         .await
-        .expect("execute panicked")
+        .map_err(Error::ExecutePanicked)?
         .map_err(Into::into)
     }
 }
@@ -118,6 +118,8 @@ pub enum Error {
     Prepare(#[from] Arc<PrepareError>),
     #[error(transparent)]
     Execute(#[from] executor::Error),
+    #[error("execute panicked: {0}")]
+    ExecutePanicked(#[from] tokio::task::JoinError),
 }
 
 #[derive(thiserror::Error, Debug)]
