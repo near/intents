@@ -139,7 +139,7 @@ impl VmRuntime {
     ///     fuel: 1_000_000_000,
     /// };
     ///
-    /// let runner = VmRuntime::new(VmRuntime::MEMORY_LIMIT)?;
+    /// let runner = VmRuntime::new(VmRuntime::DEFAULT_MEMORY_LIMIT)?;
     /// let component = runner.compile(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../sdk/examples/empty.wat")))?;
     /// runner.execute(ctx, &component).await?;
     ///
