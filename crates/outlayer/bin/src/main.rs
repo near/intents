@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use defuse_outlayer_executor::Signer;
-use defuse_outlayer_signer::InMemorySigner;
+use defuse_outlayer_host::crypto::Signer;
 use defuse_outlayer_service::{Outlayer, OutlayerConfig};
+use defuse_outlayer_signer::InMemorySigner;
 
 use anyhow::{Context as _, Result};
 use config::{Config, Environment};
@@ -68,12 +68,10 @@ async fn main() -> Result<()> {
         None => unimplemented!("signer seed must be provided until CKD integration is complete"),
     };
 
-    let mut svc = Outlayer::builder()
+    let _ = Outlayer::builder()
         .with_config(config.outlayer)
         .build(Arc::new(signer) as Arc<dyn Signer>)
         .context("outlayer")?;
 
-
     Ok(())
 }
-

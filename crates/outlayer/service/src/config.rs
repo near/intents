@@ -4,9 +4,9 @@ use crate::{CacheConfig, resolver::ResolverConfig};
 
 #[cfg_attr(
     feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize)
+    derive(::serde::Serialize, ::serde::Deserialize),
+    serde(deny_unknown_fields, default)
 )]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields, default))]
 pub struct OutlayerConfig {
     pub executor: ExecutorConfig,
     pub resolver: ResolverConfig,

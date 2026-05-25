@@ -6,12 +6,12 @@ pub use self::{compiler::*, config::*, error::*};
 
 use std::sync::Arc;
 
-pub use defuse_outlayer_vm_runner::host::{crypto::Signer, Context as HostContext};
+pub use defuse_outlayer_vm_runner::host::{Context as HostContext, crypto::Signer};
 pub use defuse_outlayer_vm_runner::wasmtime::component::Component;
 
 use defuse_outlayer_vm_runner::{
     Context as VmContext, ExecutionOutcome, VmRuntime, WasiContext,
-    host::{Host},
+    host::Host,
     wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe},
 };
 
@@ -52,17 +52,12 @@ impl Outcome {
     }
 }
 
-
 impl Executor {
-    pub fn builder() -> ExecutorBuilder{
+    pub fn builder() -> ExecutorBuilder {
         ExecutorBuilder::default()
     }
 
-    pub fn new(
-        signer: Arc<dyn Signer>,
-        runtime: Arc<VmRuntime>,
-        limits: ExecutorLimits,
-    ) -> Self {
+    pub fn new(signer: Arc<dyn Signer>, runtime: Arc<VmRuntime>, limits: ExecutorLimits) -> Self {
         Self {
             runtime,
             signer,

@@ -54,7 +54,7 @@ async fn main() -> Result<()> {
         .await
         .with_context(|| format!("failed to read: {}", args.wasm.display()))?;
 
-    let runner = VmRuntime::new(VmRuntime::MEMORY_LIMIT).context("failed to initialize runtime")?;
+    let runner = VmRuntime::new(VmRuntime::DEFAULT_MEMORY_LIMIT).context("failed to initialize runtime")?;
 
     let component = runner
         .compile(&wasm_binary)

@@ -6,9 +6,29 @@ use crate::Executor;
 
 #[cfg_attr(
     feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize)
+    derive(::serde::Serialize, ::serde::Deserialize),
+    serde(deny_unknown_fields, default)
 )]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields, default))]
+#[derive(Debug, Clone, Copy)]
+pub struct ExecutorConfig {
+    pub memory_limit: usize,
+    pub limits: ExecutorLimits,
+}
+
+impl Default for ExecutorConfig {
+    fn default() -> Self {
+        Self {
+            memory_limit: VmRuntime::DEFAULT_MEMORY_LIMIT,
+            limits: ExecutorLimits::default(),
+        }
+    }
+}
+
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    serde(deny_unknown_fields, default)
+)]
 #[derive(Debug, Clone, Copy)]
 pub struct ExecutorLimits {
     pub stdin: usize,
@@ -27,43 +47,21 @@ impl Default for ExecutorLimits {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct ExecutorBuilder{
-    config: ExecutorConfig
+pub struct ExecutorBuilder {
+    config: ExecutorConfig,
 }
 
 impl ExecutorBuilder {
-    pub fn with_config(&mut self, config: ExecutorConfig) -> Self {
+    #[must_use]
+    pub const fn with_config(&mut self, config: ExecutorConfig) -> Self {
         Self { config }
     }
 
     pub fn build(self, signer: Arc<dyn Signer>) -> anyhow::Result<Executor> {
-
-
         Ok(Executor::new(
             signer,
             Arc::new(VmRuntime::new(self.config.memory_limit)?),
             self.config.limits,
         ))
-
-    }
-}
-
-#[cfg_attr(
-    feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize)
-)]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields, default))]
-#[derive(Debug, Clone, Copy)]
-pub struct ExecutorConfig {
-    pub memory_limit: usize,
-    pub limits: ExecutorLimits,
-}
-
-impl Default for ExecutorConfig {
-    fn default() -> Self {
-        Self {
-            memory_limit: VmRuntime::DEFAULT_MEMORY_LIMIT,
-            limits: ExecutorLimits::default(),
-        }
     }
 }

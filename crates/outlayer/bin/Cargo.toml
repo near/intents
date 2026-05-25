@@ -14,10 +14,9 @@ name = "outlayer"
 path = "src/main.rs"
 
 [dependencies]
-defuse-outlayer-executor.workspace = true
 defuse-outlayer-service = { workspace = true }
 defuse-outlayer-signer = { workspace = true }
-defuse-outlayer-vm-runner.workspace = true
+defuse-outlayer-host = { workspace = true }
 
 anyhow.workspace = true
 bytes.workspace = true

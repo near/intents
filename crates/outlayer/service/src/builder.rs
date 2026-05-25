@@ -17,14 +17,16 @@ impl OutlayerBuilder {
     }
 
     pub fn build(self, signer: impl Into<Arc<dyn Signer>>) -> anyhow::Result<Outlayer> {
-        let executor = Executor::builder().with_config(self.config.executor).build(signer.into())?;
-        let resolver = Resolver::new(self.config.resolver);
+        let executor = Executor::builder()
+            .with_config(self.config.executor)
+            .build(signer.into())?;
+        let resolver = Resolver::build(self.config.resolver);
+        let cache = self.config.cache.build();
         Ok(Outlayer::new(
             resolver,
             executor,
-            self.config.cache,
+            cache,
             self.config.default_fuel,
         ))
     }
-
 }

@@ -9,11 +9,7 @@ use sha2::{Digest, Sha256};
 pub use self::near::NearResolver;
 pub use self::url::{HttpResolver, UrlResolver};
 
-
-#[cfg_attr(
-    feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields, default))]
 pub struct ResolverConfig {
     pub near_rpc_url: String,
@@ -38,11 +34,15 @@ pub struct Resolver {
 }
 
 impl Resolver {
-    pub fn new(config: ResolverConfig) -> Self {
+    pub fn new(near: NearResolver, url: UrlResolver) -> Self {
+        Self { near, url }
+    }
+
+    pub fn build(config: ResolverConfig) -> Self {
         let near = near_kit::Near::custom(config.near_rpc_url, config.near_chain_id).build();
         let near = NearResolver::new(near);
         let url = UrlResolver::new(HttpResolver::new(config.http_max_len));
-        Self { near, url }
+        Self::new(near, url)
     }
 
     pub async fn resolve_code_url(&self, code: CodeRef<'_>) -> Result<AppCodeUrl> {

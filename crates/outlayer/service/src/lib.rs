@@ -13,7 +13,9 @@ use std::{convert, sync::Arc};
 
 use anyhow::Context as _;
 use bytes::Bytes;
-use defuse_outlayer_executor::{self as executor, Component, Context, Executor, HostContext, Outcome};
+use defuse_outlayer_executor::{
+    self as executor, Component, Context, Executor, HostContext, Outcome,
+};
 use defuse_outlayer_primitives::AppId;
 use moka::future::Cache;
 
@@ -29,13 +31,13 @@ impl Outlayer {
     pub fn new(
         resolver: Resolver,
         executor: Executor,
-        cache: CacheConfig,
+        runtime_cache: Cache<[u8; 32], Component>,
         default_fuel: u64,
     ) -> Self {
         Self {
             resolver,
             executor,
-            runtime_cache: cache.build(),
+            runtime_cache,
             default_fuel,
         }
     }
@@ -108,7 +110,6 @@ impl Outlayer {
         .map_err(Into::into)
     }
 }
-
 
 #[derive(derive_more::From, thiserror::Error, Debug)]
 pub enum Error {
