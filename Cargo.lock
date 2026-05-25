@@ -1765,7 +1765,6 @@ name = "defuse-outlayer-bin"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bytes",
  "config",
  "defuse-outlayer-host",
  "defuse-outlayer-service",
@@ -1786,7 +1785,6 @@ dependencies = [
  "anyhow",
  "bytes",
  "cfg_eval",
- "defuse-outlayer-signer",
  "defuse-outlayer-vm-runner",
  "serde",
  "serde_json",
