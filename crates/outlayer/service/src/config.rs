@@ -1,4 +1,4 @@
-use defuse_outlayer_executor::Config as ExecutorConfig;
+use defuse_outlayer_executor::ExecutorConfig;
 
 use crate::{CacheConfig, resolver::ResolverConfig};
 
@@ -12,8 +12,6 @@ pub struct OutlayerConfig {
     pub resolver: ResolverConfig,
     pub cache: CacheConfig,
     pub default_fuel: u64,
-    #[cfg(feature = "tower")]
-    pub tower: crate::tower::TowerConfig,
 }
 
 impl Default for OutlayerConfig {
@@ -23,8 +21,6 @@ impl Default for OutlayerConfig {
             resolver: ResolverConfig::default(),
             cache: CacheConfig::default(),
             default_fuel: u64::MAX,
-            #[cfg(feature = "tower")]
-            tower: crate::tower::TowerConfig::default(),
         }
     }
 }

@@ -1,19 +1,18 @@
+use std::sync::Arc;
+
+use defuse_outlayer_vm_runner::{VmRuntime, host::crypto::Signer};
+
+use crate::Executor;
+
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize)
 )]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields, default))]
 #[derive(Debug, Clone, Copy)]
 pub struct ExecutorLimits {
-    #[cfg_attr(feature = "serde", serde_as(as = "Clamp<1, { 64 * 1024 * 1024 }, usize>"))]
     pub stdin: usize,
-
-    #[cfg_attr(feature = "serde", serde_as(as = "Clamp<1, { 64 * 1024 * 1024 }, usize>"))]
     pub stdout: usize,
-
-    #[cfg_attr(feature = "serde", serde_as(as = "Clamp<1, { 1024 * 1024 }, usize>"))]
     pub stderr: usize,
 }
 
@@ -27,45 +26,44 @@ impl Default for ExecutorLimits {
     }
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct ExecutorBuilder{
+    config: ExecutorConfig
+}
+
+impl ExecutorBuilder {
+    pub fn with_config(&mut self, config: ExecutorConfig) -> Self {
+        Self { config }
+    }
+
+    pub fn build(self, signer: Arc<dyn Signer>) -> anyhow::Result<Executor> {
+
+
+        Ok(Executor::new(
+            signer,
+            Arc::new(VmRuntime::new(self.config.memory_limit)?),
+            self.config.limits,
+        ))
+
+    }
+}
+
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize)
 )]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields, default))]
 #[derive(Debug, Clone, Copy)]
-pub struct Config {
-    #[cfg_attr(
-        feature = "serde",
-        serde_as(as = "Clamp<{ 1024 * 1024 }, { 4 * 1024 * 1024 * 1024 }, usize>")
-    )]
+pub struct ExecutorConfig {
     pub memory_limit: usize,
-
     pub limits: ExecutorLimits,
 }
 
-impl Default for Config {
+impl Default for ExecutorConfig {
     fn default() -> Self {
         Self {
-            memory_limit: 100 * 1024 * 1024,
+            memory_limit: VmRuntime::DEFAULT_MEMORY_LIMIT,
             limits: ExecutorLimits::default(),
         }
-    }
-}
-
-#[cfg(feature = "serde")]
-use defuse_outlayer_utils::Clamp;
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn executor_limits_clamps_below_min() {
-        // stdin MIN is 1; passing 0 should be clamped to 1
-        let json = r#"{"stdin": 0, "stdout": 1, "stderr": 1}"#;
-        let limits: ExecutorLimits = serde_json::from_str(json).unwrap();
-        assert_eq!(limits.stdin, 1);
     }
 }

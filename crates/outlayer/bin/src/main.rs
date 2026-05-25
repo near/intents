@@ -1,4 +1,7 @@
-use defuse_outlayer_executor::InMemorySigner;
+use std::sync::Arc;
+
+use defuse_outlayer_executor::Signer;
+use defuse_outlayer_signer::InMemorySigner;
 use defuse_outlayer_service::{Outlayer, OutlayerConfig};
 
 use anyhow::{Context as _, Result};
@@ -6,8 +9,6 @@ use config::{Config, Environment};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::hex::Hex;
-use tokio::sync::mpsc;
-use tower::{Service as _, ServiceExt as _};
 
 const PREFIX: &str = "WORKER";
 
@@ -20,8 +21,6 @@ struct AppConfig {
     #[serde_as(as = "Option<Hex>")]
     signer_seed: Option<Vec<u8>>,
 }
-
-type Request = (defuse_outlayer_service::Code<'static>, bytes::Bytes);
 
 fn print_value(prefix: &str, value: &Value) {
     match value {
@@ -71,7 +70,7 @@ async fn main() -> Result<()> {
 
     let mut svc = Outlayer::builder()
         .with_config(config.outlayer)
-        .build_service(signer)
+        .build(Arc::new(signer) as Arc<dyn Signer>)
         .context("outlayer")?;
 
 

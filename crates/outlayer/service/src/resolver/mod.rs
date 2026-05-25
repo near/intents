@@ -1,24 +1,23 @@
 mod near;
 mod url;
 
-#[cfg(feature = "serde")]
-use defuse_outlayer_utils::Clamp;
+use crate::{AppCodeUrl, CodeRef};
+use bytes::Bytes;
+use defuse_outlayer_primitives::AppId;
+use sha2::{Digest, Sha256};
+
+pub use self::near::NearResolver;
+pub use self::url::{HttpResolver, UrlResolver};
+
 
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize)
 )]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields, default))]
 pub struct ResolverConfig {
     pub near_rpc_url: String,
     pub near_chain_id: String,
-
-    #[cfg_attr(
-        feature = "serde",
-        serde_as(deserialize_as = "Clamp<1, { 100 * 1024 * 1024 }, usize>")
-    )]
     pub http_max_len: usize,
 }
 
@@ -31,14 +30,6 @@ impl Default for ResolverConfig {
         }
     }
 }
-
-use crate::{AppCodeUrl, CodeRef};
-use bytes::Bytes;
-use defuse_outlayer_primitives::AppId;
-use sha2::{Digest, Sha256};
-
-pub use self::near::NearResolver;
-pub use self::url::{HttpResolver, UrlResolver};
 
 #[derive(Clone)]
 pub struct Resolver {

@@ -133,8 +133,3 @@ impl From<resolver::Error> for Error {
         Self::Prepare(PrepareError::Resolve(err).into())
     }
 }
-
-#[cfg(feature = "tower")]
-pub mod tower;
-#[cfg(feature = "tower")]
-pub use self::tower::TowerConfig;
