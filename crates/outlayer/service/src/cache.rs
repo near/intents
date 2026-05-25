@@ -5,12 +5,17 @@ use moka::future::Cache;
 
 #[cfg_attr(
     feature = "serde",
+    ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     serde(deny_unknown_fields, default)
 )]
 pub struct CacheConfig {
     pub max_capacity: u64,
-    pub time_to_idle: Option<u64>,
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "Option<::serde_with::DurationSeconds<u64>>")
+    )]
+    pub time_to_idle: Option<Duration>,
 }
 
 impl Default for CacheConfig {
@@ -34,7 +39,7 @@ impl CacheConfig {
                 u32::try_from((r.start.addr()..r.end.addr()).len()).unwrap_or(u32::MAX)
             });
         if let Some(tti) = self.time_to_idle {
-            builder = builder.time_to_idle(Duration::from_secs(tti));
+            builder = builder.time_to_idle(tti);
         }
         builder.build()
     }

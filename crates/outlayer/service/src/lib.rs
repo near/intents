@@ -28,7 +28,7 @@ pub struct Outlayer {
 }
 
 impl Outlayer {
-    pub fn new(
+    pub const fn new(
         resolver: Resolver,
         executor: Executor,
         runtime_cache: Cache<[u8; 32], Component>,

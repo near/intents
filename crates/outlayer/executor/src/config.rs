@@ -53,8 +53,9 @@ pub struct ExecutorBuilder {
 
 impl ExecutorBuilder {
     #[must_use]
-    pub const fn with_config(&mut self, config: ExecutorConfig) -> Self {
-        Self { config }
+    pub const fn with_config(mut self, config: ExecutorConfig) -> Self {
+        self.config = config;
+        self
     }
 
     pub fn build(self, signer: Arc<dyn Signer>) -> anyhow::Result<Executor> {

@@ -20,7 +20,8 @@ impl Default for OutlayerConfig {
             executor: ExecutorConfig::default(),
             resolver: ResolverConfig::default(),
             cache: CacheConfig::default(),
-            default_fuel: u64::MAX,
+            // TODO: determine a reasonable fuel ceiling based on benchmarked workloads
+            default_fuel: 10_000,
         }
     }
 }

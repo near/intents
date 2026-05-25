@@ -34,7 +34,7 @@ pub struct Resolver {
 }
 
 impl Resolver {
-    pub fn new(near: NearResolver, url: UrlResolver) -> Self {
+    pub const fn new(near: NearResolver, url: UrlResolver) -> Self {
         Self { near, url }
     }
 

@@ -4,13 +4,13 @@ use defuse_outlayer_executor::{Executor, Signer};
 
 use crate::{Outlayer, OutlayerConfig, Resolver};
 
+#[must_use = "call .build() to construct the Outlayer"]
 #[derive(Default)]
 pub struct OutlayerBuilder {
     config: OutlayerConfig,
 }
 
 impl OutlayerBuilder {
-    #[must_use]
     pub fn with_config(mut self, config: OutlayerConfig) -> Self {
         self.config = config;
         self

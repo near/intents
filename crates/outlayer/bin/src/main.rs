@@ -68,9 +68,10 @@ async fn main() -> Result<()> {
         None => unimplemented!("signer seed must be provided until CKD integration is complete"),
     };
 
+    let signer: Arc<dyn Signer> = Arc::new(signer);
     let _ = Outlayer::builder()
         .with_config(config.outlayer)
-        .build(Arc::new(signer) as Arc<dyn Signer>)
+        .build(signer)
         .context("outlayer")?;
 
     Ok(())
