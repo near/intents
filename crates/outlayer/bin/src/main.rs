@@ -9,16 +9,12 @@ use serde_with::hex::Hex;
 use tokio::sync::mpsc;
 use tower::{Service as _, ServiceExt as _};
 
-mod nats;
-
 const PREFIX: &str = "WORKER";
 
 #[serde_with::serde_as]
 #[derive(Deserialize, Serialize, Default)]
 #[serde(default)]
 struct AppConfig {
-    #[serde(rename = "nats")]
-    nats: nats::NatsConfig,
     #[serde(rename = "service")]
     outlayer: OutlayerConfig,
     #[serde_as(as = "Option<Hex>")]
@@ -27,10 +23,22 @@ struct AppConfig {
 
 type Request = (defuse_outlayer_service::Code<'static>, bytes::Bytes);
 
+fn print_value(prefix: &str, value: &Value) {
+    match value {
+        Value::Object(map) => {
+            for (key, val) in map {
+                print_value(&format!("{prefix}__{}", key.to_uppercase()), val);
+            }
+        }
+        Value::Null => println!("# {prefix}="),
+        other => println!("{prefix}={other}"),
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     //TODO: is that even needed?
-    if std::env::args().any(|a| a == "--print-config") {
+    if std::env::args().any(|a| a == "--print-env") {
         let defaults = serde_json::to_value(AppConfig::default()).unwrap();
         print_value(PREFIX, &defaults);
         return Ok(());
@@ -66,30 +74,7 @@ async fn main() -> Result<()> {
         .build_service(signer)
         .context("outlayer")?;
 
-    let nats = nats::NatsConnector::connect(config.nats).await?;
 
-    let (_requests_tx, mut requests_rx) = mpsc::channel::<Request>(100);
-    let (result_tx, mut _result_rx) = mpsc::channel(100);
-    loop {
-        svc.ready().await.map_err(|e| anyhow::anyhow!(e))?;
-        let req = requests_rx.recv().await.expect("should be infinite");
-        let fut = svc.call(req); // future is 'static, svc stays here
-        let result_tx = result_tx.clone();
-        tokio::spawn(async move {
-            let resp = fut.await;
-            result_tx.send(resp).await.ok();
-        });
-    }
+    Ok(())
 }
 
-fn print_value(prefix: &str, value: &Value) {
-    match value {
-        Value::Object(map) => {
-            for (key, val) in map {
-                print_value(&format!("{prefix}__{}", key.to_uppercase()), val);
-            }
-        }
-        Value::Null => println!("# {prefix}="),
-        other => println!("{prefix}={other}"),
-    }
-}
