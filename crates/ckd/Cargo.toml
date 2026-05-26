@@ -13,8 +13,8 @@ defuse-kdf-mpc.workspace = true
 
 # TODO: zeroize
 blstrs.workspace = true
-pairing.workspace = true
 near-account-id.workspace = true
+pairing.workspace = true
 # rand = { workspace = true, features = ["sys_rng"] }
 rand_core.workspace = true
 zeroize = { workspace = true, features = ["derive"] }
