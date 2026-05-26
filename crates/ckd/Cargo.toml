@@ -6,3 +6,19 @@ edition.workspace = true
 version.workspace = true
 rust-version.workspace = true
 repository.workspace = true
+
+[dependencies]
+# TODO: zeroize
+defuse-kdf-mpc.workspace = true
+
+# TODO: zeroize
+blstrs.workspace = true
+pairing.workspace = true
+near-account-id.workspace = true
+# rand = { workspace = true, features = ["sys_rng"] }
+rand_core.workspace = true
+zeroize = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+hex-literal.workspace = true
+rstest.workspace = true

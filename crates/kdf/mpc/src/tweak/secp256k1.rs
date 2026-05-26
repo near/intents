@@ -23,7 +23,7 @@ mod tests {
     use near_account_id::AccountIdRef;
     use rstest::rstest;
 
-    use crate::tweak::derive_scalar;
+    use crate::tweak::tweak;
 
     use super::*;
 
@@ -60,8 +60,8 @@ mod tests {
         .unwrap();
         let predecessor_id = AccountIdRef::new(predecessor_id).unwrap();
 
-        let schema = Additive::<Secp256k1>::new(master_pk)
-            .derive(derive_scalar::<Secp256k1>(predecessor_id));
+        let schema =
+            Additive::<Secp256k1>::new(master_pk).derive(tweak::<Secp256k1>(predecessor_id));
 
         let derived_pk = schema.derive_path(path);
 

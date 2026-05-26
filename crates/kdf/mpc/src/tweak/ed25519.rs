@@ -21,7 +21,7 @@ mod tests {
     use near_account_id::AccountIdRef;
     use rstest::rstest;
 
-    use crate::tweak::derive_scalar;
+    use crate::tweak::tweak;
 
     use super::*;
 
@@ -54,8 +54,7 @@ mod tests {
         let master_pk = VerifyingKey::from_bytes(&ED25519_MPC_PK).unwrap();
         let predecessor_id = AccountIdRef::new(predecessor_id).unwrap();
 
-        let schema =
-            Additive::<Ed25519>::new(master_pk).derive(derive_scalar::<Ed25519>(predecessor_id));
+        let schema = Additive::<Ed25519>::new(master_pk).derive(tweak::<Ed25519>(predecessor_id));
 
         let derived_pk = schema.derive_path(path);
 

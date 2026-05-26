@@ -1,12 +1,9 @@
 mod ckd;
-// #[cfg(feature = "ed25519")]
-// mod ed25519;
-// #[cfg(feature = "secp256k1")]
-// mod secp256k1;
 mod tweak;
 
 pub use self::{ckd::*, tweak::*};
 
+pub use defuse_kdf as kdf;
 use defuse_kdf::digest::Digest;
 use near_account_id::AccountIdRef;
 use sha3::{Digest as _, Sha3_256};

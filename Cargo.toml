@@ -162,6 +162,7 @@ array-util = "1"
 async-trait = "0.1.89"
 base64 = "0.22.1"
 bitflags = "2.9.1"
+blstrs = "0.7.1"
 bnum = { version = "0.13", features = ["borsh"] }
 borsh = "1.6.1"
 bs58 = "0.5.1"
@@ -177,6 +178,7 @@ digest-io = "0.1.0"
 ed25519-dalek = { version = "2.1", default-features = false }
 futures = "0.3"
 generic-array = "1"
+# group = "0.13"                                                # TODO: features?
 hex = "0.4"
 hex-literal = "1.0"
 hkdf = "0.13"
@@ -186,6 +188,7 @@ k256 = { version = "0.13.4", default-features = false }
 moka = "0.12"
 num-traits = "0.2.19"
 p256 = { version = "0.13.2", default-features = false }
+pairing = "0.23"                                           # TODO: features
 proptest = "1.5"
 rand = "0.10"
 rand_core = "0.10"
