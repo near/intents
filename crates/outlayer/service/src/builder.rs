@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use defuse_outlayer_executor::{Executor, Signer};
+use defuse_outlayer_executor::{Executor, ExecutorBuilder, Signer};
 
 use crate::{Outlayer, OutlayerConfig, Resolver};
 
@@ -17,10 +17,10 @@ impl OutlayerBuilder {
     }
 
     pub fn build(self, signer: impl Into<Arc<dyn Signer>>) -> anyhow::Result<Outlayer> {
-        let executor = Executor::builder()
+        let executor = ExecutorBuilder::default()
             .with_config(self.config.executor)
             .build(signer.into())?;
-        let resolver = Resolver::build(self.config.resolver);
+        let resolver = ResolverBuilder::build(self.config.resolver);
         let cache = self.config.cache.build();
         Ok(Outlayer::new(
             resolver,

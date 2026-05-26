@@ -1,5 +1,6 @@
 mod near;
 mod url;
+mod config;
 
 use crate::{AppCodeUrl, CodeRef};
 use bytes::Bytes;
@@ -9,27 +10,6 @@ use sha2::{Digest, Sha256};
 pub use self::near::NearResolver;
 pub use self::url::{HttpResolver, UrlResolver};
 
-const NEAR_RPC_URL: &str = "https://rpc.mainnet.near.org";
-const NEAR_CHAIN_ID: &str = "mainnet";
-const MAX_WASM_SIZE_10MB: usize = 10 * 1024 * 1024;
-
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(deny_unknown_fields, default))]
-pub struct ResolverConfig {
-    pub near_rpc_url: String,
-    pub near_chain_id: String,
-    pub http_max_len: usize,
-}
-
-impl Default for ResolverConfig {
-    fn default() -> Self {
-        Self {
-            near_rpc_url: NEAR_RPC_URL.to_string(),
-            near_chain_id: NEAR_CHAIN_ID.to_string(),
-            http_max_len: MAX_WASM_SIZE_10MB,
-        }
-    }
-}
 
 #[derive(Clone)]
 pub struct Resolver {
@@ -42,14 +22,7 @@ impl Resolver {
         Self { near, url }
     }
 
-    pub fn build(config: ResolverConfig) -> Self {
-        let near = near_kit::Near::custom(config.near_rpc_url, config.near_chain_id).build();
-        let near = NearResolver::new(near);
-        let url = UrlResolver::new(HttpResolver::new(config.http_max_len));
-        Self::new(near, url)
-    }
-
-    pub async fn resolve_code_url(&self, code: CodeRef<'_>) -> Result<AppCodeUrl> {
+    pub async fn resolve_code_url(&self, code: CodeRef<'_>) -> Result<AppCodeUrl, Error> {
         match code {
             CodeRef::AppId(app_id) => match app_id {
                 AppId::Near(oa_contract_id) => {
@@ -66,7 +39,7 @@ impl Resolver {
             code_url,
             code_hash,
         }: AppCodeUrl,
-    ) -> Result<Bytes> {
+    ) -> Result<Bytes, Error> {
         let code = self.url.resolve(code_url).await?;
         let actual = Sha256::digest(&code);
         if actual != code_hash {
@@ -75,8 +48,6 @@ impl Resolver {
         Ok(code)
     }
 }
-
-pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

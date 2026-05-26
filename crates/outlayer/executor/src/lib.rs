@@ -53,10 +53,6 @@ impl Outcome {
 }
 
 impl Executor {
-    pub fn builder() -> ExecutorBuilder {
-        ExecutorBuilder::default()
-    }
-
     pub fn new(signer: Arc<dyn Signer>, runtime: Arc<VmRuntime>, limits: StreamLimits) -> Self {
         Self {
             runtime,

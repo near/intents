@@ -42,10 +42,6 @@ impl Outlayer {
         }
     }
 
-    pub fn builder() -> OutlayerBuilder {
-        OutlayerBuilder::default()
-    }
-
     async fn resolve_app(&self, app: Code<'_>) -> Result<(AppId<'static>, Component), Error> {
         let (app_id, app_code_url, code) = match app {
             Code::Ref(code_ref) => (
