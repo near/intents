@@ -21,7 +21,7 @@ use bytes::Bytes;
 pub struct Executor {
     runtime: Arc<VmRuntime>,
     signer: Arc<dyn Signer>,
-    limits: ExecutorLimits,
+    limits: StreamLimits,
 }
 
 pub struct Context {
@@ -57,7 +57,7 @@ impl Executor {
         ExecutorBuilder::default()
     }
 
-    pub fn new(signer: Arc<dyn Signer>, runtime: Arc<VmRuntime>, limits: ExecutorLimits) -> Self {
+    pub fn new(signer: Arc<dyn Signer>, runtime: Arc<VmRuntime>, limits: StreamLimits) -> Self {
         Self {
             runtime,
             signer,

@@ -12,14 +12,14 @@ use crate::Executor;
 #[derive(Debug, Clone, Copy)]
 pub struct ExecutorConfig {
     pub memory_limit: usize,
-    pub limits: ExecutorLimits,
+    pub limits: StreamLimits,
 }
 
 impl Default for ExecutorConfig {
     fn default() -> Self {
         Self {
             memory_limit: VmRuntime::DEFAULT_MEMORY_LIMIT,
-            limits: ExecutorLimits::default(),
+            limits: StreamLimits::default(),
         }
     }
 }
@@ -30,13 +30,13 @@ impl Default for ExecutorConfig {
     serde(deny_unknown_fields, default)
 )]
 #[derive(Debug, Clone, Copy)]
-pub struct ExecutorLimits {
+pub struct StreamLimits {
     pub stdin: usize,
     pub stdout: usize,
     pub stderr: usize,
 }
 
-impl Default for ExecutorLimits {
+impl Default for StreamLimits {
     fn default() -> Self {
         Self {
             stdin: 4 * 1024 * 1024,
