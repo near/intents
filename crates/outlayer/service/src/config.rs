@@ -1,6 +1,7 @@
 use defuse_outlayer_executor::ExecutorConfig;
 
 use crate::{CacheConfig, resolver::ResolverConfig};
+const DEFAULT_FUEL: u64 = 10_000;
 
 #[cfg_attr(
     feature = "serde",
@@ -21,7 +22,7 @@ impl Default for OutlayerConfig {
             resolver: ResolverConfig::default(),
             cache: CacheConfig::default(),
             // TODO: determine a reasonable fuel ceiling based on benchmarked workloads
-            default_fuel: 10_000,
+            default_fuel: DEFAULT_FUEL,
         }
     }
 }

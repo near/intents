@@ -10,7 +10,9 @@ mod resolver;
 
 pub use self::builder::OutlayerBuilder;
 pub use self::config::OutlayerConfig;
-pub use self::resolver::{HttpResolver, NearResolver, Resolver, ResolverConfig, UrlResolver};
+pub use self::resolver::{
+    HttpResolver, NearResolver, Resolver, ResolverBuilder, ResolverConfig, UrlResolver,
+};
 pub use self::{cache::*, code::*};
 
 use std::{convert, sync::Arc};
@@ -44,10 +46,6 @@ impl Outlayer {
             runtime_cache,
             default_fuel,
         }
-    }
-
-    pub fn builder() -> OutlayerBuilder {
-        OutlayerBuilder::default()
     }
 
     async fn resolve_app(&self, app: Code<'_>) -> Result<(AppId<'static>, Component), Error> {

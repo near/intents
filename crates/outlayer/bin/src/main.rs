@@ -1,16 +1,17 @@
 use std::sync::Arc;
 
 use defuse_outlayer_host::crypto::Signer;
-use defuse_outlayer_service::{Outlayer, OutlayerConfig};
+use defuse_outlayer_service::{OutlayerBuilder, OutlayerConfig};
 use defuse_outlayer_signer::InMemorySigner;
-use tonic::transport::Server;
-use tonic_health::ServingStatus;
+
 
 use anyhow::{Context as _, Result};
 use config::{Config, Environment};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::hex::Hex;
+use tonic::transport::Server;
+use tonic_health::ServingStatus;
 
 const PREFIX: &str = "WORKER";
 
@@ -80,7 +81,7 @@ async fn main() -> Result<()> {
 
     let signer: Arc<dyn Signer> = Arc::new(signer);
 
-    let grpc_service = Outlayer::builder()
+    let grpc_service = OutlayerBuilder::default()
         .with_config(config.outlayer)
         .build_service(signer)
         .context("outlayer")?;
