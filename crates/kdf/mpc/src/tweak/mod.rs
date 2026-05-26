@@ -69,6 +69,7 @@ mod tests {
 
     use super::*;
 
+    // See <https://github.com/near/mpc/blob/cf179467124203b0187ef0e80b429885b9a51627/crates/near-mpc-crypto-types/src/kdf.rs#L46-L68>
     #[rstest]
     #[case(
         "dwefqwg",
