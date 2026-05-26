@@ -1,6 +1,6 @@
+mod config;
 mod near;
 mod url;
-mod config;
 
 use crate::{AppCodeUrl, CodeRef};
 use bytes::Bytes;
@@ -10,7 +10,6 @@ use sha2::{Digest, Sha256};
 pub use self::config::{ResolverBuilder, ResolverConfig};
 pub use self::near::NearResolver;
 pub use self::url::{HttpResolver, UrlResolver};
-
 
 #[derive(Clone)]
 pub struct Resolver {

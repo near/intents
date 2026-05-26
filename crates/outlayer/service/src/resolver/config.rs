@@ -1,9 +1,8 @@
-use crate::resolver::{NearResolver, Resolver, UrlResolver, HttpResolver};
+use crate::resolver::{HttpResolver, NearResolver, Resolver, UrlResolver};
 
 const NEAR_RPC_URL: &str = "https://rpc.mainnet.near.org";
 const NEAR_CHAIN_ID: &str = "mainnet";
 const MAX_WASM_SIZE_10MB: usize = 10 * 1024 * 1024;
-
 
 #[cfg_attr(
     feature = "serde",
@@ -36,11 +35,10 @@ impl ResolverBuilder {
         self
     }
 
-    pub fn build(config: ResolverConfig) -> Resolver {
-        let near = near_kit::Near::custom(config.near_rpc_url, config.near_chain_id).build();
+    pub fn build(self) -> Resolver {
+        let near = near_kit::Near::custom(self.0.near_rpc_url, self.0.near_chain_id).build();
         let near = NearResolver::new(near);
-        let url = UrlResolver::new(HttpResolver::new(config.http_max_len));
+        let url = UrlResolver::new(HttpResolver::new(self.0.http_max_len));
         Resolver::new(near, url)
     }
-
 }

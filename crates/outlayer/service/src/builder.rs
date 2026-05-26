@@ -20,8 +20,12 @@ impl OutlayerBuilder {
         let executor = ExecutorBuilder::default()
             .with_config(self.config.executor)
             .build(signer.into())?;
-        let resolver = ResolverBuilder::build(self.config.resolver);
-        let cache = CacheBuilder::default().with_config(self.config.cache).build();
+        let resolver = ResolverBuilder::default()
+            .with_config(self.config.resolver)
+            .build();
+        let cache = CacheBuilder::default()
+            .with_config(self.config.cache)
+            .build();
         Ok(Outlayer::new(
             resolver,
             executor,
