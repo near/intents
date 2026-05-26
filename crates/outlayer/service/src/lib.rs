@@ -6,7 +6,7 @@ mod resolver;
 
 pub use self::builder::OutlayerBuilder;
 pub use self::config::OutlayerConfig;
-pub use self::resolver::{HttpResolver, NearResolver, Resolver, ResolverConfig, UrlResolver};
+pub use self::resolver::{HttpResolver, NearResolver, Resolver, ResolverBuilder, ResolverConfig, UrlResolver};
 pub use self::{cache::*, code::*};
 
 use std::{convert, sync::Arc};

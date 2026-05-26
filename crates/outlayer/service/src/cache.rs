@@ -31,7 +31,8 @@ impl Default for CacheConfig {
 pub struct CacheBuilder(CacheConfig);
 
 impl CacheBuilder {
-    pub fn with_config(mut self, config: CacheConfig) -> Self {
+    #[must_use]
+    pub const fn with_config(mut self, config: CacheConfig) -> Self {
         self.0 = config;
         self
     }

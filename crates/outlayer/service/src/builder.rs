@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use defuse_outlayer_executor::{Executor, ExecutorBuilder, Signer};
+use defuse_outlayer_executor::{ExecutorBuilder, Signer};
 
-use crate::{Outlayer, OutlayerConfig, Resolver};
+use crate::{CacheBuilder, Outlayer, OutlayerConfig, ResolverBuilder};
 
 #[must_use = "call .build() to construct the Outlayer"]
 #[derive(Default)]
@@ -21,7 +21,7 @@ impl OutlayerBuilder {
             .with_config(self.config.executor)
             .build(signer.into())?;
         let resolver = ResolverBuilder::build(self.config.resolver);
-        let cache = self.config.cache.build();
+        let cache = CacheBuilder::default().with_config(self.config.cache).build();
         Ok(Outlayer::new(
             resolver,
             executor,
