@@ -9,6 +9,10 @@ use sha2::{Digest, Sha256};
 pub use self::near::NearResolver;
 pub use self::url::{HttpResolver, UrlResolver};
 
+const NEAR_RPC_URL: &str = "https://rpc.mainnet.near.org";
+const NEAR_CHAIN_ID: &str = "mainnet";
+const MAX_WASM_SIZE_10MB: usize = 10 * 1024 * 1024;
+
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(deny_unknown_fields, default))]
 pub struct ResolverConfig {
@@ -20,9 +24,9 @@ pub struct ResolverConfig {
 impl Default for ResolverConfig {
     fn default() -> Self {
         Self {
-            near_rpc_url: "https://rpc.mainnet.near.org".to_owned(),
-            near_chain_id: "mainnet".to_owned(),
-            http_max_len: 10 * 1024 * 1024,
+            near_rpc_url: NEAR_RPC_URL.to_string(),
+            near_chain_id: NEAR_CHAIN_ID.to_string(),
+            http_max_len: MAX_WASM_SIZE_10MB,
         }
     }
 }
