@@ -53,6 +53,7 @@ members = [
   "crates/testing/sandbox",
 
   "crates/outlayer/bin",
+  "crates/outlayer/proto",
   "crates/outlayer/executor",
   "crates/outlayer/host",
 
@@ -127,6 +128,7 @@ defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
 defuse-outlayer-bin.path = "crates/outlayer/bin"
+defuse-outlayer-proto.path = "crates/outlayer/proto"
 defuse-outlayer-executor.path = "crates/outlayer/executor"
 defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-kdf-app = { path = "crates/outlayer/kdf-app", default-features = false }
@@ -212,6 +214,11 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 url = "2"
 zeroize = { version = "1.8", features = ["derive"] }
+
+tonic        = "0.14"
+tonic-prost  = "0.14"
+tonic-health = "0.14"
+prost        = "0.14"
 
 wasmtime = { version = "=36.0.10", default-features = false, features = ["std"] }
 wasmtime-wasi = "=36.0.10"

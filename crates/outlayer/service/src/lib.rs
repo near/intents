@@ -2,6 +2,10 @@ mod builder;
 mod cache;
 mod code;
 mod config;
+#[cfg(feature = "proto")]
+mod proto_impls;
+#[cfg(feature = "tonic")]
+mod tonic_impl;
 mod resolver;
 
 pub use self::builder::OutlayerBuilder;

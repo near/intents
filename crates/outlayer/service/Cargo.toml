@@ -29,12 +29,25 @@ tokio-util = { workspace = true, features = ["io"] }
 url.workspace = true
 
 cfg_eval = { workspace = true, optional = true }
+defuse-outlayer-proto = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true, features = ["hex"] }
+tonic       = { workspace = true, optional = true }
+tonic-prost = { workspace = true, optional = true }
 
 [features]
 default = ["serde"]
 
+proto = [
+  "dep:defuse-outlayer-proto",
+  "defuse-outlayer-executor/proto",
+  "defuse-outlayer-primitives/proto",
+]
+tonic = [
+  "proto",
+  "dep:tonic",
+  "dep:tonic-prost",
+]
 serde = [
   "defuse-outlayer-executor/serde",
   "defuse-outlayer-primitives/serde",

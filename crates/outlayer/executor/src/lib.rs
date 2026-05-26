@@ -1,6 +1,8 @@
 mod compiler;
 mod config;
 mod error;
+#[cfg(feature = "proto")]
+mod proto_impls;
 
 pub use self::{compiler::*, config::*, error::*};
 

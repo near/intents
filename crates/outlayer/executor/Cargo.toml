@@ -16,6 +16,7 @@ bytes.workspace = true
 thiserror.workspace = true
 
 cfg_eval = { workspace = true, optional = true }
+defuse-outlayer-proto = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 serde_with = { workspace = true, features = ["base64"], optional = true }
 
@@ -25,4 +26,5 @@ serde_json.workspace = true
 [features]
 default = ["serde"]
 
+proto = ["dep:defuse-outlayer-proto", "defuse-outlayer-vm-runner/proto"]
 serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with"]

@@ -3,6 +3,8 @@ use std::sync::Arc;
 use defuse_outlayer_host::crypto::Signer;
 use defuse_outlayer_service::{Outlayer, OutlayerConfig};
 use defuse_outlayer_signer::InMemorySigner;
+use tonic::transport::Server;
+use tonic_health::ServingStatus;
 
 use anyhow::{Context as _, Result};
 use config::{Config, Environment};
@@ -20,6 +22,12 @@ struct AppConfig {
     outlayer: OutlayerConfig,
     #[serde_as(as = "Option<Hex>")]
     signer_seed: Option<Vec<u8>>,
+    #[serde(default = "default_addr")]
+    addr: String,
+}
+
+fn default_addr() -> String {
+    "0.0.0.0:50051".to_owned()
 }
 
 //TODO: probably to be removed, but lets keep it until configs
@@ -71,10 +79,24 @@ async fn main() -> Result<()> {
     };
 
     let signer: Arc<dyn Signer> = Arc::new(signer);
-    let _ = Outlayer::builder()
+
+    let grpc_service = Outlayer::builder()
         .with_config(config.outlayer)
-        .build(signer)
+        .build_service(signer)
         .context("outlayer")?;
 
-    Ok(())
+    let (health_reporter, health_service) = tonic_health::server::health_reporter();
+    health_reporter
+        .set_service_status("", ServingStatus::Serving)
+        .await;
+
+    let addr = config.addr.parse().context("invalid listen address")?;
+    tracing::info!(%addr, "listening");
+
+    Server::builder()
+        .add_service(health_service)
+        .add_service(grpc_service)
+        .serve(addr)
+        .await
+        .context("server error")
 }
