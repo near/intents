@@ -14,6 +14,7 @@ use crate::derive_from_path;
 
 pub type TweakSchema<C> = Derive<ToScalar<C>, Digest<Sha3_256>>;
 
+/// Prepare [`Schema`](defuse_kdf::Schema) for MPC tweak derivation.
 pub fn tweak<C>(predecessor_id: impl AsRef<AccountIdRef>) -> TweakSchema<C>
 where
     C: NearMpcCurve,

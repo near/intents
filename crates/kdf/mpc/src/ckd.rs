@@ -6,6 +6,19 @@ use crate::derive_from_path;
 
 pub type CkdSchema = Digest<Sha3_256>;
 
+/// Prepare [`Schema`](defuse_kdf::Schema) for MPC CKD AppId derivation.
+///
+/// ```rust
+/// # use defuse_kdf_mpc::{ckd, kdf::Schema};
+/// # use hex_literal::hex;
+/// # use near_account_id::AccountIdRef;
+/// let predecessor_id = AccountIdRef::new_or_panic("predecessor.near");
+///
+/// assert_eq!(
+///     ckd(predecessor_id).derive_path("mykey"),
+///     hex!("7bd78cf4f92b146e3781b3ef3c37f00352e0127d643136291d9992d052524afe"),
+/// );
+/// ```
 pub fn ckd(predecessor_id: impl AsRef<AccountIdRef>) -> CkdSchema {
     // See <https://github.com/near/mpc/blob/f07b9145b17e2372be768aa67a2106be9989a7d7/crates/near-mpc-crypto-types/src/kdf.rs#L15-L23>
     const APP_ID_DERIVATION_PREFIX: &str = "near-mpc v0.1.0 app_id derivation:";

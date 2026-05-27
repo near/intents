@@ -8,17 +8,16 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-# TODO: zeroize
 defuse-kdf-mpc.workspace = true
 defuse-rand-compat = { workspace = true, features = ["rand_core_0_6"] }
 
-# TODO: zeroize
+# TODO: activate "zeroize" feature once this PR is released:
+# https://github.com/filecoin-project/blstrs/pull/66
 blstrs.workspace = true
 near-account-id.workspace = true
 pairing.workspace = true
-# rand = { workspace = true, features = ["sys_rng"] }
 rand_core.workspace = true
-zeroize = { workspace = true, features = ["derive"] }
+# zeroize = { workspace = true, features = ["derive"] }
 
 [dev-dependencies]
 hex-literal.workspace = true
