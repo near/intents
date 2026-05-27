@@ -6,15 +6,14 @@ use defuse_outlayer_signer::InMemorySigner;
 
 use anyhow::{Context as _, Result};
 use config::{Config, Environment};
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde::Deserialize;
 use serde_with::hex::Hex;
 use zeroize::Zeroizing;
 
 const PREFIX: &str = "WORKER";
 
 #[serde_with::serde_as]
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Deserialize, Default)]
 #[serde(default)]
 struct AppConfig {
     #[serde(rename = "service")]
@@ -35,33 +34,10 @@ impl AppConfig {
             .and_then(config::Config::try_deserialize)
             .context("config")
     }
-
-    //TODO: probably to be removed, but lets keep it until configs
-    //are more stable
-    fn print_defaults() {
-        fn print_value(prefix: &str, value: &Value) {
-            match value {
-                Value::Object(map) => {
-                    for (key, val) in map {
-                        print_value(&format!("{prefix}__{}", key.to_uppercase()), val);
-                    }
-                }
-                Value::Null => println!("# {prefix}="),
-                other => println!("{prefix}={other}"),
-            }
-        }
-        let defaults = serde_json::to_value(Self::default()).unwrap();
-        print_value(PREFIX, &defaults);
-    }
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    if std::env::args().any(|a| a == "--print-env") {
-        AppConfig::print_defaults();
-        return Ok(());
-    }
-
     dotenvy::dotenv().ok();
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_env("RUST_LOG"))

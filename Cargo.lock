@@ -1771,7 +1771,6 @@ dependencies = [
  "defuse-outlayer-signer",
  "dotenvy",
  "serde",
- "serde_json",
  "serde_with",
  "tokio",
  "tracing",
