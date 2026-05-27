@@ -9,6 +9,7 @@ use config::{Config, Environment};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::hex::Hex;
+use zeroize::Zeroizing;
 
 const PREFIX: &str = "WORKER";
 
@@ -19,7 +20,7 @@ struct AppConfig {
     #[serde(rename = "service")]
     outlayer: OutlayerConfig,
     #[serde_as(as = "Option<Hex>")]
-    signer_seed: Option<Vec<u8>>,
+    signer_seed: Option<Zeroizing<Vec<u8>>>,
 }
 
 //TODO: probably to be removed, but lets keep it until configs
@@ -60,10 +61,12 @@ async fn main() -> Result<()> {
         .and_then(config::Config::try_deserialize)
         .context("config")?;
 
+    let AppConfig { outlayer, signer_seed } = config;
+
     // TODO: derive seed from CKD
     #[allow(clippy::option_if_let_else)]
-    let signer = match config.signer_seed {
-        Some(ref seed) => {
+    let signer = match signer_seed.as_deref() {
+        Some(seed) => {
             tracing::warn!("using custom signer seed — not intended for production use");
             InMemorySigner::from_seed(seed)
         }
@@ -72,7 +75,7 @@ async fn main() -> Result<()> {
 
     let signer: Arc<dyn Signer> = Arc::new(signer);
     let _ = OutlayerBuilder::default()
-        .with_config(config.outlayer)
+        .with_config(outlayer)
         .build(signer)
         .context("outlayer")?;
 
