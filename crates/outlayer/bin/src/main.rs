@@ -1,5 +1,5 @@
 use defuse_outlayer_host::crypto::Signer;
-use defuse_outlayer_proto::outlayer_service_server::OutlayerServiceServer;
+use defuse_outlayer_proto::{outlayer_service_server::OutlayerServiceServer, FILE_DESCRIPTOR_SET};
 use defuse_outlayer_service::{OutlayerBuilder, OutlayerConfig, OutlayerGrpc};
 use defuse_outlayer_signer::InMemorySigner;
 
@@ -148,12 +148,18 @@ async fn main() -> Result<()> {
         .set_service_status("", ServingStatus::Serving)
         .await;
 
+    let reflection_service = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
+        .register_encoded_file_descriptor_set(tonic_health::pb::FILE_DESCRIPTOR_SET)
+        .build_v1()?;
+
     tracing::info!(addr = %config.addr, "listening");
 
     Server::builder()
         .concurrency_limit_per_connection(config.concurrency_limit_per_connection)
         .add_service(health_service)
         .add_service(grpc_service)
+        .add_service(reflection_service)
         .serve(config.addr)
         .await
         .context("server error")
