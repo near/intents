@@ -1,9 +1,14 @@
-use std::sync::Arc;
+use std::{
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
+    sync::Arc,
+    time::Duration,
+};
 
 use defuse_outlayer_host::crypto::Signer;
-use defuse_outlayer_service::{OutlayerBuilder, OutlayerConfig};
+use defuse_outlayer_proto::outlayer_service_server::OutlayerServiceServer;
+use defuse_outlayer_service::{OutlayerBuilder, OutlayerConfig, OutlayerGrpc};
 use defuse_outlayer_signer::InMemorySigner;
-
+use tower::ServiceBuilder;
 
 use anyhow::{Context as _, Result};
 use config::{Config, Environment};
@@ -15,20 +20,42 @@ use tonic_health::ServingStatus;
 
 const PREFIX: &str = "WORKER";
 
+const DEFAULT_ADDR: SocketAddr =
+    SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 50051));
+const DEFAULT_CONCURRENCY_LIMIT: usize = 2;
+const DEFAULT_CONNECTIONS_LIMIT: usize = 500;
+const DEFAULT_CONCURRENCY_LIMIT_PER_CONNECTION: usize = 1;
+const DEFAULT_EXECUTION_TIMEOUT: Duration = Duration::from_secs(30);
+
 #[serde_with::serde_as]
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Deserialize, Serialize)]
 #[serde(default)]
 struct AppConfig {
     #[serde(rename = "service")]
     outlayer: OutlayerConfig,
     #[serde_as(as = "Option<Hex>")]
     signer_seed: Option<Vec<u8>>,
-    #[serde(default = "default_addr")]
-    addr: String,
+    #[serde_as(as = "serde_with::DisplayFromStr")]
+    addr: SocketAddr,
+    concurrency_limit: usize,
+    connections_limit: usize,
+    concurrency_limit_per_connection: usize,
+    #[serde_as(as = "serde_with::DurationSeconds<u64>")]
+    execution_timeout_s: Duration,
 }
 
-fn default_addr() -> String {
-    "0.0.0.0:50051".to_owned()
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            outlayer: OutlayerConfig::default(),
+            signer_seed: None,
+            addr: DEFAULT_ADDR,
+            concurrency_limit: DEFAULT_CONCURRENCY_LIMIT,
+            connections_limit: DEFAULT_CONNECTIONS_LIMIT,
+            concurrency_limit_per_connection: DEFAULT_CONCURRENCY_LIMIT_PER_CONNECTION,
+            execution_timeout_s: DEFAULT_EXECUTION_TIMEOUT,
+        }
+    }
 }
 
 //TODO: probably to be removed, but lets keep it until configs
@@ -81,23 +108,47 @@ async fn main() -> Result<()> {
 
     let signer: Arc<dyn Signer> = Arc::new(signer);
 
-    let grpc_service = OutlayerBuilder::default()
+    let outlayer = OutlayerBuilder::default()
         .with_config(config.outlayer)
-        .build_service(signer)
+        .build(signer)
         .context("outlayer")?;
 
+    let grpc_service = OutlayerServiceServer::new(OutlayerGrpc::new(
+        ServiceBuilder::new()
+            // When the queue is full, immediately return RESOURCE_EXHAUSTED so the load
+            // balancer can route the request elsewhere rather than waiting here.
+            // RESOURCE_EXHAUSTED is the standard gRPC backpressure code respected by
+            // gRPC-aware load balancers (e.g. Envoy, AWS ALB).
+            .load_shed()
+            // Bounded async queue. Decouples acceptance from execution. When full, the
+            // load_shed layer above fires.
+            .buffer(config.connections_limit)
+            // Limit concurrent WASM executions. WASM runs synchronously on blocking
+            // threads; this prevents saturating the thread pool with CPU-bound work.
+            .concurrency_limit(config.concurrency_limit)
+            // Deadline for a single execution. Runs inside the buffer's background
+            // worker, so it actually cancels async work (e.g. slow WASM downloads)
+            // on expiry. 
+            // TODO: spawn_blocking phases (compile, WASM run) cannot be
+            // interrupted consider using epoch interruptions on wasm execution
+            .timeout(config.execution_timeout_s)
+            .service(outlayer),
+    ));
+
+    // Implements the standard gRPC health checking protocol (grpc.health.v1).
+    // Kubernetes uses this natively for liveness/readiness probes.
     let (health_reporter, health_service) = tonic_health::server::health_reporter();
     health_reporter
         .set_service_status("", ServingStatus::Serving)
         .await;
 
-    let addr = config.addr.parse().context("invalid listen address")?;
-    tracing::info!(%addr, "listening");
+    tracing::info!(addr = %config.addr, "listening");
 
     Server::builder()
+        .concurrency_limit_per_connection(config.concurrency_limit_per_connection)
         .add_service(health_service)
         .add_service(grpc_service)
-        .serve(addr)
+        .serve(config.addr)
         .await
         .context("server error")
 }
