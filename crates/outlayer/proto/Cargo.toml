@@ -7,9 +7,13 @@ repository.workspace = true
 publish = false
 
 [dependencies]
-tonic       = { workspace = true }
+prost = { workspace = true }
+tonic = { workspace = true }
 tonic-prost = { workspace = true }
-prost       = { workspace = true }
+
 
 [build-dependencies]
 tonic-prost-build = "0.14"
+
+[package.metadata.cargo-machete]
+ignored = ["prost", "tonic-prost"]

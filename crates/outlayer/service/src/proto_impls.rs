@@ -8,11 +8,9 @@ impl TryFrom<proto::AppCodeUrl> for AppCodeUrl {
 
     fn try_from(p: proto::AppCodeUrl) -> Result<Self, Self::Error> {
         let code_url = p.code_url.parse::<Url>()?;
-        let code_hash: [u8; 32] = p
-            .code_hash
-            .as_slice()
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("code_hash must be 32 bytes, got {}", p.code_hash.len()))?;
+        let code_hash: [u8; 32] = p.code_hash.as_slice().try_into().map_err(|_| {
+            anyhow::anyhow!("code_hash must be 32 bytes, got {}", p.code_hash.len())
+        })?;
         Ok(Self {
             code_url,
             code_hash,

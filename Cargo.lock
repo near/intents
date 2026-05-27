@@ -1777,7 +1777,6 @@ dependencies = [
  "tokio",
  "tonic 0.14.5",
  "tonic-health",
- "tonic-prost",
  "tower",
  "tracing",
  "tracing-subscriber",
@@ -1897,7 +1896,6 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tonic 0.14.5",
- "tonic-prost",
  "tower",
  "url",
 ]

@@ -128,11 +128,11 @@ defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
 defuse-outlayer-bin.path = "crates/outlayer/bin"
-defuse-outlayer-proto.path = "crates/outlayer/proto"
 defuse-outlayer-executor.path = "crates/outlayer/executor"
 defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-kdf-app = { path = "crates/outlayer/kdf-app", default-features = false }
 defuse-outlayer-primitives.path = "crates/outlayer/primitives"
+defuse-outlayer-proto.path = "crates/outlayer/proto"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
 defuse-outlayer-service.path = "crates/outlayer/service"
 defuse-outlayer-signer.path = "crates/outlayer/signer"
@@ -193,6 +193,7 @@ moka = "0.12"
 num-traits = "0.2.19"
 p256 = { version = "0.13.2", default-features = false }
 proptest = "1.5"
+prost = "0.14"
 rand = "0.10"
 rand_core = "0.10"
 reqwest = "0.13.3"
@@ -209,16 +210,14 @@ thiserror = "2"
 tlb-ton = { version = "0.8", default-features = false }
 tokio = { version = "1.45", default-features = false }
 tokio-util = { version = "0.7", default-features = false }
+tonic = "0.14"
+tonic-health = "0.14"
+tonic-prost = "0.14"
 tower = "0.5.3"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 url = "2"
 zeroize = { version = "1.8", features = ["derive"] }
-
-tonic        = "0.14"
-tonic-prost  = "0.14"
-tonic-health = "0.14"
-prost        = "0.14"
 
 wasmtime = { version = "=36.0.10", default-features = false, features = ["std"] }
 wasmtime-wasi = "=36.0.10"

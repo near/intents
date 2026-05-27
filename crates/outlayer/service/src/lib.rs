@@ -4,11 +4,11 @@ mod code;
 mod config;
 #[cfg(feature = "proto")]
 mod proto_impls;
+mod resolver;
 #[cfg(feature = "tonic")]
 mod tonic_impl;
 #[cfg(feature = "tower")]
 mod tower_impl;
-mod resolver;
 
 pub use self::builder::OutlayerBuilder;
 pub use self::config::OutlayerConfig;
@@ -16,10 +16,12 @@ pub use self::resolver::{
     HttpResolver, NearResolver, Resolver, ResolverBuilder, ResolverConfig, UrlResolver,
 };
 pub use self::{cache::*, code::*};
+
 #[cfg(feature = "tonic")]
-pub use tonic_impl::OutlayerGrpc;
+pub use self::tonic_impl::*;
+
 #[cfg(feature = "tower")]
-pub use tower_impl::ExecuteRequest;
+pub use self::tower_impl::*;
 
 use std::{convert, sync::Arc};
 

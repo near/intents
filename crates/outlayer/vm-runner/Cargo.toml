@@ -11,15 +11,15 @@ workspace = true
 [dependencies]
 defuse-outlayer-host.workspace = true
 
+defuse-outlayer-proto = { workspace = true, optional = true }
+
 anyhow.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
-
 wasmtime = { workspace = true, features = ["cranelift"] } # TODO: no JIT?
 wasmtime-wasi.workspace = true
 
 cfg_eval = { workspace = true, optional = true }
-defuse-outlayer-proto = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true }
 

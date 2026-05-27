@@ -11,9 +11,7 @@ impl TryFrom<proto::AppId> for AppId<'static> {
             .variant
             .ok_or_else(|| anyhow::anyhow!("missing AppId variant"))?
         {
-            proto::app_id::Variant::Near(s) => {
-                Ok(Self::from(s.parse::<AccountId>()?))
-            }
+            proto::app_id::Variant::Near(s) => Ok(Self::from(s.parse::<AccountId>()?)),
         }
     }
 }
