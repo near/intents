@@ -10,6 +10,7 @@ repository.workspace = true
 [dependencies]
 # TODO: zeroize
 defuse-kdf-mpc.workspace = true
+defuse-rand-compat = { workspace = true, features = ["rand_core_0_6"] }
 
 # TODO: zeroize
 blstrs.workspace = true

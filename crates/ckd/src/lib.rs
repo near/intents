@@ -2,7 +2,11 @@ use blstrs::{Bls12, G1Affine, G1Projective, G2Affine, G2Prepared, G2Projective, 
 use defuse_kdf_mpc::kdf::Schema;
 use pairing::{
     MillerLoopResult, MultiMillerLoop,
-    group::{Curve, Group, ff::Field, prime::PrimeCurveAffine},
+    group::{
+        Curve, Group,
+        ff::{Field, PrimeField},
+        prime::PrimeCurveAffine,
+    },
 };
 
 use near_account_id::AccountIdRef;
@@ -21,11 +25,10 @@ pub struct Ckd {
 // // let app_id = defuse_kdf_mpc::ckd(predecessor_id).derive_path(path);
 
 impl Ckd {
-    // // TODO: implement Distribution?
-    // pub fn random(rng: impl CryptoRng) -> (Self, G1Projective, G2Projective) {
-    //     // TODO: legacy adaptor
-    //     Self::from_scalar(Scalar::random(todo!()))
-    // }
+    // TODO: implement Distribution?
+    pub fn random(rng: impl CryptoRng) -> (Self, G1Projective, G2Projective) {
+        Self::from_scalar(Scalar::random(defuse_rand_compat::V0_10(rng)))
+    }
 
     fn from_scalar(x: Scalar) -> (Self, G1Projective, G2Projective) {
         let pk1 = G1Projective::generator() * x;
@@ -126,10 +129,10 @@ impl CkdSession {
     ) -> Self {
         let app_id = defuse_kdf_mpc::ckd(predecessor_id).derive_path(path.as_ref());
 
-        Self::new_with_app_id(mpc_public_key, app_id, app_pk2)
+        Self::from_app_id(mpc_public_key, app_id, app_pk2)
     }
 
-    fn new_with_app_id(mpc_public_key: G2Affine, app_id: [u8; 32], app_pk2: G2Prepared) -> Self {
+    fn from_app_id(mpc_public_key: G2Affine, app_id: [u8; 32], app_pk2: G2Prepared) -> Self {
         let hash_point = G1Projective::hash_to_curve(
             &[mpc_public_key.to_compressed().as_slice(), app_id.as_slice()].concat(),
             NEAR_CKD_DOMAIN,
@@ -198,6 +201,7 @@ mod tests {
 
     #[rstest]
     // TODO: failing cases
+    // https://nearblocks.io/txns/DmRZQx9Z3BT8LRV4QPtEN63DDJ7zFwZEZdPQhD3oufkT
     #[case(
         hex!("bcdfe70513e78a088045d0a308d5c4d5dc82dd2a8e6eb139f1bd31f84c4f6462"),
         "iamgrut.near",

@@ -1468,6 +1468,7 @@ version = "0.1.0"
 dependencies = [
  "blstrs",
  "defuse-kdf-mpc",
+ "defuse-rand-compat",
  "hex-literal",
  "near-account-id",
  "pairing",
@@ -1959,6 +1960,15 @@ dependencies = [
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
+]
+
+[[package]]
+name = "defuse-rand-compat"
+version = "0.1.0"
+dependencies = [
+ "rand_core 0.10.1",
+ "rand_core 0.6.4",
+ "rand_core 0.9.5",
 ]
 
 [[package]]

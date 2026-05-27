@@ -18,12 +18,13 @@ members = [
   "crates/crypto",
   "crates/ckd",
   "crates/io-utils",
-  "crates/map-utils",
-  "crates/num-utils",
-  "crates/serde-utils",
   "crates/kdf",
   "crates/kdf/crypto",
   "crates/kdf/mpc",
+  "crates/map-utils",
+  "crates/num-utils",
+  "crates/rand-compat",
+  "crates/serde-utils",
 
   "crates/near/admin-utils",
   "crates/near/auth-call",
@@ -97,6 +98,7 @@ defuse-kdf-crypto = { path = "crates/kdf/crypto", default-features = false }
 defuse-kdf-mpc = { path = "crates/kdf/mpc", default-features = false }
 defuse-map-utils.path = "crates/map-utils"
 defuse-num-utils.path = "crates/num-utils"
+defuse-rand-compat.path = "crates/rand-compat"
 defuse-serde-utils.path = "crates/serde-utils"
 
 defuse-admin-utils.path = "crates/near/admin-utils"
@@ -178,7 +180,6 @@ digest-io = "0.1.0"
 ed25519-dalek = { version = "2.1", default-features = false }
 futures = "0.3"
 generic-array = "1"
-# group = "0.13"                                                # TODO: features?
 hex = "0.4"
 hex-literal = "1.0"
 hkdf = "0.13"
@@ -188,7 +189,7 @@ k256 = { version = "0.13.4", default-features = false }
 moka = "0.12"
 num-traits = "0.2.19"
 p256 = { version = "0.13.2", default-features = false }
-pairing = "0.23"                                           # TODO: features
+pairing = "0.23"                                              # TODO: features
 proptest = "1.5"
 rand = "0.10"
 rand_core = "0.10"
