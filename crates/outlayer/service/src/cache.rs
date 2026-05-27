@@ -18,10 +18,12 @@ pub struct CacheConfig {
     pub time_to_idle: Option<Duration>,
 }
 
+const DEFAULT_MAX_CAPACITY_BYTES: u64 = 100 * 1024 * 1024;
+
 impl Default for CacheConfig {
     fn default() -> Self {
         Self {
-            max_capacity_bytes: 100 * 1024 * 1024,
+            max_capacity_bytes: DEFAULT_MAX_CAPACITY_BYTES,
             time_to_idle: None,
         }
     }
