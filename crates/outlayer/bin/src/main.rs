@@ -23,26 +23,42 @@ struct AppConfig {
     signer_seed: Option<Zeroizing<Vec<u8>>>,
 }
 
-//TODO: probably to be removed, but lets keep it until configs
-//are more stable
-fn print_value(prefix: &str, value: &Value) {
-    match value {
-        Value::Object(map) => {
-            for (key, val) in map {
-                print_value(&format!("{prefix}__{}", key.to_uppercase()), val);
+impl AppConfig {
+    fn load() -> Result<Self> {
+        Config::builder()
+            .add_source(
+                Environment::with_prefix(PREFIX)
+                    .prefix_separator("__")
+                    .separator("__"),
+            )
+            .build()
+            .and_then(config::Config::try_deserialize)
+            .context("config")
+    }
+
+    //TODO: probably to be removed, but lets keep it until configs
+    //are more stable
+    fn print_defaults() {
+        fn print_value(prefix: &str, value: &Value) {
+            match value {
+                Value::Object(map) => {
+                    for (key, val) in map {
+                        print_value(&format!("{prefix}__{}", key.to_uppercase()), val);
+                    }
+                }
+                Value::Null => println!("# {prefix}="),
+                other => println!("{prefix}={other}"),
             }
         }
-        Value::Null => println!("# {prefix}="),
-        other => println!("{prefix}={other}"),
+        let defaults = serde_json::to_value(Self::default()).unwrap();
+        print_value(PREFIX, &defaults);
     }
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    //TODO: is that even needed?
     if std::env::args().any(|a| a == "--print-env") {
-        let defaults = serde_json::to_value(AppConfig::default()).unwrap();
-        print_value(PREFIX, &defaults);
+        AppConfig::print_defaults();
         return Ok(());
     }
 
@@ -51,15 +67,7 @@ async fn main() -> Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_env("RUST_LOG"))
         .init();
 
-    let config: AppConfig = Config::builder()
-        .add_source(
-            Environment::with_prefix(PREFIX)
-                .prefix_separator("__")
-                .separator("__"),
-        )
-        .build()
-        .and_then(config::Config::try_deserialize)
-        .context("config")?;
+    let config = AppConfig::load()?;
 
     let AppConfig {
         outlayer,
