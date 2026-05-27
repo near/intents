@@ -1,17 +1,19 @@
 use crate::resolver::{HttpResolver, NearResolver, Resolver, UrlResolver};
 
 const NEAR_RPC_URL: &str = "https://rpc.mainnet.near.org";
-const NEAR_CHAIN_ID: &str = "mainnet";
 const MAX_WASM_SIZE_10MB: usize = 10 * 1024 * 1024;
 
 #[cfg_attr(
     feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     serde(deny_unknown_fields, default)
 )]
 pub struct ResolverConfig {
     pub near_rpc_url: String,
-    pub near_chain_id: String,
+    #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::DisplayFromStr"))]
+    pub near_chain_id: near_kit::ChainId,
     pub http_max_len: usize,
 }
 
@@ -19,7 +21,7 @@ impl Default for ResolverConfig {
     fn default() -> Self {
         Self {
             near_rpc_url: NEAR_RPC_URL.to_string(),
-            near_chain_id: NEAR_CHAIN_ID.to_string(),
+            near_chain_id: near_kit::ChainId::mainnet(),
             http_max_len: MAX_WASM_SIZE_10MB,
         }
     }
