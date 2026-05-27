@@ -1,28 +1,25 @@
-use std::{
-    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
-    sync::Arc,
-    time::Duration,
-};
-
 use defuse_outlayer_host::crypto::Signer;
 use defuse_outlayer_proto::outlayer_service_server::OutlayerServiceServer;
 use defuse_outlayer_service::{OutlayerBuilder, OutlayerConfig, OutlayerGrpc};
 use defuse_outlayer_signer::InMemorySigner;
-use tower::ServiceBuilder;
 
 use anyhow::{Context as _, Result};
 use config::{Config, Environment};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::hex::Hex;
+use std::{
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
+    sync::Arc,
+    time::Duration,
+};
 use tonic::transport::Server;
 use tonic_health::ServingStatus;
+use tower::ServiceBuilder;
 use zeroize::Zeroizing;
 
 const PREFIX: &str = "WORKER";
-
-const DEFAULT_ADDR: SocketAddr =
-    SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 50051));
+const DEFAULT_ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 50051));
 const DEFAULT_CONCURRENCY_LIMIT: usize = 2;
 const DEFAULT_CONNECTIONS_LIMIT: usize = 500;
 const DEFAULT_CONCURRENCY_LIMIT_PER_CONNECTION: usize = 1;
@@ -129,7 +126,7 @@ async fn main() -> Result<()> {
             .concurrency_limit(config.concurrency_limit)
             // Deadline for a single execution. Runs inside the buffer's background
             // worker, so it actually cancels async work (e.g. slow WASM downloads)
-            // on expiry. 
+            // on expiry.
             // TODO: spawn_blocking phases (compile, WASM run) cannot be
             // interrupted consider using epoch interruptions on wasm execution
             .timeout(config.execution_timeout_s)

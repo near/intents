@@ -38,7 +38,7 @@ where
                 .app
                 .ok_or_else(|| Status::invalid_argument("missing app"))?
                 .try_into()
-                .map_err(|e: String| Status::invalid_argument(e))?,
+                .map_err(|e: anyhow::Error| Status::invalid_argument(e.to_string()))?,
             input: req.input.into(),
             fuel: req.fuel,
         };

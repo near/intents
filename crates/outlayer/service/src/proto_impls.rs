@@ -4,15 +4,15 @@ use url::Url;
 use crate::{AppCodeUrl, Code, CodeRef};
 
 impl TryFrom<proto::AppCodeUrl> for AppCodeUrl {
-    type Error = String;
+    type Error = anyhow::Error;
 
     fn try_from(p: proto::AppCodeUrl) -> Result<Self, Self::Error> {
-        let code_url = p.code_url.parse::<Url>().map_err(|e| e.to_string())?;
+        let code_url = p.code_url.parse::<Url>()?;
         let code_hash: [u8; 32] = p
             .code_hash
             .as_slice()
             .try_into()
-            .map_err(|_| format!("code_hash must be 32 bytes, got {}", p.code_hash.len()))?;
+            .map_err(|_| anyhow::anyhow!("code_hash must be 32 bytes, got {}", p.code_hash.len()))?;
         Ok(Self {
             code_url,
             code_hash,
@@ -21,12 +21,12 @@ impl TryFrom<proto::AppCodeUrl> for AppCodeUrl {
 }
 
 impl TryFrom<proto::CodeRef> for CodeRef<'static> {
-    type Error = String;
+    type Error = anyhow::Error;
 
     fn try_from(p: proto::CodeRef) -> Result<Self, Self::Error> {
         match p
             .variant
-            .ok_or_else(|| "missing CodeRef variant".to_owned())?
+            .ok_or_else(|| anyhow::anyhow!("missing CodeRef variant"))?
         {
             proto::code_ref::Variant::AppId(app_id) => Ok(Self::AppId(app_id.try_into()?)),
             proto::code_ref::Variant::Url(url) => Ok(Self::Url(url.try_into()?)),
@@ -35,12 +35,12 @@ impl TryFrom<proto::CodeRef> for CodeRef<'static> {
 }
 
 impl TryFrom<proto::Code> for Code<'static> {
-    type Error = String;
+    type Error = anyhow::Error;
 
     fn try_from(p: proto::Code) -> Result<Self, Self::Error> {
         match p
             .variant
-            .ok_or_else(|| "missing Code variant".to_owned())?
+            .ok_or_else(|| anyhow::anyhow!("missing Code variant"))?
         {
             proto::code::Variant::CodeRef(code_ref) => Ok(Self::Ref(code_ref.try_into()?)),
             proto::code::Variant::InlineCode(bytes) => Ok(Self::Inline { code: bytes.into() }),

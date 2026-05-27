@@ -3,7 +3,7 @@ use defuse_outlayer_proto as proto;
 use crate::{ExecutionDetails, ExecutionOutcome};
 
 impl TryFrom<proto::ExecutionDetails> for ExecutionDetails {
-    type Error = String;
+    type Error = anyhow::Error;
 
     fn try_from(p: proto::ExecutionDetails) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -13,12 +13,12 @@ impl TryFrom<proto::ExecutionDetails> for ExecutionDetails {
 }
 
 impl TryFrom<proto::ExecutionOutcome> for ExecutionOutcome {
-    type Error = String;
+    type Error = anyhow::Error;
 
     fn try_from(p: proto::ExecutionOutcome) -> Result<Self, Self::Error> {
         let details = p
             .details
-            .ok_or_else(|| "missing ExecutionOutcome.details".to_owned())?
+            .ok_or_else(|| anyhow::anyhow!("missing ExecutionOutcome.details"))?
             .try_into()?;
         Ok(Self {
             details,
