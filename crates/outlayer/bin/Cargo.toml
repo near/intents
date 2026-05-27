@@ -33,3 +33,4 @@ serde_with = { workspace = true, features = ["hex"] }
 tokio = { workspace = true, features = ["full"] }
 tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
+zeroize = { workspace = true }

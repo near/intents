@@ -17,6 +17,7 @@ use serde_json::Value;
 use serde_with::hex::Hex;
 use tonic::transport::Server;
 use tonic_health::ServingStatus;
+use zeroize::Zeroizing;
 
 const PREFIX: &str = "WORKER";
 
@@ -34,7 +35,7 @@ struct AppConfig {
     #[serde(rename = "service")]
     outlayer: OutlayerConfig,
     #[serde_as(as = "Option<Hex>")]
-    signer_seed: Option<Vec<u8>>,
+    signer_seed: Option<Zeroizing<Vec<u8>>>,
     #[serde_as(as = "serde_with::DisplayFromStr")]
     addr: SocketAddr,
     concurrency_limit: usize,
@@ -99,9 +100,9 @@ async fn main() -> Result<()> {
     // TODO: derive seed from CKD
     #[allow(clippy::option_if_let_else)]
     let signer = match config.signer_seed {
-        Some(ref seed) => {
+        Some(seed) => {
             tracing::warn!("using custom signer seed — not intended for production use");
-            InMemorySigner::from_seed(seed)
+            InMemorySigner::from_seed(&seed)
         }
         None => unimplemented!("signer seed must be provided until CKD integration is complete"),
     };

@@ -1,7 +1,7 @@
 use defuse_outlayer_executor::ExecutorConfig;
 
 use crate::{CacheConfig, resolver::ResolverConfig};
-const DEFAULT_FUEL: u64 = 10_000;
+const DEFAULT_FUEL: u64 = 1_000_000_000;
 
 #[cfg_attr(
     feature = "serde",
