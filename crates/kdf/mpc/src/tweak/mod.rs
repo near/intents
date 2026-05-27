@@ -159,6 +159,6 @@ mod tests {
     ) {
         let schema = derive_tweak(AccountIdRef::new_or_panic(predecessor_id));
 
-        assert_eq!(schema.derive_path(path), tweak, "derived tweak has changed")
+        assert_eq!(schema.derive_path(path), tweak, "derived tweak has changed");
     }
 }

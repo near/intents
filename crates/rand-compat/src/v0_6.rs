@@ -85,11 +85,15 @@ const _: () = {
         }
 
         fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Self::Error> {
-            Ok(self.0.fill_bytes(dst))
+            self.0.fill_bytes(dst);
+            Ok(())
         }
     }
 
-    impl<R: rand_core_0_6::RngCore + rand_core_0_6::CryptoRng> crate::rand_core_0_10::TryCryptoRng for V0_6<R> {}
+    impl<R: rand_core_0_6::RngCore + rand_core_0_6::CryptoRng> crate::rand_core_0_10::TryCryptoRng
+        for V0_6<R>
+    {
+    }
 
     impl<R> crate::rand_core_0_10::SeedableRng for V0_6<R>
     where

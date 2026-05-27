@@ -88,7 +88,7 @@ impl CkdPrivateKey {
             return false;
         }
 
-        let hp = hash_point(&mpc_public_key, &app_id);
+        let hp = hash_point(&mpc_public_key, app_id);
         let minus_g2 = -G2Affine::generator();
 
         Bls12::multi_miller_loop(&[

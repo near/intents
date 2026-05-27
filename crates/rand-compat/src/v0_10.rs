@@ -45,7 +45,8 @@ const _: () = {
         }
 
         fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), crate::rand_core_0_6::Error> {
-            Ok(self.fill_bytes(dest))
+            self.fill_bytes(dest);
+            Ok(())
         }
     }
 

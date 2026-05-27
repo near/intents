@@ -6,7 +6,7 @@ use crate::derive_from_path;
 
 pub type CkdSchema = Digest<Sha3_256>;
 
-/// Prepare [`Schema`](defuse_kdf::Schema) for MPC CKD AppId derivation.
+/// Prepare [`Schema`](defuse_kdf::Schema) for MPC CKD `AppId` derivation.
 ///
 /// ```rust
 /// # use defuse_kdf_mpc::{ckd, kdf::Schema};
