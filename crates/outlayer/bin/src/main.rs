@@ -1,5 +1,5 @@
 use defuse_outlayer_host::crypto::Signer;
-use defuse_outlayer_proto::{outlayer_service_server::OutlayerServiceServer, FILE_DESCRIPTOR_SET};
+use defuse_outlayer_proto::{FILE_DESCRIPTOR_SET, outlayer_service_server::OutlayerServiceServer};
 use defuse_outlayer_service::{OutlayerBuilder, OutlayerConfig, OutlayerGrpc};
 use defuse_outlayer_signer::InMemorySigner;
 
