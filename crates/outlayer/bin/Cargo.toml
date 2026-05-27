@@ -19,7 +19,6 @@ defuse-outlayer-service = { workspace = true }
 defuse-outlayer-signer = { workspace = true, features = ["ed25519", "secp256k1"] }
 
 anyhow.workspace = true
-zeroize = { workspace = true }
 config.workspace = true
 dotenvy.workspace = true
 serde = { workspace = true, features = ["derive"] }
@@ -28,3 +27,4 @@ serde_with = { workspace = true, features = ["hex"] }
 tokio = { workspace = true, features = ["full"] }
 tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
+zeroize = { workspace = true }

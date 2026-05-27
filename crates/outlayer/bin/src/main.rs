@@ -61,7 +61,10 @@ async fn main() -> Result<()> {
         .and_then(config::Config::try_deserialize)
         .context("config")?;
 
-    let AppConfig { outlayer, signer_seed } = config;
+    let AppConfig {
+        outlayer,
+        signer_seed,
+    } = config;
 
     // TODO: derive seed from CKD
     #[allow(clippy::option_if_let_else)]
