@@ -10,7 +10,7 @@ use moka::future::Cache;
     serde(deny_unknown_fields, default)
 )]
 pub struct CacheConfig {
-    pub max_capacity: u64,
+    pub max_capacity_bytes: u64,
     #[cfg_attr(
         feature = "serde",
         serde_as(as = "Option<::serde_with::DurationSeconds<u64>>")
@@ -21,7 +21,7 @@ pub struct CacheConfig {
 impl Default for CacheConfig {
     fn default() -> Self {
         Self {
-            max_capacity: 100 * 1024 * 1024,
+            max_capacity_bytes: 100 * 1024 * 1024,
             time_to_idle: None,
         }
     }
@@ -39,7 +39,7 @@ impl CacheBuilder {
 
     pub fn build(self) -> Cache<[u8; 32], Component> {
         let mut builder = Cache::<[u8; 32], Component>::builder()
-            .max_capacity(self.0.max_capacity)
+            .max_capacity(self.0.max_capacity_bytes)
             .weigher(|_hash, comp: &Component| {
                 // Approximates the in-memory size of a compiled component using its
                 // mmap'd image range. Per-Component heap metadata (type tables, etc.)
