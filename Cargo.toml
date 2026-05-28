@@ -16,13 +16,15 @@ members = [
   "crates/bitmap",
   "crates/borsh-utils",
   "crates/crypto",
+  "crates/ckd",
   "crates/io-utils",
-  "crates/map-utils",
-  "crates/num-utils",
-  "crates/serde-utils",
   "crates/kdf",
   "crates/kdf/crypto",
   "crates/kdf/mpc",
+  "crates/map-utils",
+  "crates/num-utils",
+  "crates/rand-compat",
+  "crates/serde-utils",
 
   "crates/near/admin-utils",
   "crates/near/auth-call",
@@ -88,6 +90,7 @@ defuse-wallet.path = "contracts/wallet"
 
 defuse-bitmap.path = "crates/bitmap"
 defuse-borsh-utils.path = "crates/borsh-utils"
+defuse-ckd = { path = "crates/ckd", default-features = false }
 defuse-crypto = { path = "crates/crypto", default-features = false }
 defuse-io-utils.path = "crates/io-utils"
 defuse-kdf = { path = "crates/kdf", default-features = false }
@@ -95,6 +98,7 @@ defuse-kdf-crypto = { path = "crates/kdf/crypto", default-features = false }
 defuse-kdf-mpc = { path = "crates/kdf/mpc", default-features = false }
 defuse-map-utils.path = "crates/map-utils"
 defuse-num-utils.path = "crates/num-utils"
+defuse-rand-compat.path = "crates/rand-compat"
 defuse-serde-utils.path = "crates/serde-utils"
 
 defuse-admin-utils.path = "crates/near/admin-utils"
@@ -160,6 +164,7 @@ array-util = "1"
 async-trait = "0.1.89"
 base64 = "0.22.1"
 bitflags = "2.9.1"
+blstrs = "0.7.1"
 bnum = { version = "0.13", features = ["borsh"] }
 borsh = "1.6.1"
 bs58 = "0.5.1"
@@ -184,6 +189,7 @@ k256 = { version = "0.13.4", default-features = false }
 moka = "0.12"
 num-traits = "0.2.19"
 p256 = { version = "0.13.2", default-features = false }
+pairing = "0.23"                                              # TODO: features
 proptest = "1.5"
 rand = "0.10"
 rand_core = "0.10"
@@ -207,8 +213,8 @@ tracing-subscriber = "0.3"
 url = "2"
 zeroize = { version = "1.8", features = ["derive"] }
 
-wasmtime = { version = "=36.0.8", default-features = false, features = ["std"] }
-wasmtime-wasi = "=36.0.8"
+wasmtime = { version = "=36.0.10", default-features = false, features = ["std"] }
+wasmtime-wasi = "=36.0.10"
 wit-bindgen = "0.49.0"
 
 [workspace.lints.clippy]
