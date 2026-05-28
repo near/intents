@@ -211,7 +211,7 @@ pub struct CkdResponse {
 impl CkdResponse {
     /// Check if points in the response are valid.
     ///
-    /// See [AppPublicKeyPV::verify] for full public verification.
+    /// See [`AppPublicKeyPV::verify`] for full public verification.
     #[inline]
     pub fn is_valid(&self) -> bool {
         // See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/contract/src/primitives/ckd.rs#L69-L71>
