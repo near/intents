@@ -21,7 +21,7 @@ pub struct AppPrivateKey {
 }
 
 impl AppPrivateKey {
-    /// Generate ephemeral private key from given cryptographically-secure PRGN
+    /// Generate ephemeral private key from given cryptographically-secure PRNG
     #[inline]
     pub fn ephemeral(rng: impl CryptoRng) -> Self {
         Self::from_scalar(Scalar::random(rng.v0_10()))
