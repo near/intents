@@ -14,7 +14,7 @@ impl-tools.workspace = true
 borsh = { workspace = true, features = ["derive"], optional = true }
 cfg_eval = { workspace = true, optional = true }
 defuse-serde-utils = { workspace = true, features = ["base64"], optional = true }
-near-api = { workspace = true, optional = true }
+near-kit = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true, features = ["derive"] }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
@@ -40,7 +40,8 @@ serde = [
   "dep:serde",
   "dep:serde_with",
 ]
-near-api = ["dep:near-api"]
+# TODO: remove
+near-kit = ["dep:near-kit"]
 sha2 = ["defuse-digest/sha2"]
 
 [dev-dependencies]

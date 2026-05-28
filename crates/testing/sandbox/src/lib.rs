@@ -22,9 +22,8 @@ pub use tx::{FnCallBuilder, TxBuilder};
 
 pub use anyhow;
 use impl_tools::autoimpl;
-pub use near_api as api;
-// NOTE: that is not ok - errors should be separated to another mod
-pub use near_openapi_types as openapi_types;
+pub use near_kit as kit;
+
 pub use near_sandbox;
 
 use near_api::{NetworkConfig, RPCEndpoint, Signer, signer::generate_secret_key};
