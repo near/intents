@@ -15,25 +15,53 @@ pub type Secret = [u8; SECRET_LEN];
 
 // TODO: derive(ZeroizeOnDrop) once this PR is released:
 // https://github.com/filecoin-project/blstrs/pull/66
-pub struct CkdPrivateKey(Scalar);
+/// An ephemeral application private key
+pub struct AppPrivateKey {
+    private_key: Scalar,
+}
 
-impl CkdPrivateKey {
-    pub fn ephemeral(rng: impl CryptoRng) -> (Self, CkdPublicKey) {
+impl AppPrivateKey {
+    /// Generate ephemeral private key from given cryptographically-secure PRGN
+    #[inline]
+    pub fn ephemeral(rng: impl CryptoRng) -> Self {
         Self::from_scalar(Scalar::random(rng.v0_10()))
     }
 
-    fn from_scalar(x: Scalar) -> (Self, CkdPublicKey) {
-        let pk1 = G1Projective::generator() * x;
-        let pk2 = G2Projective::generator() * x;
+    #[inline]
+    const fn from_scalar(x: Scalar) -> Self {
+        Self { private_key: x }
+    }
 
-        let pk = CkdPublicKey {
-            pk1: pk1.to_affine(),
+    /// Calculate corresponding public key
+    #[inline]
+    pub fn public_key(&self) -> G1Affine {
+        (G1Projective::generator() * self.private_key).to_affine()
+    }
+
+    /// Calculate corresponding publicly-verifiable public key
+    ///
+    /// ```rust
+    /// # use defuse_ckd::AppPrivateKey;
+    /// use rand::{rand_core::UnwrapErr, rngs::SysRng};
+    ///
+    /// let sk = AppPrivateKey::ephemeral(UnwrapErr(SysRng));
+    /// let pk = sk.public_key_pv();
+    ///
+    /// // MPC contract verifies PV app public key
+    /// assert!(pk.check());
+    /// ```
+    #[inline]
+    pub fn public_key_pv(&self) -> AppPublicKeyPV {
+        let pk2 = G2Projective::generator() * self.private_key;
+
+        let pk = AppPublicKeyPV {
+            pk1: self.public_key(),
             pk2: pk2.to_affine(),
         };
 
         debug_assert!(pk.check());
 
-        (Self(x), pk)
+        pk
     }
 
     /// Decrypt the secret and verify that it was derived from given MPC
@@ -77,7 +105,7 @@ impl CkdPrivateKey {
 
     /// See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/ckd-example-cli/src/ckd.rs#L128-L129>
     fn decrypt(&self, resp: CkdResponse) -> G1Projective {
-        resp.big_c - resp.big_y * self.0
+        resp.big_c - resp.big_y * self.private_key
     }
 
     /// Check that `e(sig, g2) = e(hash_point, mpc_public_key)`
@@ -101,13 +129,14 @@ impl CkdPrivateKey {
     }
 }
 
+/// Publicly-verifiable app public key
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CkdPublicKey {
+pub struct AppPublicKeyPV {
     pub pk1: G1Affine,
     pub pk2: G2Affine,
 }
 
-impl CkdPublicKey {
+impl AppPublicKeyPV {
     /// Check that `e(app_pk1, g2) = e(g1, app_pk2)`
     ///
     /// See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/contract/src/primitives/ckd.rs#L34-L54>
@@ -126,6 +155,8 @@ impl CkdPublicKey {
             .into()
     }
 
+    /// Shorthand for [`.verify_app_id()`](AppPublicKeyPV::verify_app_id) with `app_id`
+    /// derived from `predecessor_id` and `path`
     pub fn verify(
         &self,
         mpc_public_key: G2Affine,
@@ -162,6 +193,7 @@ impl CkdPublicKey {
     }
 }
 
+/// CKD response
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CkdResponse {
     pub big_y: G1Affine,
@@ -230,7 +262,7 @@ mod tests {
         #[case] big_c: [u8; G1Affine::compressed_size()],
     ) {
         // 1. App prepares PV (publicly-verifiable) app public key
-        let pk = CkdPublicKey {
+        let pk = AppPublicKeyPV {
             pk1: G1Affine::from_compressed(&pk1).unwrap(),
             pk2: G2Affine::from_compressed(&pk2).unwrap(),
         };
@@ -282,10 +314,12 @@ mod tests {
     ) {
         let scalar = Scalar::from_bytes_le(&scalar_le).unwrap();
 
-        // 1. Application creates a keypair
-        let (sk, pk) = CkdPrivateKey::from_scalar(scalar);
+        // 1. Application generates an ephemeral private key and
+        // publishes its PV (publicly-verifiable) public key
+        let sk = AppPrivateKey::from_scalar(scalar);
+        let pk = sk.public_key_pv();
 
-        // 2. MPC contract checks PV (publicly-verifiable) app public key
+        // 2. MPC contract checks PV app public key
         // and emits an event for MPC nodes
         assert!(pk.check());
 

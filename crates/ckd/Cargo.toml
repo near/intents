@@ -21,4 +21,5 @@ rand_core.workspace = true
 
 [dev-dependencies]
 hex-literal.workspace = true
+rand = { workspace = true, features = ["sys_rng"] }
 rstest.workspace = true

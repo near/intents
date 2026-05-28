@@ -1472,6 +1472,7 @@ dependencies = [
  "hex-literal",
  "near-account-id",
  "pairing",
+ "rand 0.10.1",
  "rand_core 0.10.1",
  "rstest",
 ]
