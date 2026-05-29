@@ -15,14 +15,14 @@ const LIMIT_16KB: usize = 16 * 1024;
 #[derive(Debug, Clone, Copy)]
 pub struct ExecutorConfig {
     pub memory_limit: usize,
-    pub limits: StreamLimits,
+    pub io_limits: IoLimits,
 }
 
 impl Default for ExecutorConfig {
     fn default() -> Self {
         Self {
             memory_limit: VmRuntime::DEFAULT_MEMORY_LIMIT,
-            limits: StreamLimits::default(),
+            io_limits: IoLimits::default(),
         }
     }
 }
@@ -33,13 +33,13 @@ impl Default for ExecutorConfig {
     serde(deny_unknown_fields, default)
 )]
 #[derive(Debug, Clone, Copy)]
-pub struct StreamLimits {
+pub struct IoLimits {
     pub stdin: usize,
     pub stdout: usize,
     pub stderr: usize,
 }
 
-impl Default for StreamLimits {
+impl Default for IoLimits {
     fn default() -> Self {
         Self {
             stdin: LIMIT_4MB,
@@ -65,7 +65,7 @@ impl ExecutorBuilder {
         Ok(Executor::new(
             signer,
             Arc::new(VmRuntime::new(self.config.memory_limit)?),
-            self.config.limits,
+            self.config.io_limits,
         ))
     }
 }
