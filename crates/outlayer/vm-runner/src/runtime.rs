@@ -34,13 +34,13 @@ pub struct VmRuntime {
 }
 
 impl VmRuntime {
-    const MEMORY_LIMIT: usize = 100 * 1024 * 1024; // 100 MB
+    pub const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024; // 100 MiB
 
-    /// Creates a new `VmRuntime` with default configuration.
+    /// Creates a new `VmRuntime`.
     ///
     /// Async support and fuel metering are always enabled and cannot be
     /// disabled.
-    pub fn new() -> anyhow::Result<Self> {
+    pub fn new(memory_limit: usize) -> anyhow::Result<Self> {
         let mut config = Config::new();
         config.guard_before_linear_memory(true);
         config.memory_guard_size(MEMORY_GUARD_SIZE);
@@ -61,7 +61,7 @@ impl VmRuntime {
         Ok(Self {
             linker,
             store_limits: StoreLimitsBuilder::new()
-                .memory_size(Self::MEMORY_LIMIT)
+                .memory_size(memory_limit)
                 // TODO: other?
                 .build(),
         })
@@ -139,7 +139,7 @@ impl VmRuntime {
     ///     fuel: 1_000_000_000,
     /// };
     ///
-    /// let runner = VmRuntime::new()?;
+    /// let runner = VmRuntime::new(VmRuntime::DEFAULT_MEMORY_LIMIT)?;
     /// let component = runner.compile(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../sdk/examples/empty.wat")))?;
     /// runner.execute(ctx, &component).await?;
     ///

@@ -3,38 +3,36 @@ use std::time::Duration;
 use defuse_outlayer_executor::Component;
 use moka::future::Cache;
 
-const DEFAULT_MAX_CAPACITY: u64 = 100 * 1024 * 1024; // 100MB
-
-#[must_use = "use .build()"]
-#[derive(Debug, Clone)]
-pub struct CacheBuilder {
-    max_capacity: u64,
-    time_to_idle: Option<Duration>,
+#[cfg_attr(
+    feature = "serde",
+    ::serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    serde(deny_unknown_fields, default)
+)]
+pub struct CacheConfig {
+    pub max_capacity_bytes: u64,
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "Option<::serde_with::DurationSeconds<u64>>")
+    )]
+    pub time_to_idle: Option<Duration>,
 }
 
-impl Default for CacheBuilder {
+const DEFAULT_MAX_CAPACITY_BYTES: u64 = 100 * 1024 * 1024;
+
+impl Default for CacheConfig {
     fn default() -> Self {
         Self {
-            max_capacity: DEFAULT_MAX_CAPACITY,
+            max_capacity_bytes: DEFAULT_MAX_CAPACITY_BYTES,
             time_to_idle: None,
         }
     }
 }
 
-impl CacheBuilder {
-    pub const fn max_capacity(mut self, max_capacity: u64) -> Self {
-        self.max_capacity = max_capacity;
-        self
-    }
-
-    pub const fn time_to_idle(mut self, tti: Duration) -> Self {
-        self.time_to_idle = Some(tti);
-        self
-    }
-
+impl CacheConfig {
     pub fn build(self) -> Cache<[u8; 32], Component> {
         let mut builder = Cache::<[u8; 32], Component>::builder()
-            .max_capacity(self.max_capacity)
+            .max_capacity(self.max_capacity_bytes)
             .weigher(|_hash, comp: &Component| {
                 // Approximates the in-memory size of a compiled component using its
                 // mmap'd image range. Per-Component heap metadata (type tables, etc.)

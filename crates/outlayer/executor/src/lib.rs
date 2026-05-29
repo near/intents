@@ -1,16 +1,17 @@
 mod compiler;
+mod config;
 mod error;
 
-pub use self::{compiler::*, error::*};
+pub use self::{compiler::*, config::*, error::*};
 
 use std::sync::Arc;
 
-pub use defuse_outlayer_vm_runner::host::Context as HostContext;
+pub use defuse_outlayer_vm_runner::host::{Context as HostContext, crypto::Signer};
 pub use defuse_outlayer_vm_runner::wasmtime::component::Component;
 
 use defuse_outlayer_vm_runner::{
     Context as VmContext, ExecutionOutcome, VmRuntime, WasiContext,
-    host::{Host, crypto::Signer},
+    host::Host,
     wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe},
 };
 
@@ -20,6 +21,7 @@ use bytes::Bytes;
 pub struct Executor {
     runtime: Arc<VmRuntime>,
     signer: Arc<dyn Signer>,
+    io_limits: IoLimits,
 }
 
 pub struct Context {
@@ -50,12 +52,15 @@ impl Outcome {
     }
 }
 
-// TODO: maybe read from config?
-const STDIN_LIMIT: usize = 4 * 1024 * 1024; // 4 MB
-const STDOUT_LIMIT: usize = 4 * 1024 * 1024; // 4 MB
-const STDERR_LIMIT: usize = 16 * 1024; // 16 KB
-
 impl Executor {
+    pub fn new(signer: Arc<dyn Signer>, runtime: Arc<VmRuntime>, io_limits: IoLimits) -> Self {
+        Self {
+            runtime,
+            signer,
+            io_limits,
+        }
+    }
+
     pub fn compiler(&self) -> Compiler {
         Compiler::new(self.runtime.clone())
     }
@@ -66,12 +71,12 @@ impl Executor {
         component: &Component,
         fuel: u64,
     ) -> Result<Outcome, Error> {
-        if ctx.input.len() > STDIN_LIMIT {
+        if ctx.input.len() > self.io_limits.stdin {
             return Err(Error::InputTooLong);
         }
 
-        let stdout = MemoryOutputPipe::new(STDOUT_LIMIT);
-        let stderr = MemoryOutputPipe::new(STDERR_LIMIT);
+        let stdout = MemoryOutputPipe::new(self.io_limits.stdout);
+        let stderr = MemoryOutputPipe::new(self.io_limits.stderr);
         let ctx = VmContext {
             wasi: WasiContext {
                 stdin: MemoryInputPipe::new(ctx.input),

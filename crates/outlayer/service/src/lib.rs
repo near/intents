@@ -1,10 +1,11 @@
-mod builder;
 mod cache;
 mod code;
+mod config;
 mod resolver;
 
-pub use self::resolver::Resolver;
-pub use self::{builder::*, cache::*, code::*};
+pub use self::config::OutlayerConfig;
+pub use self::resolver::{HttpResolver, NearResolver, Resolver, ResolverConfig, UrlResolver};
+pub use self::{cache::*, code::*};
 
 use std::{convert, sync::Arc};
 
@@ -21,11 +22,22 @@ pub struct Outlayer {
     resolver: Resolver,
     executor: Executor,
     runtime_cache: Cache<[u8; 32], Component>,
+    default_fuel: u64,
 }
 
 impl Outlayer {
-    pub fn builder() -> OutlayerBuilder {
-        OutlayerBuilder::default()
+    pub const fn new(
+        resolver: Resolver,
+        executor: Executor,
+        runtime_cache: Cache<[u8; 32], Component>,
+        default_fuel: u64,
+    ) -> Self {
+        Self {
+            resolver,
+            executor,
+            runtime_cache,
+            default_fuel,
+        }
     }
 
     async fn resolve_app(&self, app: Code<'_>) -> Result<(AppId<'static>, Component), Error> {
@@ -64,20 +76,32 @@ impl Outlayer {
         Ok((app_id, component))
     }
 
-    pub async fn execute(&self, app: Code<'_>, input: Bytes, fuel: u64) -> Result<Outcome, Error> {
+    pub async fn execute(
+        &self,
+        app: Code<'_>,
+        input: Bytes,
+        fuel: Option<u64>,
+    ) -> Result<Outcome, Error> {
         let (app_id, component) = self.resolve_app(app).await?;
 
-        self.executor
-            .execute(
+        let executor = self.executor.clone();
+        let default_fuel = self.default_fuel;
+        // WASM execution is CPU-bound and wasmtime doesn't yield between instructions
+        // without epoch interruption, which would block the tokio scheduler.
+        // Run on the blocking thread pool to keep the async runtime responsive.
+        tokio::task::spawn_blocking(move || {
+            tokio::runtime::Handle::current().block_on(executor.execute(
                 Context {
                     input,
                     host: HostContext { app_id },
                 },
                 &component,
-                fuel,
-            )
-            .await
-            .map_err(Into::into)
+                fuel.unwrap_or(default_fuel),
+            ))
+        })
+        .await
+        .map_err(Error::ExecutePanicked)?
+        .map_err(Into::into)
     }
 }
 
@@ -88,6 +112,8 @@ pub enum Error {
     Prepare(#[from] Arc<PrepareError>),
     #[error(transparent)]
     Execute(#[from] executor::Error),
+    #[error("execute panicked: {0}")]
+    ExecutePanicked(#[from] tokio::task::JoinError),
 }
 
 #[derive(thiserror::Error, Debug)]

@@ -54,6 +54,7 @@ members = [
   "crates/testing/randomness",
   "crates/testing/sandbox",
 
+  "crates/outlayer/worker",
   "crates/outlayer/executor",
   "crates/outlayer/host",
 
@@ -137,8 +138,10 @@ defuse-outlayer-sdk.path = "crates/outlayer/sdk"
 defuse-outlayer-service.path = "crates/outlayer/service"
 defuse-outlayer-signer.path = "crates/outlayer/signer"
 defuse-outlayer-sys.path = "crates/outlayer/sys"
+defuse-outlayer-utils.path = "crates/outlayer/utils"
 defuse-outlayer-vm-runner.path = "crates/outlayer/vm-runner"
 defuse-outlayer-vm-runner-cli.path = "crates/outlayer/vm-runner/cli"
+defuse-outlayer-worker.path = "crates/outlayer/worker"
 
 defuse-tests.path = "tests"
 
@@ -172,11 +175,13 @@ bytes = "1.11.1"
 cfg_eval = "0.1.2"
 chrono = { version = "0.4", default-features = false }
 clap = { version = "4.5.55", features = ["derive"] }
+config = { version = "0.15", default-features = false, features = ["json"] }
 curve25519-dalek = "4.1.3"
 data-url = "0.3"
 derive_more = "2.0"
 digest = { version = "0.11", default-features = false }
 digest-io = "0.1.0"
+dotenvy = "0.15"
 ed25519-dalek = { version = "2.1", default-features = false }
 futures = "0.3"
 generic-array = "1"

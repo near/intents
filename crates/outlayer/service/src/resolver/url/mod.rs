@@ -4,7 +4,7 @@ mod http;
 use bytes::Bytes;
 use url::Url;
 
-use self::http::HttpResolver;
+pub use self::http::HttpResolver;
 
 #[derive(Clone)]
 pub struct UrlResolver {
@@ -12,6 +12,10 @@ pub struct UrlResolver {
 }
 
 impl UrlResolver {
+    pub const fn new(http: HttpResolver) -> Self {
+        Self { http }
+    }
+
     pub async fn resolve(&self, url: Url) -> Result<Bytes, Error> {
         match url.scheme() {
             "data" => data::resolve(url).map_err(Into::into),

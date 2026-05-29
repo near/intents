@@ -12,6 +12,10 @@ pub struct NearResolver {
 }
 
 impl NearResolver {
+    pub const fn new(client: Near) -> Self {
+        Self { client }
+    }
+
     pub async fn resolve(
         &self,
         oa_contract_id: impl Into<AccountId>,
