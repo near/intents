@@ -43,12 +43,10 @@ async fn main() -> Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_env("RUST_LOG"))
         .init();
 
-    let config = AppConfig::load()?;
-
     let AppConfig {
         outlayer,
         signer_seed,
-    } = config;
+    } = AppConfig::load()?;
 
     // TODO: derive seed from CKD
     #[allow(clippy::option_if_let_else)]

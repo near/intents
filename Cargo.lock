@@ -1761,24 +1761,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-outlayer-bin"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "config",
- "defuse-outlayer-host",
- "defuse-outlayer-service",
- "defuse-outlayer-signer",
- "dotenvy",
- "serde",
- "serde_with",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "zeroize",
-]
-
-[[package]]
 name = "defuse-outlayer-executor"
 version = "0.1.0"
 dependencies = [
@@ -1926,6 +1908,24 @@ dependencies = [
  "defuse-outlayer-signer",
  "defuse-outlayer-vm-runner",
  "tokio",
+]
+
+[[package]]
+name = "defuse-outlayer-worker"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "config",
+ "defuse-outlayer-host",
+ "defuse-outlayer-service",
+ "defuse-outlayer-signer",
+ "dotenvy",
+ "serde",
+ "serde_with",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "zeroize",
 ]
 
 [[package]]
