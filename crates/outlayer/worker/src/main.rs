@@ -19,7 +19,7 @@ struct AppConfig {
     #[serde(rename = "service")]
     outlayer: OutlayerConfig,
     #[serde_as(as = "Option<Hex>")]
-    signer_seed: Option<Zeroizing<Vec<u8>>>,
+    seed: Option<Zeroizing<Vec<u8>>>,
 }
 
 impl AppConfig {
@@ -43,14 +43,11 @@ async fn main() -> Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_env("RUST_LOG"))
         .init();
 
-    let AppConfig {
-        outlayer,
-        signer_seed,
-    } = AppConfig::load()?;
+    let AppConfig { outlayer, seed } = AppConfig::load()?;
 
     // TODO: derive seed from CKD
     #[allow(clippy::option_if_let_else)]
-    let signer = match signer_seed.as_deref() {
+    let signer = match seed.as_deref() {
         Some(seed) => {
             tracing::warn!("using custom signer seed — not intended for production use");
             InMemorySigner::from_seed(seed)
