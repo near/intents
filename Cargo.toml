@@ -52,7 +52,7 @@ members = [
   "crates/testing/randomness",
   "crates/testing/sandbox",
 
-  "crates/outlayer/bin",
+  "crates/outlayer/worker",
   "crates/outlayer/executor",
   "crates/outlayer/host",
 
@@ -126,7 +126,7 @@ defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
-defuse-outlayer-bin.path = "crates/outlayer/bin"
+defuse-outlayer-worker.path = "crates/outlayer/worker"
 defuse-outlayer-executor.path = "crates/outlayer/executor"
 defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-kdf-app = { path = "crates/outlayer/kdf-app", default-features = false }
