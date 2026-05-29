@@ -2,7 +2,7 @@ services:
   worker:
     image: mat13mn/worker:latest
     environment:
-      RUST_LOG: info
+      RUST_LOG: "outlayer=info,defuse_outlayer_service=debug,defuse_outlayer_executor=debug"
       WORKER__ADDR: "0.0.0.0:50051"
       WORKER__CONCURRENCY_LIMIT: 2
       WORKER__CONCURRENCY_LIMIT_PER_CONNECTION: 1

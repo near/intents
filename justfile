@@ -38,7 +38,7 @@ cvm-stop:
 
 
 # Deploy compose + env to Phala Cloud (creates a new CVM)
-deploy:
+cvm-init-deploy:
     phala deploy \
         --name {{cvm_name}} \
         --compose compose.yaml \
@@ -47,10 +47,6 @@ deploy:
         --disk-size 1G \
         --image dstack-0.5.9 \
         --kms phala
-
-# Push new image and restart the CVM to pick it up
-upgrade: push
-    phala cvms restart {{cvm_name}}
 
 # Start / stop the CVM
 start:
@@ -68,7 +64,7 @@ status:
     phala cvms get {{cvm_name}} --json
 
 # Build and push image to Docker Hub (linux/amd64 for Phala)
-push:
+deploy-docker-image:
     docker buildx build --platform linux/amd64 \
         -t {{image}} \
         -f crates/outlayer/bin/Dockerfile \
