@@ -1,0 +1,75 @@
+set dotenv-load
+
+image    := env_var("PHALA_IMAGE")
+cvm_name := env_var("PHALA_CVM_NAME")
+cvm_id := env_var("PHALA_CVM_ID")
+
+# Build and run locally
+# dev: build
+#     docker compose up
+#
+build-docker:
+    docker buildx build \
+        -t {{image}} \
+        -f crates/outlayer/bin/Dockerfile \
+        .
+
+# Deploy compose + env to Phala Cloud (creates a new CVM)
+cvm-upgrade-manifest:
+      phala \
+          deploy \
+          --cvm-id {{cvm_id}} \
+          --compose ./compose.yaml
+
+cvm-attestation:
+  phala cvms attestation {{cvm_id}}
+
+cvm-logs:
+  phala logs dstack-{{cvm_name}}-1 --cvm-id {{cvm_id}} -f
+
+cvm-status:
+  phala cvms get {{cvm_name}}
+
+cvm-start:
+  phala cvms start {{cvm_name}}
+
+cvm-stop:
+  phala cvms stop {{cvm_name}}
+
+
+# Deploy compose + env to Phala Cloud (creates a new CVM)
+deploy:
+    phala deploy \
+        --name {{cvm_name}} \
+        --compose compose.yaml \
+        --vcpu 2 \
+        --memory 2G \
+        --disk-size 1G \
+        --image dstack-0.5.9 \
+        --kms phala
+
+# Push new image and restart the CVM to pick it up
+upgrade: push
+    phala cvms restart {{cvm_name}}
+
+# Start / stop the CVM
+start:
+    phala cvms start {{cvm_name}}
+
+stop:
+    phala cvms stop {{cvm_name}}
+
+# Stream logs
+logs:
+    phala cvms logs {{cvm_name}} --follow
+
+# CVM status
+status:
+    phala cvms get {{cvm_name}} --json
+
+# Build and push image to Docker Hub (linux/amd64 for Phala)
+push:
+    docker buildx build --platform linux/amd64 \
+        -t {{image}} \
+        -f crates/outlayer/bin/Dockerfile \
+        --push .
