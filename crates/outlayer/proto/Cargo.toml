@@ -1,0 +1,19 @@
+[package]
+name = "defuse-outlayer-proto"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+prost = { workspace = true }
+tonic = { workspace = true }
+tonic-prost = { workspace = true }
+
+
+[build-dependencies]
+tonic-prost-build = "0.14"
+
+[package.metadata.cargo-machete]
+ignored = ["prost", "tonic-prost"]
