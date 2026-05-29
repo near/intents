@@ -24,20 +24,14 @@ where
     S::Error: Into<Box<dyn std::error::Error + Send + Sync + 'static>>,
     S::Future: Send,
 {
-    async fn execute(
+    async fn call(
         &self,
-        request: Request<proto::ExecuteRequest>,
-    ) -> Result<Response<proto::ExecuteResponse>, Status> {
-        let req = request.into_inner();
-        let svc_req = ExecuteRequest {
-            app: req
-                .app
-                .ok_or_else(|| Status::invalid_argument("missing app"))?
-                .try_into()
-                .map_err(|e: anyhow::Error| Status::invalid_argument(e.to_string()))?,
-            input: req.input.into(),
-            fuel: req.fuel,
-        };
+        request: Request<proto::Request>,
+    ) -> Result<Response<proto::Response>, Status> {
+        let svc_req: ExecuteRequest = request
+            .into_inner()
+            .try_into()
+            .map_err(|e: anyhow::Error| Status::invalid_argument(e.to_string()))?;
 
         let outcome = self.service.clone().oneshot(svc_req).await.map_err(|e| {
             let e: Box<dyn std::error::Error + Send + Sync + 'static> = e.into();
@@ -52,6 +46,8 @@ where
             }
         })?;
 
-        Ok(Response::new(outcome.into()))
+        Ok(Response::new(proto::Response {
+            kind: Some(proto::response::Kind::Execute(outcome.into())),
+        }))
     }
 }

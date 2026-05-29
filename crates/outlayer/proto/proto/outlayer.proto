@@ -38,6 +38,12 @@ message ExecuteRequest {
   optional uint64 fuel  = 3;
 }
 
+message Request {
+  oneof kind {
+    ExecuteRequest execute = 1;
+  }
+}
+
 // Mirrors ExecutionDetails { fuel_consumed: u64 }
 message ExecutionDetails {
   uint64 fuel_consumed = 1;
@@ -56,8 +62,15 @@ message ExecuteResponse {
   ExecutionOutcome execution = 3;
 }
 
+// Generic response envelope, mirroring Request.
+message Response {
+  oneof kind {
+    ExecuteResponse execute = 1;
+  }
+}
+
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 service OutlayerService {
-  rpc Execute(ExecuteRequest) returns (ExecuteResponse);
+  rpc Call(Request) returns (Response);
 }
