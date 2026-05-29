@@ -160,7 +160,6 @@ near-workspaces = "0.22"
 anyhow = "1"
 arbitrary = { version = "1", features = ["derive"] }
 array-util = "1"
-async-nats = "0.46.0"
 async-trait = "0.1.89"
 base64 = "0.22.1"
 bitflags = "2.9.1"
