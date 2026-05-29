@@ -12,14 +12,14 @@ const INITIAL_CAP: usize = 1024 * 1024;
 pub struct HttpResolver {
     // TODO: caching?
     client: Client,
-    max_len_bytes: usize,
+    max_body_bytes: usize,
 }
 
 impl HttpResolver {
-    pub fn new(max_len_bytes: usize) -> Self {
+    pub fn new(max_body_bytes: usize) -> Self {
         Self {
             client: Client::new(),
-            max_len_bytes,
+            max_body_bytes,
         }
     }
 
@@ -44,18 +44,18 @@ impl HttpResolver {
                 .map(usize::try_from)
                 .transpose()
                 .map_err(|_| Error::TooLarge {
-                    limit: self.max_len_bytes,
+                    limit: self.max_body_bytes,
                 })?
                 .unwrap_or_default();
-            if cap > self.max_len_bytes {
+            if cap > self.max_body_bytes {
                 return Err(Error::TooLarge {
-                    limit: self.max_len_bytes,
+                    limit: self.max_body_bytes,
                 });
             }
             cap.min(INITIAL_CAP)
         });
 
-        let limit = u64::try_from(self.max_len_bytes).expect("usize fits in u64");
+        let limit = u64::try_from(self.max_body_bytes).expect("usize fits in u64");
         let stream = resp.bytes_stream().map_err(io::Error::other);
         let mut stream = StreamReader::new(stream).take(limit);
         stream.read_to_end(&mut buf).await?;
@@ -64,7 +64,7 @@ impl HttpResolver {
         // stream to verify it is actually exhausted at the cap.
         if stream.into_inner().read(&mut [0u8]).await? != 0 {
             return Err(Error::TooLarge {
-                limit: self.max_len_bytes,
+                limit: self.max_body_bytes,
             });
         }
 
