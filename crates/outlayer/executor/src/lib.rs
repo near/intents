@@ -21,7 +21,7 @@ use bytes::Bytes;
 pub struct Executor {
     runtime: Arc<VmRuntime>,
     signer: Arc<dyn Signer>,
-    limits: IoLimits,
+    io_limits: IoLimits,
 }
 
 pub struct Context {
@@ -53,11 +53,11 @@ impl Outcome {
 }
 
 impl Executor {
-    pub fn new(signer: Arc<dyn Signer>, runtime: Arc<VmRuntime>, limits: IoLimits) -> Self {
+    pub fn new(signer: Arc<dyn Signer>, runtime: Arc<VmRuntime>, io_limits: IoLimits) -> Self {
         Self {
             runtime,
             signer,
-            limits,
+            io_limits,
         }
     }
 
@@ -71,12 +71,12 @@ impl Executor {
         component: &Component,
         fuel: u64,
     ) -> Result<Outcome, Error> {
-        if ctx.input.len() > self.limits.stdin {
+        if ctx.input.len() > self.io_limits.stdin {
             return Err(Error::InputTooLong);
         }
 
-        let stdout = MemoryOutputPipe::new(self.limits.stdout);
-        let stderr = MemoryOutputPipe::new(self.limits.stderr);
+        let stdout = MemoryOutputPipe::new(self.io_limits.stdout);
+        let stderr = MemoryOutputPipe::new(self.io_limits.stderr);
         let ctx = VmContext {
             wasi: WasiContext {
                 stdin: MemoryInputPipe::new(ctx.input),

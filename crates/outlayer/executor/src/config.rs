@@ -14,14 +14,14 @@ const LIMIT_16KB: usize = 16 * 1024;
 )]
 #[derive(Debug, Clone, Copy)]
 pub struct ExecutorConfig {
-    pub memory_limit: usize,
+    pub memory_limit_bytes: usize,
     pub io_limits: IoLimits,
 }
 
 impl Default for ExecutorConfig {
     fn default() -> Self {
         Self {
-            memory_limit: VmRuntime::DEFAULT_MEMORY_LIMIT,
+            memory_limit_bytes: VmRuntime::DEFAULT_MEMORY_LIMIT,
             io_limits: IoLimits::default(),
         }
     }
@@ -64,7 +64,7 @@ impl ExecutorBuilder {
     pub fn build(self, signer: Arc<dyn Signer>) -> anyhow::Result<Executor> {
         Ok(Executor::new(
             signer,
-            Arc::new(VmRuntime::new(self.config.memory_limit)?),
+            Arc::new(VmRuntime::new(self.config.memory_limit_bytes)?),
             self.config.io_limits,
         ))
     }
