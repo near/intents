@@ -24,10 +24,10 @@ where
     S::Error: Into<Box<dyn std::error::Error + Send + Sync + 'static>>,
     S::Future: Send,
 {
-    async fn execute(
+    async fn call(
         &self,
-        request: Request<proto::ExecuteRequest>,
-    ) -> Result<Response<proto::ExecuteResponse>, Status> {
+        request: Request<proto::Request>,
+    ) -> Result<Response<proto::Response>, Status> {
         let svc_req: ExecuteRequest = request
             .into_inner()
             .try_into()
@@ -46,6 +46,8 @@ where
             }
         })?;
 
-        Ok(Response::new(outcome.into()))
+        Ok(Response::new(proto::Response {
+            kind: Some(proto::response::Kind::Execute(outcome.into())),
+        }))
     }
 }
