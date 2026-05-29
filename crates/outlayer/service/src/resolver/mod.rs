@@ -7,7 +7,7 @@ use bytes::Bytes;
 use defuse_outlayer_primitives::AppId;
 use sha2::{Digest, Sha256};
 
-pub use self::config::{ResolverBuilder, ResolverConfig};
+pub use self::config::ResolverConfig;
 pub use self::near::NearResolver;
 pub use self::url::{HttpResolver, UrlResolver};
 

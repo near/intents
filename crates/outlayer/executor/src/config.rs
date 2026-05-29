@@ -49,23 +49,12 @@ impl Default for IoLimits {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct ExecutorBuilder {
-    config: ExecutorConfig,
-}
-
-impl ExecutorBuilder {
-    #[must_use]
-    pub const fn with_config(mut self, config: ExecutorConfig) -> Self {
-        self.config = config;
-        self
-    }
-
+impl ExecutorConfig {
     pub fn build(self, signer: Arc<dyn Signer>) -> anyhow::Result<Executor> {
         Ok(Executor::new(
             signer,
-            Arc::new(VmRuntime::new(self.config.memory_limit_bytes)?),
-            self.config.io_limits,
+            Arc::new(VmRuntime::new(self.memory_limit_bytes)?),
+            self.io_limits,
         ))
     }
 }

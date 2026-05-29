@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use defuse_outlayer_host::crypto::Signer;
-use defuse_outlayer_service::{OutlayerBuilder, OutlayerConfig};
+use defuse_outlayer_service::OutlayerConfig;
 use defuse_outlayer_signer::InMemorySigner;
 
 use anyhow::{Context as _, Result};
@@ -59,10 +59,7 @@ async fn main() -> Result<()> {
     };
 
     let signer: Arc<dyn Signer> = Arc::new(signer);
-    let _ = OutlayerBuilder::default()
-        .with_config(outlayer)
-        .build(signer)
-        .context("outlayer")?;
+    let _ = outlayer.build(signer).context("outlayer")?;
 
     Ok(())
 }

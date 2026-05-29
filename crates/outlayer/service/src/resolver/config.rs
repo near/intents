@@ -27,20 +27,11 @@ impl Default for ResolverConfig {
     }
 }
 
-#[derive(Default)]
-pub struct ResolverBuilder(ResolverConfig);
-
-impl ResolverBuilder {
-    #[must_use]
-    pub fn with_config(mut self, config: ResolverConfig) -> Self {
-        self.0 = config;
-        self
-    }
-
+impl ResolverConfig {
     pub fn build(self) -> Resolver {
-        let near = near_kit::Near::custom(self.0.near_rpc_url, self.0.near_chain_id).build();
+        let near = near_kit::Near::custom(self.near_rpc_url, self.near_chain_id).build();
         let near = NearResolver::new(near);
-        let url = UrlResolver::new(HttpResolver::new(self.0.http_max_len));
+        let url = UrlResolver::new(HttpResolver::new(self.http_max_len));
         Resolver::new(near, url)
     }
 }

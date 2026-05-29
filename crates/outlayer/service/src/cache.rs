@@ -29,19 +29,10 @@ impl Default for CacheConfig {
     }
 }
 
-#[derive(Default)]
-pub struct CacheBuilder(CacheConfig);
-
-impl CacheBuilder {
-    #[must_use]
-    pub const fn with_config(mut self, config: CacheConfig) -> Self {
-        self.0 = config;
-        self
-    }
-
+impl CacheConfig {
     pub fn build(self) -> Cache<[u8; 32], Component> {
         let mut builder = Cache::<[u8; 32], Component>::builder()
-            .max_capacity(self.0.max_capacity_bytes)
+            .max_capacity(self.max_capacity_bytes)
             .weigher(|_hash, comp: &Component| {
                 // Approximates the in-memory size of a compiled component using its
                 // mmap'd image range. Per-Component heap metadata (type tables, etc.)
@@ -49,7 +40,7 @@ impl CacheBuilder {
                 let r = comp.image_range();
                 u32::try_from((r.start.addr()..r.end.addr()).len()).unwrap_or(u32::MAX)
             });
-        if let Some(tti) = self.0.time_to_idle {
+        if let Some(tti) = self.time_to_idle {
             builder = builder.time_to_idle(tti);
         }
         builder.build()
