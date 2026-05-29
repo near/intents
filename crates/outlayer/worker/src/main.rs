@@ -40,7 +40,7 @@ impl AppConfig {
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok();
     tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_env("RUST_LOG"))
+        .with_env_filter(tracing_subscriber::EnvFilter::from_env("OUTLAYER_LOG"))
         .init();
 
     let AppConfig { outlayer, seed } = AppConfig::load()?;
