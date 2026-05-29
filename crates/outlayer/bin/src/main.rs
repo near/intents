@@ -72,9 +72,35 @@ impl AppConfig {
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok();
-    tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_env("RUST_LOG"))
-        .init();
+    {
+        use tracing_subscriber::{
+            EnvFilter,
+            filter::{LevelFilter, filter_fn},
+            fmt::{self, format::FmtSpan},
+            prelude::*,
+        };
+
+        let logs = EnvFilter::from_env("RUST_LOG");
+        // Only collect span timings when the log level is DEBUG (or more verbose).
+        let timings = logs
+            .max_level_hint()
+            .is_some_and(|level| level >= LevelFilter::DEBUG)
+            .then(|| {
+                // Busy/idle timing for the executor's `compile`/`execute` spans only.
+                // `is_span` keeps it to timing lines; the target filter scopes it to
+                // those spans rather than the whole tree.
+                fmt::layer()
+                    .with_span_events(FmtSpan::CLOSE)
+                    .with_filter(filter_fn(|meta| {
+                        meta.is_span() && meta.target().starts_with("defuse_outlayer_executor")
+                    }))
+            });
+
+        tracing_subscriber::registry()
+            .with(fmt::layer().with_filter(logs))
+            .with(timings)
+            .init();
+    }
 
     let config = AppConfig::load()?;
 

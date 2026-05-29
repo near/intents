@@ -10,6 +10,7 @@ impl Compiler {
         Self(runtime)
     }
 
+    #[tracing::instrument(name = "compile", level = "debug", skip_all)]
     pub fn compile(&self, wasm: impl AsRef<[u8]>) -> anyhow::Result<Component> {
         self.0.compile(wasm)
     }

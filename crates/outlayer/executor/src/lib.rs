@@ -67,6 +67,7 @@ impl Executor {
         Compiler::new(self.runtime.clone())
     }
 
+    #[tracing::instrument(name = "execute", level = "debug", skip_all, fields(fuel))]
     pub async fn execute(
         &self,
         ctx: Context,

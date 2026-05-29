@@ -9,6 +9,7 @@ use bytes::Bytes;
 use crate::{Code, Error, Outlayer};
 use defuse_outlayer_executor::Outcome;
 
+#[derive(Debug)]
 pub struct ExecuteRequest {
     pub app: Code<'static>,
     pub input: Bytes,

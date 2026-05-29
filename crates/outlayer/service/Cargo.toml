@@ -35,6 +35,7 @@ serde = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true, features = ["hex"] }
 tonic = { workspace = true, optional = true }
 tower = { workspace = true, optional = true }
+tracing.workspace = true
 
 [features]
 default = ["serde"]
