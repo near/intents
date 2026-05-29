@@ -15,6 +15,22 @@ pub struct ExecuteRequest {
     pub fuel: Option<u64>,
 }
 
+#[cfg(feature = "proto")]
+impl TryFrom<defuse_outlayer_proto::ExecuteRequest> for ExecuteRequest {
+    type Error = anyhow::Error;
+
+    fn try_from(p: defuse_outlayer_proto::ExecuteRequest) -> Result<Self, Self::Error> {
+        Ok(Self {
+            app: p
+                .app
+                .ok_or_else(|| anyhow::anyhow!("missing app"))?
+                .try_into()?,
+            input: p.input.into(),
+            fuel: p.fuel,
+        })
+    }
+}
+
 impl tower::Service<ExecuteRequest> for Outlayer {
     type Response = Outcome;
     type Error = Error;
