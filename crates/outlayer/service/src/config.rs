@@ -7,7 +7,7 @@ const DEFAULT_FUEL: u64 = 1_000_000_000;
 
 #[cfg_attr(
     feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize),
+    derive(::serde::Deserialize),
     serde(deny_unknown_fields, default)
 )]
 pub struct OutlayerConfig {

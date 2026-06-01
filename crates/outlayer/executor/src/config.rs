@@ -9,7 +9,7 @@ const LIMIT_16KB: usize = 16 * 1024;
 
 #[cfg_attr(
     feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize),
+    derive(::serde::Deserialize),
     serde(deny_unknown_fields, default)
 )]
 #[derive(Debug, Clone, Copy)]
@@ -29,7 +29,7 @@ impl Default for ExecutorConfig {
 
 #[cfg_attr(
     feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize),
+    derive(::serde::Deserialize),
     serde(deny_unknown_fields, default)
 )]
 #[derive(Debug, Clone, Copy)]
