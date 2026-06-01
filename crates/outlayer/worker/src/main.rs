@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use defuse_outlayer_service::{OutlayerConfig, host::crypto::Signer};
+use defuse_outlayer_service::{OutlayerConfig, Signer};
 use defuse_outlayer_signer::InMemorySigner;
 
 use anyhow::{Context as _, Result};
@@ -23,15 +23,14 @@ struct AppConfig {
 
 impl AppConfig {
     fn load() -> Result<Self> {
-        Config::builder()
+        Ok(Config::builder()
             .add_source(
                 Environment::with_prefix(PREFIX)
                     .prefix_separator("__")
                     .separator("__"),
             )
             .build()
-            .and_then(config::Config::try_deserialize)
-            .context("config")
+            .and_then(config::Config::try_deserialize)?)
     }
 }
 
@@ -42,7 +41,7 @@ async fn main() -> Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_env("OUTLAYER_LOG"))
         .init();
 
-    let AppConfig { outlayer, seed } = AppConfig::load()?;
+    let AppConfig { outlayer, seed } = AppConfig::load().context("config")?;
 
     // TODO: derive seed from CKD
     #[allow(clippy::option_if_let_else)]

@@ -10,7 +10,6 @@ workspace = true
 
 [dependencies]
 defuse-outlayer-executor.workspace = true
-defuse-outlayer-host.workspace = true
 defuse-outlayer-primitives.workspace = true
 defuse-serde-utils = { workspace = true, features = ["hex"] }
 

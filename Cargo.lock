@@ -1882,7 +1882,6 @@ dependencies = [
  "cfg_eval",
  "data-url",
  "defuse-outlayer-executor",
- "defuse-outlayer-host",
  "defuse-outlayer-primitives",
  "defuse-serde-utils",
  "derive_more",
