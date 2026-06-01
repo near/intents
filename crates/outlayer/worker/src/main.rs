@@ -9,7 +9,7 @@ use serde::Deserialize;
 use serde_with::hex::Hex;
 use zeroize::Zeroizing;
 
-const PREFIX: &str = "WORKER";
+const PREFIX: &str = "OUTLAYER";
 
 #[serde_with::serde_as]
 #[derive(Deserialize, Default)]
