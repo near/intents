@@ -32,6 +32,7 @@ use defuse_outlayer_executor::{
 };
 use defuse_outlayer_primitives::AppId;
 use moka::future::Cache;
+use tracing::Instrument as _;
 
 #[derive(Clone)]
 pub struct Outlayer {
@@ -60,7 +61,10 @@ impl Outlayer {
         let (app_id, app_code_url, code) = match app {
             Code::Ref(code_ref) => (
                 code_ref.app_id(),
-                self.resolver.resolve_code_url(code_ref).await?,
+                self.resolver
+                    .resolve_code_url(code_ref)
+                    .instrument(tracing::debug_span!("resolve_url"))
+                    .await?,
                 None,
             ),
             Code::Inline { code } => {
@@ -75,7 +79,10 @@ impl Outlayer {
                 let code = if let Some(code) = code {
                     code
                 } else {
-                    self.resolver.resolve_code(app_code_url).await?
+                    self.resolver
+                        .resolve_code(app_code_url)
+                        .instrument(tracing::debug_span!("fetch"))
+                        .await?
                 };
 
                 tokio::task::spawn_blocking({

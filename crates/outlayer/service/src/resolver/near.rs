@@ -16,6 +16,7 @@ impl NearResolver {
         Self { client }
     }
 
+    #[tracing::instrument(name = "near_resolve", skip_all)]
     pub async fn resolve(
         &self,
         oa_contract_id: impl Into<AccountId>,

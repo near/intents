@@ -86,13 +86,16 @@ async fn main() -> Result<()> {
             .max_level_hint()
             .is_some_and(|level| level >= LevelFilter::DEBUG)
             .then(|| {
-                // Busy/idle timing for the executor's `compile`/`execute` spans only.
+                // Busy/idle timing for the executor's `compile`/`execute` spans plus
+                // the service's per-request spans (`grpc` total, `resolve_url`, `fetch`).
                 // `is_span` keeps it to timing lines; the target filter scopes it to
                 // those spans rather than the whole tree.
                 fmt::layer()
                     .with_span_events(FmtSpan::CLOSE)
                     .with_filter(filter_fn(|meta| {
-                        meta.is_span() && meta.target().starts_with("defuse_outlayer_executor")
+                        meta.is_span()
+                            && (meta.target().starts_with("defuse_outlayer_executor")
+                                || meta.target().starts_with("defuse_outlayer_service"))
                     }))
             });
 

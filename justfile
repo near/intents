@@ -1,13 +1,9 @@
 set dotenv-load
 
-image    := env_var("PHALA_IMAGE")
-cvm_name := env_var("PHALA_CVM_NAME")
+cvm_name := "worker"
+image    := "mat13mn/worker:latest"
 cvm_id := env_var("PHALA_CVM_ID")
 
-# Build and run locally
-# dev: build
-#     docker compose up
-#
 build-docker:
     docker buildx build \
         -t {{image}} \
@@ -40,7 +36,7 @@ cvm-stop:
 # Deploy compose + env to Phala Cloud (creates a new CVM)
 cvm-init-deploy:
     phala deploy \
-        --name {{cvm_name}} \
+        --name outlayer \
         --compose compose.yaml \
         --vcpu 2 \
         --memory 2G \
