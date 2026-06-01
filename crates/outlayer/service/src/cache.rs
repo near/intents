@@ -5,6 +5,7 @@ use moka::future::Cache;
 
 #[cfg_attr(
     feature = "serde",
+    ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Deserialize),
     serde(deny_unknown_fields, default)
