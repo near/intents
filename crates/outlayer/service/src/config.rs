@@ -33,7 +33,11 @@ impl OutlayerConfig {
     pub fn build(self, signer: impl Into<Arc<dyn Signer>>) -> anyhow::Result<Outlayer> {
         let executor = self.executor.build(signer.into())?;
         let resolver = self.resolver.build();
-        let cache = self.cache.build();
-        Ok(Outlayer::new(resolver, executor, cache, self.default_fuel))
+        Ok(Outlayer::new(
+            resolver,
+            executor,
+            self.cache,
+            self.default_fuel,
+        ))
     }
 }

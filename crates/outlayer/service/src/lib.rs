@@ -26,16 +26,16 @@ pub struct Outlayer {
 }
 
 impl Outlayer {
-    pub const fn new(
+    pub fn new(
         resolver: Resolver,
         executor: Executor,
-        runtime_cache: Cache<[u8; 32], Component>,
+        cache: CacheConfig,
         default_fuel: u64,
     ) -> Self {
         Self {
             resolver,
             executor,
-            runtime_cache,
+            runtime_cache: cache.build(),
             default_fuel,
         }
     }
