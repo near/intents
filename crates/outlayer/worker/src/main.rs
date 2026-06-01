@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
     };
 
     let signer: Arc<dyn Signer> = Arc::new(signer);
-    let _ = outlayer.build(signer).context("outlayer")?;
+    let _ = outlayer.build(signer).context("build")?;
 
     Ok(())
 }
