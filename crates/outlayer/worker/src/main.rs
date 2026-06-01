@@ -19,7 +19,7 @@ use zeroize::Zeroizing;
 
 const PREFIX: &str = "WORKER";
 const DEFAULT_ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 50051));
-const DEFAULT_CONCURRENCY_LIMIT: usize = 2;
+const DEFAULT_MAX_PARALLEL_WASM_EXECUTIONS: usize = 2;
 const DEFAULT_CONNECTIONS_LIMIT: usize = 500;
 const DEFAULT_CONCURRENCY_LIMIT_PER_CONNECTION: usize = 1;
 const DEFAULT_EXECUTION_TIMEOUT: Duration = Duration::from_secs(30);
@@ -34,7 +34,7 @@ struct AppConfig {
     seed: Option<Zeroizing<Vec<u8>>>,
     #[serde_as(as = "serde_with::DisplayFromStr")]
     addr: SocketAddr,
-    concurrency_limit: usize,
+    max_parallel_wasm_executions: usize,
     connections_limit: usize,
     concurrency_limit_per_connection: usize,
     #[serde_as(as = "serde_with::DurationSeconds<u64>")]
@@ -47,7 +47,7 @@ impl Default for AppConfig {
             outlayer: OutlayerConfig::default(),
             seed: None,
             addr: DEFAULT_ADDR,
-            concurrency_limit: DEFAULT_CONCURRENCY_LIMIT,
+            max_parallel_wasm_executions: DEFAULT_MAX_PARALLEL_WASM_EXECUTIONS,
             connections_limit: DEFAULT_CONNECTIONS_LIMIT,
             concurrency_limit_per_connection: DEFAULT_CONCURRENCY_LIMIT_PER_CONNECTION,
             execution_timeout_s: DEFAULT_EXECUTION_TIMEOUT,
@@ -104,7 +104,7 @@ async fn main() -> Result<()> {
             .buffer(config.connections_limit)
             // Limit concurrent WASM executions. WASM runs synchronously on blocking
             // threads; this prevents saturating the thread pool with CPU-bound work.
-            .concurrency_limit(config.concurrency_limit)
+            .concurrency_limit(config.max_parallel_wasm_executions)
             // Deadline for a single execution. Runs inside the buffer's background
             // worker, so it actually cancels async work (e.g. slow WASM downloads)
             // on expiry.
