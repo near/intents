@@ -1761,29 +1761,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-outlayer-bin"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "config",
- "defuse-outlayer-host",
- "defuse-outlayer-proto",
- "defuse-outlayer-service",
- "defuse-outlayer-signer",
- "dotenvy",
- "serde",
- "serde_with",
- "tokio",
- "tonic 0.14.5",
- "tonic-health",
- "tonic-reflection",
- "tower",
- "tracing",
- "tracing-subscriber",
- "zeroize",
-]
-
-[[package]]
 name = "defuse-outlayer-executor"
 version = "0.1.0"
 dependencies = [
@@ -1793,7 +1770,6 @@ dependencies = [
  "defuse-outlayer-proto",
  "defuse-outlayer-vm-runner",
  "serde",
- "serde_json",
  "serde_with",
  "thiserror 2.0.18",
 ]
@@ -1948,6 +1924,29 @@ dependencies = [
  "defuse-outlayer-signer",
  "defuse-outlayer-vm-runner",
  "tokio",
+]
+
+[[package]]
+name = "defuse-outlayer-worker"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "config",
+ "defuse-outlayer-host",
+ "defuse-outlayer-proto",
+ "defuse-outlayer-service",
+ "defuse-outlayer-signer",
+ "dotenvy",
+ "serde",
+ "serde_with",
+ "tokio",
+ "tonic 0.14.5",
+ "tonic-health",
+ "tonic-reflection",
+ "tower",
+ "tracing",
+ "tracing-subscriber",
+ "zeroize",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 [package]
-name = "defuse-outlayer-bin"
+name = "defuse-outlayer-worker"
 edition.workspace = true
 version.workspace = true
 rust-version.workspace = true
@@ -10,7 +10,7 @@ publish = false
 workspace = true
 
 [[bin]]
-name = "outlayer"
+name = "outlayer-worker"
 path = "src/main.rs"
 
 [dependencies]
@@ -25,11 +25,11 @@ tonic-reflection = { workspace = true }
 tower = { workspace = true }
 
 anyhow.workspace = true
-config.workspace = true
+config = { workspace = true, features = ["json"] }
 dotenvy.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_with = { workspace = true, features = ["hex"] }
-tokio = { workspace = true, features = ["full"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 zeroize = { workspace = true }

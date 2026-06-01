@@ -1,6 +1,10 @@
 use defuse_outlayer_host::crypto::Signer;
+<<<<<<< HEAD:crates/outlayer/bin/src/main.rs
 use defuse_outlayer_proto::{FILE_DESCRIPTOR_SET, outlayer_service_server::OutlayerServiceServer};
 use defuse_outlayer_service::{OutlayerBuilder, OutlayerConfig, OutlayerGrpc};
+=======
+use defuse_outlayer_service::OutlayerConfig;
+>>>>>>> origin/feat/outlayerconfig:crates/outlayer/worker/src/main.rs
 use defuse_outlayer_signer::InMemorySigner;
 
 use anyhow::{Context as _, Result};
@@ -31,6 +35,7 @@ struct AppConfig {
     #[serde(rename = "service")]
     outlayer: OutlayerConfig,
     #[serde_as(as = "Option<Hex>")]
+<<<<<<< HEAD:crates/outlayer/bin/src/main.rs
     signer_seed: Option<Zeroizing<Vec<u8>>>,
     #[serde_as(as = "serde_with::DisplayFromStr")]
     addr: SocketAddr,
@@ -53,6 +58,9 @@ impl Default for AppConfig {
             execution_timeout_s: DEFAULT_EXECUTION_TIMEOUT,
         }
     }
+=======
+    seed: Option<Zeroizing<Vec<u8>>>,
+>>>>>>> origin/feat/outlayerconfig:crates/outlayer/worker/src/main.rs
 }
 
 impl AppConfig {
@@ -73,14 +81,22 @@ impl AppConfig {
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok();
     tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_env("RUST_LOG"))
+        .with_env_filter(tracing_subscriber::EnvFilter::from_env("OUTLAYER_LOG"))
         .init();
 
+<<<<<<< HEAD:crates/outlayer/bin/src/main.rs
     let config = AppConfig::load()?;
 
     // TODO: derive seed from CKD
     #[allow(clippy::option_if_let_else)]
     let signer = match config.signer_seed {
+=======
+    let AppConfig { outlayer, seed } = AppConfig::load()?;
+
+    // TODO: derive seed from CKD
+    #[allow(clippy::option_if_let_else)]
+    let signer = match seed.as_deref() {
+>>>>>>> origin/feat/outlayerconfig:crates/outlayer/worker/src/main.rs
         Some(seed) => {
             tracing::warn!("using custom signer seed — not intended for production use");
             InMemorySigner::from_seed(&seed)
@@ -89,11 +105,15 @@ async fn main() -> Result<()> {
     };
 
     let signer: Arc<dyn Signer> = Arc::new(signer);
+<<<<<<< HEAD:crates/outlayer/bin/src/main.rs
 
     let outlayer = OutlayerBuilder::default()
         .with_config(config.outlayer)
         .build(signer)
         .context("outlayer")?;
+=======
+    let _ = outlayer.build(signer).context("outlayer")?;
+>>>>>>> origin/feat/outlayerconfig:crates/outlayer/worker/src/main.rs
 
     let grpc_service = OutlayerServiceServer::new(OutlayerGrpc::new(
         ServiceBuilder::new()

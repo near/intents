@@ -1,19 +1,22 @@
 mod compiler;
 mod config;
 mod error;
-#[cfg(feature = "proto")]
-mod proto_impls;
 
 pub use self::{compiler::*, config::*, error::*};
 
 use std::sync::Arc;
 
-pub use defuse_outlayer_vm_runner::host::{Context as HostContext, crypto::Signer};
+pub use defuse_outlayer_vm_runner::host::Context as HostContext;
+pub use defuse_outlayer_vm_runner::host::InMemorySigner;
 pub use defuse_outlayer_vm_runner::wasmtime::component::Component;
 
 use defuse_outlayer_vm_runner::{
     Context as VmContext, ExecutionOutcome, VmRuntime, WasiContext,
+<<<<<<< HEAD
     host::Host,
+=======
+    host::{Host, crypto::Signer},
+>>>>>>> origin/main
     wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe},
 };
 
@@ -22,8 +25,12 @@ use bytes::Bytes;
 #[derive(Clone)]
 pub struct Executor {
     runtime: Arc<VmRuntime>,
+<<<<<<< HEAD
+    signer: Arc<InMemorySigner>,
+    limits: ExecutorLimits,
+=======
     signer: Arc<dyn Signer>,
-    io_limits: IoLimits,
+>>>>>>> origin/main
 }
 
 pub struct Context {
@@ -55,12 +62,15 @@ impl Outcome {
 }
 
 impl Executor {
-    pub fn new(signer: Arc<dyn Signer>, runtime: Arc<VmRuntime>, io_limits: IoLimits) -> Self {
-        Self {
-            runtime,
-            signer,
-            io_limits,
-        }
+    pub fn new(
+        signer: impl Into<Arc<InMemorySigner>>,
+        config: Config,
+    ) -> anyhow::Result<Self> {
+        Ok(Self {
+            runtime: Arc::new(VmRuntime::new(config.memory_limit)?),
+            signer: signer.into(),
+            limits: config.limits,
+        })
     }
 
     pub fn compiler(&self) -> Compiler {
@@ -73,12 +83,12 @@ impl Executor {
         component: &Component,
         fuel: u64,
     ) -> Result<Outcome, Error> {
-        if ctx.input.len() > self.io_limits.stdin {
+        if ctx.input.len() > self.limits.stdin {
             return Err(Error::InputTooLong);
         }
 
-        let stdout = MemoryOutputPipe::new(self.io_limits.stdout);
-        let stderr = MemoryOutputPipe::new(self.io_limits.stderr);
+        let stdout = MemoryOutputPipe::new(self.limits.stdout);
+        let stderr = MemoryOutputPipe::new(self.limits.stderr);
         let ctx = VmContext {
             wasi: WasiContext {
                 stdin: MemoryInputPipe::new(ctx.input),

@@ -1,4 +1,3 @@
-mod builder;
 mod cache;
 mod code;
 mod config;
@@ -10,11 +9,8 @@ mod tonic_impl;
 #[cfg(feature = "tower")]
 mod tower_impl;
 
-pub use self::builder::OutlayerBuilder;
 pub use self::config::OutlayerConfig;
-pub use self::resolver::{
-    HttpResolver, NearResolver, Resolver, ResolverBuilder, ResolverConfig, UrlResolver,
-};
+pub use self::resolver::{HttpResolver, NearResolver, Resolver, ResolverConfig, UrlResolver};
 pub use self::{cache::*, code::*};
 
 #[cfg(feature = "tonic")]
@@ -42,16 +38,16 @@ pub struct Outlayer {
 }
 
 impl Outlayer {
-    pub const fn new(
+    pub fn new(
         resolver: Resolver,
         executor: Executor,
-        runtime_cache: Cache<[u8; 32], Component>,
+        cache: CacheConfig,
         default_fuel: u64,
     ) -> Self {
         Self {
             resolver,
             executor,
-            runtime_cache,
+            runtime_cache: cache.build(),
             default_fuel,
         }
     }

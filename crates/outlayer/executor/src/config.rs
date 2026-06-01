@@ -9,37 +9,37 @@ const LIMIT_16KB: usize = 16 * 1024;
 
 #[cfg_attr(
     feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize),
+    derive(::serde::Deserialize),
     serde(deny_unknown_fields, default)
 )]
 #[derive(Debug, Clone, Copy)]
 pub struct ExecutorConfig {
-    pub memory_limit: usize,
-    pub limits: StreamLimits,
+    pub memory_limit_bytes: usize,
+    pub io_limits: IoLimits,
 }
 
 impl Default for ExecutorConfig {
     fn default() -> Self {
         Self {
-            memory_limit: VmRuntime::DEFAULT_MEMORY_LIMIT,
-            limits: StreamLimits::default(),
+            memory_limit_bytes: VmRuntime::DEFAULT_MEMORY_LIMIT,
+            io_limits: IoLimits::default(),
         }
     }
 }
 
 #[cfg_attr(
     feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize),
+    derive(::serde::Deserialize),
     serde(deny_unknown_fields, default)
 )]
 #[derive(Debug, Clone, Copy)]
-pub struct StreamLimits {
+pub struct IoLimits {
     pub stdin: usize,
     pub stdout: usize,
     pub stderr: usize,
 }
 
-impl Default for StreamLimits {
+impl Default for IoLimits {
     fn default() -> Self {
         Self {
             stdin: LIMIT_4MB,
@@ -49,23 +49,12 @@ impl Default for StreamLimits {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct ExecutorBuilder {
-    config: ExecutorConfig,
-}
-
-impl ExecutorBuilder {
-    #[must_use]
-    pub const fn with_config(mut self, config: ExecutorConfig) -> Self {
-        self.config = config;
-        self
-    }
-
+impl ExecutorConfig {
     pub fn build(self, signer: Arc<dyn Signer>) -> anyhow::Result<Executor> {
         Ok(Executor::new(
             signer,
-            Arc::new(VmRuntime::new(self.config.memory_limit)?),
-            self.config.limits,
+            Arc::new(VmRuntime::new(self.memory_limit_bytes)?),
+            self.io_limits,
         ))
     }
 }
