@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
-use defuse_outlayer_host::crypto::Signer;
-use defuse_outlayer_service::OutlayerConfig;
+use defuse_outlayer_service::{OutlayerConfig, host::crypto::Signer};
 use defuse_outlayer_signer::InMemorySigner;
 
 use anyhow::{Context as _, Result};

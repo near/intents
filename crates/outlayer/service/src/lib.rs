@@ -3,6 +3,8 @@ mod code;
 mod config;
 mod resolver;
 
+pub use defuse_outlayer_host as host;
+
 pub use self::config::OutlayerConfig;
 pub use self::resolver::{HttpResolver, NearResolver, Resolver, ResolverConfig, UrlResolver};
 pub use self::{cache::*, code::*};

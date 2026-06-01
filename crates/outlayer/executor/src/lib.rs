@@ -53,7 +53,11 @@ impl Outcome {
 }
 
 impl Executor {
-    pub const fn new(signer: Arc<dyn Signer>, runtime: Arc<VmRuntime>, io_limits: IoLimits) -> Self {
+    pub const fn new(
+        signer: Arc<dyn Signer>,
+        runtime: Arc<VmRuntime>,
+        io_limits: IoLimits,
+    ) -> Self {
         Self {
             runtime,
             signer,

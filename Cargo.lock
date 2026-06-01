@@ -1844,6 +1844,7 @@ dependencies = [
  "cfg_eval",
  "data-url",
  "defuse-outlayer-executor",
+ "defuse-outlayer-host",
  "defuse-outlayer-primitives",
  "defuse-serde-utils",
  "derive_more",
@@ -1915,7 +1916,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "config",
- "defuse-outlayer-host",
  "defuse-outlayer-service",
  "defuse-outlayer-signer",
  "dotenvy",
