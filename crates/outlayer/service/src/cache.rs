@@ -13,9 +13,10 @@ pub struct CacheConfig {
     pub max_capacity_bytes: u64,
     #[cfg_attr(
         feature = "serde",
+        serde(rename = "time_to_idle_seconds"),
         serde_as(as = "Option<::serde_with::DurationSeconds<u64>>")
     )]
-    pub time_to_idle_s: Option<Duration>,
+    pub time_to_idle: Option<Duration>,
 }
 
 const DEFAULT_MAX_CAPACITY_BYTES: u64 = 100 * 1024 * 1024;
@@ -24,7 +25,7 @@ impl Default for CacheConfig {
     fn default() -> Self {
         Self {
             max_capacity_bytes: DEFAULT_MAX_CAPACITY_BYTES,
-            time_to_idle_s: None,
+            time_to_idle: None,
         }
     }
 }
@@ -40,7 +41,7 @@ impl CacheConfig {
                 let r = comp.image_range();
                 u32::try_from((r.start.addr()..r.end.addr()).len()).unwrap_or(u32::MAX)
             });
-        if let Some(tti) = self.time_to_idle_s {
+        if let Some(tti) = self.time_to_idle {
             builder = builder.time_to_idle(tti);
         }
         builder.build()
