@@ -22,7 +22,7 @@ const DEFAULT_ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSP
 const DEFAULT_MAX_PARALLEL_WASM_EXECUTIONS: usize = 2;
 const DEFAULT_CONNECTIONS_LIMIT: usize = 500;
 const DEFAULT_CONCURRENCY_LIMIT_PER_CONNECTION: usize = 1;
-const DEFAULT_EXECUTION_TIMEOUT: Duration = Duration::from_secs(30);
+const DEFAULT_REQUEST_HANDLING_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[serde_with::serde_as]
 #[derive(Deserialize)]
@@ -37,8 +37,9 @@ struct AppConfig {
     max_parallel_wasm_executions: usize,
     connections_limit: usize,
     concurrency_limit_per_connection: usize,
+    #[serde(rename = "request_handling_timeout_seconds")]
     #[serde_as(as = "serde_with::DurationSeconds<u64>")]
-    execution_timeout_s: Duration,
+    request_handling_timeout: Duration,
 }
 
 impl Default for AppConfig {
@@ -50,7 +51,7 @@ impl Default for AppConfig {
             max_parallel_wasm_executions: DEFAULT_MAX_PARALLEL_WASM_EXECUTIONS,
             connections_limit: DEFAULT_CONNECTIONS_LIMIT,
             concurrency_limit_per_connection: DEFAULT_CONCURRENCY_LIMIT_PER_CONNECTION,
-            execution_timeout_s: DEFAULT_EXECUTION_TIMEOUT,
+            request_handling_timeout: DEFAULT_REQUEST_HANDLING_TIMEOUT,
         }
     }
 }
@@ -110,7 +111,7 @@ async fn main() -> Result<()> {
             // on expiry.
             // TODO: spawn_blocking phases (compile, WASM run) cannot be
             // interrupted consider using epoch interruptions on wasm execution
-            .timeout(config.execution_timeout_s)
+            .timeout(config.request_handling_timeout)
             .service(outlayer),
     ));
 
