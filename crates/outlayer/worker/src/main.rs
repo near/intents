@@ -23,14 +23,15 @@ struct AppConfig {
 
 impl AppConfig {
     fn load() -> Result<Self> {
-        Ok(Config::builder()
+        Config::builder()
             .add_source(
                 Environment::with_prefix(PREFIX)
                     .prefix_separator("__")
                     .separator("__"),
             )
             .build()
-            .and_then(config::Config::try_deserialize)?)
+            .and_then(config::Config::try_deserialize)
+            .map_err(Into::into)
     }
 }
 
