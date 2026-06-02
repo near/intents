@@ -11,7 +11,7 @@ use tonic::{Request, Response, Status};
 use tower::util::BoxCloneSyncService;
 use tower::{BoxError, ServiceBuilder, ServiceExt as _, service_fn};
 
-use crate::convert::{IntoProto as _, TryFromProto as _};
+use crate::convert::ProtoTryFrom as _;
 
 pub use defuse_outlayer_proto::FILE_DESCRIPTOR_SET;
 pub use defuse_outlayer_proto::outlayer_service_server::OutlayerServiceServer;
@@ -76,7 +76,7 @@ impl OutlayerService for OutlayerGrpc {
         &self,
         request: Request<proto::Request>,
     ) -> Result<Response<proto::Response>, Status> {
-        let svc_req = ExecuteRequest::try_from_proto(request.into_inner())
+        let svc_req = ExecuteRequest::proto_try_from(request.into_inner())
             .map_err(|e| Status::invalid_argument(e.to_string()))?;
 
         // The `buffer` layer (and `load_shed`/`timeout`) erase errors into `BoxError`,
@@ -93,8 +93,12 @@ impl OutlayerService for OutlayerGrpc {
             }
         })?;
 
+        // Infallible by construction; the match goes non-exhaustive (compile error)
+        // if `ExecuteResponse`'s conversion ever becomes fallible.
+        let Ok(response) = proto::ExecuteResponse::proto_try_from(outcome);
+
         Ok(Response::new(proto::Response {
-            kind: Some(proto::response::Kind::Execute(outcome.into_proto())),
+            kind: Some(proto::response::Kind::Execute(response)),
         }))
     }
 }

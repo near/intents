@@ -6,6 +6,8 @@
 //! and the proto types are foreign to this crate, so the orphan rule forbids
 //! `From`/`TryFrom` impls — we use local conversion traits instead.
 
+use core::convert::Infallible;
+
 use defuse_outlayer_executor::Outcome;
 use defuse_outlayer_primitives::{AccountId, AppId};
 use defuse_outlayer_proto as proto;
@@ -14,16 +16,14 @@ use defuse_outlayer_vm_runner::{ExecutionDetails, ExecutionOutcome};
 
 use crate::ExecuteRequest;
 
-pub trait TryFromProto<P>: Sized {
-    fn try_from_proto(proto: P) -> anyhow::Result<Self>;
+pub trait ProtoTryFrom<P>: Sized {
+    type Error;
+    fn proto_try_from(value: P) -> Result<Self, Self::Error>;
 }
 
-pub trait IntoProto<P> {
-    fn into_proto(self) -> P;
-}
-
-impl TryFromProto<proto::AppId> for AppId<'static> {
-    fn try_from_proto(p: proto::AppId) -> anyhow::Result<Self> {
+impl ProtoTryFrom<proto::AppId> for AppId<'static> {
+    type Error = anyhow::Error;
+    fn proto_try_from(p: proto::AppId) -> Result<Self, Self::Error> {
         match p
             .variant
             .ok_or_else(|| anyhow::anyhow!("missing AppId variant"))?
@@ -33,8 +33,9 @@ impl TryFromProto<proto::AppId> for AppId<'static> {
     }
 }
 
-impl TryFromProto<proto::AppCodeUrl> for AppCodeUrl {
-    fn try_from_proto(p: proto::AppCodeUrl) -> anyhow::Result<Self> {
+impl ProtoTryFrom<proto::AppCodeUrl> for AppCodeUrl {
+    type Error = anyhow::Error;
+    fn proto_try_from(p: proto::AppCodeUrl) -> Result<Self, Self::Error> {
         let code_url = p.code_url.parse()?;
         let code_hash: [u8; 32] = p.code_hash.as_slice().try_into().map_err(|_| {
             anyhow::anyhow!("code_hash must be 32 bytes, got {}", p.code_hash.len())
@@ -46,78 +47,85 @@ impl TryFromProto<proto::AppCodeUrl> for AppCodeUrl {
     }
 }
 
-impl TryFromProto<proto::CodeRef> for CodeRef<'static> {
-    fn try_from_proto(p: proto::CodeRef) -> anyhow::Result<Self> {
+impl ProtoTryFrom<proto::CodeRef> for CodeRef<'static> {
+    type Error = anyhow::Error;
+    fn proto_try_from(p: proto::CodeRef) -> Result<Self, Self::Error> {
         match p
             .variant
             .ok_or_else(|| anyhow::anyhow!("missing CodeRef variant"))?
         {
             proto::code_ref::Variant::AppId(app_id) => {
-                Ok(Self::AppId(AppId::try_from_proto(app_id)?))
+                Ok(Self::AppId(AppId::proto_try_from(app_id)?))
             }
-            proto::code_ref::Variant::Url(url) => Ok(Self::Url(AppCodeUrl::try_from_proto(url)?)),
+            proto::code_ref::Variant::Url(url) => Ok(Self::Url(AppCodeUrl::proto_try_from(url)?)),
         }
     }
 }
 
-impl TryFromProto<proto::Code> for Code<'static> {
-    fn try_from_proto(p: proto::Code) -> anyhow::Result<Self> {
+impl ProtoTryFrom<proto::Code> for Code<'static> {
+    type Error = anyhow::Error;
+    fn proto_try_from(p: proto::Code) -> Result<Self, Self::Error> {
         match p
             .variant
             .ok_or_else(|| anyhow::anyhow!("missing Code variant"))?
         {
             proto::code::Variant::CodeRef(code_ref) => {
-                Ok(Self::Ref(CodeRef::try_from_proto(code_ref)?))
+                Ok(Self::Ref(CodeRef::proto_try_from(code_ref)?))
             }
             proto::code::Variant::InlineCode(bytes) => Ok(Self::Inline { code: bytes.into() }),
         }
     }
 }
 
-impl TryFromProto<proto::ExecuteRequest> for ExecuteRequest {
-    fn try_from_proto(p: proto::ExecuteRequest) -> anyhow::Result<Self> {
+impl ProtoTryFrom<proto::ExecuteRequest> for ExecuteRequest {
+    type Error = anyhow::Error;
+    fn proto_try_from(p: proto::ExecuteRequest) -> Result<Self, Self::Error> {
         Ok(Self {
-            app: Code::try_from_proto(p.app.ok_or_else(|| anyhow::anyhow!("missing app"))?)?,
+            app: Code::proto_try_from(p.app.ok_or_else(|| anyhow::anyhow!("missing app"))?)?,
             input: p.input.into(),
             fuel: p.fuel,
         })
     }
 }
 
-impl TryFromProto<proto::Request> for ExecuteRequest {
-    fn try_from_proto(p: proto::Request) -> anyhow::Result<Self> {
+impl ProtoTryFrom<proto::Request> for ExecuteRequest {
+    type Error = anyhow::Error;
+    fn proto_try_from(p: proto::Request) -> Result<Self, Self::Error> {
         match p
             .kind
             .ok_or_else(|| anyhow::anyhow!("missing request kind"))?
         {
-            proto::request::Kind::Execute(req) => Self::try_from_proto(req),
+            proto::request::Kind::Execute(req) => Self::proto_try_from(req),
         }
     }
 }
 
-impl IntoProto<proto::ExecutionDetails> for ExecutionDetails {
-    fn into_proto(self) -> proto::ExecutionDetails {
-        proto::ExecutionDetails {
-            fuel_consumed: self.fuel_consumed,
-        }
+impl ProtoTryFrom<ExecutionDetails> for proto::ExecutionDetails {
+    type Error = Infallible;
+    fn proto_try_from(value: ExecutionDetails) -> Result<Self, Self::Error> {
+        Ok(Self {
+            fuel_consumed: value.fuel_consumed,
+        })
     }
 }
 
-impl IntoProto<proto::ExecutionOutcome> for ExecutionOutcome {
-    fn into_proto(self) -> proto::ExecutionOutcome {
-        proto::ExecutionOutcome {
-            details: Some(self.details.into_proto()),
-            error: self.error,
-        }
+impl ProtoTryFrom<ExecutionOutcome> for proto::ExecutionOutcome {
+    type Error = Infallible;
+    fn proto_try_from(value: ExecutionOutcome) -> Result<Self, Self::Error> {
+        Ok(Self {
+            details: Some(proto::ExecutionDetails::proto_try_from(value.details)?),
+            error: value.error,
+        })
     }
 }
 
-impl IntoProto<proto::ExecuteResponse> for Outcome {
-    fn into_proto(self) -> proto::ExecuteResponse {
-        proto::ExecuteResponse {
-            output: self.output.into(),
-            logs: self.logs.into(),
-            execution: Some(self.execution.into_proto()),
-        }
+impl ProtoTryFrom<Outcome> for proto::ExecuteResponse {
+    type Error = Infallible;
+    fn proto_try_from(value: Outcome) -> Result<Self, Self::Error> {
+        Ok(Self {
+            output: value.output.into(),
+            logs: value.logs.into(),
+            execution: Some(proto::ExecutionOutcome::proto_try_from(value.execution)?),
+        })
     }
 }
