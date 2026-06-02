@@ -76,7 +76,7 @@ async fn main() -> Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_env("RUST_LOG"))
         .init();
 
-    let AppConfig { outlayer, seed } = AppConfig::load().context("config")?;
+    let config = AppConfig::load().context("config")?;
 
     // TODO: derive seed from CKD
     #[allow(clippy::option_if_let_else)]
