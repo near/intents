@@ -1,10 +1,7 @@
-use std::{
-    future::Future,
-    pin::Pin,
-    task::{Context, Poll},
-};
+use std::task::{Context, Poll};
 
 use bytes::Bytes;
+use futures::future::BoxFuture;
 
 use crate::{Code, Error, Outlayer};
 use defuse_outlayer_executor::Outcome;
@@ -18,7 +15,7 @@ pub struct ExecuteRequest {
 impl tower::Service<ExecuteRequest> for Outlayer {
     type Response = Outcome;
     type Error = Error;
-    type Future = Pin<Box<dyn Future<Output = Result<Outcome, Error>> + Send>>;
+    type Future = BoxFuture<'static, Result<Outcome, Error>>;
 
     fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         Poll::Ready(Ok(()))
