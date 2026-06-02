@@ -9,8 +9,10 @@
 use defuse_outlayer_executor::Outcome;
 use defuse_outlayer_primitives::{AccountId, AppId};
 use defuse_outlayer_proto as proto;
-use defuse_outlayer_service::{AppCodeUrl, Code, CodeRef, ExecuteRequest};
+use defuse_outlayer_service::{AppCodeUrl, Code, CodeRef};
 use defuse_outlayer_vm_runner::{ExecutionDetails, ExecutionOutcome};
+
+use crate::ExecuteRequest;
 
 pub trait TryFromProto<P>: Sized {
     fn try_from_proto(proto: P) -> anyhow::Result<Self>;

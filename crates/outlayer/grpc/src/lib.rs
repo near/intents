@@ -2,18 +2,26 @@ mod convert;
 
 use std::time::Duration;
 
+use bytes::Bytes;
 use defuse_outlayer_executor::Outcome;
 use defuse_outlayer_proto as proto;
 use defuse_outlayer_proto::outlayer_service_server::OutlayerService;
-use defuse_outlayer_service::{ExecuteRequest, Outlayer};
+use defuse_outlayer_service::{Code, Outlayer};
 use tonic::{Request, Response, Status};
 use tower::util::BoxCloneSyncService;
-use tower::{BoxError, ServiceBuilder, ServiceExt as _};
+use tower::{BoxError, ServiceBuilder, ServiceExt as _, service_fn};
 
 use crate::convert::{IntoProto as _, TryFromProto as _};
 
 pub use defuse_outlayer_proto::FILE_DESCRIPTOR_SET;
 pub use defuse_outlayer_proto::outlayer_service_server::OutlayerServiceServer;
+
+/// Request handled by the layered execution service.
+pub struct ExecuteRequest {
+    pub app: Code<'static>,
+    pub input: Bytes,
+    pub fuel: Option<u64>,
+}
 
 /// The fully-layered execution service, type-erased so it can be named.
 //
@@ -50,7 +58,12 @@ impl OutlayerGrpc {
             // TODO: spawn_blocking phases (compile, WASM run) cannot be
             // interrupted consider using epoch interruptions on wasm execution
             .timeout(config.request_handling_timeout)
-            .service(outlayer);
+            // Thin adapter: turn `Outlayer` into a `tower::Service` over `ExecuteRequest`.
+            // Kept here (the transport edge) so the core `service` crate stays free of tower.
+            .service(service_fn(move |req: ExecuteRequest| {
+                let outlayer = outlayer.clone();
+                async move { outlayer.execute(req.app, req.input, req.fuel).await }
+            }));
 
         Self(BoxCloneSyncService::new(service))
     }

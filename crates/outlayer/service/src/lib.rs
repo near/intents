@@ -2,17 +2,12 @@ mod cache;
 mod code;
 mod config;
 mod resolver;
-#[cfg(feature = "tower")]
-mod tower_impl;
 
 pub use defuse_outlayer_executor::Signer;
 
 pub use self::config::OutlayerConfig;
 pub use self::resolver::{HttpResolver, NearResolver, Resolver, ResolverConfig, UrlResolver};
 pub use self::{cache::*, code::*};
-
-#[cfg(feature = "tower")]
-pub use self::tower_impl::*;
 
 use std::{convert, sync::Arc};
 
