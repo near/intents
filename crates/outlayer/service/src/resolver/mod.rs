@@ -1,12 +1,18 @@
+mod config;
 mod near;
 mod url;
 
+use defuse_outlayer_primitives::AppId;
+
 use crate::{AppCodeUrl, CodeRef};
 use bytes::Bytes;
-use defuse_outlayer_primitives::AppId;
 use sha2::{Digest, Sha256};
 
-use self::{near::NearResolver, url::UrlResolver};
+pub use self::{
+    config::ResolverConfig,
+    near::NearResolver,
+    url::{HttpResolver, UrlResolver},
+};
 
 #[derive(Clone)]
 pub struct Resolver {
@@ -15,7 +21,11 @@ pub struct Resolver {
 }
 
 impl Resolver {
-    pub async fn resolve_code_url(&self, code: CodeRef<'_>) -> Result<AppCodeUrl> {
+    pub const fn new(near: NearResolver, url: UrlResolver) -> Self {
+        Self { near, url }
+    }
+
+    pub async fn resolve_code_url(&self, code: CodeRef<'_>) -> Result<AppCodeUrl, Error> {
         match code {
             CodeRef::AppId(app_id) => match app_id {
                 AppId::Near(oa_contract_id) => {
@@ -32,7 +42,7 @@ impl Resolver {
             code_url,
             code_hash,
         }: AppCodeUrl,
-    ) -> Result<Bytes> {
+    ) -> Result<Bytes, Error> {
         let code = self.url.resolve(code_url).await?;
         let actual = Sha256::digest(&code);
         if actual != code_hash {
@@ -41,8 +51,6 @@ impl Resolver {
         Ok(code)
     }
 }
-
-pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
