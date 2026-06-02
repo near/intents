@@ -10,7 +10,7 @@ use std::{
     net::{Ipv4Addr, SocketAddr, SocketAddrV4},
     sync::Arc,
 };
-use tonic::transport::Server;
+use tonic::transport::{Server, server::TcpIncoming};
 use tonic_health::ServingStatus;
 use zeroize::Zeroizing;
 
@@ -26,20 +26,20 @@ struct AppConfig {
     outlayer: OutlayerConfig,
     #[serde_as(as = "Option<Hex>")]
     seed: Option<Zeroizing<Vec<u8>>>,
-    http_server: HttpServerConfig,
+    grpc_server: GrpcServerConfig,
     grpc: GrpcConfig,
 }
 
 #[serde_with::serde_as]
 #[derive(Deserialize)]
 #[serde(default)]
-struct HttpServerConfig {
+struct GrpcServerConfig {
     #[serde_as(as = "serde_with::DisplayFromStr")]
     addr: SocketAddr,
     concurrency_limit_per_connection: usize,
 }
 
-impl Default for HttpServerConfig {
+impl Default for GrpcServerConfig {
     fn default() -> Self {
         Self {
             addr: DEFAULT_ADDR,
@@ -99,14 +99,15 @@ async fn main() -> Result<()> {
         .register_encoded_file_descriptor_set(tonic_health::pb::FILE_DESCRIPTOR_SET)
         .build_v1()?;
 
-    tracing::info!(addr = %config.http_server.addr, "listening");
+    let incoming = TcpIncoming::bind(config.grpc_server.addr).context("bind")?;
+    tracing::info!(addr = %incoming.local_addr().context("local addr")?, "listening");
 
     Server::builder()
-        .concurrency_limit_per_connection(config.http_server.concurrency_limit_per_connection)
+        .concurrency_limit_per_connection(config.grpc_server.concurrency_limit_per_connection)
         .add_service(health_service)
         .add_service(grpc_service)
         .add_service(reflection_service)
-        .serve(config.http_server.addr)
+        .serve_with_incoming(incoming)
         .await
         .context("server error")
 }
