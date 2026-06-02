@@ -16,6 +16,13 @@ pub use defuse_outlayer_proto::FILE_DESCRIPTOR_SET;
 pub use defuse_outlayer_proto::outlayer_service_server::OutlayerServiceServer;
 
 /// The fully-layered execution service, type-erased so it can be named.
+//
+// Type erasure is forced by the `buffer` layer: `Buffer<Req, F>` is generic over
+// the inner service's (unnameable) future type, so the stack can't be spelled out;
+// `BoxCloneSyncService` also satisfies tonic's `Clone + Send + Sync` requirement.
+// TODO: replace `buffer` with a dedicated layer that caps N active executions via a
+// semaphore acquire (instead of queueing requests). Such a stack would be nameable
+// and could drop this erasure — out of scope for this PR.
 type LayeredService = BoxCloneSyncService<ExecuteRequest, Outcome, BoxError>;
 
 #[derive(Clone)]
@@ -62,6 +69,8 @@ impl OutlayerService for OutlayerGrpc {
         let svc_req = ExecuteRequest::try_from_proto(request.into_inner())
             .map_err(|e| Status::invalid_argument(e.to_string()))?;
 
+        // The `buffer` layer (and `load_shed`/`timeout`) erase errors into `BoxError`,
+        // so we downcast to recover which layer failed.
         let outcome = self.service.clone().oneshot(svc_req).await.map_err(|e| {
             if e.is::<tower::load_shed::error::Overloaded>() {
                 // RESOURCE_EXHAUSTED is the standard gRPC backpressure code; load balancers
