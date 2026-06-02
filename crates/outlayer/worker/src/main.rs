@@ -1,6 +1,5 @@
 use defuse_outlayer_grpc::{FILE_DESCRIPTOR_SET, GrpcConfig, OutlayerGrpc, OutlayerServiceServer};
-use defuse_outlayer_host::crypto::Signer;
-use defuse_outlayer_service::OutlayerConfig;
+use defuse_outlayer_service::{OutlayerConfig, Signer};
 use defuse_outlayer_signer::InMemorySigner;
 
 use anyhow::{Context as _, Result};
@@ -67,7 +66,7 @@ impl AppConfig {
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok();
     tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_env("RUST_LOG"))
+        .with_env_filter(tracing_subscriber::EnvFilter::from_env("OUTLAYER_LOG"))
         .init();
 
     let config = AppConfig::load().context("config")?;

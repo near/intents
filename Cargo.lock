@@ -1981,7 +1981,6 @@ dependencies = [
  "anyhow",
  "config",
  "defuse-outlayer-grpc",
- "defuse-outlayer-host",
  "defuse-outlayer-service",
  "defuse-outlayer-signer",
  "dotenvy",
