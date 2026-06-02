@@ -4,6 +4,7 @@ use defuse_outlayer_vm_runner::{VmRuntime, host::crypto::Signer};
 
 use crate::Executor;
 
+const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024; // 100 MiB
 const LIMIT_4MB: usize = 4 * 1024 * 1024;
 const LIMIT_16KB: usize = 16 * 1024;
 
@@ -21,7 +22,7 @@ pub struct ExecutorConfig {
 impl Default for ExecutorConfig {
     fn default() -> Self {
         Self {
-            memory_limit_bytes: VmRuntime::DEFAULT_MEMORY_LIMIT,
+            memory_limit_bytes: DEFAULT_MEMORY_LIMIT,
             io_limits: IoLimits::default(),
         }
     }

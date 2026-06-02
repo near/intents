@@ -34,8 +34,6 @@ pub struct VmRuntime {
 }
 
 impl VmRuntime {
-    pub const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024; // 100 MiB
-
     /// Creates a new `VmRuntime`.
     ///
     /// Async support and fuel metering are always enabled and cannot be
@@ -139,7 +137,7 @@ impl VmRuntime {
     ///     fuel: 1_000_000_000,
     /// };
     ///
-    /// let runner = VmRuntime::new(VmRuntime::DEFAULT_MEMORY_LIMIT)?;
+    /// let runner = VmRuntime::new(100 * 1024 * 1024)?;
     /// let component = runner.compile(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../sdk/examples/empty.wat")))?;
     /// runner.execute(ctx, &component).await?;
     ///

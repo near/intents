@@ -16,7 +16,7 @@ use tonic::transport::Server;
 use tonic_health::ServingStatus;
 use zeroize::Zeroizing;
 
-const PREFIX: &str = "WORKER";
+const PREFIX: &str = "OUTLAYER";
 const DEFAULT_ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 50051));
 const DEFAULT_MAX_PARALLEL_WASM_EXECUTIONS: usize = 2;
 const DEFAULT_CONNECTIONS_LIMIT: usize = 500;
@@ -76,7 +76,7 @@ async fn main() -> Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_env("RUST_LOG"))
         .init();
 
-    let config = AppConfig::load()?;
+    let AppConfig { outlayer, seed } = AppConfig::load().context("config")?;
 
     // TODO: derive seed from CKD
     #[allow(clippy::option_if_let_else)]
@@ -90,7 +90,7 @@ async fn main() -> Result<()> {
 
     let signer: Arc<dyn Signer> = Arc::new(signer);
 
-    let outlayer = config.outlayer.build(signer).context("outlayer")?;
+    let outlayer = config.outlayer.build(signer).context("build")?;
 
     let grpc_service = OutlayerServiceServer::new(OutlayerGrpc::new(
         outlayer,
