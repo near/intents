@@ -1,7 +1,7 @@
 use std::task::{Context, Poll};
 
 use bytes::Bytes;
-use futures::future::BoxFuture;
+use futures::future::{BoxFuture, FutureExt};
 
 use crate::{Code, Error, Outlayer};
 use defuse_outlayer_executor::Outcome;
@@ -23,6 +23,6 @@ impl tower::Service<ExecuteRequest> for Outlayer {
 
     fn call(&mut self, req: ExecuteRequest) -> Self::Future {
         let this = self.clone();
-        Box::pin(async move { this.execute(req.app, req.input, req.fuel).await })
+        async move { this.execute(req.app, req.input, req.fuel).await }.boxed()
     }
 }

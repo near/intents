@@ -58,6 +58,7 @@ impl OutlayerGrpc {
 
 #[tonic::async_trait]
 impl OutlayerService for OutlayerGrpc {
+    #[tracing::instrument(name = "grpc", skip_all)]
     async fn call(
         &self,
         request: Request<proto::Request>,

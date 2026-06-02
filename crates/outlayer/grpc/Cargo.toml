@@ -19,6 +19,7 @@ defuse-outlayer-vm-runner.workspace = true
 anyhow.workspace = true
 tonic.workspace = true
 tower = { workspace = true, features = ["buffer", "limit", "load-shed", "timeout", "util"] }
+tracing.workspace = true
 
 serde = { workspace = true, optional = true, features = ["derive"] }
 serde_with = { workspace = true, optional = true }

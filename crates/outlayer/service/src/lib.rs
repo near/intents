@@ -23,6 +23,7 @@ use defuse_outlayer_executor::{
 };
 use defuse_outlayer_primitives::AppId;
 use moka::future::Cache;
+use tracing::Instrument;
 
 #[derive(Clone)]
 pub struct Outlayer {
@@ -83,6 +84,7 @@ impl Outlayer {
         Ok((app_id, component))
     }
 
+    #[tracing::instrument(skip_all)]
     pub async fn execute(
         &self,
         app: Code<'_>,
@@ -101,8 +103,10 @@ impl Outlayer {
                 input,
                 host: HostContext { app_id },
             };
+            let span = tracing::Span::current();
             move || {
-                tokio::runtime::Handle::current().block_on(executor.execute(ctx, &component, fuel))
+                tokio::runtime::Handle::current()
+                    .block_on(executor.execute(ctx, &component, fuel).instrument(span))
             }
         })
         .await
