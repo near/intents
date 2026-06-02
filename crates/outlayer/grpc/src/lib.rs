@@ -1,0 +1,93 @@
+mod convert;
+
+use std::time::Duration;
+
+use defuse_outlayer_executor::Outcome;
+use defuse_outlayer_proto as proto;
+use defuse_outlayer_proto::outlayer_service_server::OutlayerService;
+use defuse_outlayer_service::{ExecuteRequest, Outlayer};
+use tonic::{Request, Response, Status};
+use tower::util::BoxCloneSyncService;
+use tower::{BoxError, ServiceBuilder, ServiceExt as _};
+
+use crate::convert::{IntoProto as _, TryFromProto as _};
+
+pub use defuse_outlayer_proto::FILE_DESCRIPTOR_SET;
+pub use defuse_outlayer_proto::outlayer_service_server::OutlayerServiceServer;
+
+/// The fully-layered execution service, type-erased so it can be named.
+type LayeredService = BoxCloneSyncService<ExecuteRequest, Outcome, BoxError>;
+
+#[derive(Clone)]
+pub struct OutlayerGrpc {
+    service: LayeredService,
+}
+
+impl OutlayerGrpc {
+    /// Builds the gRPC adapter, wrapping `outlayer` with the tower layer stack
+    /// (`load_shed` → `buffer` → `concurrency_limit` → `timeout`).
+    pub fn new(outlayer: Outlayer, config: GrpcConfig) -> Self {
+        let service = ServiceBuilder::new()
+            // When the queue is full, immediately return RESOURCE_EXHAUSTED so the load
+            // balancer can route the request elsewhere rather than waiting here.
+            // RESOURCE_EXHAUSTED is the standard gRPC backpressure code respected by
+            // gRPC-aware load balancers (e.g. Envoy, AWS ALB).
+            .load_shed()
+            // Bounded async queue. Decouples acceptance from execution. When full, the
+            // load_shed layer above fires.
+            .buffer(config.connections_limit)
+            // Limit concurrent WASM executions. WASM runs synchronously on blocking
+            // threads; this prevents saturating the thread pool with CPU-bound work.
+            .concurrency_limit(config.max_parallel_wasm_executions)
+            // Deadline for a single execution. Runs inside the buffer's background
+            // worker, so it actually cancels async work (e.g. slow WASM downloads)
+            // on expiry.
+            // TODO: spawn_blocking phases (compile, WASM run) cannot be
+            // interrupted consider using epoch interruptions on wasm execution
+            .timeout(config.request_handling_timeout)
+            .service(outlayer);
+
+        Self {
+            service: BoxCloneSyncService::new(service),
+        }
+    }
+}
+
+#[tonic::async_trait]
+impl OutlayerService for OutlayerGrpc {
+    async fn call(
+        &self,
+        request: Request<proto::Request>,
+    ) -> Result<Response<proto::Response>, Status> {
+        let svc_req = ExecuteRequest::try_from_proto(request.into_inner())
+            .map_err(|e| Status::invalid_argument(e.to_string()))?;
+
+        let outcome = self.service.clone().oneshot(svc_req).await.map_err(|e| {
+            if e.is::<tower::load_shed::error::Overloaded>() {
+                // RESOURCE_EXHAUSTED is the standard gRPC backpressure code; load balancers
+                // (e.g. Envoy, grpc-go) treat it as a retry signal and route elsewhere.
+                Status::resource_exhausted("service overloaded")
+            } else if e.is::<tower::timeout::error::Elapsed>() {
+                Status::deadline_exceeded("request timeout")
+            } else {
+                Status::internal(e.to_string())
+            }
+        })?;
+
+        Ok(Response::new(proto::Response {
+            kind: Some(proto::response::Kind::Execute(outcome.into_proto())),
+        }))
+    }
+}
+
+/// Backpressure and timeout policy for the gRPC service.
+#[derive(Clone, Copy)]
+pub struct GrpcConfig {
+    /// Capacity of the bounded request queue. When full, requests are shed with
+    /// `RESOURCE_EXHAUSTED`.
+    pub connections_limit: usize,
+    /// Maximum number of WASM executions running concurrently.
+    pub max_parallel_wasm_executions: usize,
+    /// Deadline for handling a single request end-to-end.
+    pub request_handling_timeout: Duration,
+}

@@ -11,8 +11,6 @@ workspace = true
 [dependencies]
 defuse-outlayer-host.workspace = true
 
-defuse-outlayer-proto = { workspace = true, optional = true }
-
 anyhow.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
@@ -26,7 +24,6 @@ serde_with = { workspace = true, optional = true }
 [features]
 default = ["serde"]
 
-proto = ["dep:defuse-outlayer-proto"]
 serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with"]
 wat = ["wasmtime/wat"]
 

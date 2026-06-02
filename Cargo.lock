@@ -1767,11 +1767,24 @@ dependencies = [
  "anyhow",
  "bytes",
  "cfg_eval",
- "defuse-outlayer-proto",
  "defuse-outlayer-vm-runner",
  "serde",
  "serde_with",
  "thiserror 2.0.18",
+]
+
+[[package]]
+name = "defuse-outlayer-grpc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "defuse-outlayer-executor",
+ "defuse-outlayer-primitives",
+ "defuse-outlayer-proto",
+ "defuse-outlayer-service",
+ "defuse-outlayer-vm-runner",
+ "tonic 0.14.5",
+ "tower",
 ]
 
 [[package]]
@@ -1802,10 +1815,8 @@ dependencies = [
 name = "defuse-outlayer-primitives"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "arbitrary",
  "borsh",
- "defuse-outlayer-proto",
  "derive_more",
  "hex-literal",
  "near-account-id",
@@ -1858,7 +1869,6 @@ dependencies = [
  "data-url",
  "defuse-outlayer-executor",
  "defuse-outlayer-primitives",
- "defuse-outlayer-proto",
  "defuse-serde-utils",
  "derive_more",
  "futures",
@@ -1871,7 +1881,6 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tokio-util",
- "tonic 0.14.5",
  "tower",
  "url",
 ]
@@ -1904,7 +1913,6 @@ dependencies = [
  "cfg_eval",
  "defuse-outlayer-host",
  "defuse-outlayer-primitives",
- "defuse-outlayer-proto",
  "defuse-outlayer-vm-runner",
  "serde",
  "serde_with",
@@ -1932,8 +1940,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "config",
+ "defuse-outlayer-grpc",
  "defuse-outlayer-host",
- "defuse-outlayer-proto",
  "defuse-outlayer-service",
  "defuse-outlayer-signer",
  "dotenvy",
@@ -1943,7 +1951,6 @@ dependencies = [
  "tonic 0.14.5",
  "tonic-health",
  "tonic-reflection",
- "tower",
  "tracing",
  "tracing-subscriber",
  "zeroize",

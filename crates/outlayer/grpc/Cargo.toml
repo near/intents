@@ -1,0 +1,21 @@
+[package]
+name = "defuse-outlayer-grpc"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-outlayer-executor.workspace = true
+defuse-outlayer-primitives.workspace = true
+defuse-outlayer-proto.workspace = true
+defuse-outlayer-service = { workspace = true, features = ["tower"] }
+defuse-outlayer-vm-runner.workspace = true
+
+anyhow.workspace = true
+tonic.workspace = true
+tower = { workspace = true, features = ["buffer", "limit", "load-shed", "timeout", "util"] }

@@ -14,15 +14,14 @@ name = "outlayer-worker"
 path = "src/main.rs"
 
 [dependencies]
+defuse-outlayer-grpc = { workspace = true }
 defuse-outlayer-host = { workspace = true }
-defuse-outlayer-proto = { workspace = true }
-defuse-outlayer-service = { workspace = true, features = ["tonic"] }
+defuse-outlayer-service = { workspace = true }
 defuse-outlayer-signer = { workspace = true, features = ["ed25519", "secp256k1"] }
 
 tonic = { workspace = true }
 tonic-health = { workspace = true }
 tonic-reflection = { workspace = true }
-tower = { workspace = true }
 
 anyhow.workspace = true
 config = { workspace = true, features = ["json"] }

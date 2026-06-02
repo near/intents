@@ -53,6 +53,7 @@ members = [
   "crates/testing/sandbox",
 
   "crates/outlayer/worker",
+  "crates/outlayer/grpc",
   "crates/outlayer/proto",
   "crates/outlayer/executor",
   "crates/outlayer/host",
@@ -128,6 +129,7 @@ defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
 defuse-outlayer-executor.path = "crates/outlayer/executor"
+defuse-outlayer-grpc.path = "crates/outlayer/grpc"
 defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-kdf-app = { path = "crates/outlayer/kdf-app", default-features = false }
 defuse-outlayer-primitives.path = "crates/outlayer/primitives"

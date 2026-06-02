@@ -1,6 +1,6 @@
+use defuse_outlayer_grpc::{FILE_DESCRIPTOR_SET, GrpcConfig, OutlayerGrpc, OutlayerServiceServer};
 use defuse_outlayer_host::crypto::Signer;
-use defuse_outlayer_proto::{FILE_DESCRIPTOR_SET, outlayer_service_server::OutlayerServiceServer};
-use defuse_outlayer_service::{OutlayerConfig, OutlayerGrpc};
+use defuse_outlayer_service::OutlayerConfig;
 use defuse_outlayer_signer::InMemorySigner;
 
 use anyhow::{Context as _, Result};
@@ -14,7 +14,6 @@ use std::{
 };
 use tonic::transport::Server;
 use tonic_health::ServingStatus;
-use tower::ServiceBuilder;
 use zeroize::Zeroizing;
 
 const PREFIX: &str = "WORKER";
@@ -94,25 +93,12 @@ async fn main() -> Result<()> {
     let outlayer = config.outlayer.build(signer).context("outlayer")?;
 
     let grpc_service = OutlayerServiceServer::new(OutlayerGrpc::new(
-        ServiceBuilder::new()
-            // When the queue is full, immediately return RESOURCE_EXHAUSTED so the load
-            // balancer can route the request elsewhere rather than waiting here.
-            // RESOURCE_EXHAUSTED is the standard gRPC backpressure code respected by
-            // gRPC-aware load balancers (e.g. Envoy, AWS ALB).
-            .load_shed()
-            // Bounded async queue. Decouples acceptance from execution. When full, the
-            // load_shed layer above fires.
-            .buffer(config.connections_limit)
-            // Limit concurrent WASM executions. WASM runs synchronously on blocking
-            // threads; this prevents saturating the thread pool with CPU-bound work.
-            .concurrency_limit(config.max_parallel_wasm_executions)
-            // Deadline for a single execution. Runs inside the buffer's background
-            // worker, so it actually cancels async work (e.g. slow WASM downloads)
-            // on expiry.
-            // TODO: spawn_blocking phases (compile, WASM run) cannot be
-            // interrupted consider using epoch interruptions on wasm execution
-            .timeout(config.request_handling_timeout)
-            .service(outlayer),
+        outlayer,
+        GrpcConfig {
+            connections_limit: config.connections_limit,
+            max_parallel_wasm_executions: config.max_parallel_wasm_executions,
+            request_handling_timeout: config.request_handling_timeout,
+        },
     ));
 
     // Implements the standard gRPC health checking protocol (grpc.health.v1).
