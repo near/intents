@@ -10,7 +10,6 @@ use serde_with::hex::Hex;
 use std::{
     net::{Ipv4Addr, SocketAddr, SocketAddrV4},
     sync::Arc,
-    time::Duration,
 };
 use tonic::transport::Server;
 use tonic_health::ServingStatus;
@@ -18,39 +17,34 @@ use zeroize::Zeroizing;
 
 const PREFIX: &str = "OUTLAYER";
 const DEFAULT_ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 50051));
-const DEFAULT_MAX_PARALLEL_WASM_EXECUTIONS: usize = 2;
-const DEFAULT_CONNECTIONS_LIMIT: usize = 500;
 const DEFAULT_CONCURRENCY_LIMIT_PER_CONNECTION: usize = 1;
-const DEFAULT_REQUEST_HANDLING_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[serde_with::serde_as]
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
 #[serde(default)]
 struct AppConfig {
     #[serde(rename = "service")]
     outlayer: OutlayerConfig,
     #[serde_as(as = "Option<Hex>")]
     seed: Option<Zeroizing<Vec<u8>>>,
-    #[serde_as(as = "serde_with::DisplayFromStr")]
-    addr: SocketAddr,
-    max_parallel_wasm_executions: usize,
-    connections_limit: usize,
-    concurrency_limit_per_connection: usize,
-    #[serde(rename = "request_handling_timeout_seconds")]
-    #[serde_as(as = "serde_with::DurationSeconds<u64>")]
-    request_handling_timeout: Duration,
+    http_server: HttpServerConfig,
+    grpc: GrpcConfig,
 }
 
-impl Default for AppConfig {
+#[serde_with::serde_as]
+#[derive(Deserialize)]
+#[serde(default)]
+struct HttpServerConfig {
+    #[serde_as(as = "serde_with::DisplayFromStr")]
+    addr: SocketAddr,
+    concurrency_limit_per_connection: usize,
+}
+
+impl Default for HttpServerConfig {
     fn default() -> Self {
         Self {
-            outlayer: OutlayerConfig::default(),
-            seed: None,
             addr: DEFAULT_ADDR,
-            max_parallel_wasm_executions: DEFAULT_MAX_PARALLEL_WASM_EXECUTIONS,
-            connections_limit: DEFAULT_CONNECTIONS_LIMIT,
             concurrency_limit_per_connection: DEFAULT_CONCURRENCY_LIMIT_PER_CONNECTION,
-            request_handling_timeout: DEFAULT_REQUEST_HANDLING_TIMEOUT,
         }
     }
 }
@@ -65,7 +59,7 @@ impl AppConfig {
             )
             .build()
             .and_then(config::Config::try_deserialize)
-            .context("config")
+            .map_err(Into::into)
     }
 }
 
@@ -92,14 +86,7 @@ async fn main() -> Result<()> {
 
     let outlayer = config.outlayer.build(signer).context("build")?;
 
-    let grpc_service = OutlayerServiceServer::new(OutlayerGrpc::new(
-        outlayer,
-        GrpcConfig {
-            connections_limit: config.connections_limit,
-            max_parallel_wasm_executions: config.max_parallel_wasm_executions,
-            request_handling_timeout: config.request_handling_timeout,
-        },
-    ));
+    let grpc_service = OutlayerServiceServer::new(OutlayerGrpc::new(outlayer, config.grpc));
 
     // Implements the standard gRPC health checking protocol (grpc.health.v1).
     // Kubernetes uses this natively for liveness/readiness probes.
@@ -113,14 +100,14 @@ async fn main() -> Result<()> {
         .register_encoded_file_descriptor_set(tonic_health::pb::FILE_DESCRIPTOR_SET)
         .build_v1()?;
 
-    tracing::info!(addr = %config.addr, "listening");
+    tracing::info!(addr = %config.http_server.addr, "listening");
 
     Server::builder()
-        .concurrency_limit_per_connection(config.concurrency_limit_per_connection)
+        .concurrency_limit_per_connection(config.http_server.concurrency_limit_per_connection)
         .add_service(health_service)
         .add_service(grpc_service)
         .add_service(reflection_service)
-        .serve(config.addr)
+        .serve(config.http_server.addr)
         .await
         .context("server error")
 }

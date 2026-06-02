@@ -12,12 +12,10 @@ use defuse_outlayer_proto as proto;
 use defuse_outlayer_service::{AppCodeUrl, Code, CodeRef, ExecuteRequest};
 use defuse_outlayer_vm_runner::{ExecutionDetails, ExecutionOutcome};
 
-/// Fallible conversion from a generated proto message into a native type.
 pub trait TryFromProto<P>: Sized {
     fn try_from_proto(proto: P) -> anyhow::Result<Self>;
 }
 
-/// Infallible conversion from a native type into a generated proto message.
 pub trait IntoProto<P> {
     fn into_proto(self) -> P;
 }

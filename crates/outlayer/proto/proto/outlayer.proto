@@ -1,20 +1,17 @@
 syntax = "proto3";
 package outlayer;
 
-// Mirrors AppId<'a> { Near(Cow<'a, AccountIdRef>) }
 message AppId {
   oneof variant {
     string near = 1;
   }
 }
 
-// Mirrors AppCodeUrl { code_url: Url, code_hash: [u8; 32] }
 message AppCodeUrl {
   string code_url  = 1;
   bytes  code_hash = 2;
 }
 
-// Mirrors CodeRef<'a> { AppId(AppId<'a>) | Url(AppCodeUrl) }
 message CodeRef {
   oneof variant {
     AppId      app_id = 1;
@@ -22,7 +19,6 @@ message CodeRef {
   }
 }
 
-// Mirrors Code<'a> { Ref(CodeRef<'a>) | Inline { code: Bytes } }
 message Code {
   oneof variant {
     CodeRef code_ref    = 1;
@@ -44,25 +40,21 @@ message Request {
   }
 }
 
-// Mirrors ExecutionDetails { fuel_consumed: u64 }
 message ExecutionDetails {
   uint64 fuel_consumed = 1;
 }
 
-// Mirrors ExecutionOutcome { details: ExecutionDetails, error: Option<String> }
 message ExecutionOutcome {
   ExecutionDetails details = 1;
   optional string  error   = 2;
 }
 
-// Mirrors Outcome { output: Bytes, logs: Bytes, execution: ExecutionOutcome }
 message ExecuteResponse {
   bytes            output    = 1;
   bytes            logs      = 2;
   ExecutionOutcome execution = 3;
 }
 
-// Generic response envelope, mirroring Request.
 message Response {
   oneof kind {
     ExecuteResponse execute = 1;

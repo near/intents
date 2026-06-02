@@ -26,9 +26,7 @@ pub use defuse_outlayer_proto::outlayer_service_server::OutlayerServiceServer;
 type LayeredService = BoxCloneSyncService<ExecuteRequest, Outcome, BoxError>;
 
 #[derive(Clone)]
-pub struct OutlayerGrpc {
-    service: LayeredService,
-}
+pub struct OutlayerGrpc(LayeredService);
 
 impl OutlayerGrpc {
     /// Builds the gRPC adapter, wrapping `outlayer` with the tower layer stack
@@ -54,9 +52,7 @@ impl OutlayerGrpc {
             .timeout(config.request_handling_timeout)
             .service(outlayer);
 
-        Self {
-            service: BoxCloneSyncService::new(service),
-        }
+        Self(BoxCloneSyncService::new(service))
     }
 }
 
@@ -71,7 +67,7 @@ impl OutlayerService for OutlayerGrpc {
 
         // The `buffer` layer (and `load_shed`/`timeout`) erase errors into `BoxError`,
         // so we downcast to recover which layer failed.
-        let outcome = self.service.clone().oneshot(svc_req).await.map_err(|e| {
+        let outcome = self.0.clone().oneshot(svc_req).await.map_err(|e| {
             if e.is::<tower::load_shed::error::Overloaded>() {
                 // RESOURCE_EXHAUSTED is the standard gRPC backpressure code; load balancers
                 // (e.g. Envoy, grpc-go) treat it as a retry signal and route elsewhere.
@@ -90,6 +86,12 @@ impl OutlayerService for OutlayerGrpc {
 }
 
 /// Backpressure and timeout policy for the gRPC service.
+#[cfg_attr(
+    feature = "serde",
+    ::serde_with::serde_as,
+    derive(::serde::Deserialize),
+    serde(deny_unknown_fields, default)
+)]
 #[derive(Clone, Copy)]
 pub struct GrpcConfig {
     /// Capacity of the bounded request queue. When full, requests are shed with
@@ -98,5 +100,24 @@ pub struct GrpcConfig {
     /// Maximum number of WASM executions running concurrently.
     pub max_parallel_wasm_executions: usize,
     /// Deadline for handling a single request end-to-end.
+    #[cfg_attr(
+        feature = "serde",
+        serde(rename = "request_handling_timeout_seconds"),
+        serde_as(as = "::serde_with::DurationSeconds<u64>")
+    )]
     pub request_handling_timeout: Duration,
+}
+
+const DEFAULT_MAX_PARALLEL_WASM_EXECUTIONS: usize = 2;
+const DEFAULT_CONNECTIONS_LIMIT: usize = 500;
+const DEFAULT_REQUEST_HANDLING_TIMEOUT: Duration = Duration::from_secs(30);
+
+impl Default for GrpcConfig {
+    fn default() -> Self {
+        Self {
+            connections_limit: DEFAULT_CONNECTIONS_LIMIT,
+            max_parallel_wasm_executions: DEFAULT_MAX_PARALLEL_WASM_EXECUTIONS,
+            request_handling_timeout: DEFAULT_REQUEST_HANDLING_TIMEOUT,
+        }
+    }
 }

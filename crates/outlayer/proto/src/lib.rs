@@ -1,5 +1,8 @@
 #![allow(clippy::all, clippy::pedantic, clippy::nursery)]
 
+// Inlines the Rust code generated from the `outlayer` proto package at build time
+// (message structs/enums, plus the gRPC client and `*Server` service stubs),
+// expanding it directly into this module.
 tonic::include_proto!("outlayer");
 
 /// Binary-encoded protobuf schema (a [`FileDescriptorSet`]) for this package.

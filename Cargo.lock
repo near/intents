@@ -1821,6 +1821,8 @@ dependencies = [
  "defuse-outlayer-proto",
  "defuse-outlayer-service",
  "defuse-outlayer-vm-runner",
+ "serde",
+ "serde_with",
  "tonic 0.14.5",
  "tower",
 ]
