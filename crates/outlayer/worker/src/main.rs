@@ -28,7 +28,6 @@ struct AppConfig {
     seed: Option<Zeroizing<Vec<u8>>>,
     grpc_server: GrpcServerConfig,
     grpc: GrpcConfig,
-    /// `tracing-subscriber` env-filter directives, e.g. `outlayer=info,defuse_outlayer_service=debug`.
     log: String,
 }
 
