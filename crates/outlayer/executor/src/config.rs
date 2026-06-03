@@ -35,8 +35,11 @@ impl Default for ExecutorConfig {
 )]
 #[derive(Debug, Clone, Copy)]
 pub struct IoLimits {
+    #[cfg_attr(feature = "serde", serde(rename = "stdin_bytes"))]
     pub stdin: usize,
+    #[cfg_attr(feature = "serde", serde(rename = "stdout_bytes"))]
     pub stdout: usize,
+    #[cfg_attr(feature = "serde", serde(rename = "stderr_bytes"))]
     pub stderr: usize,
 }
 
