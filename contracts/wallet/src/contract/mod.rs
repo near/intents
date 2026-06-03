@@ -6,11 +6,11 @@ pub use self::impl_::*;
 use std::collections::BTreeSet;
 
 use defuse_deadline::Deadline;
+use defuse_nep641::{AuthorizationResolution, Purpose};
 use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near};
 
 use crate::{
     Actor, Error, Request, RequestMessage, Result, Wallet, WalletEvent, WalletOp,
-    resolve_auth::{AuthorizationResolution, Purpose},
     signature::SigningStandard,
 };
 
@@ -69,7 +69,12 @@ impl Wallet for Contract {
         recipient: String,
         authorization: String,
     ) -> AuthorizationResolution {
-        SS::resolve_auth(&purpose, &recipient, &authorization, &self.public_key)
+        <SS as SigningStandard<&RequestMessage>>::resolve_auth(
+            &purpose,
+            &recipient,
+            &authorization,
+            &self.public_key,
+        )
     }
 }
 

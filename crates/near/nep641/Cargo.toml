@@ -1,0 +1,15 @@
+[package]
+name = "defuse-nep641"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+near-sdk.workspace = true
+
+[features]
+abi = ["near-sdk/abi"]
+
+[lints]
+workspace = true

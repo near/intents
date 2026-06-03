@@ -20,7 +20,7 @@ use crate::Request;
 
 pub use self::{borsh::*, domain::*, hash::*};
 
-use crate::resolve_auth::{AuthorizationResolution, ErrorKind, Purpose};
+use defuse_nep641::{AuthorizationResolution, ErrorKind, Purpose};
 
 /// Signing standard, which defines the public key and how `signature` on
 /// `msg` is verified.

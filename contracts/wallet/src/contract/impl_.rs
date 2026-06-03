@@ -21,7 +21,7 @@ pub trait ContractImpl {
 }
 
 /// Signing standard implemented by the contract
-type SS = <Contract as ContractImpl>::SigningStandard;
+pub(crate) type SS = <Contract as ContractImpl>::SigningStandard;
 
 /// Public key used by the signing standard
 type PublicKey = <SS as SigningStandard<&'static RequestMessage>>::PublicKey;

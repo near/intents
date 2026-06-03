@@ -1407,6 +1407,7 @@ name = "defuse-eip712"
 version = "0.1.0"
 dependencies = [
  "defuse-crypto",
+ "defuse-nep641",
  "defuse-test-utils",
  "hex-literal",
  "impl-tools",
@@ -1524,6 +1525,13 @@ dependencies = [
 [[package]]
 name = "defuse-nep461"
 version = "0.1.0"
+
+[[package]]
+name = "defuse-nep641"
+version = "0.1.0"
+dependencies = [
+ "near-sdk",
+]
 
 [[package]]
 name = "defuse-num-utils"
@@ -1760,6 +1768,7 @@ dependencies = [
  "defuse-crypto",
  "defuse-deadline",
  "defuse-eip712",
+ "defuse-nep641",
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-webauthn",

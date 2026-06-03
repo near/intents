@@ -2,7 +2,6 @@
 
 #[cfg(any(feature = "arbitrary", test))]
 mod arbitrary;
-pub mod resolve_auth;
 #[cfg(feature = "contract")]
 mod contract;
 mod error;
@@ -15,9 +14,9 @@ mod state;
 use std::collections::BTreeSet;
 
 use defuse_deadline::Deadline;
+use defuse_nep641::{AuthorizationResolution, Purpose};
 use near_sdk::{AccountId, ext_contract};
 
-use crate::resolve_auth::{AuthorizationResolution, Purpose};
 use crate::signature::RequestMessage;
 
 pub use self::{error::*, events::*, nonces::*, request::*, state::*};

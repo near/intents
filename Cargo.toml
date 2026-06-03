@@ -22,6 +22,7 @@ members = [
   "crates/near/auth-call",
   "crates/near/controller",
   "crates/near/nep245",
+  "crates/near/nep641",
   "crates/near/utils",
   "crates/near/wnear",
 
@@ -84,6 +85,7 @@ defuse-auth-call.path = "crates/near/auth-call"
 defuse-controller.path = "crates/near/controller"
 defuse-near-utils.path = "crates/near/utils"
 defuse-nep245.path = "crates/near/nep245"
+defuse-nep641.path = "crates/near/nep641"
 defuse-wnear.path = "crates/near/wnear"
 
 defuse-deadline.path = "crates/primitives/deadline"

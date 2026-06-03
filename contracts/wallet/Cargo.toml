@@ -16,6 +16,7 @@ workspace = true
 defuse-bitmap.workspace = true
 defuse-borsh-utils.workspace = true
 defuse-deadline.workspace = true
+defuse-nep641.workspace = true
 defuse-serde-utils.workspace = true
 
 derive_more = { workspace = true, features = ["from"] }
@@ -36,6 +37,7 @@ abi = [
   "defuse-crypto?/abi",
   "defuse-deadline/abi",
   "defuse-eip712?/abi",
+  "defuse-nep641/abi",
   "defuse-serde-utils/abi",
   "defuse-webauthn?/abi",
   "near-sdk/abi",

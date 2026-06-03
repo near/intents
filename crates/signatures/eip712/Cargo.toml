@@ -7,12 +7,13 @@ repository.workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["secp256k1"] }
+defuse-nep641.workspace = true
 
 impl-tools.workspace = true
 near-sdk.workspace = true
 
 [features]
-abi = ["defuse-crypto/abi", "near-sdk/abi"]
+abi = ["defuse-crypto/abi", "defuse-nep641/abi", "near-sdk/abi"]
 
 [dev-dependencies]
 defuse-test-utils.workspace = true

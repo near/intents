@@ -1,6 +1,6 @@
 //! NEP-641: Off-chain Authorization Resolution for Wallet Contracts.
 
-use near_sdk::{near, AccountId};
+use near_sdk::{AccountId, near};
 
 #[near(serializers = [json])]
 #[derive(Debug, Clone, PartialEq, Eq)]

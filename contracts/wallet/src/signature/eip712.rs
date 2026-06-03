@@ -1,8 +1,8 @@
-use crate::resolve_auth::{AuthorizationResolution, ErrorKind, Purpose};
 use crate::signature::SigningStandard;
 use defuse_crypto::{Secp256k1PublicKey, SignedPayload};
-use defuse_eip712::auth::SignedEip712Authorization;
 use defuse_eip712::SignedEip712Payload;
+use defuse_eip712::auth::SignedEip712Authorization;
+use defuse_nep641::{AuthorizationResolution, ErrorKind, Purpose};
 use near_sdk::{serde::de::DeserializeOwned, serde_json};
 
 use crate::signature::RequestMessage;
@@ -48,8 +48,7 @@ impl SigningStandard<&RequestMessage> for Eip712 {
             return false;
         }
 
-        let Ok(decoded_out) = serde_json::from_str::<crate::PromiseDAG>(&signed.payload.out)
-        else {
+        let Ok(decoded_out) = serde_json::from_str::<crate::PromiseDAG>(&signed.payload.out) else {
             return false;
         };
         if msg.request.out != decoded_out {
@@ -75,11 +74,11 @@ impl SigningStandard<&RequestMessage> for Eip712 {
                 return AuthorizationResolution::Invalid {
                     error_kind: ErrorKind::InvalidInput,
                     error_message: format!("failed to decode authorization: {e}"),
-                }
+                };
             }
         };
 
-        if signed.message.purpose != purpose.to_string() {
+        if signed.message.purpose != *purpose {
             return AuthorizationResolution::Invalid {
                 error_kind: ErrorKind::InvalidInput,
                 error_message: "purpose mismatch".into(),
