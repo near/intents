@@ -2,7 +2,13 @@ name: Build & push worker image
 
 on:
   # Manual trigger — pick the branch to build from in the Actions tab.
+  # NOTE: workflow_dispatch only shows up once this file is on the default branch.
   workflow_dispatch:
+  # TEMPORARY: lets us test the workflow from the feature branch before it's on
+  # main (where workflow_dispatch isn't available yet). REMOVE once it builds &
+  # pushes successfully.
+  push:
+    branches: ["feat/outlayer-ops"]
   # TODO: enable automatic builds once we're ready to publish from CI.
   # push:
   #   branches: ["main"]
