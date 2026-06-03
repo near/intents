@@ -2,30 +2,29 @@
 
 Runbook for deploying the outlayer worker to [Phala Cloud](https://cloud.phala.network).
 
-Commands assume a populated `.env` in the repo root (`SERVICE_DOCKER_IMAGE`,
-`OUTLAYER__SEED`, `PHALA_CVM_ID`, …).
+## Configuration
+
+Two env templates live in `ops/` — copy the relevant one and fill in the values:
+
+- **Local** — `cp ops/env.local.example ops/.env` (just an image tag + a dev seed;
+  the image is built locally, so no registry credentials).
+- **Production** — `cp ops/env.production.example .env` (repo root); fill in the
+  GHCR pull credentials and signer seed, then deploy with `-e .env`.
+
 
 ## Development
 
-Run the worker locally with Docker Compose from the repo root:
+Run the worker locally with Docker Compose. The compose files live in `ops/`, so
+run from there (auto-merge needs both files in the working directory):
 
 ```sh
+cp ops/env.local.example ops/.env   # first time only
+cd ops
 docker compose up --build
 ```
 
-`compose.yaml` only references the image (this is the file Phala deploys, which
-just pulls it). `compose.override.yaml` adds the `build:` block that compiles the
-worker from source. Plain `docker compose` loads **both** by default and merges
-them, so local runs build from source with no extra flags. The gRPC server is then
-reachable at `localhost:50051` (plaintext) — see [Call the gRPC endpoint](#call-the-grpc-endpoint).
 
-To run the base file only (no build, exactly what Phala sees), pass it explicitly:
-
-```sh
-docker compose -f compose.yaml up
-```
-
-## Install & authenticate the CLI
+## Phala deployment
 
 Install the [`phala` CLI](https://github.com/Phala-Network/phala-cloud/tree/main/cli)
 (or run ad-hoc with `npx phala <command>`):
@@ -34,8 +33,7 @@ Install the [`phala` CLI](https://github.com/Phala-Network/phala-cloud/tree/main
 npm install -g phala
 ```
 
-Authenticate via the browser device flow (credentials are stored in
-`~/.phala-cloud/`; override with `PHALA_CLOUD_API_KEY` if needed):
+Authenticate via the browser device flow
 
 ```sh
 phala login
@@ -46,7 +44,7 @@ phala login
 ```sh
 phala deploy \
     --name outlayer \
-    --compose compose.yaml \
+    --compose ops/compose.yaml \
     --vcpu 4 \
     --memory 4G \
     --disk-size 1G \
@@ -61,7 +59,7 @@ Redeploy the current compose + env onto a running CVM (its `--cvm-id` is shown b
 `-e` so the updated values are applied:
 
 ```sh
-phala deploy --cvm-id app_<CVM ID> --compose ./compose.yaml -e .env
+phala deploy --cvm-id app_<CVM ID> --compose ./ops/compose.yaml -e .env
 ```
 
 This ships new code only if the image tag in `SERVICE_DOCKER_IMAGE` (in `.env`)
@@ -119,8 +117,6 @@ grpcurl <APP ID>-50051g.dstack-pha-prod5.phala.network:443 \
     grpc.health.v1.Health/Check
 ```
 
-Reflection is enabled, so no `.proto` is needed. Locally (plaintext, unproxied)
-use `grpcurl -plaintext localhost:50051 ...` instead.
 
 ## Purge all CVMs
 
@@ -146,3 +142,10 @@ phala cvms list --json \
   that platform — on Apple Silicon, cross-build with
   `docker buildx build --platform linux/amd64 …` (a native arm64 image will fail
   to start on the CVM).
+- **TEE attestation & env vars.** Values hard-coded literally in `compose.yaml`
+  (e.g. `OUTLAYER__LOG`, the `OUTLAYER__GRPC__*` / `OUTLAYER__SERVICE__*` tuning)
+  are part of the compose that is measured into the CVM's attestation, so changing
+  them changes the app's attested identity. Values passed in at deploy time via
+  `-e .env` (the `${VAR}` placeholders — `OUTLAYER__SEED`, `DSTACK_DOCKER_*`,
+  `SERVICE_DOCKER_IMAGE`) are supplied as encrypted env separately and are **not**
+  part of the measured compose, so they do **not** affect the attestation.
