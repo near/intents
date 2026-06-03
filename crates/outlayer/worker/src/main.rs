@@ -56,7 +56,8 @@ impl AppConfig {
             .add_source(
                 Environment::with_prefix(PREFIX)
                     .prefix_separator("__")
-                    .separator("__"),
+                    .separator("__")
+                    .ignore_empty(true),
             )
             .build()
             .and_then(config::Config::try_deserialize)
