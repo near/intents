@@ -1,14 +1,7 @@
 set dotenv-load
 
 cvm_name := "worker"
-image    := "mat13mn/worker:latest"
 cvm_id := env_var("PHALA_CVM_ID")
-
-build-docker:
-    docker buildx build \
-        -t {{image}} \
-        -f crates/outlayer/bin/Dockerfile \
-        .
 
 # Deploy compose + env to Phala Cloud (creates a new CVM)
 cvm-upgrade-manifest:

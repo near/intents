@@ -105,10 +105,10 @@ async fn main() -> Result<()> {
     #[allow(clippy::option_if_let_else)]
     let signer = match config.seed {
         Some(seed) => {
-            tracing::warn!("using custom signer seed — not intended for production use");
+            tracing::warn!("using custom seed — not intended for production use");
             InMemorySigner::from_seed(&seed)
         }
-        None => unimplemented!("signer seed must be provided until CKD integration is complete"),
+        None => unimplemented!("seed must be provided until CKD integration is complete"),
     };
 
     let signer: Arc<dyn Signer> = Arc::new(signer);

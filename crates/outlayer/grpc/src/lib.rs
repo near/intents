@@ -106,6 +106,7 @@ impl OutlayerService for OutlayerGrpc {
 /// Backpressure and timeout policy for the gRPC service.
 #[cfg_attr(
     feature = "serde",
+    ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Deserialize),
     serde(deny_unknown_fields, default)
