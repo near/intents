@@ -1,8 +1,7 @@
-use std::{io, sync::Arc, time::Duration};
+use std::io;
 
 use bytes::Bytes;
 use futures::TryStreamExt as _;
-use moka::future::Cache;
 use reqwest::Client;
 use tokio::io::AsyncReadExt as _;
 use tokio_util::io::StreamReader;
@@ -11,25 +10,20 @@ use url::Url;
 const INITIAL_CAP: usize = 1024 * 1024;
 #[derive(Clone)]
 pub struct HttpResolver {
+    // TODO: caching?
     client: Client,
     max_body_bytes: usize,
-    cache: Cache<Url, Bytes>,
 }
 
 impl HttpResolver {
-    pub fn new(max_body_bytes: usize, cache_ttl: Duration) -> Self {
+    pub fn new(max_body_bytes: usize) -> Self {
         Self {
             client: Client::new(),
             max_body_bytes,
-            cache: Cache::builder().time_to_live(cache_ttl).build(),
         }
     }
 
-    pub async fn resolve(&self, url: Url) -> Result<Bytes, Arc<Error>> {
-        self.cache.try_get_with(url.clone(), self.fetch(url)).await
-    }
-
-    async fn fetch(&self, url: Url) -> Result<Bytes, Error> {
+    pub async fn resolve(&self, url: Url) -> Result<Bytes, Error> {
         // TODO: have a whitelist or blacklist of domains?
         let resp = self
             .client
