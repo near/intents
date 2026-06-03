@@ -16,13 +16,15 @@ members = [
   "crates/bitmap",
   "crates/borsh-utils",
   "crates/crypto",
+  "crates/ckd",
   "crates/io-utils",
-  "crates/map-utils",
-  "crates/num-utils",
-  "crates/serde-utils",
   "crates/kdf",
   "crates/kdf/crypto",
   "crates/kdf/mpc",
+  "crates/map-utils",
+  "crates/num-utils",
+  "crates/rand-compat",
+  "crates/serde-utils",
 
   "crates/near/admin-utils",
   "crates/near/auth-call",
@@ -52,7 +54,8 @@ members = [
   "crates/testing/randomness",
   "crates/testing/sandbox",
 
-  "crates/outlayer/bin",
+  "crates/outlayer/worker",
+  "crates/outlayer/grpc",
   "crates/outlayer/proto",
   "crates/outlayer/executor",
   "crates/outlayer/host",
@@ -90,6 +93,7 @@ defuse-wallet.path = "contracts/wallet"
 
 defuse-bitmap.path = "crates/bitmap"
 defuse-borsh-utils.path = "crates/borsh-utils"
+defuse-ckd = { path = "crates/ckd", default-features = false }
 defuse-crypto = { path = "crates/crypto", default-features = false }
 defuse-io-utils.path = "crates/io-utils"
 defuse-kdf = { path = "crates/kdf", default-features = false }
@@ -97,6 +101,7 @@ defuse-kdf-crypto = { path = "crates/kdf/crypto", default-features = false }
 defuse-kdf-mpc = { path = "crates/kdf/mpc", default-features = false }
 defuse-map-utils.path = "crates/map-utils"
 defuse-num-utils.path = "crates/num-utils"
+defuse-rand-compat.path = "crates/rand-compat"
 defuse-serde-utils.path = "crates/serde-utils"
 
 defuse-admin-utils.path = "crates/near/admin-utils"
@@ -127,8 +132,8 @@ defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
-defuse-outlayer-bin.path = "crates/outlayer/bin"
 defuse-outlayer-executor.path = "crates/outlayer/executor"
+defuse-outlayer-grpc.path = "crates/outlayer/grpc"
 defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-kdf-app = { path = "crates/outlayer/kdf-app", default-features = false }
 defuse-outlayer-primitives.path = "crates/outlayer/primitives"
@@ -137,9 +142,9 @@ defuse-outlayer-sdk.path = "crates/outlayer/sdk"
 defuse-outlayer-service.path = "crates/outlayer/service"
 defuse-outlayer-signer.path = "crates/outlayer/signer"
 defuse-outlayer-sys.path = "crates/outlayer/sys"
-defuse-outlayer-utils.path = "crates/outlayer/utils"
 defuse-outlayer-vm-runner.path = "crates/outlayer/vm-runner"
 defuse-outlayer-vm-runner-cli.path = "crates/outlayer/vm-runner/cli"
+defuse-outlayer-worker.path = "crates/outlayer/worker"
 
 defuse-tests.path = "tests"
 
@@ -162,10 +167,10 @@ near-workspaces = "0.22"
 anyhow = "1"
 arbitrary = { version = "1", features = ["derive"] }
 array-util = "1"
-async-nats = "0.46.0"
 async-trait = "0.1.89"
 base64 = "0.22.1"
 bitflags = "2.9.1"
+blstrs = "0.7.1"
 bnum = { version = "0.13", features = ["borsh"] }
 borsh = "1.6.1"
 bs58 = "0.5.1"
@@ -173,7 +178,7 @@ bytes = "1.11.1"
 cfg_eval = "0.1.2"
 chrono = { version = "0.4", default-features = false }
 clap = { version = "4.5.55", features = ["derive"] }
-config = { version = "0.15", default-features = false, features = ["json"] }
+config = { version = "0.15", default-features = false }
 curve25519-dalek = "4.1.3"
 data-url = "0.3"
 derive_more = "2.0"
@@ -192,6 +197,7 @@ k256 = { version = "0.13.4", default-features = false }
 moka = "0.12"
 num-traits = "0.2.19"
 p256 = { version = "0.13.2", default-features = false }
+pairing = "0.23"                                              # TODO: features
 proptest = "1.5"
 prost = "0.14"
 rand = "0.10"
@@ -213,6 +219,7 @@ tokio-util = { version = "0.7", default-features = false }
 tonic = "0.14"
 tonic-health = "0.14"
 tonic-prost = "0.14"
+tonic-prost-build = "0.14"
 tonic-reflection = "0.14"
 tower = "0.5.3"
 tracing = "0.1"

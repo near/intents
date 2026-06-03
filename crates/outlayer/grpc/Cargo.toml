@@ -1,0 +1,29 @@
+[package]
+name = "defuse-outlayer-grpc"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-outlayer-executor.workspace = true
+defuse-outlayer-primitives.workspace = true
+defuse-outlayer-proto.workspace = true
+defuse-outlayer-service.workspace = true
+defuse-outlayer-vm-runner.workspace = true
+
+anyhow.workspace = true
+bytes.workspace = true
+tonic.workspace = true
+tower = { workspace = true, features = ["buffer", "limit", "load-shed", "timeout", "util"] }
+tracing.workspace = true
+
+serde = { workspace = true, optional = true, features = ["derive"] }
+serde_with = { workspace = true, optional = true }
+
+[features]
+serde = ["dep:serde", "dep:serde_with"]

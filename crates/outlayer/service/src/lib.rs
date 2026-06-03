@@ -1,27 +1,13 @@
-mod builder;
 mod cache;
 mod code;
 mod config;
-#[cfg(feature = "proto")]
-mod proto_impls;
 mod resolver;
-#[cfg(feature = "tonic")]
-mod tonic_impl;
-#[cfg(feature = "tower")]
-mod tower_impl;
 
-pub use self::builder::OutlayerBuilder;
+pub use defuse_outlayer_executor::Signer;
+
 pub use self::config::OutlayerConfig;
-pub use self::resolver::{
-    HttpResolver, NearResolver, Resolver, ResolverBuilder, ResolverConfig, UrlResolver,
-};
+pub use self::resolver::{HttpResolver, NearResolver, Resolver, ResolverConfig, UrlResolver};
 pub use self::{cache::*, code::*};
-
-#[cfg(feature = "tonic")]
-pub use self::tonic_impl::*;
-
-#[cfg(feature = "tower")]
-pub use self::tower_impl::*;
 
 use std::{convert, sync::Arc};
 
@@ -32,7 +18,7 @@ use defuse_outlayer_executor::{
 };
 use defuse_outlayer_primitives::AppId;
 use moka::future::Cache;
-use tracing::Instrument as _;
+use tracing::Instrument;
 
 #[derive(Clone)]
 pub struct Outlayer {
@@ -43,16 +29,16 @@ pub struct Outlayer {
 }
 
 impl Outlayer {
-    pub const fn new(
+    pub fn new(
         resolver: Resolver,
         executor: Executor,
-        runtime_cache: Cache<[u8; 32], Component>,
+        cache: CacheConfig,
         default_fuel: u64,
     ) -> Self {
         Self {
             resolver,
             executor,
-            runtime_cache,
+            runtime_cache: cache.build(),
             default_fuel,
         }
     }
@@ -99,6 +85,7 @@ impl Outlayer {
         Ok((app_id, component))
     }
 
+    #[tracing::instrument(skip_all)]
     pub async fn execute(
         &self,
         app: Code<'_>,
@@ -106,21 +93,22 @@ impl Outlayer {
         fuel: Option<u64>,
     ) -> Result<Outcome, Error> {
         let (app_id, component) = self.resolve_app(app).await?;
+        let fuel = fuel.unwrap_or(self.default_fuel);
 
-        let executor = self.executor.clone();
-        let default_fuel = self.default_fuel;
         // WASM execution is CPU-bound and wasmtime doesn't yield between instructions
         // without epoch interruption, which would block the tokio scheduler.
         // Run on the blocking thread pool to keep the async runtime responsive.
-        tokio::task::spawn_blocking(move || {
-            tokio::runtime::Handle::current().block_on(executor.execute(
-                Context {
-                    input,
-                    host: HostContext { app_id },
-                },
-                &component,
-                fuel.unwrap_or(default_fuel),
-            ))
+        tokio::task::spawn_blocking({
+            let executor = self.executor.clone();
+            let ctx = Context {
+                input,
+                host: HostContext { app_id },
+            };
+            let span = tracing::Span::current();
+            move || {
+                tokio::runtime::Handle::current()
+                    .block_on(executor.execute(ctx, &component, fuel).instrument(span))
+            }
         })
         .await
         .map_err(Error::ExecutePanicked)?

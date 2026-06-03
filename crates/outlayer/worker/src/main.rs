@@ -1,6 +1,5 @@
-use defuse_outlayer_host::crypto::Signer;
-use defuse_outlayer_proto::{FILE_DESCRIPTOR_SET, outlayer_service_server::OutlayerServiceServer};
-use defuse_outlayer_service::{OutlayerBuilder, OutlayerConfig, OutlayerGrpc};
+use defuse_outlayer_grpc::{FILE_DESCRIPTOR_SET, GrpcConfig, OutlayerGrpc, OutlayerServiceServer};
+use defuse_outlayer_service::{OutlayerConfig, Signer};
 use defuse_outlayer_signer::InMemorySigner;
 
 use anyhow::{Context as _, Result};
@@ -10,47 +9,41 @@ use serde_with::hex::Hex;
 use std::{
     net::{Ipv4Addr, SocketAddr, SocketAddrV4},
     sync::Arc,
-    time::Duration,
 };
-use tonic::transport::Server;
+use tonic::transport::{Server, server::TcpIncoming};
 use tonic_health::ServingStatus;
-use tower::ServiceBuilder;
 use zeroize::Zeroizing;
 
-const PREFIX: &str = "WORKER";
+const PREFIX: &str = "OUTLAYER";
 const DEFAULT_ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 50051));
-const DEFAULT_CONCURRENCY_LIMIT: usize = 2;
-const DEFAULT_CONNECTIONS_LIMIT: usize = 500;
 const DEFAULT_CONCURRENCY_LIMIT_PER_CONNECTION: usize = 1;
-const DEFAULT_EXECUTION_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[serde_with::serde_as]
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
 #[serde(default)]
 struct AppConfig {
     #[serde(rename = "service")]
     outlayer: OutlayerConfig,
     #[serde_as(as = "Option<Hex>")]
-    signer_seed: Option<Zeroizing<Vec<u8>>>,
-    #[serde_as(as = "serde_with::DisplayFromStr")]
-    addr: SocketAddr,
-    concurrency_limit: usize,
-    connections_limit: usize,
-    concurrency_limit_per_connection: usize,
-    #[serde_as(as = "serde_with::DurationSeconds<u64>")]
-    execution_timeout_s: Duration,
+    seed: Option<Zeroizing<Vec<u8>>>,
+    grpc_server: GrpcServerConfig,
+    grpc: GrpcConfig,
 }
 
-impl Default for AppConfig {
+#[serde_with::serde_as]
+#[derive(Deserialize)]
+#[serde(default)]
+struct GrpcServerConfig {
+    #[serde_as(as = "serde_with::DisplayFromStr")]
+    addr: SocketAddr,
+    concurrency_limit_per_connection: usize,
+}
+
+impl Default for GrpcServerConfig {
     fn default() -> Self {
         Self {
-            outlayer: OutlayerConfig::default(),
-            signer_seed: None,
             addr: DEFAULT_ADDR,
-            concurrency_limit: DEFAULT_CONCURRENCY_LIMIT,
-            connections_limit: DEFAULT_CONNECTIONS_LIMIT,
             concurrency_limit_per_connection: DEFAULT_CONCURRENCY_LIMIT_PER_CONNECTION,
-            execution_timeout_s: DEFAULT_EXECUTION_TIMEOUT,
         }
     }
 }
@@ -65,7 +58,7 @@ impl AppConfig {
             )
             .build()
             .and_then(config::Config::try_deserialize)
-            .context("config")
+            .map_err(Into::into)
     }
 }
 
@@ -86,15 +79,16 @@ async fn main() -> Result<()> {
             .max_level_hint()
             .is_some_and(|level| level >= LevelFilter::DEBUG)
             .then(|| {
-                // Busy/idle timing for the executor's `compile`/`execute` spans plus
-                // the service's per-request spans (`grpc` total, `resolve_url`, `fetch`).
-                // `is_span` keeps it to timing lines; the target filter scopes it to
-                // those spans rather than the whole tree.
+                // Busy/idle timing for the executor's `compile`/`execute` spans, the
+                // gRPC adapter's `grpc` total span, and the service's per-request spans
+                // (`resolve_url`, `fetch`). `is_span` keeps it to timing lines; the
+                // target filter scopes it to those spans rather than the whole tree.
                 fmt::layer()
                     .with_span_events(FmtSpan::CLOSE)
                     .with_filter(filter_fn(|meta| {
                         meta.is_span()
                             && (meta.target().starts_with("defuse_outlayer_executor")
+                                || meta.target().starts_with("defuse_outlayer_grpc")
                                 || meta.target().starts_with("defuse_outlayer_service"))
                     }))
             });
@@ -105,11 +99,11 @@ async fn main() -> Result<()> {
             .init();
     }
 
-    let config = AppConfig::load()?;
+    let config = AppConfig::load().context("config")?;
 
     // TODO: derive seed from CKD
     #[allow(clippy::option_if_let_else)]
-    let signer = match config.signer_seed {
+    let signer = match config.seed {
         Some(seed) => {
             tracing::warn!("using custom signer seed — not intended for production use");
             InMemorySigner::from_seed(&seed)
@@ -119,32 +113,9 @@ async fn main() -> Result<()> {
 
     let signer: Arc<dyn Signer> = Arc::new(signer);
 
-    let outlayer = OutlayerBuilder::default()
-        .with_config(config.outlayer)
-        .build(signer)
-        .context("outlayer")?;
+    let outlayer = config.outlayer.build(signer).context("build")?;
 
-    let grpc_service = OutlayerServiceServer::new(OutlayerGrpc::new(
-        ServiceBuilder::new()
-            // When the queue is full, immediately return RESOURCE_EXHAUSTED so the load
-            // balancer can route the request elsewhere rather than waiting here.
-            // RESOURCE_EXHAUSTED is the standard gRPC backpressure code respected by
-            // gRPC-aware load balancers (e.g. Envoy, AWS ALB).
-            .load_shed()
-            // Bounded async queue. Decouples acceptance from execution. When full, the
-            // load_shed layer above fires.
-            .buffer(config.connections_limit)
-            // Limit concurrent WASM executions. WASM runs synchronously on blocking
-            // threads; this prevents saturating the thread pool with CPU-bound work.
-            .concurrency_limit(config.concurrency_limit)
-            // Deadline for a single execution. Runs inside the buffer's background
-            // worker, so it actually cancels async work (e.g. slow WASM downloads)
-            // on expiry.
-            // TODO: spawn_blocking phases (compile, WASM run) cannot be
-            // interrupted consider using epoch interruptions on wasm execution
-            .timeout(config.execution_timeout_s)
-            .service(outlayer),
-    ));
+    let grpc_service = OutlayerServiceServer::new(OutlayerGrpc::new(outlayer, config.grpc));
 
     // Implements the standard gRPC health checking protocol (grpc.health.v1).
     // Kubernetes uses this natively for liveness/readiness probes.
@@ -158,14 +129,15 @@ async fn main() -> Result<()> {
         .register_encoded_file_descriptor_set(tonic_health::pb::FILE_DESCRIPTOR_SET)
         .build_v1()?;
 
-    tracing::info!(addr = %config.addr, "listening");
+    let incoming = TcpIncoming::bind(config.grpc_server.addr).context("bind")?;
+    tracing::info!(addr = %incoming.local_addr().context("local addr")?, "gRPC listening");
 
     Server::builder()
-        .concurrency_limit_per_connection(config.concurrency_limit_per_connection)
+        .concurrency_limit_per_connection(config.grpc_server.concurrency_limit_per_connection)
         .add_service(health_service)
         .add_service(grpc_service)
         .add_service(reflection_service)
-        .serve(config.addr)
+        .serve_with_incoming(incoming)
         .await
         .context("server error")
 }

@@ -29,6 +29,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Install Dependencies
+        uses: awalsh128/cache-apt-pkgs-action@2c09a5e66da6c8016428a2172bd76e5e4f14bb17 # v1
+        with:
+          packages: protobuf-compiler # protoc for outlayer worker
+          version: 1.0
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:

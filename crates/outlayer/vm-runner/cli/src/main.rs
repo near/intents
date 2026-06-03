@@ -15,6 +15,8 @@ const DEFAULT_SEED: &[u8] = b"test";
 
 const DEFAULT_FUEL: u64 = u64::MAX;
 
+const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024; // 100 MiB
+
 #[derive(Parser)]
 /// Execute a WASI-P2 component with a custom host environment
 #[command(long_about = r#"
@@ -54,8 +56,7 @@ async fn main() -> Result<()> {
         .await
         .with_context(|| format!("failed to read: {}", args.wasm.display()))?;
 
-    let runner =
-        VmRuntime::new(VmRuntime::DEFAULT_MEMORY_LIMIT).context("failed to initialize runtime")?;
+    let runner = VmRuntime::new(DEFAULT_MEMORY_LIMIT).context("failed to initialize runtime")?;
 
     let component = runner
         .compile(&wasm_binary)

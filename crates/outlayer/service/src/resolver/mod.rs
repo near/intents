@@ -2,14 +2,17 @@ mod config;
 mod near;
 mod url;
 
+use defuse_outlayer_primitives::AppId;
+
 use crate::{AppCodeUrl, CodeRef};
 use bytes::Bytes;
-use defuse_outlayer_primitives::AppId;
 use sha2::{Digest, Sha256};
 
-pub use self::config::{ResolverBuilder, ResolverConfig};
-pub use self::near::NearResolver;
-pub use self::url::{HttpResolver, UrlResolver};
+pub use self::{
+    config::ResolverConfig,
+    near::NearResolver,
+    url::{HttpResolver, UrlResolver},
+};
 
 #[derive(Clone)]
 pub struct Resolver {

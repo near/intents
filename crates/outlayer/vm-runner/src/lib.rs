@@ -1,8 +1,6 @@
 mod context;
 mod error;
 mod outcome;
-#[cfg(feature = "proto")]
-mod proto_impls;
 mod runtime;
 mod state;
 
