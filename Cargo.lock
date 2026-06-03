@@ -1832,6 +1832,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-outlayer-grpc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "defuse-outlayer-executor",
+ "defuse-outlayer-primitives",
+ "defuse-outlayer-proto",
+ "defuse-outlayer-service",
+ "defuse-outlayer-vm-runner",
+ "serde",
+ "serde_with",
+ "tonic 0.14.5",
+ "tower",
+ "tracing",
+]
+
+[[package]]
 name = "defuse-outlayer-host"
 version = "0.1.0"
 dependencies = [
