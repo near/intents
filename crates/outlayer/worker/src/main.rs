@@ -100,7 +100,7 @@ async fn main() -> Result<()> {
         .build_v1()?;
 
     let incoming = TcpIncoming::bind(config.grpc_server.addr).context("bind")?;
-    tracing::info!(addr = %incoming.local_addr().context("local addr")?, "listening");
+    tracing::info!(addr = %incoming.local_addr().context("local addr")?, "gRPC listening");
 
     Server::builder()
         .concurrency_limit_per_connection(config.grpc_server.concurrency_limit_per_connection)
