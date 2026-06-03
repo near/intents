@@ -29,7 +29,7 @@ jobs:
       - name: Install Dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: libudev-dev # dependency for cargo-near
+          packages: libudev-dev protobuf-compiler # libudev-dev for cargo-near; protoc for outlayer worker
           version: 1.0
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -139,7 +139,7 @@ jobs:
       - name: Install Dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: libudev-dev
+          packages: libudev-dev protobuf-compiler # libudev-dev for cargo-near; protoc for outlayer worker
           version: 1.0
       - name: Checkout sources
         uses: actions/checkout@v4

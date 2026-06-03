@@ -1,0 +1,68 @@
+syntax = "proto3";
+package outlayer;
+
+message AppId {
+  oneof variant {
+    string near = 1;
+  }
+}
+
+message AppCodeUrl {
+  string code_url  = 1;
+  bytes  code_hash = 2;
+}
+
+message CodeRef {
+  oneof variant {
+    AppId      app_id = 1;
+    AppCodeUrl url    = 2;
+  }
+}
+
+message Code {
+  oneof variant {
+    CodeRef code_ref    = 1;
+    bytes   inline_code = 2;
+  }
+}
+
+// ─── RPC messages ────────────────────────────────────────────────────────────
+
+message ExecuteRequest {
+  Code            app   = 1;
+  bytes           input = 2;
+  optional uint64 fuel  = 3;
+}
+
+message Request {
+  oneof kind {
+    ExecuteRequest execute = 1;
+  }
+}
+
+message ExecutionDetails {
+  uint64 fuel_consumed = 1;
+}
+
+message ExecutionOutcome {
+  ExecutionDetails details = 1;
+  optional string  error   = 2;
+}
+
+message ExecuteResponse {
+  bytes            output    = 1;
+  bytes            logs      = 2;
+  ExecutionOutcome execution = 3;
+}
+
+message Response {
+  oneof kind {
+    ExecuteResponse execute = 1;
+  }
+}
+
+// ─── Service ─────────────────────────────────────────────────────────────────
+
+service OutlayerService {
+  rpc Call(Request) returns (Response);
+}
