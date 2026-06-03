@@ -3,6 +3,8 @@
 # Paths are relative to this file's dir (ops/), so the build context is the repo root (..).
 services:
   worker:
+    # Replaces the digest-pinned image from compose.yaml with a locally built tag.
+    image: outlayer-worker:local
     build:
       context: ..
       dockerfile: crates/outlayer/worker/Dockerfile

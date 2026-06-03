@@ -6,10 +6,11 @@ Runbook for deploying the outlayer worker to [Phala Cloud](https://cloud.phala.n
 
 Two env templates live in `ops/` — copy the relevant one and fill in the values:
 
-- **Local** — `cp ops/env.local.example ops/.env` (just an image tag + a dev seed;
-  the image is built locally, so no registry credentials).
+- **Local** — `cp ops/env.local.example ops/.env` (just a dev seed; the image is
+  built locally, so no registry credentials).
 - **Production** — `cp ops/env.production.example .env` (repo root); fill in the
-  GHCR pull credentials and signer seed, then deploy with `-e .env`.
+  GHCR pull credentials and signer seed, then deploy with `-e .env`. The image is
+  **not** set here — it's pinned by digest in `ops/compose.yaml`.
 
 
 ## Development
@@ -62,8 +63,8 @@ Redeploy the current compose + env onto a running CVM (its `--cvm-id` is shown b
 phala deploy --cvm-id app_<CVM ID> --compose ./ops/compose.yaml -e .env
 ```
 
-This ships new code only if the image tag in `SERVICE_DOCKER_IMAGE` (in `.env`)
-changed; if you changed the worker, build and push a new image tag first.
+This ships new code only if the pinned image digest in `ops/compose.yaml` changed;
+if you changed the worker, build & push it and bump that `@sha256:` digest first.
 
 ### Upgrading an app with active replicas
 
@@ -142,10 +143,7 @@ phala cvms list --json \
   that platform — on Apple Silicon, cross-build with
   `docker buildx build --platform linux/amd64 …` (a native arm64 image will fail
   to start on the CVM).
-- **TEE attestation & env vars.** Values hard-coded literally in `compose.yaml`
-  (e.g. `OUTLAYER__LOG`, the `OUTLAYER__GRPC__*` / `OUTLAYER__SERVICE__*` tuning)
-  are part of the compose that is measured into the CVM's attestation, so changing
-  them changes the app's attested identity. Values passed in at deploy time via
-  `-e .env` (the `${VAR}` placeholders — `OUTLAYER__SEED`, `DSTACK_DOCKER_*`,
-  `SERVICE_DOCKER_IMAGE`) are supplied as encrypted env separately and are **not**
-  part of the measured compose, so they do **not** affect the attestation.
+- **TEE attestation.** The whole `compose.yaml` is hashed into the CVM's
+  attestation, so the image must be hardcoded **by digest**
+  (`…/outlayer-worker@sha256:…`) — that's what binds the exact worker image to the
+  attested identity. A tag wouldn't do: only the digest pins the image bytes.
