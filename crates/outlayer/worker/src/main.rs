@@ -70,6 +70,8 @@ async fn main() -> Result<()> {
 
     let config = AppConfig::load().context("config")?;
 
+    // TODO: drop this ad-hoc subscriber once proper metrics/tracing infrastructure
+    // (exporter, span timings) is in place.
     {
         use tracing_subscriber::{
             EnvFilter,
