@@ -1,18 +1,15 @@
 services:
   worker:
     image: ${SERVICE_DOCKER_IMAGE:-outlayer-worker:local}
-    build:
-      context: .
-      dockerfile: crates/outlayer/worker/Dockerfile
     environment:
       DSTACK_DOCKER_USERNAME: ${DSTACK_DOCKER_USERNAME}
       DSTACK_DOCKER_PASSWORD: ${DSTACK_DOCKER_PASSWORD}
       DSTACK_DOCKER_REGISTRY: ${DSTACK_DOCKER_REGISTRY}
       OUTLAYER__SEED: ${OUTLAYER__SEED}
-      RUST_LOG: "outlayer=info,defuse_outlayer_service=debug,defuse_outlayer_executor=debug"
+      OUTLAYER__LOG: "outlayer=info,defuse_outlayer_service=debug,defuse_outlayer_executor=debug"
       OUTLAYER__GRPC_SERVER__ADDR: "0.0.0.0:50051"
       OUTLAYER__GRPC_SERVER__CONCURRENCY_LIMIT_PER_CONNECTION: 1
-      OUTLAYER__GRPC__MAX_PARALLEL_WASM_EXECUTIONS: 2
+      OUTLAYER__GRPC__MAX_PARALLEL_WASM_EXECUTIONS: 8 
       OUTLAYER__GRPC__CONNECTIONS_LIMIT: 10
       OUTLAYER__GRPC__REQUEST_HANDLING_TIMEOUT_SECONDS: 30
       OUTLAYER__SERVICE__CACHE__MAX_CAPACITY_BYTES: 104857600

@@ -1,0 +1,7 @@
+# Local-development overrides, auto-merged by `docker compose` (not uploaded to Phala).
+# Builds the worker image from source so `docker compose up` works without a published image.
+services:
+  worker:
+    build:
+      context: .
+      dockerfile: crates/outlayer/worker/Dockerfile

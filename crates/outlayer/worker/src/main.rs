@@ -28,6 +28,8 @@ struct AppConfig {
     seed: Option<Zeroizing<Vec<u8>>>,
     grpc_server: GrpcServerConfig,
     grpc: GrpcConfig,
+    /// `tracing-subscriber` env-filter directives, e.g. `outlayer=info,defuse_outlayer_service=debug`.
+    log: String,
 }
 
 #[serde_with::serde_as]
@@ -65,6 +67,9 @@ impl AppConfig {
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok();
+
+    let config = AppConfig::load().context("config")?;
+
     {
         use tracing_subscriber::{
             EnvFilter,
@@ -73,7 +78,7 @@ async fn main() -> Result<()> {
             prelude::*,
         };
 
-        let logs = EnvFilter::from_env("RUST_LOG");
+        let logs = EnvFilter::new(&config.log);
         // Only collect span timings when the log level is DEBUG (or more verbose).
         let timings = logs
             .max_level_hint()
@@ -98,8 +103,6 @@ async fn main() -> Result<()> {
             .with(timings)
             .init();
     }
-
-    let config = AppConfig::load().context("config")?;
 
     // TODO: derive seed from CKD
     #[allow(clippy::option_if_let_else)]
