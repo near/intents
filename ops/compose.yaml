@@ -1,7 +1,7 @@
 services:
   worker:
     # Pinned by digest so the image is bound into the TEE attestation (local dev overrides via compose.override.yaml).
-    image: ghcr.io/near/intents/outlayer-worker@sha256:a1b4933e97aef17789603fd7cde66e3923764e620769a072451d271f25e9e879
+    image: ghcr.io/near/intents/outlayer-worker@sha256:cbe21c71bc03d37104b9b436bf31b18d4023cc23cf477aa30952092454907f3b
     environment:
       DSTACK_DOCKER_USERNAME: ${DSTACK_DOCKER_USERNAME}
       DSTACK_DOCKER_PASSWORD: ${DSTACK_DOCKER_PASSWORD}
