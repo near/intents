@@ -14,7 +14,7 @@ poa = ["dep:defuse-poa-factory"]
 deployer = ["dep:defuse-global-deployer", "dep:defuse-serde-utils"]
 escrow = ["dep:defuse-escrow-swap"]
 imt = ["defuse", "defuse/imt"]
-wallet = ["dep:defuse-wallet"]
+wallet = ["dep:defuse-wallet", "dep:defuse-wallet-sdk"]
 outlayer = ["dep:defuse-outlayer-app", "dep:defuse-serde-utils"]
 
 [dependencies]
@@ -28,8 +28,7 @@ anyhow.workspace = true
 futures.workspace = true
 impl-tools.workspace = true
 libc = "0.2"
-near-kit.workspace = true
-near-sandbox.workspace = true
+near-kit = {workspace = true, features = ["sandbox"] }
 near-sdk = { workspace = true, features = ["unit-testing", "deterministic-account-ids"] }
 tracing.workspace = true
 
@@ -39,8 +38,8 @@ defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call
 defuse-global-deployer = { workspace = true, optional = true }
 defuse-outlayer-app = { workspace = true, optional = true }
 defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
-defuse-wallet = { workspace = true, optional = true }
-
+defuse-wallet = { workspace = true, features = ["arbitrary", "concurrent"], optional = true }
+defuse-wallet-sdk = { workspace = true, optional = true }
 defuse = { workspace = true, optional = true, features = ["contract"] }
 defuse-serde-utils = { workspace = true, optional = true, features = ["base64", "hex"] }
 defuse-test-utils = { workspace = true, optional = true }

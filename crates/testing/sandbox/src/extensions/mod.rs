@@ -1,22 +1,14 @@
-#![allow(async_fn_in_trait)]
+use near_sdk::Gas;
 
-pub mod acl;
-pub mod ft;
-pub mod mt;
-pub mod mt_receiver;
-pub mod nft;
-pub mod storage_management;
-pub mod wnear;
-
-#[cfg(feature = "defuse")]
-pub mod defuse;
-#[cfg(feature = "escrow")]
-pub mod escrow;
-#[cfg(feature = "deployer")]
-pub mod global_deployer;
-#[cfg(feature = "outlayer")]
-pub mod outlayer_app;
+// #[cfg(feature = "defuse")]
+// pub mod defuse;
+// #[cfg(feature = "escrow")]
+// pub mod escrow;
+// #[cfg(feature = "deployer")]
+// pub mod global_deployer;
 #[cfg(feature = "poa")]
 pub mod poa;
 #[cfg(feature = "wallet")]
 pub mod wallet;
+
+pub const DEFAULT_GAS: Gas = Gas::from_tgas(300);

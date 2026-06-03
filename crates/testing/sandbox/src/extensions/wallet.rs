@@ -1,0 +1,117 @@
+use std::collections::BTreeSet;
+
+use anyhow::Result;
+use defuse_wallet::{Request, signature::Deadline, signature::RequestMessage};
+use near_kit::{Final, Near};
+use near_sdk::{
+    AccountId, NearToken,
+    serde::{Deserialize, Serialize},
+    state_init::StateInit,
+};
+
+use crate::{extensions::DEFAULT_GAS, state_init::IntoStateInit};
+
+pub use defuse_wallet as contract;
+pub use defuse_wallet_sdk as sdk;
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct ExecuteSignedArgs {
+    pub msg: RequestMessage,
+    pub proof: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct ExecuteExtensionArgs {
+    pub request: Request,
+}
+
+#[near_kit::contract]
+pub trait Wallet {
+    #[call]
+    fn w_execute_signed(&mut self, args: ExecuteSignedArgs) -> bool;
+
+    #[call]
+    fn w_execute_extension(&mut self, args: ExecuteExtensionArgs) -> bool;
+
+    fn w_subwallet_id(&self) -> u32;
+    fn w_is_signature_allowed(&self) -> bool;
+    fn w_public_key(&self) -> String;
+    fn w_is_extension_enabled(&self, account_id: AccountId) -> bool;
+    fn w_extensions(&self) -> BTreeSet<AccountId>;
+    fn w_timeout_secs(&self) -> u64;
+    fn w_last_cleaned_at(&self) -> Deadline;
+}
+
+#[allow(async_fn_in_trait)]
+pub trait WalletExt {
+    async fn w_execute_signed(
+        &self,
+        wallet_id: impl Into<AccountId>,
+        state_init: impl Into<Option<StateInit>>,
+        msg: RequestMessage,
+        proof: String,
+        deposit: NearToken,
+    ) -> Result<()>;
+
+    async fn w_execute_extension(
+        &self,
+        wallet_id: impl Into<AccountId>,
+        state_init: impl Into<Option<StateInit>>,
+        request: Request,
+        deposit: NearToken,
+    ) -> Result<()>;
+}
+
+impl WalletExt for Near {
+    async fn w_execute_signed(
+        &self,
+        wallet_id: impl Into<AccountId>,
+        state_init: impl Into<Option<StateInit>>,
+        msg: RequestMessage,
+        proof: String,
+        deposit: NearToken,
+    ) -> Result<()> {
+        let mut tx = self.transaction(&wallet_id.into());
+
+        if let Some(state_init) = state_init.into() {
+            tx = tx.state_init(state_init.into_state_init(), NearToken::ZERO);
+        }
+
+        tx.add_action(
+            Wallet::w_execute_signed(ExecuteSignedArgs { msg, proof })
+                .deposit(deposit)
+                .gas(DEFAULT_GAS),
+        )
+        .wait_until(Final)
+        .await?
+        .result()?;
+
+        Ok(())
+    }
+
+    async fn w_execute_extension(
+        &self,
+        wallet_id: impl Into<AccountId>,
+        state_init: impl Into<Option<StateInit>>,
+        request: Request,
+        deposit: NearToken,
+    ) -> Result<()> {
+        let mut tx = self.transaction(&wallet_id.into());
+
+        if let Some(state_init) = state_init.into() {
+            tx = tx.state_init(state_init.into_state_init(), NearToken::ZERO);
+        }
+        tx.add_action(
+            Wallet::w_execute_extension(ExecuteExtensionArgs { request })
+                .deposit(deposit)
+                .gas(DEFAULT_GAS),
+        )
+        .wait_until(Final)
+        .await?
+        .result()?;
+
+        Ok(())
+    }
+}
