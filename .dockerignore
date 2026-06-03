@@ -1,0 +1,12 @@
+target/
+res/
+releases/
+.env*
+.sbx/
+.vscode/
+.nvim.lua
+LICENSE
+taplo.toml
+.catalog-info.yaml
+**/*.md
+**/*.txt
