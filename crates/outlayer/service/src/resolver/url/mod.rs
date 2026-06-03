@@ -1,6 +1,8 @@
 mod data;
 mod http;
 
+use std::sync::Arc;
+
 use bytes::Bytes;
 use url::Url;
 
@@ -32,7 +34,7 @@ pub enum Error {
     Data(#[from] data::Error),
 
     #[error("HTTP: {0}")]
-    Http(#[from] http::Error),
+    Http(#[from] Arc<http::Error>),
 
     #[error("unsupported scheme: {0}")]
     UnsupportedScheme(String),
