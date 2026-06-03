@@ -2,7 +2,7 @@
 
 #[cfg(any(feature = "arbitrary", test))]
 mod arbitrary;
-pub mod auth_resolve;
+pub mod resolve_auth;
 #[cfg(feature = "contract")]
 mod contract;
 mod error;
@@ -17,7 +17,7 @@ use std::collections::BTreeSet;
 use defuse_deadline::Deadline;
 use near_sdk::{AccountId, ext_contract};
 
-use crate::auth_resolve::{AuthorizationResolution, Purpose};
+use crate::resolve_auth::{AuthorizationResolution, Purpose};
 use crate::signature::RequestMessage;
 
 pub use self::{error::*, events::*, nonces::*, request::*, state::*};
@@ -74,7 +74,7 @@ pub trait Wallet {
     ///
     /// View function that verifies the `authorization` blob against
     /// the contract's signing standard and returns the extracted payload.
-    fn w_auth_resolve(
+    fn w_resolve_auth(
         &self,
         purpose: Purpose,
         recipient: String,

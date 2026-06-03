@@ -20,7 +20,7 @@ use crate::Request;
 
 pub use self::{borsh::*, domain::*, hash::*};
 
-use crate::auth_resolve::{AuthorizationResolution, ErrorKind, Purpose};
+use crate::resolve_auth::{AuthorizationResolution, ErrorKind, Purpose};
 
 /// Signing standard, which defines the public key and how `signature` on
 /// `msg` is verified.
@@ -35,7 +35,7 @@ pub trait SigningStandard<M> {
     /// The default implementation returns `INVALID` (unsupported).
     /// Signing standards that support off-chain authorization (EIP-712,
     /// WebAuthn, etc.) override this.
-    fn auth_resolve(
+    fn resolve_auth(
         _purpose: &Purpose,
         _recipient: &str,
         _authorization: &str,
@@ -43,7 +43,7 @@ pub trait SigningStandard<M> {
     ) -> AuthorizationResolution {
         AuthorizationResolution::Invalid {
             error_kind: ErrorKind::InvalidInput,
-            error_message: "auth_resolve is not supported by this signing standard".into(),
+            error_message: "resolve_auth is not supported by this signing standard".into(),
         }
     }
 }

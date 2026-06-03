@@ -1,4 +1,4 @@
-use crate::auth_resolve::{AuthorizationResolution, ErrorKind, Purpose};
+use crate::resolve_auth::{AuthorizationResolution, ErrorKind, Purpose};
 use crate::signature::SigningStandard;
 use defuse_crypto::{Secp256k1PublicKey, SignedPayload};
 use defuse_eip712::auth::SignedEip712Authorization;
@@ -63,7 +63,7 @@ impl SigningStandard<&RequestMessage> for Eip712 {
         recovered_pk == public_key.0
     }
 
-    fn auth_resolve(
+    fn resolve_auth(
         purpose: &Purpose,
         recipient: &str,
         authorization: &str,

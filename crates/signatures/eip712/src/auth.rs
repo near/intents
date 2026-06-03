@@ -1,4 +1,4 @@
-//! EIP-712 authorization envelope for NEP-641 `w_auth_resolve`.
+//! EIP-712 authorization envelope for NEP-641 `w_resolve_auth`.
 //!
 //! EIP-712 type:
 //! ```text
@@ -60,7 +60,7 @@ impl Payload for Eip712Authorization {
     }
 }
 
-/// Signed EIP-712 authorization blob (the `authorization` parameter to `w_auth_resolve`).
+/// Signed EIP-712 authorization blob (the `authorization` parameter to `w_resolve_auth`).
 #[near(serializers = [json])]
 #[autoimpl(Deref using self.message)]
 #[derive(Debug, Clone)]
