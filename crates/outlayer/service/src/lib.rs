@@ -18,7 +18,7 @@ use defuse_outlayer_executor::{
 };
 use defuse_outlayer_primitives::AppId;
 use moka::future::Cache;
-use tracing::Instrument;
+use tracing::{Instrument, instrument};
 
 #[derive(Clone)]
 pub struct Outlayer {
@@ -80,7 +80,7 @@ impl Outlayer {
         Ok((app_id, component))
     }
 
-    #[tracing::instrument(skip_all)]
+    #[instrument(skip_all)]
     pub async fn execute(
         &self,
         app: Code<'_>,

@@ -16,6 +16,7 @@ use defuse_outlayer_vm_runner::{
 };
 
 use bytes::Bytes;
+use tracing::instrument;
 
 #[derive(Clone)]
 pub struct Executor {
@@ -69,7 +70,7 @@ impl Executor {
         Compiler::new(self.runtime.clone())
     }
 
-    #[tracing::instrument(level = "debug", skip_all, fields(%fuel))]
+    #[instrument(level = "debug", skip_all, fields(%fuel))]
     pub async fn execute(
         &self,
         ctx: Context,

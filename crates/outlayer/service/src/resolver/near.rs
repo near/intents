@@ -6,6 +6,7 @@ use defuse_serde_utils::hex::AsHex;
 use futures::try_join;
 use moka::future::Cache;
 use near_kit::Near;
+use tracing::instrument;
 use url::Url;
 
 use crate::AppCodeUrl;
@@ -34,7 +35,7 @@ impl NearResolver {
             .await
     }
 
-    #[tracing::instrument(level = "debug", skip(self))]
+    #[instrument(level = "debug", skip(self))]
     async fn fetch(&self, oa_contract_id: AccountId) -> Result<AppCodeUrl, near_kit::Error> {
         let oa = self.client.contract::<OutlayerApp>(oa_contract_id);
         // TODO: finality or speicific block hash?

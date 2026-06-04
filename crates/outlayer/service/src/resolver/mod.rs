@@ -9,6 +9,7 @@ use defuse_outlayer_primitives::AppId;
 use crate::{AppCodeUrl, CodeRef};
 use bytes::Bytes;
 use sha2::{Digest, Sha256};
+use tracing::instrument;
 
 pub use self::{
     config::ResolverConfig,
@@ -27,7 +28,7 @@ impl Resolver {
         Self { near, url }
     }
 
-    #[tracing::instrument(level = "debug", skip_all)]
+    #[instrument(level = "debug", skip_all)]
     pub async fn resolve_code_url(&self, code: CodeRef<'_>) -> Result<AppCodeUrl, Error> {
         match code {
             CodeRef::AppId(app_id) => match app_id {
@@ -39,7 +40,7 @@ impl Resolver {
         }
     }
 
-    #[tracing::instrument(level = "debug", skip_all)]
+    #[instrument(level = "debug", skip_all)]
     pub async fn resolve_code(
         &self,
         AppCodeUrl {

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use defuse_outlayer_vm_runner::{VmRuntime, wasmtime::component::Component};
+use tracing::instrument;
 
 #[derive(Clone)]
 pub struct Compiler(Arc<VmRuntime>);
@@ -10,7 +11,7 @@ impl Compiler {
         Self(runtime)
     }
 
-    #[tracing::instrument(level = "debug", skip_all)]
+    #[instrument(level = "debug", skip_all)]
     pub fn compile(&self, wasm: impl AsRef<[u8]>) -> anyhow::Result<Component> {
         self.0.compile(wasm)
     }
