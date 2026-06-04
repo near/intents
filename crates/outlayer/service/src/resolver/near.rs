@@ -6,7 +6,6 @@ use defuse_serde_utils::hex::AsHex;
 use futures::try_join;
 use moka::future::Cache;
 use near_kit::Near;
-use tracing::Instrument;
 use url::Url;
 
 use crate::AppCodeUrl;
