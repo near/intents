@@ -6,6 +6,7 @@ use defuse_serde_utils::hex::AsHex;
 use futures::try_join;
 use moka::future::Cache;
 use near_kit::Near;
+use tracing::Instrument;
 use url::Url;
 
 use crate::AppCodeUrl;
@@ -29,12 +30,15 @@ impl NearResolver {
         oa_contract_id: impl Into<AccountId>,
     ) -> Result<AppCodeUrl, Arc<near_kit::Error>> {
         let oa_contract_id = oa_contract_id.into();
+        let span = tracing::debug_span!("near_resolve", %oa_contract_id);
+
         self.cache
             .try_get_with(oa_contract_id.clone(), self.fetch(oa_contract_id))
+            .instrument(span)
             .await
     }
 
-    #[tracing::instrument(level = "debug", name = "fetch", skip_all)]
+    #[tracing::instrument(level = "debug", skip_all)]
     async fn fetch(&self, oa_contract_id: AccountId) -> Result<AppCodeUrl, near_kit::Error> {
         let oa = self.client.contract::<OutlayerApp>(oa_contract_id);
         // TODO: finality or speicific block hash?

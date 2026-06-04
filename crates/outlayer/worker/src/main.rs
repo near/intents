@@ -73,9 +73,10 @@ async fn main() -> Result<()> {
     // TODO: drop this ad-hoc subscriber once proper metrics/tracing infrastructure
     // (exporter, span timings) is in place.
     {
+        use tracing::Metadata;
         use tracing_subscriber::{
             EnvFilter,
-            filter::{LevelFilter, filter_fn},
+            filter::{FilterExt, LevelFilter, filter_fn},
             fmt::{self, format::FmtSpan},
             prelude::*,
         };
@@ -86,18 +87,12 @@ async fn main() -> Result<()> {
             .max_level_hint()
             .is_some_and(|level| level >= LevelFilter::DEBUG)
             .then(|| {
-                // Busy/idle timing for the executor's `compile`/`execute` spans, the
-                // gRPC adapter's `grpc` total span, and the service's per-request spans
-                // (`resolve_url`, `fetch`). `is_span` keeps it to timing lines; the
-                // target filter scopes it to those spans rather than the whole tree.
-                fmt::layer()
-                    .with_span_events(FmtSpan::CLOSE)
-                    .with_filter(filter_fn(|meta| {
-                        meta.is_span()
-                            && (meta.target().starts_with("defuse_outlayer_executor")
-                                || meta.target().starts_with("defuse_outlayer_grpc")
-                                || meta.target().starts_with("defuse_outlayer_service"))
-                    }))
+                // Span busy/idle timings, scoped by OUTLAYER__LOG (same as the message
+                // layer) and limited to spans (not events) via `is_span`.
+                fmt::layer().with_span_events(FmtSpan::CLOSE).with_filter(
+                    logs.clone()
+                        .and(filter_fn(|meta: &Metadata<'_>| meta.is_span())),
+                )
             });
 
         tracing_subscriber::registry()
