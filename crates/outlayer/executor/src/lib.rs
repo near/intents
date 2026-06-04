@@ -76,12 +76,12 @@ impl Executor {
         component: &Component,
         fuel: u64,
     ) -> Result<Outcome, Error> {
-        if ctx.input.len() > self.io_limits.stdin {
+        if ctx.input.len() > self.io_limits.stdin_bytes {
             return Err(Error::InputTooLong);
         }
 
-        let stdout = MemoryOutputPipe::new(self.io_limits.stdout);
-        let stderr = MemoryOutputPipe::new(self.io_limits.stderr);
+        let stdout = MemoryOutputPipe::new(self.io_limits.stdout_bytes);
+        let stderr = MemoryOutputPipe::new(self.io_limits.stderr_bytes);
         let ctx = VmContext {
             wasi: WasiContext {
                 stdin: MemoryInputPipe::new(ctx.input),

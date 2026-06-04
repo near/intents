@@ -37,20 +37,17 @@ impl Default for ExecutorConfig {
 )]
 #[derive(Debug, Clone, Copy)]
 pub struct IoLimits {
-    #[cfg_attr(feature = "serde", serde(rename = "stdin_bytes"))]
-    pub stdin: usize,
-    #[cfg_attr(feature = "serde", serde(rename = "stdout_bytes"))]
-    pub stdout: usize,
-    #[cfg_attr(feature = "serde", serde(rename = "stderr_bytes"))]
-    pub stderr: usize,
+    pub stdin_bytes: usize,
+    pub stdout_bytes: usize,
+    pub stderr_bytes: usize,
 }
 
 impl Default for IoLimits {
     fn default() -> Self {
         Self {
-            stdin: LIMIT_4MB,
-            stdout: LIMIT_4MB,
-            stderr: LIMIT_16KB,
+            stdin_bytes: LIMIT_4MB,
+            stdout_bytes: LIMIT_4MB,
+            stderr_bytes: LIMIT_16KB,
         }
     }
 }
