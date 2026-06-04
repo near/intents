@@ -31,5 +31,8 @@ FROM debian:bookworm-slim AS runtime
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+# Run as a non-root system user to reduce the attack surface.
+RUN useradd -r -s /usr/sbin/nologin outlayer
+USER outlayer
 COPY --from=builder /build/target/release/outlayer-worker /usr/local/bin/outlayer-worker
-CMD ["outlayer-worker"]
+ENTRYPOINT ["outlayer-worker"]
