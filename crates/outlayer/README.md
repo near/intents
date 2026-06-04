@@ -4,28 +4,40 @@ Runbook for deploying the outlayer worker to [Phala Cloud](https://cloud.phala.n
 
 ## Configuration
 
-Two env templates live in `ops/` — copy the relevant one and fill in the values:
+Two env templates live in `crates/outlayer/worker/` — `cd` there, then copy the
+relevant one and fill in the values:
 
-- **Local** — `cp ops/env.local.example ops/.env` (just a dev seed; the image is
-  built locally, so no registry credentials).
-- **Production** — `cp ops/env.production.example .env` (repo root); fill in the
-  GHCR pull credentials and signer seed, then deploy with `-e .env`. The image is
-  **not** set here — it's pinned by digest in `ops/compose.yaml`.
+```sh
+cd crates/outlayer/worker
+```
+
+- **Local** — `env.local.example` (just a dev seed; the image is built
+  locally, so no registry credentials).
+- **Production** — `env.production.example`; fill in the GHCR pull
+  credentials and signer seed, then deploy with `-e .env`. The image is **not** set
+  here — it's pinned by digest in `compose.yaml`.
 
 
 ## Development
 
-Run the worker locally with Docker Compose. The compose files live in `ops/`, so
-run from there (auto-merge needs both files in the working directory):
+Run the worker locally with Docker Compose. The compose files live in
+`crates/outlayer/worker/`, so run from there (auto-merge needs both files in the
+working directory):
 
 ```sh
-cp ops/env.local.example ops/.env   # first time only
-cd ops
+cd crates/outlayer/worker
+cp env.local.example .env   # first time only
 docker compose up --build
 ```
 
 
 ## Phala deployment
+
+All commands below assume you are in the worker directory:
+
+```sh
+cd crates/outlayer/worker
+```
 
 Install the [`phala` CLI](https://github.com/Phala-Network/phala-cloud/tree/main/cli)
 (or run ad-hoc with `npx phala <command>`):
@@ -45,7 +57,7 @@ phala login
 ```sh
 phala deploy \
     --name outlayer \
-    --compose ops/compose.yaml \
+    --compose compose.yaml \
     --vcpu 4 \
     --memory 4G \
     --disk-size 1G \
@@ -60,10 +72,10 @@ Redeploy the current compose + env onto a running CVM (its `--cvm-id` is shown b
 `-e` so the updated values are applied:
 
 ```sh
-phala deploy --cvm-id app_<CVM ID> --compose ./ops/compose.yaml -e .env
+phala deploy --cvm-id app_<CVM ID> --compose ./compose.yaml -e .env
 ```
 
-This ships new code only if the pinned image digest in `ops/compose.yaml` changed;
+This ships new code only if the pinned image digest in `compose.yaml` changed;
 if you changed the worker, build & push it and bump that `@sha256:` digest first.
 
 ### Upgrading an app with active replicas
