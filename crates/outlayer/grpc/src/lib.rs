@@ -10,6 +10,7 @@ use defuse_outlayer_service::{Code, Outlayer};
 use tonic::{Request, Response, Status};
 use tower::util::BoxCloneSyncService;
 use tower::{BoxError, ServiceBuilder, ServiceExt as _, service_fn};
+use tracing::instrument;
 
 use crate::convert::ProtoTryFrom as _;
 
@@ -71,7 +72,7 @@ impl OutlayerGrpc {
 
 #[tonic::async_trait]
 impl OutlayerService for OutlayerGrpc {
-    #[tracing::instrument(name = "grpc", skip_all)]
+    #[instrument(name = "grpc", skip_all)]
     async fn call(
         &self,
         request: Request<proto::Request>,
@@ -106,6 +107,7 @@ impl OutlayerService for OutlayerGrpc {
 /// Backpressure and timeout policy for the gRPC service.
 #[cfg_attr(
     feature = "serde",
+    ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Deserialize),
     serde(deny_unknown_fields, default)

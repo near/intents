@@ -28,6 +28,7 @@ struct AppConfig {
     seed: Option<Zeroizing<Vec<u8>>>,
     grpc_server: GrpcServerConfig,
     grpc: GrpcConfig,
+    log: String,
 }
 
 #[serde_with::serde_as]
@@ -54,7 +55,8 @@ impl AppConfig {
             .add_source(
                 Environment::with_prefix(PREFIX)
                     .prefix_separator("__")
-                    .separator("__"),
+                    .separator("__")
+                    .ignore_empty(true),
             )
             .build()
             .and_then(config::Config::try_deserialize)
@@ -65,20 +67,48 @@ impl AppConfig {
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok();
-    tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_env("OUTLAYER_LOG"))
-        .init();
 
     let config = AppConfig::load().context("config")?;
+
+    // TODO: drop this ad-hoc subscriber once proper metrics/tracing infrastructure
+    // (exporter, span timings) is in place.
+    {
+        use tracing::Metadata;
+        use tracing_subscriber::{
+            EnvFilter,
+            filter::{FilterExt, LevelFilter, filter_fn},
+            fmt::{self, format::FmtSpan},
+            prelude::*,
+        };
+
+        let logs = EnvFilter::new(&config.log);
+        // Only collect span timings when the log level is DEBUG (or more verbose).
+        let timings = logs
+            .max_level_hint()
+            .is_some_and(|level| level >= LevelFilter::DEBUG)
+            .then(|| {
+                // Span busy/idle timings, scoped by OUTLAYER__LOG (same as the message
+                // layer) and limited to spans (not events) via `is_span`.
+                fmt::layer().with_span_events(FmtSpan::CLOSE).with_filter(
+                    logs.clone()
+                        .and(filter_fn(|meta: &Metadata<'_>| meta.is_span())),
+                )
+            });
+
+        tracing_subscriber::registry()
+            .with(fmt::layer().with_filter(logs))
+            .with(timings)
+            .init();
+    }
 
     // TODO: derive seed from CKD
     #[allow(clippy::option_if_let_else)]
     let signer = match config.seed {
         Some(seed) => {
-            tracing::warn!("using custom signer seed — not intended for production use");
+            tracing::warn!("using custom seed — not intended for production use");
             InMemorySigner::from_seed(&seed)
         }
-        None => unimplemented!("signer seed must be provided until CKD integration is complete"),
+        None => unimplemented!("seed must be provided until CKD integration is complete"),
     };
 
     let signer: Arc<dyn Signer> = Arc::new(signer);

@@ -2,11 +2,14 @@ mod config;
 mod near;
 mod url;
 
+use std::sync::Arc;
+
 use defuse_outlayer_primitives::AppId;
 
 use crate::{AppCodeUrl, CodeRef};
 use bytes::Bytes;
 use sha2::{Digest, Sha256};
+use tracing::instrument;
 
 pub use self::{
     config::ResolverConfig,
@@ -25,6 +28,7 @@ impl Resolver {
         Self { near, url }
     }
 
+    #[instrument(level = "debug", skip_all)]
     pub async fn resolve_code_url(&self, code: CodeRef<'_>) -> Result<AppCodeUrl, Error> {
         match code {
             CodeRef::AppId(app_id) => match app_id {
@@ -36,6 +40,7 @@ impl Resolver {
         }
     }
 
+    #[instrument(level = "debug", skip_all)]
     pub async fn resolve_code(
         &self,
         AppCodeUrl {
@@ -58,7 +63,7 @@ pub enum Error {
     CodeHashMismatch,
 
     #[error("NEAR: {0}")]
-    NearRpc(#[from] near_kit::Error),
+    NearRpc(#[from] Arc<near_kit::Error>),
 
     #[error("URL: {0}")]
     Url(#[from] self::url::Error),

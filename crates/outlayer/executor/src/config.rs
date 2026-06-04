@@ -30,22 +30,24 @@ impl Default for ExecutorConfig {
 
 #[cfg_attr(
     feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
     derive(::serde::Deserialize),
     serde(deny_unknown_fields, default)
 )]
 #[derive(Debug, Clone, Copy)]
 pub struct IoLimits {
-    pub stdin: usize,
-    pub stdout: usize,
-    pub stderr: usize,
+    pub stdin_bytes: usize,
+    pub stdout_bytes: usize,
+    pub stderr_bytes: usize,
 }
 
 impl Default for IoLimits {
     fn default() -> Self {
         Self {
-            stdin: LIMIT_4MB,
-            stdout: LIMIT_4MB,
-            stderr: LIMIT_16KB,
+            stdin_bytes: LIMIT_4MB,
+            stdout_bytes: LIMIT_4MB,
+            stderr_bytes: LIMIT_16KB,
         }
     }
 }

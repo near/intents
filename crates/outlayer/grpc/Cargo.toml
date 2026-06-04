@@ -22,8 +22,9 @@ tonic.workspace = true
 tower = { workspace = true, features = ["buffer", "limit", "load-shed", "timeout", "util"] }
 tracing.workspace = true
 
+cfg_eval = { workspace = true, optional = true }
 serde = { workspace = true, optional = true, features = ["derive"] }
 serde_with = { workspace = true, optional = true }
 
 [features]
-serde = ["dep:serde", "dep:serde_with"]
+serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with"]
