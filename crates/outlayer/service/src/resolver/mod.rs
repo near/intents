@@ -27,6 +27,7 @@ impl Resolver {
         Self { near, url }
     }
 
+    #[tracing::instrument(level = "debug", skip_all)]
     pub async fn resolve_code_url(&self, code: CodeRef<'_>) -> Result<AppCodeUrl, Error> {
         match code {
             CodeRef::AppId(app_id) => match app_id {
@@ -38,6 +39,7 @@ impl Resolver {
         }
     }
 
+    #[tracing::instrument(level = "debug", skip_all)]
     pub async fn resolve_code(
         &self,
         AppCodeUrl {

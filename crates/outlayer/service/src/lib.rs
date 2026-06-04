@@ -49,7 +49,6 @@ impl Outlayer {
                 code_ref.app_id(),
                 self.resolver
                     .resolve_code_url(code_ref)
-                    .instrument(tracing::debug_span!("resolve_url"))
                     .await?,
                 None,
             ),
@@ -67,13 +66,13 @@ impl Outlayer {
                 } else {
                     self.resolver
                         .resolve_code(app_code_url)
-                        .instrument(tracing::debug_span!("fetch"))
                         .await?
                 };
 
                 tokio::task::spawn_blocking({
                     let compiler = self.executor.compiler();
-                    move || compiler.compile(code)
+                    let span = tracing::Span::current();
+                    move || span.in_scope(|| compiler.compile(code))
                 })
                 .await
                 .context("panicked")

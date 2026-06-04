@@ -2,6 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use defuse_outlayer_primitives::account_id::AccountId;
 use defuse_serde_utils::hex::AsHex;
+
 use futures::try_join;
 use moka::future::Cache;
 use near_kit::Near;
@@ -23,7 +24,6 @@ impl NearResolver {
         }
     }
 
-    #[tracing::instrument(name = "near_resolve", skip_all)]
     pub async fn resolve(
         &self,
         oa_contract_id: impl Into<AccountId>,
@@ -34,6 +34,7 @@ impl NearResolver {
             .await
     }
 
+    #[tracing::instrument(level = "debug", name = "fetch", skip_all)]
     async fn fetch(&self, oa_contract_id: AccountId) -> Result<AppCodeUrl, near_kit::Error> {
         let oa = self.client.contract::<OutlayerApp>(oa_contract_id);
         // TODO: finality or speicific block hash?
