@@ -9,8 +9,8 @@ repository.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [package.metadata.near.reproducible_build]
-image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
-image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+image = "sourcescan/cargo-near:0.21.1-rust-1.93.0"
+image_digest = "sha256:79b789c81ba19ec30794a6b1046b02dcaf5c055994b22cc7c9af67ab5096b095"
 passed_env = []
 container_build_command = [
   "cargo",
