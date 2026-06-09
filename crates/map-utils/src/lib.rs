@@ -2,7 +2,7 @@ mod btree_map;
 pub mod cleanup;
 mod hash_map;
 mod iter;
-#[cfg(feature = "near")]
+#[cfg(near)]
 mod near;
 
 pub use self::iter::*;

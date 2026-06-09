@@ -10,11 +10,9 @@ doctest = true
 
 [dependencies]
 impl-tools.workspace = true
-near-sdk = { workspace = true, optional = true }
 
-[features]
-
-near = ["dep:near-sdk"]
+[target.'cfg(near)'.dependencies]
+near-sdk.workspace = true
 
 [lints]
 workspace = true

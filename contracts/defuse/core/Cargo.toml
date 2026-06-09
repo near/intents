@@ -8,11 +8,11 @@ repository.workspace = true
 [dependencies]
 defuse-bitmap = { workspace = true, features = ["borsh"] }
 defuse-crypto = { workspace = true, features = ["borsh", "ed25519", "secp256k1", "p256", "near-contract", "serde"] }
-defuse-deadline = { workspace = true, features = ["borsh", "near-contract", "serde"] }
+defuse-deadline = { workspace = true, features = ["borsh", "serde"] }
 defuse-digest = { workspace = true, features = ["near-contract"] }
 defuse-erc191 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
-defuse-map-utils = { workspace = true, features = ["near"] }
+defuse-map-utils.workspace = true
 defuse-near-utils = { workspace = true }
 defuse-nep245.workspace = true
 defuse-nep413 = { workspace = true, features = ["near-contract", "serde"] }

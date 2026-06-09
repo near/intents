@@ -22,17 +22,18 @@ impl Deadline {
         Self(d)
     }
 
-    #[cfg(target_arch = "wasm32")]
-    #[must_use]
-    pub fn now() -> Self {
-        Self(defuse_near_utils::time::now())
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
     #[must_use]
     #[inline]
     pub fn now() -> Self {
-        Self(Utc::now())
+        #[cfg(near)]
+        {
+            Self(defuse_near_utils::time::now())
+        }
+
+        #[cfg(not(near))]
+        {
+            Self(Utc::now())
+        }
     }
 
     #[must_use]
