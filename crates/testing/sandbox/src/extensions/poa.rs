@@ -11,7 +11,7 @@ use near_sdk::{
 };
 use std::collections::{HashMap, HashSet};
 
-use crate::{account::Account, extensions::DEFAULT_GAS};
+use crate::{account::Account, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
 
 pub use defuse_poa_factory::*;
 
@@ -62,7 +62,7 @@ pub trait PoaFactory {
 
     fn tokens(&self) -> HashMap<String, AccountId>;
 }
-pub trait PoaFactoryDeployer {
+pub trait PoaFactoryDeployerExt {
     async fn deploy_poa_factory(
         &self,
         name: impl AsRef<str>,
@@ -73,7 +73,7 @@ pub trait PoaFactoryDeployer {
     ) -> PoaFactoryClient;
 }
 
-impl PoaFactoryDeployer for Near {
+impl PoaFactoryDeployerExt for Near {
     async fn deploy_poa_factory(
         &self,
         name: impl AsRef<str>,
@@ -135,7 +135,7 @@ pub trait PoAFactoryExt {
         amount: u128,
         msg: Option<String>,
         memo: Option<String>,
-    ) -> Result<()>;
+    ) -> Result<SuccessfulExecutionOutcome>;
 }
 
 impl PoAFactoryExt for Near {
@@ -169,7 +169,7 @@ impl PoAFactoryExt for Near {
         amount: u128,
         msg: Option<String>,
         memo: Option<String>,
-    ) -> Result<()> {
+    ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(&factory.into())
             .add_action(
                 PoaFactory::ft_deposit(PoaFtDepositArgs {
@@ -183,8 +183,6 @@ impl PoAFactoryExt for Near {
                 .gas(DEFAULT_GAS),
             )
             .await?
-            .result()?;
-
-        Ok(())
+            .try_into()
     }
 }

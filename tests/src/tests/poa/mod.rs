@@ -1,6 +1,6 @@
 use defuse_sandbox::{
     account::Account,
-    extensions::poa::{PoAFactoryExt, PoaFactoryDeployer, contract::Role},
+    extensions::poa::{PoAFactoryExt, PoaFactoryDeployerExt, contract::Role},
     kit::Near,
     root,
 };

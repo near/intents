@@ -9,7 +9,9 @@ use near_sdk::{
     state_init::StateInit,
 };
 
-use crate::{extensions::DEFAULT_GAS, state_init::IntoStateInit};
+use crate::{
+    extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome, state_init::IntoStateInit,
+};
 
 pub use defuse_wallet as contract;
 pub use defuse_wallet_sdk as sdk;
@@ -53,7 +55,7 @@ pub trait WalletExt {
         msg: RequestMessage,
         proof: String,
         deposit: NearToken,
-    ) -> Result<()>;
+    ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn w_execute_extension(
         &self,
@@ -61,7 +63,7 @@ pub trait WalletExt {
         state_init: impl Into<Option<StateInit>>,
         request: Request,
         deposit: NearToken,
-    ) -> Result<()>;
+    ) -> Result<SuccessfulExecutionOutcome>;
 }
 
 impl WalletExt for Near {
@@ -72,7 +74,7 @@ impl WalletExt for Near {
         msg: RequestMessage,
         proof: String,
         deposit: NearToken,
-    ) -> Result<()> {
+    ) -> Result<SuccessfulExecutionOutcome> {
         let mut tx = self.transaction(&wallet_id.into());
 
         if let Some(state_init) = state_init.into() {
@@ -86,9 +88,7 @@ impl WalletExt for Near {
         )
         .wait_until(Final)
         .await?
-        .result()?;
-
-        Ok(())
+        .try_into()
     }
 
     async fn w_execute_extension(
@@ -97,7 +97,7 @@ impl WalletExt for Near {
         state_init: impl Into<Option<StateInit>>,
         request: Request,
         deposit: NearToken,
-    ) -> Result<()> {
+    ) -> Result<SuccessfulExecutionOutcome> {
         let mut tx = self.transaction(&wallet_id.into());
 
         if let Some(state_init) = state_init.into() {
@@ -110,8 +110,6 @@ impl WalletExt for Near {
         )
         .wait_until(Final)
         .await?
-        .result()?;
-
-        Ok(())
+        .try_into()
     }
 }

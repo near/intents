@@ -13,7 +13,7 @@ mod wallet;
 // #[cfg(feature = "deployer")]
 // mod global_deployer;
 
-// mod utils;
+mod utils;
 
-// #[cfg(feature = "outlayer")]
-// mod outlayer_app;
+#[cfg(feature = "outlayer")]
+mod outlayer_app;

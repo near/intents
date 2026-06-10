@@ -1,6 +1,8 @@
 #![allow(async_fn_in_trait)]
 
 pub mod extensions;
+pub mod nep616;
+pub mod outcome;
 pub mod state_init;
 
 pub mod account;

@@ -231,6 +231,7 @@ async fn test_no_storage_staking(#[future] env: Env) {
     let wallet_id = wallet.account_id().clone();
     let wallet_state_init = wallet.state_init();
 
+    // TODO: replace to deploy_global
     // do state_init in advance
     env.transaction(wallet_id.clone())
         .state_init(wallet_state_init.into_state_init(), NearToken::ZERO)
