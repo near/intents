@@ -10,8 +10,8 @@ mod poa;
 #[cfg(feature = "wallet")]
 mod wallet;
 
-// #[cfg(feature = "deployer")]
-// mod global_deployer;
+#[cfg(feature = "deployer")]
+mod global_deployer;
 
 mod utils;
 

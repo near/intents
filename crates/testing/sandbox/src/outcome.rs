@@ -6,6 +6,22 @@ pub struct SuccessfulExecutionOutcome {
     pub receipts_outcome: Vec<ExecutionOutcomeWithId>,
 }
 
+impl SuccessfulExecutionOutcome {
+    pub fn logs(&self) -> Vec<String> {
+        self.transaction_outcome
+            .outcome
+            .logs
+            .iter()
+            .chain(
+                self.receipts_outcome
+                    .iter()
+                    .flat_map(|o| o.outcome.logs.iter()),
+            )
+            .cloned()
+            .collect()
+    }
+}
+
 impl TryFrom<FinalExecutionOutcome> for SuccessfulExecutionOutcome {
     type Error = anyhow::Error;
     fn try_from(outcome: FinalExecutionOutcome) -> Result<Self, Self::Error> {

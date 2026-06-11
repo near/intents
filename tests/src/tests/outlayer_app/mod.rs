@@ -120,14 +120,8 @@ async fn test_event_set_code(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
         .await
         .unwrap();
 
-    let logs: Vec<_> = result
-        .receipts_outcome
-        .into_iter()
-        .flat_map(|o| o.outcome.logs)
-        .collect();
-
     assert_eq!(
-        logs,
+        result.logs(),
         vec![
             Event::SetCode {
                 hash: new_hash,
@@ -161,14 +155,8 @@ async fn test_event_transfer_admin(#[future(awt)] outlayer_app_env: OutlayerAppE
         .await
         .unwrap();
 
-    let logs: Vec<_> = result
-        .receipts_outcome
-        .into_iter()
-        .flat_map(|o| o.outcome.logs)
-        .collect();
-
     assert_eq!(
-        logs,
+        result.logs(),
         vec![
             Event::TransferAdmin {
                 old_admin_id: root.account_id().into(),

@@ -70,6 +70,7 @@ defuse-outlayer-app = { workspace = true, optional = true }
 
 near-contract-standards.workspace = true
 near-crypto.workspace = true
+# TODO: replace it with near-sdk-core?
 near-sdk.workspace = true
 
 anyhow.workspace = true

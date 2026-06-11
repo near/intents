@@ -58,7 +58,8 @@ impl OutlayerAppDeployerExt for Near {
                 state.state_init(),
                 NearToken::ZERO,
             )
-            .await,
+            .await
+            .unwrap(),
         )
     }
 }

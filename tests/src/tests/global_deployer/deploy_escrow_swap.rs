@@ -6,10 +6,7 @@ use std::{
 };
 
 use defuse_escrow_swap::{ContractStorage, Deadline, OverrideSend, Params};
-use defuse_sandbox::{
-    SigningAccount,
-    extensions::{escrow::EscrowExtView, mt_receiver::MtReceiverStubExtView},
-};
+
 use defuse_test_utils::wasms::ESCROW_SWAP_WASM;
 use near_sdk::state_init::{StateInit, StateInitV1};
 

@@ -1,7 +1,8 @@
 #![allow(clippy::future_not_send)]
 
 use defuse_sandbox::{
-    account::{Account, GlobalContract},
+    account::Account,
+    convert::ConvertInto,
     extensions::wallet::{
         Wallet, WalletExt,
         contract::{
@@ -13,15 +14,15 @@ use defuse_sandbox::{
             ed25519::ed25519_dalek::{self, ed25519::signature::rand_core::OsRng},
         },
     },
-    kit::Near,
+    global_contract::GlobalContract,
+    kit::{GlobalContractIdentifier, Near},
     root,
-    state_init::IntoStateInit,
 };
 use defuse_test_utils::wasms::WALLET_WASM;
 use futures::{StreamExt, TryStreamExt, stream};
 use impl_tools::autoimpl;
 use near_sdk::{
-    Gas, GlobalContractId, NearToken,
+    Gas, NearToken,
     state_init::{StateInit, StateInitV1},
 };
 use rstest::{fixture, rstest};
@@ -191,7 +192,7 @@ async fn test_extension(#[future] env: Env) {
         .await;
 
     let wallet_state_init = StateInit::V1(StateInitV1 {
-        code: env.wallet_global_id.clone(),
+        code: env.wallet_global_id.clone().convert_into(),
         data: State::new(Ed25519PublicKey([0; 32]))
             .extensions([extension.account_id()])
             .as_storage(),
@@ -231,10 +232,9 @@ async fn test_no_storage_staking(#[future] env: Env) {
     let wallet_id = wallet.account_id().clone();
     let wallet_state_init = wallet.state_init();
 
-    // TODO: replace to deploy_global
     // do state_init in advance
     env.transaction(wallet_id.clone())
-        .state_init(wallet_state_init.into_state_init(), NearToken::ZERO)
+        .state_init(wallet_state_init.convert_into(), NearToken::ZERO)
         .await
         .unwrap()
         .result()
@@ -261,7 +261,7 @@ async fn test_no_storage_staking(#[future] env: Env) {
 
 #[autoimpl(Deref using self.root)]
 struct Env {
-    pub wallet_global_id: GlobalContractId,
+    pub wallet_global_id: GlobalContractIdentifier,
 
     root: Near,
 }
@@ -269,7 +269,7 @@ struct Env {
 impl Env {
     pub fn generate_wallet(&self) -> WalletSigner<ed25519_dalek::SigningKey> {
         WalletSigner::new(
-            self.wallet_global_id.clone(),
+            self.wallet_global_id.clone().convert_into(),
             ed25519_dalek::SigningKey::generate(&mut OsRng),
         )
     }
@@ -279,13 +279,17 @@ impl Env {
 #[awt]
 async fn env(#[future] root: Near) -> Env {
     // wallet.0.test
-    let wallet_contract = root
-        .deploy_global_sub_contract("wallet", NearToken::from_near(1000), WALLET_WASM.clone())
+    let wallet_global_id = root
+        .deploy_upgradable_global_contract(
+            root.account_id().sub_account("wallet").unwrap(),
+            WALLET_WASM.clone(),
+            NearToken::from_near(1000),
+        )
         .await
         .unwrap();
 
     Env {
-        wallet_global_id: wallet_contract.account_id().clone().into(),
+        wallet_global_id,
         root,
     }
 }

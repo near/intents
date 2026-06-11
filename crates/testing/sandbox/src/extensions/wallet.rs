@@ -9,9 +9,7 @@ use near_sdk::{
     state_init::StateInit,
 };
 
-use crate::{
-    extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome, state_init::IntoStateInit,
-};
+use crate::{convert::ConvertInto, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
 
 pub use defuse_wallet as contract;
 pub use defuse_wallet_sdk as sdk;
@@ -78,7 +76,7 @@ impl WalletExt for Near {
         let mut tx = self.transaction(&wallet_id.into());
 
         if let Some(state_init) = state_init.into() {
-            tx = tx.state_init(state_init.into_state_init(), NearToken::ZERO);
+            tx = tx.state_init(state_init.convert_into(), NearToken::ZERO);
         }
 
         tx.add_action(
@@ -101,7 +99,7 @@ impl WalletExt for Near {
         let mut tx = self.transaction(&wallet_id.into());
 
         if let Some(state_init) = state_init.into() {
-            tx = tx.state_init(state_init.into_state_init(), NearToken::ZERO);
+            tx = tx.state_init(state_init.convert_into(), NearToken::ZERO);
         }
         tx.add_action(
             Wallet::w_execute_extension(ExecuteExtensionArgs { request })

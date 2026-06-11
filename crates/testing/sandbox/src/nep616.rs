@@ -1,3 +1,4 @@
+use anyhow::Result;
 use near_kit::{
     DeterministicAccountStateInit, DeterministicAccountStateInitV1, Final,
     GlobalContractIdentifier, Near,
@@ -12,7 +13,7 @@ pub trait DeployDeterministicAccountExt {
         global_contract_id: GlobalContractIdentifier,
         state: impl Into<BTreeMap<Vec<u8>, Vec<u8>>>,
         deposit: NearToken,
-    ) -> AccountId;
+    ) -> Result<AccountId>;
 }
 
 impl DeployDeterministicAccountExt for Near {
@@ -21,7 +22,7 @@ impl DeployDeterministicAccountExt for Near {
         global_contract_id: GlobalContractIdentifier,
         state: impl Into<BTreeMap<Vec<u8>, Vec<u8>>>,
         deposit: NearToken,
-    ) -> AccountId {
+    ) -> Result<AccountId> {
         let si = DeterministicAccountStateInit::V1(DeterministicAccountStateInitV1 {
             code: global_contract_id,
             data: state.into(),
@@ -31,11 +32,9 @@ impl DeployDeterministicAccountExt for Near {
         self.state_init(si, deposit)
             .send()
             .wait_until(Final)
-            .await
-            .unwrap()
-            .result()
-            .unwrap();
+            .await?
+            .result()?;
 
-        account_id
+        Ok(account_id)
     }
 }

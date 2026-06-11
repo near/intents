@@ -1,15 +1,13 @@
+use anyhow::Result;
 use defuse_global_deployer::{AsHex, State as DeployerState};
-use near_kit::{
-    DeterministicAccountStateInit, DeterministicAccountStateInitV1, Finality,
-    GlobalContractIdentifier,
-};
+use near_kit::{GlobalContractIdentifier, Near};
 use near_sdk::{
     AccountId, Gas, NearToken,
     borsh::BorshSerialize,
     serde::{Deserialize, Serialize},
 };
 
-use crate::{IntoAccountId, Sandbox};
+use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -54,72 +52,161 @@ pub trait GlobalDeployer {
     fn gd_approved_hash(&self) -> AsHex<[u8; 32]>;
 }
 
-impl Sandbox {
-    pub async fn deploy_gd_instance(
+pub trait GDDeployerExt {
+    /// Deploy a new `global-deployer` instance via `StateInit`.
+    async fn deploy_gd_instance(
         &self,
         global_contract_id: GlobalContractIdentifier,
-        state: DeployerState,
-    ) -> anyhow::Result<GlobalDeployerClient> {
-        let state_init = DeterministicAccountStateInit::V1(DeterministicAccountStateInitV1 {
-            code: global_contract_id,
-            data: state.state_init(),
-        });
-        let deterministic_account_id = state_init.derive_account_id();
+        state: DeployerState<'_>,
+    ) -> Result<GlobalDeployerClient>;
+}
 
-        self.transaction(self.into_account_id())
-            .state_init(state_init, NearToken::ZERO)
-            .await?;
-
-        Ok(self.contract::<dyn GlobalDeployer>(deterministic_account_id))
-    }
-
-    pub async fn gd_approve_and_deploy(
+impl GDDeployerExt for Near {
+    async fn deploy_gd_instance(
         &self,
-        gd: &GlobalDeployerClient,
-        old_hash: [u8; 32],
-        new_code: &[u8],
-    ) -> anyhow::Result<()> {
-        let new_hash = near_sdk::env::sha256_array(new_code);
-
-        // TODO: merge it into single transaction after fix in near kit
-        gd.gd_approve(GDApproveArgs {
-            old_hash: AsHex(old_hash),
-            new_hash: AsHex(new_hash),
-        })
-        .deposit(NearToken::from_yoctonear(1))
-        .gas(Gas::from_tgas(10))
-        .await?;
-
-        gd.gd_deploy(GDDeployArgs {
-            code: new_code.to_vec(),
-        })
-        .deposit(NearToken::from_near(50))
-        .gas(Gas::from_tgas(290))
-        .await?;
-
-        Ok(())
+        global_contract_id: GlobalContractIdentifier,
+        state: DeployerState<'_>,
+    ) -> Result<GlobalDeployerClient> {
+        Ok(self.contract::<GlobalDeployer>(
+            self.deploy_deterministic_account(
+                global_contract_id,
+                state.state_init(),
+                NearToken::ZERO,
+            )
+            .await?,
+        ))
     }
+}
 
-    pub async fn global_contract_id(
+pub trait GlobalDeployerExt {
+    async fn gd_approve_and_deploy(
         &self,
-        gd_id: impl Into<AccountId>,
-    ) -> anyhow::Result<GlobalContractIdentifier> {
-        let account = self
-            .account(gd_id.into())
-            .finality(Finality::Optimistic)
-            .await?;
+        target: impl Into<AccountId>,
+        old_hash: impl Into<[u8; 32]>,
+        new_code: impl AsRef<[u8]>,
+    ) -> Result<SuccessfulExecutionOutcome>;
 
-        // TODO: i dont like it
-        if let Some(global_contract_account_id) = account.global_contract_account_id {
-            return Ok(GlobalContractIdentifier::AccountId(
-                global_contract_account_id,
-            ));
-        }
+    async fn gd_approve(
+        &self,
+        target: impl Into<AccountId>,
+        old_hash: impl Into<[u8; 32]>,
+        new_hash: impl Into<[u8; 32]>,
+    ) -> Result<SuccessfulExecutionOutcome>;
 
-        if let Some(global_contract_hash) = account.global_contract_hash {
-            return Ok(GlobalContractIdentifier::CodeHash(global_contract_hash));
-        }
+    async fn gd_deploy(
+        &self,
+        target: impl Into<AccountId>,
+        code: impl AsRef<[u8]>,
+        deposit: NearToken,
+    ) -> Result<SuccessfulExecutionOutcome>;
 
-        anyhow::bail!("Account is not a global contract")
+    async fn gd_transfer_ownership(
+        &self,
+        target: impl Into<AccountId>,
+        new_owner: impl Into<AccountId>,
+    ) -> anyhow::Result<SuccessfulExecutionOutcome>;
+}
+
+impl GlobalDeployerExt for Near {
+    async fn gd_approve_and_deploy(
+        &self,
+        target: impl Into<AccountId>,
+        old_hash: impl Into<[u8; 32]>,
+        new_code: impl AsRef<[u8]>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        let code = new_code.as_ref().to_vec();
+        let new_hash = near_sdk::env::sha256_array(&code);
+
+        self.transaction(target.into())
+            .add_action(
+                GlobalDeployer::gd_approve(GDApproveArgs {
+                    old_hash: old_hash.into().into(),
+                    new_hash: new_hash.into(),
+                })
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(10)),
+            )
+            .add_action(
+                GlobalDeployer::gd_deploy(GDDeployArgs { code })
+                    .deposit(NearToken::from_near(50))
+                    .gas(Gas::from_tgas(290)),
+            )
+            .await?
+            .try_into()
     }
+
+    async fn gd_approve(
+        &self,
+        target: impl Into<AccountId>,
+        old_hash: impl Into<[u8; 32]>,
+        new_hash: impl Into<[u8; 32]>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(target.into())
+            .add_action(
+                GlobalDeployer::gd_approve(GDApproveArgs {
+                    old_hash: old_hash.into().into(),
+                    new_hash: new_hash.into().into(),
+                })
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(10)),
+            )
+            .await?
+            .try_into()
+    }
+
+    async fn gd_deploy(
+        &self,
+        target: impl Into<AccountId>,
+        code: impl AsRef<[u8]>,
+        deposit: NearToken,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        let code = code.as_ref().to_vec();
+        self.transaction(target.into())
+            .add_action(
+                GlobalDeployer::gd_deploy(GDDeployArgs { code })
+                    .deposit(deposit)
+                    .gas(Gas::from_tgas(290)),
+            )
+            .await?
+            .try_into()
+    }
+
+    async fn gd_transfer_ownership(
+        &self,
+        target: impl Into<AccountId>,
+        new_owner: impl Into<AccountId>,
+    ) -> anyhow::Result<SuccessfulExecutionOutcome> {
+        self.transaction(target.into())
+            .add_action(
+                GlobalDeployer::gd_transfer_ownership(GDTransferOwnershipArgs {
+                    receiver_id: new_owner.into(),
+                })
+                .deposit(NearToken::from_yoctonear(1)),
+            )
+            .await?
+            .try_into()
+    }
+
+    // pub async fn global_contract_id(
+    //     &self,
+    //     gd_id: impl Into<AccountId>,
+    // ) -> anyhow::Result<GlobalContractIdentifier> {
+    //     let account = self
+    //         .account(gd_id.into())
+    //         .finality(Finality::Optimistic)
+    //         .await?;
+
+    //     // TODO: i dont like it
+    //     if let Some(global_contract_account_id) = account.global_contract_account_id {
+    //         return Ok(GlobalContractIdentifier::AccountId(
+    //             global_contract_account_id,
+    //         ));
+    //     }
+
+    //     if let Some(global_contract_hash) = account.global_contract_hash {
+    //         return Ok(GlobalContractIdentifier::CodeHash(global_contract_hash));
+    //     }
+
+    //     anyhow::bail!("Account is not a global contract")
+    // }
 }
