@@ -33,7 +33,11 @@ pub struct DeployerEnv {
 #[fixture]
 pub async fn deployer_env(#[future(awt)] root: Near) -> DeployerEnv {
     let deployer_global_id = root
-        .deploy_immutable_global_contract(root.account_id(), DEPLOYER_WASM.clone(), NearToken::ZERO)
+        .deploy_immutable_global_contract(
+            root.account_id().sub_account("gd").unwrap(),
+            DEPLOYER_WASM.clone(),
+            NearToken::from_near(20),
+        )
         .await
         .unwrap();
 
@@ -75,7 +79,7 @@ async fn test_deploy_controller_instance(
         upgradeable_instance_state.clone(),
     )
     .await
-    .assert_err_contains("GlobalContractDoesNotExist");
+    .assert_err_contains("Invalid transaction: Action error");
 
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
@@ -183,7 +187,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
             storage_deposit,
         )
         .await
-        .assert_err_contains("LackBalanceForState");
+        .assert_err_contains("Invalid transaction: Action error");
 
     let after = root.balance(owner.account_id()).await.unwrap().total;
 

@@ -1,6 +1,6 @@
 use anyhow::Result;
 use defuse_global_deployer::{AsHex, State as DeployerState};
-use near_kit::{GlobalContractIdentifier, Near};
+use near_kit::{Final, GlobalContractIdentifier, Near};
 use near_sdk::{
     AccountId, Gas, NearToken,
     borsh::BorshSerialize,
@@ -131,6 +131,7 @@ impl GlobalDeployerExt for Near {
                     .deposit(NearToken::from_near(50))
                     .gas(Gas::from_tgas(290)),
             )
+            .wait_until(Final)
             .await?
             .try_into()
     }
@@ -150,6 +151,7 @@ impl GlobalDeployerExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(10)),
             )
+            .wait_until(Final)
             .await?
             .try_into()
     }
@@ -167,6 +169,7 @@ impl GlobalDeployerExt for Near {
                     .deposit(deposit)
                     .gas(Gas::from_tgas(290)),
             )
+            .wait_until(Final)
             .await?
             .try_into()
     }
@@ -183,30 +186,8 @@ impl GlobalDeployerExt for Near {
                 })
                 .deposit(NearToken::from_yoctonear(1)),
             )
+            .wait_until(Final)
             .await?
             .try_into()
     }
-
-    // pub async fn global_contract_id(
-    //     &self,
-    //     gd_id: impl Into<AccountId>,
-    // ) -> anyhow::Result<GlobalContractIdentifier> {
-    //     let account = self
-    //         .account(gd_id.into())
-    //         .finality(Finality::Optimistic)
-    //         .await?;
-
-    //     // TODO: i dont like it
-    //     if let Some(global_contract_account_id) = account.global_contract_account_id {
-    //         return Ok(GlobalContractIdentifier::AccountId(
-    //             global_contract_account_id,
-    //         ));
-    //     }
-
-    //     if let Some(global_contract_hash) = account.global_contract_hash {
-    //         return Ok(GlobalContractIdentifier::CodeHash(global_contract_hash));
-    //     }
-
-    //     anyhow::bail!("Account is not a global contract")
-    // }
 }

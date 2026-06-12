@@ -34,7 +34,8 @@ impl GlobalContract for Near {
             .add_full_access_key(kp.public_key)
             .publish(code, PublishMode::Updatable)
             .wait_until(Final)
-            .await?;
+            .await?
+            .result()?;
 
         Ok(GlobalContractIdentifier::AccountId(account_id))
     }
@@ -54,7 +55,8 @@ impl GlobalContract for Near {
             .transfer(balance)
             .publish(code, PublishMode::Immutable)
             .wait_until(Final)
-            .await?;
+            .await?
+            .result()?;
 
         Ok(id)
     }

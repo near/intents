@@ -1,5 +1,5 @@
 use anyhow::Result;
-use near_kit::{FunctionCallAction, NearToken};
+use near_kit::{Final, FunctionCallAction, NearToken};
 
 use crate::{DEFAULT_GAS, Sandbox};
 
@@ -30,6 +30,7 @@ impl Sandbox {
                     deposit: NearToken::from_near(0),
                 }),
             )
+            .wait_until(Final)
             .await?;
 
         Ok(self.contract::<dyn WNear>(contract_id))

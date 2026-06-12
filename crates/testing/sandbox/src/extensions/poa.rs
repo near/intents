@@ -155,6 +155,7 @@ impl PoAFactoryExt for Near {
                 .deposit(POA_TOKEN_INIT_BALANCE)
                 .gas(DEFAULT_GAS),
             )
+            .wait_until(Final)
             .await?
             .result()?;
 
@@ -182,6 +183,7 @@ impl PoAFactoryExt for Near {
                 .deposit(NearToken::from_millinear(4))
                 .gas(DEFAULT_GAS),
             )
+            .wait_until(Final)
             .await?
             .try_into()
     }

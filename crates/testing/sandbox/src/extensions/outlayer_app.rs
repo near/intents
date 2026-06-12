@@ -1,6 +1,6 @@
 use anyhow::Result;
 use defuse_outlayer_app::{AsHex, State as OutlayerState};
-use near_kit::{GlobalContractIdentifier, Near};
+use near_kit::{Final, GlobalContractIdentifier, Near};
 use near_sdk::{
     AccountId, NearToken,
     serde::{Deserialize, Serialize},
@@ -97,6 +97,7 @@ impl OutlayerAppExt for Near {
                 })
                 .deposit(NearToken::from_yoctonear(1)),
             )
+            .wait_until(Final)
             .await?
             .try_into()
     }
@@ -113,6 +114,7 @@ impl OutlayerAppExt for Near {
                 })
                 .deposit(NearToken::from_yoctonear(1)),
             )
+            .wait_until(Final)
             .await?
             .try_into()
     }

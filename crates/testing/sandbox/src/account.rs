@@ -35,6 +35,8 @@ impl Account for Near {
         tx.send()
             .wait_until(Final)
             .await
+            .unwrap()
+            .result()
             .expect("create subaccount failed");
 
         self.with_signer(
