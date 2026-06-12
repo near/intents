@@ -1,5 +1,6 @@
 # NEAR Intents smart contracts
 
+foo 
 ## What is NEAR Intents?
 
 NEAR Intents is a smart contract developed for the NEAR blockchain. It facilitates atomic P2P transactions among peers, by allowing trustless transactions in the smart contract.
