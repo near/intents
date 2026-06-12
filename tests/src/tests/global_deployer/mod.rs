@@ -10,15 +10,17 @@ use defuse_global_deployer::{
     Event, Reason, State as DeployerState,
     error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_UNAUTHORIZED},
 };
-use defuse_sandbox::account::{Account, generate_implicit_account_id};
-use defuse_sandbox::extensions::global_deployer::{GDDeployerExt, GlobalDeployerExt};
+use defuse_sandbox::account::Account;
+use defuse_sandbox::extensions::global_deployer::{
+    GDApproveArgs, GDDeployArgs, GDDeployerExt, GlobalDeployer, GlobalDeployerExt,
+};
 use defuse_sandbox::global_contract::GlobalContract;
-use defuse_sandbox::kit::{GlobalContractIdentifier, Near};
+use defuse_sandbox::kit::{ExecutionStatus, Final, GlobalContractIdentifier, Near};
 use defuse_sandbox::root;
 
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::MT_RECEIVER_STUB_WASM};
 use futures::future::join_all;
-use near_sdk::{AsNep297Event, Gas, GlobalContractId, NearToken, env::sha256_array};
+use near_sdk::{AsNep297Event, Gas, NearToken, env::sha256_array};
 use rstest::{fixture, rstest};
 
 use crate::utils::wasms::DEPLOYER_WASM;
@@ -182,13 +184,19 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
     let storage_deposit = NearToken::from_near(1);
 
     owner
-        .gd_deploy(
-            controller_instance.contract_id(),
-            DEPLOYER_WASM.clone(),
-            storage_deposit,
+        .transaction(controller_instance.contract_id())
+        .add_action(
+            GlobalDeployer::gd_deploy(GDDeployArgs {
+                code: DEPLOYER_WASM.clone(),
+            })
+            .deposit(storage_deposit)
+            .gas(Gas::from_tgas(290)),
         )
+        .wait_until(Final)
         .await
-        .assert_err_contains("Invalid transaction: Action error");
+        .unwrap()
+        .result()
+        .assert_err_contains("NEAR to cover storage cost");
 
     let after = root.balance(owner.account_id()).await.unwrap().total;
 
@@ -659,12 +667,18 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
         .unwrap();
 
     owner
-        .gd_deploy(
-            controller_instance.contract_id(),
-            &*DEPLOYER_WASM,
-            NearToken::from_near(100), // attach more than enough to cover storage
+        .transaction(controller_instance.contract_id())
+        .add_action(
+            GlobalDeployer::gd_deploy(GDDeployArgs {
+                code: DEPLOYER_WASM.clone(),
+            })
+            .deposit(NearToken::from_near(100)) // attach more than enough to cover storage
+            .gas(Gas::from_tgas(290)),
         )
+        .wait_until(Final)
         .await
+        .unwrap()
+        .result()
         .unwrap();
 
     assert!(
@@ -718,498 +732,505 @@ async fn test_state_init_pre_approve_allows_immediate_deploy(
     );
 }
 
-// #[rstest]
-// #[tokio::test]
-// async fn test_state_init_same_code_hash_and_pre_approve_allows_deploy(
-//     #[future(awt)] deployer_env: DeployerEnv,
-//     unique_index: u32,
-// ) {
-//     let root = deployer_env.root;
-//     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-
-//     let dummy_wasm: Vec<u8> = vec![1u8; 64];
-//     let dummy_hash = sha256_array(&dummy_wasm);
-
-//     // State where code_hash == approved_hash == hash(dummy_wasm)
-//     let mut state = DeployerState::new(root.account_id().clone())
-//         .with_index(unique_index)
-//         .pre_approve(dummy_hash);
-//     state.code_hash = dummy_hash;
-
-//     let controller_instance = root
-//         .deploy_gd_instance(deployer_code_hash_id.clone(), state.clone())
-//         .await
-//         .unwrap();
-
-//     assert_eq!(
-//         controller_instance.gd_code_hash().await.unwrap().0,
-//         dummy_hash
-//     );
-//     assert_eq!(
-//         controller_instance.gd_approved_hash().await.unwrap().0,
-//         dummy_hash,
-//     );
-
-//     // Deploy should succeed even though code_hash == approved_hash
-//     root.gd_deploy(controller_instance.contract_id(), &dummy_wasm)
-//         .await
-//         .unwrap();
-
-//     assert_eq!(
-//         controller_instance.gd_code_hash().await.unwrap().0,
-//         dummy_hash,
-//     );
-
-//     // Approval should be cleared after deploy
-//     assert_eq!(
-//         controller_instance.gd_approved_hash().await.unwrap().0,
-//         DeployerState::DEFAULT_HASH,
-//     );
-// }
-
-// #[rstest]
-// #[tokio::test]
-// async fn test_post_deploy_does_not_run_on_failed_deploy(
-//     #[future(awt)] deployer_env: DeployerEnv,
-//     unique_index: u32,
-// ) {
-//     let root = deployer_env.root;
-//     let initial_balance = NearToken::from_near(2);
-//     let owner = root
-//         .generate_subaccount("dummy2", initial_balance)
-//         .await
-//         .unwrap();
-
-//     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-//     let storage = DeployerState::new(owner.account_id().clone()).with_index(unique_index);
-
-//     let controller_instance = root
-//         .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
-//         .await
-//         .unwrap();
-
-//     // Instance has 0 balance
-//     assert_eq!(
-//         controller_instance.view().await.unwrap().amount,
-//         NearToken::from_near(0)
-//     );
-
-//     let new_hash = sha256_array(&*DEPLOYER_WASM);
-
-//     owner
-//         .gd_approve(
-//             controller_instance.contract_id(),
-//             storage.code_hash,
-//             new_hash,
-//         )
-//         .await
-//         .unwrap();
-
-//     assert_eq!(
-//         controller_instance.gd_approved_hash().await.unwrap().0,
-//         new_hash,
-//     );
-
-//     // Deploy with insufficient deposit → LackBalanceForState
-//     let result = owner
-//         .gd_deploy(
-//             controller_instance.contract_id(),
-//             &*DEPLOYER_WASM,
-//             NearToken::from_yoctonear(1), // not enough to cover state
-//         )
-//         .await
-//         .assert_err_contains("LackBalanceForState");
-
-//     // No Deploy event should have been emitted
-//     assert!(
-//         !result.logs().iter().any(|log| log.contains("Deploy")),
-//         "Deploy event should not be emitted on failed deploy"
-//     );
-
-//     // code_hash must NOT have been updated by gd_post_deploy
-//     assert_eq!(
-//         controller_instance.gd_code_hash().await.unwrap().0,
-//         storage.code_hash,
-//     );
-
-//     // approved_hash must NOT have been cleared by gd_post_deploy
-//     assert_eq!(
-//         controller_instance.gd_approved_hash().await.unwrap().0,
-//         new_hash,
-//     );
-// }
-
-// #[rstest]
-// #[tokio::test]
-// async fn test_retry_approve_and_deploy_after_insufficient_deposit(
-//     #[future(awt)] deployer_env: DeployerEnv,
-//     unique_index: u32,
-// ) {
-//     let root = deployer_env.root;
-//     let owner = root
-//         .generate_subaccount("retry", NearToken::from_near(100))
-//         .await
-//         .unwrap();
-
-//     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-//     let storage = DeployerState::new(owner.account_id().clone()).with_index(unique_index);
-
-//     let controller_instance = root
-//         .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
-//         .await
-//         .unwrap();
-
-//     let new_hash = sha256_array(&*DEPLOYER_WASM);
-
-//     // First attempt: gd_approve_and_deploy with insufficient deposit (1 NEAR)
-//     owner
-//         .tx(controller_instance.contract_id())
-//         .function_call(
-//             FnCallBuilder::new("gd_approve")
-//                 .json_args(near_sdk::serde_json::json!({
-//                     "old_hash": defuse_serde_utils::hex::AsHex(storage.code_hash),
-//                     "new_hash": defuse_serde_utils::hex::AsHex(new_hash),
-//                 }))
-//                 .with_deposit(NearToken::from_yoctonear(1))
-//                 .with_gas(Gas::from_tgas(10)),
-//         )
-//         .function_call(
-//             FnCallBuilder::new("gd_deploy")
-//                 .raw_args(DEPLOYER_WASM.to_vec())
-//                 .with_deposit(NearToken::from_near(1))
-//                 .with_gas(Gas::from_tgas(290)),
-//         )
-//         .await
-//         .assert_err_contains("LackBalanceForState");
-
-//     // code_hash unchanged after failed deploy
-//     assert_eq!(
-//         controller_instance.gd_code_hash().await.unwrap().0,
-//         storage.code_hash,
-//     );
-
-//     // Retry with sufficient deposit
-//     owner
-//         .gd_approve_and_deploy(
-//             controller_instance.contract_id(),
-//             storage.code_hash,
-//             &*DEPLOYER_WASM,
-//         )
-//         .await
-//         .unwrap();
-
-//     assert_eq!(controller_instance.gd_code_hash().await.unwrap().0, new_hash,);
-// }
-
-// #[rstest]
-// #[tokio::test]
-// async fn test_post_deploy_fails_when_approval_changed(
-//     #[future(awt)] deployer_env: DeployerEnv,
-//     unique_index: u32,
-// ) {
-//     let root = deployer_env.root;
-//     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-
-//     let state = DeployerState::new(root.account_id().clone()).with_index(unique_index);
-//     let controller_instance = root
-//         .deploy_gd_instance(deployer_code_hash_id.clone(), state.clone())
-//         .await
-//         .unwrap();
-
-//     // Initial deploy so controller has real code
-//     root.gd_approve_and_deploy(
-//         controller_instance.contract_id(),
-//         state.code_hash,
-//         &*DEPLOYER_WASM,
-//     )
-//     .await
-//     .unwrap();
-
-//     let deployer_hash = sha256_array(&*DEPLOYER_WASM);
-//     let mt_stub_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
-//     assert_eq!(
-//         controller_instance.gd_code_hash().await.unwrap().0,
-//         deployer_hash,
-//     );
-
-//     // Approve re-deploying the same DEPLOYER_WASM code. This way, after the deploy
-//     // promise succeeds, the controller still runs the deployer code and we can query state.
-//     root.gd_approve(
-//         controller_instance.contract_id(),
-//         deployer_hash,
-//         deployer_hash,
-//     )
-//     .await
-//     .unwrap();
-
-//     // Batch transaction:
-//     //   Action 1: gd_deploy(DEPLOYER_WASM) — passes approved_hash check, creates deploy+callback
-//     //   Action 2: gd_approve(deployer_hash, mt_stub_hash) — changes approved_hash to mt_stub_hash
-//     //
-//     // In NEAR, batch actions execute sequentially in the same receipt, but promise receipts
-//     // from action 1 execute in later blocks — so action 2's state change is visible to the
-//     // callback. The callback sees approved_hash == mt_stub_hash != deployer_hash and panics.
-//     let result = root
-//         .tx(controller_instance.contract_id())
-//         .function_call(
-//             FnCallBuilder::new("gd_deploy")
-//                 .raw_args(DEPLOYER_WASM.to_vec())
-//                 .with_deposit(NearToken::from_near(50))
-//                 .with_gas(Gas::from_tgas(140)),
-//         )
-//         .function_call(
-//             FnCallBuilder::new("gd_approve")
-//                 .json_args(near_sdk::serde_json::json!({
-//                     "old_hash": defuse_serde_utils::hex::AsHex(deployer_hash),
-//                     "new_hash": defuse_serde_utils::hex::AsHex(mt_stub_hash),
-//                 }))
-//                 .with_deposit(NearToken::from_yoctonear(1))
-//                 .with_gas(Gas::from_tgas(10)),
-//         )
-//         .exec_transaction()
-//         .await
-//         .unwrap();
-
-//     // The callback (gd_post_deploy) should have failed because approved_hash was changed
-//     // by the second action in the batch before the callback executed
-//     assert!(
-//         result
-//             .outcomes()
-//             .iter()
-//             .any(|o| (*o).clone().into_result().is_err()),
-//         "gd_post_deploy callback should have failed"
-//     );
-
-//     // code_hash should be unchanged — the callback was rejected so state was not updated
-//     assert_eq!(
-//         controller_instance.gd_code_hash().await.unwrap().0,
-//         deployer_hash,
-//     );
-
-//     // approved_hash should be mt_stub_hash (set by gd_approve in action 2)
-//     assert_eq!(
-//         controller_instance.gd_approved_hash().await.unwrap().0,
-//         mt_stub_hash,
-//     );
-// }
-
-// #[rstest]
-// #[tokio::test]
-// async fn test_deploy_with_zero_deposit_and_prefunded_account(
-//     #[future(awt)] deployer_env: DeployerEnv,
-//     unique_index: u32,
-// ) {
-//     let root = deployer_env.root;
-//     let owner = root
-//         .generate_subaccount("prefund", NearToken::from_near(100))
-//         .await
-//         .unwrap();
-
-//     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-//     let storage = DeployerState::new(owner.account_id().clone()).with_index(unique_index);
-
-//     let controller_instance = root
-//         .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
-//         .await
-//         .unwrap();
-
-//     assert_eq!(
-//         controller_instance.view().await.unwrap().amount,
-//         NearToken::from_near(0)
-//     );
-
-//     // Pre-fund the deterministic account so it has enough for storage
-//     root.tx(controller_instance.contract_id())
-//         .transfer(NearToken::from_near(50))
-//         .await
-//         .unwrap();
-
-//     assert_eq!(
-//         controller_instance.view().await.unwrap().amount,
-//         NearToken::from_near(50)
-//     );
-
-//     owner
-//         .gd_approve(
-//             controller_instance.contract_id(),
-//             storage.code_hash,
-//             sha256_array(&*DEPLOYER_WASM),
-//         )
-//         .await
-//         .unwrap();
-
-//     owner
-//         .tx(controller_instance.contract_id())
-//         .function_call(
-//             FnCallBuilder::new("gd_deploy")
-//                 .raw_args(DEPLOYER_WASM.to_vec())
-//                 .with_deposit(NearToken::from_yoctonear(0)),
-//         )
-//         .await
-//         .unwrap();
-
-//     assert_eq!(
-//         controller_instance.gd_code_hash().await.unwrap().0,
-//         sha256_array(&*DEPLOYER_WASM),
-//     );
-// }
-
-// #[rstest]
-// #[tokio::test]
-// async fn test_concurrent_transfer_does_not_inflate_refund(
-//     #[future(awt)] deployer_env: DeployerEnv,
-//     unique_index: u32,
-// ) {
-//     let root = deployer_env.root;
-//     let initial_balance = NearToken::from_near(200);
-//     let owner = root.fund_implicit(initial_balance).await.unwrap();
-
-//     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-//     let storage = DeployerState::new(owner.account_id().clone()).with_index(unique_index);
-
-//     let controller_instance = root
-//         .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
-//         .await
-//         .unwrap();
-
-//     owner
-//         .gd_approve_and_deploy(
-//             controller_instance.contract_id(),
-//             storage.code_hash,
-//             &*DEPLOYER_WASM,
-//         )
-//         .await
-//         .unwrap();
-//     let deployer_hash = sha256_array(&*DEPLOYER_WASM);
-//     assert_eq!(
-//         controller_instance.gd_code_hash().await.unwrap().0,
-//         deployer_hash,
-//     );
-
-//     let mt_stub_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
-//     owner
-//         .gd_approve(
-//             controller_instance.contract_id(),
-//             deployer_hash,
-//             mt_stub_hash,
-//         )
-//         .await
-//         .unwrap();
-
-//     // Create 50 accounts that will each transfer 4 NEAR (200 NEAR total)
-//     let num_senders = 50;
-//     let transfer_amount = NearToken::from_near(4);
-//     let senders = join_all((0..num_senders).map(|_| root.fund_implicit(NearToken::from_near(10))))
-//         .await
-//         .into_iter()
-//         .collect::<Result<Vec<_>, _>>()
-//         .unwrap();
-
-//     let owner_balance_before_deploy = owner.view().await.unwrap().amount;
-
-//     let deploy_deposit = NearToken::from_near(50);
-
-//     let deploy_handle = tokio::spawn({
-//         let controller_id = controller_instance.contract_id().clone();
-//         let owner = owner.clone();
-//         async move {
-//             owner
-//                 .tx(&controller_id)
-//                 .function_call(
-//                     FnCallBuilder::new("gd_deploy")
-//                         .raw_args(MT_RECEIVER_STUB_WASM.to_vec())
-//                         .with_deposit(deploy_deposit),
-//                 )
-//                 .await
-//                 .unwrap()
-//         }
-//     });
-//     let transfer_futs = senders.iter().map(|s| {
-//         s.tx(controller_instance.contract_id())
-//             .transfer(transfer_amount)
-//             .into_future()
-//     });
-
-//     tokio::time::sleep(Duration::from_millis(50)).await;
-//     join_all(transfer_futs).await;
-
-//     deploy_handle.await.unwrap();
-
-//     assert_eq!(
-//         controller_instance.gd_code_hash().await.unwrap().0,
-//         mt_stub_hash,
-//     );
-
-//     let owner_balance_after = owner.view().await.unwrap().amount;
-//     // Some transfers land between gd_deploy and gd_post_deploy, inflating
-//     // account_balance well above initial_balance + attached_deposit. The refund
-//     // cap `min(excess, attached_deposit)` limits refund to 50 NEAR
-//     assert!(
-//         owner_balance_after <= owner_balance_before_deploy,
-//         "owner balance should not increase after deploy"
-//     );
-
-//     let deploy_price = NearToken::from_micronear(100); // 0001 NEAR per 1B
-//     let contract_size = MT_RECEIVER_STUB_WASM.len().try_into().unwrap();
-//     let deploy_cost = deploy_price.checked_mul(contract_size).unwrap();
-
-//     let owner_spent = owner_balance_before_deploy.saturating_sub(owner_balance_after);
-//     let contract_balance_after = controller_instance.view().await.unwrap().amount;
-//     let transferred_amount = transfer_amount.checked_mul(num_senders).unwrap();
-
-//     // There can be 2 options:
-//     // 1) If transfer amount equal or greater to deploy cost land before the post deploy,
-//     // then owner gets a full refund and spends near only on gas
-//     // 2) Otherwise, owner only gets a partial refund
-
-//     let refund = deploy_deposit
-//         .saturating_sub(deploy_cost)
-//         .saturating_add(transferred_amount.saturating_sub(contract_balance_after));
-
-//     let max_gas = NearToken::from_near(1);
-//     let expected_outlay = deploy_deposit
-//         .saturating_sub(refund)
-//         .saturating_add(max_gas);
-
-//     assert!(owner_spent <= expected_outlay);
-// }
-
-// #[rstest]
-// #[tokio::test]
-// async fn test_gd_deploy_accepts_raw_bytes(
-//     #[future(awt)] deployer_env: DeployerEnv,
-//     unique_index: u32,
-// ) {
-//     let root = deployer_env.root;
-//     let owner = root.fund_implicit(NearToken::from_near(200)).await.unwrap();
-//     let storage = DeployerState::new(owner.account_id().clone()).with_index(unique_index);
-
-//     let controller_instance = root
-//         .deploy_gd_instance(deployer_env.deployer_global_id.clone(), storage.clone())
-//         .await
-//         .unwrap();
-
-//     owner
-//         .gd_approve(
-//             controller_instance.contract_id(),
-//             storage.code_hash,
-//             sha256_array(&*DEPLOYER_WASM),
-//         )
-//         .await
-//         .unwrap();
-
-//     owner
-//         .tx(controller_instance.contract_id())
-//         .function_call(
-//             FnCallBuilder::new("gd_deploy")
-//                 .raw_args(DEPLOYER_WASM.to_vec())
-//                 .with_deposit(NearToken::from_near(50)),
-//         )
-//         .await
-//         .unwrap();
-
-//     assert_eq!(
-//         controller_instance.gd_code_hash().await.unwrap().0,
-//         sha256_array(&*DEPLOYER_WASM),
-//     );
-// }
+#[rstest]
+#[tokio::test]
+async fn test_state_init_same_code_hash_and_pre_approve_allows_deploy(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.root;
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+
+    let dummy_wasm: Vec<u8> = vec![1u8; 64];
+    let dummy_hash = sha256_array(&dummy_wasm);
+
+    // State where code_hash == approved_hash == hash(dummy_wasm)
+    let mut state = DeployerState::new(root.account_id().clone())
+        .with_index(unique_index)
+        .pre_approve(dummy_hash);
+    state.code_hash = dummy_hash;
+
+    let controller_instance = root
+        .deploy_gd_instance(deployer_code_hash_id.clone(), state.clone())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap().0,
+        dummy_hash
+    );
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap().0,
+        dummy_hash,
+    );
+
+    // Deploy should succeed even though code_hash == approved_hash
+    root.gd_deploy(
+        controller_instance.contract_id(),
+        dummy_wasm,
+        NearToken::from_near(50),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap().0,
+        dummy_hash,
+    );
+
+    // Approval should be cleared after deploy
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap().0,
+        DeployerState::DEFAULT_HASH,
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_post_deploy_does_not_run_on_failed_deploy(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.root;
+    let initial_balance = NearToken::from_near(2);
+    let owner = root.create_subaccount("dummy2", initial_balance).await;
+
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+    let storage = DeployerState::new(owner.account_id().clone()).with_index(unique_index);
+
+    let controller_instance = root
+        .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
+        .await
+        .unwrap();
+
+    // Instance has 0 balance
+    assert_eq!(
+        root.balance(controller_instance.contract_id())
+            .await
+            .unwrap()
+            .total,
+        NearToken::from_near(0)
+    );
+
+    let new_hash = sha256_array(&*DEPLOYER_WASM);
+
+    owner
+        .gd_approve(
+            controller_instance.contract_id(),
+            storage.code_hash,
+            new_hash,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap().0,
+        new_hash,
+    );
+
+    // Deploy with insufficient deposit → LackBalanceForState
+    owner
+        .gd_deploy(
+            controller_instance.contract_id(),
+            &*DEPLOYER_WASM,
+            NearToken::from_yoctonear(1), // not enough to cover state
+        )
+        .await
+        .assert_err_contains("NEAR to cover storage cost");
+
+    // code_hash must NOT have been updated by gd_post_deploy
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap().0,
+        storage.code_hash,
+    );
+
+    // approved_hash must NOT have been cleared by gd_post_deploy
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap().0,
+        new_hash,
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_retry_approve_and_deploy_after_insufficient_deposit(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.root;
+    let owner = root
+        .create_subaccount("retry", NearToken::from_near(100))
+        .await;
+
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+    let storage = DeployerState::new(owner.account_id().clone()).with_index(unique_index);
+
+    let controller_instance = root
+        .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
+        .await
+        .unwrap();
+
+    let new_hash = sha256_array(&*DEPLOYER_WASM);
+
+    // First attempt: gd_approve_and_deploy with insufficient deposit (1 NEAR)
+    owner
+        .transaction(controller_instance.contract_id())
+        .add_action(
+            GlobalDeployer::gd_approve(GDApproveArgs {
+                old_hash: storage.code_hash.into(),
+                new_hash: new_hash.into(),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(10)),
+        )
+        .add_action(
+            GlobalDeployer::gd_deploy(GDDeployArgs {
+                code: DEPLOYER_WASM.clone(),
+            })
+            .deposit(NearToken::from_near(1))
+            .gas(Gas::from_tgas(290)),
+        )
+        .await
+        .unwrap()
+        .result()
+        .assert_err_contains("NEAR to cover storage cost");
+
+    // code_hash unchanged after failed deploy
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap().0,
+        storage.code_hash,
+    );
+
+    // Retry with sufficient deposit
+    owner
+        .gd_approve_and_deploy(
+            controller_instance.contract_id(),
+            storage.code_hash,
+            &*DEPLOYER_WASM,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap().0,
+        new_hash,
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_post_deploy_fails_when_approval_changed(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.root;
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+
+    let state = DeployerState::new(root.account_id().clone()).with_index(unique_index);
+    let controller_instance = root
+        .deploy_gd_instance(deployer_code_hash_id.clone(), state.clone())
+        .await
+        .unwrap();
+
+    // Initial deploy so controller has real code
+    root.gd_approve_and_deploy(
+        controller_instance.contract_id(),
+        state.code_hash,
+        &*DEPLOYER_WASM,
+    )
+    .await
+    .unwrap();
+
+    let deployer_hash = sha256_array(&*DEPLOYER_WASM);
+    let mt_stub_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap().0,
+        deployer_hash,
+    );
+
+    // Approve re-deploying the same DEPLOYER_WASM code. This way, after the deploy
+    // promise succeeds, the controller still runs the deployer code and we can query state.
+    root.gd_approve(
+        controller_instance.contract_id(),
+        deployer_hash,
+        deployer_hash,
+    )
+    .await
+    .unwrap();
+
+    // Batch transaction:
+    //   Action 1: gd_deploy(DEPLOYER_WASM) — passes approved_hash check, creates deploy+callback
+    //   Action 2: gd_approve(deployer_hash, mt_stub_hash) — changes approved_hash to mt_stub_hash
+    //
+    // In NEAR, batch actions execute sequentially in the same receipt, but promise receipts
+    // from action 1 execute in later blocks — so action 2's state change is visible to the
+    // callback. The callback sees approved_hash == mt_stub_hash != deployer_hash and panics.
+    let result = root
+        .transaction(controller_instance.contract_id())
+        .add_action(
+            GlobalDeployer::gd_deploy(GDDeployArgs {
+                code: DEPLOYER_WASM.clone(),
+            })
+            .deposit(NearToken::from_near(50))
+            .gas(Gas::from_tgas(140)),
+        )
+        .add_action(
+            GlobalDeployer::gd_approve(GDApproveArgs {
+                old_hash: deployer_hash.into(),
+                new_hash: mt_stub_hash.into(),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(10)),
+        )
+        .wait_until(Final)
+        .await
+        .unwrap();
+
+    // The callback (gd_post_deploy) should have failed because approved_hash was changed
+    // by the second action in the batch before the callback executed
+    assert!(
+        result
+            .receipts_outcome
+            .iter()
+            .any(|o| matches!(o.outcome.status, ExecutionStatus::Failure(_))),
+        "gd_post_deploy callback should have failed"
+    );
+
+    result.result().unwrap();
+
+    // code_hash should be unchanged — the callback was rejected so state was not updated
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap().0,
+        deployer_hash,
+    );
+
+    // approved_hash should be mt_stub_hash (set by gd_approve in action 2)
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap().0,
+        mt_stub_hash,
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_deploy_with_zero_deposit_and_prefunded_account(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.root;
+    let owner = root
+        .create_subaccount("prefund", NearToken::from_near(100))
+        .await;
+
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+    let storage = DeployerState::new(owner.account_id().clone()).with_index(unique_index);
+
+    let controller_instance = root
+        .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        root.balance(controller_instance.contract_id())
+            .await
+            .unwrap()
+            .total,
+        NearToken::from_near(0)
+    );
+
+    // Pre-fund the deterministic account so it has enough for storage
+    root.transaction(controller_instance.contract_id())
+        .transfer(NearToken::from_near(50))
+        .send()
+        .wait_until(Final)
+        .await
+        .unwrap()
+        .result()
+        .unwrap();
+
+    assert_eq!(
+        root.balance(controller_instance.contract_id())
+            .await
+            .unwrap()
+            .total,
+        NearToken::from_near(50)
+    );
+
+    owner
+        .gd_approve(
+            controller_instance.contract_id(),
+            storage.code_hash,
+            sha256_array(&*DEPLOYER_WASM),
+        )
+        .await
+        .unwrap();
+
+    owner
+        .gd_deploy(
+            controller_instance.contract_id(),
+            &*DEPLOYER_WASM,
+            NearToken::from_yoctonear(0),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap().0,
+        sha256_array(&*DEPLOYER_WASM),
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_concurrent_transfer_does_not_inflate_refund(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.root;
+    let initial_balance = NearToken::from_near(200);
+    let owner = root.create_implicit(initial_balance).await;
+
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+    let storage = DeployerState::new(owner.account_id().clone()).with_index(unique_index);
+
+    let controller_instance = root
+        .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
+        .await
+        .unwrap();
+
+    owner
+        .gd_approve_and_deploy(
+            controller_instance.contract_id(),
+            storage.code_hash,
+            &*DEPLOYER_WASM,
+        )
+        .await
+        .unwrap();
+    let deployer_hash = sha256_array(&*DEPLOYER_WASM);
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap().0,
+        deployer_hash,
+    );
+
+    let mt_stub_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
+    owner
+        .gd_approve(
+            controller_instance.contract_id(),
+            deployer_hash,
+            mt_stub_hash,
+        )
+        .await
+        .unwrap();
+
+    // Create 50 accounts that will each transfer 4 NEAR (200 NEAR total)
+    let num_senders = 50u128;
+    let transfer_amount = NearToken::from_near(4);
+    let senders: Vec<Near> =
+        join_all((0..num_senders).map(|_| root.create_implicit(NearToken::from_near(10)))).await;
+
+    let owner_balance_before_deploy = root.balance(owner.account_id()).await.unwrap().total;
+
+    let deploy_deposit = NearToken::from_near(50);
+
+    let deploy_handle = tokio::spawn({
+        let controller_id = controller_instance.contract_id().clone();
+        let owner = owner.clone();
+        async move {
+            owner
+                .gd_deploy(controller_id, MT_RECEIVER_STUB_WASM.clone(), deploy_deposit)
+                .await
+                .unwrap()
+        }
+    });
+    let transfer_futs = senders.iter().map(|s| {
+        s.transaction(controller_instance.contract_id())
+            .transfer(transfer_amount)
+            .into_future()
+    });
+
+    tokio::time::sleep(Duration::from_millis(50)).await;
+    join_all(transfer_futs).await;
+
+    deploy_handle.await.unwrap();
+
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap().0,
+        mt_stub_hash,
+    );
+
+    let owner_balance_after = root.balance(owner.account_id()).await.unwrap().total;
+    // Some transfers land between gd_deploy and gd_post_deploy, inflating
+    // account_balance well above initial_balance + attached_deposit. The refund
+    // cap `min(excess, attached_deposit)` limits refund to 50 NEAR
+    assert!(
+        owner_balance_after <= owner_balance_before_deploy,
+        "owner balance should not increase after deploy"
+    );
+
+    let deploy_price = NearToken::from_micronear(100); // 0001 NEAR per 1B
+    let contract_size = MT_RECEIVER_STUB_WASM.len().try_into().unwrap();
+    let deploy_cost = deploy_price.checked_mul(contract_size).unwrap();
+
+    let owner_spent = owner_balance_before_deploy.saturating_sub(owner_balance_after);
+    let contract_balance_after = root
+        .balance(controller_instance.contract_id())
+        .await
+        .unwrap()
+        .total;
+    let transferred_amount = transfer_amount.checked_mul(num_senders).unwrap();
+
+    // There can be 2 options:
+    // 1) If transfer amount equal or greater to deploy cost land before the post deploy,
+    // then owner gets a full refund and spends near only on gas
+    // 2) Otherwise, owner only gets a partial refund
+
+    let refund = deploy_deposit
+        .saturating_sub(deploy_cost)
+        .saturating_add(transferred_amount.saturating_sub(contract_balance_after));
+
+    let max_gas = NearToken::from_near(1);
+    let expected_outlay = deploy_deposit
+        .saturating_sub(refund)
+        .saturating_add(max_gas);
+
+    assert!(owner_spent <= expected_outlay);
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_gd_deploy_accepts_raw_bytes(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.root;
+    let owner = root.create_implicit(NearToken::from_near(200)).await;
+    let storage = DeployerState::new(owner.account_id().clone()).with_index(unique_index);
+
+    let controller_instance = root
+        .deploy_gd_instance(deployer_env.deployer_global_id.clone(), storage.clone())
+        .await
+        .unwrap();
+
+    owner
+        .gd_approve(
+            controller_instance.contract_id(),
+            storage.code_hash,
+            sha256_array(&*DEPLOYER_WASM),
+        )
+        .await
+        .unwrap();
+
+    owner
+        .gd_deploy(
+            controller_instance.contract_id(),
+            &*DEPLOYER_WASM,
+            NearToken::from_near(50),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap().0,
+        sha256_array(&*DEPLOYER_WASM),
+    );
+}
