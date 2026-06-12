@@ -35,7 +35,7 @@ pub async fn outlayer_app_env(#[future(awt)] root: Near) -> OutlayerAppEnv {
 async fn test_deploy(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     let root = outlayer_app_env.root;
     let alice = root
-        .generate_subaccount("alice", NearToken::from_near(100))
+        .create_subaccount("alice", NearToken::from_near(100))
         .await;
 
     let state = OutlayerState::new(
@@ -77,7 +77,7 @@ async fn test_deploy_with_pre_approved_hash(#[future(awt)] outlayer_app_env: Out
 async fn test_non_admin_cannot_set_code(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     let root = outlayer_app_env.root;
     let alice = root
-        .generate_subaccount("alice", NearToken::from_near(100))
+        .create_subaccount("alice", NearToken::from_near(100))
         .await;
 
     let state = OutlayerState::new(
@@ -138,7 +138,7 @@ async fn test_event_set_code(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
 async fn test_event_transfer_admin(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     let root = outlayer_app_env.root;
     let alice = root
-        .generate_subaccount("alice", NearToken::from_near(100))
+        .create_subaccount("alice", NearToken::from_near(100))
         .await;
 
     let state = OutlayerState::new(

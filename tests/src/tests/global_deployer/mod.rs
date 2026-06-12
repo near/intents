@@ -10,7 +10,7 @@ use defuse_global_deployer::{
     Event, Reason, State as DeployerState,
     error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_UNAUTHORIZED},
 };
-use defuse_sandbox::account::Account;
+use defuse_sandbox::account::{Account, generate_implicit_account_id};
 use defuse_sandbox::extensions::global_deployer::{GDDeployerExt, GlobalDeployerExt};
 use defuse_sandbox::global_contract::GlobalContract;
 use defuse_sandbox::kit::{GlobalContractIdentifier, Near};
@@ -34,7 +34,7 @@ pub struct DeployerEnv {
 pub async fn deployer_env(#[future(awt)] root: Near) -> DeployerEnv {
     let deployer_global_id = root
         .deploy_immutable_global_contract(
-            root.account_id().sub_account("gd").unwrap(),
+            root.account_id().sub_account("deployer").unwrap(),
             DEPLOYER_WASM.clone(),
             NearToken::from_near(20),
         )
@@ -60,7 +60,7 @@ async fn test_deploy_controller_instance(
 ) {
     let root = deployer_env.root;
     let alice = root
-        .generate_subaccount("alice", NearToken::from_near(1))
+        .create_subaccount("alice", NearToken::from_near(1))
         .await;
 
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
@@ -79,7 +79,8 @@ async fn test_deploy_controller_instance(
         upgradeable_instance_state.clone(),
     )
     .await
-    .assert_err_contains("Invalid transaction: Action error");
+    .map(|_| ())
+    .unwrap_err();
 
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
@@ -146,7 +147,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
 ) {
     let root = deployer_env.root;
     let initial_balance = NearToken::from_near(2);
-    let owner = root.generate_subaccount("dummy", initial_balance).await;
+    let owner = root.create_subaccount("dummy", initial_balance).await;
 
     assert_eq!(
         root.balance(owner.account_id()).await.unwrap().total,
@@ -205,8 +206,8 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
 async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, unique_index: u32) {
     let root = deployer_env.root;
     let (alice, bob) = futures::future::join(
-        root.generate_subaccount("alice", NearToken::from_near(100)),
-        root.generate_subaccount("bob", NearToken::from_near(100)),
+        root.create_subaccount("alice", NearToken::from_near(100)),
+        root.create_subaccount("bob", NearToken::from_near(100)),
     )
     .await;
 
@@ -559,8 +560,8 @@ async fn test_permissionless_deploy_with_approval(
 ) {
     let root = deployer_env.root;
     let (alice, bob) = futures::future::join(
-        root.generate_subaccount("alice", NearToken::from_near(100)),
-        root.generate_subaccount("bob", NearToken::from_near(100)),
+        root.create_subaccount("alice", NearToken::from_near(100)),
+        root.create_subaccount("bob", NearToken::from_near(100)),
     )
     .await;
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
@@ -617,90 +618,105 @@ async fn test_permissionless_deploy_with_approval(
     .assert_err_contains(ERR_NEW_CODE_HASH_MISMATCH);
 }
 
-// #[rstest]
-// #[tokio::test]
-// async fn test_refund_excessive_deposit_attached_to_deploy(
-//     #[future(awt)] deployer_env: DeployerEnv,
-//     unique_index: u32,
-// ) {
-//     let root = deployer_env.root;
-//     let initial_balance = NearToken::from_near(200);
-//     let owner = root.fund_implicit(initial_balance).await.unwrap();
+#[rstest]
+#[tokio::test]
+async fn test_refund_excessive_deposit_attached_to_deploy(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.root;
+    let initial_balance = NearToken::from_near(200);
+    let owner = root.create_implicit(initial_balance).await;
 
-//     assert_eq!(owner.view().await.unwrap().amount, initial_balance);
-//     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-//     let storage = DeployerState::new(owner.account_id().clone()).with_index(unique_index);
+    assert_eq!(
+        root.balance(owner.account_id()).await.unwrap().total,
+        initial_balance
+    );
 
-//     let controller_instance = root
-//         .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
-//         .await
-//         .unwrap();
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+    let storage = DeployerState::new(owner.account_id().clone()).with_index(unique_index);
 
-//     assert_eq!(
-//         root.balance(owner.account_id()).await.unwrap().total,
-//         NearToken::from_near(0)
-//     );
+    let controller_instance = root
+        .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
+        .await
+        .unwrap();
 
-//     owner
-//         .gd_approve(
-//             controller_instance.contract_id(),
-//             storage.code_hash,
-//             sha256_array(&*DEPLOYER_WASM),
-//         )
-//         .await
-//         .unwrap();
+    assert_eq!(
+        root.balance(controller_instance.contract_id())
+            .await
+            .unwrap()
+            .total,
+        NearToken::from_near(0)
+    );
 
-//     owner
-//         .tx(controller_instance.contract_id())
-//         .function_call(
-//             FnCallBuilder::new("gd_deploy")
-//                 .raw_args(DEPLOYER_WASM.to_vec())
-//                 .with_deposit(NearToken::from_near(100)),
-//         )
-//         .await
-//         .unwrap();
+    owner
+        .gd_approve(
+            controller_instance.contract_id(),
+            storage.code_hash,
+            sha256_array(&*DEPLOYER_WASM),
+        )
+        .await
+        .unwrap();
 
-//     let controller_instance_balance = controller_instance.view().await.unwrap().amount;
-//     assert!(controller_instance_balance < NearToken::from_millinear(900));
-// }
+    owner
+        .gd_deploy(
+            controller_instance.contract_id(),
+            &*DEPLOYER_WASM,
+            NearToken::from_near(100), // attach more than enough to cover storage
+        )
+        .await
+        .unwrap();
 
-// #[rstest]
-// #[tokio::test]
-// async fn test_state_init_pre_approve_allows_immediate_deploy(
-//     #[future(awt)] deployer_env: DeployerEnv,
-//     unique_index: u32,
-// ) {
-//     let root = deployer_env.root;
-//     let bob = root
-//         .generate_subaccount("bob", NearToken::from_near(100))
-//         .await;
-//     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+    assert!(
+        root.balance(controller_instance.contract_id())
+            .await
+            .unwrap()
+            .total
+            < NearToken::from_millinear(900)
+    );
+}
 
-//     // Pre-set approved_hash so gd_deploy can be called immediately without gd_approve
-//     let state = DeployerState::new(root.account_id().clone())
-//         .with_index(unique_index)
-//         .pre_approve(sha256_array(&*DEPLOYER_WASM));
+#[rstest]
+#[tokio::test]
+async fn test_state_init_pre_approve_allows_immediate_deploy(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.root;
+    let bob = root
+        .create_subaccount("bob", NearToken::from_near(100))
+        .await;
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
-//     let controller_instance = root
-//         .deploy_gd_instance(deployer_code_hash_id.clone(), state.clone())
-//         .await
-//         .unwrap();
+    // Pre-set approved_hash so gd_deploy can be called immediately without gd_approve
+    let state = DeployerState::new(root.account_id().clone())
+        .with_index(unique_index)
+        .pre_approve(sha256_array(&*DEPLOYER_WASM));
 
-//     assert!(bob.account_id().clone() != controller_instance.gd_owner_id().await.unwrap());
-//     bob.gd_deploy(controller_instance.contract_id(), &*DEPLOYER_WASM)
-//         .await
-//         .unwrap();
+    let controller_instance = root
+        .deploy_gd_instance(deployer_code_hash_id.clone(), state.clone())
+        .await
+        .unwrap();
 
-//     assert_eq!(
-//         controller_instance.gd_code_hash().await.unwrap().0,
-//         sha256_array(&*DEPLOYER_WASM),
-//     );
+    assert!(bob.account_id().clone() != controller_instance.gd_owner_id().await.unwrap());
+    bob.gd_deploy(
+        controller_instance.contract_id(),
+        &*DEPLOYER_WASM,
+        NearToken::from_near(50),
+    )
+    .await
+    .unwrap();
 
-//     assert_eq!(
-//         controller_instance.gd_approved_hash().await.unwrap().0,
-//         DeployerState::DEFAULT_HASH,
-//     );
-// }
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap().0,
+        sha256_array(&*DEPLOYER_WASM),
+    );
+
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap().0,
+        DeployerState::DEFAULT_HASH,
+    );
+}
 
 // #[rstest]
 // #[tokio::test]

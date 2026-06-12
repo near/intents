@@ -29,7 +29,7 @@ pub async fn root(#[default(NearToken::from_near(100_000))] amount: NearToken) -
     SandboxConfig::shared()
         .await
         .client()
-        .generate_subaccount(
+        .create_subaccount(
             SUB_COUNTER.fetch_add(1, Ordering::Relaxed).to_string(),
             amount,
         )

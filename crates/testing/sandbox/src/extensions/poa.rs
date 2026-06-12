@@ -83,7 +83,7 @@ impl PoaFactoryDeployerExt for Near {
         wasm: impl Into<Vec<u8>>,
     ) -> PoaFactoryClient {
         let account = self
-            .generate_subaccount(name, Some(NearToken::from_near(10)))
+            .create_subaccount(name, Some(NearToken::from_near(10)))
             .await;
 
         let action = FunctionCallAction {

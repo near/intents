@@ -34,7 +34,7 @@ use serde_json::json;
 async fn test_signed(#[future] env: Env) {
     let mut wallet = env.generate_wallet();
 
-    let receiver = env.generate_subaccount("receiver", NearToken::ZERO).await;
+    let receiver = env.create_subaccount("receiver", NearToken::ZERO).await;
 
     let (msg, proof) = wallet
         .sign(
@@ -188,7 +188,7 @@ async fn test_rotate(#[future] env: Env) {
 #[tokio::test]
 async fn test_extension(#[future] env: Env) {
     let extension = env
-        .generate_subaccount("extension", NearToken::from_near(100))
+        .create_subaccount("extension", NearToken::from_near(100))
         .await;
 
     let wallet_state_init = StateInit::V1(StateInitV1 {
@@ -199,8 +199,8 @@ async fn test_extension(#[future] env: Env) {
     });
 
     // 0s123445
-    let receiver = env.generate_subaccount("receiver", NearToken::ZERO).await;
-    let refund_to = env.generate_subaccount("refund_to", NearToken::ZERO).await;
+    let receiver = env.create_subaccount("receiver", NearToken::ZERO).await;
+    let refund_to = env.create_subaccount("refund_to", NearToken::ZERO).await;
 
     extension
         .w_execute_extension(

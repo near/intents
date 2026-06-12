@@ -13,7 +13,7 @@ use rstest::rstest;
 #[tokio::test]
 async fn deploy_mint(#[future(awt)] root: Near) {
     let user = root
-        .generate_subaccount("user1", NearToken::from_near(10))
+        .create_subaccount("user1", NearToken::from_near(10))
         .await;
 
     let poa_factory = root
