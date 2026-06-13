@@ -148,7 +148,7 @@ near-api = "0.8.6"
 near-api-types = "0.8.6"
 near-contract-standards = "5.24"
 near-crypto = "0.35.0"
-near-kit = { version = "0.9.0", default-features = false }
+near-kit = { version = "0.10.0", default-features = false }
 near-mpc-crypto-types = { git = "https://github.com/near/mpc", rev = "2924956010abc3e76d904dca8cb68af17b1216a4", version = "0.0.1", default-features = false }
 near-openapi-types = "0.8.0"
 near-plugins = "0.5.1"

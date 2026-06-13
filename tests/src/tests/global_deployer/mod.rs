@@ -1,5 +1,5 @@
-// #[cfg(feature = "escrow-swap")]
-// mod deploy_escrow_swap;
+#[cfg(feature = "escrow-swap")]
+mod deploy_escrow_swap;
 
 use std::future::IntoFuture;
 

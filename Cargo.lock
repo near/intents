@@ -4137,9 +4137,9 @@ dependencies = [
 
 [[package]]
 name = "near-kit"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df69bb2f8e7810859d246b36e66b0285370c6dc1b998d1ae1f4eb7000a84388d"
+checksum = "d5224b0e59b46dee4bea5fdd4fc2edb4e798fefcd22583aa699dc91dd822968f"
 dependencies = [
  "base64 0.22.1",
  "bip39",
@@ -4162,7 +4162,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "sha2 0.11.0",
- "sha3 0.11.0",
+ "sha3 0.12.0",
  "testcontainers",
  "thiserror 2.0.18",
  "tokio",
@@ -4171,9 +4171,9 @@ dependencies = [
 
 [[package]]
 name = "near-kit-macros"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c5a61828876deecb38aafaf8f8b9772910a82f8d89869b95a6ab500c8d87dae"
+checksum = "67ba9ef598d0dc049d91be7a8356b49edc3fa46cc085f84a69ab3ac8e86caf32"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6239,6 +6239,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha3"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc9bad02c26382724b2d2692c6f179285e4b54eeecd7968f52a50059c3c11759"
+dependencies = [
+ "digest 0.11.3",
+ "keccak 0.2.0",
+ "sponge-cursor",
+]
+
+[[package]]
 name = "sharded-slab"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6366,6 +6377,12 @@ dependencies = [
  "base64ct",
  "der",
 ]
+
+[[package]]
+name = "sponge-cursor"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a0219bd7d979d58245a4f41f695e1ac9f8befdffadd7f61f1bae9e39abc6620"
 
 [[package]]
 name = "stable_deref_trait"
