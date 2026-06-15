@@ -15,7 +15,7 @@ use defuse_sandbox::{
             },
         },
     },
-    kit::{Final, Near},
+    kit::{Final, Gas, Near},
 };
 use futures::{TryStreamExt, stream::FuturesOrdered};
 use itertools::Itertools;
@@ -195,6 +195,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
                     )
                     .unwrap(),
                 )
+                .gas(Gas::from_tgas(300))
                 .wait_until(Final)
                 .await
                 .unwrap()
