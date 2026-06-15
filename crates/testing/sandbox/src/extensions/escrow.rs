@@ -1,19 +1,30 @@
 use anyhow::Result;
 use defuse_escrow_swap::{Params, Storage};
 use near_kit::{Final, Near};
-use near_sdk::AccountId;
+use near_sdk::{
+    AccountId,
+    serde::{Deserialize, Serialize},
+};
 
 use crate::outcome::SuccessfulExecutionOutcome;
+
+pub use defuse_escrow_swap as contract;
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct EsParams {
+    pub params: Params,
+}
 
 #[near_kit::contract]
 pub trait Escrow {
     fn es_view(&self) -> Storage;
 
     #[call]
-    fn es_close(&mut self, params: Params) -> bool;
+    fn es_close(&mut self, params: EsParams) -> bool;
 
     #[call]
-    fn es_lost_found(&mut self, params: Params) -> bool;
+    fn es_lost_found(&mut self, params: EsParams) -> bool;
 }
 
 pub trait EscrowExt {
@@ -37,7 +48,7 @@ impl EscrowExt for Near {
         params: Params,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(escrow_id.into())
-            .add_action(Escrow::es_close(params))
+            .add_action(Escrow::es_close(EsParams { params }))
             .wait_until(Final)
             .await?
             .try_into()
@@ -49,7 +60,7 @@ impl EscrowExt for Near {
         params: Params,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(escrow_id.into())
-            .add_action(Escrow::es_lost_found(params))
+            .add_action(Escrow::es_lost_found(EsParams { params }))
             .wait_until(Final)
             .await?
             .try_into()

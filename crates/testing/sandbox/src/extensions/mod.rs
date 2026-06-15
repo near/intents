@@ -1,9 +1,10 @@
 use near_sdk::Gas;
 
 pub mod mt_receiver;
+pub mod wnear;
 
-// #[cfg(feature = "defuse")]
-// pub mod defuse;
+#[cfg(feature = "defuse")]
+pub mod defuse;
 #[cfg(feature = "escrow")]
 pub mod escrow;
 #[cfg(feature = "deployer")]

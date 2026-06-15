@@ -9,6 +9,8 @@ use near_sdk::{
 
 use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
 
+pub use defuse_global_deployer as contract;
+
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct GDApproveArgs {

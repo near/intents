@@ -13,7 +13,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{account::Account, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
 
-pub use defuse_poa_factory::*;
+pub use defuse_poa_factory::contract;
 
 pub const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
 

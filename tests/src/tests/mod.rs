@@ -4,8 +4,8 @@
 #[cfg(feature = "poa")]
 mod poa;
 
-// #[cfg(feature = "escrow-swap")]
-// mod escrow;
+#[cfg(feature = "escrow-swap")]
+mod escrow;
 
 #[cfg(feature = "wallet")]
 mod wallet;
