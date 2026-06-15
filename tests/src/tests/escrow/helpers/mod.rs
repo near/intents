@@ -1,4 +1,3 @@
-use defuse::core::fees::FeesConfig;
 use defuse_fees::Pips;
 use defuse_sandbox::{
     account::Account,
@@ -6,6 +5,7 @@ use defuse_sandbox::{
         defuse::{
             DefuseClient, DefuseDeployerExt,
             contract::config::{DefuseConfig, RolesConfig},
+            core::fees::FeesConfig,
         },
         poa::{
             PoAFactoryExt, PoaFactoryClient, PoaFactoryDeployerExt,

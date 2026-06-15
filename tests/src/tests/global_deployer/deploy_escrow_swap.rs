@@ -1,19 +1,22 @@
 use super::*;
 
-use defuse_sandbox::kit::Error as KitError;
-
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    time::Duration,
-};
-
-use defuse_escrow_swap::{ContractStorage, Deadline, OverrideSend, Params};
 use defuse_sandbox::{
-    extensions::{escrow::Escrow, mt_receiver::MtReceiverStub},
+    extensions::{
+        escrow::{
+            Escrow,
+            contract::{ContractStorage, Deadline, OverrideSend, Params},
+        },
+        mt_receiver::MtReceiverStub,
+    },
+    kit::Error as KitError,
     nep616::DeployDeterministicAccountExt,
 };
 use defuse_test_utils::wasms::ESCROW_SWAP_WASM;
 use near_sdk::AccountId;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    time::Duration,
+};
 
 fn dummy_escrow_params(root: &AccountId) -> Params {
     let maker = root.sub_account("maker").unwrap();

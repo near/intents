@@ -1,7 +1,9 @@
-use defuse_outlayer_app::{Event, State as OutlayerState};
 use defuse_sandbox::{
     account::Account,
-    extensions::outlayer_app::{OutlayerAppDeployerExt, OutlayerAppExt},
+    extensions::outlayer_app::{
+        OutlayerAppDeployerExt, OutlayerAppExt,
+        contract::{Event, State as OutlayerState},
+    },
     kit::{GlobalContractIdentifier, Near, PublishMode},
     root,
 };

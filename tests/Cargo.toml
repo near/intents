@@ -26,7 +26,7 @@ defuse = [
   "defuse-sandbox/poa",
   "defuse-test-utils/defuse",
   "defuse-test-utils/poa",
-  "dep:defuse",
+  # "dep:defuse",
 ]
 escrow-swap = [
   "defuse-sandbox/defuse",
@@ -35,7 +35,7 @@ escrow-swap = [
   "defuse-test-utils/defuse",
   "defuse-test-utils/escrow",
   "defuse-test-utils/poa",
-  "dep:defuse-escrow-swap",
+  # "dep:defuse-escrow-swap",
 ]
 wallet = [
   "defuse-sandbox/wallet",
@@ -43,12 +43,13 @@ wallet = [
   "deployer",
 ]
 
-deployer = ["defuse-sandbox/deployer", "dep:defuse-global-deployer"]
+deployer = ["defuse-sandbox/deployer"] 
+# "dep:defuse-global-deployer"]
 
 outlayer = [
   "defuse-sandbox/outlayer",
   "defuse-test-utils/outlayer",
-  "dep:defuse-outlayer-app",
+  # "dep:defuse-outlayer-app",
 ]
 
 long = []
@@ -63,10 +64,10 @@ defuse-randomness.workspace = true
 defuse-serde-utils = { workspace = true, features = ["hex"] }
 defuse-test-utils = { workspace = true, features = ["near-contract"] }
 
-defuse = { workspace = true, features = ["contract", "arbitrary", "far"], optional = true }
-defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = true }
-defuse-global-deployer = { workspace = true, optional = true }
-defuse-outlayer-app = { workspace = true, optional = true }
+# defuse = { workspace = true, features = ["contract", "arbitrary", "far"], optional = true }
+# defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = true }
+# defuse-global-deployer = { workspace = true, optional = true }
+# defuse-outlayer-app = { workspace = true, optional = true }
 
 near-contract-standards.workspace = true
 near-crypto.workspace = true

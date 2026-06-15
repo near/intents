@@ -1,5 +1,5 @@
-// #[cfg(feature = "defuse")]
-// mod defuse;
+#[cfg(feature = "defuse")]
+mod defuse;
 
 #[cfg(feature = "poa")]
 mod poa;

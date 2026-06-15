@@ -1,28 +1,27 @@
 #![allow(dead_code)]
 
-mod builder;
-mod state;
-mod storage;
+// mod builder;
 
-use builder::EnvBuilder;
+// use builder::EnvBuilder;
 
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse_randomness::{RngExt, make_true_rng};
-use defuse_sandbox::extensions::defuse::contract::{
-    core::{Deadline, Nonce},
-    tokens::{DepositAction, DepositMessage},
-};
-use defuse_sandbox::extensions::storage_management::StorageManagementExt;
-use defuse_sandbox::extensions::{
-    defuse::{
-        account_manager::{AccountManagerExt, AccountViewExt},
-        nonce::generate_unique_nonce,
-        tokens::nep141::DefuseFtDepositor,
-    },
-    poa::PoAFactoryExt,
-};
-use defuse_sandbox::{Account, Sandbox, SigningAccount};
+use defuse_sandbox::kit::Near;
+// use defuse_sandbox::extensions::defuse::contract::{
+//     core::{Deadline, Nonce},
+//     tokens::{DepositAction, DepositMessage},
+// };
+// use defuse_sandbox::extensions::storage_management::StorageManagementExt;
+// use defuse_sandbox::extensions::{
+//     defuse::{
+//         account_manager::{AccountManagerExt, AccountViewExt},
+//         nonce::generate_unique_nonce,
+//         tokens::nep141::DefuseFtDepositor,
+//     },
+//     poa::PoAFactoryExt,
+// };
+// use defuse_sandbox::{Account, Sandbox, SigningAccount};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
 use impl_tools::autoimpl;
@@ -35,9 +34,9 @@ const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_near(1);
 const INITIAL_USER_BALANCE: NearToken = NearToken::from_near(10);
 
 // TODO: implement it as a fixture
-#[autoimpl(Deref using self.sandbox)]
+#[autoimpl(Deref using self.root)]
 pub struct Env {
-    sandbox: Sandbox,
+    root: Near,
 
     pub wnear: Account,
 
@@ -61,10 +60,6 @@ impl Env {
 
     pub async fn new() -> Self {
         Self::builder().build().await
-    }
-
-    pub const fn root(&self) -> &SigningAccount {
-        self.sandbox.root()
     }
 
     pub async fn get_unique_nonce(&self, deadline: Option<Deadline>) -> anyhow::Result<Nonce> {

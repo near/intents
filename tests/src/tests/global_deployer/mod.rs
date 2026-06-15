@@ -1,27 +1,28 @@
 #[cfg(feature = "escrow-swap")]
 mod deploy_escrow_swap;
 
-use std::future::IntoFuture;
-
-use std::sync::atomic::{AtomicU32, Ordering};
-use std::time::Duration;
-
-use defuse_global_deployer::{
-    Event, Reason, State as DeployerState,
-    error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_UNAUTHORIZED},
+use defuse_sandbox::{
+    account::Account,
+    extensions::global_deployer::{
+        GDApproveArgs, GDDeployArgs, GDDeployerExt, GlobalDeployer, GlobalDeployerExt,
+        contract::{
+            Event, Reason, State as DeployerState,
+            error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_UNAUTHORIZED},
+        },
+    },
+    global_contract::GlobalContract,
+    kit::{ExecutionStatus, Final, GlobalContractIdentifier, Near},
+    root,
 };
-use defuse_sandbox::account::Account;
-use defuse_sandbox::extensions::global_deployer::{
-    GDApproveArgs, GDDeployArgs, GDDeployerExt, GlobalDeployer, GlobalDeployerExt,
-};
-use defuse_sandbox::global_contract::GlobalContract;
-use defuse_sandbox::kit::{ExecutionStatus, Final, GlobalContractIdentifier, Near};
-use defuse_sandbox::root;
-
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::MT_RECEIVER_STUB_WASM};
 use futures::future::join_all;
 use near_sdk::{AsNep297Event, Gas, NearToken, env::sha256_array};
 use rstest::{fixture, rstest};
+use std::{
+    future::IntoFuture,
+    sync::atomic::{AtomicU32, Ordering},
+    time::Duration,
+};
 
 use crate::utils::wasms::DEPLOYER_WASM;
 
