@@ -8,33 +8,20 @@ use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse_randomness::{RngExt, make_true_rng};
 use defuse_sandbox::account::Account;
-use defuse_sandbox::extensions::defuse::DefuseClient;
-use defuse_sandbox::extensions::defuse::tokens::{DepositAction, DepositMessage};
+use defuse_sandbox::extensions::defuse::{
+    DefuseClient, DefuseExt, HasPublicKeyArgs,
+    core::PublicKey as DefusePublicKey,
+    tokens::{DepositAction, DepositMessage},
+};
 use defuse_sandbox::extensions::poa::{PoAFactoryExt, PoaFactoryClient};
 use defuse_sandbox::extensions::wnear::WNearClient;
-use defuse_sandbox::kit::{Final, FungibleToken, Near};
-// use defuse_sandbox::extensions::defuse::contract::{
-//     core::{Deadline, Nonce},
-//     tokens::{DepositAction, DepositMessage},
-// };
-// use defuse_sandbox::extensions::storage_management::StorageManagementExt;
-// use defuse_sandbox::extensions::{
-//     defuse::{
-//         account_manager::{AccountManagerExt, AccountViewExt},
-//         nonce::generate_unique_nonce,
-//         tokens::nep141::DefuseFtDepositor,
-//     },
-//     poa::PoAFactoryExt,
-// };
-// use defuse_sandbox::{Account, Sandbox, SigningAccount};
+use defuse_sandbox::kit::{Final, FungibleToken, Gas, Near};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
 use impl_tools::autoimpl;
+use near_sdk::AccountIdRef;
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, NearToken, account_id::arbitrary::ArbitraryNamedAccountId, env::sha256};
-use near_sdk::{AccountIdRef, Gas};
-
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::tests::defuse::env::builder::EnvBuilder;
 
@@ -53,9 +40,6 @@ pub struct Env {
     pub disable_ft_storage_deposit: bool,
     pub disable_registration: bool,
 
-    // // Persistent state generated in case of migration tests
-    // // used to fetch existing accounts
-    // pub next_user_index: AtomicUsize,
     pub seed: Seed,
 }
 
@@ -68,10 +52,6 @@ impl Env {
         Self::builder().build().await
     }
 
-    // pub async fn get_unique_nonce(&self, deadline: Option<Deadline>) -> anyhow::Result<Nonce> {
-    //     generate_unique_nonce(&self.defuse, deadline).await
-    // }
-
     pub async fn defuse_ft_deposit_to(
         &self,
         token_id: &AccountIdRef,
@@ -79,15 +59,15 @@ impl Env {
         to: &AccountIdRef,
         action: impl Into<Option<DepositAction>>,
     ) -> anyhow::Result<()> {
+        let mut msg = DepositMessage::new(to.into());
+        if let Some(action) = action.into() {
+            msg = msg.with_action(action);
+        }
+
         if self
-            .ft(token_id.into())?
-            .transfer_call(
-                self.defuse.contract_id(),
-                amount,
-                DepositMessage::new(to.into()).to_string(),
-            )
+            .ft(AccountId::from(token_id))?
+            .transfer_call(self.defuse.contract_id(), amount, msg.to_string())
             .gas(Gas::from_tgas(300))
-            .deposit(NearToken::from_yoctonear(1))
             .wait_until(Final)
             .await?
             .json::<U128>()
@@ -118,16 +98,24 @@ impl Env {
     pub async fn create_named_user(&self, name: &str) -> Near {
         let account = self.create_subaccount(name, INITIAL_USER_BALANCE).await;
 
-        let pubkey = account.signer().unwrap().public_key();
+        let near_pubkey = account.public_key().expect("account must have signer");
+        let defuse_pubkey = DefusePublicKey::Ed25519(
+            *near_pubkey
+                .as_ed25519_bytes()
+                .expect("ed25519 key required"),
+        );
 
         if !self
             .defuse
-            .has_public_key(account.id(), &pubkey)
+            .has_public_key(HasPublicKeyArgs {
+                account_id: account.account_id().clone(),
+                public_key: defuse_pubkey.clone(),
+            })
             .await
-            .expect("Failed to check publick key")
+            .expect("Failed to check public key")
         {
             account
-                .add_public_key(self.defuse.id(), &pubkey)
+                .defuse_add_public_key(self.defuse.contract_id().clone(), defuse_pubkey)
                 .await
                 .expect("Failed to add pubkey");
         }
@@ -135,35 +123,33 @@ impl Env {
         account
     }
 
-    pub async fn create_user(&self) -> SigningAccount {
-        let account_id = self
-            .get_next_account_id()
-            .expect("Failed to generate next account id");
+    // pub async fn create_user(&self) -> Near {
+    //     let account_id = generate_random_account_id(self.account_id())
+    //         .expect("Failed to generate next account id");
 
-        println!("Creating user account: {}", &account_id);
-        let name = account_id
-            .as_str()
-            .trim_end_matches(&format!(".{}", self.root().id()));
+    //     println!("Creating user account: {}", &account_id);
+    //     let name = account_id
+    //         .as_str()
+    //         .trim_end_matches(&format!(".{}", self.account_id()));
 
-        self.create_named_user(name).await
-    }
+    //     self.create_named_user(name).await
+    // }
 
-    // Randomly derives account ID from seed and unique index
-    // (to match existing accounts in migration tests)
-    // Or create new arbitrary account id
-    fn get_next_account_id(&self) -> Result<AccountId> {
-        let mut rand = make_true_rng();
-        let root = self.root();
+    // // Randomly derives account ID from seed and unique index
+    // // (to match existing accounts in migration tests)
+    // // Or create new arbitrary account id
+    // fn get_next_account_id(&self) -> Result<AccountId> {
+    //     let mut rand = make_true_rng();
 
-        // NOTE: every second account is legacy
-        if rand.random() {
-            let index = self.next_user_index.fetch_add(1, Ordering::SeqCst);
-            Ok(generate_legacy_user_account_id(root, index, self.seed)
-                .expect("Failed to generate account ID"))
-        } else {
-            generate_random_account_id(root.id())
-        }
-    }
+    //     // NOTE: every second account is legacy
+    //     if rand.random() {
+    //         let index = self.next_user_index.fetch_add(1, Ordering::SeqCst);
+    //         Ok(generate_legacy_user_account_id(self.account_id(), index, self.seed)
+    //             .expect("Failed to generate account ID"))
+    //     } else {
+    //         generate_random_account_id(self.account_id())
+    //     }
+    // }
 
     // if no tokens provided - only wnear storage deposit will be done
     pub async fn initial_ft_storage_deposit(
@@ -175,14 +161,13 @@ impl Env {
             return;
         }
 
-        let root = self.root();
         let mut all_accounts: Vec<&AccountId> = accounts.into_iter().collect();
 
-        all_accounts.push(self.defuse.id());
-        all_accounts.push(root.id());
+        all_accounts.push(self.defuse.contract_id());
+        all_accounts.push(self.account_id());
 
         // deposit WNEAR storage
-        self.ft_storage_deposit_for_accounts(self.wnear.id(), all_accounts.clone())
+        self.ft_storage_deposit_for_accounts(self.wnear.contract_id(), all_accounts.clone())
             .await
             .expect("Failed to deposit Wnear storage");
 
@@ -204,10 +189,15 @@ impl Env {
         token: &AccountIdRef,
         accounts: impl IntoIterator<Item = &AccountId>,
     ) -> Result<()> {
+        let ft = self.ft(AccountId::from(token))?;
         try_join_all(accounts.into_iter().map(|acc| {
-            self.sandbox
-                .root()
-                .storage_deposit(token, acc.as_ref(), TOKEN_STORAGE_DEPOSIT)
+            let ft = ft.clone();
+            let acc = acc.clone();
+            async move {
+                ft.storage_deposit(acc, TOKEN_STORAGE_DEPOSIT)
+                    .wait_until(Final)
+                    .await
+            }
         }))
         .await?;
 
@@ -216,19 +206,21 @@ impl Env {
 
     async fn ft_deposit_to_root(&self, token: &AccountIdRef) -> Result<()> {
         self.poa_factory_ft_deposit(
-            self.poa_factory.id(),
-            &self.poa_ft_name(token),
-            self.root().id(),
+            self.poa_factory.contract_id().clone(),
+            self.poa_ft_name(token),
+            self.account_id(),
             1_000_000_000,
             None,
             None,
         )
         .await
+        .map(|_| ())
     }
 
+    // TODO: may be move it to poa?
     pub fn poa_ft_name(&self, ft: &AccountIdRef) -> String {
         ft.as_str()
-            .trim_end_matches(&format!(".{}", self.poa_factory.id()))
+            .trim_end_matches(&format!(".{}", self.poa_factory.contract_id()))
             .to_string()
     }
 
@@ -237,24 +229,16 @@ impl Env {
         account_id: &AccountIdRef,
         amount: NearToken,
     ) -> Result<()> {
-        self.sandbox
-            .root()
-            .tx(account_id)
+        self.transaction(account_id)
             .transfer(amount)
-            .await
-            .map(|_| ())
+            .send()
+            .wait_until(Final)
+            .await?;
+        Ok(())
     }
 
-    pub async fn near_balance(&self, account: &Account) -> NearToken {
-        account.view().await.unwrap().amount
-    }
-
-    pub const fn sandbox(&self) -> &Sandbox {
-        &self.sandbox
-    }
-
-    pub const fn sandbox_mut(&mut self) -> &mut Sandbox {
-        &mut self.sandbox
+    pub async fn near_balance(&self, account_id: &AccountIdRef) -> NearToken {
+        self.balance(account_id).await.unwrap().available
     }
 }
 
@@ -268,7 +252,7 @@ fn generate_random_account_id(parent_id: &AccountId) -> Result<AccountId> {
 }
 
 fn generate_legacy_user_account_id(
-    parent_id: &Account,
+    parent_id: &AccountId,
     index: usize,
     seed: Seed,
 ) -> Result<AccountId> {
@@ -279,7 +263,7 @@ fn generate_legacy_user_account_id(
     let mut rng = rng(seed);
     ArbitraryNamedAccountId::arbitrary_subaccount(
         &mut Unstructured::new(&rng.random::<[u8; 64]>()),
-        Some(parent_id.id()),
+        Some(parent_id),
     )
     .map_err(|e| anyhow::anyhow!("failed to generate account ID : {e}"))
 }
