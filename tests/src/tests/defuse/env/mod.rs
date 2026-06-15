@@ -1,13 +1,18 @@
 #![allow(dead_code)]
 
-// mod builder;
+mod builder;
 
 // use builder::EnvBuilder;
 
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse_randomness::{RngExt, make_true_rng};
-use defuse_sandbox::kit::Near;
+use defuse_sandbox::account::Account;
+use defuse_sandbox::extensions::defuse::DefuseClient;
+use defuse_sandbox::extensions::defuse::tokens::{DepositAction, DepositMessage};
+use defuse_sandbox::extensions::poa::{PoAFactoryExt, PoaFactoryClient};
+use defuse_sandbox::extensions::wnear::WNearClient;
+use defuse_sandbox::kit::{Final, FungibleToken, Near};
 // use defuse_sandbox::extensions::defuse::contract::{
 //     core::{Deadline, Nonce},
 //     tokens::{DepositAction, DepositMessage},
@@ -25,10 +30,13 @@ use defuse_sandbox::kit::Near;
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
 use impl_tools::autoimpl;
-use near_sdk::AccountIdRef;
+use near_sdk::json_types::U128;
 use near_sdk::{AccountId, NearToken, account_id::arbitrary::ArbitraryNamedAccountId, env::sha256};
+use near_sdk::{AccountIdRef, Gas};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+use crate::tests::defuse::env::builder::EnvBuilder;
 
 const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_near(1);
 const INITIAL_USER_BALANCE: NearToken = NearToken::from_near(10);
@@ -38,18 +46,16 @@ const INITIAL_USER_BALANCE: NearToken = NearToken::from_near(10);
 pub struct Env {
     root: Near,
 
-    pub wnear: Account,
-
-    pub defuse: Account,
-
-    pub poa_factory: Account,
+    pub wnear: WNearClient,
+    pub defuse: DefuseClient,
+    pub poa_factory: PoaFactoryClient,
 
     pub disable_ft_storage_deposit: bool,
     pub disable_registration: bool,
 
-    // Persistent state generated in case of migration tests
-    // used to fetch existing accounts
-    pub next_user_index: AtomicUsize,
+    // // Persistent state generated in case of migration tests
+    // // used to fetch existing accounts
+    // pub next_user_index: AtomicUsize,
     pub seed: Seed,
 }
 
@@ -62,9 +68,9 @@ impl Env {
         Self::builder().build().await
     }
 
-    pub async fn get_unique_nonce(&self, deadline: Option<Deadline>) -> anyhow::Result<Nonce> {
-        generate_unique_nonce(&self.defuse, deadline).await
-    }
+    // pub async fn get_unique_nonce(&self, deadline: Option<Deadline>) -> anyhow::Result<Nonce> {
+    //     generate_unique_nonce(&self.defuse, deadline).await
+    // }
 
     pub async fn defuse_ft_deposit_to(
         &self,
@@ -74,13 +80,18 @@ impl Env {
         action: impl Into<Option<DepositAction>>,
     ) -> anyhow::Result<()> {
         if self
-            .defuse_ft_deposit(
-                self.defuse.id(),
-                token_id,
+            .ft(token_id.into())?
+            .transfer_call(
+                self.defuse.contract_id(),
                 amount,
-                DepositMessage::new(to.into()).with_action(action),
+                DepositMessage::new(to.into()).to_string(),
             )
+            .gas(Gas::from_tgas(300))
+            .deposit(NearToken::from_yoctonear(1))
+            .wait_until(Final)
             .await?
+            .json::<U128>()
+            .map(|v| v.0)?
             != amount
         {
             return Err(anyhow!("refunded"));
@@ -88,31 +99,26 @@ impl Env {
         Ok(())
     }
 
-    pub async fn create_named_token(&self, name: impl AsRef<str>) -> Account {
-        let root = self.root();
-
-        root.poa_factory_deploy_token(self.poa_factory.id(), name, None)
+    pub async fn create_named_token(&self, name: impl AsRef<str>) -> FungibleToken {
+        self.poa_factory_deploy_token(self.poa_factory.contract_id(), name, None)
             .await
             .unwrap()
     }
 
-    pub async fn create_token(&self) -> Account {
-        let account_id = generate_random_account_id(self.poa_factory.id())
-            .expect("Failed to generate random account ID");
-        let name = account_id
-            .as_str()
-            .trim_end_matches(&format!(".{}", self.poa_factory.id()));
+    // pub async fn create_token(&self) -> FungibleToken {
+    //     let account_id = generate_random_account_id(self.poa_factory.id())
+    //         .expect("Failed to generate random account ID");
+    //     let name = account_id
+    //         .as_str()
+    //         .trim_end_matches(&format!(".{}", self.poa_factory.id()));
 
-        self.create_named_token(name).await
-    }
+    //     self.create_named_token(name).await
+    // }
 
-    pub async fn create_named_user(&self, name: &str) -> SigningAccount {
-        let account = self
-            .generate_subaccount(name, INITIAL_USER_BALANCE)
-            .await
-            .expect("Failed to create user");
+    pub async fn create_named_user(&self, name: &str) -> Near {
+        let account = self.create_subaccount(name, INITIAL_USER_BALANCE).await;
 
-        let pubkey = account.signer().get_public_key().await.unwrap().into();
+        let pubkey = account.signer().unwrap().public_key();
 
         if !self
             .defuse

@@ -1,6 +1,8 @@
+use anyhow::Result;
 use near_kit::{Action, Final, FunctionCallAction, Near, NearToken};
+use near_sdk::AccountId;
 
-use crate::{account::Account, extensions::DEFAULT_GAS};
+use crate::{account::Account, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
 
 #[near_kit::contract]
 pub trait WNear {
@@ -25,7 +27,9 @@ impl WNearDeployerExt for Near {
         name: impl AsRef<str>,
         wasm: impl Into<Vec<u8>>,
     ) -> WNearClient {
-        let account = self.create_subaccount(name, NearToken::from_near(100)).await;
+        let account = self
+            .create_subaccount(name, NearToken::from_near(100))
+            .await;
 
         account
             .deploy(wasm)
@@ -42,5 +46,27 @@ impl WNearDeployerExt for Near {
             .unwrap();
 
         self.contract::<WNear>(account.account_id())
+    }
+}
+
+pub trait WNearExt {
+    async fn near_deposit(
+        &self,
+        contract_id: impl Into<AccountId>,
+        amount: NearToken,
+    ) -> Result<SuccessfulExecutionOutcome>;
+}
+
+impl WNearExt for Near {
+    async fn near_deposit(
+        &self,
+        contract_id: impl Into<AccountId>,
+        amount: NearToken,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(&contract_id.into())
+            .add_action(WNear::near_deposit(amount))
+            .wait_until(Final)
+            .await?
+            .try_into()
     }
 }

@@ -1,31 +1,27 @@
-use std::sync::atomic::AtomicUsize;
-
-use defuse_sandbox::extensions::{
-    defuse::deployer::DefuseExt,
-    poa::{PoAFactoryDeployerExt, contract::contract::Role as POAFactoryRole},
-};
+use defuse_fees::Pips;
 use defuse_sandbox::{
-    Account, SigningAccount,
-    extensions::wnear::{WNearDeployerExt, WNearExt},
-    sandbox,
-};
-use defuse_sandbox::{
-    DEFAULT_CONCURRENCY_LIMIT,
-    extensions::defuse::contract::{
-        contract::{
-            Role,
-            config::{DefuseConfig, RolesConfig},
+    extensions::{
+        defuse::{
+            DefuseClient, DefuseDeployerExt,
+            contract::{
+                Role,
+                config::{DefuseConfig, RolesConfig},
+            },
+            core::fees::FeesConfig,
         },
-        core::fees::{FeesConfig, Pips},
+        poa::{PoaFactoryClient, PoaFactoryDeployerExt, contract::Role as POAFactoryRole},
+        wnear::{WNearDeployerExt, WNearExt},
     },
+    kit::Near,
+    root,
 };
-use defuse_test_utils::{random::Seed, wasms::DEFUSE_FAR_WASM};
-use near_sdk::{AccountId, NearToken};
+use defuse_test_utils::{
+    random::Seed,
+    wasms::{DEFUSE_FAR_WASM, POA_FACTORY_WASM, WNEAR_WASM},
+};
+use near_sdk::{AccountId, AccountIdRef, NearToken};
 
-use super::Env;
-use defuse_test_utils::wasms::{DEFUSE_LEGACY_WASM, POA_FACTORY_WASM, WNEAR_WASM};
-
-const MIGRATE_FROM_LEGACY_ENV_NAME: &str = "DEFUSE_MIGRATE_FROM_LEGACY";
+use crate::tests::defuse::env::Env;
 
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Default)]
@@ -39,11 +35,6 @@ pub struct EnvBuilder {
     deployer_as_super_admin: bool,
     disable_ft_storage_deposit: bool,
     disable_registration: bool,
-
-    // Create only unique users (no reusing from persistent state)
-    create_unique_users: bool,
-
-    concurrency_limit: Option<usize>,
 }
 
 impl EnvBuilder {
@@ -92,142 +83,83 @@ impl EnvBuilder {
         self
     }
 
-    pub const fn create_unique_users(mut self) -> Self {
-        self.create_unique_users = true;
-        self
-    }
-
-    pub const fn concurrency_limit(mut self, limit: usize) -> Self {
-        self.concurrency_limit = Some(limit);
-        self
-    }
-
-    async fn deploy_defuse(
-        &self,
-        root: &SigningAccount,
-        wnear: &Account,
-        legacy: bool,
-    ) -> SigningAccount {
-        let id = "defuse";
+    async fn deploy_defuse(&self, root: &Near, wnear: impl AsRef<AccountIdRef>) -> DefuseClient {
         let cfg = DefuseConfig {
-            wnear_id: wnear.id().clone(),
+            wnear_id: wnear.as_ref().into(),
             fees: FeesConfig {
                 fee: self.fee,
                 fee_collector: self
                     .fee_collector
                     .as_ref()
-                    .unwrap_or_else(|| root.id())
+                    .unwrap_or_else(|| root.account_id())
                     .clone(),
             },
             roles: self.roles.clone(),
         };
 
         root.deploy_defuse(
-            id,
+            "defuse",
             cfg,
-            if legacy {
-                DEFUSE_LEGACY_WASM.clone()
-            } else {
-                // far feature enabled by default in tests
-                DEFUSE_FAR_WASM.clone()
-            },
+            // far feature enabled by default in tests
+            DEFUSE_FAR_WASM.clone(),
         )
         .await
-        .unwrap()
     }
 
-    fn grant_roles(&mut self, root: &Account, deploy_legacy: bool) {
+    fn grant_roles(&mut self, root: impl AsRef<AccountIdRef>) {
         if self.self_as_super_admin {
             self.roles
                 .super_admins
-                .insert(format!("defuse.{}", root.id()).parse().unwrap());
+                .insert(format!("defuse.{}", root.as_ref()).parse().unwrap());
         }
 
-        if self.deployer_as_super_admin || deploy_legacy {
-            self.roles.super_admins.insert(root.id().clone());
+        if self.deployer_as_super_admin {
+            self.roles.super_admins.insert(root.as_ref().into());
         }
     }
 
-    pub async fn build_env(&mut self, deploy_legacy: bool) -> Env {
-        let sandbox = sandbox(
-            NearToken::from_near(100_000),
-            self.concurrency_limit.unwrap_or(DEFAULT_CONCURRENCY_LIMIT),
-        )
-        .await;
-        let root = sandbox.root();
+    pub async fn build(&mut self) -> Env {
+        let root = root(NearToken::from_near(100_000)).await;
 
-        let poa_factory = deploy_poa_factory(root).await;
-        let wnear = root
-            .deploy_wrap_near("wnear", WNEAR_WASM.clone())
-            .await
-            .unwrap();
+        self.grant_roles(root.account_id());
 
-        self.grant_roles(root, deploy_legacy);
-
-        let defuse = self.deploy_defuse(root, &wnear, deploy_legacy).await;
+        let poa_factory = deploy_poa_factory(&root).await;
+        let wnear = root.deploy_wrap_near("wnear", WNEAR_WASM.clone()).await;
+        let defuse = self.deploy_defuse(&root, wnear.contract_id()).await;
 
         let env = Env {
             defuse: defuse.into(),
             wnear: wnear.into(),
             poa_factory: poa_factory.into(),
-            sandbox,
+            root,
             disable_ft_storage_deposit: self.disable_ft_storage_deposit,
             disable_registration: self.disable_registration,
             seed: Seed::from_entropy(),
-            next_user_index: AtomicUsize::new(0),
+            // next_user_index: AtomicUsize::new(0),
         };
 
-        if deploy_legacy {
-            // Legacy version deployed -> arbitrary data applied to the
-            // contract before upgrade -> upgrade to the latest version ->
-            // verify that the data is preserved after the upgrade
-            env.upgrade_legacy(!self.create_unique_users).await;
-        }
-
-        env.near_deposit(env.wnear.id(), NearToken::from_near(100))
+        env.near_deposit(env.wnear.contract_id(), NearToken::from_near(100))
             .await
             .unwrap();
 
         env
     }
-
-    pub async fn build_with_migration(&mut self) -> Env {
-        self.build_env(true).await
-    }
-
-    pub async fn build(&mut self) -> Env {
-        // TODO: enable migration tests
-        let migrate_from_legacy = false;
-        // let migrate_from_legacy = std::env::var(MIGRATE_FROM_LEGACY_ENV_NAME)
-        //     .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
-
-        println!(
-            "Test migration mode: {}",
-            if migrate_from_legacy {
-                "enabled"
-            } else {
-                "disabled"
-            }
-        );
-
-        self.build_env(migrate_from_legacy).await
-    }
 }
 
-async fn deploy_poa_factory(root: &SigningAccount) -> SigningAccount {
+async fn deploy_poa_factory(root: &Near) -> PoaFactoryClient {
+    let root_id = root.account_id();
     root.deploy_poa_factory(
         "poa-factory",
-        [root.id().clone()],
+        [root.account_id().clone()],
         [
-            (POAFactoryRole::TokenDeployer, [root.id().clone()]),
-            (POAFactoryRole::TokenDepositer, [root.id().clone()]),
+            (POAFactoryRole::TokenDeployer, [root_id.clone()]),
+            (POAFactoryRole::TokenDepositer, [root_id.clone()]),
         ],
         [
-            (POAFactoryRole::TokenDeployer, [root.id().clone()]),
-            (POAFactoryRole::TokenDepositer, [root.id().clone()]),
+            (POAFactoryRole::TokenDeployer, [root_id.clone()]),
+            (POAFactoryRole::TokenDepositer, [root_id.clone()]),
         ],
         POA_FACTORY_WASM.clone(),
     )
     .await
-    .unwrap()
 }

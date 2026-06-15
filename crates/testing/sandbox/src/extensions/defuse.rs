@@ -1,3 +1,4 @@
+use anyhow::Result;
 use defuse::contract::config::DefuseConfig;
 use defuse_core::{Nonce, PublicKey, fees::Pips};
 use defuse_serde_utils::base64::AsBase64;
@@ -17,7 +18,7 @@ pub struct MtBatchBalanceOfArgs {
     pub token_ids: Vec<String>,
 }
 
-use crate::{account::Account, extensions::DEFAULT_GAS};
+use crate::{account::Account, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
 
 pub use defuse::contract;
 pub use defuse::core;
@@ -63,6 +64,98 @@ pub trait Defuse {
 
     #[call]
     fn set_fee_collector(&mut self, fee_collector: AccountId);
+}
+
+pub trait DefuseExt {
+    async fn defuse_add_public_key(
+        &self,
+        defuse: impl Into<AccountId>,
+        public_key: PublicKey,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_remove_public_key(
+        &self,
+        defuse: impl Into<AccountId>,
+        public_key: PublicKey,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_disable_auth_by_predecessor_id(
+        &self,
+        defuse: impl Into<AccountId>,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_set_fee(
+        &self,
+        defuse: impl Into<AccountId>,
+        fee: Pips,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_set_fee_collector(
+        &self,
+        defuse: impl Into<AccountId>,
+        fee_collector: AccountId,
+    ) -> Result<SuccessfulExecutionOutcome>;
+}
+
+impl DefuseExt for Near {
+    async fn defuse_add_public_key(
+        &self,
+        defuse: impl Into<AccountId>,
+        public_key: PublicKey,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(defuse.into())
+            .add_action(Defuse::add_public_key(public_key).gas(DEFAULT_GAS))
+            .wait_until(Final)
+            .await?
+            .try_into()
+    }
+
+    async fn defuse_remove_public_key(
+        &self,
+        defuse: impl Into<AccountId>,
+        public_key: PublicKey,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(defuse.into())
+            .add_action(Defuse::remove_public_key(public_key).gas(DEFAULT_GAS))
+            .wait_until(Final)
+            .await?
+            .try_into()
+    }
+
+    async fn defuse_disable_auth_by_predecessor_id(
+        &self,
+        defuse: impl Into<AccountId>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(defuse.into())
+            .add_action(Defuse::disable_auth_by_predecessor_id().gas(DEFAULT_GAS))
+            .wait_until(Final)
+            .await?
+            .try_into()
+    }
+
+    async fn defuse_set_fee(
+        &self,
+        defuse: impl Into<AccountId>,
+        fee: Pips,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(defuse.into())
+            .add_action(Defuse::set_fee(fee).gas(DEFAULT_GAS))
+            .wait_until(Final)
+            .await?
+            .try_into()
+    }
+
+    async fn defuse_set_fee_collector(
+        &self,
+        defuse: impl Into<AccountId>,
+        fee_collector: AccountId,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(defuse.into())
+            .add_action(Defuse::set_fee_collector(fee_collector).gas(DEFAULT_GAS))
+            .wait_until(Final)
+            .await?
+            .try_into()
+    }
 }
 
 pub trait DefuseDeployerExt {
