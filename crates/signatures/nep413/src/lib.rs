@@ -133,16 +133,17 @@ impl defuse_crypto::SignedPayload for SignedNep413Payload {
     }
 }
 
-// #[cfg(feature = "near-kit")]
-// const _: () = {
-//     impl From<Nep413Payload> for near_kit::nep413::Nep413Payload {
-//         fn from(payload: Nep413Payload) -> Self {
-//             Self {
-//                 message: payload.message,
-//                 nonce: payload.nonce,
-//                 recipient: payload.recipient,
-//                 callback_url: payload.callback_url,
-//             }
-//         }
-//     }
-// };
+#[cfg(feature = "near-kit")]
+const _: () = {
+    impl From<Nep413Payload> for near_kit::nep413::SignMessageParams {
+        fn from(payload: Nep413Payload) -> Self {
+            Self {
+                message: payload.message,
+                nonce: payload.nonce,
+                recipient: payload.recipient,
+                callback_url: payload.callback_url,
+                state: None,
+            }
+        }
+    }
+};

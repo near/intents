@@ -3,7 +3,7 @@
 // mod intents;
 mod state;
 // mod state_init;
-// mod storage;
+mod storage;
 // mod tokens;
 
 mod env;

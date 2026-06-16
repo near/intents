@@ -2,8 +2,6 @@
 
 mod builder;
 
-// use builder::EnvBuilder;
-
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse_randomness::{RngExt, make_true_rng};
@@ -16,10 +14,8 @@ use defuse_sandbox::{
             tokens::{DepositAction, DepositMessage},
         },
         poa::{PoAFactoryExt, PoaFactoryClient},
-        wnear::WNearClient,
     },
     kit::{Final, FungibleToken, Gas, Near},
-    root,
 };
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
@@ -41,7 +37,7 @@ pub struct Env {
     root: Near,
 
     pub defuse_near: Near,
-    pub wnear: WNearClient,
+    pub wnear: FungibleToken,
     pub defuse: DefuseClient,
     pub poa_factory: PoaFactoryClient,
 
@@ -98,15 +94,15 @@ impl Env {
             .unwrap()
     }
 
-    // pub async fn create_token(&self) -> FungibleToken {
-    //     let account_id = generate_random_account_id(self.poa_factory.id())
-    //         .expect("Failed to generate random account ID");
-    //     let name = account_id
-    //         .as_str()
-    //         .trim_end_matches(&format!(".{}", self.poa_factory.id()));
+    pub async fn create_token(&self) -> FungibleToken {
+        let account_id = generate_random_account_id(self.poa_factory.contract_id())
+            .expect("Failed to generate random account ID");
+        let name = account_id
+            .as_str()
+            .trim_end_matches(&format!(".{}", self.poa_factory.contract_id()));
 
-    //     self.create_named_token(name).await
-    // }
+        self.create_named_token(name).await
+    }
 
     pub async fn create_named_user(&self, name: &str) -> Near {
         let account = self.create_subaccount(name, INITIAL_USER_BALANCE).await;

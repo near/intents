@@ -1,6 +1,12 @@
+mod nonce;
+mod signer;
+
 use anyhow::Result;
-use defuse::contract::{Role, config::DefuseConfig};
-use defuse_core::{Nonce, PublicKey, Salt, fees::Pips};
+use defuse::{
+    contract::{Role, config::DefuseConfig},
+    simulation_output::SimulationOutput,
+};
+use defuse_core::{Nonce, PublicKey, Salt, fees::Pips, payload::multi::MultiPayload};
 use defuse_serde_utils::base64::AsBase64;
 use near_kit::{Action, Final, FunctionCallAction, Near, NearToken};
 use near_sdk::{
@@ -9,7 +15,10 @@ use near_sdk::{
     serde::{Deserialize, Serialize},
     serde_json::json,
 };
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
+
+pub use nonce::*;
+pub use signer::*;
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -75,6 +84,12 @@ pub struct AclRoleArgs {
     pub account_id: AccountId,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct MultiPayloadArgs {
+    pub signed: Vec<MultiPayload>,
+}
+
 #[near_kit::contract]
 pub trait Defuse {
     fn fee(&self) -> Pips;
@@ -115,6 +130,29 @@ pub trait Defuse {
 
     #[call]
     fn invalidate_salts(&mut self, args: InvalidateSaltArgs) -> Salt;
+
+    #[call]
+    fn execute_intents(&mut self, args: MultiPayloadArgs);
+
+    fn simulate_intents(&self, args: MultiPayloadArgs) -> SimulationOutput;
+
+    #[call]
+    fn add_relayer_key(&mut self, args: PublicKeyArgs);
+
+    #[call]
+    fn do_add_relayer_key(&mut self, args: PublicKeyArgs);
+
+    #[call]
+    fn delete_relayer_key(&mut self, args: PublicKeyArgs);
+
+    #[call]
+    fn cleanup_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>);
+
+    #[call]
+    fn force_add_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>);
+
+    #[call]
+    fn force_remove_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>);
 }
 
 pub trait DefuseExt {
@@ -164,6 +202,48 @@ pub trait DefuseExt {
         defuse: impl Into<AccountId>,
         salts: impl IntoIterator<Item = Salt>,
     ) -> Result<(SuccessfulExecutionOutcome, Salt)>;
+
+    async fn defuse_execute_intents(
+        &self,
+        defuse: impl Into<AccountId>,
+        signed: Vec<MultiPayload>,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_simulate_and_execute_intents(
+        &self,
+        defuse: impl Into<AccountId>,
+        intents: impl IntoIterator<Item = MultiPayload>,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_add_relayer_key(
+        &self,
+        defuse: impl Into<AccountId>,
+        public_key: PublicKey,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_delete_relayer_key(
+        &self,
+        defuse: impl Into<AccountId>,
+        public_key: PublicKey,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_cleanup_nonces(
+        &self,
+        defuse: impl Into<AccountId>,
+        nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_force_add_public_keys(
+        &self,
+        defuse: impl Into<AccountId>,
+        public_keys: HashMap<AccountId, HashSet<PublicKey>>,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_force_remove_public_keys(
+        &self,
+        defuse: impl Into<AccountId>,
+        public_keys: HashMap<AccountId, HashSet<PublicKey>>,
+    ) -> Result<SuccessfulExecutionOutcome>;
 }
 
 impl DefuseExt for Near {
@@ -294,6 +374,118 @@ impl DefuseExt for Near {
             .await?;
         let salt = outcome.json::<Salt>()?;
         Ok((outcome.try_into()?, salt))
+    }
+
+    async fn defuse_execute_intents(
+        &self,
+        defuse: impl Into<AccountId>,
+        signed: Vec<MultiPayload>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(defuse.into())
+            .add_action(
+                Defuse::execute_intents(MultiPayloadArgs { signed: signed }).gas(DEFAULT_GAS),
+            )
+            .wait_until(Final)
+            .await?
+            .try_into()
+    }
+
+    async fn defuse_simulate_and_execute_intents(
+        &self,
+        defuse: impl Into<AccountId>,
+        intents: impl IntoIterator<Item = MultiPayload>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        let defuse_id = defuse.into();
+        let signed: Vec<MultiPayload> = intents.into_iter().collect();
+
+        let _simulation_result = self
+            .contract::<Defuse>(defuse_id.clone())
+            .simulate_intents(MultiPayloadArgs {
+                signed: signed.clone(),
+            })
+            .await?;
+
+        self.defuse_execute_intents(defuse_id, signed).await
+    }
+
+    async fn defuse_add_relayer_key(
+        &self,
+        defuse: impl Into<AccountId>,
+        public_key: PublicKey,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(defuse.into())
+            .add_action(
+                Defuse::add_relayer_key(PublicKeyArgs { public_key })
+                    .gas(DEFAULT_GAS)
+                    .deposit(NearToken::from_yoctonear(1)),
+            )
+            .wait_until(Final)
+            .await?
+            .try_into()
+    }
+
+    async fn defuse_delete_relayer_key(
+        &self,
+        defuse: impl Into<AccountId>,
+        public_key: PublicKey,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(defuse.into())
+            .add_action(
+                Defuse::delete_relayer_key(PublicKeyArgs { public_key })
+                    .gas(DEFAULT_GAS)
+                    .deposit(NearToken::from_yoctonear(1)),
+            )
+            .wait_until(Final)
+            .await?
+            .try_into()
+    }
+
+    async fn defuse_cleanup_nonces(
+        &self,
+        defuse: impl Into<AccountId>,
+        nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(defuse.into())
+            .add_action(
+                Defuse::cleanup_nonces(nonces)
+                    .gas(DEFAULT_GAS)
+                    .deposit(NearToken::from_yoctonear(1)),
+            )
+            .wait_until(Final)
+            .await?
+            .try_into()
+    }
+
+    async fn defuse_force_add_public_keys(
+        &self,
+        defuse: impl Into<AccountId>,
+        public_keys: HashMap<AccountId, HashSet<PublicKey>>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(defuse.into())
+            .add_action(
+                Defuse::force_add_public_keys(public_keys)
+                    .gas(DEFAULT_GAS)
+                    .deposit(NearToken::from_yoctonear(1)),
+            )
+            .wait_until(Final)
+            .await?
+            .try_into()
+    }
+
+    async fn defuse_force_remove_public_keys(
+        &self,
+        defuse: impl Into<AccountId>,
+        public_keys: HashMap<AccountId, HashSet<PublicKey>>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(defuse.into())
+            .add_action(
+                Defuse::force_remove_public_keys(public_keys)
+                    .gas(DEFAULT_GAS)
+                    .deposit(NearToken::from_yoctonear(1)),
+            )
+            .wait_until(Final)
+            .await?
+            .try_into()
     }
 }
 
