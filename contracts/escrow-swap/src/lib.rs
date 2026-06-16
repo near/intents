@@ -30,12 +30,12 @@ use near_sdk::{PromiseOrValue, ext_contract};
 pub trait Escrow {
     fn es_view(&self) -> &Storage;
 
-    /// Closes the escrow + performs escrow_lost_found().
+    /// Closes the escrow + performs `escrow_lost_found()`.
     ///
     /// It's allowed to close when:
     /// * Deadline has expired (permissionless)
-    /// * maker_src_remaining == 0 && predecessor == maker
-    /// * taker_whitelist == [predecessor]
+    /// * `maker_src_remaining == 0 && predecessor == maker`
+    /// * `taker_whitelist == [predecessor]`
     fn es_close(&mut self, params: Params) -> PromiseOrValue<bool>;
 
     /// Retries sending:

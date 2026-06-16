@@ -35,7 +35,7 @@ pub const DEFAULT_WALLET_ID: u32 = 0;
 ///
 /// As a result, `1h` is an acceptable timeout allowing messages to survive
 /// relayer/chain congestion.
-pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60 * 60); // 1h
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_hours(1); // 1h
 
 /// State of the wallet-contract.
 #[near(serializers = [borsh])]

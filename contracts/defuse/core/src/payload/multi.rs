@@ -41,12 +41,12 @@ pub enum MultiPayload {
     /// For more details, refer to [Phantom Wallet's documentation](https://docs.phantom.com/solana/signing-a-message).
     RawEd25519(SignedRawEd25519Payload),
 
-    /// WebAuthn: The standard for Passkeys.
+    /// `WebAuthn`: The standard for Passkeys.
     /// For more details, refer to [WebAuthn specification](https://w3c.github.io/webauthn/).
     #[serde(rename = "webauthn")]
     WebAuthn(SignedWebAuthnPayload),
 
-    /// TonConnect: The standard for data signing in TON blockchain platform.
+    /// `TonConnect`: The standard for data signing in TON blockchain platform.
     /// For more details, refer to [TonConnect documentation](https://docs.tonconsole.com/academy/sign-data).
     TonConnect(SignedTonConnectPayload),
 

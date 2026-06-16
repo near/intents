@@ -183,9 +183,10 @@ impl PoaFactory for Contract {
     fn tokens(&self) -> HashMap<String, AccountId> {
         self.tokens
             .iter()
+            .cloned()
             .map(|token| {
-                let account_id = Self::token_id(token);
-                (token.to_string(), account_id)
+                let account_id = Self::token_id(&token);
+                (token, account_id)
             })
             .collect()
     }

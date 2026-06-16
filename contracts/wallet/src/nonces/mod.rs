@@ -60,9 +60,9 @@ pub struct Nonces {
     last_cleaned_at: Deadline,
 
     /// Previous nonces, i.e. within `[now - 2*timeout, now - timeout)`
-    old_nonces: BitMap<BTreeMap<u32, u32>>,
+    old: BitMap<BTreeMap<u32, u32>>,
     /// Current nonces, i.e. within `[now - timeout, now]`
-    nonces: BitMap<BTreeMap<u32, u32>>,
+    current: BitMap<BTreeMap<u32, u32>>,
 }
 
 impl Nonces {
@@ -71,8 +71,8 @@ impl Nonces {
         Self {
             timeout,
             last_cleaned_at: Deadline::UNIX_EPOCH,
-            old_nonces: BitMap::new(BTreeMap::new()),
-            nonces: BitMap::new(BTreeMap::new()),
+            old: BitMap::new(BTreeMap::new()),
+            current: BitMap::new(BTreeMap::new()),
         }
     }
 
@@ -85,7 +85,7 @@ impl Nonces {
             return Err(Error::ExpiredOrFuture);
         }
 
-        if self.old_nonces.get_bit(nonce) || self.nonces.set_bit(nonce) {
+        if self.old.get_bit(nonce) || self.current.set_bit(nonce) {
             return Err(Error::AlreadyExecuted);
         }
 
@@ -100,11 +100,11 @@ impl Nonces {
         // check if it's time to rotate
         if self.last_cleaned_at < last_valid_nonce_at {
             // rotate current -> old
-            self.old_nonces = mem::take(&mut self.nonces);
+            self.old = mem::take(&mut self.current);
             // check if `2 * timeout` has passed since last rotation
             if self.last_cleaned_at < last_valid_nonce_at - self.timeout {
                 // cleanup old nonces
-                self.old_nonces = BitMap::new(BTreeMap::new());
+                self.old = BitMap::new(BTreeMap::new());
             }
             // update last rotation time
             self.last_cleaned_at = now;

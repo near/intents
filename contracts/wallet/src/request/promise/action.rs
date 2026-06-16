@@ -10,8 +10,8 @@ use near_sdk::{
 };
 
 /// NOTE: there is no support for other actions, since they operate on the
-/// account itself (e.g. DeployContract, AddKey and etc...) or on its subaccounts
-/// (e.g. CreateAccount). Wallet-contracts are not self-upgradable and do
+/// account itself (e.g. `DeployContract`, `AddKey` and etc...) or on its subaccounts
+/// (e.g. `CreateAccount`). Wallet-contracts are not self-upgradable and do
 /// not allow creating subaccounts.
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh(use_discriminant = true), json])]

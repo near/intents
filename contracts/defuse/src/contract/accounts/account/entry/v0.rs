@@ -44,9 +44,11 @@ impl From<AccountV0> for Account {
                 nonces,
                 LookupMap::with_hasher(prefix.as_slice().nest(AccountPrefix::OptimizedNonces)),
             ),
-            flags: implicit_public_key_removed
-                .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
-                .unwrap_or_else(AccountFlags::empty),
+            flags: if implicit_public_key_removed {
+                AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED
+            } else {
+                AccountFlags::empty()
+            },
             public_keys,
             state,
             prefix,

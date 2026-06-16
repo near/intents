@@ -23,7 +23,7 @@ use super::ExecutableIntent;
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct NotifyOnTransfer {
-    /// Optionally initialize the receiver's contract (Deterministic AccountId)
+    /// Optionally initialize the receiver's contract (Deterministic `AccountId`)
     /// via [`state_init`](https://github.com/near/NEPs/blob/master/neps/nep-0616.md#stateinit-action)
     /// right before calling `mt_on_transfer()` (in the same receipt).
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -72,7 +72,7 @@ pub struct Transfer {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
 
-    /// Optionally notify receiver_id via `mt_on_transfer()`
+    /// Optionally notify `receiver_id` via `mt_on_transfer()`
     ///
     /// NOTE: `min_gas` is adjusted with following values:
     /// * minimum: 5TGas
@@ -463,9 +463,9 @@ impl ExecutableIntent for NativeWithdraw {
 /// The `amount` will be subtracted from user's NEP-141 `wNEAR` balance.
 /// NOTE: the `wNEAR` will not be refunded in any case.
 ///
-/// WARNING: use this intent only if paying storage_deposit is not a prerequisite
-/// for other intents to succeed. If some intent (e.g. ft_withdraw) requires storage_deposit,
-/// then use storage_deposit field of corresponding intent instead of adding a separate
+/// WARNING: use this intent only if paying storage deposit is not a prerequisite
+/// for other intents to succeed. If some intent (e.g. `ft_withdraw`) requires storage deposit,
+/// then use `storage_deposit` field of corresponding intent instead of adding a separate
 /// `StorageDeposit` intent. This is due to the fact that intents that fire `Promise`s
 /// are not guaranteed to be executed sequentially, in the order of the provided intents in
 /// `DefuseIntents`.

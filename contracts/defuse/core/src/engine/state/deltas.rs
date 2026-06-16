@@ -268,10 +268,10 @@ impl TransferMatcher {
         let mut transfers = Transfers::default();
         let mut deltas = TokenDeltas::default();
         for (token_id, transfer_matcher) in self.0 {
-            if let Err(unmatched) = transfer_matcher.finalize_into(&token_id, &mut transfers) {
-                if unmatched == 0 || deltas.apply_delta(token_id, unmatched).is_none() {
-                    return Err(InvariantViolated::Overflow);
-                }
+            if let Err(unmatched) = transfer_matcher.finalize_into(&token_id, &mut transfers)
+                && (unmatched == 0 || deltas.apply_delta(token_id, unmatched).is_none())
+            {
+                return Err(InvariantViolated::Overflow);
             }
         }
         if !deltas.is_empty() {

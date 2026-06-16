@@ -12,12 +12,12 @@ pub trait AccountManager {
     /// Returns set of public keys registered for given account
     fn public_keys_of(&self, account_id: &AccountId) -> HashSet<PublicKey>;
 
-    /// Registers or re-activates `public_key` under the caller account_id.
+    /// Registers or re-activates `public_key` under the caller `account_id`.
     ///
     /// NOTE: MUST attach 1 yⓃ for security purposes.
     fn add_public_key(&mut self, public_key: PublicKey);
 
-    /// Deactivate `public_key` from the caller account_id,
+    /// Deactivate `public_key` from the caller `account_id`,
     /// i.e. this key can't be used to make any actions unless it's re-created.
     ///
     /// NOTE: MUST attach 1 yⓃ for security purposes.
@@ -28,18 +28,18 @@ pub trait AccountManager {
     /// [permit2 nonce schema](https://docs.uniswap.org/contracts/permit2/reference/signature-transfer#nonce-schema).
     fn is_nonce_used(&self, account_id: &AccountId, nonce: AsBase64<Nonce>) -> bool;
 
-    /// Returns whether authentication by PREDECESSOR_ID is enabled
+    /// Returns whether authentication by `PREDECESSOR_ID` is enabled
     /// for given `account_id`.
     ///
-    /// NOTE: Authentication by PREDECESSOR_ID is enabled by default
+    /// NOTE: Authentication by `PREDECESSOR_ID` is enabled by default
     /// when creating new accounts.
     fn is_auth_by_predecessor_id_enabled(&self, account_id: &AccountId) -> bool;
 
-    /// Disables authentication by PREDECESSOR_ID for the caller,
-    /// i.e. PREDECESSOR_ID itself.
+    /// Disables authentication by `PREDECESSOR_ID` for the caller,
+    /// i.e. `PREDECESSOR_ID` itself.
     ///
     /// **WARN**: Doing so might lock you out of your funds if
-    /// you don't have any other public_keys added to your account.
+    /// you don't have any other public keys added to your account.
     ///
     /// NOTE: MUST attach 1 yⓃ for security purposes.
     fn disable_auth_by_predecessor_id(&mut self);
@@ -65,18 +65,18 @@ pub trait ForceAccountManager: AccessControllable {
     /// Attached deposit of 1yN is required for security purposes.
     fn force_unlock_account(&mut self, account_id: &AccountId) -> bool;
 
-    /// Disables authentication by PREDECESSOR_ID for given account ids.
+    /// Disables authentication by `PREDECESSOR_ID` for given account ids.
     ///
     /// **WARN**: Doing so might lock these accounts out of your funds if
-    /// they don't have any other public_keys added to them.
+    /// they don't have any other public keys added to them.
     ///
     /// NOTE: MUST attach 1 yⓃ for security purposes.
     fn force_disable_auth_by_predecessor_ids(&mut self, account_ids: Vec<AccountId>);
 
-    /// Enables authentication by PREDECESSOR_ID for given account ids.
+    /// Enables authentication by `PREDECESSOR_ID` for given account ids.
     ///
     /// **WARN**: Doing so might let an attacker who has control over Near
-    /// accounts with the same AccountIds to take over control of these
+    /// accounts with the same `AccountId`s to take over control of these
     /// accounts inside verifier contract.
     ///
     /// NOTE: MUST attach 1 yⓃ for security purposes.

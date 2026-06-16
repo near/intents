@@ -8,6 +8,8 @@ use near_account_id::ParseAccountError;
 pub use near_account_id::{self as account_id, AccountId, AccountIdRef};
 use strum::{EnumDiscriminants, EnumString};
 
+// clippy thinks that `feature = "abi"` is duplicated
+#[allow(clippy::duplicated_attributes)]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "borsh",

@@ -9,7 +9,7 @@ use crate::contract::{Contract, ContractExt};
 impl Contract {
     pub(crate) const DO_AUTH_CALL_MIN_GAS: Gas = Gas::from_tgas(5);
 
-    /// Covers StateInit (NEP-616) cost when deterministic account doesn't exist yet.
+    /// Covers `StateInit` (NEP-616) cost when deterministic account doesn't exist yet.
     /// Only accounts for deploying via Global Contract ref (NEP-591) with <770B storage
     /// which doesn't require storage staking.
     pub const STATE_INIT_GAS: Gas = Gas::from_tgas(15);
