@@ -5,7 +5,6 @@ use near_kit::{
     DeterministicAccountStateInit, DeterministicAccountStateInitV1, Final,
     GlobalContractIdentifier, Near,
 };
-use near_sdk::{AccountId, NearToken};
 
 use crate::{
     global_contract::GlobalContract, nep616::DeployDeterministicAccountExt,

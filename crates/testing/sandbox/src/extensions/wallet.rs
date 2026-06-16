@@ -2,12 +2,9 @@ use std::collections::BTreeSet;
 
 use anyhow::Result;
 use defuse_wallet::{Request, signature::Deadline, signature::RequestMessage};
-use near_kit::{Final, Near};
-use near_sdk::{
-    AccountId, NearToken,
-    serde::{Deserialize, Serialize},
-    state_init::StateInit,
-};
+use near_account_id::AccountId;
+use near_kit::{Final, Near, NearToken};
+use serde::{Deserialize, Serialize};
 
 use crate::{convert::ConvertInto, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
 
@@ -15,14 +12,12 @@ pub use defuse_wallet as contract;
 pub use defuse_wallet_sdk as sdk;
 
 #[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
 pub struct ExecuteSignedArgs {
     pub msg: RequestMessage,
     pub proof: String,
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
 pub struct ExecuteExtensionArgs {
     pub request: Request,
 }

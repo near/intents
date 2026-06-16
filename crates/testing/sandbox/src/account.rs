@@ -1,5 +1,5 @@
-use near_kit::{Final, InMemorySigner, KeyPair, Near, PublicKey};
-use near_sdk::{AccountId, NearToken};
+use near_account_id::AccountId;
+use near_kit::{Final, InMemorySigner, KeyPair, Near, NearToken, PublicKey};
 
 pub trait Account {
     async fn create_subaccount(

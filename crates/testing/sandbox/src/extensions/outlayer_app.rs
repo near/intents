@@ -1,26 +1,25 @@
 use anyhow::Result;
 use defuse_outlayer_app::{AsHex, State as OutlayerState};
-use near_kit::{Final, GlobalContractIdentifier, Near};
-use near_sdk::{
-    AccountId, NearToken,
-    serde::{Deserialize, Serialize},
-};
+use near_account_id::AccountId;
+use near_kit::{Final, GlobalContractIdentifier, Near, NearToken};
+use serde::{Deserialize, Serialize};
+use serde_with::{hex::Hex, serde_as};
 
 use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
 
 pub use defuse_outlayer_app as contract;
 
+#[serde_as]
 #[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
 pub struct OaSetCodeArgs {
-    pub old_code_hash: AsHex<[u8; 32]>,
-    pub new_code_hash: AsHex<[u8; 32]>,
+    #[serde_as(as = "Hex")]
+    pub old_code_hash: [u8; 32],
+    #[serde_as(as = "Hex")]
+    pub new_code_hash: [u8; 32],
     pub new_code_url: String,
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
-pub struct OaTransferAdminArgs {
+#[derive(Serialize, Deserialize)]pub struct OaTransferAdminArgs {
     pub new_admin_id: AccountId,
 }
 

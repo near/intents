@@ -3,7 +3,9 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use defuse::{
+use defuse_randomness::{Rng, RngExt};
+use defuse_sandbox::extensions::defuse::{
+    DefuseExt,
     contract::Role,
     core::{
         PublicKey,
@@ -12,19 +14,11 @@ use defuse::{
         intents::MaybeIntentEvent,
     },
 };
-use defuse_randomness::{Rng, RngExt};
-use defuse_sandbox::{
-    assert_a_contains_b,
-    extensions::{acl::AclExt, defuse::account_manager::AccountViewExt},
-    tx::FnCallBuilder,
-};
-use defuse_test_utils::{asserts::ResultAssertsExt, random::rng};
-use near_sdk::{AccountId, AsNep297Event, NearToken};
+use defuse_test_utils::{asserts::ResultAssertsExt, fixtures::public_key, random::rng};
+use near_sdk::{AccountId, AsNep297Event, json_types::U128};
 use rstest::rstest;
-use serde_json::json;
 
 use crate::tests::defuse::env::Env;
-use defuse_test_utils::fixtures::public_key;
 
 fn generate_public_keys(
     mut rng: &mut impl Rng,
@@ -50,49 +44,32 @@ async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
-    let public_keys = generate_public_keys(&mut rng, vec![user1.id(), user2.id()]);
+    let public_keys = generate_public_keys(
+        &mut rng,
+        [user1.account_id().clone(), user2.account_id().clone()],
+    );
 
     // only DAO or pubkey synchronizer can add public keys to accounts
     {
         user1
-            .tx(env.defuse.id().clone())
-            .function_call(
-                FnCallBuilder::new("force_add_public_keys")
-                    .with_deposit(NearToken::from_yoctonear(1))
-                    .json_args(json!({
-                        "public_keys": public_keys
-                    })),
-            )
-            .exec_transaction()
+            .defuse_force_add_public_keys(env.defuse.contract_id(), public_keys.clone())
             .await
-            .unwrap()
-            .into_result()
             .assert_err_contains("Insufficient permissions for method");
     }
 
     // Add public keys
     {
-        env.acl_grant_role(
-            env.defuse.id(),
+        env.defuse_acl_grant_role(
+            env.defuse.contract_id(),
             Role::UnrestrictedAccountManager,
-            user1.id(),
+            user1.account_id(),
         )
         .await
         .expect("failed to grant role");
 
         let result = user1
-            .tx(env.defuse.id().clone())
-            .function_call(
-                FnCallBuilder::new("force_add_public_keys")
-                    .with_deposit(NearToken::from_yoctonear(1))
-                    .json_args(json!({
-                        "public_keys": public_keys
-                    })),
-            )
-            .exec_transaction()
+            .defuse_force_add_public_keys(env.defuse.contract_id(), public_keys.clone())
             .await
-            .unwrap()
-            .into_result()
             .unwrap();
 
         // the number of emitted events should be equal to the number of added public keys
@@ -105,7 +82,7 @@ async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
             for public_key in keys {
                 assert!(
                     env.defuse
-                        .has_public_key(account_id, public_key)
+                        .query_has_public_key(account_id, public_key)
                         .await
                         .unwrap(),
                     "Public key {public_key:?} not found for account {account_id}",
@@ -121,10 +98,7 @@ async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
                     .to_nep297_event()
                     .to_event_log();
 
-                assert_a_contains_b!(
-                    a: result.logs().clone(),
-                    b: [event]
-                );
+                assert!(result.logs().contains(&event));
             }
         }
     }
@@ -138,75 +112,48 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
-    let public_keys = generate_public_keys(&mut rng, vec![user1.id(), user2.id()]);
+    let public_keys = generate_public_keys(
+        &mut rng,
+        [user1.account_id().clone(), user2.account_id().clone()],
+    );
 
     // Add public keys
     {
-        env.acl_grant_role(
-            env.defuse.id(),
+        env.defuse_acl_grant_role(
+            env.defuse.contract_id(),
             Role::UnrestrictedAccountManager,
-            user1.id(),
+            user1.account_id(),
         )
         .await
         .expect("failed to grant role");
 
         user1
-            .tx(env.defuse.id().clone())
-            .function_call(
-                FnCallBuilder::new("force_add_public_keys")
-                    .with_deposit(NearToken::from_yoctonear(1))
-                    .json_args(json!({
-                        "public_keys": public_keys
-                    })),
-            )
-            .exec_transaction()
+            .defuse_force_add_public_keys(env.defuse.contract_id(), public_keys.clone())
             .await
-            .unwrap()
-            .into_result()
             .unwrap();
     }
 
     // only DAO or pubkey synchronizer can remove public keys from accounts
     {
         user2
-            .tx(env.defuse.id().clone())
-            .function_call(
-                FnCallBuilder::new("force_remove_public_keys")
-                    .with_deposit(NearToken::from_yoctonear(1))
-                    .json_args(json!({
-                        "public_keys": public_keys
-                    })),
-            )
-            .exec_transaction()
+            .defuse_force_remove_public_keys(env.defuse.contract_id(), public_keys.clone())
             .await
-            .unwrap()
-            .into_result()
             .assert_err_contains("Insufficient permissions for method");
     }
 
     // Remove public keys
     {
-        env.acl_grant_role(
-            env.defuse.id(),
+        env.defuse_acl_grant_role(
+            env.defuse.contract_id(),
             Role::UnrestrictedAccountManager,
-            user2.id(),
+            user2.account_id(),
         )
         .await
         .expect("failed to grant role");
 
         let result = user2
-            .tx(env.defuse.id().clone())
-            .function_call(
-                FnCallBuilder::new("force_remove_public_keys")
-                    .with_deposit(NearToken::from_yoctonear(1))
-                    .json_args(json!({
-                        "public_keys": public_keys
-                    })),
-            )
-            .exec_transaction()
+            .defuse_force_remove_public_keys(env.defuse.contract_id(), public_keys.clone())
             .await
-            .unwrap()
-            .into_result()
             .unwrap();
 
         // the number of emitted events should be equal to the number of removed public keys
@@ -219,7 +166,7 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
             for public_key in keys {
                 assert!(
                     !env.defuse
-                        .has_public_key(account_id, public_key)
+                        .query_has_public_key(account_id, public_key)
                         .await
                         .unwrap(),
                     "Public key {public_key:?} found for account {account_id}",
@@ -236,10 +183,7 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
                 .to_nep297_event()
                 .to_event_log();
 
-                assert_a_contains_b!(
-                    a: result.logs().clone(),
-                    b: [event]
-                );
+                assert!(result.logs().contains(&event));
             }
         }
     }

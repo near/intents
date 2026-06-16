@@ -1,17 +1,14 @@
 use anyhow::Result;
 use defuse_escrow_swap::{Params, Storage};
+use near_account_id::AccountId;
 use near_kit::{Final, Near};
-use near_sdk::{
-    AccountId,
-    serde::{Deserialize, Serialize},
-};
+use serde::{Deserialize, Serialize};
 
 use crate::outcome::SuccessfulExecutionOutcome;
 
 pub use defuse_escrow_swap as contract;
 
 #[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
 pub struct EsParams {
     pub params: Params,
 }

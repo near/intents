@@ -21,18 +21,23 @@ outlayer = ["dep:defuse-outlayer-app", "dep:defuse-serde-utils"]
 defuse-core = { workspace = true, features = ["near-kit"] }
 defuse-nep245.workspace = true
 defuse-nep413 = { workspace = true, features = ["near-kit", "serde"] }
-rstest.workspace = true
-tokio.workspace = true
 
 anyhow.workspace = true
 futures.workspace = true
 impl-tools.workspace = true
 libc = "0.2"
-near-kit = {workspace = true, features = ["sandbox"] }
-near-sdk = { workspace = true, features = ["unit-testing", "deterministic-account-ids"] }
-tracing.workspace = true
-
 near-contract-standards.workspace = true
+near-kit = {workspace = true, features = ["sandbox"] }
+near-account-id.workspace = true
+rstest.workspace = true
+serde_with.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+borsh.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+# TODO: use only in defuse
+sha2.workspace = true
 
 defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }
 defuse-global-deployer = { workspace = true, optional = true }

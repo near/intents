@@ -1,24 +1,19 @@
 use anyhow::Result;
 use defuse_poa_factory::contract::Role;
-
+use near_account_id::AccountIdRef;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_kit::{AccountId, Action, Final, FunctionCallAction, FungibleToken, Near, NearToken};
-use near_sdk::{
-    AccountIdRef,
-    json_types::U128,
-    serde::{Deserialize, Serialize},
-    serde_json::json,
-};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::collections::{HashMap, HashSet};
 
-use crate::{account::Account, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
+use crate::{U128, account::Account, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
 
 pub use defuse_poa_factory::contract;
 
 pub const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
 
 #[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
 pub struct PoaInitArgs {
     pub super_admins: HashSet<AccountId>,
     pub admins: HashMap<Role, HashSet<AccountId>>,
@@ -26,21 +21,18 @@ pub struct PoaInitArgs {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
 pub struct PoaDeployTokenArgs {
     pub token: String,
     pub metadata: Option<FungibleTokenMetadata>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
 pub struct PoaSetMetadataArgs {
     pub token: String,
     pub metadata: FungibleTokenMetadata,
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
 pub struct PoaFtDepositArgs {
     pub token: String,
     pub owner_id: AccountId,
@@ -176,7 +168,7 @@ impl PoAFactoryExt for Near {
                 PoaFactory::ft_deposit(PoaFtDepositArgs {
                     token: token.as_ref().to_string(),
                     owner_id: owner_id.as_ref().into(),
-                    amount: U128(amount),
+                    amount: amount.into(),
                     msg,
                     memo,
                 })

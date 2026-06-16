@@ -1962,6 +1962,7 @@ name = "defuse-sandbox"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "borsh",
  "defuse",
  "defuse-core",
  "defuse-escrow-swap",
@@ -1977,10 +1978,14 @@ dependencies = [
  "futures",
  "impl-tools",
  "libc",
+ "near-account-id",
  "near-contract-standards",
  "near-kit",
- "near-sdk",
  "rstest",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "sha2 0.11.0",
  "tokio",
  "tracing",
 ]
@@ -2051,6 +2056,7 @@ dependencies = [
  "near-sdk",
  "rstest",
  "serde_json",
+ "serde_with",
  "strum 0.27.2",
  "tokio",
 ]

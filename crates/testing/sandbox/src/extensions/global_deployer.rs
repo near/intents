@@ -1,21 +1,23 @@
 use anyhow::Result;
+use borsh::BorshSerialize;
 use defuse_global_deployer::{AsHex, State as DeployerState};
-use near_kit::{Final, GlobalContractIdentifier, Near};
-use near_sdk::{
-    AccountId, Gas, NearToken,
-    borsh::BorshSerialize,
-    serde::{Deserialize, Serialize},
-};
+use near_account_id::AccountId;
+use near_kit::{Final, Gas, GlobalContractIdentifier, Near, NearToken};
+use serde::{Deserialize, Serialize};
+use serde_with::{hex::Hex, serde_as};
+use sha2::{Digest, Sha256};
 
 use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
 
 pub use defuse_global_deployer as contract;
 
+#[serde_as]
 #[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
 pub struct GDApproveArgs {
-    pub old_hash: AsHex<[u8; 32]>,
-    pub new_hash: AsHex<[u8; 32]>,
+    #[serde_as(as = "Hex")]
+    pub old_hash: [u8; 32],
+    #[serde_as(as = "Hex")]
+    pub new_hash: [u8; 32],
 }
 
 // Standard borsh serialization would prepend a 4-byte length
@@ -24,14 +26,12 @@ fn serialize_code_remainder<W: std::io::Write>(v: &Vec<u8>, w: &mut W) -> std::i
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
 pub struct GDTransferOwnershipArgs {
     pub receiver_id: AccountId,
 }
 
 // TODO: remove this after near kit fix (passing raw data)
 #[derive(BorshSerialize)]
-#[borsh(crate = "near_sdk::borsh")]
 pub struct GDDeployArgs {
     #[borsh(serialize_with = "serialize_code_remainder")]
     pub code: Vec<u8>,
@@ -117,7 +117,7 @@ impl GlobalDeployerExt for Near {
         new_code: impl AsRef<[u8]>,
     ) -> Result<SuccessfulExecutionOutcome> {
         let code = new_code.as_ref().to_vec();
-        let new_hash = near_sdk::env::sha256_array(&code);
+        let new_hash: [u8; 32] = Sha256::digest(&code).into();
 
         self.transaction(target.into())
             .add_action(

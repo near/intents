@@ -1,9 +1,9 @@
 use anyhow::Result;
+use near_account_id::AccountId;
 use near_kit::{
     DeterministicAccountStateInit, DeterministicAccountStateInitV1, Final,
-    GlobalContractIdentifier, Near,
+    GlobalContractIdentifier, Near, NearToken,
 };
-use near_sdk::{AccountId, NearToken};
 use std::collections::BTreeMap;
 
 pub trait DeployDeterministicAccountExt {

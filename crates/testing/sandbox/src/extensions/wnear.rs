@@ -1,6 +1,6 @@
 use anyhow::Result;
+use near_account_id::AccountId;
 use near_kit::{Action, Final, FunctionCallAction, FungibleToken, Near, NearToken};
-use near_sdk::AccountId;
 
 use crate::{account::Account, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
 
