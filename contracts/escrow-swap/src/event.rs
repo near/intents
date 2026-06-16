@@ -2,7 +2,7 @@ use std::{borrow::Cow, collections::BTreeMap};
 
 use derive_more::From;
 use near_sdk::{AccountIdRef, near};
-use serde_with::{DisplayFromStr, serde_as};
+use serde_with::DisplayFromStr;
 
 use crate::{Params, decimal::UD128, token_id::TokenId};
 

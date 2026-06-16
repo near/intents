@@ -4399,9 +4399,9 @@ dependencies = [
 
 [[package]]
 name = "near-contract-standards"
-version = "5.28.0"
+version = "5.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9195eeae3f63331737489d53a21e44621807818b09124c2d93800e3a9f605c5"
+checksum = "db64af2ad16dea47458de1d85748255bbfb8a08fc57d1f51efe11f99752b5b52"
 dependencies = [
  "near-sdk",
 ]
@@ -4434,20 +4434,6 @@ dependencies = [
 
 [[package]]
 name = "near-crypto-hash"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c203dab49864dd98bb39a849ff78a2191415f2c287b5a1c0845d7ab743539d9"
-dependencies = [
- "arbitrary",
- "borsh",
- "bs58 0.5.1",
- "schemars 0.8.22",
- "serde",
- "serde_with",
-]
-
-[[package]]
-name = "near-crypto-hash"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8fd0822ff3a82bdccda49b787cb11530512a929bfd13fd0d9fbd510b6360200"
@@ -4474,39 +4460,23 @@ dependencies = [
 
 [[package]]
 name = "near-global-contracts"
-version = "0.1.1"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e78498a0f092cc6f921032c8ab7792060c3f59cfb16b775d02e62fb56c10f40d"
+checksum = "02ca26382a7315d4da1fc2fb50d19b46a5a942d5f24d262efea9d84db2080027"
 dependencies = [
  "arbitrary",
  "borsh",
  "cfg_eval",
+ "digest-io",
  "hex",
  "near-account-id",
- "near-crypto-hash 0.1.0",
+ "near-crypto-hash",
  "near-primitives-core",
  "near-sdk-env",
  "schemars 0.8.22",
  "serde",
  "serde_with",
- "sha3 0.10.9",
-]
-
-[[package]]
-name = "near-global-contracts"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9124fca52251d3ecf714ddb50937c39cc3e2b6f4ee03f85e272fa73eb588920e"
-dependencies = [
- "borsh",
- "cfg_eval",
- "hex",
- "near-account-id",
- "near-crypto-hash 0.2.0",
- "near-sdk-env",
- "serde",
- "serde_with",
- "sha3 0.10.9",
+ "sha3 0.11.0",
 ]
 
 [[package]]
@@ -4565,7 +4535,7 @@ dependencies = [
  "libc",
  "near-account-id",
  "near-gas",
- "near-global-contracts 0.2.0",
+ "near-global-contracts",
  "near-kit-macros",
  "near-token",
  "rand 0.8.6",
@@ -4670,9 +4640,9 @@ dependencies = [
 
 [[package]]
 name = "near-plugins"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "398b94e104f7d6cc350a3cfa5134cf0a81a2c237b85df6820b18c2eca763fc0e"
+checksum = "0f750f8533eacdb925f95e79a96f64d6dba070dbcfd453d6698d02e4f3c9a37a"
 dependencies = [
  "bitflags 1.3.2",
  "near-plugins-derive",
@@ -4682,9 +4652,9 @@ dependencies = [
 
 [[package]]
 name = "near-plugins-derive"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90004ce76905fc3b7d501c729b8682a48f8ba58faba8c8e5bca1958d5051cbcf"
+checksum = "727f19867bc222414a915f64c03eca98e2561964c09c5eafcc00ef326f950793"
 dependencies = [
  "darling 0.20.11",
  "proc-macro-crate 0.1.5",
@@ -4806,9 +4776,9 @@ checksum = "731a7b9cc155e291f149f2f6f8f88f5cab512b772aaf301f9defb4e4bceb1629"
 
 [[package]]
 name = "near-sdk"
-version = "5.28.0"
+version = "5.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b892fe415aed663d56045ded55304ecd7c3ae20acd13705bfd876f900121af73"
+checksum = "b7499223f5ffaa8722dff33b208be4c5d3b118838da58d222961378d776b23d9"
 dependencies = [
  "arbitrary",
  "base64 0.22.1",
@@ -4820,7 +4790,7 @@ dependencies = [
  "near-account-id",
  "near-crypto",
  "near-gas",
- "near-global-contracts 0.1.1",
+ "near-global-contracts",
  "near-parameters",
  "near-primitives",
  "near-primitives-core",
@@ -4841,9 +4811,9 @@ dependencies = [
 
 [[package]]
 name = "near-sdk-core"
-version = "4.1.1"
+version = "4.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4458222343b11d563c011c04e087fbbdbe8ca23acd605aeaffab78faaf0606aa"
+checksum = "1fc7af84e939042e3d50c955410d7a57754b2ebfae7abe903d1bf7ab055e9e44"
 dependencies = [
  "arbitrary",
  "base64 0.22.1",
@@ -4852,7 +4822,7 @@ dependencies = [
  "hex",
  "near-account-id",
  "near-crypto",
- "near-crypto-hash 0.1.0",
+ "near-crypto-hash",
  "near-gas",
  "near-parameters",
  "near-primitives-core",
@@ -4867,21 +4837,21 @@ dependencies = [
 
 [[package]]
 name = "near-sdk-env"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4f4bf153cf88eadafff20c6d82b16e3cab3fc4d636d3530473079044ddb9bf3"
+checksum = "c7bf5f7bf8c33257ead4e56fc325e018144e08b0bc98c8bd459abf77bf1b7c30"
 dependencies = [
  "near-sys",
  "ripemd",
- "sha2 0.10.9",
- "sha3 0.10.9",
+ "sha2 0.11.0",
+ "sha3 0.11.0",
 ]
 
 [[package]]
 name = "near-sdk-macros"
-version = "5.28.0"
+version = "5.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4880ec9be9f54912938052d0e42299d972020e0ff60ca1efe5aa329da1a212f8"
+checksum = "5df6dfab6cabd5194c61ccc019f2fc35b3c9d5ddeb0834735f323ab81d4f2c3c"
 dependencies = [
  "Inflector",
  "darling 0.20.11",
@@ -4913,9 +4883,9 @@ checksum = "f35191f9d7a78d5cdca9788e648dce89ebbb74faef4abfa6992ed7f1fb300369"
 
 [[package]]
 name = "near-sys"
-version = "0.2.9"
+version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7c212278351251aa342eab33a9d64f99294bc5784cda10107867a72dda699bb"
+checksum = "7008ee53300e02ae61a5ea3898adba9aa4cf87df8c8db86ca08041225fe14c98"
 
 [[package]]
 name = "near-time"

@@ -15,7 +15,7 @@ use crate::{
 use defuse_map_utils::cleanup::DefaultMap;
 use defuse_nep245::{MtEvent, MtTransferEvent};
 use near_sdk::{AccountId, AccountIdRef, json_types::U128, near};
-use serde_with::{DisplayFromStr, serde_as};
+use serde_with::DisplayFromStr;
 use std::{
     borrow::Cow,
     cmp::Reverse,

@@ -108,16 +108,16 @@ impl Account {
     pub async fn global_contract_wasm(&self) -> anyhow::Result<Vec<u8>> {
         use near_sdk::base64::{Engine as _, engine::general_purpose::STANDARD};
         let id = self.global_contract_id().await?;
-        let code_view = match &id {
+        let code_view = match id {
             GlobalContractId::CodeHash(hash) => {
                 Contract::global_wasm()
-                    .by_hash(CryptoHash(*hash.as_ref()))
+                    .by_hash(CryptoHash(hash))
                     .fetch_from(&self.network_config)
                     .await?
             }
             GlobalContractId::AccountId(account_id) => {
                 Contract::global_wasm()
-                    .by_account_id(account_id.clone())
+                    .by_account_id(account_id)
                     .fetch_from(&self.network_config)
                     .await?
             }

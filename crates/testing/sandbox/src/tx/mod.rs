@@ -91,9 +91,7 @@ impl TxBuilder {
                         DeterministicAccountStateInit::V1(DeterministicAccountStateInitV1 {
                             code: match code {
                                 GlobalContractId::CodeHash(hash) => {
-                                    GlobalContractIdentifier::CodeHash(near_api::CryptoHash(
-                                        *hash.as_ref(),
-                                    ))
+                                    GlobalContractIdentifier::CodeHash(near_api::CryptoHash(hash))
                                 }
                                 GlobalContractId::AccountId(account) => {
                                     GlobalContractIdentifier::AccountId(account)

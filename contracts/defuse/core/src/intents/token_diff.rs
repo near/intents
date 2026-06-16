@@ -12,7 +12,7 @@ use crate::{
 use defuse_num_utils::CheckedMulDiv;
 use impl_tools::autoimpl;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, near};
-use serde_with::{DisplayFromStr, serde_as};
+use serde_with::DisplayFromStr;
 use std::{borrow::Cow, collections::BTreeMap};
 
 pub type TokenDeltas = Amounts<BTreeMap<TokenId, i128>>;

@@ -5,7 +5,7 @@ use near_sdk::{
     AccountId, AccountIdRef, CryptoHash, Gas, NearToken, json_types::U128, near,
     state_init::StateInit,
 };
-use serde_with::{DisplayFromStr, serde_as};
+use serde_with::DisplayFromStr;
 
 use crate::{
     DefuseError, Result,
