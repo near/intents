@@ -11,7 +11,7 @@ use crate::tests::defuse::env::Env;
 #[rstest]
 #[tokio::test]
 async fn imt_burn_call() {
-    let env = Env::builder().create_unique_users().build().await;
+    let env = Env::builder().build().await;
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
     let token = "sometoken.near".to_string();

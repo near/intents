@@ -1,6 +1,6 @@
 use anyhow::Result;
-use defuse::contract::config::DefuseConfig;
-use defuse_core::{Nonce, PublicKey, fees::Pips};
+use defuse::contract::{Role, config::DefuseConfig};
+use defuse_core::{Nonce, PublicKey, Salt, fees::Pips};
 use defuse_serde_utils::base64::AsBase64;
 use near_kit::{Action, Final, FunctionCallAction, Near, NearToken};
 use near_sdk::{
@@ -38,6 +38,43 @@ pub struct IsNonceUsedArgs {
     pub nonce: AsBase64<Nonce>,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct PublicKeyArgs {
+    pub public_key: PublicKey,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct SaltArgs {
+    pub salt: Salt,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct InvalidateSaltArgs {
+    pub salts: Vec<Salt>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct FeeArgs {
+    pub fee: Pips,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct FeeCollectorArgs {
+    pub fee_collector: AccountId,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct AclRoleArgs {
+    pub role: Role,
+    pub account_id: AccountId,
+}
+
 #[near_kit::contract]
 pub trait Defuse {
     fn fee(&self) -> Pips;
@@ -51,19 +88,33 @@ pub trait Defuse {
     fn mt_batch_balance_of(&self, args: MtBatchBalanceOfArgs) -> Vec<U128>;
 
     #[call]
-    fn add_public_key(&mut self, public_key: PublicKey);
+    fn add_public_key(&mut self, args: PublicKeyArgs);
 
     #[call]
-    fn remove_public_key(&mut self, public_key: PublicKey);
+    fn remove_public_key(&mut self, args: PublicKeyArgs);
 
     #[call]
     fn disable_auth_by_predecessor_id(&mut self);
 
     #[call]
-    fn set_fee(&mut self, fee: Pips);
+    fn set_fee(&mut self, args: FeeArgs);
 
     #[call]
-    fn set_fee_collector(&mut self, fee_collector: AccountId);
+    fn set_fee_collector(&mut self, args: FeeCollectorArgs);
+
+    fn acl_has_role(&self, args: AclRoleArgs) -> bool;
+
+    #[call]
+    fn acl_grant_role(&mut self, args: AclRoleArgs) -> Option<bool>;
+
+    fn current_salt(&self) -> Salt;
+    fn is_valid_salt(&self, salt: SaltArgs) -> bool;
+
+    #[call]
+    fn update_current_salt(&mut self) -> Salt;
+
+    #[call]
+    fn invalidate_salts(&mut self, args: InvalidateSaltArgs) -> Salt;
 }
 
 pub trait DefuseExt {
@@ -95,6 +146,24 @@ pub trait DefuseExt {
         defuse: impl Into<AccountId>,
         fee_collector: AccountId,
     ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_acl_grant_role(
+        &self,
+        defuse: impl Into<AccountId>,
+        role: Role,
+        account_id: AccountId,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_update_current_salt(
+        &self,
+        defuse: impl Into<AccountId>,
+    ) -> Result<(SuccessfulExecutionOutcome, Salt)>;
+
+    async fn defuse_invalidate_salts(
+        &self,
+        defuse: impl Into<AccountId>,
+        salts: impl IntoIterator<Item = Salt>,
+    ) -> Result<(SuccessfulExecutionOutcome, Salt)>;
 }
 
 impl DefuseExt for Near {
@@ -104,7 +173,11 @@ impl DefuseExt for Near {
         public_key: PublicKey,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(defuse.into())
-            .add_action(Defuse::add_public_key(public_key).gas(DEFAULT_GAS))
+            .add_action(
+                Defuse::add_public_key(PublicKeyArgs { public_key })
+                    .gas(DEFAULT_GAS)
+                    .deposit(NearToken::from_yoctonear(1)),
+            )
             .wait_until(Final)
             .await?
             .try_into()
@@ -116,7 +189,11 @@ impl DefuseExt for Near {
         public_key: PublicKey,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(defuse.into())
-            .add_action(Defuse::remove_public_key(public_key).gas(DEFAULT_GAS))
+            .add_action(
+                Defuse::remove_public_key(PublicKeyArgs { public_key })
+                    .gas(DEFAULT_GAS)
+                    .deposit(NearToken::from_yoctonear(1)),
+            )
             .wait_until(Final)
             .await?
             .try_into()
@@ -127,7 +204,11 @@ impl DefuseExt for Near {
         defuse: impl Into<AccountId>,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(defuse.into())
-            .add_action(Defuse::disable_auth_by_predecessor_id().gas(DEFAULT_GAS))
+            .add_action(
+                Defuse::disable_auth_by_predecessor_id()
+                    .gas(DEFAULT_GAS)
+                    .deposit(NearToken::from_yoctonear(1)),
+            )
             .wait_until(Final)
             .await?
             .try_into()
@@ -139,7 +220,11 @@ impl DefuseExt for Near {
         fee: Pips,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(defuse.into())
-            .add_action(Defuse::set_fee(fee).gas(DEFAULT_GAS))
+            .add_action(
+                Defuse::set_fee(FeeArgs { fee })
+                    .gas(DEFAULT_GAS)
+                    .deposit(NearToken::from_yoctonear(1)),
+            )
             .wait_until(Final)
             .await?
             .try_into()
@@ -151,10 +236,64 @@ impl DefuseExt for Near {
         fee_collector: AccountId,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(defuse.into())
-            .add_action(Defuse::set_fee_collector(fee_collector).gas(DEFAULT_GAS))
+            .add_action(
+                Defuse::set_fee_collector(FeeCollectorArgs { fee_collector })
+                    .gas(DEFAULT_GAS)
+                    .deposit(NearToken::from_yoctonear(1)),
+            )
             .wait_until(Final)
             .await?
             .try_into()
+    }
+
+    async fn defuse_acl_grant_role(
+        &self,
+        defuse: impl Into<AccountId>,
+        role: Role,
+        account_id: AccountId,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(defuse.into())
+            .add_action(Defuse::acl_grant_role(AclRoleArgs { role, account_id }).gas(DEFAULT_GAS))
+            .wait_until(Final)
+            .await?
+            .try_into()
+    }
+
+    async fn defuse_update_current_salt(
+        &self,
+        defuse: impl Into<AccountId>,
+    ) -> Result<(SuccessfulExecutionOutcome, Salt)> {
+        let outcome = self
+            .transaction(defuse.into())
+            .add_action(
+                Defuse::update_current_salt()
+                    .gas(DEFAULT_GAS)
+                    .deposit(NearToken::from_yoctonear(1)),
+            )
+            .wait_until(Final)
+            .await?;
+        let salt = outcome.json::<Salt>()?;
+        Ok((outcome.try_into()?, salt))
+    }
+
+    async fn defuse_invalidate_salts(
+        &self,
+        defuse: impl Into<AccountId>,
+        salts: impl IntoIterator<Item = Salt>,
+    ) -> Result<(SuccessfulExecutionOutcome, Salt)> {
+        let outcome = self
+            .transaction(defuse.into())
+            .add_action(
+                Defuse::invalidate_salts(InvalidateSaltArgs {
+                    salts: salts.into_iter().collect(),
+                })
+                .gas(DEFAULT_GAS)
+                .deposit(NearToken::from_yoctonear(1)),
+            )
+            .wait_until(Final)
+            .await?;
+        let salt = outcome.json::<Salt>()?;
+        Ok((outcome.try_into()?, salt))
     }
 }
 

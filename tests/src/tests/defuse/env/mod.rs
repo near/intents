@@ -7,21 +7,28 @@ mod builder;
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse_randomness::{RngExt, make_true_rng};
-use defuse_sandbox::account::Account;
-use defuse_sandbox::extensions::defuse::{
-    DefuseClient, DefuseExt, HasPublicKeyArgs,
-    core::PublicKey as DefusePublicKey,
-    tokens::{DepositAction, DepositMessage},
+use defuse_sandbox::{
+    account::Account,
+    extensions::{
+        defuse::{
+            DefuseClient, DefuseExt, HasPublicKeyArgs,
+            core::PublicKey as DefusePublicKey,
+            tokens::{DepositAction, DepositMessage},
+        },
+        poa::{PoAFactoryExt, PoaFactoryClient},
+        wnear::WNearClient,
+    },
+    kit::{Final, FungibleToken, Gas, Near},
+    root,
 };
-use defuse_sandbox::extensions::poa::{PoAFactoryExt, PoaFactoryClient};
-use defuse_sandbox::extensions::wnear::WNearClient;
-use defuse_sandbox::kit::{Final, FungibleToken, Gas, Near};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
 use impl_tools::autoimpl;
-use near_sdk::AccountIdRef;
-use near_sdk::json_types::U128;
-use near_sdk::{AccountId, NearToken, account_id::arbitrary::ArbitraryNamedAccountId, env::sha256};
+use near_sdk::{
+    AccountId, AccountIdRef, NearToken, account_id::arbitrary::ArbitraryNamedAccountId,
+    env::sha256, json_types::U128,
+};
+use rstest::fixture;
 
 use crate::tests::defuse::env::builder::EnvBuilder;
 
@@ -33,6 +40,7 @@ const INITIAL_USER_BALANCE: NearToken = NearToken::from_near(10);
 pub struct Env {
     root: Near,
 
+    pub defuse_near: Near,
     pub wnear: WNearClient,
     pub defuse: DefuseClient,
     pub poa_factory: PoaFactoryClient,
@@ -41,6 +49,11 @@ pub struct Env {
     pub disable_registration: bool,
 
     pub seed: Seed,
+}
+
+#[fixture]
+pub async fn defuse_env() -> Env {
+    Env::new().await
 }
 
 impl Env {
@@ -123,17 +136,17 @@ impl Env {
         account
     }
 
-    // pub async fn create_user(&self) -> Near {
-    //     let account_id = generate_random_account_id(self.account_id())
-    //         .expect("Failed to generate next account id");
+    pub async fn create_user(&self) -> Near {
+        let account_id = generate_random_account_id(self.account_id())
+            .expect("Failed to generate next account id");
 
-    //     println!("Creating user account: {}", &account_id);
-    //     let name = account_id
-    //         .as_str()
-    //         .trim_end_matches(&format!(".{}", self.account_id()));
+        println!("Creating user account: {}", &account_id);
+        let name = account_id
+            .as_str()
+            .trim_end_matches(&format!(".{}", self.account_id()));
 
-    //     self.create_named_user(name).await
-    // }
+        self.create_named_user(name).await
+    }
 
     // // Randomly derives account ID from seed and unique index
     // // (to match existing accounts in migration tests)
@@ -224,6 +237,16 @@ impl Env {
             .to_string()
     }
 
+    pub async fn upgrade_defuse(&self, wasm: impl Into<Vec<u8>>) {
+        self.defuse_near
+            .deploy(wasm)
+            .wait_until(Final)
+            .await
+            .unwrap()
+            .result()
+            .unwrap();
+    }
+
     pub async fn fund_account_with_near(
         &self,
         account_id: &AccountIdRef,
@@ -235,10 +258,6 @@ impl Env {
             .wait_until(Final)
             .await?;
         Ok(())
-    }
-
-    pub async fn near_balance(&self, account_id: &AccountIdRef) -> NearToken {
-        self.balance(account_id).await.unwrap().available
     }
 }
 
@@ -261,6 +280,7 @@ fn generate_legacy_user_account_id(
         .map_err(|_| anyhow::anyhow!("failed to create new account seed"))?;
     let seed = Seed::from_u64(u64::from_be_bytes(bytes));
     let mut rng = rng(seed);
+
     ArbitraryNamedAccountId::arbitrary_subaccount(
         &mut Unstructured::new(&rng.random::<[u8; 64]>()),
         Some(parent_id),

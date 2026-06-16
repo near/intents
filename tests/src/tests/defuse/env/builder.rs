@@ -1,8 +1,10 @@
 use defuse_fees::Pips;
 use defuse_sandbox::{
+    account::Account,
     extensions::{
+        DEFAULT_GAS,
         defuse::{
-            DefuseClient, DefuseDeployerExt,
+            Defuse, DefuseClient,
             contract::{
                 Role,
                 config::{DefuseConfig, RolesConfig},
@@ -12,14 +14,14 @@ use defuse_sandbox::{
         poa::{PoaFactoryClient, PoaFactoryDeployerExt, contract::Role as POAFactoryRole},
         wnear::{WNearDeployerExt, WNearExt},
     },
-    kit::Near,
+    kit::{Action, Final, FunctionCallAction, Near, NearToken},
     root,
 };
 use defuse_test_utils::{
     random::Seed,
     wasms::{DEFUSE_FAR_WASM, POA_FACTORY_WASM, WNEAR_WASM},
 };
-use near_sdk::{AccountId, AccountIdRef, NearToken};
+use near_sdk::{AccountId, AccountIdRef, serde_json::json};
 
 use crate::tests::defuse::env::Env;
 
@@ -35,6 +37,8 @@ pub struct EnvBuilder {
     deployer_as_super_admin: bool,
     disable_ft_storage_deposit: bool,
     disable_registration: bool,
+
+    defuse_wasm: Option<Vec<u8>>,
 }
 
 impl EnvBuilder {
@@ -83,7 +87,16 @@ impl EnvBuilder {
         self
     }
 
-    async fn deploy_defuse(&self, root: &Near, wnear: impl AsRef<AccountIdRef>) -> DefuseClient {
+    pub fn defuse_wasm(mut self, wasm: Vec<u8>) -> Self {
+        self.defuse_wasm = Some(wasm);
+        self
+    }
+
+    async fn deploy_defuse(
+        &self,
+        root: &Near,
+        wnear: impl AsRef<AccountIdRef>,
+    ) -> (DefuseClient, Near) {
         let cfg = DefuseConfig {
             wnear_id: wnear.as_ref().into(),
             fees: FeesConfig {
@@ -97,13 +110,31 @@ impl EnvBuilder {
             roles: self.roles.clone(),
         };
 
-        root.deploy_defuse(
-            "defuse",
-            cfg,
-            // far feature enabled by default in tests
-            DEFUSE_FAR_WASM.clone(),
-        )
-        .await
+        let wasm = self
+            .defuse_wasm
+            .clone()
+            .unwrap_or_else(|| DEFUSE_FAR_WASM.clone());
+
+        let account = root
+            .create_subaccount("defuse", NearToken::from_near(100))
+            .await;
+
+        account
+            .deploy(wasm)
+            .add_action(Action::FunctionCall(FunctionCallAction {
+                method_name: "new".to_string(),
+                args: json!({"config": cfg}).to_string().as_bytes().to_vec(),
+                gas: DEFAULT_GAS,
+                deposit: NearToken::from_near(0),
+            }))
+            .wait_until(Final)
+            .await
+            .unwrap()
+            .result()
+            .unwrap();
+
+        let client = root.contract::<Defuse>(account.account_id());
+        (client, account)
     }
 
     fn grant_roles(&mut self, root: impl AsRef<AccountIdRef>) {
@@ -125,10 +156,11 @@ impl EnvBuilder {
 
         let poa_factory = deploy_poa_factory(&root).await;
         let wnear = root.deploy_wrap_near("wnear", WNEAR_WASM.clone()).await;
-        let defuse = self.deploy_defuse(&root, wnear.contract_id()).await;
+        let (defuse, defuse_near) = self.deploy_defuse(&root, wnear.contract_id()).await;
 
         let env = Env {
             defuse: defuse.into(),
+            defuse_near,
             wnear: wnear.into(),
             poa_factory: poa_factory.into(),
             root,
