@@ -1,4 +1,4 @@
-// mod accounts;
+mod accounts;
 // mod global_deployment;
 // mod intents;
 mod state;

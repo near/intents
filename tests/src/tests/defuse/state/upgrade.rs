@@ -1,6 +1,6 @@
 use defuse_sandbox::{
     extensions::defuse::{
-        DefuseClient, DefuseExt, HasPublicKeyArgs, MtBatchBalanceOfArgs,
+        DefuseClient, DefuseExt, MtBatchBalanceOfArgs,
         contract::Role,
         core::{
             PublicKey as DefusePublicKey,
@@ -76,19 +76,13 @@ async fn test_upgrade_with_persistence() {
 
     assert!(
         env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user1.account_id().clone(),
-                public_key: get_pubkey(&user1),
-            })
+            .query_has_public_key(user1.account_id(), &get_pubkey(&user1))
             .await
             .unwrap()
     );
     assert!(
         env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user2.account_id().clone(),
-                public_key: get_pubkey(&user2),
-            })
+            .query_has_public_key(user2.account_id(), &get_pubkey(&user2))
             .await
             .unwrap()
     );
@@ -109,19 +103,13 @@ async fn test_upgrade_with_persistence() {
 
     assert!(
         env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user1.account_id().clone(),
-                public_key: get_pubkey(&user1),
-            })
+            .query_has_public_key(user1.account_id(), &get_pubkey(&user1))
             .await
             .unwrap()
     );
     assert!(
         env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user2.account_id().clone(),
-                public_key: get_pubkey(&user2),
-            })
+            .query_has_public_key(user2.account_id(), &get_pubkey(&user2))
             .await
             .unwrap()
     );

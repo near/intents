@@ -1,35 +1,26 @@
-#![allow(clippy::future_not_send)]
+// #![allow(clippy::future_not_send)]
 
 use arbitrary::{Arbitrary, Unstructured};
 use chrono::{TimeDelta, Utc};
-use defuse_sandbox::extensions::defuse::contract::{
+use defuse_sandbox::extensions::defuse::{
+    DefuseExt, DefuseSignerExt,
     contract::Role,
     core::{Deadline, Nonce, Salt, intents::DefuseIntents},
+    create_random_salted_nonce,
 };
-
 use futures::future::join_all;
 use itertools::Itertools;
-
+use near_sdk::AccountId;
+use rstest::rstest;
 use std::time::Duration;
 use tokio::time::sleep;
 
-use near_sdk::AccountId;
-use rstest::rstest;
-
 use crate::{
-    sandbox::extensions::acl::AclExt,
     tests::defuse::env::Env,
     utils::{
         asserts::ResultAssertsExt,
         random::{Rng, RngExt, random_bytes, rng},
     },
-};
-use defuse_sandbox::extensions::defuse::{
-    account_manager::AccountViewExt,
-    intents::ExecuteIntentsExt,
-    nonce::create_random_salted_nonce,
-    signer::DefuseSignerExt,
-    state::{GarbageCollectorExt, SaltManagerExt, SaltViewExt},
 };
 
 #[rstest]
@@ -48,11 +39,11 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
         let deadline = Deadline::MAX;
         let legacy_nonce = rng.random();
 
-        env.simulate_and_execute_intents(
-            env.defuse.id(),
+        env.defuse_simulate_and_execute_intents(
+            env.defuse.contract_id(),
             [user
                 .sign_defuse_message(
-                    env.defuse.id(),
+                    env.defuse.contract_id(),
                     legacy_nonce,
                     deadline,
                     DefuseIntents { intents: [].into() },
@@ -64,7 +55,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
         assert!(
             env.defuse
-                .is_nonce_used(user.id(), &legacy_nonce)
+                .query_is_nonce_used(user.account_id(), &legacy_nonce)
                 .await
                 .unwrap(),
         );
@@ -76,11 +67,11 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
         let random_salt = Salt::arbitrary(u).unwrap();
         let salted = create_random_salted_nonce(random_salt, deadline, &mut rng);
 
-        env.simulate_and_execute_intents(
-            env.defuse.id(),
+        env.defuse_simulate_and_execute_intents(
+            env.defuse.contract_id(),
             [user
                 .sign_defuse_message(
-                    env.defuse.id(),
+                    env.defuse.contract_id(),
                     salted,
                     deadline,
                     DefuseIntents { intents: [].into() },
@@ -96,11 +87,11 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
         let deadline = Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap());
         let expired_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
-        env.simulate_and_execute_intents(
-            env.defuse.id(),
+        env.defuse_simulate_and_execute_intents(
+            env.defuse.contract_id(),
             [user
                 .sign_defuse_message(
-                    env.defuse.id(),
+                    env.defuse.contract_id(),
                     expired_nonce,
                     Deadline::MAX,
                     DefuseIntents { intents: [].into() },
@@ -116,11 +107,11 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
         let deadline = Deadline::new(current_timestamp.checked_sub_signed(timeout_delta).unwrap());
         let expired_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
-        env.simulate_and_execute_intents(
-            env.defuse.id(),
+        env.defuse_simulate_and_execute_intents(
+            env.defuse.contract_id(),
             [user
                 .sign_defuse_message(
-                    env.defuse.id(),
+                    env.defuse.contract_id(),
                     expired_nonce,
                     deadline,
                     DefuseIntents { intents: [].into() },
@@ -136,11 +127,11 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
         let deadline = Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap());
         let expirable_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
-        env.simulate_and_execute_intents(
-            env.defuse.id(),
+        env.defuse_simulate_and_execute_intents(
+            env.defuse.contract_id(),
             [user
                 .sign_defuse_message(
-                    env.defuse.id(),
+                    env.defuse.contract_id(),
                     expirable_nonce,
                     deadline,
                     DefuseIntents { intents: [].into() },
@@ -152,7 +143,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
         assert!(
             env.defuse
-                .is_nonce_used(user.id(), &expirable_nonce)
+                .query_is_nonce_used(user.account_id(), &expirable_nonce)
                 .await
                 .unwrap(),
         );
@@ -160,22 +151,26 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
     // nonce can be committed with previous salt
     {
-        env.acl_grant_role(env.defuse.id(), Role::SaltManager, user.id())
-            .await
-            .expect("failed to grant role");
+        env.defuse_acl_grant_role(
+            env.defuse.contract_id(),
+            Role::SaltManager,
+            user.account_id(),
+        )
+        .await
+        .expect("failed to grant role");
 
-        user.update_current_salt(env.defuse.id())
+        user.defuse_update_current_salt(env.defuse.contract_id())
             .await
             .expect("unable to rotate salt");
 
         let deadline = Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap());
         let old_salt_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
-        env.simulate_and_execute_intents(
-            env.defuse.id(),
+        env.defuse_simulate_and_execute_intents(
+            env.defuse.contract_id(),
             [user
                 .sign_defuse_message(
-                    env.defuse.id(),
+                    env.defuse.contract_id(),
                     old_salt_nonce,
                     deadline,
                     DefuseIntents { intents: [].into() },
@@ -187,7 +182,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
         assert!(
             env.defuse
-                .is_nonce_used(user.id(), &old_salt_nonce)
+                .query_is_nonce_used(user.account_id(), &old_salt_nonce)
                 .await
                 .unwrap(),
         );
@@ -196,18 +191,18 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
     // nonce can't be committed with invalidated salt
     {
         let current_salt = env.defuse.current_salt().await.unwrap();
-        user.invalidate_salts(env.defuse.id(), [current_salt])
+        user.defuse_invalidate_salts(env.defuse.contract_id(), [current_salt])
             .await
             .expect("unable to invalidate salt");
 
         let deadline = Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap());
         let invalid_salt_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
-        env.simulate_and_execute_intents(
-            env.defuse.id(),
+        env.defuse_simulate_and_execute_intents(
+            env.defuse.contract_id(),
             [user
                 .sign_defuse_message(
-                    env.defuse.id(),
+                    env.defuse.contract_id(),
                     invalid_salt_nonce,
                     deadline,
                     DefuseIntents { intents: [].into() },
@@ -249,23 +244,23 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
     // commit nonces
     {
-        env.simulate_and_execute_intents(
-            env.defuse.id(),
+        env.defuse_simulate_and_execute_intents(
+            env.defuse.contract_id(),
             join_all([
                 user.sign_defuse_message(
-                    env.defuse.id(),
+                    env.defuse.contract_id(),
                     legacy_nonce,
                     deadline,
                     DefuseIntents { intents: [].into() },
                 ),
                 user.sign_defuse_message(
-                    env.defuse.id(),
+                    env.defuse.contract_id(),
                     expirable_nonce,
                     deadline,
                     DefuseIntents { intents: [].into() },
                 ),
                 user.sign_defuse_message(
-                    env.defuse.id(),
+                    env.defuse.contract_id(),
                     long_term_expirable_nonce,
                     long_term_deadline,
                     DefuseIntents { intents: [].into() },
@@ -281,9 +276,9 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
     // only DAO or garbage collector can cleanup nonces
     {
-        user.cleanup_nonces(
-            env.defuse.id(),
-            vec![(user.id().clone(), vec![expirable_nonce])],
+        user.defuse_cleanup_nonces(
+            env.defuse.contract_id(),
+            vec![(user.account_id().clone(), vec![expirable_nonce])],
         )
         .await
         .assert_err_contains("Insufficient permissions for method");
@@ -291,20 +286,24 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
     // nonce is expired
     {
-        env.acl_grant_role(env.defuse.id(), Role::GarbageCollector, user.id())
-            .await
-            .expect("failed to grant role");
+        env.defuse_acl_grant_role(
+            env.defuse.contract_id(),
+            Role::GarbageCollector,
+            user.account_id(),
+        )
+        .await
+        .expect("failed to grant role");
 
-        user.cleanup_nonces(
-            env.defuse.id(),
-            vec![(user.id().clone(), vec![expirable_nonce])],
+        user.defuse_cleanup_nonces(
+            env.defuse.contract_id(),
+            vec![(user.account_id().clone(), vec![expirable_nonce])],
         )
         .await
         .unwrap();
 
         assert!(
             !env.defuse
-                .is_nonce_used(user.id(), &expirable_nonce)
+                .query_is_nonce_used(user.account_id(), &expirable_nonce)
                 .await
                 .unwrap(),
         );
@@ -314,12 +313,12 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
     {
         let unknown_user: AccountId = "unknown-user.near".parse().unwrap();
 
-        user.cleanup_nonces(
-            env.defuse.id(),
+        user.defuse_cleanup_nonces(
+            env.defuse.contract_id(),
             vec![
-                (user.id().clone(), vec![expirable_nonce]),
-                (user.id().clone(), vec![legacy_nonce]),
-                (user.id().clone(), vec![long_term_expirable_nonce]),
+                (user.account_id().clone(), vec![expirable_nonce]),
+                (user.account_id().clone(), vec![legacy_nonce]),
+                (user.account_id().clone(), vec![long_term_expirable_nonce]),
                 (unknown_user, vec![expirable_nonce]),
             ],
         )
@@ -328,14 +327,14 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
         assert!(
             env.defuse
-                .is_nonce_used(user.id(), &legacy_nonce)
+                .query_is_nonce_used(user.account_id(), &legacy_nonce)
                 .await
                 .unwrap(),
         );
 
         assert!(
             env.defuse
-                .is_nonce_used(user.id(), &long_term_expirable_nonce)
+                .query_is_nonce_used(user.account_id(), &long_term_expirable_nonce)
                 .await
                 .unwrap(),
         );
@@ -343,24 +342,28 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
     // clean invalid salt
     {
-        env.acl_grant_role(env.defuse.id(), Role::SaltManager, user.id())
-            .await
-            .expect("failed to grant role");
+        env.defuse_acl_grant_role(
+            env.defuse.contract_id(),
+            Role::SaltManager,
+            user.account_id(),
+        )
+        .await
+        .expect("failed to grant role");
 
-        user.invalidate_salts(env.defuse.id(), [current_salt])
+        user.defuse_invalidate_salts(env.defuse.contract_id(), [current_salt])
             .await
             .expect("unable to rotate salt");
 
-        user.cleanup_nonces(
-            env.defuse.id(),
-            vec![(user.id().clone(), vec![long_term_expirable_nonce])],
+        user.defuse_cleanup_nonces(
+            env.defuse.contract_id(),
+            vec![(user.account_id().clone(), vec![long_term_expirable_nonce])],
         )
         .await
         .unwrap();
 
         assert!(
             !env.defuse
-                .is_nonce_used(user.id(), &long_term_expirable_nonce)
+                .query_is_nonce_used(user.account_id(), &long_term_expirable_nonce)
                 .await
                 .unwrap(),
         );
@@ -384,9 +387,13 @@ async fn cleanup_multiple_nonces(
     let mut nonces = Vec::with_capacity(nonce_count);
     let current_salt = env.defuse.current_salt().await.unwrap();
 
-    env.acl_grant_role(env.defuse.id(), Role::GarbageCollector, user.id())
-        .await
-        .expect("failed to grant role");
+    env.defuse_acl_grant_role(
+        env.defuse.contract_id(),
+        Role::GarbageCollector,
+        user.account_id(),
+    )
+    .await
+    .expect("failed to grant role");
 
     for chunk in &(0..nonce_count).chunks(CHUNK_SIZE) {
         let current_timestamp = Utc::now();
@@ -400,7 +407,7 @@ async fn cleanup_multiple_nonces(
             nonces.push(expirable_nonce);
 
             user.sign_defuse_message(
-                env.defuse.id(),
+                env.defuse.contract_id(),
                 expirable_nonce,
                 deadline,
                 DefuseIntents { intents: [].into() },
@@ -408,24 +415,27 @@ async fn cleanup_multiple_nonces(
         }))
         .await;
 
-        env.simulate_and_execute_intents(env.defuse.id(), intents)
+        env.defuse_simulate_and_execute_intents(env.defuse.contract_id(), intents)
             .await
             .unwrap();
     }
 
     sleep(Duration::from_secs_f64(WAITING_TIME.as_seconds_f64())).await;
 
-    user.cleanup_nonces(env.defuse.id(), vec![(user.id().clone(), nonces.clone())])
-        .await
-        .unwrap();
+    user.defuse_cleanup_nonces(
+        env.defuse.contract_id(),
+        vec![(user.account_id().clone(), nonces.clone())],
+    )
+    .await
+    .unwrap();
 
     assert!(
         futures::stream::iter(nonces)
             .all(|n| {
-                let defuse = env.defuse.clone();
-                let user_id = user.id().clone();
+                let defuse = &env.defuse;
+                let user_id = user.account_id().clone();
 
-                async move { !defuse.is_nonce_used(&user_id, &n).await.unwrap() }
+                async move { !defuse.query_is_nonce_used(&user_id, &n).await.unwrap() }
             })
             .await
     );

@@ -1,20 +1,19 @@
 use std::borrow::Cow;
 
-use defuse::core::intents::MaybeIntentEvent;
-use defuse_sandbox::extensions::defuse::contract::core::{
-    PublicKey,
-    accounts::{AccountEvent, PublicKeyEvent},
-    events::DefuseEvent,
+use defuse_sandbox::extensions::defuse::{
+    DefuseExt,
+    core::{
+        PublicKey,
+        accounts::{AccountEvent, PublicKeyEvent},
+        events::DefuseEvent,
+        intents::MaybeIntentEvent,
+    },
 };
-use near_sdk::{AsNep297Event, NearToken, serde_json::json};
+use defuse_test_utils::fixtures::public_key;
+use near_sdk::AsNep297Event;
 use rstest::rstest;
 
-use crate::{
-    sandbox::{assert_eq_event_logs, tx::FnCallBuilder},
-    tests::defuse::env::Env,
-    utils::fixtures::public_key,
-};
-use defuse_sandbox::extensions::defuse::account_manager::{AccountManagerExt, AccountViewExt};
+use crate::tests::defuse::env::Env;
 
 #[rstest]
 #[trace]
@@ -26,28 +25,18 @@ async fn test_add_public_key(public_key: PublicKey) {
 
     assert!(
         !env.defuse
-            .has_public_key(user.id(), &public_key)
+            .query_has_public_key(user.account_id(), &public_key)
             .await
             .unwrap()
     );
 
     let result = user
-        .tx(env.defuse.id().clone())
-        .function_call(
-            FnCallBuilder::new("add_public_key")
-                .with_deposit(NearToken::from_yoctonear(1))
-                .json_args(json!({
-                    "public_key": public_key,
-                })),
-        )
-        .exec_transaction()
+        .defuse_add_public_key(env.defuse.contract_id(), public_key)
         .await
-        .unwrap()
-        .into_result()
         .unwrap();
 
     let event = DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_fn_call(AccountEvent::new(
-        user.id(),
+        user.account_id(),
         PublicKeyEvent {
             public_key: Cow::Borrowed(&public_key),
         },
@@ -55,11 +44,11 @@ async fn test_add_public_key(public_key: PublicKey) {
     .to_nep297_event()
     .to_event_log();
 
-    assert_eq_event_logs!(result.logs().clone(), [event]);
+    assert_eq!(result.logs().clone(), [event]);
 
     assert!(
         env.defuse
-            .has_public_key(user.id(), &public_key)
+            .query_has_public_key(user.account_id(), &public_key)
             .await
             .unwrap()
     );
@@ -73,34 +62,24 @@ async fn test_add_and_remove_public_key(public_key: PublicKey) {
 
     let user = env.create_user().await;
 
-    user.add_public_key(env.defuse.id(), &public_key)
+    user.defuse_add_public_key(env.defuse.contract_id(), public_key)
         .await
         .unwrap();
 
     assert!(
         env.defuse
-            .has_public_key(user.id(), &public_key)
+            .query_has_public_key(user.account_id(), &public_key)
             .await
             .unwrap()
     );
 
     let result = user
-        .tx(env.defuse.id().clone())
-        .function_call(
-            FnCallBuilder::new("remove_public_key")
-                .with_deposit(NearToken::from_yoctonear(1))
-                .json_args(json!({
-                    "public_key": public_key,
-                })),
-        )
-        .exec_transaction()
+        .defuse_remove_public_key(env.defuse.contract_id(), public_key)
         .await
-        .unwrap()
-        .into_result()
         .unwrap();
 
     let event = DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_fn_call(AccountEvent::new(
-        user.id(),
+        user.account_id(),
         PublicKeyEvent {
             public_key: Cow::Borrowed(&public_key),
         },
@@ -108,11 +87,11 @@ async fn test_add_and_remove_public_key(public_key: PublicKey) {
     .to_nep297_event()
     .to_event_log();
 
-    assert_eq_event_logs!(result.logs().clone(), [event]);
+    assert_eq!(result.logs().clone(), [event]);
 
     assert!(
         !env.defuse
-            .has_public_key(user.id(), &public_key)
+            .query_has_public_key(user.account_id(), &public_key)
             .await
             .unwrap()
     );
