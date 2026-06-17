@@ -84,7 +84,7 @@ async fn upgrade(ed25519_pk: PublicKey, secp256k1_pk: PublicKey, p256_pk: Public
 }
 
 // TODO: enable after fixing state migration
-#[ignore]
+#[ignore = "TODO"]
 #[rstest]
 #[tokio::test]
 async fn test_upgrade_with_persistence() {

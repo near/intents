@@ -31,7 +31,7 @@ use crate::tests::escrow::helpers::{Env, env};
 async fn partial_fills(#[future(awt)] env: Env) {
     const MAKER_AMOUNT: u128 = 10000;
     // const TAKER_AMOUNT: u128 = 20000;
-    const TIMEOUT: Duration = Duration::from_secs(60);
+    const TIMEOUT: Duration = Duration::from_mins(1);
 
     // try_join!(
     //     env.src_deposit_to_verifier(env.maker.id(), SRC_TOKEN_ID, MAKER_AMOUNT),

@@ -99,7 +99,7 @@ impl Account {
     pub async fn global_contract_id(&self) -> anyhow::Result<GlobalContractId> {
         let account = self.view().await?;
         match account.contract_state {
-            ContractState::GlobalHash(hash) => Ok(GlobalContractId::CodeHash(hash.0.into())),
+            ContractState::GlobalHash(hash) => Ok(GlobalContractId::CodeHash(hash.0)),
             ContractState::GlobalAccountId(id) => Ok(GlobalContractId::AccountId(id)),
             other => anyhow::bail!("unexpected contract state: {other:?}"),
         }

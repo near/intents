@@ -358,7 +358,7 @@ fn get_all_events<'a>() -> Vec<DefuseEvent<'a>> {
 #[rstest]
 #[case(DefuseEventVersion::V0_4_1)]
 fn event_backward_compatibility_test(#[case] event_version: DefuseEventVersion) {
-    get_all_events()
-        .iter()
-        .for_each(|event| event_version.assert_compatible(event));
+    for event in get_all_events() {
+        event_version.assert_compatible(&event);
+    }
 }

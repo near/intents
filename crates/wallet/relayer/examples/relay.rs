@@ -37,7 +37,7 @@ async fn main() {
             .wait_until(Final)
             .await
             .unwrap();
-        GlobalContractId::CodeHash(sha256_array(&*WALLET_WASM).into())
+        GlobalContractId::CodeHash(sha256_array(&*WALLET_WASM))
     };
 
     let relayer = Relayer::new(near.clone());

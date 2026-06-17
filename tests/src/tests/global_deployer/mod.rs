@@ -40,7 +40,7 @@ pub async fn deployer_env(#[future(awt)] sandbox: Sandbox) -> DeployerEnv {
         .unwrap();
     DeployerEnv {
         sandbox,
-        deployer_global_id: GlobalContractId::CodeHash(sha256_array(&*DEPLOYER_WASM).into()),
+        deployer_global_id: GlobalContractId::CodeHash(sha256_array(&*DEPLOYER_WASM)),
     }
 }
 
