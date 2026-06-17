@@ -346,8 +346,8 @@ impl TokenTransferMatcher {
         let (mut deposit, mut withdraw) = (deposits.next(), withdrawals.next());
 
         // as long as there is both: sender and receiver
-        while let (Some((sender, send)), Some((receiver, receive))) =
-            (withdraw.as_mut(), deposit.as_mut())
+        while let Some(((sender, send), (receiver, receive))) =
+            withdraw.as_mut().zip(deposit.as_mut())
         {
             // get min amount and transfer
             let transfer = (*send).min(*receive);

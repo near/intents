@@ -69,9 +69,9 @@ near-api-types = ["dep:near-api-types"]
 chrono = { workspace = true, features = ["now"] }
 
 [dev-dependencies]
+defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-test-utils.workspace = true
 
-arbitrary.workspace = true
 hex-literal.workspace = true
 itertools.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }

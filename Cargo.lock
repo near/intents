@@ -1440,6 +1440,7 @@ dependencies = [
  "chrono",
  "defuse-bitmap",
  "defuse-borsh-utils",
+ "defuse-core",
  "defuse-crypto",
  "defuse-deadline",
  "defuse-digest",

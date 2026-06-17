@@ -1,6 +1,6 @@
 mod v0_4_1;
 
-use std::{borrow::Cow, collections::BTreeMap};
+use std::borrow::Cow;
 
 use defuse_fees::Pips;
 use defuse_token_id::TokenId;
@@ -246,6 +246,8 @@ fn storage_deposit_intent_event<'a>() -> DefuseEvent<'a> {
 
 #[cfg(feature = "imt")]
 fn imt_mint_intent_event<'a>() -> DefuseEvent<'a> {
+    use std::collections::BTreeMap;
+
     let tokens = Amounts::new(
         tokens()
             .into_iter()
@@ -268,6 +270,8 @@ fn imt_mint_intent_event<'a>() -> DefuseEvent<'a> {
 
 #[cfg(feature = "imt")]
 fn imt_burn_intent_event<'a>() -> DefuseEvent<'a> {
+    use std::collections::BTreeMap;
+
     let tokens = Amounts::new(
         tokens()
             .into_iter()
@@ -327,6 +331,7 @@ fn salt_rotation_event<'a>() -> DefuseEvent<'a> {
 }
 
 fn get_all_events<'a>() -> Vec<DefuseEvent<'a>> {
+    #[allow(unused_mut)]
     let mut all_events = vec![
         pk_added_direct_event(),
         pk_added_intent_event(),
