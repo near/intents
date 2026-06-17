@@ -179,7 +179,7 @@ jobs:
           cache: false
       - name: Install cargo-audit
         # Require 0.22+ for CVSS 4.0 support (advisory-db now contains CVSS 4.0 entries)
-        run: cargo install cargo-audit --version "=0.22.1" --locked
+        run: cargo install cargo-audit --version "=0.22.2" --locked
       - uses: rustsec/audit-check@v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -203,7 +203,7 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-all-crates: "true" # Yes, it's a string
       - name: Install Cargo Plugins
-        run: cargo install cargo-audit --version "=0.22.1" --locked
+        run: cargo install cargo-audit --version "=0.22.2" --locked
       - name: Run security audit
         run: cargo audit --deny unsound --deny yanked
         # run: cargo audit --deny warnings  # Warnings include: unmaintained, unsound and yanked
