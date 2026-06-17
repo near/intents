@@ -8,6 +8,7 @@ pub mod outcome;
 
 pub mod account;
 
+use impl_tools::autoimpl;
 use near_kit::{Near, sandbox::SandboxConfig};
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
@@ -41,6 +42,7 @@ pub async fn root(#[default(NearToken::from_near(100_000))] amount: NearToken) -
 // TODO: remove it after near kit update
 #[serde_as]
 #[derive(Serialize, Deserialize)]
+#[autoimpl(Deref using self.0)]
 pub struct U128(#[serde_as(as = "DisplayFromStr")] pub u128);
 
 impl From<u128> for U128 {

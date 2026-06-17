@@ -1,3 +1,4 @@
+mod event;
 mod nonce;
 mod signer;
 
@@ -10,6 +11,7 @@ use defuse_core::{Nonce, PublicKey, Salt, fees::Pips, payload::multi::MultiPaylo
 use defuse_serde_utils::base64::AsBase64;
 use near_account_id::AccountId;
 use near_kit::{Action, Final, FunctionCallAction, Near, NearToken};
+use near_sdk::{AccountIdRef, json_types::U128};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use serde_with::{base64::Base64, serde_as};
@@ -21,6 +23,7 @@ use crate::{
     outcome::SuccessfulExecutionOutcome,
 };
 
+pub use event::*;
 pub use nonce::*;
 pub use signer::*;
 
@@ -28,57 +31,57 @@ pub use defuse::contract;
 pub use defuse::core;
 pub use defuse::tokens;
 
-#[derive(Serialize, Deserialize)]
-pub struct HasPublicKeyArgs {
-    pub account_id: AccountId,
-    pub public_key: PublicKey,
+#[derive(Serialize)]
+pub struct HasPublicKeyArgs<'a> {
+    pub account_id: &'a AccountIdRef,
+    pub public_key: &'a PublicKey,
 }
 
 #[serde_as]
-#[derive(Serialize, Deserialize)]
-pub struct IsNonceUsedArgs {
-    pub account_id: AccountId,
+#[derive(Serialize)]
+pub struct IsNonceUsedArgs<'a> {
+    pub account_id: &'a AccountIdRef,
     #[serde_as(as = "Base64")]
-    pub nonce: Nonce,
+    pub nonce: &'a Nonce,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct PublicKeyArgs {
     pub public_key: PublicKey,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct SaltArgs {
     pub salt: Salt,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct InvalidateSaltArgs {
     pub salts: Vec<Salt>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct FeeArgs {
     pub fee: Pips,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct FeeCollectorArgs {
-    pub fee_collector: AccountId,
+#[derive(Serialize)]
+pub struct FeeCollectorArgs<'a> {
+    pub fee_collector: &'a AccountIdRef,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct AclRoleArgs {
+#[derive(Serialize)]
+pub struct AclRoleArgs<'a> {
     pub role: Role,
-    pub account_id: AccountId,
+    pub account_id: &'a AccountIdRef,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct MultiPayloadArgs {
     pub signed: Vec<MultiPayload>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct CleanupNoncesArgs {
     pub nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>,
 }
@@ -88,14 +91,42 @@ pub struct ForcePublicKeysArgs {
     pub public_keys: HashMap<AccountId, HashSet<PublicKey>>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct AccountArgs {
-    pub account_id: AccountId,
+#[derive(Serialize)]
+pub struct AccountArgs<'a> {
+    pub account_id: &'a AccountIdRef,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct MultipleAccountsArgs {
     pub account_ids: Vec<AccountId>,
+}
+
+#[derive(Serialize)]
+pub struct FtWithdrawArgs {
+    pub token: AccountId,
+    pub receiver_id: AccountId,
+    pub amount: U128,
+    pub memo: Option<String>,
+    pub msg: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct MtWithdrawArgs {
+    pub token: AccountId,
+    pub receiver_id: AccountId,
+    pub token_ids: Vec<defuse_nep245::TokenId>,
+    pub amounts: Vec<U128>,
+    pub memo: Option<String>,
+    pub msg: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct NftWithdrawArgs {
+    pub token: AccountId,
+    pub receiver_id: AccountId,
+    pub token_id: String,
+    pub memo: Option<String>,
+    pub msg: Option<String>,
 }
 
 #[near_kit::contract]
@@ -104,11 +135,10 @@ pub trait Defuse {
     fn fee_collector(&self) -> AccountId;
 
     fn has_public_key(&self, args: HasPublicKeyArgs) -> bool;
-    fn public_keys_of(&self, account_id: AccountId) -> HashSet<PublicKey>;
+    fn public_keys_of(&self, args: AccountArgs) -> HashSet<PublicKey>;
 
     fn is_nonce_used(&self, args: IsNonceUsedArgs) -> bool;
-    fn is_auth_by_predecessor_id_enabled(&self, account_id: AccountId) -> bool;
-    fn is_account_locked(&self, account_id: AccountId) -> bool;
+    fn is_auth_by_predecessor_id_enabled(&self, args: AccountArgs) -> bool;
 
     #[call]
     fn add_public_key(&mut self, args: PublicKeyArgs);
@@ -165,19 +195,26 @@ pub trait Defuse {
     fn force_disable_auth_by_predecessor_ids(&mut self, args: MultipleAccountsArgs);
     #[call]
     fn force_enable_auth_by_predecessor_ids(&mut self, args: MultipleAccountsArgs);
+
+    #[call]
+    fn ft_withdraw(&mut self, args: FtWithdrawArgs) -> U128;
+    #[call]
+    fn mt_withdraw(&mut self, args: MtWithdrawArgs) -> Vec<U128>;
+    #[call]
+    fn nft_withdraw(&mut self, args: NftWithdrawArgs) -> bool;
 }
 
 pub trait DefuseExt {
     async fn defuse_add_public_key(
         &self,
         defuse: impl Into<AccountId>,
-        public_key: PublicKey,
+        public_key: impl Into<PublicKey>,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn defuse_remove_public_key(
         &self,
         defuse: impl Into<AccountId>,
-        public_key: PublicKey,
+        public_key: impl Into<PublicKey>,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn defuse_disable_auth_by_predecessor_id(
@@ -230,13 +267,13 @@ pub trait DefuseExt {
     async fn defuse_add_relayer_key(
         &self,
         defuse: impl Into<AccountId>,
-        public_key: PublicKey,
+        public_key: impl Into<PublicKey>,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn defuse_delete_relayer_key(
         &self,
         defuse: impl Into<AccountId>,
-        public_key: PublicKey,
+        public_key: impl Into<PublicKey>,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn defuse_cleanup_nonces(
@@ -261,13 +298,13 @@ pub trait DefuseExt {
         &self,
         defuse: impl Into<AccountId>,
         account_id: impl Into<AccountId>,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<(SuccessfulExecutionOutcome, bool)>;
 
     async fn defuse_force_unlock_account(
         &self,
         defuse: impl Into<AccountId>,
         account_id: impl Into<AccountId>,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<(SuccessfulExecutionOutcome, bool)>;
 
     async fn defuse_force_disable_auth_by_predecessor_ids(
         &self,
@@ -280,6 +317,37 @@ pub trait DefuseExt {
         defuse: impl Into<AccountId>,
         account_ids: impl IntoIterator<Item = AccountId>,
     ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_ft_withdraw(
+        &self,
+        defuse: impl Into<AccountId>,
+        token: impl Into<AccountId>,
+        receiver_id: impl Into<AccountId>,
+        amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
+    ) -> Result<(SuccessfulExecutionOutcome, u128)>;
+
+    async fn defuse_mt_withdraw(
+        &self,
+        defuse: impl Into<AccountId>,
+        token: impl Into<AccountId>,
+        receiver_id: impl Into<AccountId>,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<u128>,
+        memo: Option<String>,
+        msg: Option<String>,
+    ) -> Result<(SuccessfulExecutionOutcome, Vec<u128>)>;
+
+    async fn defuse_nft_withdraw(
+        &self,
+        defuse: impl Into<AccountId>,
+        token: impl Into<AccountId>,
+        receiver_id: impl Into<AccountId>,
+        token_id: String,
+        memo: Option<String>,
+        msg: Option<String>,
+    ) -> Result<(SuccessfulExecutionOutcome, bool)>;
 }
 
 pub trait DefuseDeployerExt {
@@ -326,11 +394,13 @@ impl DefuseExt for Near {
     async fn defuse_add_public_key(
         &self,
         defuse: impl Into<AccountId>,
-        public_key: PublicKey,
+        public_key: impl Into<PublicKey>,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.fn_call(
             defuse,
-            Defuse::add_public_key(PublicKeyArgs { public_key }),
+            Defuse::add_public_key(PublicKeyArgs {
+                public_key: public_key.into(),
+            }),
             NearToken::from_yoctonear(1),
         )
         .await
@@ -339,11 +409,13 @@ impl DefuseExt for Near {
     async fn defuse_remove_public_key(
         &self,
         defuse: impl Into<AccountId>,
-        public_key: PublicKey,
+        public_key: impl Into<PublicKey>,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.fn_call(
             defuse,
-            Defuse::remove_public_key(PublicKeyArgs { public_key }),
+            Defuse::remove_public_key(PublicKeyArgs {
+                public_key: public_key.into(),
+            }),
             NearToken::from_yoctonear(1),
         )
         .await
@@ -382,7 +454,7 @@ impl DefuseExt for Near {
         self.fn_call(
             defuse,
             Defuse::set_fee_collector(FeeCollectorArgs {
-                fee_collector: fee_collector.into(),
+                fee_collector: &fee_collector.into(),
             }),
             NearToken::from_yoctonear(1),
         )
@@ -399,7 +471,7 @@ impl DefuseExt for Near {
             defuse,
             Defuse::acl_grant_role(AclRoleArgs {
                 role,
-                account_id: account_id.into(),
+                account_id: &account_id.into(),
             }),
             NearToken::from_near(0),
         )
@@ -479,11 +551,13 @@ impl DefuseExt for Near {
     async fn defuse_add_relayer_key(
         &self,
         defuse: impl Into<AccountId>,
-        public_key: PublicKey,
+        public_key: impl Into<PublicKey>,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.fn_call(
             defuse,
-            Defuse::add_relayer_key(PublicKeyArgs { public_key }),
+            Defuse::add_relayer_key(PublicKeyArgs {
+                public_key: public_key.into(),
+            }),
             NearToken::from_yoctonear(1),
         )
         .await
@@ -492,11 +566,13 @@ impl DefuseExt for Near {
     async fn defuse_delete_relayer_key(
         &self,
         defuse: impl Into<AccountId>,
-        public_key: PublicKey,
+        public_key: impl Into<PublicKey>,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.fn_call(
             defuse,
-            Defuse::delete_relayer_key(PublicKeyArgs { public_key }),
+            Defuse::delete_relayer_key(PublicKeyArgs {
+                public_key: public_key.into(),
+            }),
             NearToken::from_yoctonear(1),
         )
         .await
@@ -550,30 +626,42 @@ impl DefuseExt for Near {
         &self,
         defuse: impl Into<AccountId>,
         account_id: impl Into<AccountId>,
-    ) -> Result<SuccessfulExecutionOutcome> {
-        self.fn_call(
-            defuse,
-            Defuse::force_lock_account(AccountArgs {
-                account_id: account_id.into(),
-            }),
-            NearToken::from_yoctonear(1),
-        )
-        .await
+    ) -> Result<(SuccessfulExecutionOutcome, bool)> {
+        let res = self
+            .transaction(defuse.into())
+            .add_action(
+                Defuse::force_lock_account(AccountArgs {
+                    account_id: &account_id.into(),
+                })
+                .gas(DEFAULT_GAS)
+                .deposit(NearToken::from_yoctonear(1)),
+            )
+            .wait_until(Final)
+            .await?;
+        let locked = res.json::<bool>()?;
+
+        Ok((res.try_into()?, locked))
     }
 
     async fn defuse_force_unlock_account(
         &self,
         defuse: impl Into<AccountId>,
         account_id: impl Into<AccountId>,
-    ) -> Result<SuccessfulExecutionOutcome> {
-        self.fn_call(
-            defuse,
-            Defuse::force_unlock_account(AccountArgs {
-                account_id: account_id.into(),
-            }),
-            NearToken::from_yoctonear(1),
-        )
-        .await
+    ) -> Result<(SuccessfulExecutionOutcome, bool)> {
+        let res = self
+            .transaction(defuse.into())
+            .add_action(
+                Defuse::force_unlock_account(AccountArgs {
+                    account_id: &account_id.into(),
+                })
+                .gas(DEFAULT_GAS)
+                .deposit(NearToken::from_yoctonear(1)),
+            )
+            .wait_until(Final)
+            .await?;
+        let unlocked = res.json::<bool>()?;
+
+        Ok((res.try_into()?, unlocked))
     }
 
     async fn defuse_force_enable_auth_by_predecessor_ids(
@@ -604,5 +692,91 @@ impl DefuseExt for Near {
             NearToken::from_yoctonear(1),
         )
         .await
+    }
+
+    async fn defuse_ft_withdraw(
+        &self,
+        defuse: impl Into<AccountId>,
+        token: impl Into<AccountId>,
+        receiver_id: impl Into<AccountId>,
+        amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
+    ) -> Result<(SuccessfulExecutionOutcome, u128)> {
+        let res = self
+            .transaction(defuse.into())
+            .add_action(
+                Defuse::ft_withdraw(FtWithdrawArgs {
+                    token: token.into(),
+                    receiver_id: receiver_id.into(),
+                    amount: amount.into(),
+                    memo,
+                    msg,
+                })
+                .gas(DEFAULT_GAS)
+                .deposit(NearToken::from_yoctonear(1)),
+            )
+            .wait_until(Final)
+            .await?;
+        let transferred = res.json::<U128>()?.0;
+        Ok((res.try_into()?, transferred))
+    }
+
+    async fn defuse_mt_withdraw(
+        &self,
+        defuse: impl Into<AccountId>,
+        token: impl Into<AccountId>,
+        receiver_id: impl Into<AccountId>,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<u128>,
+        memo: Option<String>,
+        msg: Option<String>,
+    ) -> Result<(SuccessfulExecutionOutcome, Vec<u128>)> {
+        let res = self
+            .transaction(defuse.into())
+            .add_action(
+                Defuse::mt_withdraw(MtWithdrawArgs {
+                    token: token.into(),
+                    receiver_id: receiver_id.into(),
+                    token_ids,
+                    amounts: amounts.into_iter().map(U128::from).collect(),
+                    memo,
+                    msg,
+                })
+                .gas(DEFAULT_GAS)
+                .deposit(NearToken::from_yoctonear(1)),
+            )
+            .wait_until(Final)
+            .await?;
+        let transferred = res.json::<Vec<U128>>()?.into_iter().map(|x| x.0).collect();
+        Ok((res.try_into()?, transferred))
+    }
+
+    async fn defuse_nft_withdraw(
+        &self,
+        defuse: impl Into<AccountId>,
+        token: impl Into<AccountId>,
+        receiver_id: impl Into<AccountId>,
+        token_id: String,
+        memo: Option<String>,
+        msg: Option<String>,
+    ) -> Result<(SuccessfulExecutionOutcome, bool)> {
+        let res = self
+            .transaction(defuse.into())
+            .add_action(
+                Defuse::nft_withdraw(NftWithdrawArgs {
+                    token: token.into(),
+                    receiver_id: receiver_id.into(),
+                    token_id,
+                    memo,
+                    msg,
+                })
+                .gas(DEFAULT_GAS)
+                .deposit(NearToken::from_yoctonear(1)),
+            )
+            .wait_until(Final)
+            .await?;
+        let transferred = res.json::<bool>()?;
+        Ok((res.try_into()?, transferred))
     }
 }

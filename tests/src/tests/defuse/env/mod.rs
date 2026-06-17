@@ -117,8 +117,8 @@ impl Env {
         if !self
             .defuse
             .has_public_key(HasPublicKeyArgs {
-                account_id: account.account_id().clone(),
-                public_key: defuse_pubkey.clone(),
+                account_id: account.account_id(),
+                public_key: &defuse_pubkey,
             })
             .await
             .expect("Failed to check public key")

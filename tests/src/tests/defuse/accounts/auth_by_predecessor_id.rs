@@ -1,29 +1,22 @@
-use std::borrow::Cow;
-
-use defuse::core::{accounts::AccountEvent, events::DefuseEvent, intents::MaybeIntentEvent};
-use defuse_sandbox::{
-    assert_eq_event_logs,
-    extensions::defuse::{
-        contract::core::{
+use crate::tests::defuse::env::Env;
+use defuse_sandbox::extensions::{
+    defuse::{
+        AccountArgs, DefuseExt, DefuseSignerExt, ToEventLog,
+        core::{
             DefuseError,
+            accounts::AccountEvent,
             amounts::Amounts,
-            intents::{account::SetAuthByPredecessorId, tokens::Transfer},
+            events::DefuseEvent,
+            intents::{MaybeIntentEvent, account::SetAuthByPredecessorId, tokens::Transfer},
             token_id::{TokenId, nep141::Nep141TokenId},
         },
-        event::ToEventLog,
     },
+    mt::{Mt, MtBalanceOfArgs, MtExt},
 };
+use defuse_test_utils::asserts::ResultAssertsExt;
 use near_sdk::{AccountId, AsNep297Event};
 use rstest::rstest;
-
-use crate::tests::defuse::env::Env;
-use defuse_sandbox::extensions::defuse::{
-    account_manager::{AccountManagerExt, AccountViewExt},
-    intents::ExecuteIntentsExt,
-    signer::DefaultDefuseSignerExt,
-};
-use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
-use defuse_test_utils::asserts::ResultAssertsExt;
+use std::borrow::Cow;
 
 #[rstest]
 #[tokio::test]
@@ -32,23 +25,27 @@ async fn auth_by_predecessor_id() {
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    env.initial_ft_storage_deposit(vec![user.id()], vec![ft.id()])
+    env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
         .await;
 
     let receiver_id: AccountId = "receiver_id.near".parse().unwrap();
 
     // deposit tokens
-    env.defuse_ft_deposit_to(ft.id(), 1000, user.id(), None)
+    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.account_id(), None)
         .await
         .unwrap();
 
-    let ft: TokenId = Nep141TokenId::new(ft.id().clone()).into();
+    let ft: TokenId = Nep141TokenId::new(ft.contract_id().clone()).into();
 
     assert_eq!(
-        env.defuse
-            .mt_balance_of(user.id(), &ft.to_string())
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: user.account_id(),
+                token_id: &ft.to_string(),
+            })
             .await
-            .unwrap(),
+            .unwrap()
+            .0,
         1000
     );
 
@@ -56,69 +53,91 @@ async fn auth_by_predecessor_id() {
     {
         assert!(
             env.defuse
-                .is_auth_by_predecessor_id_enabled(user.id())
+                .is_auth_by_predecessor_id_enabled(AccountArgs {
+                    account_id: user.account_id(),
+                })
                 .await
                 .unwrap()
         );
 
         let result = user
-            .disable_auth_by_predecessor_id(env.defuse.id())
+            .defuse_disable_auth_by_predecessor_id(env.defuse.contract_id())
             .await
             .unwrap();
 
         let event =
             DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_fn_call(AccountEvent::new(
-                user.id().clone(),
+                user.account_id().clone(),
                 Cow::Owned(SetAuthByPredecessorId { enabled: false }),
             )))
             .to_nep297_event()
             .to_event_log();
 
-        assert_eq_event_logs!(result.logs(), [event]);
+        assert_eq!(result.logs(), [event]);
 
         assert!(
             !env.defuse
-                .is_auth_by_predecessor_id_enabled(user.id())
+                .is_auth_by_predecessor_id_enabled(AccountArgs {
+                    account_id: user.account_id(),
+                })
                 .await
                 .unwrap()
         );
 
         // second attempt should fail, since already disabled
-        user.disable_auth_by_predecessor_id(env.defuse.id())
+        user.defuse_disable_auth_by_predecessor_id(env.defuse.contract_id())
             .await
             .assert_err_contains(
-                DefuseError::AuthByPredecessorIdDisabled(user.id().clone()).to_string(),
+                DefuseError::AuthByPredecessorIdDisabled(user.account_id().clone()).to_string(),
             );
     }
 
     // transfer via tx should fail
     {
         assert_eq!(
-            env.defuse
-                .mt_balance_of(user.id(), &ft.to_string())
+            env.contract::<Mt>(env.defuse.contract_id())
+                .mt_balance_of(MtBalanceOfArgs {
+                    account_id: user.account_id(),
+                    token_id: &ft.to_string(),
+                })
                 .await
-                .unwrap(),
+                .unwrap()
+                .0,
             1000
         );
 
-        user.mt_transfer(env.defuse.id(), &receiver_id, &ft.to_string(), 100, None)
-            .await
-            .assert_err_contains(
-                DefuseError::AuthByPredecessorIdDisabled(user.id().clone()).to_string(),
-            );
+        user.mt_transfer(
+            env.defuse.contract_id(),
+            &receiver_id,
+            &ft.to_string(),
+            100,
+            None,
+        )
+        .await
+        .assert_err_contains(
+            DefuseError::AuthByPredecessorIdDisabled(user.account_id().clone()).to_string(),
+        );
 
         assert_eq!(
-            env.defuse
-                .mt_balance_of(user.id(), &ft.to_string())
+            env.contract::<Mt>(env.defuse.contract_id())
+                .mt_balance_of(MtBalanceOfArgs {
+                    account_id: user.account_id(),
+                    token_id: &ft.to_string(),
+                })
                 .await
-                .unwrap(),
+                .unwrap()
+                .0,
             1000
         );
         assert_eq!(
-            env.defuse
-                .mt_balance_of(&receiver_id, &ft.to_string())
+            env.contract::<Mt>(env.defuse.contract_id())
+                .mt_balance_of(MtBalanceOfArgs {
+                    account_id: &receiver_id,
+                    token_id: &ft.to_string(),
+                })
                 .await
-                .unwrap(),
+                .unwrap()
+                .0,
             0
         );
     }
@@ -138,22 +157,30 @@ async fn auth_by_predecessor_id() {
             .await
             .unwrap();
 
-        env.simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
+        env.defuse_simulate_and_execute_intents(env.defuse.contract_id(), [transfer_payload])
             .await
             .unwrap();
 
         assert_eq!(
-            env.defuse
-                .mt_balance_of(user.id(), &ft.to_string())
+            env.contract::<Mt>(env.defuse.contract_id())
+                .mt_balance_of(MtBalanceOfArgs {
+                    account_id: user.account_id(),
+                    token_id: &ft.to_string(),
+                })
                 .await
-                .unwrap(),
+                .unwrap()
+                .0,
             800
         );
         assert_eq!(
-            env.defuse
-                .mt_balance_of(&receiver_id, &ft.to_string())
+            env.contract::<Mt>(env.defuse.contract_id())
+                .mt_balance_of(MtBalanceOfArgs {
+                    account_id: &receiver_id,
+                    token_id: &ft.to_string(),
+                })
                 .await
-                .unwrap(),
+                .unwrap()
+                .0,
             200
         );
     }
@@ -167,7 +194,10 @@ async fn auth_by_predecessor_id() {
             .unwrap();
 
         let result = env
-            .simulate_and_execute_intents(env.defuse.id(), [enable_auth_payload.clone()])
+            .defuse_simulate_and_execute_intents(
+                env.defuse.contract_id(),
+                [enable_auth_payload.clone()],
+            )
             .await
             .unwrap();
 
@@ -175,7 +205,9 @@ async fn auth_by_predecessor_id() {
 
         assert!(
             env.defuse
-                .is_auth_by_predecessor_id_enabled(user.id())
+                .is_auth_by_predecessor_id_enabled(AccountArgs {
+                    account_id: user.account_id()
+                })
                 .await
                 .unwrap()
         );
@@ -184,22 +216,36 @@ async fn auth_by_predecessor_id() {
     // transfer via tx should succeed, since auth by PREDECESSOR_ID was
     // enabled back
     {
-        user.mt_transfer(env.defuse.id(), &receiver_id, &ft.to_string(), 400, None)
-            .await
-            .unwrap();
+        user.mt_transfer(
+            env.defuse.contract_id(),
+            &receiver_id,
+            &ft.to_string(),
+            400,
+            None,
+        )
+        .await
+        .unwrap();
 
         assert_eq!(
-            env.defuse
-                .mt_balance_of(user.id(), &ft.to_string())
+            env.contract::<Mt>(env.defuse.contract_id())
+                .mt_balance_of(MtBalanceOfArgs {
+                    account_id: user.account_id(),
+                    token_id: &ft.to_string(),
+                })
                 .await
-                .unwrap(),
+                .unwrap()
+                .0,
             400
         );
         assert_eq!(
-            env.defuse
-                .mt_balance_of(&receiver_id, &ft.to_string())
+            env.contract::<Mt>(env.defuse.contract_id())
+                .mt_balance_of(MtBalanceOfArgs {
+                    account_id: &receiver_id,
+                    token_id: &ft.to_string(),
+                })
                 .await
-                .unwrap(),
+                .unwrap()
+                .0,
             600
         );
     }

@@ -1,18 +1,22 @@
 use crate::{anyhow, extensions::defuse::DefuseClient};
 use defuse::core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce};
+use defuse_core::{
+    intents::DefuseIntents,
+    payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
+};
 use defuse_test_utils::random::{Rng, RngExt, TestRng};
 
-// pub trait ExtractNonceExt {
-//     fn extract_nonce(&self) -> Result<Nonce, serde_json::Error>;
-// }
+pub trait ExtractNonceExt {
+    fn extract_nonce(&self) -> Result<Nonce, serde_json::Error>;
+}
 
-// impl ExtractNonceExt for MultiPayload {
-//     #[inline]
-//     fn extract_nonce(&self) -> Result<Nonce, serde_json::Error> {
-//         let DefusePayload::<DefuseIntents> { nonce, .. } = self.clone().extract_defuse_payload()?;
-//         Ok(nonce)
-//     }
-// }
+impl ExtractNonceExt for MultiPayload {
+    #[inline]
+    fn extract_nonce(&self) -> Result<Nonce, serde_json::Error> {
+        let DefusePayload::<DefuseIntents> { nonce, .. } = self.clone().extract_defuse_payload()?;
+        Ok(nonce)
+    }
+}
 
 pub async fn generate_unique_nonce(
     defuse_contract: &DefuseClient,

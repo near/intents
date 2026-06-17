@@ -1,7 +1,7 @@
 use defuse_sandbox::{
     extensions::{
         defuse::{
-            DefuseExt,
+            DefuseExt, HasPublicKeyArgs,
             contract::Role,
             core::{
                 PublicKey as DefusePublicKey,
@@ -14,21 +14,21 @@ use defuse_sandbox::{
     kit::Near,
 };
 use defuse_test_utils::wasms::{DEFUSE_LEGACY_WASM, DEFUSE_WASM};
-use near_sdk::AccountId;
+use near_sdk::AccountIdRef;
 use rstest::rstest;
 
 use crate::tests::defuse::env::Env;
 
 async fn balance_of(
     near: &Near,
-    defuse_id: impl Into<AccountId>,
-    account_id: impl Into<AccountId>,
+    defuse_id: impl AsRef<AccountIdRef>,
+    account_id: impl AsRef<AccountIdRef>,
     token_id: &str,
 ) -> u128 {
-    near.contract::<Mt>(defuse_id.into())
+    near.contract::<Mt>(defuse_id.as_ref())
         .mt_batch_balance_of(MtBatchBalanceOfArgs {
-            account_id: account_id.into(),
-            token_ids: vec![token_id.to_string()],
+            account_id: account_id.as_ref(),
+            token_ids: &[token_id.to_string()],
         })
         .await
         .unwrap()
@@ -74,19 +74,31 @@ async fn test_upgrade_with_persistence() {
 
     // record state before upgrade
     assert_eq!(
-        balance_of(&env.defuse, &user1.account_id(), &token_id).await,
+        balance_of(
+            &env,
+            env.defuse.contract_id(),
+            user1.account_id(),
+            &token_id
+        )
+        .await,
         deposit_amount
     );
     assert_eq!(
-        balance_of(&env.defuse, &user2.account_id(), &token_id).await,
+        balance_of(
+            &env,
+            env.defuse.contract_id(),
+            user2.account_id(),
+            &token_id
+        )
+        .await,
         deposit_amount
     );
 
     assert!(
         env.defuse
             .has_public_key(HasPublicKeyArgs {
-                account_id: user1.account_id().clone(),
-                public_key: get_pubkey(&user1),
+                account_id: user1.account_id(),
+                public_key: &get_pubkey(&user1),
             })
             .await
             .unwrap()
@@ -94,8 +106,8 @@ async fn test_upgrade_with_persistence() {
     assert!(
         env.defuse
             .has_public_key(HasPublicKeyArgs {
-                account_id: user2.account_id().clone(),
-                public_key: get_pubkey(&user2),
+                account_id: user2.account_id(),
+                public_key: &get_pubkey(&user2),
             })
             .await
             .unwrap()
@@ -107,19 +119,31 @@ async fn test_upgrade_with_persistence() {
 
     // state persists after upgrade
     assert_eq!(
-        balance_of(&env.defuse, &user1.account_id(), &token_id).await,
+        balance_of(
+            &env,
+            env.defuse.contract_id(),
+            user1.account_id(),
+            &token_id
+        )
+        .await,
         deposit_amount
     );
     assert_eq!(
-        balance_of(&env.defuse, &user2.account_id(), &token_id).await,
+        balance_of(
+            &env,
+            env.defuse.contract_id(),
+            user2.account_id(),
+            &token_id
+        )
+        .await,
         deposit_amount
     );
 
     assert!(
         env.defuse
             .has_public_key(HasPublicKeyArgs {
-                account_id: user1.account_id().clone(),
-                public_key: get_pubkey(&user1),
+                account_id: user1.account_id(),
+                public_key: &get_pubkey(&user1),
             })
             .await
             .unwrap()
@@ -127,8 +151,8 @@ async fn test_upgrade_with_persistence() {
     assert!(
         env.defuse
             .has_public_key(HasPublicKeyArgs {
-                account_id: user2.account_id().clone(),
-                public_key: get_pubkey(&user2),
+                account_id: user2.account_id(),
+                public_key: &get_pubkey(&user2),
             })
             .await
             .unwrap()
@@ -143,7 +167,13 @@ async fn test_upgrade_with_persistence() {
         .unwrap();
 
     assert_eq!(
-        balance_of(&env.defuse, &user1.account_id(), &token_id).await,
+        balance_of(
+            &env,
+            env.defuse.contract_id(),
+            user1.account_id(),
+            &token_id
+        )
+        .await,
         deposit_amount + extra
     );
 
@@ -158,7 +188,13 @@ async fn test_upgrade_with_persistence() {
         .unwrap();
 
     assert_eq!(
-        balance_of(&env.defuse, user3.account_id().clone(), &token_id).await,
+        balance_of(
+            &env,
+            env.defuse.contract_id(),
+            user3.account_id(),
+            &token_id
+        )
+        .await,
         deposit_amount
     );
 

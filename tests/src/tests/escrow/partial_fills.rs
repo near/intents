@@ -2,7 +2,6 @@ use defuse_sandbox::{
     convert::ConvertInto,
     extensions::{
         defuse::{
-            DefuseClient, MtBatchBalanceOfArgs,
             core::intents::tokens::NotifyOnTransfer,
             tokens::{DepositAction, DepositMessage},
         },
@@ -14,6 +13,7 @@ use defuse_sandbox::{
                 token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
             },
         },
+        mt::{Mt, MtBatchBalanceOfArgs},
     },
     kit::{Final, Gas, Near},
 };
@@ -105,7 +105,8 @@ async fn partial_fills(#[future(awt)] env: Env) {
     let escrow = env.contract::<Escrow>(escrow_id.clone());
 
     show_verifier_balances(
-        &env.verifier,
+        &env,
+        env.verifier.contract_id(),
         [escrow.contract_id(), env.maker.account_id()]
             .into_iter()
             .chain(env.takers.iter().map(|a| a.account_id()))
@@ -149,7 +150,8 @@ async fn partial_fills(#[future(awt)] env: Env) {
             println!("maker sent: {amount}, deposited: {deposited}");
 
             show_verifier_balances(
-                &env.verifier,
+                &env,
+                env.verifier.contract_id(),
                 [escrow.contract_id(), env.maker.account_id()]
                     .into_iter()
                     .chain(env.takers.iter().map(|a| a.account_id()))
@@ -206,7 +208,8 @@ async fn partial_fills(#[future(awt)] env: Env) {
             println!("taker sent: {amount}, deposited: {deposited}");
 
             show_verifier_balances(
-                &env.verifier,
+                &env,
+                env.verifier.contract_id(),
                 [escrow.contract_id(), env.maker.account_id()]
                     .into_iter()
                     .chain(env.takers.iter().map(|a| a.account_id()))
@@ -232,7 +235,8 @@ async fn partial_fills(#[future(awt)] env: Env) {
             .unwrap();
 
         show_verifier_balances(
-            &env.verifier,
+            &env,
+            env.verifier.contract_id(),
             [escrow.contract_id(), env.maker.account_id()]
                 .into_iter()
                 .chain(env.takers.iter().map(|a| a.account_id()))
@@ -251,17 +255,22 @@ async fn partial_fills(#[future(awt)] env: Env) {
 }
 
 pub async fn show_verifier_balances(
-    verifier: &DefuseClient,
+    near: &Near,
+    verifier: &AccountId,
     accounts: impl IntoIterator<Item = &AccountIdRef>,
     token_ids: &[&TokenId],
 ) {
     let mut balances = accounts
         .into_iter()
         .map(|account_id| async move {
-            let balances = verifier
+            let balances = near
+                .contract::<Mt>(verifier)
                 .mt_batch_balance_of(MtBatchBalanceOfArgs {
-                    account_id: AccountId::from(account_id),
-                    token_ids: token_ids.iter().map(ToString::to_string).collect(),
+                    account_id: account_id.into(),
+                    token_ids: &token_ids
+                        .iter()
+                        .map(ToString::to_string)
+                        .collect::<Vec<_>>(),
                 })
                 .await?;
             anyhow::Ok((account_id, balances))
