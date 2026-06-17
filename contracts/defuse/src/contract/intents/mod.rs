@@ -25,7 +25,6 @@ use super::{Contract, ContractExt};
 #[near]
 impl Intents for Contract {
     #[pause(name = "intents")]
-    #[inline]
     fn execute_intents(&mut self, signed: Vec<MultiPayload>) {
         if let Some(event) = Engine::new(self, ExecuteInspector::default())
             .execute_signed_intents(signed)
@@ -41,7 +40,6 @@ impl Intents for Contract {
     }
 
     #[pause(name = "intents")]
-    #[inline]
     fn simulate_intents(&self, signed: Vec<MultiPayload>) -> SimulationOutput {
         let mut inspector = SimulateInspector::default();
         let engine = Engine::new(self.cached(), &mut inspector);
