@@ -1,11 +1,13 @@
 use defuse_sandbox::{
     extensions::{
         defuse::{
-            DefuseExt, HasPublicKeyArgs,
+            DefuseExt, DefuseSignerExt, HasPublicKeyArgs,
             contract::Role,
             core::{
                 PublicKey as DefusePublicKey,
+                amounts::Amounts,
                 fees::Pips,
+                intents::tokens::{FtWithdraw, Transfer},
                 token_id::{TokenId, nep141::Nep141TokenId},
             },
         },
@@ -16,6 +18,7 @@ use defuse_sandbox::{
 use defuse_test_utils::wasms::{DEFUSE_LEGACY_WASM, DEFUSE_WASM};
 use near_sdk::AccountIdRef;
 use rstest::rstest;
+use std::collections::BTreeMap;
 
 use crate::tests::defuse::env::Env;
 
@@ -177,12 +180,88 @@ async fn test_upgrade_with_persistence() {
         deposit_amount + extra
     );
 
-    // TODO: add transfer, intents, withdraw
+    // Transfer: user1 sends tokens to user2 within defuse
+    let transfer_amount = 1_000u128;
+    let transfer_payload = user1
+        .sign_defuse_payload_default(
+            &env.defuse,
+            [Transfer {
+                receiver_id: user2.account_id().clone(),
+                tokens: Amounts::new(BTreeMap::from([(
+                    TokenId::Nep141(Nep141TokenId::new(ft.contract_id().clone())),
+                    transfer_amount,
+                )])),
+                memo: None,
+                notification: None,
+            }],
+        )
+        .await
+        .unwrap();
+
+    env.defuse_simulate_and_execute_intents(env.defuse.contract_id().clone(), [transfer_payload])
+        .await
+        .unwrap();
+
+    assert_eq!(
+        balance_of(
+            &env,
+            env.defuse.contract_id(),
+            user1.account_id(),
+            &token_id
+        )
+        .await,
+        deposit_amount + extra - transfer_amount,
+    );
+
+    assert_eq!(
+        balance_of(
+            &env,
+            env.defuse.contract_id(),
+            user2.account_id(),
+            &token_id
+        )
+        .await,
+        deposit_amount + transfer_amount,
+    );
+
+    // FtWithdraw: user2 withdraws tokens from defuse to their FT account
+    let withdraw_amount = 500u128;
+    let withdraw_payload = user2
+        .sign_defuse_payload_default(
+            &env.defuse,
+            [FtWithdraw {
+                token: ft.contract_id().clone(),
+                receiver_id: user2.account_id().clone(),
+                amount: withdraw_amount.into(),
+                memo: None,
+                msg: None,
+                storage_deposit: None,
+                min_gas: None,
+            }],
+        )
+        .await
+        .unwrap();
+
+    env.defuse_simulate_and_execute_intents(env.defuse.contract_id().clone(), [withdraw_payload])
+        .await
+        .unwrap();
+
+    assert_eq!(
+        balance_of(
+            &env,
+            env.defuse.contract_id(),
+            user2.account_id(),
+            &token_id
+        )
+        .await,
+        deposit_amount + transfer_amount - withdraw_amount,
+    );
 
     // new user can register and deposit
     let user3 = env.create_user().await;
     env.initial_ft_storage_deposit([user3.account_id()], [ft.contract_id()])
         .await;
+
     env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user3.account_id(), None)
         .await
         .unwrap();

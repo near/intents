@@ -1,8 +1,3 @@
-use std::{
-    borrow::Cow,
-    collections::{HashMap, HashSet},
-};
-
 use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::extensions::defuse::{
     DefuseExt, HasPublicKeyArgs,
@@ -17,6 +12,10 @@ use defuse_sandbox::extensions::defuse::{
 use defuse_test_utils::{asserts::ResultAssertsExt, fixtures::public_key, random::rng};
 use near_sdk::{AccountId, AsNep297Event};
 use rstest::rstest;
+use std::{
+    borrow::Cow,
+    collections::{HashMap, HashSet},
+};
 
 use crate::tests::defuse::env::Env;
 

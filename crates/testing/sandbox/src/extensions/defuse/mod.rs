@@ -7,7 +7,7 @@ use defuse::{
     contract::{Role, config::DefuseConfig},
     simulation_output::SimulationOutput,
 };
-use defuse_core::{Nonce, PublicKey, Salt, fees::Pips, payload::multi::MultiPayload};
+use defuse_core::{Nonce, PublicKey, Salt, fees::Pips, intents::auth::AuthCall, payload::multi::MultiPayload};
 use defuse_serde_utils::base64::AsBase64;
 use near_account_id::AccountId;
 use near_kit::{Action, Final, FunctionCallAction, Near, NearToken};
@@ -129,6 +129,12 @@ pub struct NftWithdrawArgs {
     pub msg: Option<String>,
 }
 
+#[derive(Serialize)]
+pub struct DoAuthCallArgs {
+    pub signer_id: AccountId,
+    pub auth_call: AuthCall,
+}
+
 #[near_kit::contract]
 pub trait Defuse {
     fn fee(&self) -> Pips;
@@ -202,6 +208,9 @@ pub trait Defuse {
     fn mt_withdraw(&mut self, args: MtWithdrawArgs) -> Vec<U128>;
     #[call]
     fn nft_withdraw(&mut self, args: NftWithdrawArgs) -> bool;
+
+    #[call]
+    fn do_auth_call(&mut self, args: DoAuthCallArgs);
 }
 
 pub trait DefuseExt {
