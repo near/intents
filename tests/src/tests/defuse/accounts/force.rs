@@ -1,38 +1,10 @@
 use std::borrow::Cow;
 
-use defuse::core::{
-    accounts::AccountEvent,
-    events::DefuseEvent,
-    intents::{MaybeIntentEvent, account::SetAuthByPredecessorId},
-};
-use defuse_sandbox::assert_eq_event_logs;
-use defuse_sandbox::extensions::defuse::contract::{
-    contract::Role,
-    core::{
-        DefuseError, PublicKey,
-        intents::Intent,
-        token_id::{TokenId, nep141::Nep141TokenId},
-    },
-};
+use defuse_sandbox::kit::PublicKey;
 use defuse_test_utils::fixtures::public_key;
 use near_sdk::AsNep297Event;
 
-use crate::{
-    sandbox::extensions::{
-        acl::AclExt,
-        mt::{MtExt, MtViewExt},
-    },
-    tests::defuse::env::Env,
-    utils::asserts::ResultAssertsExt,
-};
-use defuse_sandbox::extensions::defuse::{
-    account_manager::{AccountManagerExt, AccountViewExt},
-    force_manager::{ForceAccountManagerExt, ForceAccountViewExt},
-    intents::ExecuteIntentsExt,
-    nonce::ExtractNonceExt,
-    signer::DefaultDefuseSignerExt,
-    tokens::nep141::DefuseFtWithdrawer,
-};
+use crate::{tests::defuse::env::Env, utils::asserts::ResultAssertsExt};
 use rstest::rstest;
 
 #[rstest]

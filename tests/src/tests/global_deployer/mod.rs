@@ -3,11 +3,14 @@ mod deploy_escrow_swap;
 
 use defuse_sandbox::{
     account::Account,
-    extensions::global_deployer::{
-        GDApproveArgs, GDDeployArgs, GDDeployerExt, GlobalDeployer, GlobalDeployerExt,
-        contract::{
-            Event, Reason, State as DeployerState,
-            error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_UNAUTHORIZED},
+    extensions::{
+        FnCallTransaction,
+        global_deployer::{
+            GDApproveArgs, GDDeployArgs, GDDeployerExt, GlobalDeployer, GlobalDeployerExt,
+            contract::{
+                Event, Reason, State as DeployerState,
+                error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_UNAUTHORIZED},
+            },
         },
     },
     global_contract::GlobalContract,
@@ -185,18 +188,14 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
     let storage_deposit = NearToken::from_near(1);
 
     owner
-        .transaction(controller_instance.contract_id())
-        .add_action(
+        .fn_call(
+            controller_instance.contract_id(),
             GlobalDeployer::gd_deploy(GDDeployArgs {
                 code: DEPLOYER_WASM.clone(),
-            })
-            .deposit(storage_deposit)
-            .gas(Gas::from_tgas(290)),
+            }),
+            storage_deposit,
         )
-        .wait_until(Final)
         .await
-        .unwrap()
-        .result()
         .assert_err_contains("NEAR to cover storage cost");
 
     let after = root.balance(owner.account_id()).await.unwrap().total;
@@ -668,18 +667,14 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
         .unwrap();
 
     owner
-        .transaction(controller_instance.contract_id())
-        .add_action(
+        .fn_call(
+            controller_instance.contract_id(),
             GlobalDeployer::gd_deploy(GDDeployArgs {
                 code: DEPLOYER_WASM.clone(),
-            })
-            .deposit(NearToken::from_near(100)) // attach more than enough to cover storage
-            .gas(Gas::from_tgas(290)),
+            }),
+            NearToken::from_near(100), // attach more than enough to cover storage
         )
-        .wait_until(Final)
         .await
-        .unwrap()
-        .result()
         .unwrap();
 
     assert!(

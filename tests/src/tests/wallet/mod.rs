@@ -1,5 +1,3 @@
-#![allow(clippy::future_not_send)]
-
 use defuse_sandbox::{
     account::Account,
     convert::ConvertInto,

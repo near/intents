@@ -38,6 +38,8 @@ tokio.workspace = true
 tracing.workspace = true
 # TODO: use only in defuse
 sha2.workspace = true
+# TODO: remove
+near-sdk = { workspace = true, features = ["unit-testing", "deterministic-account-ids"] }
 
 defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }
 defuse-global-deployer = { workspace = true, optional = true }

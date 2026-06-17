@@ -15,7 +15,11 @@ use serde_json::json;
 use serde_with::{base64::Base64, serde_as};
 use std::collections::{HashMap, HashSet};
 
-use crate::{account::Account, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
+use crate::{
+    account::Account,
+    extensions::{DEFAULT_GAS, FnCallTransaction},
+    outcome::SuccessfulExecutionOutcome,
+};
 
 pub use nonce::*;
 pub use signer::*;
@@ -279,15 +283,12 @@ impl DefuseExt for Near {
         defuse: impl Into<AccountId>,
         public_key: PublicKey,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(defuse.into())
-            .add_action(
-                Defuse::add_public_key(PublicKeyArgs { public_key })
-                    .gas(DEFAULT_GAS)
-                    .deposit(NearToken::from_yoctonear(1)),
-            )
-            .wait_until(Final)
-            .await?
-            .try_into()
+        self.fn_call(
+            defuse,
+            Defuse::add_public_key(PublicKeyArgs { public_key }),
+            NearToken::from_yoctonear(1),
+        )
+        .await
     }
 
     async fn defuse_remove_public_key(
@@ -295,30 +296,24 @@ impl DefuseExt for Near {
         defuse: impl Into<AccountId>,
         public_key: PublicKey,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(defuse.into())
-            .add_action(
-                Defuse::remove_public_key(PublicKeyArgs { public_key })
-                    .gas(DEFAULT_GAS)
-                    .deposit(NearToken::from_yoctonear(1)),
-            )
-            .wait_until(Final)
-            .await?
-            .try_into()
+        self.fn_call(
+            defuse,
+            Defuse::remove_public_key(PublicKeyArgs { public_key }),
+            NearToken::from_yoctonear(1),
+        )
+        .await
     }
 
     async fn defuse_disable_auth_by_predecessor_id(
         &self,
         defuse: impl Into<AccountId>,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(defuse.into())
-            .add_action(
-                Defuse::disable_auth_by_predecessor_id()
-                    .gas(DEFAULT_GAS)
-                    .deposit(NearToken::from_yoctonear(1)),
-            )
-            .wait_until(Final)
-            .await?
-            .try_into()
+        self.fn_call(
+            defuse,
+            Defuse::disable_auth_by_predecessor_id(),
+            NearToken::from_yoctonear(1),
+        )
+        .await
     }
 
     async fn defuse_set_fee(
@@ -326,15 +321,12 @@ impl DefuseExt for Near {
         defuse: impl Into<AccountId>,
         fee: Pips,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(defuse.into())
-            .add_action(
-                Defuse::set_fee(FeeArgs { fee })
-                    .gas(DEFAULT_GAS)
-                    .deposit(NearToken::from_yoctonear(1)),
-            )
-            .wait_until(Final)
-            .await?
-            .try_into()
+        self.fn_call(
+            defuse,
+            Defuse::set_fee(FeeArgs { fee }),
+            NearToken::from_yoctonear(1),
+        )
+        .await
     }
 
     async fn defuse_set_fee_collector(
@@ -342,17 +334,14 @@ impl DefuseExt for Near {
         defuse: impl Into<AccountId>,
         fee_collector: impl Into<AccountId>,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(defuse.into())
-            .add_action(
-                Defuse::set_fee_collector(FeeCollectorArgs {
-                    fee_collector: fee_collector.into(),
-                })
-                .gas(DEFAULT_GAS)
-                .deposit(NearToken::from_yoctonear(1)),
-            )
-            .wait_until(Final)
-            .await?
-            .try_into()
+        self.fn_call(
+            defuse,
+            Defuse::set_fee_collector(FeeCollectorArgs {
+                fee_collector: fee_collector.into(),
+            }),
+            NearToken::from_yoctonear(1),
+        )
+        .await
     }
 
     async fn defuse_acl_grant_role(
@@ -361,17 +350,15 @@ impl DefuseExt for Near {
         role: Role,
         account_id: impl Into<AccountId>,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(defuse.into())
-            .add_action(
-                Defuse::acl_grant_role(AclRoleArgs {
-                    role,
-                    account_id: account_id.into(),
-                })
-                .gas(DEFAULT_GAS),
-            )
-            .wait_until(Final)
-            .await?
-            .try_into()
+        self.fn_call(
+            defuse,
+            Defuse::acl_grant_role(AclRoleArgs {
+                role,
+                account_id: account_id.into(),
+            }),
+            NearToken::from_near(0),
+        )
+        .await
     }
 
     async fn defuse_update_current_salt(
@@ -416,16 +403,14 @@ impl DefuseExt for Near {
         defuse: impl Into<AccountId>,
         signed: impl IntoIterator<Item = MultiPayload>,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(defuse.into())
-            .add_action(
-                Defuse::execute_intents(MultiPayloadArgs {
-                    signed: signed.into_iter().collect(),
-                })
-                .gas(DEFAULT_GAS),
-            )
-            .wait_until(Final)
-            .await?
-            .try_into()
+        self.fn_call(
+            defuse,
+            Defuse::execute_intents(MultiPayloadArgs {
+                signed: signed.into_iter().collect(),
+            }),
+            NearToken::from_near(0),
+        )
+        .await
     }
 
     async fn defuse_simulate_and_execute_intents(
@@ -451,15 +436,12 @@ impl DefuseExt for Near {
         defuse: impl Into<AccountId>,
         public_key: PublicKey,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(defuse.into())
-            .add_action(
-                Defuse::add_relayer_key(PublicKeyArgs { public_key })
-                    .gas(DEFAULT_GAS)
-                    .deposit(NearToken::from_yoctonear(1)),
-            )
-            .wait_until(Final)
-            .await?
-            .try_into()
+        self.fn_call(
+            defuse,
+            Defuse::add_relayer_key(PublicKeyArgs { public_key }),
+            NearToken::from_yoctonear(1),
+        )
+        .await
     }
 
     async fn defuse_delete_relayer_key(
@@ -467,15 +449,12 @@ impl DefuseExt for Near {
         defuse: impl Into<AccountId>,
         public_key: PublicKey,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(defuse.into())
-            .add_action(
-                Defuse::delete_relayer_key(PublicKeyArgs { public_key })
-                    .gas(DEFAULT_GAS)
-                    .deposit(NearToken::from_yoctonear(1)),
-            )
-            .wait_until(Final)
-            .await?
-            .try_into()
+        self.fn_call(
+            defuse,
+            Defuse::delete_relayer_key(PublicKeyArgs { public_key }),
+            NearToken::from_yoctonear(1),
+        )
+        .await
     }
 
     async fn defuse_cleanup_nonces(
@@ -483,22 +462,17 @@ impl DefuseExt for Near {
         defuse: impl Into<AccountId>,
         nonces: impl IntoIterator<Item = (AccountId, Vec<Nonce>)>,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(defuse.into())
-            .add_action(
-                Defuse::cleanup_nonces(CleanupNoncesArgs {
-                    nonces: nonces
-                        .into_iter()
-                        .map(|(account_id, ns)| {
-                            (account_id, ns.into_iter().map(Into::into).collect())
-                        })
-                        .collect(),
-                })
-                .gas(DEFAULT_GAS)
-                .deposit(NearToken::from_yoctonear(1)),
-            )
-            .wait_until(Final)
-            .await?
-            .try_into()
+        self.fn_call(
+            defuse,
+            Defuse::cleanup_nonces(CleanupNoncesArgs {
+                nonces: nonces
+                    .into_iter()
+                    .map(|(account_id, ns)| (account_id, ns.into_iter().map(Into::into).collect()))
+                    .collect(),
+            }),
+            NearToken::from_yoctonear(1),
+        )
+        .await
     }
 
     async fn defuse_force_add_public_keys(
@@ -506,15 +480,12 @@ impl DefuseExt for Near {
         defuse: impl Into<AccountId>,
         public_keys: HashMap<AccountId, HashSet<PublicKey>>,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(defuse.into())
-            .add_action(
-                Defuse::force_add_public_keys(ForcePublicKeysArgs { public_keys })
-                    .gas(DEFAULT_GAS)
-                    .deposit(NearToken::from_yoctonear(1)),
-            )
-            .wait_until(Final)
-            .await?
-            .try_into()
+        self.fn_call(
+            defuse,
+            Defuse::force_add_public_keys(ForcePublicKeysArgs { public_keys }),
+            NearToken::from_yoctonear(1),
+        )
+        .await
     }
 
     async fn defuse_force_remove_public_keys(
@@ -522,14 +493,11 @@ impl DefuseExt for Near {
         defuse: impl Into<AccountId>,
         public_keys: HashMap<AccountId, HashSet<PublicKey>>,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(defuse.into())
-            .add_action(
-                Defuse::force_remove_public_keys(ForcePublicKeysArgs { public_keys })
-                    .gas(DEFAULT_GAS)
-                    .deposit(NearToken::from_yoctonear(1)),
-            )
-            .wait_until(Final)
-            .await?
-            .try_into()
+        self.fn_call(
+            defuse,
+            Defuse::force_remove_public_keys(ForcePublicKeysArgs { public_keys }),
+            NearToken::from_yoctonear(1),
+        )
+        .await
     }
 }

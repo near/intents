@@ -1981,6 +1981,7 @@ dependencies = [
  "near-account-id",
  "near-contract-standards",
  "near-kit",
+ "near-sdk",
  "rstest",
  "serde",
  "serde_json",

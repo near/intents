@@ -5,7 +5,7 @@ use std::{
 
 use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::extensions::defuse::{
-    DefuseExt,
+    DefuseExt, HasPublicKeyArgs,
     contract::Role,
     core::{
         PublicKey,
@@ -15,7 +15,7 @@ use defuse_sandbox::extensions::defuse::{
     },
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, fixtures::public_key, random::rng};
-use near_sdk::{AccountId, AsNep297Event, json_types::U128};
+use near_sdk::{AccountId, AsNep297Event};
 use rstest::rstest;
 
 use crate::tests::defuse::env::Env;
@@ -82,7 +82,10 @@ async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
             for public_key in keys {
                 assert!(
                     env.defuse
-                        .query_has_public_key(account_id, public_key)
+                        .has_public_key(HasPublicKeyArgs {
+                            account_id: account_id.clone(),
+                            public_key: *public_key
+                        })
                         .await
                         .unwrap(),
                     "Public key {public_key:?} not found for account {account_id}",
@@ -166,7 +169,10 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
             for public_key in keys {
                 assert!(
                     !env.defuse
-                        .query_has_public_key(account_id, public_key)
+                        .has_public_key(HasPublicKeyArgs {
+                            account_id: account_id.clone(),
+                            public_key: *public_key
+                        })
                         .await
                         .unwrap(),
                     "Public key {public_key:?} found for account {account_id}",

@@ -23,8 +23,8 @@ use near_kit::{AccountId, Final, FunctionCall, Gas, IntoNearToken, Near};
 pub const DEFAULT_GAS: Gas = Gas::from_tgas(300);
 pub const DEFAULT_DEPOSIT: Gas = Gas::from_tgas(300);
 
-pub trait SendTransaction {
-    async fn send_transaction(
+pub trait FnCallTransaction {
+    async fn fn_call(
         &self,
         contract: impl Into<AccountId>,
         action: impl Into<FunctionCall>,
@@ -32,8 +32,8 @@ pub trait SendTransaction {
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
-impl SendTransaction for Near {
-    async fn send_transaction(
+impl FnCallTransaction for Near {
+    async fn fn_call(
         &self,
         contract: impl Into<AccountId>,
         action: impl Into<FunctionCall>,

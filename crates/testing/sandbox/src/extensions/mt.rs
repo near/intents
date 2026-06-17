@@ -73,7 +73,7 @@ pub struct MtBatchTransferCallArgs {
 
 // TODO: may be also make ext helpers for view methods?
 #[near_kit::contract]
-pub trait MtExt {
+pub trait Mt {
     fn mt_token(&self, args: MtTokenArgs) -> Vec<Option<Token>>;
     fn mt_balance_of(&self, args: MtBalanceOfArgs) -> U128;
     fn mt_batch_balance_of(&self, args: MtBatchBalanceOfArgs) -> Vec<U128>;
@@ -93,7 +93,7 @@ pub trait MtExt {
     fn mt_batch_transfer_call(&mut self, args: MtBatchTransferCallArgs);
 }
 
-pub trait DefuseMtExt {
+pub trait MtExt {
     async fn mt_transfer(
         &self,
         contract: impl Into<AccountId>,
@@ -137,7 +137,7 @@ pub trait DefuseMtExt {
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
-impl DefuseMtExt for Near {
+impl MtExt for Near {
     async fn mt_transfer(
         &self,
         contract: impl Into<AccountId>,
@@ -149,7 +149,7 @@ impl DefuseMtExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(contract.into())
             .add_action(
-                MtExt::mt_transfer(MtTransferArgs {
+                Mt::mt_transfer(MtTransferArgs {
                     receiver_id: receiver_id.into(),
                     token_id: token_id.into(),
                     amount: amount.into(),
@@ -175,7 +175,7 @@ impl DefuseMtExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(contract.into())
             .add_action(
-                MtExt::mt_batch_transfer(MtBatchTransferArgs {
+                Mt::mt_batch_transfer(MtBatchTransferArgs {
                     receiver_id: receiver_id.into(),
                     token_ids: token_ids.into_iter().map(Into::into).collect(),
                     amounts: amounts.into_iter().map(Into::into).collect(),
@@ -202,7 +202,7 @@ impl DefuseMtExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(contract.into())
             .add_action(
-                MtExt::mt_transfer_call(MtTransferCallArgs {
+                Mt::mt_transfer_call(MtTransferCallArgs {
                     receiver_id: receiver_id.into(),
                     token_id: token_id.into(),
                     amount: amount.into(),
@@ -230,7 +230,7 @@ impl DefuseMtExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(contract.into())
             .add_action(
-                MtExt::mt_batch_transfer_call(MtBatchTransferCallArgs {
+                Mt::mt_batch_transfer_call(MtBatchTransferCallArgs {
                     receiver_id: receiver_id.into(),
                     token_ids: token_ids.into_iter().map(Into::into).collect(),
                     amounts: amounts.into_iter().map(Into::into).collect(),
