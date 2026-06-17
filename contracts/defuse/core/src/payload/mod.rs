@@ -9,9 +9,9 @@ pub mod webauthn;
 
 use core::convert::Infallible;
 
-use defuse_serde_utils::base64::Base64;
 use impl_tools::autoimpl;
 use near_sdk::{AccountId, near};
+use serde_with::base64::Base64;
 
 use crate::{Deadline, Nonce};
 

@@ -92,7 +92,6 @@ pub struct StateInitAction {
 pub struct FunctionCallAction {
     pub function_name: String,
 
-    #[cfg_attr(feature = "abi", schemars(with = "String"))]
     #[serde_as(as = "Base64")]
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub args: Vec<u8>,

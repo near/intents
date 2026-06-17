@@ -1452,7 +1452,6 @@ dependencies = [
  "defuse-nep413",
  "defuse-num-utils",
  "defuse-sep53",
- "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-tip191",
  "defuse-token-id",
@@ -1691,7 +1690,6 @@ dependencies = [
  "defuse-crypto",
  "defuse-digest",
  "defuse-nep461",
- "defuse-serde-utils",
  "impl-tools",
  "near-api",
  "schemars 0.8.22",
@@ -1830,7 +1828,6 @@ dependencies = [
 name = "defuse-serde-utils"
 version = "0.1.0"
 dependencies = [
- "bs58 0.5.1",
  "derive_more",
  "schemars 0.8.22",
  "serde",
@@ -1964,7 +1961,6 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-crypto",
  "defuse-deadline",
- "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-webauthn",
  "derive_more",
@@ -1972,6 +1968,7 @@ dependencies = [
  "rand 0.10.1",
  "rand_core 0.10.1",
  "rstest",
+ "serde_with",
  "thiserror 2.0.18",
 ]
 
@@ -2014,7 +2011,6 @@ version = "0.1.0"
 dependencies = [
  "defuse-crypto",
  "defuse-digest",
- "defuse-serde-utils",
  "schemars 0.8.22",
  "serde",
  "serde_json",

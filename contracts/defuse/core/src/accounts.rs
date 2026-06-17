@@ -1,6 +1,7 @@
-use defuse_serde_utils::base64::Base64;
-use near_sdk::{AccountIdRef, near};
 use std::{borrow::Cow, collections::BTreeSet};
+
+use near_sdk::{AccountIdRef, near};
+use serde_with::base64::Base64;
 
 use crate::{Nonce, Salt, public_key::PublicKey};
 

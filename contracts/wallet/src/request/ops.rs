@@ -18,7 +18,6 @@ pub enum WalletOp {
 
     /// Custom op for third-party implementations.
     Custom {
-        #[cfg_attr(feature = "abi", schemars(with = "String"))]
         #[serde_as(as = "Base64")]
         args: Vec<u8>,
     } = u8::MAX - 1,

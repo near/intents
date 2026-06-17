@@ -6,9 +6,9 @@ pub mod tokens;
 #[cfg(feature = "imt")]
 pub mod imt;
 
-use defuse_serde_utils::base58::Base58;
 use derive_more::derive::From;
 use near_sdk::{AccountIdRef, CryptoHash, near};
+use serde_with::base58::Base58;
 
 #[cfg(feature = "imt")]
 use crate::intents::imt::{ImtBurn, ImtMint};
