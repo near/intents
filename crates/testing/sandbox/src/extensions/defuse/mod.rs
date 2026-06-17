@@ -88,6 +88,16 @@ pub struct ForcePublicKeysArgs {
     pub public_keys: HashMap<AccountId, HashSet<PublicKey>>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct AccountArgs {
+    pub account_id: AccountId,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct MultipleAccountsArgs {
+    pub account_ids: Vec<AccountId>,
+}
+
 #[near_kit::contract]
 pub trait Defuse {
     fn fee(&self) -> Pips;
@@ -144,6 +154,17 @@ pub trait Defuse {
     fn force_add_public_keys(&mut self, args: ForcePublicKeysArgs);
     #[call]
     fn force_remove_public_keys(&mut self, args: ForcePublicKeysArgs);
+
+    fn is_account_locked(&self, args: AccountArgs) -> bool;
+
+    #[call]
+    fn force_lock_account(&mut self, args: AccountArgs) -> bool;
+    #[call]
+    fn force_unlock_account(&mut self, args: AccountArgs) -> bool;
+    #[call]
+    fn force_disable_auth_by_predecessor_ids(&mut self, args: MultipleAccountsArgs);
+    #[call]
+    fn force_enable_auth_by_predecessor_ids(&mut self, args: MultipleAccountsArgs);
 }
 
 pub trait DefuseExt {
@@ -234,6 +255,30 @@ pub trait DefuseExt {
         &self,
         defuse: impl Into<AccountId>,
         public_keys: HashMap<AccountId, HashSet<PublicKey>>,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_force_lock_account(
+        &self,
+        defuse: impl Into<AccountId>,
+        account_id: impl Into<AccountId>,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_force_unlock_account(
+        &self,
+        defuse: impl Into<AccountId>,
+        account_id: impl Into<AccountId>,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_force_disable_auth_by_predecessor_ids(
+        &self,
+        defuse: impl Into<AccountId>,
+        account_ids: impl IntoIterator<Item = AccountId>,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_force_enable_auth_by_predecessor_ids(
+        &self,
+        defuse: impl Into<AccountId>,
+        account_ids: impl IntoIterator<Item = AccountId>,
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
@@ -496,6 +541,66 @@ impl DefuseExt for Near {
         self.fn_call(
             defuse,
             Defuse::force_remove_public_keys(ForcePublicKeysArgs { public_keys }),
+            NearToken::from_yoctonear(1),
+        )
+        .await
+    }
+
+    async fn defuse_force_lock_account(
+        &self,
+        defuse: impl Into<AccountId>,
+        account_id: impl Into<AccountId>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.fn_call(
+            defuse,
+            Defuse::force_lock_account(AccountArgs {
+                account_id: account_id.into(),
+            }),
+            NearToken::from_yoctonear(1),
+        )
+        .await
+    }
+
+    async fn defuse_force_unlock_account(
+        &self,
+        defuse: impl Into<AccountId>,
+        account_id: impl Into<AccountId>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.fn_call(
+            defuse,
+            Defuse::force_unlock_account(AccountArgs {
+                account_id: account_id.into(),
+            }),
+            NearToken::from_yoctonear(1),
+        )
+        .await
+    }
+
+    async fn defuse_force_enable_auth_by_predecessor_ids(
+        &self,
+        defuse: impl Into<AccountId>,
+        account_ids: impl IntoIterator<Item = AccountId>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.fn_call(
+            defuse,
+            Defuse::force_enable_auth_by_predecessor_ids(MultipleAccountsArgs {
+                account_ids: account_ids.into_iter().collect(),
+            }),
+            NearToken::from_yoctonear(1),
+        )
+        .await
+    }
+
+    async fn defuse_force_disable_auth_by_predecessor_ids(
+        &self,
+        defuse: impl Into<AccountId>,
+        account_ids: impl IntoIterator<Item = AccountId>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.fn_call(
+            defuse,
+            Defuse::force_disable_auth_by_predecessor_ids(MultipleAccountsArgs {
+                account_ids: account_ids.into_iter().collect(),
+            }),
             NearToken::from_yoctonear(1),
         )
         .await
