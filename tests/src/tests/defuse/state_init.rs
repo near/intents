@@ -127,11 +127,11 @@ async fn benchmark_auth_call_with_largest_possible_state_init(
 ) {
     let env = Env::builder().build().await;
 
-    let global_contract_id = env.account_id().sub_account("global").unwrap();
+    let global_contract_id = env.account_id().sub_account("g").unwrap();
     env.deploy_upgradable_global_contract(
         global_contract_id.clone(),
         MT_RECEIVER_STUB_WASM.clone(),
-        NearToken::from_near(0),
+        NearToken::from_near(40),
     )
     .await
     .unwrap();
@@ -190,11 +190,11 @@ async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] 
 
     let env = Env::builder().build().await;
 
-    let global_contract_id = env.account_id().sub_account("global").unwrap();
+    let global_contract_id = env.account_id().sub_account("g").unwrap();
     env.deploy_upgradable_global_contract(
         global_contract_id.clone(),
         MT_RECEIVER_STUB_WASM.clone(),
-        NearToken::from_near(0),
+        NearToken::from_near(40),
     )
     .await
     .unwrap();
@@ -223,7 +223,8 @@ async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] 
         .unwrap()
         .saturating_sub(NEAR_WITHDRAW_PROMISE_READ_OVERHEAD);
 
-    env.transaction(defuse.contract_id())
+    defuse
+        .transaction(defuse.account_id())
         .add_action(
             Defuse::do_auth_call(DoAuthCallArgs {
                 signer_id: account,
@@ -233,6 +234,8 @@ async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] 
         )
         .wait_until(Final)
         .await
+        .unwrap()
+        .result()
         .unwrap();
 }
 
@@ -275,11 +278,11 @@ async fn test_auth_call_state_init_via_execute_intents(
 
     let env = Env::builder().build().await;
 
-    let global_contract_id = env.account_id().sub_account("global").unwrap();
+    let global_contract_id = env.account_id().sub_account("g").unwrap();
     env.deploy_upgradable_global_contract(
         &global_contract_id,
         MT_RECEIVER_STUB_WASM.clone(),
-        NearToken::from_near(0),
+        NearToken::from_near(40),
     )
     .await
     .unwrap();
@@ -399,11 +402,11 @@ async fn test_auth_call_state_init_via_do_auth_call(
 
     let env = Env::builder().build().await;
 
-    let global_contract_id = env.account_id().sub_account("global").unwrap();
+    let global_contract_id = env.account_id().sub_account("g").unwrap();
     env.deploy_upgradable_global_contract(
         &global_contract_id,
         MT_RECEIVER_STUB_WASM.clone(),
-        NearToken::from_near(0),
+        NearToken::from_near(40),
     )
     .await
     .unwrap();
@@ -438,12 +441,11 @@ async fn test_auth_call_state_init_via_do_auth_call(
             (account_id, auth_intent, callback_gas)
         })
         .map(|(account_id, auth_intent, callback_gas)| {
-            let root = env.clone();
-            let defuse_contract_id = defuse.contract_id().clone();
+            let defuse = defuse.clone();
 
             async move {
-                let result = root
-                    .transaction(defuse_contract_id)
+                let result = defuse
+                    .transaction(defuse.account_id())
                     .add_action(
                         Defuse::do_auth_call(DoAuthCallArgs {
                             signer_id: account_id.clone(),

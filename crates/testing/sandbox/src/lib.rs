@@ -41,7 +41,7 @@ pub async fn root(#[default(NearToken::from_near(100_000))] amount: NearToken) -
 
 // TODO: remove it after near kit update
 #[serde_as]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[autoimpl(Deref using self.0)]
 pub struct U128(#[serde_as(as = "DisplayFromStr")] pub u128);
 

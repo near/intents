@@ -94,6 +94,7 @@ impl EnvBuilder {
 
     async fn deploy_defuse(
         &self,
+        name: &str,
         root: &Near,
         wnear: impl AsRef<AccountIdRef>,
     ) -> (DefuseClient, Near) {
@@ -116,7 +117,7 @@ impl EnvBuilder {
             .unwrap_or_else(|| DEFUSE_FAR_WASM.clone());
 
         let account = root
-            .create_subaccount("defuse", NearToken::from_near(100))
+            .create_subaccount(name, NearToken::from_near(100))
             .await;
 
         account
@@ -156,7 +157,9 @@ impl EnvBuilder {
 
         let poa_factory = deploy_poa_factory(&root).await;
         let wnear = root.deploy_wrap_near("wnear", WNEAR_WASM.clone()).await;
-        let (defuse, defuse_near) = self.deploy_defuse(&root, wnear.contract_id()).await;
+        let (defuse, defuse_near) = self
+            .deploy_defuse("defuse", &root, wnear.contract_id())
+            .await;
 
         let env = Env {
             defuse: defuse.into(),

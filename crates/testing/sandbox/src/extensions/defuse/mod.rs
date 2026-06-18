@@ -7,7 +7,9 @@ use defuse::{
     contract::{Role, config::DefuseConfig},
     simulation_output::SimulationOutput,
 };
-use defuse_core::{Nonce, PublicKey, Salt, fees::Pips, intents::auth::AuthCall, payload::multi::MultiPayload};
+use defuse_core::{
+    Nonce, PublicKey, Salt, fees::Pips, intents::auth::AuthCall, payload::multi::MultiPayload,
+};
 use defuse_serde_utils::base64::AsBase64;
 use near_account_id::AccountId;
 use near_kit::{Action, Final, FunctionCallAction, Near, NearToken};
@@ -365,7 +367,7 @@ pub trait DefuseDeployerExt {
         name: impl AsRef<str>,
         config: DefuseConfig,
         wasm: impl Into<Vec<u8>>,
-    ) -> DefuseClient;
+    ) -> Near;
 }
 
 impl DefuseDeployerExt for Near {
@@ -374,7 +376,7 @@ impl DefuseDeployerExt for Near {
         name: impl AsRef<str>,
         config: DefuseConfig,
         wasm: impl Into<Vec<u8>>,
-    ) -> DefuseClient {
+    ) -> Near {
         let account = self
             .create_subaccount(name, NearToken::from_near(100))
             .await;
@@ -395,7 +397,7 @@ impl DefuseDeployerExt for Near {
             .result()
             .unwrap();
 
-        self.contract::<Defuse>(account.account_id())
+        account
     }
 }
 

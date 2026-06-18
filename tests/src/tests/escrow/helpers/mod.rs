@@ -3,7 +3,7 @@ use defuse_sandbox::{
     account::Account,
     extensions::{
         defuse::{
-            DefuseClient, DefuseDeployerExt,
+            Defuse, DefuseClient, DefuseDeployerExt,
             contract::config::{DefuseConfig, RolesConfig},
             core::fees::FeesConfig,
         },
@@ -126,19 +126,22 @@ impl Env {
 
     async fn deploy_verifier(root: &Near) -> DefuseClient {
         let wnear = root.deploy_wrap_near("wnear", WNEAR_WASM.clone()).await;
-        root.deploy_defuse(
-            "intents",
-            DefuseConfig {
-                wnear_id: wnear.contract_id().clone(),
-                fees: FeesConfig {
-                    fee: Pips::ZERO,
-                    fee_collector: root.account_id().clone(),
+        let defuse = root
+            .deploy_defuse(
+                "intents",
+                DefuseConfig {
+                    wnear_id: wnear.contract_id().clone(),
+                    fees: FeesConfig {
+                        fee: Pips::ZERO,
+                        fee_collector: root.account_id().clone(),
+                    },
+                    roles: RolesConfig::default(),
                 },
-                roles: RolesConfig::default(),
-            },
-            DEFUSE_WASM.clone(),
-        )
-        .await
+                DEFUSE_WASM.clone(),
+            )
+            .await;
+
+        defuse.contract::<Defuse>(defuse.account_id())
     }
 
     async fn deploy_poa_factory(root: &Near) -> PoaFactoryClient {
