@@ -19,7 +19,7 @@ pub enum TransferAction {
     // TODO: Borrow, Repay
 }
 
-/// NOTE: make sure you (or receiver_id) has enough `storage_deposit`
+/// NOTE: make sure you (or `receiver_id`) has enough `storage_deposit`
 /// on `src_token`, otherwise tokens will be lost.
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]

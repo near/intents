@@ -80,9 +80,11 @@ pub(super) mod tests {
                     #[allow(deprecated)]
                     prefix.as_slice().nest(AccountPrefix::_LegacyNonces),
                 )),
-                flags: (!me.get_account_type().is_implicit())
-                    .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
-                    .unwrap_or_else(AccountFlags::empty),
+                flags: if me.get_account_type().is_implicit() {
+                    AccountFlags::empty()
+                } else {
+                    AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED
+                },
                 public_keys: IterableSet::new(prefix.as_slice().nest(AccountPrefix::PublicKeys)),
                 state: AccountState::new(prefix.as_slice().nest(AccountPrefix::State)),
                 prefix,

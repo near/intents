@@ -14,7 +14,7 @@ pub struct AuthCall {
     /// Callee for [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
     pub contract_id: AccountId,
 
-    /// Optionally initialize the receiver's contract (Deterministic AccountId)
+    /// Optionally initialize the receiver's contract (Deterministic `AccountId`)
     /// via [`state_init`](https://github.com/near/NEPs/blob/master/neps/nep-0616.md#stateinit-action)
     /// right before calling [`.on_auth()`](::defuse_auth_call::AuthCallee::on_auth)
     /// (in the same receipt).

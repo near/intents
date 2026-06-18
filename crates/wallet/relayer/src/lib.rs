@@ -1,4 +1,3 @@
-mod adapters;
 mod contract;
 
 use std::time::Duration;
@@ -91,7 +90,7 @@ impl Relayer {
             }
 
             tx = tx.state_init(
-                adapters::state_init(state_init),
+                state_init,
                 NearToken::ZERO, // wallet-contract should fit into ZBA limits
             );
 

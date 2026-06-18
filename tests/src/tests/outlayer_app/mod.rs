@@ -27,7 +27,7 @@ pub async fn outlayer_app_env(#[future(awt)] sandbox: Sandbox) -> OutlayerAppEnv
     .unwrap();
     OutlayerAppEnv {
         sandbox,
-        global_id: GlobalContractId::CodeHash(sha256_array(&*OUTLAYER_APP_WASM).into()),
+        global_id: GlobalContractId::CodeHash(sha256_array(&*OUTLAYER_APP_WASM)),
     }
 }
 

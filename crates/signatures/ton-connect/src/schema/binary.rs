@@ -14,7 +14,7 @@ use tlb_ton::StringError;
 )]
 #[autoimpl(Deref using self.bytes)]
 pub struct BinaryPayload {
-    #[cfg_attr(feature = "serde", serde_as(as = "defuse_serde_utils::base64::Base64"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::base64::Base64"))]
     pub bytes: Vec<u8>,
 }
 

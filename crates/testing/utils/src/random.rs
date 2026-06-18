@@ -138,7 +138,7 @@ pub fn gen_random_string<R: Rng>(rng: &mut R, size: impl RangeBounds<usize>) -> 
 #[fixture]
 pub fn random_seed() -> Seed {
     let seed = Seed::from_entropy();
-    eprintln!("======= SEED =======\n{seed}\n====================",);
+    eprintln!("======= SEED =======\n{seed}\n====================");
     seed
 }
 

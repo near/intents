@@ -31,7 +31,7 @@ pub trait PoaFungibleToken:
 
     /// Deposits given amount to `owner_id`.
     /// Requires to attach enough Ⓝ to make storage deposit for the user
-    /// (see NEP145::storage_balance_bounds()).
+    /// (see `NEP145::storage_balance_bounds()`).
     fn ft_deposit(&mut self, owner_id: AccountId, amount: U128, memo: Option<String>);
 }
 

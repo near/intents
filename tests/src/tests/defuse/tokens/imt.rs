@@ -18,7 +18,7 @@ async fn imt_burn_call() {
     let memo = "Some memo";
     let amount = 1000;
 
-    let imt_id = TokenId::from(ImtTokenId::new(user1.id().clone(), token.to_string()));
+    let imt_id = TokenId::from(ImtTokenId::new(user1.id().clone(), token.clone()));
 
     // Mint tokens first
     {

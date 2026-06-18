@@ -1,5 +1,5 @@
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, near};
-use serde_with::{DisplayFromStr, serde_as};
+use serde_with::DisplayFromStr;
 use std::{borrow::Cow, collections::BTreeMap};
 
 use crate::{
@@ -19,7 +19,7 @@ pub struct ImtMint {
     /// Receiver of the minted tokens
     pub receiver_id: AccountId,
 
-    /// The token_ids will be wrapped to bind the token ID to the
+    /// The `token_ids` will be wrapped to bind the token ID to the
     /// minter authority (i.e. signer of this intent).
     /// The final string representation of the token will be as follows:
     /// `imt:<minter_id>:<token_id>`
@@ -29,7 +29,7 @@ pub struct ImtMint {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
 
-    /// Optionally notify receiver_id via `mt_on_transfer()`
+    /// Optionally notify `receiver_id` via `mt_on_transfer()`
     ///
     /// NOTE: `min_gas` is adjusted with following values:
     /// * minimum: 5TGas
@@ -77,7 +77,7 @@ pub struct ImtBurn {
     // The minter authority of the imt tokens
     pub minter_id: AccountId,
 
-    /// The token_ids will be wrapped to bind the token ID to the
+    /// The `token_ids` will be wrapped to bind the token ID to the
     /// minter authority. The final string representation of the
     /// token will be as follows:
     /// `imt:<minter_id>:<token_id>`

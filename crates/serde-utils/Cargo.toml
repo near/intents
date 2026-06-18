@@ -10,7 +10,6 @@ derive_more = { workspace = true, features = ["from"] }
 serde = { workspace = true, features = ["derive"] }
 serde_with.workspace = true
 
-bs58 = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true, features = ["derive"] }
 tlb-ton = { workspace = true, optional = true }
 
@@ -20,7 +19,6 @@ serde_json.workspace = true
 [features]
 
 abi = ["dep:schemars", "serde_with/schemars_0_8"]
-base58 = ["dep:bs58"]
 base64 = ["serde_with/base64"]
 hex = ["serde_with/hex"]
 tlb = ["dep:tlb-ton"]

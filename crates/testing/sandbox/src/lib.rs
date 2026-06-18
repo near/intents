@@ -100,10 +100,10 @@ impl Sandbox {
 static SHARED_SANDBOX: OnceCell<Mutex<Option<Sandbox>>> = OnceCell::const_new();
 
 extern "C" fn cleanup_sandbox() {
-    if let Some(mutex) = SHARED_SANDBOX.get() {
-        if let Ok(mut guard) = mutex.lock() {
-            drop(guard.take());
-        }
+    if let Some(mutex) = SHARED_SANDBOX.get()
+        && let Ok(mut guard) = mutex.lock()
+    {
+        drop(guard.take());
     }
 }
 

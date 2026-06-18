@@ -6,7 +6,7 @@ use defuse_borsh_utils::adapters::{
 use defuse_fees::Pips;
 use defuse_token_id::TokenId;
 use near_sdk::{AccountId, CryptoHash, Gas, borsh, env, near};
-use serde_with::{DisplayFromStr, hex::Hex, serde_as};
+use serde_with::{DisplayFromStr, hex::Hex};
 
 use crate::{Deadline, Error, Result, decimal::UD128};
 

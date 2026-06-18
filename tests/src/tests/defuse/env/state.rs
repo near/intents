@@ -60,8 +60,9 @@ impl PersistentState {
 
     pub fn get_tokens(&self) -> Vec<Nep141TokenId> {
         self.accounts
-            .iter()
-            .flat_map(|(_, account)| account.tokens.keys().cloned())
+            .values()
+            .flat_map(|account| account.tokens.keys())
+            .cloned()
             .unique()
             .sorted()
             .collect()

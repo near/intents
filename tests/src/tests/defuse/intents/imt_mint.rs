@@ -52,7 +52,7 @@ async fn imt_mint_intent() {
         .await
         .unwrap();
 
-    let mt_id = TokenId::from(ImtTokenId::new(user.id().clone(), token.to_string()));
+    let mt_id = TokenId::from(ImtTokenId::new(user.id().clone(), token.clone()));
 
     assert_eq!(
         env.defuse
@@ -165,7 +165,7 @@ async fn imt_mint_intent_to_defuse() {
 
         assert_eq_defuse_event_logs!(mint_payload.to_event_log(), res.logs());
 
-        let mt_token = TokenId::from(ImtTokenId::new(user.id().clone(), ft.to_string()));
+        let mt_token = TokenId::from(ImtTokenId::new(user.id().clone(), ft.clone()));
 
         assert_eq!(
             env.defuse
@@ -272,7 +272,7 @@ async fn imt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferC
 
     assert_eq_defuse_event_logs!(mint_payload.to_event_log(), res.logs());
 
-    let mt_token = TokenId::from(ImtTokenId::new(user.id().clone(), ft1.to_string()));
+    let mt_token = TokenId::from(ImtTokenId::new(user.id().clone(), ft1.clone()));
 
     assert_eq!(
         env.defuse

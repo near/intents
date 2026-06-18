@@ -43,7 +43,7 @@ pub trait Wallet {
     ///   extension is not enabled
     fn w_execute_extension(&mut self, request: Request);
 
-    /// Returns subwallet_id.
+    /// Returns `subwallet_id`.
     fn w_subwallet_id(&self) -> u32;
 
     /// Returns whether authentication by signature is currently allowed.

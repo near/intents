@@ -20,7 +20,7 @@ pub struct CellPayload {
     pub schema_crc: u32,
     #[cfg_attr(
         feature = "serde",
-        serde_as(as = "defuse_serde_utils::tlb::AsBoC<defuse_serde_utils::base64::Base64>")
+        serde_as(as = "defuse_serde_utils::tlb::AsBoC<serde_with::base64::Base64>")
     )]
     pub cell: Cell,
 }
