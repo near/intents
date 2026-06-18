@@ -7,7 +7,7 @@ repository.workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
-defuse-digest.workspace = true
+defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-nep461.workspace = true
 impl-tools.workspace = true
 
@@ -26,14 +26,9 @@ abi = [
   "serde_with?/schemars_0_8",
 ]
 borsh = ["defuse-crypto/borsh", "dep:borsh"]
-near-contract = [
-  "borsh",
-  "defuse-crypto/near-contract",
-  "defuse-digest/near-contract",
-]
+near-contract = ["borsh", "defuse-crypto/near-contract"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 near-api = ["dep:near-api"]
-sha2 = ["defuse-digest/sha2"]
 
 [dev-dependencies]
 serde_json.workspace = true

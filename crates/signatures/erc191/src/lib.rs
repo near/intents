@@ -22,11 +22,16 @@ impl Erc191Payload {
     }
 }
 
-#[cfg(any(test, feature = "sha3", feature = "near-contract"))]
 impl defuse_crypto::Payload for Erc191Payload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {
         use defuse_digest::{Digest, Keccak256};
+
+        #[cfg(near)]
+        use defuse_near_digest::Keccak256;
+        #[cfg(not(near))]
+        use sha3::Keccak256;
+
         Keccak256::digest(self.prehash().as_slice()).into()
     }
 }

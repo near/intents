@@ -1517,9 +1517,11 @@ dependencies = [
 name = "defuse-digest"
 version = "0.1.0"
 dependencies = [
- "defuse-test-utils",
  "digest 0.11.3",
+ "hex-literal",
+ "impl-tools",
  "near-sdk",
+ "near-sdk-env",
  "rstest",
  "sha2 0.11.0",
  "sha3 0.11.0",
@@ -1994,7 +1996,6 @@ name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
  "borsh",
- "defuse-digest",
  "defuse-wallet",
  "ed25519-dalek",
  "impl-tools",
@@ -2007,7 +2008,6 @@ name = "defuse-webauthn"
 version = "0.1.0"
 dependencies = [
  "defuse-crypto",
- "defuse-digest",
  "schemars 0.8.22",
  "serde",
  "serde_json",

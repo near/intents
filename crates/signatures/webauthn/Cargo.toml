@@ -9,7 +9,6 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-digest.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 serde_with = { workspace = true, features = ["base64"] }
@@ -22,7 +21,6 @@ default = ["ed25519", "p256"]
 
 abi = ["defuse-crypto?/abi", "dep:schemars", "serde_with/schemars_0_8"]
 ed25519 = ["defuse-crypto/ed25519", "near-contract"]
-near-contract = ["defuse-crypto?/near-contract", "defuse-digest/near-contract"]
+near-contract = ["defuse-crypto?/near-contract"]
 borsh = ["defuse-crypto?/borsh"]
 p256 = ["defuse-crypto/p256"]
-sha2 = ["defuse-digest/sha2"]
