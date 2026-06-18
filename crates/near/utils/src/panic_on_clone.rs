@@ -55,7 +55,7 @@ mod tests {
     fn from_ref() {
         let value = "example".to_string();
         let poc = PanicOnClone::from_ref(&value);
-        assert!(ptr::eq(&**poc, &value));
+        assert!(ptr::eq(&raw const **poc, &raw const value));
         assert_eq!(&**poc, &value);
     }
 

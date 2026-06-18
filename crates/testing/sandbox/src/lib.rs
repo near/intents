@@ -1,7 +1,6 @@
 #![allow(async_fn_in_trait)]
 
 pub mod account;
-pub mod convert;
 pub mod extensions;
 pub mod global_contract;
 pub mod helpers;

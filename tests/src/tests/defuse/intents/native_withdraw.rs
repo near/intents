@@ -56,8 +56,7 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
                 .account(account)
                 .view()
                 .await
-                .map(|a| a.amount)
-                .unwrap_or(NearToken::from_near(0));
+                .map_or(NearToken::ZERO, |a| a.amount);
 
             result.push(balance);
         }

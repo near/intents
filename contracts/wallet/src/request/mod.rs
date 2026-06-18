@@ -26,7 +26,7 @@ impl Request {
     }
 
     #[inline]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.ops.is_empty() && self.out.is_empty()
     }
 

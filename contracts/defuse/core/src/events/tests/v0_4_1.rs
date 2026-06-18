@@ -1,7 +1,6 @@
-use defuse_serde_utils::base58::Base58;
 use derive_more::derive::From;
 use near_sdk::{CryptoHash, near, serde::Deserialize};
-use serde_with::serde_as;
+use serde_with::base58::Base58;
 use std::borrow::Cow;
 
 use crate::{

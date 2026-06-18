@@ -26,11 +26,12 @@ pub fn read_wasm(mode: &ReadWasmMode, path: impl AsRef<Path>) -> Vec<u8> {
 
     let path = base.join(path);
     let path = fs::canonicalize(&path)
-        .unwrap_or_else(|e| panic!("Failed to canonicalize path: {path:?} {e}"));
+        .unwrap_or_else(|e| panic!("Failed to canonicalize path: {} {e}", path.display()));
 
     eprintln!("Reading WASM file at {}", path.display());
 
-    fs::read(&path).unwrap_or_else(|e| panic!("Failed to read WASM file at {path:?}: {e}"))
+    fs::read(&path)
+        .unwrap_or_else(|e| panic!("Failed to read WASM file at {}: {e}", path.display()))
 }
 
 #[cfg(feature = "defuse")]

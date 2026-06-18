@@ -15,7 +15,7 @@ use crate::{
 use defuse_map_utils::cleanup::DefaultMap;
 use defuse_nep245::{MtEvent, MtTransferEvent};
 use near_sdk::{AccountId, AccountIdRef, json_types::U128, near};
-use serde_with::{DisplayFromStr, serde_as};
+use serde_with::DisplayFromStr;
 use std::{
     borrow::Cow,
     cmp::Reverse,
@@ -268,10 +268,10 @@ impl TransferMatcher {
         let mut transfers = Transfers::default();
         let mut deltas = TokenDeltas::default();
         for (token_id, transfer_matcher) in self.0 {
-            if let Err(unmatched) = transfer_matcher.finalize_into(&token_id, &mut transfers) {
-                if unmatched == 0 || deltas.apply_delta(token_id, unmatched).is_none() {
-                    return Err(InvariantViolated::Overflow);
-                }
+            if let Err(unmatched) = transfer_matcher.finalize_into(&token_id, &mut transfers)
+                && (unmatched == 0 || deltas.apply_delta(token_id, unmatched).is_none())
+            {
+                return Err(InvariantViolated::Overflow);
             }
         }
         if !deltas.is_empty() {
@@ -346,8 +346,8 @@ impl TokenTransferMatcher {
         let (mut deposit, mut withdraw) = (deposits.next(), withdrawals.next());
 
         // as long as there is both: sender and receiver
-        while let (Some((sender, send)), Some((receiver, receive))) =
-            (withdraw.as_mut(), deposit.as_mut())
+        while let Some(((sender, send), (receiver, receive))) =
+            withdraw.as_mut().zip(deposit.as_mut())
         {
             // get min amount and transfer
             let transfer = (*send).min(*receive);

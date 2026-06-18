@@ -1,5 +1,4 @@
 use defuse_sandbox::{
-    convert::ConvertInto,
     extensions::{
         defuse::{
             core::intents::tokens::NotifyOnTransfer,
@@ -36,7 +35,7 @@ use crate::tests::escrow::helpers::{Env, env};
 async fn partial_fills(#[future(awt)] env: Env) {
     const MAKER_AMOUNT: u128 = 10000;
     // const TAKER_AMOUNT: u128 = 20000;
-    const TIMEOUT: Duration = Duration::from_secs(60);
+    const TIMEOUT: Duration = Duration::from_mins(1);
 
     // try_join!(
     //     env.src_deposit_to_verifier(env.maker.account_id(), SRC_TOKEN_ID, MAKER_AMOUNT),
@@ -97,7 +96,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
         salt: [0; 32],
     };
     let state_init = StateInit::V1(StateInitV1 {
-        code: env.escrow_global_id.clone().convert_into(),
+        code: env.escrow_global_id.clone(),
         data: ContractStorage::init_state(&params).unwrap(),
     });
 

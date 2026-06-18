@@ -63,7 +63,7 @@ impl PromiseSingle {
     }
 
     /// Returns whether the promise is no-op, i.e. list of actions is empty
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.actions.is_empty()
     }
 

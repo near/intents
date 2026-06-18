@@ -1,6 +1,5 @@
 use defuse_sandbox::{
     account::Account,
-    convert::ConvertInto,
     extensions::wallet::{
         Wallet, WalletExt,
         contract::{
@@ -13,16 +12,13 @@ use defuse_sandbox::{
         },
     },
     global_contract::GlobalContract,
-    kit::{GlobalContractIdentifier, Near},
+    kit::{GlobalContractIdentifierView, Near, StateInit, StateInitV1},
     root,
 };
 use defuse_test_utils::wasms::WALLET_WASM;
 use futures::{StreamExt, TryStreamExt, stream};
 use impl_tools::autoimpl;
-use near_sdk::{
-    Gas, NearToken,
-    state_init::{StateInit, StateInitV1},
-};
+use near_sdk::{Gas, GlobalContractId, NearToken};
 use rstest::{fixture, rstest};
 use serde_json::json;
 
@@ -190,7 +186,7 @@ async fn test_extension(#[future] env: Env) {
         .await;
 
     let wallet_state_init = StateInit::V1(StateInitV1 {
-        code: env.wallet_global_id.clone().convert_into(),
+        code: env.wallet_global_id.clone(),
         data: State::new(Ed25519PublicKey([0; 32]))
             .extensions([extension.account_id()])
             .as_storage(),
@@ -232,7 +228,7 @@ async fn test_no_storage_staking(#[future] env: Env) {
 
     // do state_init in advance
     env.transaction(wallet_id.clone())
-        .state_init(wallet_state_init.convert_into(), NearToken::ZERO)
+        .state_init(wallet_state_init, NearToken::ZERO)
         .await
         .unwrap()
         .result()
@@ -259,7 +255,7 @@ async fn test_no_storage_staking(#[future] env: Env) {
 
 #[autoimpl(Deref using self.root)]
 struct Env {
-    pub wallet_global_id: GlobalContractIdentifier,
+    pub wallet_global_id: GlobalContractId,
 
     root: Near,
 }
@@ -267,7 +263,7 @@ struct Env {
 impl Env {
     pub fn generate_wallet(&self) -> WalletSigner<ed25519_dalek::SigningKey> {
         WalletSigner::new(
-            self.wallet_global_id.clone().convert_into(),
+            self.wallet_global_id.clone(),
             ed25519_dalek::SigningKey::generate(&mut OsRng),
         )
     }

@@ -48,7 +48,7 @@ impl AppPrivateKey {
     /// let pk = sk.public_key_pv();
     ///
     /// // MPC contract verifies PV app public key
-    /// assert!(pk.check());
+    /// assert!(pk.is_valid());
     /// ```
     #[inline]
     pub fn public_key_pv(&self) -> AppPublicKeyPV {
@@ -59,7 +59,7 @@ impl AppPrivateKey {
             pk2: pk2.to_affine(),
         };
 
-        debug_assert!(pk.check());
+        debug_assert!(pk.is_valid());
 
         pk
     }
@@ -94,6 +94,10 @@ impl AppPrivateKey {
         app_id: &[u8; 32],
         resp: CkdResponse,
     ) -> Option<Secret> {
+        if !resp.is_valid() {
+            return None;
+        }
+
         let secret = self.decrypt(resp).to_affine();
 
         if !Self::verify(mpc_public_key, app_id, secret) {
@@ -112,7 +116,7 @@ impl AppPrivateKey {
     ///
     /// See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/ckd-example-cli/src/ckd.rs#L100-L115>
     fn verify(mpc_public_key: G2Affine, app_id: &[u8; 32], signature: G1Affine) -> bool {
-        if !check_g1(&signature) || !check_g2(&mpc_public_key) {
+        if !is_valid_g1(&signature) || !is_valid_g2(&mpc_public_key) {
             return false;
         }
 
@@ -140,8 +144,8 @@ impl AppPublicKeyPV {
     /// Check that `e(app_pk1, g2) = e(g1, app_pk2)`
     ///
     /// See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/contract/src/primitives/ckd.rs#L34-L54>
-    pub fn check(&self) -> bool {
-        if !check_g1(&self.pk1) || !check_g2(&self.pk2) {
+    pub fn is_valid(&self) -> bool {
+        if !is_valid_g1(&self.pk1) || !is_valid_g2(&self.pk2) {
             return false;
         }
 
@@ -169,7 +173,7 @@ impl AppPublicKeyPV {
         self.verify_app_id(mpc_public_key, app_id, resp)
     }
 
-    /// Check that `e(big_c, g2) = e(big_y, app_pk2) * e(hash_point, public_key)`
+    /// Verify that `e(big_c, g2) = e(big_y, app_pk2) * e(hash_point, public_key)`
     ///
     /// See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/contract/src/primitives/ckd.rs#L56-L83>
     pub fn verify_app_id(
@@ -178,6 +182,10 @@ impl AppPublicKeyPV {
         app_id: [u8; 32],
         resp: &CkdResponse,
     ) -> bool {
+        if !resp.is_valid() {
+            return false;
+        }
+
         let minus_g2 = -G2Affine::generator();
         let hp = hash_point(&mpc_public_key, &app_id);
 
@@ -200,11 +208,24 @@ pub struct CkdResponse {
     pub big_c: G1Affine,
 }
 
-fn check_g1(p: &G1Affine) -> bool {
+impl CkdResponse {
+    /// Check if points in the response are valid.
+    ///
+    /// See [`AppPublicKeyPV::verify`] for full public verification.
+    #[inline]
+    pub fn is_valid(&self) -> bool {
+        // See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/contract/src/primitives/ckd.rs#L69-L71>
+        is_valid_g1(&self.big_c) && is_valid_g1(&self.big_y)
+    }
+}
+
+#[inline]
+fn is_valid_g1(p: &G1Affine) -> bool {
     (!p.is_identity() & p.is_on_curve() & p.is_torsion_free()).into()
 }
 
-fn check_g2(p: &G2Affine) -> bool {
+#[inline]
+fn is_valid_g2(p: &G2Affine) -> bool {
     (!p.is_identity() & p.is_on_curve() & p.is_torsion_free()).into()
 }
 
@@ -269,7 +290,7 @@ mod tests {
 
         // 2. MPC contract checks PV app public key and emits an event
         // for MPC nodes
-        assert!(pk.check());
+        assert!(pk.is_valid());
 
         // 3. MPC nodes encrypt derived secret and publish the response
         // back on-chain
@@ -321,7 +342,7 @@ mod tests {
 
         // 2. MPC contract checks PV app public key
         // and emits an event for MPC nodes
-        assert!(pk.check());
+        assert!(pk.is_valid());
 
         // 3. MPC nodes encrypt derived secret and publish the response
         // back on-chain

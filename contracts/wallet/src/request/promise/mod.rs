@@ -73,7 +73,7 @@ impl PromiseDAG {
         }
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.after.is_empty() && self.then.is_empty()
     }
 

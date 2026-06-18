@@ -1,5 +1,5 @@
 use near_sdk::{AccountIdRef, Gas, near};
-use serde_with::{DisplayFromStr, serde_as};
+use serde_with::DisplayFromStr;
 use std::{borrow::Cow, collections::BTreeMap};
 
 use crate::{amounts::Amounts, intents::tokens::Transfer};
@@ -13,7 +13,7 @@ pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
 pub mod imt {
     use defuse_token_id::{TokenId, imt::ImtTokenId};
     use near_sdk::{AccountIdRef, near};
-    use serde_with::{DisplayFromStr, serde_as};
+    use serde_with::DisplayFromStr;
     use std::{borrow::Cow, collections::BTreeMap};
 
     use crate::{

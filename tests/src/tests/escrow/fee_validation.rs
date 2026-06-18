@@ -1,7 +1,6 @@
 use defuse_fees::Pips;
 use defuse_sandbox::{
     U128,
-    convert::ConvertInto,
     extensions::{
         defuse::{
             core::{
@@ -49,7 +48,7 @@ fn test_excessive_protocol_fee_does_not_pass_validation() {
         src_token,
         dst_token,
         price: "1".parse().unwrap(),
-        deadline: Deadline::timeout(Duration::from_secs(60)),
+        deadline: Deadline::timeout(Duration::from_mins(1)),
         partial_fills_allowed: false,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
@@ -78,7 +77,7 @@ fn test_excessive_integrator_fee_does_not_pass_validation() {
         src_token,
         dst_token,
         price: "1".parse().unwrap(),
-        deadline: Deadline::timeout(Duration::from_secs(60)),
+        deadline: Deadline::timeout(Duration::from_mins(1)),
         partial_fills_allowed: false,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
@@ -107,7 +106,7 @@ fn test_excessive_integrator_fees_sum_does_not_pass_validation() {
         src_token,
         dst_token,
         price: "1".parse().unwrap(),
-        deadline: Deadline::timeout(Duration::from_secs(60)),
+        deadline: Deadline::timeout(Duration::from_mins(1)),
         partial_fills_allowed: false,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
@@ -139,7 +138,7 @@ fn test_combined_protocol_and_integrator_fees_does_not_pass_validation() {
         src_token,
         dst_token,
         price: "1".parse().unwrap(),
-        deadline: Deadline::timeout(Duration::from_secs(60)),
+        deadline: Deadline::timeout(Duration::from_mins(1)),
         partial_fills_allowed: false,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
@@ -172,7 +171,7 @@ fn test_valid_combined_fees_within_cap() {
         src_token,
         dst_token,
         price: "1".parse().unwrap(),
-        deadline: Deadline::timeout(Duration::from_secs(60)),
+        deadline: Deadline::timeout(Duration::from_mins(1)),
         partial_fills_allowed: false,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
@@ -219,7 +218,7 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
         src_token: src_token.clone(),
         dst_token: dst_token.clone(),
         price: "1".parse().unwrap(),
-        deadline: Deadline::timeout(Duration::from_secs(60)),
+        deadline: Deadline::timeout(Duration::from_mins(1)),
         partial_fills_allowed: true,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
@@ -236,7 +235,7 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
     };
 
     let state_init = StateInit::V1(StateInitV1 {
-        code: env.escrow_global_id.clone().convert_into(),
+        code: env.escrow_global_id.clone(),
         data: ContractStorage::init_state(&params).unwrap(),
     });
 

@@ -21,7 +21,7 @@ async fn init_state_has_single_empty_key(#[future(awt)] env: Env) {
         src_token,
         dst_token,
         price: "1".parse().unwrap(),
-        deadline: Deadline::timeout(Duration::from_secs(60)),
+        deadline: Deadline::timeout(Duration::from_mins(1)),
         partial_fills_allowed: false,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),

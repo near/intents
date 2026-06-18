@@ -18,7 +18,6 @@ defuse-nep245.workspace = true
 defuse-nep413 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-num-utils.workspace = true
 defuse-sep53 = { workspace = true, features = ["near-contract", "serde"] }
-defuse-serde-utils = { workspace = true, features = ["base58", "base64"] }
 defuse-tip191 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245", "borsh", "serde"] }
 defuse-ton-connect = { workspace = true, features = ["near-contract", "serde"] }
@@ -31,7 +30,7 @@ hex-literal.workspace = true
 impl-tools.workspace = true
 near-contract-standards.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
-serde_with.workspace = true
+serde_with = { workspace = true, features = ["base58", "base64"] }
 thiserror.workspace = true
 
 arbitrary = { workspace = true, optional = true }
@@ -47,13 +46,13 @@ abi = [
   "defuse-fees/abi",
   "defuse-nep413/abi",
   "defuse-sep53/abi",
-  "defuse-serde-utils/abi",
   "defuse-tip191/abi",
   "defuse-token-id/abi",
   "defuse-ton-connect/abi",
   "defuse-webauthn/abi",
   "dep:serde_json",
   "near-sdk/abi",
+  "serde_with/schemars_0_8",
 ]
 arbitrary = [
   "defuse-bitmap/arbitrary",
@@ -71,9 +70,9 @@ chrono = { workspace = true, features = ["now"] }
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
 
 [dev-dependencies]
+defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-test-utils.workspace = true
 
-arbitrary.workspace = true
 hex-literal.workspace = true
 itertools.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }

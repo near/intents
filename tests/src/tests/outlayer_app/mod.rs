@@ -4,18 +4,18 @@ use defuse_sandbox::{
         OutlayerAppDeployerExt, OutlayerAppExt,
         contract::{Event, State as OutlayerState},
     },
-    kit::{GlobalContractIdentifier, Near, PublishMode},
+    kit::{Near, PublishMode, StateInit},
     root,
 };
 use defuse_test_utils::wasms::OUTLAYER_APP_WASM;
-use near_sdk::{AsNep297Event, NearToken, env::sha256_array};
+use near_sdk::{AsNep297Event, GlobalContractId, NearToken, env::sha256_array};
 use rstest::{fixture, rstest};
 
 const EXAMPLE_URL: &str = "https://example.com/contract.wasm";
 
 pub struct OutlayerAppEnv {
     pub root: Near,
-    pub global_id: GlobalContractIdentifier,
+    pub global_id: GlobalContractId,
 }
 
 #[fixture]
@@ -28,7 +28,7 @@ pub async fn outlayer_app_env(#[future(awt)] root: Near) -> OutlayerAppEnv {
 
     OutlayerAppEnv {
         root,
-        global_id: GlobalContractIdentifier::CodeHash(sha256_array(&*OUTLAYER_APP_WASM).into()),
+        global_id: GlobalContractId::CodeHash(sha256_array(&*OUTLAYER_APP_WASM).into()),
     }
 }
 

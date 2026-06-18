@@ -5,7 +5,7 @@ use near_sdk::{AccountId, ext_contract};
 #[ext_contract(ext_fees_manager)]
 #[allow(clippy::module_name_repetitions)]
 pub trait FeesManager: AccessControllable {
-    /// Set fees for both token_in and token_out
+    /// Set fees for both `token_in` and `token_out`
     fn set_fee(&mut self, fee: Pips);
     fn fee(&self) -> Pips;
 

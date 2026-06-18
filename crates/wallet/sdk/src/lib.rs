@@ -106,7 +106,7 @@ where
         self
     }
 
-    pub fn chain_id(&self) -> &str {
+    pub const fn chain_id(&self) -> &str {
         self.chain_id.as_str()
     }
 
@@ -144,7 +144,7 @@ where
 
     /// Returns an optimal lag for `created_at`, so it doesn't fail on-chain.
     fn optimal_lag(&self) -> Duration {
-        Duration::from_secs(60).min(self.state.nonces.timeout() / 5)
+        Duration::from_mins(1).min(self.state.nonces.timeout() / 5)
     }
 }
 

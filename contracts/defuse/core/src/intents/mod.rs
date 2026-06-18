@@ -6,11 +6,9 @@ pub mod tokens;
 #[cfg(feature = "imt")]
 pub mod imt;
 
-use defuse_serde_utils::base58::Base58;
 use derive_more::derive::From;
 use near_sdk::{AccountIdRef, CryptoHash, near};
-use serde_with::serde_as;
-use tokens::{NativeWithdraw, StorageDeposit};
+use serde_with::base58::Base58;
 
 #[cfg(feature = "imt")]
 use crate::intents::imt::{ImtBurn, ImtMint};
@@ -24,7 +22,7 @@ use crate::{
 use self::{
     account::{AddPublicKey, RemovePublicKey},
     token_diff::TokenDiff,
-    tokens::{FtWithdraw, MtWithdraw, NftWithdraw, Transfer},
+    tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
 };
 
 #[near(serializers = [json])]

@@ -15,12 +15,12 @@ mod on_auth;
 #[cfg(target_arch = "wasm32")]
 #[unsafe(no_mangle)]
 pub extern "C" fn stub_return_bytes() {
-    if let Some(input) = near_sdk::env::input() {
-        if input.len() >= 8 {
-            let len = u64::from_le_bytes(input[..8].try_into().unwrap()) as usize;
-            let bytes = vec![0xf0u8; len];
-            near_sdk::env::value_return(&bytes);
-        }
+    if let Some(input) = near_sdk::env::input()
+        && input.len() >= 8
+    {
+        let len = u64::from_le_bytes(input[..8].try_into().unwrap()) as usize;
+        let bytes = vec![0xf0u8; len];
+        near_sdk::env::value_return(&bytes);
     }
 }
 

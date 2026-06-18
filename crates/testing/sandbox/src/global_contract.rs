@@ -1,5 +1,5 @@
 use anyhow::Result;
-use near_kit::{Final, GlobalContractIdentifier, KeyPair, Near, NearToken, PublishMode};
+use near_kit::{Final, GlobalContractId, KeyPair, Near, NearToken, PublishMode};
 use near_sdk::AccountIdRef;
 use sha2::{Digest, Sha256};
 
@@ -9,14 +9,14 @@ pub trait GlobalContract {
         target: impl AsRef<AccountIdRef>,
         code: impl Into<Vec<u8>>,
         balance: NearToken,
-    ) -> Result<GlobalContractIdentifier>;
+    ) -> Result<GlobalContractId>;
 
     async fn deploy_immutable_global_contract(
         &self,
         target: impl AsRef<AccountIdRef>,
         code: impl Into<Vec<u8>>,
         balance: NearToken,
-    ) -> Result<GlobalContractIdentifier>;
+    ) -> Result<GlobalContractId>;
 }
 
 impl GlobalContract for Near {
@@ -25,7 +25,7 @@ impl GlobalContract for Near {
         target: impl AsRef<AccountIdRef>,
         code: impl Into<Vec<u8>>,
         balance: NearToken,
-    ) -> Result<GlobalContractIdentifier> {
+    ) -> Result<GlobalContractId> {
         let kp = KeyPair::random();
         let account_id = target.as_ref();
 
@@ -38,7 +38,7 @@ impl GlobalContract for Near {
             .await?
             .result()?;
 
-        Ok(GlobalContractIdentifier::AccountId(account_id.into()))
+        Ok(GlobalContractId::AccountId(account_id.into()))
     }
 
     async fn deploy_immutable_global_contract(
@@ -46,11 +46,11 @@ impl GlobalContract for Near {
         target: impl AsRef<AccountIdRef>,
         code: impl Into<Vec<u8>>,
         balance: NearToken,
-    ) -> Result<GlobalContractIdentifier> {
+    ) -> Result<GlobalContractId> {
         let code = code.into();
 
         let hash: [u8; 32] = Sha256::digest(&code).into();
-        let id = GlobalContractIdentifier::CodeHash(hash.into());
+        let id = GlobalContractId::CodeHash(hash.into());
 
         self.transaction(target.as_ref())
             .create_account()

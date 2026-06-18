@@ -2,7 +2,7 @@ use anyhow::Result;
 use borsh::BorshSerialize;
 use defuse_global_deployer::{AsHex, State as DeployerState};
 use near_account_id::AccountId;
-use near_kit::{Final, Gas, GlobalContractIdentifier, Near, NearToken};
+use near_kit::{Final, Gas, GlobalContractId, Near, NearToken};
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
 use sha2::{Digest, Sha256};
@@ -58,7 +58,7 @@ pub trait GDDeployerExt {
     /// Deploy a new `global-deployer` instance via `StateInit`.
     async fn deploy_gd_instance(
         &self,
-        global_contract_id: GlobalContractIdentifier,
+        global_contract_id: GlobalContractId,
         state: DeployerState<'_>,
     ) -> Result<GlobalDeployerClient>;
 }
@@ -66,7 +66,7 @@ pub trait GDDeployerExt {
 impl GDDeployerExt for Near {
     async fn deploy_gd_instance(
         &self,
-        global_contract_id: GlobalContractIdentifier,
+        global_contract_id: GlobalContractId,
         state: DeployerState<'_>,
     ) -> Result<GlobalDeployerClient> {
         Ok(self.contract::<GlobalDeployer>(

@@ -63,7 +63,7 @@ mod tests {
 
     #[test]
     fn zba() {
-        const ZBA_TIMEOUT: Duration = Duration::from_secs(15 * 60); // 15m
+        const ZBA_TIMEOUT: Duration = Duration::from_mins(15); // 15m
         const MAX_SIZE: usize = 236;
 
         let mut ns = ConcurrentNonces::new(rng());

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use defuse_outlayer_app::{AsHex, State as OutlayerState};
 use near_account_id::AccountId;
-use near_kit::{Final, GlobalContractIdentifier, Near, NearToken};
+use near_kit::{Final, GlobalContractId, Near, NearToken};
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
 
@@ -19,7 +19,8 @@ pub struct OaSetCodeArgs {
     pub new_code_url: String,
 }
 
-#[derive(Serialize, Deserialize)]pub struct OaTransferAdminArgs {
+#[derive(Serialize, Deserialize)]
+pub struct OaTransferAdminArgs {
     pub new_admin_id: AccountId,
 }
 
@@ -40,7 +41,7 @@ pub trait OutlayerAppDeployerExt {
     /// Deploy a new `outlayer-app` instance via `StateInit`.
     async fn deploy_outlayer_app(
         &self,
-        global_contract_id: GlobalContractIdentifier,
+        global_contract_id: GlobalContractId,
         state: OutlayerState<'static>,
     ) -> OutlayerAppClient;
 }
@@ -48,7 +49,7 @@ pub trait OutlayerAppDeployerExt {
 impl OutlayerAppDeployerExt for Near {
     async fn deploy_outlayer_app(
         &self,
-        global_contract_id: GlobalContractIdentifier,
+        global_contract_id: GlobalContractId,
         state: OutlayerState<'static>,
     ) -> OutlayerAppClient {
         self.contract::<OutlayerApp>(

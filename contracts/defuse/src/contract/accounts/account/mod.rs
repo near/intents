@@ -48,9 +48,11 @@ impl Account {
             nonces: MaybeLegacyAccountNonces::new(LookupMap::with_hasher(
                 prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
             )),
-            flags: (!has_implicit_public_key(me))
-                .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
-                .unwrap_or_else(AccountFlags::empty),
+            flags: if has_implicit_public_key(me) {
+                AccountFlags::empty()
+            } else {
+                AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED
+            },
             public_keys: IterableSet::new(prefix.as_slice().nest(AccountPrefix::PublicKeys)),
             state: AccountState::new(prefix.as_slice().nest(AccountPrefix::State)),
             prefix,

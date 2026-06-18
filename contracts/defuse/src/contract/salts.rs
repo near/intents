@@ -49,12 +49,10 @@ impl SaltManager for Contract {
         current
     }
 
-    #[inline]
     fn is_valid_salt(&self, salt: Salt) -> bool {
         self.salts.is_valid(salt)
     }
 
-    #[inline]
     fn current_salt(&self) -> Salt {
         self.salts.current()
     }

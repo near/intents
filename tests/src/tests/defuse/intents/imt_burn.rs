@@ -24,7 +24,7 @@ async fn imt_burn_intent() {
     let memo = "Some memo";
     let amount = 1000;
 
-    let mt_id = TokenId::from(ImtTokenId::new(user.id().clone(), token_id.to_string()));
+    let mt_id = TokenId::from(ImtTokenId::new(user.id().clone(), token_id.clone()));
 
     let mint_payload = user
         .sign_defuse_payload_default(

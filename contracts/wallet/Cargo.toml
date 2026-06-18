@@ -16,10 +16,10 @@ workspace = true
 defuse-bitmap = { workspace = true, features = ["borsh"] }
 defuse-borsh-utils.workspace = true
 defuse-deadline = { workspace = true, features = ["borsh", "serde"] }
-defuse-serde-utils = { workspace = true, features = ["base58"] }
 
 derive_more = { workspace = true, features = ["from"] }
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
+serde_with = { workspace = true, features = ["base58"] }
 thiserror.workspace = true
 
 defuse-crypto = { workspace = true, default-features = false, features = ["parse", "borsh"], optional = true }
@@ -33,9 +33,9 @@ abi = [
   "defuse-borsh-utils/abi",
   "defuse-crypto?/abi",
   "defuse-deadline/abi",
-  "defuse-serde-utils/abi",
   "defuse-webauthn?/abi",
   "near-sdk/abi",
+  "serde_with/schemars_0_8",
 ]
 arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
 concurrent = ["dep:rand_core"]
@@ -60,8 +60,8 @@ webauthn-p256 = ["defuse-webauthn/p256", "webauthn"]
 ed25519 = ["defuse-crypto/ed25519", "defuse-crypto/near-contract"]
 
 [package.metadata.near.reproducible_build]
-image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
-image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"
+image_digest = "sha256:ccb22bb4e677ed022d8b9d1aa1b32f0af52dd0471ef1c32e48dedbf68ee6ee17"
 passed_env = []
 container_build_command = [
   "cargo",
@@ -75,8 +75,8 @@ container_build_command = [
 ]
 
 [package.metadata.near.reproducible_build.variant.webauthn-ed25519]
-image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
-image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"
+image_digest = "sha256:ccb22bb4e677ed022d8b9d1aa1b32f0af52dd0471ef1c32e48dedbf68ee6ee17"
 passed_env = []
 container_build_command = [
   "cargo",
@@ -90,8 +90,8 @@ container_build_command = [
 ]
 
 [package.metadata.near.reproducible_build.variant.webauthn-p256]
-image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
-image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"
+image_digest = "sha256:ccb22bb4e677ed022d8b9d1aa1b32f0af52dd0471ef1c32e48dedbf68ee6ee17"
 passed_env = []
 container_build_command = [
   "cargo",
@@ -105,8 +105,8 @@ container_build_command = [
 ]
 
 [package.metadata.near.reproducible_build.variant.no-auth]
-image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
-image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"
+image_digest = "sha256:ccb22bb4e677ed022d8b9d1aa1b32f0af52dd0471ef1c32e48dedbf68ee6ee17"
 passed_env = []
 container_build_command = [
   "cargo",

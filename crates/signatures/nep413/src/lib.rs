@@ -22,7 +22,7 @@ use impl_tools::autoimpl;
 pub struct Nep413Payload {
     pub message: String,
 
-    #[cfg_attr(feature = "serde", serde_as(as = "defuse_serde_utils::base64::Base64"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::base64::Base64"))]
     pub nonce: [u8; 32],
 
     pub recipient: String,

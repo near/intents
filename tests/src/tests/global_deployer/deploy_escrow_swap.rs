@@ -28,7 +28,7 @@ fn dummy_escrow_params(root: &AccountId) -> Params {
         src_token: format!("nep141:{src_token}").parse().unwrap(),
         dst_token: format!("nep141:{dst_token}").parse().unwrap(),
         price: "1".parse().unwrap(),
-        deadline: Deadline::timeout(Duration::from_secs(3600)),
+        deadline: Deadline::timeout(Duration::from_hours(1)),
         partial_fills_allowed: false,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
@@ -96,9 +96,7 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
     let escrow_state = DeployerState::new(bob.account_id().clone());
     let escrow_controller_instance = root
         .deploy_gd_instance(
-            GlobalContractIdentifier::AccountId(
-                upgradable_controller_instance.contract_id().clone(),
-            ),
+            GlobalContractId::AccountId(upgradable_controller_instance.contract_id().clone()),
             escrow_state.clone(),
         )
         .await
@@ -120,9 +118,7 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
     let escrow_instance = {
         let account_id = root
             .deploy_deterministic_account(
-                GlobalContractIdentifier::AccountId(
-                    escrow_controller_instance.contract_id().clone(),
-                ),
+                GlobalContractId::AccountId(escrow_controller_instance.contract_id().clone()),
                 ContractStorage::init_state(&escrow_instance_params).unwrap(),
                 NearToken::ZERO,
             )
@@ -198,9 +194,7 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
     let escrow_state = DeployerState::new(bob.account_id().clone());
     let escrow_controller_instance = root
         .deploy_gd_instance(
-            GlobalContractIdentifier::AccountId(
-                upgradable_controller_instance.contract_id().clone(),
-            ),
+            GlobalContractId::AccountId(upgradable_controller_instance.contract_id().clone()),
             escrow_state.clone(),
         )
         .await
@@ -222,9 +216,7 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
     let escrow_instance = {
         let account_id = root
             .deploy_deterministic_account(
-                GlobalContractIdentifier::AccountId(
-                    escrow_controller_instance.contract_id().clone(),
-                ),
+                GlobalContractId::AccountId(escrow_controller_instance.contract_id().clone()),
                 ContractStorage::init_state(&escrow_instance_params).unwrap(),
                 NearToken::ZERO,
             )

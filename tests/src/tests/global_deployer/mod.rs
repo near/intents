@@ -14,12 +14,12 @@ use defuse_sandbox::{
         },
     },
     global_contract::GlobalContract,
-    kit::{ExecutionStatus, Final, GlobalContractIdentifier, Near},
+    kit::{ExecutionStatus, Final, Near, StateInit},
     root,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::MT_RECEIVER_STUB_WASM};
 use futures::future::join_all;
-use near_sdk::{AsNep297Event, Gas, NearToken, env::sha256_array};
+use near_sdk::{AsNep297Event, Gas, GlobalContractId, NearToken, env::sha256_array};
 use rstest::{fixture, rstest};
 use std::{
     future::IntoFuture,
@@ -33,7 +33,7 @@ static SUB_COUNTER: AtomicU32 = AtomicU32::new(0);
 
 pub struct DeployerEnv {
     pub root: Near,
-    pub deployer_global_id: GlobalContractIdentifier,
+    pub deployer_global_id: GlobalContractId,
 }
 
 #[fixture]
@@ -81,7 +81,7 @@ async fn test_deploy_controller_instance(
         .unwrap();
 
     root.deploy_gd_instance(
-        GlobalContractIdentifier::AccountId(controller_instance.contract_id().clone()),
+        GlobalContractId::AccountId(controller_instance.contract_id().clone()),
         upgradeable_instance_state.clone(),
     )
     .await
@@ -108,7 +108,7 @@ async fn test_deploy_controller_instance(
 
     let mutable_controller_instance = root
         .deploy_gd_instance(
-            GlobalContractIdentifier::AccountId(controller_instance.contract_id().clone()),
+            GlobalContractId::AccountId(controller_instance.contract_id().clone()),
             upgradeable_instance_state.clone(),
         )
         .await
@@ -124,12 +124,14 @@ async fn test_deploy_controller_instance(
     );
 
     assert_eq!(
-        GlobalContractIdentifier::CodeHash(
-            root.account(controller_instance.contract_id())
+        GlobalContractId::CodeHash(
+            *root
+                .account(controller_instance.contract_id())
                 .await
                 .unwrap()
                 .global_contract_hash
                 .unwrap()
+                .as_bytes()
         ),
         deployer_code_hash_id
     );

@@ -1,10 +1,7 @@
 use std::collections::BTreeMap;
 
 use anyhow::Result;
-use near_kit::{
-    DeterministicAccountStateInit, DeterministicAccountStateInitV1, Final,
-    GlobalContractIdentifier, Near,
-};
+use near_kit::{Final, GlobalContractId, Near};
 
 use crate::{
     global_contract::GlobalContract, nep616::DeployDeterministicAccountExt,
@@ -23,20 +20,20 @@ pub trait MtReceiverStub {
 //         &self,
 //         name: impl AsRef<str>,
 //         wasm: impl Into<Vec<u8>>,
-//     ) -> Result<GlobalContractIdentifier>;
+//     ) -> Result<GlobalContractId>;
 
 //     /// Deploy an instance using `DeterministicStateInit` with the given raw state.
 //     /// Returns the deterministic account ID derived from the state.
 //     async fn deploy_mt_receiver_stub_instance(
 //         &self,
-//         global_contract_id: GlobalContractIdentifier,
+//         global_contract_id: GlobalContractId,
 //         raw_state: BTreeMap<Vec<u8>, Vec<u8>>,
 //     ) -> Result<AccountId>;
 
 //     /// Deploy an instance and return the execution outcome for gas analysis.
 //     async fn deploy_mt_receiver_stub_instance_raw(
 //         &self,
-//         global_contract_id: GlobalContractIdentifier,
+//         global_contract_id: GlobalContractId,
 //         raw_state: BTreeMap<Vec<u8>, Vec<u8>>,
 //     ) -> Result<(AccountId, SuccessfulExecutionOutcome)>;
 // }
@@ -46,7 +43,7 @@ pub trait MtReceiverStub {
 //         &self,
 //         name: impl AsRef<str>,
 //         wasm: impl Into<Vec<u8>>,
-//     ) -> Result<GlobalContractIdentifier> {
+//     ) -> Result<GlobalContractId> {
 //         let account_id = self.account_id().sub_account(name.as_ref()).unwrap();
 //         self.deploy_upgradable_global_contract(account_id, wasm, NearToken::from_near(100))
 //             .await
@@ -54,7 +51,7 @@ pub trait MtReceiverStub {
 
 //     async fn deploy_mt_receiver_stub_instance(
 //         &self,
-//         global_contract_id: GlobalContractIdentifier,
+//         global_contract_id: GlobalContractId,
 //         raw_state: BTreeMap<Vec<u8>, Vec<u8>>,
 //     ) -> Result<AccountId> {
 //         self.deploy_deterministic_account(global_contract_id, raw_state, NearToken::ZERO)
@@ -63,7 +60,7 @@ pub trait MtReceiverStub {
 
 //     async fn deploy_mt_receiver_stub_instance_raw(
 //         &self,
-//         global_contract_id: GlobalContractIdentifier,
+//         global_contract_id: GlobalContractId,
 //         raw_state: BTreeMap<Vec<u8>, Vec<u8>>,
 //     ) -> Result<(AccountId, SuccessfulExecutionOutcome)> {
 //         let si = DeterministicAccountStateInit::V1(DeterministicAccountStateInitV1 {

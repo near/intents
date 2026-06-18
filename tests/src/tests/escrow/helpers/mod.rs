@@ -14,13 +14,13 @@ use defuse_sandbox::{
         wnear::WNearDeployerExt,
     },
     global_contract::GlobalContract,
-    kit::{FungibleToken, GlobalContractIdentifier, Near},
+    kit::{FungibleToken, Near, StateInit},
     root,
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, ESCROW_SWAP_WASM, POA_FACTORY_WASM, WNEAR_WASM};
 use futures::{future::try_join_all, try_join};
 use impl_tools::autoimpl;
-use near_sdk::NearToken;
+use near_sdk::{GlobalContractId, NearToken};
 use rstest::fixture;
 
 #[fixture]
@@ -30,7 +30,7 @@ pub async fn env(#[future(awt)] root: Near) -> Env {
 
 #[autoimpl(Deref using self.root)]
 pub struct Env {
-    pub escrow_global_id: GlobalContractIdentifier,
+    pub escrow_global_id: GlobalContractId,
     pub verifier: DefuseClient,
     pub src_ft: FungibleToken,
     pub dst_ft: FungibleToken,
@@ -113,7 +113,7 @@ impl Env {
         }
     }
 
-    async fn deploy_global_escrow_swap(root: &Near) -> GlobalContractIdentifier {
+    async fn deploy_global_escrow_swap(root: &Near) -> GlobalContractId {
         let account_id = root.account_id().sub_account("escrow-swap").unwrap();
         root.deploy_upgradable_global_contract(
             account_id,

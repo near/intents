@@ -32,7 +32,7 @@ pub trait DefuseSignerExt {
     where
         T: Into<Intent>,
     {
-        let deadline = Deadline::timeout(std::time::Duration::from_secs(120));
+        let deadline = Deadline::timeout(std::time::Duration::from_mins(2));
         let nonce = generate_unique_nonce(defuse_contract, Some(deadline)).await?;
 
         let defuse_intents = DefuseIntents {
