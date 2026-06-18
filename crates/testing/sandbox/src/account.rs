@@ -1,5 +1,7 @@
 use near_account_id::AccountId;
-use near_kit::{Final, InMemorySigner, KeyPair, Near, NearToken, PublicKey};
+use near_kit::{
+    Action, Final, FunctionCallAction, InMemorySigner, KeyPair, Near, NearToken, PublicKey,
+};
 
 pub trait Account {
     async fn create_subaccount(
@@ -9,6 +11,14 @@ pub trait Account {
     ) -> Near;
 
     async fn create_implicit(&self, balance: impl Into<Option<NearToken>>) -> Near;
+
+    async fn deploy_sub_contract(
+        &self,
+        name: impl AsRef<str>,
+        balance: NearToken,
+        code: impl Into<Vec<u8>>,
+        init_call: impl Into<Option<FunctionCallAction>>,
+    ) -> anyhow::Result<Near>;
 }
 
 impl Account for Near {
@@ -58,6 +68,30 @@ impl Account for Near {
         }
 
         self.with_signer(InMemorySigner::from_secret_key(account_id, kp.secret_key).unwrap())
+    }
+
+    // TODO: create + deploy n 1 tx
+    async fn deploy_sub_contract(
+        &self,
+        name: impl AsRef<str>,
+        balance: NearToken,
+        code: impl Into<Vec<u8>>,
+        init_call: impl Into<Option<FunctionCallAction>>,
+    ) -> anyhow::Result<Near> {
+        let account = self.create_subaccount(name, balance).await;
+
+        let mut tx = account.deploy(code);
+
+        if let Some(init_call) = init_call.into() {
+            tx = tx.add_action(Action::FunctionCall(init_call));
+        }
+
+        tx.wait_until(Final)
+            .await?
+            .result()
+            .map_err(|e| anyhow::anyhow!("Failed to deploy sub contract: {:?}", e))?;
+
+        Ok(account)
     }
 }
 

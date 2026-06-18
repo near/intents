@@ -3,7 +3,7 @@ use defuse_fees::Pips;
 use defuse_randomness::Rng;
 use defuse_sandbox::{
     extensions::defuse::{
-        Defuse, DefuseDeployerExt, DefuseExt, DefuseSignerExt, DoAuthCallArgs,
+        DefuseDeployerExt, DefuseExt, DefuseSignerExt, DoAuthCallArgs,
         contract::{
             Contract as DefuseContract,
             config::{DefuseConfig, RolesConfig},
@@ -11,7 +11,7 @@ use defuse_sandbox::{
         core::{fees::FeesConfig, intents::auth::AuthCall},
     },
     global_contract::GlobalContract,
-    kit::{ExecutionStatus, Final},
+    kit::ExecutionStatus,
 };
 use defuse_test_utils::{
     random::rng,
@@ -224,18 +224,15 @@ async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] 
         .saturating_sub(NEAR_WITHDRAW_PROMISE_READ_OVERHEAD);
 
     defuse
-        .transaction(defuse.account_id())
-        .add_action(
-            Defuse::do_auth_call(DoAuthCallArgs {
+        .defuse_do_auth_call(
+            defuse.account_id(),
+            DoAuthCallArgs {
                 signer_id: account,
                 auth_call: intent,
-            })
-            .gas(callback_gas),
+            },
+            callback_gas,
         )
-        .wait_until(Final)
         .await
-        .unwrap()
-        .result()
         .unwrap();
 }
 
@@ -445,15 +442,14 @@ async fn test_auth_call_state_init_via_do_auth_call(
 
             async move {
                 let result = defuse
-                    .transaction(defuse.account_id())
-                    .add_action(
-                        Defuse::do_auth_call(DoAuthCallArgs {
+                    .defuse_do_auth_call(
+                        defuse.account_id(),
+                        DoAuthCallArgs {
                             signer_id: account_id.clone(),
                             auth_call: auth_intent,
-                        })
-                        .gas(callback_gas),
+                        },
+                        callback_gas,
                     )
-                    .wait_until(Final)
                     .await
                     .unwrap();
 

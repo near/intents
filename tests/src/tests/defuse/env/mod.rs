@@ -8,6 +8,7 @@ use defuse_randomness::{RngExt, make_true_rng};
 use defuse_sandbox::{
     account::Account,
     extensions::{
+        DEFAULT_GAS,
         defuse::{
             DefuseClient, DefuseExt, HasPublicKeyArgs,
             core::PublicKey as DefusePublicKey,
@@ -15,7 +16,7 @@ use defuse_sandbox::{
         },
         poa::{PoAFactoryExt, PoaFactoryClient},
     },
-    kit::{Final, FungibleToken, Gas, Near},
+    kit::{Final, FungibleToken, Near},
 };
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
@@ -34,7 +35,7 @@ const INITIAL_USER_BALANCE: NearToken = NearToken::from_near(10);
 // TODO: implement it as a fixture
 #[autoimpl(Deref using self.root)]
 pub struct Env {
-    root: Near,
+    pub root: Near,
 
     pub defuse_near: Near,
     pub wnear: FungibleToken,
@@ -76,7 +77,7 @@ impl Env {
         if self
             .ft(AccountId::from(token_id))?
             .transfer_call(self.defuse.contract_id(), amount, msg.to_string())
-            .gas(Gas::from_tgas(300))
+            .gas(DEFAULT_GAS)
             .wait_until(Final)
             .await?
             .json::<U128>()
@@ -143,22 +144,6 @@ impl Env {
 
         self.create_named_user(name).await
     }
-
-    // // Randomly derives account ID from seed and unique index
-    // // (to match existing accounts in migration tests)
-    // // Or create new arbitrary account id
-    // fn get_next_account_id(&self) -> Result<AccountId> {
-    //     let mut rand = make_true_rng();
-
-    //     // NOTE: every second account is legacy
-    //     if rand.random() {
-    //         let index = self.next_user_index.fetch_add(1, Ordering::SeqCst);
-    //         Ok(generate_legacy_user_account_id(self.account_id(), index, self.seed)
-    //             .expect("Failed to generate account ID"))
-    //     } else {
-    //         generate_random_account_id(self.account_id())
-    //     }
-    // }
 
     // if no tokens provided - only wnear storage deposit will be done
     pub async fn initial_ft_storage_deposit(

@@ -1,23 +1,26 @@
 use super::binary_search_max;
-use crate::tests::defuse::env::Env;
-use crate::tests::defuse::tokens::nep245::letter_gen::LetterCombinations;
+use crate::tests::defuse::{env::Env, tokens::nep245::letter_gen::LetterCombinations};
 use anyhow::Context;
-use defuse::{
-    core::intents::tokens::NotifyOnTransfer,
-    nep245::{MtBurnEvent, MtEvent, MtMintEvent},
-    tokens::{DepositAction, DepositMessage},
-};
-use defuse_near_utils::REFUND_MEMO;
-use defuse_near_utils::TOTAL_LOG_LENGTH_LIMIT;
+use defuse_core::intents::tokens::NotifyOnTransfer;
+use defuse_near_utils::{REFUND_MEMO, TOTAL_LOG_LENGTH_LIMIT};
 use defuse_randomness::Rng;
-use defuse_sandbox::{SigningAccount, extensions::mt::MtExt};
-use defuse_test_utils::random::{gen_random_string, rng};
-use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
+use defuse_sandbox::{
+    account::Account,
+    extensions::defuse::{
+        Defuse, MtOnTransferArgs,
+        nep245::{MtBurnEvent, MtEvent, MtMintEvent},
+        tokens::{DepositAction, DepositMessage},
+    },
+    kit::{ExecutionStatus, Near, NearToken},
+};
+use defuse_test_utils::{
+    random::{gen_random_string, rng},
+    wasms::MT_RECEIVER_STUB_WASM,
+};
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{AccountId, AsNep297Event, Gas, json_types::U128};
 use rstest::rstest;
-use std::borrow::Cow;
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 /// Token ID generation modes to test different serialization/storage costs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::Display)]
@@ -30,35 +33,32 @@ enum TokenIdGenerationMode {
     Long,
 }
 
-async fn make_author_account(mode: TokenIdGenerationMode, env: &Env) -> SigningAccount {
-    use near_sdk::NearToken;
+async fn make_author_account(mode: TokenIdGenerationMode, env: &Env) -> Near {
     match mode {
         TokenIdGenerationMode::Short => {
             // Use root account directly: 0.test
-            env.root().clone()
+            env.root.clone()
         }
         TokenIdGenerationMode::Medium => {
             // Use a 64-char named account: {name}.{root_id} = 64 chars total
             const TARGET_LEN: usize = 64;
-            let root_id_len = env.root().id().as_str().len();
+            let root_id_len = env.account_id().as_str().len();
             // name_len + 1 (dot) + root_id_len = TARGET_LEN
             let name_len = TARGET_LEN - 1 - root_id_len;
             let name = "a".repeat(name_len);
-            env.root()
-                .generate_subaccount(name, NearToken::from_near(1000))
+            env.create_subaccount(name, NearToken::from_near(1000))
                 .await
-                .unwrap()
         }
         TokenIdGenerationMode::Long => {
             // Use implicit account (64 hex chars) for longest account ID
-            env.fund_implicit(NearToken::from_near(1000)).await.unwrap()
+            env.create_implicit(NearToken::from_near(1000)).await
         }
     }
 }
 
 fn make_defuse_token_ids(
     mode: TokenIdGenerationMode,
-    author_account: &SigningAccount,
+    author_account: &Near,
     token_ids: &[String],
 ) -> Vec<String> {
     match mode {
@@ -71,7 +71,7 @@ fn make_defuse_token_ids(
         // Medium/Long modes use nep245 format: nep245:{contract_id}:{token_id}
         TokenIdGenerationMode::Medium | TokenIdGenerationMode::Long => token_ids
             .iter()
-            .map(|token_id| format!("nep245:{}:{}", author_account.id(), token_id))
+            .map(|token_id| format!("nep245:{}:{}", author_account.account_id(), token_id))
             .collect(),
     }
 }
@@ -167,7 +167,7 @@ async fn run_deposit_resolve_gas_test(
     gen_mode: TokenIdGenerationMode,
     token_count: usize,
     env: Arc<Env>,
-    author_account: SigningAccount,
+    author_account: Near,
     receiver_id: AccountId,
     rng: Arc<tokio::sync::Mutex<impl Rng>>,
 ) -> anyhow::Result<()> {
@@ -190,19 +190,21 @@ async fn run_deposit_resolve_gas_test(
     let defuse_token_ids = make_defuse_token_ids(gen_mode, &author_account, &token_ids);
     validate_mt_event_log_size(&receiver_id, &defuse_token_ids, &amounts)?;
     let execution_result = author_account
-        .mt_on_transfer_raw(
-            author_account.id(), // sender_id (who the tokens are being deposited for)
-            env.defuse.id(),     // defuse contract receives the deposit
-            token_ids.iter().cloned().zip(amounts.clone()),
-            serde_json::to_string(&deposit_message).unwrap(),
-        )
+        .transaction(env.defuse.contract_id()) // defuse contract receives the deposit
+        .add_action(Defuse::mt_on_transfer(MtOnTransferArgs {
+            sender_id: author_account.account_id().clone(), // sender_id (who the tokens are being deposited for)
+            previous_owner_ids: vec![author_account.account_id().clone()],
+            token_ids: defuse_token_ids,
+            amounts: amounts.iter().copied().map(U128).collect(),
+            msg: serde_json::to_string(&deposit_message).unwrap(),
+        }))
         .await
         .context("Failed at mt_on_transfer (RPC error)")?;
 
     let defuse_outcomes: Vec<_> = execution_result
-        .outcomes()
-        .into_iter()
-        .filter(|o| o.executor_id == *env.defuse.id())
+        .receipts_outcome
+        .iter()
+        .filter(|o| o.outcome.executor_id == *env.defuse.contract_id())
         .collect();
 
     // NOTE:
@@ -210,22 +212,22 @@ async fn run_deposit_resolve_gas_test(
     // 2nd receipt is resolve notification callback
     // notification callback should panic/fail
     if defuse_outcomes.len() == 2 {
-        let resolve_outcome = defuse_outcomes[1].clone();
-        let resolve_result = resolve_outcome.into_result();
+        let resolve_result = defuse_outcomes[1].clone();
         assert!(
-            resolve_result.is_ok(),
+            matches!(
+                resolve_result.outcome.status,
+                ExecutionStatus::SuccessValue(_)
+            ),
             "CRITICAL: mt_resolve_deposit callback failed for token_count={token_count}! \
             This indicates insufficient gas allocation in the contract. Error: {:?}",
-            resolve_result.err()
+            resolve_result.outcome.status
         );
     }
     // Capture total gas before consuming execution_result
-    let total_gas_tgas = execution_result.total_gas_burnt.as_tgas();
+    let total_gas_tgas = execution_result.total_gas_used().as_tgas();
 
     // Extract refund amounts from the final result
     let refund_amounts = execution_result
-        .into_result()
-        .context("Transaction failed")?
         .json::<Vec<U128>>()
         .context("Failed to parse refund amounts")?
         .into_iter()
@@ -257,9 +259,6 @@ async fn mt_deposit_resolve_gas(
     #[values(true, false)] full_coverage: bool,
     rng: impl Rng,
 ) {
-    use defuse_sandbox::tx::FnCallBuilder;
-    use near_sdk::NearToken;
-
     // Skip full_coverage=true when 'long' feature is disabled
     #[cfg(not(feature = "long"))]
     if full_coverage {
@@ -274,7 +273,7 @@ async fn mt_deposit_resolve_gas(
     let rng = Arc::new(tokio::sync::Mutex::new(rng));
     let env = Arc::new(Env::new().await);
 
-    env.tx(env.defuse.id())
+    env.transaction(env.defuse.contract_id())
         .transfer(NearToken::from_near(1000))
         .await
         .unwrap();
@@ -284,7 +283,7 @@ async fn mt_deposit_resolve_gas(
             "receiver",
             NearToken::from_near(100),
             MT_RECEIVER_STUB_WASM.to_vec(),
-            None::<FnCallBuilder>,
+            None,
         )
         .await
         .unwrap();
@@ -297,7 +296,7 @@ async fn mt_deposit_resolve_gas(
         let rng = rng.clone();
         let env = env.clone();
         let author_account = author_account.clone();
-        let receiver_id = receiver_stub.id().clone();
+        let receiver_id = receiver_stub.account_id().clone();
         move |token_count| {
             run_deposit_resolve_gas_test(
                 gen_mode,
@@ -323,7 +322,7 @@ async fn mt_deposit_resolve_gas(
         max_deposited_count,
         env.clone(),
         author_account.clone(),
-        receiver_stub.id().clone(),
+        receiver_stub.account_id().clone(),
         rng.clone(),
     )
     .await
@@ -339,7 +338,7 @@ async fn mt_deposit_resolve_gas(
                 token_count,
                 env.clone(),
                 author_account.clone(),
-                receiver_stub.id().clone(),
+                receiver_stub.account_id().clone(),
                 rng.clone(),
             )
             .await
@@ -350,12 +349,10 @@ async fn mt_deposit_resolve_gas(
 
 #[tokio::test]
 async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notification() {
-    use defuse_sandbox::tx::FnCallBuilder;
-    use near_sdk::NearToken;
-
     let env = Arc::new(Env::new().await);
     let amount = 1u128;
-    env.tx(env.defuse.id())
+
+    env.transaction(env.defuse.contract_id())
         .transfer(NearToken::from_near(1000))
         .await
         .unwrap();
@@ -365,14 +362,14 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
             "receiver",
             NearToken::from_near(100),
             MT_RECEIVER_STUB_WASM.to_vec(),
-            None::<FnCallBuilder>,
+            None,
         )
         .await
         .unwrap();
 
-    let author_account = env.fund_implicit(NearToken::from_near(1000)).await.unwrap();
+    let author_account = env.create_implicit(NearToken::from_near(1000)).await;
     let deposit_message = DepositMessage {
-        receiver_id: receiver_stub.id().clone(),
+        receiver_id: receiver_stub.account_id().clone(),
         action: Some(DepositAction::Notify(
             NotifyOnTransfer::new(
                 serde_json::to_string(&MTReceiverMode::ReturnBytes(U128(3 * 1024 * 1024))).unwrap(),
@@ -383,19 +380,21 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
     };
 
     let execution_result = author_account
-        .mt_on_transfer_raw(
-            author_account.id(),
-            env.defuse.id(),
-            [("testtoken1".to_string(), amount)],
-            serde_json::to_string(&deposit_message).unwrap(),
-        )
+        .transaction(receiver_stub.account_id())
+        .add_action(Defuse::mt_on_transfer(MtOnTransferArgs {
+            sender_id: author_account.account_id().clone(),
+            previous_owner_ids: vec![author_account.account_id().clone()],
+            token_ids: vec!["testtoken1".to_string()],
+            amounts: vec![U128(amount)],
+            msg: serde_json::to_string(&deposit_message).unwrap(),
+        }))
         .await
         .expect("Failed at mt_on_transfer (RPC error)");
 
     let defuse_outcomes: Vec<_> = execution_result
-        .outcomes()
-        .into_iter()
-        .filter(|o| o.executor_id == *env.defuse.id())
+        .receipts_outcome
+        .iter()
+        .filter(|o| o.outcome.executor_id == *env.defuse.contract_id())
         .collect();
 
     assert!(
@@ -404,17 +403,17 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
         defuse_outcomes.len()
     );
 
-    let resolve_outcome = defuse_outcomes[1].clone();
-    let resolve_result = resolve_outcome.into_result();
+    let resolve_result = defuse_outcomes[1].clone();
     assert!(
-        resolve_result.is_ok(),
+        matches!(
+            resolve_result.outcome.status,
+            ExecutionStatus::SuccessValue(_)
+        ),
         "CRITICAL: mt_resolve_deposit callback failed! Error: {:?}",
-        resolve_result.err()
+        resolve_result.outcome.status
     );
 
     let refund_amounts = execution_result
-        .into_result()
-        .expect("Transaction failed")
         .json::<Vec<U128>>()
         .expect("Failed to parse refund amounts")
         .into_iter()

@@ -12,9 +12,10 @@ use defuse::{
 use defuse_core::{
     Nonce, PublicKey, Salt, fees::Pips, intents::auth::AuthCall, payload::multi::MultiPayload,
 };
+use defuse_nep245::TokenId;
 use defuse_serde_utils::base64::AsBase64;
 use near_account_id::AccountId;
-use near_kit::{Action, Final, FunctionCallAction, Near, NearToken};
+use near_kit::{Final, FunctionCallAction, Near, NearToken};
 use near_sdk::{AccountIdRef, json_types::U128};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -36,6 +37,7 @@ pub use signer::*;
 pub use defuse::contract;
 pub use defuse::core;
 pub use defuse::tokens;
+pub use defuse_nep245 as nep245;
 
 #[derive(Serialize)]
 pub struct HasPublicKeyArgs<'a> {
@@ -117,6 +119,16 @@ pub struct FtWithdrawArgs {
 }
 
 #[derive(Serialize)]
+pub struct FtForceWithdrawArgs {
+    pub owner_id: AccountId,
+    pub token: AccountId,
+    pub receiver_id: AccountId,
+    pub amount: U128,
+    pub memo: Option<String>,
+    pub msg: Option<String>,
+}
+
+#[derive(Serialize)]
 pub struct MtWithdrawArgs {
     pub token: AccountId,
     pub receiver_id: AccountId,
@@ -141,6 +153,14 @@ pub struct DoAuthCallArgs {
     pub auth_call: AuthCall,
 }
 
+#[derive(Serialize)]
+pub struct MtOnTransferArgs {
+    pub sender_id: AccountId,
+    pub previous_owner_ids: Vec<AccountId>,
+    pub token_ids: Vec<TokenId>,
+    pub amounts: Vec<U128>,
+    pub msg: String,
+}
 
 #[near_kit::contract]
 pub trait Defuse {
@@ -178,10 +198,10 @@ pub trait Defuse {
     #[call]
     fn invalidate_salts(&mut self, args: InvalidateSaltArgs) -> Salt;
 
+    fn simulate_intents(&self, args: MultiPayloadArgs) -> SimulationOutput;
+
     #[call]
     fn execute_intents(&mut self, args: MultiPayloadArgs);
-
-    fn simulate_intents(&self, args: MultiPayloadArgs) -> SimulationOutput;
 
     #[call]
     fn add_relayer_key(&mut self, args: PublicKeyArgs);
@@ -212,13 +232,18 @@ pub trait Defuse {
     #[call]
     fn ft_withdraw(&mut self, args: FtWithdrawArgs) -> U128;
     #[call]
+    fn ft_force_withdraw(&mut self, args: FtForceWithdrawArgs) -> U128;
+    #[call]
     fn mt_withdraw(&mut self, args: MtWithdrawArgs) -> Vec<U128>;
     #[call]
     fn nft_withdraw(&mut self, args: NftWithdrawArgs) -> bool;
 
+    // NOTE: private method for testing purposes, not part of the public API
     #[call]
     fn do_auth_call(&mut self, args: DoAuthCallArgs);
 
+    #[call]
+    fn mt_on_transfer(&mut self, args: MtOnTransferArgs);
 }
 
 pub trait DefuseExt {
@@ -345,6 +370,17 @@ pub trait DefuseExt {
         msg: Option<String>,
     ) -> Result<(SuccessfulExecutionOutcome, u128)>;
 
+    async fn defuse_ft_force_withdraw(
+        &self,
+        defuse: impl Into<AccountId>,
+        owner_id: impl Into<AccountId>,
+        token: impl Into<AccountId>,
+        receiver_id: impl Into<AccountId>,
+        amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
+    ) -> Result<u128>;
+
     async fn defuse_mt_withdraw(
         &self,
         defuse: impl Into<AccountId>,
@@ -365,6 +401,19 @@ pub trait DefuseExt {
         memo: Option<String>,
         msg: Option<String>,
     ) -> Result<(SuccessfulExecutionOutcome, bool)>;
+
+    async fn defuse_do_auth_call(
+        &self,
+        defuse: impl Into<AccountId>,
+        args: DoAuthCallArgs,
+        gas: near_kit::Gas,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn defuse_mt_on_transfer(
+        &self,
+        defuse: impl Into<AccountId>,
+        args: MtOnTransferArgs,
+    ) -> Result<(SuccessfulExecutionOutcome, Vec<U128>)>;
 }
 
 pub trait DefuseDeployerExt {
@@ -383,27 +432,19 @@ impl DefuseDeployerExt for Near {
         config: DefuseConfig,
         wasm: impl Into<Vec<u8>>,
     ) -> Near {
-        let account = self
-            .create_subaccount(name, NearToken::from_near(100))
-            .await;
-
-        let action = FunctionCallAction {
-            method_name: "new".to_string(),
-            args: json!({"config" : config}).to_string().as_bytes().to_vec(),
-            gas: DEFAULT_GAS,
-            deposit: NearToken::from_near(0),
-        };
-
-        account
-            .deploy(wasm)
-            .add_action(Action::FunctionCall(action))
-            .wait_until(Final)
-            .await
-            .unwrap()
-            .result()
-            .unwrap();
-
-        account
+        self.deploy_sub_contract(
+            name,
+            NearToken::from_near(100),
+            wasm,
+            Some(FunctionCallAction {
+                method_name: "new".to_string(),
+                args: json!({"config": config}).to_string().as_bytes().to_vec(),
+                gas: DEFAULT_GAS,
+                deposit: NearToken::from_near(0),
+            }),
+        )
+        .await
+        .unwrap()
     }
 }
 
@@ -739,6 +780,35 @@ impl DefuseExt for Near {
         Ok((res.try_into()?, transferred))
     }
 
+    async fn defuse_ft_force_withdraw(
+        &self,
+        defuse: impl Into<AccountId>,
+        owner_id: impl Into<AccountId>,
+        token: impl Into<AccountId>,
+        receiver_id: impl Into<AccountId>,
+        amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
+    ) -> Result<u128> {
+        let res = self
+            .transaction(defuse.into())
+            .add_action(
+                Defuse::ft_force_withdraw(FtForceWithdrawArgs {
+                    owner_id: owner_id.into(),
+                    token: token.into(),
+                    receiver_id: receiver_id.into(),
+                    amount: amount.into(),
+                    memo,
+                    msg,
+                })
+                .gas(DEFAULT_GAS)
+                .deposit(NearToken::from_yoctonear(1)),
+            )
+            .wait_until(Final)
+            .await?;
+        Ok(res.json::<U128>()?.0)
+    }
+
     async fn defuse_mt_withdraw(
         &self,
         defuse: impl Into<AccountId>,
@@ -795,5 +865,41 @@ impl DefuseExt for Near {
             .await?;
         let transferred = res.json::<bool>()?;
         Ok((res.try_into()?, transferred))
+    }
+
+    async fn defuse_do_auth_call(
+        &self,
+        defuse: impl Into<AccountId>,
+        args: DoAuthCallArgs,
+        gas: near_kit::Gas,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        let res = self
+            .transaction(defuse.into())
+            .add_action(
+                Defuse::do_auth_call(args)
+                    .gas(gas)
+                    .deposit(NearToken::from_yoctonear(1)),
+            )
+            .wait_until(Final)
+            .await?;
+        Ok(res.try_into()?)
+    }
+
+    async fn defuse_mt_on_transfer(
+        &self,
+        defuse: impl Into<AccountId>,
+        args: MtOnTransferArgs,
+    ) -> Result<(SuccessfulExecutionOutcome, Vec<U128>)> {
+        let res = self
+            .transaction(defuse.into())
+            .add_action(
+                Defuse::mt_on_transfer(args)
+                    .gas(DEFAULT_GAS)
+                    .deposit(NearToken::from_near(0)),
+            )
+            .wait_until(Final)
+            .await?;
+        let amounts = res.json::<Vec<U128>>()?;
+        Ok((res.try_into()?, amounts))
     }
 }

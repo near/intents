@@ -1,9 +1,11 @@
 use anyhow::Result;
+use core::str;
 use defuse_nep245::{Token, TokenId};
 use near_account_id::AccountId;
 use near_kit::{Final, Near, NearToken};
 use near_sdk::AccountIdRef;
 use serde::{Deserialize, Serialize};
+use std::ops::RangeBounds;
 
 use crate::{U128, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
 
@@ -72,6 +74,19 @@ pub struct MtBatchTransferCallArgs {
     pub msg: String,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct MtTokensArgs {
+    pub from_index: Option<U128>,
+    pub limit: Option<usize>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct MtTokensForOwnerArgs {
+    pub account_id: AccountId,
+    pub from_index: Option<U128>,
+    pub limit: Option<usize>,
+}
+
 // TODO: may be also make ext helpers for view methods?
 #[near_kit::contract]
 pub trait Mt {
@@ -80,6 +95,9 @@ pub trait Mt {
     fn mt_batch_balance_of(&self, args: MtBatchBalanceOfArgs) -> Vec<U128>;
     fn mt_supply(&self, args: MtSupplyArgs) -> Option<U128>;
     fn mt_batch_supply(&self, args: MtBatchSupplyArgs) -> Vec<Option<U128>>;
+
+    fn mt_tokens(&self, args: MtTokensArgs) -> Vec<Token>;
+    fn mt_tokens_for_owner(&self, args: MtTokensForOwnerArgs) -> Vec<Token>;
 
     #[call]
     fn mt_transfer(&mut self, args: MtTransferArgs);
@@ -132,6 +150,19 @@ pub trait MtExt {
         memo: impl Into<Option<String>>,
         msg: impl Into<String>,
     ) -> Result<(SuccessfulExecutionOutcome, Vec<u128>)>;
+
+    async fn mt_tokens(
+        &self,
+        contract: impl Into<AccountId>,
+        range: impl RangeBounds<usize>,
+    ) -> anyhow::Result<Vec<Token>>;
+
+    async fn mt_tokens_for_owner(
+        &self,
+        contract: impl Into<AccountId>,
+        account_id: impl AsRef<AccountIdRef>,
+        range: impl RangeBounds<usize>,
+    ) -> anyhow::Result<Vec<Token>>;
 }
 
 impl MtExt for Near {
@@ -245,5 +276,71 @@ impl MtExt for Near {
         let res = outcome.json::<Vec<U128>>()?;
 
         Ok((outcome.try_into()?, res.into_iter().map(|n| n.0).collect()))
+    }
+
+    async fn mt_tokens(
+        &self,
+        contract: impl Into<AccountId>,
+        range: impl RangeBounds<usize>,
+    ) -> anyhow::Result<Vec<Token>> {
+        let from = match range.start_bound() {
+            std::ops::Bound::Included(v) => Some(*v),
+            std::ops::Bound::Excluded(v) => Some(*v + 1),
+            std::ops::Bound::Unbounded => None,
+        };
+
+        let to = match range.end_bound() {
+            std::ops::Bound::Included(v) => Some(*v + 1),
+            std::ops::Bound::Excluded(v) => Some(*v),
+            std::ops::Bound::Unbounded => None,
+        };
+
+        let limit = match (from, to) {
+            (Some(_) | None, None) => None,
+            (None, Some(v)) => Some(v),
+            (Some(f), Some(t)) => Some(t - f),
+        };
+
+        self.contract::<Mt>(contract.into())
+            .mt_tokens(MtTokensArgs {
+                from_index: from.map(|v| U128(v.try_into().unwrap())),
+                limit,
+            })
+            .await
+            .map_err(Into::into)
+    }
+
+    async fn mt_tokens_for_owner(
+        &self,
+        contract: impl Into<AccountId>,
+        account_id: impl AsRef<AccountIdRef>,
+        range: impl RangeBounds<usize>,
+    ) -> anyhow::Result<Vec<Token>> {
+        let from = match range.start_bound() {
+            std::ops::Bound::Included(v) => Some(*v),
+            std::ops::Bound::Excluded(v) => Some(*v + 1),
+            std::ops::Bound::Unbounded => None,
+        };
+
+        let to = match range.end_bound() {
+            std::ops::Bound::Included(v) => Some(*v + 1),
+            std::ops::Bound::Excluded(v) => Some(*v),
+            std::ops::Bound::Unbounded => None,
+        };
+
+        let limit = match (from, to) {
+            (Some(_) | None, None) => None,
+            (None, Some(v)) => Some(v),
+            (Some(f), Some(t)) => Some(t - f),
+        };
+
+        self.contract::<Mt>(contract.into())
+            .mt_tokens_for_owner(MtTokensForOwnerArgs {
+                account_id: account_id.as_ref().into(),
+                from_index: from.map(|v| U128(v.try_into().unwrap())),
+                limit,
+            })
+            .await
+            .map_err(Into::into)
     }
 }

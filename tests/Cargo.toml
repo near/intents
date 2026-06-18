@@ -63,6 +63,7 @@ defuse-near-utils = { workspace = true }
 defuse-randomness.workspace = true
 defuse-serde-utils = { workspace = true, features = ["hex"] }
 defuse-test-utils = { workspace = true, features = ["near-contract"] }
+defuse-core = { workspace = true, features = ["near-kit"] }
 
 # defuse = { workspace = true, features = ["contract", "arbitrary", "far"], optional = true }
 # defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = true }

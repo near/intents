@@ -2041,6 +2041,7 @@ dependencies = [
  "anyhow",
  "arbitrary",
  "chrono",
+ "defuse-core",
  "defuse-fees",
  "defuse-near-utils",
  "defuse-randomness",

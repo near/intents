@@ -1,4 +1,5 @@
 pub mod mt_receiver;
+pub mod nft;
 pub mod wnear;
 // TODO: remove after near kit release
 pub mod mt;

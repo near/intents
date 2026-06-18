@@ -2,7 +2,7 @@ use anyhow::Result;
 use defuse_poa_factory::contract::Role;
 use near_account_id::AccountIdRef;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
-use near_kit::{AccountId, Action, Final, FunctionCallAction, FungibleToken, Near, NearToken};
+use near_kit::{AccountId, Final, FunctionCallAction, FungibleToken, Near, NearToken};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
@@ -74,10 +74,6 @@ impl PoaFactoryDeployerExt for Near {
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         wasm: impl Into<Vec<u8>>,
     ) -> PoaFactoryClient {
-        let account = self
-            .create_subaccount(name, Some(NearToken::from_near(10)))
-            .await;
-
         let action = FunctionCallAction {
             method_name: "new".to_string(),
             args: json!({
@@ -98,13 +94,9 @@ impl PoaFactoryDeployerExt for Near {
             deposit: NearToken::from_near(0),
         };
 
-        account
-            .deploy(wasm)
-            .add_action(Action::FunctionCall(action))
-            .wait_until(Final)
+        let account = self
+            .deploy_sub_contract(name, NearToken::from_near(10), wasm, Some(action))
             .await
-            .unwrap()
-            .result()
             .unwrap();
 
         self.contract::<PoaFactory>(account.account_id())
