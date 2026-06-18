@@ -1,9 +1,14 @@
-use defuse::core::{amounts::Amounts, intents::imt::ImtMint, token_id::TokenId};
-use defuse_escrow_swap::token_id::{imt::ImtTokenId, nep141::Nep141TokenId};
-use defuse_sandbox::extensions::defuse::{
-    intents::ExecuteIntentsExt, signer::DefaultDefuseSignerExt, tokens::imt::DefuseImtBurner,
+use defuse_sandbox::extensions::{
+    defuse::{
+        DefuseExt, DefuseImtExt, DefuseSignerExt,
+        core::{
+            amounts::Amounts,
+            intents::imt::ImtMint,
+            token_id::{TokenId, imt::ImtTokenId, nep141::Nep141TokenId},
+        },
+    },
+    mt::{Mt, MtBalanceOfArgs},
 };
-use defuse_sandbox::extensions::mt::MtViewExt;
 use rstest::rstest;
 
 use crate::tests::defuse::env::Env;
@@ -18,7 +23,10 @@ async fn imt_burn_call() {
     let memo = "Some memo";
     let amount = 1000;
 
-    let imt_id = TokenId::from(ImtTokenId::new(user1.id().clone(), token.to_string()));
+    let imt_id = TokenId::from(ImtTokenId::new(
+        user1.account_id().clone(),
+        token.to_string(),
+    ));
 
     // Mint tokens first
     {
@@ -28,30 +36,34 @@ async fn imt_burn_call() {
                 [ImtMint {
                     tokens: Amounts::new(std::iter::once((token.clone(), amount)).collect()),
                     memo: Some(memo.to_string()),
-                    receiver_id: user2.id().clone(),
+                    receiver_id: user2.account_id().clone(),
                     notification: None,
                 }],
             )
             .await
             .unwrap();
 
-        env.simulate_and_execute_intents(env.defuse.id(), [mint_payload])
+        env.defuse_simulate_and_execute_intents(env.defuse.contract_id(), [mint_payload])
             .await
             .unwrap();
 
         assert_eq!(
-            env.defuse
-                .mt_balance_of(user2.id(), &imt_id.to_string())
+            env.contract::<Mt>(env.defuse.contract_id())
+                .mt_balance_of(MtBalanceOfArgs {
+                    account_id: user2.account_id(),
+                    token_id: &imt_id.to_string(),
+                })
                 .await
-                .unwrap(),
+                .unwrap()
+                .0,
             amount
         );
     }
 
     user2
-        .imt_burn(
-            env.defuse.id(),
-            user1.id().clone(),
+        .defuse_imt_burn(
+            env.defuse.contract_id(),
+            user1.account_id().clone(),
             [(token.clone(), amount)],
             Some(memo.to_string()),
         )
@@ -59,10 +71,14 @@ async fn imt_burn_call() {
         .unwrap();
 
     assert_eq!(
-        env.defuse
-            .mt_balance_of(user2.id(), &imt_id.to_string())
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: user2.account_id(),
+                token_id: &imt_id.to_string(),
+            })
             .await
-            .unwrap(),
+            .unwrap()
+            .0,
         0
     );
 
@@ -81,11 +97,11 @@ async fn failed_to_burn_tokens_by_fn_call() {
     let amount = 1000;
 
     // Only minted imt tokens can be burned
-    let ft_id = TokenId::from(Nep141TokenId::new(ft));
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id()));
 
-    user.imt_burn(
-        env.defuse.id(),
-        user.id().clone(),
+    user.defuse_imt_burn(
+        env.defuse.contract_id(),
+        user.account_id().clone(),
         [(ft_id.to_string(), amount)],
         Some(memo.to_string()),
     )

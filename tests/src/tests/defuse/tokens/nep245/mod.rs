@@ -32,28 +32,6 @@ where
 
 use std::borrow::Cow;
 
-use crate::sandbox::assert_a_contains_b;
-use defuse_near_utils::REFUND_MEMO;
-use defuse_sandbox::extensions::defuse::account_manager::AccountManagerExt;
-use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
-use defuse_sandbox::extensions::defuse::{
-    contract::{
-        contract::config::{DefuseConfig, RolesConfig},
-        core::{
-            amounts::Amounts,
-            fees::{FeesConfig, Pips},
-            intents::tokens::{NotifyOnTransfer, Transfer},
-            token_id::TokenId,
-            token_id::nep141::Nep141TokenId,
-            token_id::nep245::Nep245TokenId,
-        },
-        nep245::{MtBurnEvent, MtEvent, MtTransferEvent, Token},
-        tokens::{DepositAction, DepositMessage, ExecuteIntents},
-    },
-    deployer::DefuseExt,
-    tokens::{nep141::DefuseFtWithdrawer, nep245::DefuseMtWithdrawer},
-};
-use defuse_sandbox::tx::FnCallBuilder;
 use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::json_types::U128;

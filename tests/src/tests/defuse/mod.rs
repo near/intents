@@ -4,6 +4,6 @@ mod accounts;
 mod state;
 mod state_init;
 mod storage;
-// mod tokens;
+mod tokens;
 
 mod env;

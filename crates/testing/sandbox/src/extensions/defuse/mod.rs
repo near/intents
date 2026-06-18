@@ -1,4 +1,6 @@
 mod event;
+#[cfg(feature = "imt")]
+mod imt;
 mod nonce;
 mod signer;
 
@@ -26,6 +28,8 @@ use crate::{
 };
 
 pub use event::*;
+#[cfg(feature = "imt")]
+pub use imt::*;
 pub use nonce::*;
 pub use signer::*;
 
@@ -137,6 +141,7 @@ pub struct DoAuthCallArgs {
     pub auth_call: AuthCall,
 }
 
+
 #[near_kit::contract]
 pub trait Defuse {
     fn fee(&self) -> Pips;
@@ -213,6 +218,7 @@ pub trait Defuse {
 
     #[call]
     fn do_auth_call(&mut self, args: DoAuthCallArgs);
+
 }
 
 pub trait DefuseExt {
