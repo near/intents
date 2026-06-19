@@ -167,6 +167,7 @@ pairing = "0.23"                                              # TODO: features
 proptest = "1.5"
 rand = "0.10"
 rand_core = "0.10"
+ripemd = "0.2"
 rstest = "0.26"
 schemars = { version = "0.8", default-features = false }
 serde = "1"

@@ -6,12 +6,19 @@
 
 pub use digest::*;
 
+#[cfg(near)]
+mod utils;
+#[cfg(near)]
+pub use self::utils::*;
+
 cfg_select! {
     near => {
         mod near;
         pub use self::near::*;
     }
     _ => {
+        #[cfg(feature = "ripemd")]
+        pub use ripemd;
         #[cfg(feature = "sha2")]
         pub use sha2;
         #[cfg(feature = "sha3")]
@@ -34,6 +41,16 @@ mod tests {
     use super::*;
 
     #[rstest]
+    #[case(
+        PhantomData::<ripemd::Ripemd160>,
+        b"",
+        hex!("9c1185a5c5e9fc54612808977ee8f548b2258d31"),
+    )]
+    #[case(
+        PhantomData::<ripemd::Ripemd160>,
+        b"test",
+        hex!("5e52fee47e6b070565f74372468cdc699de89107"),
+    )]
     #[case(
         PhantomData::<sha2::Sha256>,
         b"",

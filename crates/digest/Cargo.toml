@@ -11,6 +11,7 @@ repository.workspace = true
 digest.workspace = true
 
 [target.'cfg(not(near))'.dependencies]
+ripemd = { workspace = true, optional = true }
 sha2 = { workspace = true, optional = true }
 sha3 = { workspace = true, optional = true }
 
@@ -19,11 +20,12 @@ near-sdk-env.workspace = true
 impl-tools.workspace = true
 
 [features]
+ripemd = ["dep:ripemd"]
 sha2 = ["dep:sha2"]
 sha3 = ["dep:sha3"]
 
 [dev-dependencies]
-defuse-digest = { path = ".", features = ["sha2", "sha3"] }
+defuse-digest = { path = ".", features = ["ripemd", "sha2", "sha3"] }
 
 hex-literal.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
