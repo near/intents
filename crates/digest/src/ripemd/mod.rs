@@ -1,12 +1,14 @@
-use crate::digest_backend;
+use crate::digest_cfg;
 
 #[cfg(near)]
 mod near;
 
-digest_backend!(pub struct Ripemd160 {
-    near => crate::utils::DigestFn::<self::near::Ripemd160Fn>,
-    _ => ::ripemd::Ripemd160,
-});
+digest_cfg! {
+    pub struct Ripemd160 {
+        near => crate::utils::DigestFn::<self::near::Ripemd160Fn>,
+        _ => ::ripemd::Ripemd160,
+    }
+}
 
 #[cfg(test)]
 mod tests {

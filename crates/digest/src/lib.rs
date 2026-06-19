@@ -15,7 +15,7 @@ pub mod sha3;
 #[cfg(near)]
 mod utils;
 
-macro_rules! digest_backend {
+macro_rules! digest_cfg {
     ($vis:vis struct $name:ident { $($tt:tt)* }) => {
         #[derive(Debug, Clone, Default)]
         #[repr(transparent)]
@@ -42,4 +42,4 @@ macro_rules! digest_backend {
         impl ::digest::HashMarker for $name {}
     };
 }
-pub(crate) use digest_backend;
+pub(crate) use digest_cfg;

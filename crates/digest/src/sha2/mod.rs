@@ -1,12 +1,14 @@
-use crate::digest_backend;
+use crate::digest_cfg;
 
 #[cfg(near)]
 mod near;
 
-digest_backend!(pub struct Sha256 {
-    near => crate::utils::DigestFn::<self::near::Sha256Fn>,
-    _ => ::sha2::Sha256,
-});
+digest_cfg! {
+    pub struct Sha256 {
+        near => crate::utils::DigestFn::<self::near::Sha256Fn>,
+        _ => ::sha2::Sha256,
+    }
+}
 
 #[cfg(test)]
 mod tests {

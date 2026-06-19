@@ -1,17 +1,21 @@
-use crate::digest_backend;
+use crate::digest_cfg;
 
 #[cfg(near)]
 mod near;
 
-digest_backend!(pub struct Keccak256 {
-    near => crate::utils::DigestFn::<self::near::Keccak256Fn>,
-    _ => ::sha3::Keccak256,
-});
+digest_cfg! {
+    pub struct Keccak256 {
+        near => crate::utils::DigestFn::<self::near::Keccak256Fn>,
+        _ => ::sha3::Keccak256,
+    }
+}
 
-digest_backend!(pub struct Keccak512 {
-    near => crate::utils::DigestFn::<self::near::Keccak512Fn>,
-    _ => ::sha3::Keccak512,
-});
+digest_cfg! {
+    pub struct Keccak512 {
+        near => crate::utils::DigestFn::<self::near::Keccak512Fn>,
+        _ => ::sha3::Keccak512,
+    }
+}
 
 #[cfg(test)]
 mod tests {
