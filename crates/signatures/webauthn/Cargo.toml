@@ -25,3 +25,7 @@ ed25519 = ["defuse-crypto/ed25519", "near-contract"]
 near-contract = ["defuse-crypto?/near-contract"]
 borsh = ["defuse-crypto?/borsh"]
 p256 = ["defuse-crypto/p256"]
+
+[dev-dependencies]
+defuse-webauthn = { path = ".", features = ["near-contract"] }
+near-sdk = { workspace = true, features = ["unit-testing"] }

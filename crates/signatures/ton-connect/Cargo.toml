@@ -44,13 +44,12 @@ serde = [
 text = []
 
 [dev-dependencies]
-defuse-crypto = { workspace = true, features = ["near-contract"] }
-defuse-test-utils.workspace = true
 defuse-ton-connect = { path = ".", features = ["serde", "arbitrary", "near-contract"] }
-near-sdk = { workspace = true, features = ["unit-testing"] }
 
 arbitrary.workspace = true
+defuse-test-utils.workspace = true
 hex-literal.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
 serde_json.workspace = true
 tlb-ton = { workspace = true, features = ["arbitrary", "base64"] }
