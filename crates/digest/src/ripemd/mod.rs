@@ -25,7 +25,7 @@ mod tests {
         b"test",
         hex!("5e52fee47e6b070565f74372468cdc699de89107"),
     )]
-    fn ripemd160_has_not_shanged(#[case] data: &[u8], #[case] output: [u8; 20]) {
+    fn ripemd160_has_not_changed(#[case] data: &[u8], #[case] output: [u8; 20]) {
         assert!(Ripemd160::digest(data) == output, "has changed");
     }
 }

@@ -30,7 +30,7 @@ mod tests {
         b"test",
         hex!("9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658"),
     )]
-    fn keccak256_has_not_shanged(#[case] data: &[u8], #[case] output: [u8; 32]) {
+    fn keccak256_has_not_changed(#[case] data: &[u8], #[case] output: [u8; 32]) {
         assert!(Keccak256::digest(data) == output, "has changed");
     }
 
@@ -43,7 +43,7 @@ mod tests {
         b"test",
         hex!("1e2e9fc2002b002d75198b7503210c05a1baac4560916a3c6d93bcce3a50d7f00fd395bf1647b9abb8d1afcc9c76c289b0c9383ba386a956da4b38934417789e"),
     )]
-    fn keccak512_has_not_shanged(#[case] data: &[u8], #[case] output: [u8; 64]) {
+    fn keccak512_has_not_changed(#[case] data: &[u8], #[case] output: [u8; 64]) {
         assert!(Keccak512::digest(data) == output, "has changed");
     }
 }
