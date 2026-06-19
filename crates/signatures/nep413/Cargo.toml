@@ -1,3 +1,6 @@
+lints.workspace = true
+
+
 [package]
 name = "defuse-nep413"
 edition.workspace = true
@@ -32,6 +35,3 @@ near-api = ["dep:near-api"]
 
 [dev-dependencies]
 serde_json.workspace = true
-
-[lints]
-workspace = true

@@ -18,6 +18,7 @@ mod utils;
 macro_rules! digest_backend {
     ($vis:vis struct $name:ident { $($tt:tt)* }) => {
         #[derive(Debug, Clone, Default)]
+        #[repr(transparent)]
         $vis struct $name(cfg_select! {$($tt)*});
 
         impl ::digest::OutputSizeUser for $name {

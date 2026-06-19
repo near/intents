@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-tip191"
 edition.workspace = true
@@ -26,6 +28,3 @@ rstest.workspace = true
 abi = ["defuse-crypto/abi", "dep:schemars", "serde_with?/schemars_0_8"]
 near-contract = ["defuse-crypto/near-contract"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
-
-[lints]
-workspace = true

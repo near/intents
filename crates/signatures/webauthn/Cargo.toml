@@ -1,12 +1,11 @@
+lints.workspace = true
+
 [package]
 name = "defuse-webauthn"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
-
-[lints]
-workspace = true
 
 [dependencies]
 defuse-digest = { workspace = true, features = ["sha2"] }
