@@ -3,7 +3,7 @@ use digest::{Output, OutputSizeUser, consts::U20};
 use crate::utils::{DigestFinalizer, DigestFn};
 
 pub type Ripemd160 = DigestFn<Ripemd160Fn>;
-struct Ripemd160Fn;
+pub struct Ripemd160Fn;
 
 impl OutputSizeUser for Ripemd160Fn {
     type OutputSize = U20;

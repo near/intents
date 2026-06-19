@@ -6,7 +6,7 @@ use digest::{
 use crate::utils::{DigestFinalizer, DigestFn};
 
 pub type Keccak256 = DigestFn<Keccak256Fn>;
-struct Keccak256Fn;
+pub struct Keccak256Fn;
 
 impl OutputSizeUser for Keccak256Fn {
     type OutputSize = U32;
@@ -19,7 +19,7 @@ impl DigestFinalizer for Keccak256Fn {
 }
 
 pub type Keccak512 = DigestFn<Keccak512Fn>;
-struct Keccak512Fn;
+pub struct Keccak512Fn;
 
 impl OutputSizeUser for Keccak512Fn {
     type OutputSize = U64;

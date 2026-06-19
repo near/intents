@@ -19,10 +19,10 @@ macro_rules! digest_cfg {
     ($vis:vis struct $name:ident { $($tt:tt)* }) => {
         #[derive(Debug, Clone, Default)]
         #[repr(transparent)]
-        $vis struct $name(cfg_select! {$($tt)*});
+        $vis struct $name(cfg_select!($($tt)*));
 
         impl ::digest::OutputSizeUser for $name {
-            type OutputSize = <cfg_select! {$($tt)*} as ::digest::OutputSizeUser>::OutputSize;
+            type OutputSize = <cfg_select!($($tt)*) as ::digest::OutputSizeUser>::OutputSize;
         }
 
         impl ::digest::Update for $name {
