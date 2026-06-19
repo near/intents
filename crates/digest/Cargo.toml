@@ -23,6 +23,8 @@ sha2 = ["dep:sha2"]
 sha3 = ["dep:sha3"]
 
 [dev-dependencies]
+defuse-digest = { path = ".", features = ["sha2", "sha3"] }
+
 hex-literal.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
