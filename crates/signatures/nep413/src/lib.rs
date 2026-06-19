@@ -83,6 +83,7 @@ impl defuse_crypto::Payload for Nep413Payload {
         use digest_io::IoWrapper;
 
         let mut hasher = IoWrapper(Sha256::new());
+        // serialize directly to hasher
         borsh::to_writer(&mut hasher, &(Self::OFFCHAIN_PREFIX_TAG, self)).expect("borsh");
         hasher.0.finalize().into()
     }
