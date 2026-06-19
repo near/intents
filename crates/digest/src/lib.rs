@@ -1,15 +1,21 @@
+//! Helper crate to automatically chose a backend for digest implementations.
+//! Currently supported backends are:
+//!
+//! * `cfg(near)`: via Near host-function
+//! * default: fallback to pure Rust implementation
+
 pub use digest::*;
 
 cfg_select! {
-    not(near) => {
+    near => {
+        mod near;
+        pub use self::near::*;
+    }
+    _ => {
         #[cfg(feature = "sha2")]
         pub use sha2;
         #[cfg(feature = "sha3")]
         pub use sha3;
-    }
-    near => {
-        mod near;
-        pub use self::near::*;
     }
 }
 
@@ -58,8 +64,9 @@ mod tests {
         b"test",
         hex!("1e2e9fc2002b002d75198b7503210c05a1baac4560916a3c6d93bcce3a50d7f00fd395bf1647b9abb8d1afcc9c76c289b0c9383ba386a956da4b38934417789e"),
     )]
+    #[allow(clippy::used_underscore_binding)]
     fn has_not_changed<D>(
-        #[case] _f: PhantomData<D>,
+        #[case] _d: PhantomData<D>,
         #[case] data: &[u8],
         #[case] output: <OutputSize<D> as ArraySize>::ArrayType<u8>,
     ) where

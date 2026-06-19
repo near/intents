@@ -1,9 +1,9 @@
+use defuse_digest::{Digest, sha2::Sha256};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use serde_with::serde_as;
-
 use serde_with::{
     base64::{Base64, UrlSafe},
     formats::Unpadded,
+    serde_as,
 };
 
 #[cfg(feature = "ed25519")]
@@ -36,7 +36,6 @@ pub struct PayloadSignature<A: Algorithm + ?Sized> {
     pub signature: A::Signature,
 }
 
-#[cfg(any(test, feature = "sha2", feature = "near-contract"))]
 impl<A: Algorithm + ?Sized> PayloadSignature<A> {
     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
     ///
@@ -49,7 +48,6 @@ impl<A: Algorithm + ?Sized> PayloadSignature<A> {
         public_key: &A::PublicKey,
         user_verification: UserVerification,
     ) -> bool {
-        use defuse_digest::Digest;
         // verify authData flags
         if self.authenticator_data.len() < 37
             || !Self::verify_flags(self.authenticator_data[32], user_verification)
@@ -73,7 +71,7 @@ impl<A: Algorithm + ?Sized> PayloadSignature<A> {
 
         // 20. Let hash be the result of computing a hash over the cData using
         // SHA-256
-        let hash = defuse_digest::Sha256::digest(self.client_data_json.as_bytes());
+        let hash = Sha256::digest(self.client_data_json.as_bytes());
 
         // 21. Using credentialRecord.publicKey, verify that sig is a valid
         // signature over the binary concatenation of authData and hash.

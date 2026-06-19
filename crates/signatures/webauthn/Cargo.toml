@@ -9,6 +9,8 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
+defuse-digest = { workspace = true, features = ["sha2"] }
+
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 serde_with = { workspace = true, features = ["base64"] }

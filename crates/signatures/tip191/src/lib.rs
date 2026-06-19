@@ -23,11 +23,11 @@ impl Tip191Payload {
     }
 }
 
-#[cfg(any(test, feature = "sha3", feature = "near-contract"))]
 impl defuse_crypto::Payload for Tip191Payload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {
-        use defuse_digest::{Digest, Keccak256};
+        use defuse_digest::{Digest, sha3::Keccak256};
+
         Keccak256::digest(self.prehash()).into()
     }
 }
@@ -53,7 +53,6 @@ pub struct SignedTip191Payload {
     pub signature: <Secp256k1 as Curve>::Signature,
 }
 
-#[cfg(any(test, feature = "sha3", feature = "near-contract"))]
 impl defuse_crypto::Payload for SignedTip191Payload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {

@@ -1,5 +1,5 @@
 use defuse_crypto::{Curve, Ed25519, Payload, SignedPayload, VerifiableCurve, serde::AsCurve};
-use defuse_digest::{Digest, Sha256};
+use defuse_digest::{Digest, sha2::Sha256};
 use near_sdk::{near, serde::de::DeserializeOwned, serde_json};
 
 use super::ExtractDefusePayload;
