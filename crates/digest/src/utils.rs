@@ -7,7 +7,7 @@ pub trait DigestFinalizer: OutputSizeUser {
     fn digest(bytes: &[u8]) -> Output<Self>;
 }
 
-#[autoimpl(Default, Clone, PartialEq, Eq)]
+#[autoimpl(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DigestFn<F> {
     data: Vec<u8>,
     _fn: PhantomData<F>,
