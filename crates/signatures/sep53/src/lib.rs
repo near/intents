@@ -18,11 +18,6 @@ impl Sep53Payload {
     pub const fn new(payload: String) -> Self {
         Self { payload }
     }
-
-    #[inline]
-    pub fn prehash(&self) -> Vec<u8> {
-        [b"Stellar Signed Message:\n", self.payload.as_bytes()].concat()
-    }
 }
 
 impl defuse_crypto::Payload for Sep53Payload {
@@ -30,7 +25,10 @@ impl defuse_crypto::Payload for Sep53Payload {
     fn hash(&self) -> defuse_crypto::CryptoHash {
         use defuse_digest::{Digest, sha2::Sha256};
 
-        Sha256::digest(self.prehash()).into()
+        Sha256::new_with_prefix(b"Stellar Signed Message:\n")
+            .chain_update(self.payload.as_bytes())
+            .finalize()
+            .into()
     }
 }
 

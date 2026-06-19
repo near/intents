@@ -10,24 +10,16 @@ use impl_tools::autoimpl;
 #[derive(Debug, Clone)]
 pub struct Erc191Payload(pub String);
 
-impl Erc191Payload {
-    #[inline]
-    pub fn prehash(&self) -> Vec<u8> {
-        let data = self.0.as_bytes();
-        [
-            format!("\x19Ethereum Signed Message:\n{}", data.len()).as_bytes(),
-            data,
-        ]
-        .concat()
-    }
-}
-
 impl defuse_crypto::Payload for Erc191Payload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {
         use defuse_digest::{Digest, sha3::Keccak256};
 
-        Keccak256::digest(self.prehash().as_slice()).into()
+        Keccak256::new_with_prefix(b"\x19Ethereum Signed Message:\n")
+            .chain_update(self.0.len().to_string())
+            .chain_update(self.0.as_bytes())
+            .finalize()
+            .into()
     }
 }
 

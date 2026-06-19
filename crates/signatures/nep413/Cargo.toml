@@ -1,6 +1,5 @@
 lints.workspace = true
 
-
 [package]
 name = "defuse-nep413"
 edition.workspace = true

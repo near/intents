@@ -32,21 +32,17 @@ impl TonConnectPayloadContext<'_> {
         let payload_len = u32::try_from(payload.len())
             .map_err(|_| tlb_ton::Error::custom("payload: overflow"))?;
 
-        let bytes = [
-            [0xff, 0xff].as_slice(),
-            b"ton-connect/sign-data/",
-            &self.address.workchain_id.to_be_bytes(),
-            self.address.address.as_ref(),
-            &domain_len.to_be_bytes(),
-            self.domain.as_bytes(),
-            &self.timestamp.to_be_bytes(),
-            payload_prefix,
-            &payload_len.to_be_bytes(),
-            payload,
-        ]
-        .concat();
-
-        Ok(Sha256::digest(&bytes).into())
+        Ok(Sha256::new_with_prefix(b"\xFF\xFFton-connect/sign-data/")
+            .chain_update(self.address.workchain_id.to_be_bytes())
+            .chain_update(&self.address.address)
+            .chain_update(domain_len.to_be_bytes())
+            .chain_update(self.domain.as_bytes())
+            .chain_update(self.timestamp.to_be_bytes())
+            .chain_update(payload_prefix)
+            .chain_update(payload_len.to_be_bytes())
+            .chain_update(payload)
+            .finalize()
+            .into())
     }
 }
 

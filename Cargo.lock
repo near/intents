@@ -1536,6 +1536,7 @@ dependencies = [
  "cfg_eval",
  "defuse-crypto",
  "defuse-digest",
+ "defuse-erc191",
  "hex-literal",
  "impl-tools",
  "near-sdk",
