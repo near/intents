@@ -72,13 +72,6 @@ impl Nep413Payload {
         self.callback_url = Some(callback_url);
         self
     }
-
-    #[cfg(feature = "borsh")]
-    #[inline]
-    pub fn prehash(&self) -> Vec<u8> {
-        use defuse_nep461::OffchainMessage;
-        borsh::to_vec(&(Self::OFFCHAIN_PREFIX_TAG, self)).expect("borsh")
-    }
 }
 
 #[cfg(feature = "borsh")]
@@ -86,8 +79,12 @@ impl defuse_crypto::Payload for Nep413Payload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {
         use defuse_digest::{Digest, sha2::Sha256};
+        use defuse_nep461::OffchainMessage;
+        use digest_io::IoWrapper;
 
-        Sha256::digest(self.prehash()).into()
+        let mut hasher = IoWrapper(Sha256::new());
+        borsh::to_writer(&mut hasher, &(Self::OFFCHAIN_PREFIX_TAG, self)).expect("borsh");
+        hasher.0.finalize().into()
     }
 }
 

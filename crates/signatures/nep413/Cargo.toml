@@ -11,6 +11,7 @@ repository.workspace = true
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-nep461.workspace = true
+digest-io.workspace = true
 impl-tools.workspace = true
 
 borsh = { workspace = true, features = ["derive"], optional = true }
