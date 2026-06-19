@@ -1,8 +1,9 @@
 use digest::{Output, OutputSizeUser, consts::U32};
 
-use crate::utils::DigestFinalizer;
+use crate::utils::{DigestFinalizer, DigestFn};
 
-pub struct Sha256Fn;
+pub type Sha256 = DigestFn<Sha256Fn>;
+struct Sha256Fn;
 
 impl OutputSizeUser for Sha256Fn {
     type OutputSize = U32;

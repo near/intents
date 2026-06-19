@@ -5,7 +5,7 @@ mod near;
 
 digest_cfg! {
     pub struct Sha256 {
-        near => crate::utils::DigestFn::<self::near::Sha256Fn>,
+        near => self::near::Sha256,
         _ => ::sha2::Sha256,
     }
 }

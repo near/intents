@@ -5,7 +5,7 @@ mod near;
 
 digest_cfg! {
     pub struct Ripemd160 {
-        near => crate::utils::DigestFn::<self::near::Ripemd160Fn>,
+        near => self::near::Ripemd160,
         _ => ::ripemd::Ripemd160,
     }
 }
