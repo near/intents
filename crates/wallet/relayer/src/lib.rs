@@ -157,13 +157,13 @@ impl Relayer {
 
         let timeout = TimeDelta::from_std(msg.timeout).map_err(|_| Error::InvalidTimeout)?;
 
-        if !msg.created_at.has_expired() {
+        if !msg.created_at.has_passed() {
             return Err(Error::FromTheFuture);
         }
 
         let deadline = msg
             .created_at
-            .into_timestamp()
+            .into_inner()
             .checked_add_signed(timeout)
             .ok_or(Error::InvalidTimeout)?
             // add more buffer for short-living requests

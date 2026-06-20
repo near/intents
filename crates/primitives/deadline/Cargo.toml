@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-deadline"
 edition.workspace = true
@@ -5,28 +7,26 @@ version.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
-[lints]
-workspace = true
-
-[features]
-abi = ["defuse-borsh-utils?/abi", "dep:schemars"]
-borsh = ["dep:defuse-borsh-utils"]
-near-contract = ["dep:defuse-near-utils"]
-serde = ["dep:serde"]
-
 [dependencies]
+chrono.workspace = true
+
+borsh = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, features = ["chrono"], optional = true }
-defuse-near-utils = { workspace = true, features = ["time"], optional = true }
-
-chrono = { workspace = true, features = ["serde"] }
-
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-chrono = { workspace = true, features = ["clock", "now", "serde"] }
+[target.'cfg(near)'.dependencies]
+near-sdk.workspace = true
+
+[features]
+now = ["chrono/now"]
+
+abi = ["borsh?/unstable__schema", "defuse-borsh-utils?/abi", "dep:schemars"]
+borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
+serde = ["chrono/serde", "dep:serde"]
 
 [dev-dependencies]
-borsh = { workspace = true, features = ["unstable__schema"] }
-defuse-borsh-utils = { workspace = true, features = ["chrono", "abi"] }
-near-sdk = { workspace = true, features = ["non-contract-usage"] }
+defuse-deadline = { path = ".", features = ["abi", "borsh", "now", "serde"] }
+
+[target.'cfg(near)'.dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }

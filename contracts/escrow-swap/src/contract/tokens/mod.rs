@@ -47,7 +47,7 @@ impl State {
         amount: u128,
         action: TransferAction,
     ) -> Result<PromiseOrValue<u128>> {
-        if self.closed || self.deadline.has_expired() {
+        if self.closed || self.deadline.has_passed() {
             return Err(Error::Closed);
         }
 

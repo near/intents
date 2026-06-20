@@ -1435,7 +1435,6 @@ name = "defuse-core"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
- "chrono",
  "defuse-bitmap",
  "defuse-borsh-utils",
  "defuse-core",
@@ -1495,7 +1494,7 @@ dependencies = [
  "borsh",
  "chrono",
  "defuse-borsh-utils",
- "defuse-near-utils",
+ "defuse-deadline",
  "near-sdk",
  "schemars 0.8.22",
  "serde",
@@ -1666,7 +1665,6 @@ dependencies = [
 name = "defuse-near-utils"
 version = "0.1.0"
 dependencies = [
- "chrono",
  "defuse-borsh-utils",
  "defuse-test-utils",
  "impl-tools",
@@ -1858,7 +1856,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "arbitrary",
- "chrono",
  "defuse",
  "defuse-escrow-swap",
  "defuse-fees",

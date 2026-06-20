@@ -7,7 +7,7 @@ pub use defuse_wallet as wallet;
 
 use defuse_wallet::{
     ConcurrentNonces, Request, State,
-    signature::{Deadline, RequestMessage},
+    signature::{DateTime, RequestMessage},
 };
 use impl_tools::autoimpl;
 use near_sdk::{AccountId, GlobalContractId, borsh::BorshSerialize, state_init::StateInit};
@@ -136,7 +136,7 @@ where
             nonce: self.nonces.next(),
             // set `created_at` slightly before the actual time of signing,
             // so it doesn't fail on-chain if arrives too fast.
-            created_at: Deadline::now() - self.optimal_lag(),
+            created_at: DateTime::now() - self.optimal_lag(),
             timeout: self.state.nonces.timeout(),
             request,
         }

@@ -8,7 +8,7 @@ repository.workspace = true
 [dependencies]
 defuse-bitmap = { workspace = true, features = ["borsh"] }
 defuse-crypto = { workspace = true, features = ["borsh", "ed25519", "secp256k1", "p256", "near-contract", "serde"] }
-defuse-deadline = { workspace = true, features = ["borsh", "near-contract", "serde"] }
+defuse-deadline = { workspace = true, features = ["borsh", "serde", "now"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-erc191 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
@@ -63,9 +63,6 @@ arbitrary = [
 ]
 imt = ["defuse-token-id/imt"]
 near-api-types = ["dep:near-api-types"]
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-chrono = { workspace = true, features = ["now"] }
 
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }

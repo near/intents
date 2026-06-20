@@ -1,50 +1,57 @@
-use chrono::{DateTime, SubsecRound, Utc};
+use chrono::{SubsecRound, TimeDelta, TimeZone, Utc};
 use core::{
     ops::{Add, AddAssign, Sub, SubAssign},
     time::Duration,
 };
+
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+    cfg_attr(
+        feature = "abi",
+        derive(::schemars::JsonSchema),
+        schemars(example = "Self::example")
+    )
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct Deadline(
-    #[cfg_attr(all(feature = "serde", feature = "abi"), schemars(with = "String"))] DateTime<Utc>,
+pub struct DateTime(
+    #[cfg_attr(all(feature = "serde", feature = "abi"), schemars(with = "String"))]
+    ::chrono::DateTime<Utc>,
 );
 
-impl Deadline {
-    pub const UNIX_EPOCH: Self = Self::new(DateTime::UNIX_EPOCH);
-    pub const MAX: Self = Self::new(DateTime::<Utc>::MAX_UTC);
+impl DateTime {
+    pub const UNIX_EPOCH: Self = Self(::chrono::DateTime::UNIX_EPOCH);
+    pub const MAX: Self = Self(::chrono::DateTime::<Utc>::MAX_UTC);
 
-    pub const fn new(d: DateTime<Utc>) -> Self {
-        Self(d)
-    }
-
-    #[cfg(target_arch = "wasm32")]
-    #[must_use]
-    pub fn now() -> Self {
-        Self(defuse_near_utils::time::now())
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(feature = "now")]
     #[must_use]
     #[inline]
     pub fn now() -> Self {
-        Self(Utc::now())
+        Self(cfg_select! {
+            near => {
+                ::chrono::DateTime::from_timestamp_nanos(
+                    ::near_sdk::env::block_timestamp()
+                        .try_into()
+                        .expect("out of range")
+                )
+            }
+            _ => Utc::now(),
+        })
     }
 
+    #[cfg(feature = "now")]
     #[must_use]
     #[inline]
     pub fn timeout(timeout: Duration) -> Self {
         Self::now() + timeout
     }
 
+    #[cfg(feature = "now")]
     #[must_use]
     #[inline]
-    pub fn has_expired(self) -> bool {
-        Self::now() > self
+    pub fn has_passed(self) -> bool {
+        self < Self::now()
     }
 
     /// Truncate `Deadline` down to seconds part.
@@ -53,17 +60,36 @@ impl Deadline {
     #[must_use]
     #[inline]
     pub fn trunc_subsecs(self) -> Self {
-        Self::new(self.into_timestamp().trunc_subsecs(0))
+        Self(self.into_inner().trunc_subsecs(0))
     }
 
     #[must_use]
     #[inline]
-    pub const fn into_timestamp(self) -> DateTime<Utc> {
+    pub const fn into_inner(self) -> ::chrono::DateTime<Utc> {
         self.0
+    }
+
+    #[cfg(all(feature = "serde", feature = "abi"))]
+    fn example() -> Self {
+        Utc.with_ymd_and_hms(2026, 6, 20, 19, 15, 37)
+            .unwrap()
+            .into()
     }
 }
 
-impl Add<Duration> for Deadline {
+impl<Tz: TimeZone> From<::chrono::DateTime<Tz>> for DateTime {
+    fn from(value: ::chrono::DateTime<Tz>) -> Self {
+        Self(value.to_utc())
+    }
+}
+
+impl From<DateTime> for ::chrono::DateTime<Utc> {
+    fn from(value: DateTime) -> Self {
+        value.into_inner()
+    }
+}
+
+impl Add<Duration> for DateTime {
     type Output = Self;
 
     #[inline]
@@ -72,7 +98,15 @@ impl Add<Duration> for Deadline {
     }
 }
 
-impl Sub<Duration> for Deadline {
+impl Add<TimeDelta> for DateTime {
+    type Output = Self;
+
+    fn add(self, rhs: TimeDelta) -> Self::Output {
+        Self(self.0 + rhs)
+    }
+}
+
+impl Sub<Duration> for DateTime {
     type Output = Self;
 
     fn sub(self, rhs: Duration) -> Self::Output {
@@ -80,15 +114,36 @@ impl Sub<Duration> for Deadline {
     }
 }
 
-impl AddAssign<Duration> for Deadline {
+impl Sub<TimeDelta> for DateTime {
+    type Output = Self;
+
+    fn sub(self, rhs: TimeDelta) -> Self::Output {
+        Self(self.0 - rhs)
+    }
+}
+
+impl AddAssign<Duration> for DateTime {
     #[inline]
     fn add_assign(&mut self, rhs: Duration) {
         self.0 += rhs;
     }
 }
 
-impl SubAssign<Duration> for Deadline {
+impl AddAssign<TimeDelta> for DateTime {
+    #[inline]
+    fn add_assign(&mut self, rhs: TimeDelta) {
+        self.0 += rhs;
+    }
+}
+
+impl SubAssign<Duration> for DateTime {
     fn sub_assign(&mut self, rhs: Duration) {
+        self.0 -= rhs;
+    }
+}
+
+impl SubAssign<TimeDelta> for DateTime {
+    fn sub_assign(&mut self, rhs: TimeDelta) {
         self.0 -= rhs;
     }
 }
@@ -104,11 +159,11 @@ const _: () = {
     ($($a:ident,)+) => {
         const _: () = {
             $(
-                impl<I> BorshSerializeAs<Deadline> for $a<I>
+                impl<I> BorshSerializeAs<DateTime> for $a<I>
                 where
-                    $a<I>: BorshSerializeAs<DateTime<Utc>>,
+                    $a<I>: BorshSerializeAs<::chrono::DateTime<Utc>>,
                 {
-                    fn serialize_as<W>(source: &Deadline, writer: &mut W) -> std::io::Result<()>
+                    fn serialize_as<W>(source: &DateTime, writer: &mut W) -> std::io::Result<()>
                     where
                         W: std::io::Write,
                     {
@@ -116,15 +171,15 @@ const _: () = {
                     }
                 }
 
-                impl<I> BorshDeserializeAs<Deadline> for $a<I>
+                impl<I> BorshDeserializeAs<DateTime> for $a<I>
                 where
-                    $a<I>: BorshDeserializeAs<DateTime<Utc>>,
+                    $a<I>: BorshDeserializeAs<::chrono::DateTime<Utc>>,
                 {
-                    fn deserialize_as<R>(reader: &mut R) -> std::io::Result<Deadline>
+                    fn deserialize_as<R>(reader: &mut R) -> std::io::Result<DateTime>
                     where
                         R: std::io::Read,
                     {
-                        Self::deserialize_as(reader).map(Deadline)
+                        Self::deserialize_as(reader).map(DateTime)
                     }
                 }
             )*
@@ -139,13 +194,13 @@ const _: () = {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn schema_as_usage() {
-        use super::*;
-        use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
-        use chrono::TimeZone;
-        use defuse_borsh_utils::adapters::{As, TimestampNanoSeconds};
+    use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
+    use defuse_borsh_utils::adapters::{As, TimestampNanoSeconds};
 
+    use super::*;
+
+    #[test]
+    fn borsh_schema_as_usage() {
         #[derive(BorshSerialize, BorshDeserialize, BorshSchema)]
         struct S {
             #[borsh(
@@ -156,11 +211,14 @@ mod tests {
                     definitions = "As::<TimestampNanoSeconds>::add_definitions_recursively",
                 ))
             )]
-            pub deadline: Deadline,
+            pub deadline: DateTime,
         }
 
         let val = S {
-            deadline: Deadline::new(Utc.timestamp_opt(1_600_000_000, 123_456_789).unwrap()),
+            deadline: Utc
+                .timestamp_opt(1_600_000_000, 123_456_789)
+                .unwrap()
+                .into(),
         };
         let bytes = borsh::to_vec(&val).unwrap();
         let decoded = S::try_from_slice(&bytes).unwrap();

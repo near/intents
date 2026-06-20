@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use defuse_escrow_swap::{ContractStorage, Deadline, OverrideSend, Params};
+use defuse_escrow_swap::{ContractStorage, DateTime, OverrideSend, Params};
 use defuse_sandbox::{
     SigningAccount,
     extensions::{escrow::EscrowExtView, mt_receiver::MtReceiverStubExtView},
@@ -23,7 +23,7 @@ fn dummy_escrow_params(root: &SigningAccount) -> Params {
         src_token: format!("nep141:{}", src_token.id()).parse().unwrap(),
         dst_token: format!("nep141:{}", dst_token.id()).parse().unwrap(),
         price: "1".parse().unwrap(),
-        deadline: Deadline::timeout(Duration::from_hours(1)),
+        deadline: DateTime::timeout(Duration::from_hours(1)),
         partial_fills_allowed: false,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),

@@ -5,7 +5,7 @@ pub use self::impl_::*;
 
 use std::collections::BTreeSet;
 
-use defuse_deadline::Deadline;
+use defuse_deadline::DateTime;
 use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near};
 
 use crate::{
@@ -55,7 +55,7 @@ impl Wallet for Contract {
             .unwrap_or_else(|_| unreachable!())
     }
 
-    fn w_last_cleaned_at(&self) -> Deadline {
+    fn w_last_cleaned_at(&self) -> DateTime {
         self.nonces.last_cleaned_at()
     }
 }
