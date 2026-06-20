@@ -1,13 +1,12 @@
+#![allow(clippy::items_after_statements)]
+
 pub use blstrs;
 
-use blstrs::{Bls12, G1Affine, G1Projective, G2Affine, G2Projective, Scalar};
+use blstrs::{G1Affine, G1Projective, G2Affine, Scalar};
 use defuse_kdf_mpc::kdf::Schema;
 use defuse_rand_compat::RandCompat;
 use near_account_id::AccountIdRef;
-use pairing::{
-    MillerLoopResult, MultiMillerLoop,
-    group::{Curve, Group, ff::Field, prime::PrimeCurveAffine},
-};
+use pairing::group::{ff::Field, prime::PrimeCurveAffine};
 use rand_core::CryptoRng;
 
 pub const SECRET_LEN: usize = G1Affine::compressed_size();
@@ -35,7 +34,28 @@ impl AppPrivateKey {
     /// Calculate corresponding public key
     #[inline]
     pub fn public_key(&self) -> G1Affine {
-        (G1Projective::generator() * self.private_key).to_affine()
+        cfg_select! {
+            near => {
+                let uncompressed: [u8; G1Affine::uncompressed_size()] =
+                    ::near_sdk::env::bls12381_g1_multiexp(
+                        [
+                            G1Affine::generator().to_uncompressed().as_slice(),
+                            self.private_key.to_bytes_le().as_slice(),
+                        ]
+                        .concat(),
+                    )
+                    .try_into()
+                    .expect("uncompressed G1 affine: invalid length");
+
+                G1Affine::from_uncompressed_unchecked(&uncompressed)
+                    .expect("uncompressed G1 affine: failed to deserialize")
+            }
+            _ => {
+                use pairing::group::{Curve, Group};
+
+                (G1Projective::generator() * self.private_key).to_affine()
+            }
+        }
     }
 
     /// Calculate corresponding publicly-verifiable public key
@@ -52,11 +72,33 @@ impl AppPrivateKey {
     /// ```
     #[inline]
     pub fn public_key_pv(&self) -> AppPublicKeyPV {
-        let pk2 = G2Projective::generator() * self.private_key;
-
         let pk = AppPublicKeyPV {
             pk1: self.public_key(),
-            pk2: pk2.to_affine(),
+            pk2: {
+                cfg_select! {
+                    near => {
+                        let uncompressed: [u8; G2Affine::uncompressed_size()] =
+                        ::near_sdk::env::bls12381_g2_multiexp(
+                            [
+                                G2Affine::generator().to_uncompressed().as_slice(),
+                                self.private_key.to_bytes_le().as_slice(),
+                            ]
+                            .concat(),
+                        )
+                        .try_into()
+                        .expect("uncompressed G2 affine: invalid length");
+
+                        G2Affine::from_uncompressed_unchecked(&uncompressed)
+                            .expect("uncompressed G2 affine: failed to deserialize")
+                    }
+                    _ => {
+                        use blstrs::G2Projective;
+                        use pairing::group::{Curve, Group};
+
+                        (G2Projective::generator() * self.private_key).to_affine()
+                    }
+                }
+            },
         };
 
         debug_assert!(pk.is_valid());
@@ -98,7 +140,7 @@ impl AppPrivateKey {
             return None;
         }
 
-        let secret = self.decrypt(resp).to_affine();
+        let secret = self.decrypt(resp);
 
         if !Self::verify(mpc_public_key, app_id, secret) {
             return None;
@@ -108,8 +150,38 @@ impl AppPrivateKey {
     }
 
     /// See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/ckd-example-cli/src/ckd.rs#L128-L129>
-    fn decrypt(&self, resp: CkdResponse) -> G1Projective {
-        resp.big_c - resp.big_y * self.private_key
+    fn decrypt(&self, resp: CkdResponse) -> G1Affine {
+        cfg_select! {
+            near => {
+                let uncompressed: [u8; G1Affine::uncompressed_size()] =
+                    ::near_sdk::env::bls12381_p1_sum(
+                        [
+                            &[0u8], // + (positive)
+                            resp.big_c.to_uncompressed().as_slice(),
+
+                            &[1u8], // - (negative)
+                            ::near_sdk::env::bls12381_g1_multiexp(
+                                [
+                                    resp.big_y.to_uncompressed().as_slice(),
+                                    self.private_key.to_bytes_le().as_slice(),
+                                ]
+                                .concat(),
+                            ).as_slice(),
+                        ]
+                        .concat(),
+                    )
+                    .try_into()
+                    .expect("uncompressed G1 affine: invalid length");
+
+                G1Affine::from_uncompressed_unchecked(&uncompressed)
+                    .expect("uncompressed G1 affine: failed to deserialize")
+            }
+            _ => {
+                use pairing::group::Curve;
+
+                (resp.big_c - resp.big_y * self.private_key).to_affine()
+            }
+        }
     }
 
     /// Check that `e(sig, g2) = e(hash_point, mpc_public_key)`
@@ -120,16 +192,35 @@ impl AppPrivateKey {
             return false;
         }
 
-        let hp = hash_point(&mpc_public_key, app_id);
         let minus_g2 = -G2Affine::generator();
+        let hp = hash_point(&mpc_public_key, app_id);
 
-        Bls12::multi_miller_loop(&[
-            (&signature, &minus_g2.into()),
-            (&hp.into(), &mpc_public_key.into()),
-        ])
-        .final_exponentiation()
-        .is_identity()
-        .into()
+        cfg_select! {
+            near => {
+                ::near_sdk::env::bls12381_pairing_check(
+                    [
+                        signature.to_uncompressed().as_slice(),
+                        minus_g2.to_uncompressed().as_slice(),
+
+                        hp.to_uncompressed().as_slice(),
+                        mpc_public_key.to_uncompressed().as_slice(),
+                    ]
+                    .concat(),
+                )
+            }
+            _ => {
+                use blstrs::Bls12;
+                use pairing::{MillerLoopResult, MultiMillerLoop, group::Group};
+
+                Bls12::multi_miller_loop(&[
+                    (&signature, &minus_g2.into()),
+                    (&hp.into(), &mpc_public_key.into()),
+                ])
+                .final_exponentiation()
+                .is_identity()
+                .into()
+            }
+        }
     }
 }
 
@@ -152,11 +243,32 @@ impl AppPublicKeyPV {
         let g1 = G1Affine::generator();
         let minus_g2 = -G2Affine::generator();
 
-        // TODO: cfg(near)
-        Bls12::multi_miller_loop(&[(&self.pk1, &minus_g2.into()), (&g1, &self.pk2.into())])
-            .final_exponentiation()
-            .is_identity()
-            .into()
+        cfg_select! {
+            near => {
+                ::near_sdk::env::bls12381_pairing_check(
+                    [
+                        self.pk1.to_uncompressed().as_slice(),
+                        minus_g2.to_uncompressed().as_slice(),
+
+                        g1.to_uncompressed().as_slice(),
+                        self.pk2.to_uncompressed().as_slice(),
+                    ]
+                    .concat(),
+                )
+            }
+            _ => {
+                use blstrs::Bls12;
+                use pairing::{MillerLoopResult, MultiMillerLoop, group::Group};
+
+                Bls12::multi_miller_loop(&[
+                    (&self.pk1, &minus_g2.into()),
+                    (&g1, &self.pk2.into()),
+                ])
+                .final_exponentiation()
+                .is_identity()
+                .into()
+            }
+        }
     }
 
     /// Shorthand for [`.verify_app_id()`](AppPublicKeyPV::verify_app_id) with `app_id`
@@ -189,15 +301,36 @@ impl AppPublicKeyPV {
         let minus_g2 = -G2Affine::generator();
         let hp = hash_point(&mpc_public_key, &app_id);
 
-        // TODO: cfg(near)
-        Bls12::multi_miller_loop(&[
-            (&resp.big_c, &minus_g2.into()),
-            (&resp.big_y, &self.pk2.into()),
-            (&hp.into(), &mpc_public_key.into()),
-        ])
-        .final_exponentiation()
-        .is_identity()
-        .into()
+        cfg_select! {
+            near => {
+                near_sdk::env::bls12381_pairing_check(
+                    [
+                        resp.big_c.to_uncompressed().as_slice(),
+                        minus_g2.to_uncompressed().as_slice(),
+
+                        resp.big_y.to_uncompressed().as_slice(),
+                        self.pk2.to_uncompressed().as_slice(),
+
+                        hp.to_uncompressed().as_slice(),
+                        mpc_public_key.to_uncompressed().as_slice(),
+                    ]
+                    .concat(),
+                )
+            },
+            _ => {
+                use blstrs::Bls12;
+                use pairing::{MillerLoopResult, MultiMillerLoop, group::Group};
+
+                Bls12::multi_miller_loop(&[
+                    (&resp.big_c, &minus_g2.into()),
+                    (&resp.big_y, &self.pk2.into()),
+                    (&hp.into(), &mpc_public_key.into()),
+                ])
+                .final_exponentiation()
+                .is_identity()
+                .into()
+            }
+        }
     }
 }
 
@@ -233,6 +366,8 @@ fn is_valid_g2(p: &G2Affine) -> bool {
 fn hash_point(mpc_public_key: &G2Affine, app_id: &[u8; 32]) -> G1Projective {
     const NEAR_CKD_DOMAIN: &[u8] = b"NEAR BLS12381G1_XMD:SHA-256_SSWU_RO_";
 
+    // TODO: this might be optimized for `cfg(near)` by using XMD SHA-256
+    // and `env::bls12381_map_fp_to_g1`
     G1Projective::hash_to_curve(
         &[mpc_public_key.to_compressed().as_slice(), app_id.as_slice()].concat(),
         NEAR_CKD_DOMAIN,

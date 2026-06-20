@@ -1416,6 +1416,7 @@ dependencies = [
  "defuse-rand-compat",
  "hex-literal",
  "near-account-id",
+ "near-sdk",
  "pairing",
  "rand 0.10.1",
  "rand_core 0.10.1",
