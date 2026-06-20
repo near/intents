@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-webauthn"
 version.workspace = true
@@ -5,11 +7,9 @@ edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
-[lints]
-workspace = true
-
 [dependencies]
-defuse-digest.workspace = true
+defuse-digest = { workspace = true, features = ["sha2"] }
+
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 serde_with = { workspace = true, features = ["base64"] }
@@ -22,7 +22,10 @@ default = ["ed25519", "p256"]
 
 abi = ["defuse-crypto?/abi", "dep:schemars", "serde_with/schemars_0_8"]
 ed25519 = ["defuse-crypto/ed25519", "near-contract"]
-near-contract = ["defuse-crypto?/near-contract", "defuse-digest/near-contract"]
+near-contract = ["defuse-crypto?/near-contract"]
 borsh = ["defuse-crypto?/borsh"]
 p256 = ["defuse-crypto/p256"]
-sha2 = ["defuse-digest/sha2"]
+
+[dev-dependencies]
+defuse-webauthn = { path = ".", features = ["near-contract"] }
+near-sdk = { workspace = true, features = ["unit-testing"] }

@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-ton-connect"
 version.workspace = true
@@ -5,13 +7,10 @@ edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
-[lints]
-workspace = true
-
 [dependencies]
 chrono = { workspace = true, features = ["serde"] }
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
-defuse-digest.workspace = true
+defuse-digest = { workspace = true, features = ["sha2"] }
 impl-tools.workspace = true
 tlb-ton = { workspace = true, features = ["serde"] }
 
@@ -34,7 +33,7 @@ abi = [
 arbitrary = ["dep:arbitrary", "tlb-ton/arbitrary"]
 binary = []
 cell = []
-near-contract = ["defuse-crypto/near-contract", "defuse-digest/near-contract"]
+near-contract = ["defuse-crypto/near-contract"]
 serde = [
   "defuse-crypto/serde",
   "dep:cfg_eval",
@@ -43,16 +42,14 @@ serde = [
   "dep:serde_with",
 ]
 text = []
-sha2 = ["defuse-digest/sha2"]
 
 [dev-dependencies]
-defuse-crypto = { workspace = true, features = ["near-contract"] }
-defuse-test-utils.workspace = true
 defuse-ton-connect = { path = ".", features = ["serde", "arbitrary", "near-contract"] }
-near-sdk = { workspace = true, features = ["unit-testing"] }
 
 arbitrary.workspace = true
+defuse-test-utils.workspace = true
 hex-literal.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
 serde_json.workspace = true
 tlb-ton = { workspace = true, features = ["arbitrary", "base64"] }

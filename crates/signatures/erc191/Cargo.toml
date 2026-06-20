@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-erc191"
 edition.workspace = true
@@ -7,7 +9,7 @@ repository.workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["secp256k1"] }
-defuse-digest.workspace = true
+defuse-digest = { workspace = true, features = ["sha3"] }
 
 impl-tools.workspace = true
 
@@ -16,18 +18,14 @@ schemars = { workspace = true, optional = true, features = ["derive"] }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
 
+[features]
+abi = ["defuse-crypto/abi", "dep:schemars", "serde_with?/schemars_0_8"]
+near-contract = ["defuse-crypto/near-contract"]
+serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
+
 [dev-dependencies]
-defuse-crypto = { workspace = true, features = ["near-contract"] }
-defuse-digest = { workspace = true, features = ["near-contract"] }
+defuse-erc191 = { path = ".", features = ["near-contract"] }
+
 hex-literal.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
-
-[features]
-abi = ["defuse-crypto/abi", "dep:schemars", "serde_with?/schemars_0_8"]
-near-contract = ["defuse-crypto/near-contract", "defuse-digest/near-contract"]
-serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
-sha3 = ["defuse-digest/sha3"]
-
-[lints]
-workspace = true

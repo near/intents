@@ -13,7 +13,6 @@ impl-tools.workspace = true
 near-sdk = { workspace = true, optional = true }
 
 [features]
-
 near = ["dep:near-sdk"]
 
 [lints]

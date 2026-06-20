@@ -15,7 +15,6 @@ pub struct TextPayload {
     pub text: String,
 }
 
-#[cfg(any(feature = "near-contract", feature = "sha2"))]
 impl crate::schema::PayloadSchema for TextPayload {
     fn hash_with_context(
         &self,

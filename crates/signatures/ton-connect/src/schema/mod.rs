@@ -19,40 +19,33 @@ pub struct TonConnectPayloadContext<'a> {
 
 impl TonConnectPayloadContext<'_> {
     // See https://docs.tonconsole.com/academy/sign-data#how-the-signature-is-built
-    #[cfg(all(
-        any(feature = "near-contract", feature = "sha2"),
-        any(feature = "binary", feature = "text")
-    ))]
+    #[cfg(any(feature = "binary", feature = "text"))]
     pub fn create_payload_hash(
         &self,
         payload_prefix: &[u8],
         payload: &[u8],
     ) -> Result<defuse_crypto::CryptoHash, StringError> {
-        use defuse_digest::Digest;
+        use defuse_digest::{Digest, sha2::Sha256};
+
         let domain_len = u32::try_from(self.domain.len())
             .map_err(|_| tlb_ton::Error::custom("domain: overflow"))?;
         let payload_len = u32::try_from(payload.len())
             .map_err(|_| tlb_ton::Error::custom("payload: overflow"))?;
 
-        let bytes = [
-            [0xff, 0xff].as_slice(),
-            b"ton-connect/sign-data/",
-            &self.address.workchain_id.to_be_bytes(),
-            self.address.address.as_ref(),
-            &domain_len.to_be_bytes(),
-            self.domain.as_bytes(),
-            &self.timestamp.to_be_bytes(),
-            payload_prefix,
-            &payload_len.to_be_bytes(),
-            payload,
-        ]
-        .concat();
-
-        Ok(defuse_digest::Sha256::digest(&bytes).into())
+        Ok(Sha256::new_with_prefix(b"\xFF\xFFton-connect/sign-data/")
+            .chain_update(self.address.workchain_id.to_be_bytes())
+            .chain_update(self.address.address)
+            .chain_update(domain_len.to_be_bytes())
+            .chain_update(self.domain.as_bytes())
+            .chain_update(self.timestamp.to_be_bytes())
+            .chain_update(payload_prefix)
+            .chain_update(payload_len.to_be_bytes())
+            .chain_update(payload)
+            .finalize()
+            .into())
     }
 }
 
-#[cfg(any(feature = "near-contract", feature = "sha2"))]
 pub trait PayloadSchema {
     fn hash_with_context(
         &self,
@@ -97,7 +90,6 @@ impl TonConnectPayloadSchema {
     }
 }
 
-#[cfg(any(feature = "near-contract", feature = "sha2"))]
 impl PayloadSchema for TonConnectPayloadSchema {
     fn hash_with_context(
         &self,

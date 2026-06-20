@@ -10,25 +10,17 @@ use impl_tools::autoimpl;
 #[derive(Debug, Clone)]
 pub struct Tip191Payload(pub String);
 
-impl Tip191Payload {
-    #[inline]
-    pub fn prehash(&self) -> Vec<u8> {
-        let data = self.0.as_bytes();
-        [
-            // Prefix not specified in the standard. But from: https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/
-            format!("\x19TRON Signed Message:\n{}", data.len()).as_bytes(),
-            data,
-        ]
-        .concat()
-    }
-}
-
-#[cfg(any(test, feature = "sha3", feature = "near-contract"))]
 impl defuse_crypto::Payload for Tip191Payload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {
-        use defuse_digest::{Digest, Keccak256};
-        Keccak256::digest(self.prehash()).into()
+        use defuse_digest::{Digest, sha3::Keccak256};
+
+        // Prefix not specified in the standard. But from: https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/
+        Keccak256::new_with_prefix(b"\x19TRON Signed Message:\n")
+            .chain_update(self.0.len().to_string())
+            .chain_update(self.0.as_bytes())
+            .finalize()
+            .into()
     }
 }
 
@@ -53,7 +45,6 @@ pub struct SignedTip191Payload {
     pub signature: <Secp256k1 as Curve>::Signature,
 }
 
-#[cfg(any(test, feature = "sha3", feature = "near-contract"))]
 impl defuse_crypto::Payload for SignedTip191Payload {
     #[inline]
     fn hash(&self) -> defuse_crypto::CryptoHash {

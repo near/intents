@@ -1,7 +1,7 @@
 use defuse_crypto::{
     Ed25519PublicKey, Ed25519Signature, P256Signature, Payload, SignedPayload, compress_public_key,
 };
-use defuse_digest::{Digest, Sha256};
+use defuse_digest::{Digest, sha2::Sha256};
 use defuse_webauthn::{Algorithm, Ed25519, P256, PayloadSignature, UserVerification};
 use near_sdk::{CryptoHash, near, serde::de::DeserializeOwned, serde_json};
 
