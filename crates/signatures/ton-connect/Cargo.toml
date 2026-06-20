@@ -8,9 +8,9 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-chrono = { workspace = true, features = ["serde"] }
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
+defuse-time = { workspace = true, features = ["serde"] }
 impl-tools.workspace = true
 tlb-ton = { workspace = true, features = ["serde"] }
 
@@ -26,6 +26,7 @@ default = ["binary", "cell", "text"]
 abi = [
   "defuse-crypto/abi",
   "defuse-serde-utils?/abi",
+  "defuse-time/abi",
   "dep:schemars",
   "serde_with?/schemars_0_8",
   "tlb-ton/schemars_0_8",
@@ -36,6 +37,7 @@ cell = []
 near-contract = ["defuse-crypto/near-contract"]
 serde = [
   "defuse-crypto/serde",
+  "defuse-time/serde",
   "dep:cfg_eval",
   "dep:defuse-serde-utils",
   "dep:serde",
@@ -44,9 +46,8 @@ serde = [
 text = []
 
 [dev-dependencies]
-defuse-ton-connect = { path = ".", features = ["serde", "arbitrary", "near-contract"] }
+defuse-ton-connect = { path = ".", features = ["serde", "arbitrary", "near-contract", "cell", "binary", "text"] }
 
-arbitrary.workspace = true
 defuse-test-utils.workspace = true
 hex-literal.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }

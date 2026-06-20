@@ -1,8 +1,8 @@
 //! TON Connect [signData](https://github.com/ton-blockchain/ton-connect/blob/main/requests-responses.md#sign-data)
 mod schema;
 
-use chrono::{DateTime, Utc};
 use defuse_crypto::Ed25519;
+use defuse_time::DateTime;
 use impl_tools::autoimpl;
 use tlb_ton::MsgAddress;
 
@@ -29,9 +29,14 @@ pub struct TonConnectPayload {
     /// UNIX timestamp (in seconds or RFC3339) at the time of singing
     #[cfg_attr(
         feature = "serde",
-        serde_as(as = "::serde_with::PickFirst<(_, ::serde_with::TimestampSeconds)>")
+        serde_as(as = "::serde_with::PickFirst<(_, ::serde_with::TimestampSeconds)>"),
+        // Unfortunately, `JsonSchemaAs<DateTime> for TimestampSeconds`
+        // cannot be implemented, since 
+        // `serde_with::schemars_0_8::timespan::TimespanSchemaTarget`
+        // is private
+        cfg_attr(feature = "abi", schemars(with = "String")),
     )]
-    pub timestamp: DateTime<Utc>,
+    pub timestamp: DateTime,
     pub payload: TonConnectPayloadSchema,
 }
 
@@ -44,7 +49,7 @@ impl<'a> arbitrary::Arbitrary<'a> for TonConnectPayload {
         Ok(Self {
             address: u.arbitrary()?,
             domain: u.arbitrary()?,
-            timestamp: ::tlb_ton::UnixTimestamp::arbitrary(u)?,
+            timestamp: ::tlb_ton::UnixTimestamp::arbitrary(u).map(Into::into)?,
             payload: u.arbitrary()?,
         })
     }
@@ -58,6 +63,7 @@ impl TonConnectPayload {
 
         let timestamp: u64 = self
             .timestamp
+            .into_inner()
             .timestamp()
             .try_into()
             .map_err(|_| Error::custom("negative timestamp"))?;
@@ -135,11 +141,11 @@ mod tests {
     use arbitrary::{Arbitrary, Unstructured};
     use defuse_crypto::SignedPayload;
     use defuse_test_utils::random::random_bytes;
+    use defuse_time::chrono;
     use hex_literal::hex;
     use rstest::rstest;
     use tlb_ton::UnixTimestamp;
 
-    #[cfg(all(feature = "text", feature = "serde"))]
     #[rstest]
     fn verify_text(random_bytes: Vec<u8>) {
         verify(
@@ -149,7 +155,9 @@ mod tests {
                         .parse()
                         .unwrap(),
                     domain: "ton-connect.github.io".to_string(),
-                    timestamp: DateTime::from_timestamp(1747759882, 0).unwrap(),
+                    timestamp: chrono::DateTime::from_timestamp(1747759882, 0)
+                        .unwrap()
+                        .into(),
                     payload: TonConnectPayloadSchema::text("Hello, TON!".repeat(100)),
                 },
                 public_key: hex!(
@@ -163,7 +171,6 @@ mod tests {
         );
     }
 
-    #[cfg(all(feature = "binary", feature = "serde"))]
     #[rstest]
     fn verify_binary(random_bytes: Vec<u8>) {
         verify(
@@ -173,7 +180,9 @@ mod tests {
                         .parse()
                         .unwrap(),
                     domain: "ton-connect.github.io".to_string(),
-                    timestamp: DateTime::from_timestamp(1747760435, 0).unwrap(),
+                    timestamp: chrono::DateTime::from_timestamp(1747760435, 0)
+                        .unwrap()
+                        .into(),
                     payload: TonConnectPayloadSchema::binary(hex!("48656c6c6f2c20544f4e21")),
                 },
                 public_key: hex!(
@@ -187,7 +196,6 @@ mod tests {
         );
     }
 
-    #[cfg(all(feature = "cell", feature = "serde"))]
     #[rstest]
     fn verify_cell(random_bytes: Vec<u8>) {
         use tlb_ton::BagOfCells;
@@ -199,7 +207,9 @@ mod tests {
                         .parse()
                         .unwrap(),
                     domain: "ton-connect.github.io".to_string(),
-                    timestamp: DateTime::from_timestamp(1747772412, 0).unwrap(),
+                    timestamp: chrono::DateTime::from_timestamp(1747772412, 0)
+                        .unwrap()
+                        .into(),
                     payload: TonConnectPayloadSchema::cell(
                         0x2eccd0c1,
                         BagOfCells::parse_base64("te6cckEBAQEAEQAAHgAAAABIZWxsbywgVE9OIb7WCx4=")
@@ -221,7 +231,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "serde")]
     fn verify(signed: &SignedTonConnectPayload, random_bytes: &[u8]) {
         verify_ok(signed, true);
 
@@ -241,7 +250,7 @@ mod tests {
         }
         {
             let mut t = signed.clone();
-            t.payload.timestamp = UnixTimestamp::arbitrary(&mut u).unwrap();
+            t.payload.timestamp = UnixTimestamp::arbitrary(&mut u).unwrap().into();
             dbg!(&t.payload.timestamp);
             verify_ok(&t, false);
         }
@@ -253,7 +262,6 @@ mod tests {
         }
     }
 
-    #[cfg(all(feature = "arbitrary", feature = "serde"))]
     #[rstest]
     fn arbitrary(random_bytes: Vec<u8>) {
         verify_ok(
@@ -262,7 +270,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "serde")]
     fn verify_ok(signed: &SignedTonConnectPayload, ok: bool) {
         let serialized = serde_json::to_string_pretty(signed).unwrap();
         println!("{}", &serialized);

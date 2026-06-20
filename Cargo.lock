@@ -1881,6 +1881,7 @@ dependencies = [
  "near-sdk",
  "schemars 0.8.22",
  "serde",
+ "serde_with",
 ]
 
 [[package]]
@@ -1926,11 +1927,11 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "cfg_eval",
- "chrono",
  "defuse-crypto",
  "defuse-digest",
  "defuse-serde-utils",
  "defuse-test-utils",
+ "defuse-time",
  "defuse-ton-connect",
  "hex-literal",
  "impl-tools",

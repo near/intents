@@ -41,7 +41,7 @@ where
         // right after signing.
         //
         // So, we ended up to assert at least following:
-        if p.deadline.into_inner() < self.timestamp {
+        if p.deadline < self.timestamp {
             return Err(Error::custom("deadline < timestamp"));
         }
 

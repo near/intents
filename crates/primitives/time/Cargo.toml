@@ -15,6 +15,7 @@ borsh = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, features = ["chrono"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
+serde_with = { workspace = true, features = ["chrono_0_4"], optional = true }
 
 [target.'cfg(near)'.dependencies]
 near-sdk.workspace = true
@@ -22,10 +23,15 @@ near-sdk.workspace = true
 [features]
 now = ["chrono/now"]
 
-abi = ["borsh?/unstable__schema", "defuse-borsh-utils?/abi", "dep:schemars"]
+abi = [
+  "borsh?/unstable__schema",
+  "defuse-borsh-utils?/abi",
+  "dep:schemars",
+  "serde_with?/schemars_0_8",
+]
 arbitrary = ["chrono/arbitrary", "dep:arbitrary"]
 borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
-serde = ["chrono/serde", "dep:serde"]
+serde = ["chrono/serde", "dep:serde", "dep:serde_with"]
 
 [dev-dependencies]
 defuse-time = { path = ".", features = ["abi", "borsh", "now", "serde"] }
