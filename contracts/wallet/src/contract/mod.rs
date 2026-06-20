@@ -5,7 +5,7 @@ pub use self::impl_::*;
 
 use std::collections::BTreeSet;
 
-use defuse_deadline::DateTime;
+use defuse_time::DateTime;
 use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near};
 
 use crate::{

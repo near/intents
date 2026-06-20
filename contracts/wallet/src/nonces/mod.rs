@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 
 use defuse_bitmap::BitMap;
 use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds, TimestampSeconds};
-use defuse_deadline::DateTime;
+use defuse_time::DateTime;
 use near_sdk::near;
 
 use crate::{Error, Result};

@@ -28,11 +28,11 @@ container_build_command = [
 
 [dependencies]
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
-defuse-deadline = { workspace = true, features = ["borsh", "serde", "now"] }
 defuse-decimal = { workspace = true, features = ["borsh", "serde"] }
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-nep245.workspace = true
 defuse-num-utils.workspace = true
+defuse-time = { workspace = true, features = ["borsh", "serde", "now"] }
 defuse-token-id = { workspace = true, features = ["borsh", "serde"] }
 
 near-contract-standards.workspace = true
@@ -63,9 +63,9 @@ nep141 = ["defuse-token-id/nep141"]
 nep245 = ["defuse-token-id/nep245"]
 
 abi = [
-  "defuse-deadline/abi",
   "defuse-decimal/abi",
   "defuse-fees/abi",
+  "defuse-time/abi",
   "defuse-token-id/abi",
   "near-sdk/abi",
   "serde_with/schemars_0_8",

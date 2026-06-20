@@ -34,7 +34,7 @@ members = [
   "crates/near/utils",
   "crates/near/wnear",
 
-  "crates/primitives/deadline",
+  "crates/primitives/time",
   "crates/primitives/decimal",
   "crates/primitives/fees",
   "crates/primitives/token-id",
@@ -97,9 +97,9 @@ defuse-near-utils.path = "crates/near/utils"
 defuse-nep245.path = "crates/near/nep245"
 defuse-wnear.path = "crates/near/wnear"
 
-defuse-deadline.path = "crates/primitives/deadline"
 defuse-decimal.path = "crates/primitives/decimal"
 defuse-fees.path = "crates/primitives/fees"
+defuse-time.path = "crates/primitives/time"
 defuse-token-id = { path = "crates/primitives/token-id", default-features = false }
 
 defuse-erc191.path = "crates/signatures/erc191"

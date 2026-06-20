@@ -4,6 +4,7 @@ use core::{
     time::Duration,
 };
 
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
@@ -50,8 +51,8 @@ impl DateTime {
     #[cfg(feature = "now")]
     #[must_use]
     #[inline]
-    pub fn has_passed(self) -> bool {
-        self < Self::now()
+    pub fn has_passed(&self) -> bool {
+        *self < Self::now()
     }
 
     /// Truncate `Deadline` down to seconds part.
@@ -148,7 +149,7 @@ impl SubAssign<TimeDelta> for DateTime {
     }
 }
 
-#[cfg(any(test, feature = "borsh"))]
+#[cfg(feature = "borsh")]
 const _: () = {
     use defuse_borsh_utils::adapters::{
         BorshDeserializeAs, BorshSerializeAs, TimestampMicroSeconds, TimestampMilliSeconds,

@@ -1439,7 +1439,6 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-core",
  "defuse-crypto",
- "defuse-deadline",
  "defuse-digest",
  "defuse-erc191",
  "defuse-fees",
@@ -1450,6 +1449,7 @@ dependencies = [
  "defuse-num-utils",
  "defuse-sep53",
  "defuse-test-utils",
+ "defuse-time",
  "defuse-tip191",
  "defuse-token-id",
  "defuse-ton-connect",
@@ -1485,19 +1485,6 @@ dependencies = [
  "serde_with",
  "strum 0.28.0",
  "thiserror 2.0.18",
-]
-
-[[package]]
-name = "defuse-deadline"
-version = "0.1.0"
-dependencies = [
- "borsh",
- "chrono",
- "defuse-borsh-utils",
- "defuse-deadline",
- "near-sdk",
- "schemars 0.8.22",
- "serde",
 ]
 
 [[package]]
@@ -1552,13 +1539,13 @@ version = "0.1.0"
 dependencies = [
  "defuse-auth-call",
  "defuse-borsh-utils",
- "defuse-deadline",
  "defuse-decimal",
  "defuse-fees",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-num-utils",
  "defuse-sandbox",
+ "defuse-time",
  "defuse-token-id",
  "derive_more",
  "futures",
@@ -1883,6 +1870,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-time"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "borsh",
+ "chrono",
+ "defuse-borsh-utils",
+ "defuse-time",
+ "near-sdk",
+ "schemars 0.8.22",
+ "serde",
+]
+
+[[package]]
 name = "defuse-tip191"
 version = "0.1.0"
 dependencies = [
@@ -1963,8 +1964,8 @@ dependencies = [
  "defuse-bitmap",
  "defuse-borsh-utils",
  "defuse-crypto",
- "defuse-deadline",
  "defuse-test-utils",
+ "defuse-time",
  "defuse-webauthn",
  "derive_more",
  "near-sdk",

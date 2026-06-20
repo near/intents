@@ -13,7 +13,7 @@ mod state;
 
 use std::collections::BTreeSet;
 
-use defuse_deadline::DateTime;
+use defuse_time::DateTime;
 use near_sdk::{AccountId, ext_contract};
 
 use crate::signature::RequestMessage;

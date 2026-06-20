@@ -1,7 +1,7 @@
 lints.workspace = true
 
 [package]
-name = "defuse-deadline"
+name = "defuse-time"
 edition.workspace = true
 version.workspace = true
 rust-version.workspace = true
@@ -10,6 +10,7 @@ repository.workspace = true
 [dependencies]
 chrono.workspace = true
 
+arbitrary = { workspace = true, features = ["derive"], optional = true }
 borsh = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, features = ["chrono"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
@@ -22,11 +23,12 @@ near-sdk.workspace = true
 now = ["chrono/now"]
 
 abi = ["borsh?/unstable__schema", "defuse-borsh-utils?/abi", "dep:schemars"]
+arbitrary = ["chrono/arbitrary", "dep:arbitrary"]
 borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
 serde = ["chrono/serde", "dep:serde"]
 
 [dev-dependencies]
-defuse-deadline = { path = ".", features = ["abi", "borsh", "now", "serde"] }
+defuse-time = { path = ".", features = ["abi", "borsh", "now", "serde"] }
 
 [target.'cfg(near)'.dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }

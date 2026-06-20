@@ -15,7 +15,7 @@ workspace = true
 [dependencies]
 defuse-bitmap = { workspace = true, features = ["borsh"] }
 defuse-borsh-utils.workspace = true
-defuse-deadline = { workspace = true, features = ["borsh", "serde", "now"] }
+defuse-time = { workspace = true, features = ["borsh", "serde", "now"] }
 
 derive_more = { workspace = true, features = ["from"] }
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
@@ -32,12 +32,12 @@ abi = [
   "defuse-bitmap/abi",
   "defuse-borsh-utils/abi",
   "defuse-crypto?/abi",
-  "defuse-deadline/abi",
+  "defuse-time/abi",
   "defuse-webauthn?/abi",
   "near-sdk/abi",
   "serde_with/schemars_0_8",
 ]
-arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
+arbitrary = ["defuse-time/arbitrary", "dep:arbitrary", "near-sdk/arbitrary"]
 concurrent = ["dep:rand_core"]
 webauthn = ["dep:defuse-webauthn"]
 

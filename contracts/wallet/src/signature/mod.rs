@@ -11,7 +11,7 @@ pub mod webauthn;
 use std::time::Duration;
 
 use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds, TimestampSeconds};
-pub use defuse_deadline::DateTime;
+pub use defuse_time::DateTime;
 use near_sdk::{AccountId, CryptoHash, env, near, serde_with::DurationSeconds};
 
 use crate::Request;
