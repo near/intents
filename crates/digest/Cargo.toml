@@ -28,5 +28,7 @@ sha3 = ["dep:sha3"]
 defuse-digest = { path = ".", features = ["ripemd", "sha2", "sha3"] }
 
 hex-literal.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
+
+[target.'cfg(near)'.dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }
