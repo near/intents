@@ -86,7 +86,7 @@ impl AppPrivateKey {
                             .concat(),
                         )
                         .try_into()
-                        .expect("uncompressed G12affine: invalid length");
+                        .expect("uncompressed G2 affine: invalid length");
 
                         G2Affine::from_uncompressed_unchecked(&uncompressed)
                             .expect("uncompressed G2 affine: failed to deserialize")
