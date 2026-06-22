@@ -17,6 +17,7 @@ use defuse_sandbox::{
     },
     outcome::SuccessfulExecutionOutcome,
 };
+use defuse_sandbox::kit::Final;
 use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::{NearToken, json_types::U128};
@@ -517,6 +518,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
             deposit_message.to_string(),
         )
         .gas(DEFAULT_GAS)
+        .wait_until(Final)
         .await
         .unwrap()
         .try_into()
@@ -524,7 +526,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
 
     // //json::<U128>()
 
-    println!("result: {:#?}", result);
+    // println!("result: {:#?}", result);
 
     // assert!(result.is_success());
 

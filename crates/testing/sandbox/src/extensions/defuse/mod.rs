@@ -15,7 +15,7 @@ use defuse_core::{
 use defuse_nep245::TokenId;
 use defuse_serde_utils::base64::AsBase64;
 use near_account_id::AccountId;
-use near_kit::{Final, FunctionCallAction, Near, NearToken};
+use near_kit::{Final, FinalExecutionOutcome, FunctionCallAction, Near, NearToken};
 use near_sdk::{AccountIdRef, json_types::U128};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -407,7 +407,7 @@ pub trait DefuseExt {
         defuse: impl Into<AccountId>,
         args: DoAuthCallArgs,
         gas: near_kit::Gas,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<FinalExecutionOutcome>;
 
     async fn defuse_mt_on_transfer(
         &self,
@@ -872,17 +872,12 @@ impl DefuseExt for Near {
         defuse: impl Into<AccountId>,
         args: DoAuthCallArgs,
         gas: near_kit::Gas,
-    ) -> Result<SuccessfulExecutionOutcome> {
-        let res = self
-            .transaction(defuse.into())
-            .add_action(
-                Defuse::do_auth_call(args)
-                    .gas(gas)
-                    .deposit(NearToken::from_yoctonear(1)),
-            )
+    ) -> Result<FinalExecutionOutcome> {
+        self.transaction(defuse.into())
+            .add_action(Defuse::do_auth_call(args).gas(gas))
             .wait_until(Final)
-            .await?;
-        Ok(res.try_into()?)
+            .await
+            .map_err(Into::into)
     }
 
     async fn defuse_mt_on_transfer(
