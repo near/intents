@@ -7,6 +7,7 @@ use defuse_randomness::Rng;
 use defuse_sandbox::{
     account::Account,
     extensions::{
+        DEFAULT_GAS,
         defuse::{
             nep245::{MtBurnEvent, MtEvent, MtMintEvent},
             tokens::{DepositAction, DepositMessage},
@@ -195,11 +196,11 @@ async fn run_deposit_resolve_gas_test(
         .transaction(env.defuse.contract_id()) // defuse contract receives the deposit
         .add_action(Mt::mt_on_transfer(MtOnTransferArgs {
             sender_id: author_account.account_id().clone(), // sender_id (who the tokens are being deposited for)
-            previous_owner_ids: vec![author_account.account_id().clone()],
-            token_ids: defuse_token_ids,
+            previous_owner_ids: vec![author_account.account_id().clone(); token_count],
+            token_ids,
             amounts: amounts.iter().copied().map(U128).collect(),
             msg: serde_json::to_string(&deposit_message).unwrap(),
-        }))
+        }).gas(DEFAULT_GAS))
         .await
         .context("Failed at mt_on_transfer (RPC error)")?;
 
@@ -382,14 +383,14 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
     };
 
     let execution_result = author_account
-        .transaction(receiver_stub.account_id())
+        .transaction(env.defuse.contract_id())
         .add_action(Mt::mt_on_transfer(MtOnTransferArgs {
             sender_id: author_account.account_id().clone(),
             previous_owner_ids: vec![author_account.account_id().clone()],
             token_ids: vec!["testtoken1".to_string()],
             amounts: vec![U128(amount)],
             msg: serde_json::to_string(&deposit_message).unwrap(),
-        }))
+        }).gas(DEFAULT_GAS))
         .await
         .expect("Failed at mt_on_transfer (RPC error)");
 

@@ -1,6 +1,7 @@
 use defuse_sandbox::{
     assert_eq_defuse_event_logs,
     extensions::{
+        DEFAULT_GAS,
         defuse::{
             DefuseExt, DefuseSignerExt, ToEventLog,
             core::{
@@ -13,6 +14,7 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs},
         wnear::WNearExt,
     },
+    kit::Final,
 };
 use near_sdk::NearToken;
 use rstest::rstest;
@@ -78,6 +80,8 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
             total_amount_yocto,
             DepositMessage::new(other_user.account_id().clone()).to_string(),
         )
+        .gas(DEFAULT_GAS)
+        .wait_until(Final)
         .await
         .expect("failed to deposit wNEAR to user2");
 

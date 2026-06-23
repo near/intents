@@ -1,6 +1,7 @@
 use defuse_sandbox::{
     assert_eq_defuse_event_logs,
     extensions::{
+        DEFAULT_GAS,
         defuse::{
             DefuseDeployerExt, DefuseExt, DefuseSignerExt, ToEventLog,
             contract::config::{DefuseConfig, RolesConfig},
@@ -13,6 +14,7 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs},
         wnear::WNearExt,
     },
+    kit::Final,
 };
 use defuse_test_utils::wasms::DEFUSE_WASM;
 use near_sdk::{AccountId, Gas, NearToken};
@@ -130,7 +132,13 @@ async fn ft_withdraw_intent() {
     // deposit wNEAR
     user.ft(env.wnear.contract_id())
         .unwrap()
-        .transfer_call(env.defuse.contract_id(), STORAGE_DEPOSIT.as_yoctonear(), "")
+        .transfer_call(
+            env.defuse.contract_id(),
+            STORAGE_DEPOSIT.as_yoctonear(),
+            String::new(),
+        )
+        .gas(DEFAULT_GAS)
+        .wait_until(Final)
         .await
         .unwrap();
 
