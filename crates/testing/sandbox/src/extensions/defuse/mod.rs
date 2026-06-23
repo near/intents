@@ -292,18 +292,18 @@ pub trait DefuseExt {
         &self,
         defuse: impl Into<AccountId>,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<(SuccessfulExecutionOutcome, SimulationOutput)>;
 
     async fn defuse_add_relayer_key(
         &self,
-        defuse: impl Into<AccountId>,
-        public_key: impl Into<PublicKey>,
+        defuse: impl AsRef<AccountIdRef>,
+        public_key: &PublicKey,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn defuse_delete_relayer_key(
         &self,
-        defuse: impl Into<AccountId>,
-        public_key: impl Into<PublicKey>,
+        defuse: impl AsRef<AccountIdRef>,
+        public_key: &PublicKey,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn defuse_cleanup_nonces(
@@ -574,29 +574,32 @@ impl DefuseExt for Near {
         &self,
         defuse: impl Into<AccountId>,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> Result<SuccessfulExecutionOutcome> {
+    ) -> Result<(SuccessfulExecutionOutcome, SimulationOutput)> {
         let defuse_id = defuse.into();
         let signed: Vec<MultiPayload> = intents.into_iter().collect();
 
-        let _simulation_result = self
+        let simulation_result = self
             .contract::<Defuse>(defuse_id.clone())
             .simulate_intents(MultiPayloadArgs {
                 signed: signed.clone(),
             })
             .await?;
 
-        self.defuse_execute_intents(defuse_id, signed).await
+        Ok((
+            self.defuse_execute_intents(defuse_id, signed).await?,
+            simulation_result,
+        ))
     }
 
     async fn defuse_add_relayer_key(
         &self,
-        defuse: impl Into<AccountId>,
-        public_key: impl Into<PublicKey>,
+        defuse: impl AsRef<AccountIdRef>,
+        public_key: &PublicKey,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.fn_call(
-            defuse,
+            defuse.as_ref(),
             Defuse::add_relayer_key(PublicKeyArgs {
-                public_key: public_key.into(),
+                public_key: *public_key,
             }),
             NearToken::from_yoctonear(1),
         )
@@ -605,13 +608,13 @@ impl DefuseExt for Near {
 
     async fn defuse_delete_relayer_key(
         &self,
-        defuse: impl Into<AccountId>,
-        public_key: impl Into<PublicKey>,
+        defuse: impl AsRef<AccountIdRef>,
+        public_key: &PublicKey,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.fn_call(
-            defuse,
+            defuse.as_ref(),
             Defuse::delete_relayer_key(PublicKeyArgs {
-                public_key: public_key.into(),
+                public_key: *public_key,
             }),
             NearToken::from_yoctonear(1),
         )

@@ -6,6 +6,10 @@ rustflags = ["--remap-path-prefix=.=src", "--remap-path-prefix=${HOME}=/"]
 DEFUSE_USE_OUT_DIR = { value = "res", relative = true }
 # Used in build script
 DEFUSE_OUT_DIR = { value = "res", relative = true }
+# TODO: remove it after near kit update
+# near-kit defaults to sandbox 2.11.0, whose protocol version is < 84 and rejects
+# the bulk-memory wasm that cargo-near now emits (valid on mainnet since protocol 84).
+NEAR_SANDBOX_IMAGE = "nearprotocol/sandbox:2.12.0"
 
 [alias]
 integration-tests = "test -p defuse-tests --no-default-features --features"

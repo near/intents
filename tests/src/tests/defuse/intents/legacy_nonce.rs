@@ -1,23 +1,23 @@
 use defuse_sandbox::{
     assert_eq_defuse_event_logs,
-    extensions::defuse::{
-        contract::core::{
-            Deadline, Nonce,
-            amounts::Amounts,
-            intents::{DefuseIntents, tokens::Transfer},
-            token_id::{TokenId, nep141::Nep141TokenId},
+    extensions::{
+        defuse::{
+            DefuseExt, DefuseSignerExt, ToEventLog,
+            core::{
+                Deadline, Nonce,
+                amounts::Amounts,
+                intents::{DefuseIntents, tokens::Transfer},
+                token_id::{TokenId, nep141::Nep141TokenId},
+            },
         },
-        event::ToEventLog,
-        intents::ExecuteIntentsExt,
+        mt::{Mt, MtBalanceOfArgs},
     },
 };
 
-use defuse_sandbox::extensions::defuse::signer::DefuseSignerExt;
+use defuse_test_utils::random::make_arbitrary;
 use rstest::rstest;
 
-use crate::{
-    sandbox::extensions::mt::MtViewExt, tests::defuse::env::Env, utils::random::make_arbitrary,
-};
+use crate::tests::defuse::env::Env;
 
 #[rstest]
 #[trace]
@@ -28,32 +28,43 @@ async fn execute_intent_with_legacy_nonce(#[from(make_arbitrary)] legacy_nonce: 
     let (user1, user2, ft1) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
-    env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], vec![ft1.id()])
-        .await;
+    env.initial_ft_storage_deposit(
+        vec![user1.account_id(), user2.account_id()],
+        vec![ft1.contract_id()],
+    )
+    .await;
 
-    env.defuse_ft_deposit_to(ft1.id(), 1000, user1.id(), None)
+    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.account_id(), None)
         .await
         .unwrap();
 
-    let token_id = TokenId::from(Nep141TokenId::new(ft1.id().clone()));
+    let token_id = TokenId::from(Nep141TokenId::new(ft1.contract_id().clone()));
 
     assert_eq!(
-        env.defuse
-            .mt_balance_of(user1.id(), &token_id.to_string())
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: user1.account_id(),
+                token_id: &token_id.to_string()
+            })
             .await
-            .unwrap(),
+            .unwrap()
+            .0,
         1000
     );
     assert_eq!(
-        env.defuse
-            .mt_balance_of(user2.id(), &token_id.to_string())
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: user2.account_id(),
+                token_id: &token_id.to_string()
+            })
             .await
-            .unwrap(),
+            .unwrap()
+            .0,
         0
     );
 
     let transfer_intent = Transfer {
-        receiver_id: user2.id().clone(),
+        receiver_id: user2.account_id().clone(),
         tokens: Amounts::new(std::iter::once((token_id.clone(), 1000)).collect()),
         memo: None,
         notification: None,
@@ -61,7 +72,7 @@ async fn execute_intent_with_legacy_nonce(#[from(make_arbitrary)] legacy_nonce: 
 
     let transfer_intent_payload = user1
         .sign_defuse_message(
-            env.defuse.id(),
+            env.defuse.contract_id(),
             legacy_nonce,
             Deadline::MAX,
             DefuseIntents {
@@ -70,26 +81,37 @@ async fn execute_intent_with_legacy_nonce(#[from(make_arbitrary)] legacy_nonce: 
         )
         .await;
 
-    let res = env
-        .simulate_and_execute_intents(env.defuse.id(), [transfer_intent_payload.clone()])
+    let (res, _) = env
+        .defuse_simulate_and_execute_intents(
+            env.defuse.contract_id(),
+            [transfer_intent_payload.clone()],
+        )
         .await
         .unwrap();
 
     assert_eq_defuse_event_logs!(transfer_intent_payload.to_event_log(), res.logs());
 
     assert_eq!(
-        env.defuse
-            .mt_balance_of(user1.id(), &token_id.to_string())
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: user1.account_id(),
+                token_id: &token_id.to_string()
+            })
             .await
-            .unwrap(),
+            .unwrap()
+            .0,
         0
     );
 
     assert_eq!(
-        env.defuse
-            .mt_balance_of(user2.id(), &token_id.to_string())
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: user2.account_id(),
+                token_id: &token_id.to_string()
+            })
             .await
-            .unwrap(),
+            .unwrap()
+            .0,
         1000
     );
 }

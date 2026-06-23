@@ -193,7 +193,7 @@ async fn auth_by_predecessor_id() {
             .await
             .unwrap();
 
-        let result = env
+        let (result, _) = env
             .defuse_simulate_and_execute_intents(
                 env.defuse.contract_id(),
                 [enable_auth_payload.clone()],

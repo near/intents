@@ -1,7 +1,8 @@
 use defuse_sandbox::{
     assert_eq_defuse_event_logs,
-    extensions::defuse::{
-        contract::{
+    extensions::{
+        defuse::{
+            DefuseExt, DefuseSignerExt, ToEventLog,
             core::{
                 PublicKey,
                 intents::tokens::NativeWithdraw,
@@ -9,18 +10,14 @@ use defuse_sandbox::{
             },
             tokens::DepositMessage,
         },
-        event::ToEventLog,
+        mt::{Mt, MtBalanceOfArgs},
+        wnear::WNearExt,
     },
-};
-
-use defuse_sandbox::extensions::defuse::{
-    intents::ExecuteIntentsExt, signer::DefaultDefuseSignerExt, tokens::nep141::DefuseFtDepositor,
 };
 use near_sdk::NearToken;
 use rstest::rstest;
 
 use crate::{
-    sandbox::extensions::{mt::MtViewExt, wnear::WNearExt},
     tests::defuse::env::Env,
     utils::fixtures::{ed25519_pk, secp256k1_pk},
 };
@@ -32,7 +29,7 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
 
     let (user, other_user) = futures::join!(env.create_user(), env.create_user());
 
-    env.initial_ft_storage_deposit(vec![user.id(), other_user.id()], &[])
+    env.initial_ft_storage_deposit(vec![user.account_id(), other_user.account_id()], &[])
         .await;
 
     let amounts_to_withdraw = [
@@ -46,7 +43,7 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
             secp256k1_pk.to_implicit_account_id(),
             NearToken::from_near(200),
         ),
-        (user.id().to_owned(), NearToken::from_near(300)),
+        (user.account_id().to_owned(), NearToken::from_near(300)),
     ];
 
     let initial_balances = {
@@ -54,7 +51,6 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
         for (account, _) in &amounts_to_withdraw {
             let balance = env
                 .account(account)
-                .view()
                 .await
                 .map_or(NearToken::ZERO, |a| a.amount);
 
@@ -69,20 +65,21 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
         .sum();
 
     env.near_deposit(
-        env.wnear.id(),
+        env.wnear.contract_id(),
         NearToken::from_yoctonear(total_amount_yocto),
     )
     .await
     .expect("failed to wrap NEAR");
 
-    env.defuse_ft_deposit(
-        env.defuse.id(),
-        env.wnear.id(),
-        total_amount_yocto,
-        DepositMessage::new(other_user.id().clone()),
-    )
-    .await
-    .expect("failed to deposit wNEAR to user2");
+    env.ft(env.wnear.contract_id())
+        .unwrap()
+        .transfer_call(
+            env.defuse.contract_id(),
+            total_amount_yocto,
+            DepositMessage::new(other_user.account_id().clone()).to_string(),
+        )
+        .await
+        .expect("failed to deposit wNEAR to user2");
 
     // withdraw native NEAR to corresponding receivers
     let withdraw_payload = other_user
@@ -99,21 +96,23 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
         .await
         .unwrap();
 
-    let res = env
-        .simulate_and_execute_intents(env.defuse.id(), [withdraw_payload.clone()])
+    let (res, _) = env
+        .defuse_simulate_and_execute_intents(env.defuse.contract_id(), [withdraw_payload.clone()])
         .await
         .expect("execute_intents: failed to withdraw native NEAR to receivers");
 
     assert_eq_defuse_event_logs!(withdraw_payload.to_event_log(), res.logs());
 
     assert_eq!(
-        env.defuse
-            .mt_balance_of(
-                user.id(),
-                &TokenId::Nep141(Nep141TokenId::new(env.wnear.id().clone())).to_string()
-            )
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: other_user.account_id(),
+                token_id: &TokenId::Nep141(Nep141TokenId::new(env.wnear.contract_id().clone()))
+                    .to_string()
+            })
             .await
-            .unwrap(),
+            .unwrap()
+            .0,
         0,
         "there should be nothing left deposited for user1"
     );
@@ -121,7 +120,7 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
     // Check balances of NEAR on the blockchain
     for ((receiver_id, amount), initial_balance) in amounts_to_withdraw.iter().zip(initial_balances)
     {
-        let balance = env.account(receiver_id).view().await.unwrap().amount;
+        let balance = env.account(receiver_id).await.unwrap().amount;
 
         assert!(
             balance == initial_balance.checked_add(*amount).unwrap(),

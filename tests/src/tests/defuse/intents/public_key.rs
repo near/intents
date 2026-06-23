@@ -1,15 +1,17 @@
-use defuse::core::{crypto::Payload, intents::MaybeIntentEvent};
-use defuse_sandbox::extensions::defuse::event::ToEventLog;
-use defuse_sandbox::extensions::defuse::{
-    intents::ExecuteIntentsExt, nonce::ExtractNonceExt, signer::DefaultDefuseSignerExt,
-};
 use defuse_sandbox::{
     assert_eq_defuse_event_logs,
-    extensions::defuse::contract::core::{
-        PublicKey,
-        accounts::{AccountEvent, PublicKeyEvent},
-        events::DefuseEvent,
-        intents::account::{AddPublicKey, RemovePublicKey},
+    extensions::defuse::{
+        DefuseExt, DefuseSignerExt, ExtractNonceExt, ToEventLog,
+        core::{
+            PublicKey,
+            accounts::{AccountEvent, PublicKeyEvent},
+            crypto::Payload,
+            events::DefuseEvent,
+            intents::{
+                MaybeIntentEvent,
+                account::{AddPublicKey, RemovePublicKey},
+            },
+        },
     },
 };
 use near_sdk::AsNep297Event;
@@ -42,15 +44,18 @@ async fn execute_add_public_key_intent(public_key: PublicKey) {
         .unwrap();
     let nonce = add_public_key_payload.extract_nonce().unwrap();
 
-    let result = env
-        .simulate_and_execute_intents(env.defuse.id(), [add_public_key_payload.clone()])
+    let (result, _) = env
+        .defuse_simulate_and_execute_intents(
+            env.defuse.contract_id(),
+            [add_public_key_payload.clone()],
+        )
         .await
         .unwrap();
 
     let events = vec![
         DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_intent(
             AccountEvent::new(
-                user.id(),
+                user.account_id(),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(&new_public_key),
                 },
@@ -59,7 +64,7 @@ async fn execute_add_public_key_intent(public_key: PublicKey) {
         ))
         .to_nep297_event()
         .to_event_log(),
-        AccountNonceIntentEvent::new(&user.id(), nonce, &add_public_key_payload)
+        AccountNonceIntentEvent::new(&user.account_id(), nonce, &add_public_key_payload)
             .into_event()
             .to_nep297_event()
             .to_event_log(),
@@ -88,7 +93,7 @@ async fn execute_remove_public_key_intent(public_key: PublicKey) {
         .unwrap();
     let _add_nonce = add_public_key_payload.extract_nonce().unwrap();
 
-    env.simulate_and_execute_intents(env.defuse.id(), [add_public_key_payload])
+    env.defuse_simulate_and_execute_intents(env.defuse.contract_id(), [add_public_key_payload])
         .await
         .unwrap();
 
@@ -102,8 +107,11 @@ async fn execute_remove_public_key_intent(public_key: PublicKey) {
         .await
         .unwrap();
 
-    let result = env
-        .simulate_and_execute_intents(env.defuse.id(), [remove_public_key_payload.clone()])
+    let (result, _) = env
+        .defuse_simulate_and_execute_intents(
+            env.defuse.contract_id(),
+            [remove_public_key_payload.clone()],
+        )
         .await
         .unwrap();
 

@@ -1,6 +1,6 @@
 mod accounts;
 mod global_deployment;
-// mod intents;
+mod intents;
 mod state;
 mod state_init;
 mod storage;
