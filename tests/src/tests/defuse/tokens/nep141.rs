@@ -1,3 +1,4 @@
+use defuse_sandbox::kit::Final;
 use defuse_sandbox::{
     account::Account,
     extensions::{
@@ -15,9 +16,7 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs},
         poa::PoAFactoryExt,
     },
-    outcome::SuccessfulExecutionOutcome,
 };
-use defuse_sandbox::kit::Final;
 use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::{NearToken, json_types::U128};
@@ -509,8 +508,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
         }
     };
 
-    let result: SuccessfulExecutionOutcome = user
-        .ft(ft.contract_id())
+    user.ft(ft.contract_id())
         .unwrap()
         .transfer_call(
             env.defuse.contract_id(),
@@ -521,14 +519,8 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
         .wait_until(Final)
         .await
         .unwrap()
-        .try_into()
+        .result()
         .unwrap();
-
-    // //json::<U128>()
-
-    // println!("result: {:#?}", result);
-
-    // assert!(result.is_success());
 
     assert_eq!(
         ft.balance_of(user.account_id()).await.unwrap().raw(),

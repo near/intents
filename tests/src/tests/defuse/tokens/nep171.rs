@@ -115,11 +115,14 @@ async fn transfer_nft_to_verifier() {
                 .transfer_call(
                     env.defuse.contract_id(),
                     nft1.token_id.clone(),
-                    DepositMessage::new(user3.account_id().clone()).to_string(),
+                    near_sdk::serde_json::to_string(&DepositMessage::new(
+                        user3.account_id().clone(),
+                    ))
+                    .unwrap(),
                 )
+                .gas(DEFAULT_GAS)
+                .wait_until(Final)
                 .await
-                .unwrap()
-                .result()
                 .unwrap();
 
             let nft1_data = nft_issuer_contract
@@ -166,11 +169,14 @@ async fn transfer_nft_to_verifier() {
                 .transfer_call(
                     env.defuse.contract_id(),
                     nft2.token_id.clone(),
-                    DepositMessage::new(user1.account_id().clone()).to_string(),
+                    near_sdk::serde_json::to_string(&DepositMessage::new(
+                        user1.account_id().clone(),
+                    ))
+                    .unwrap(),
                 )
+                .gas(DEFAULT_GAS)
+                .wait_until(Final)
                 .await
-                .unwrap()
-                .result()
                 .unwrap();
 
             let nft2_data = nft_issuer_contract

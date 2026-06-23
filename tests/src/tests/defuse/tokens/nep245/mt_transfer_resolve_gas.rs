@@ -154,8 +154,11 @@ async fn run_resolve_gas_test(
             env.defuse.contract_id(),
             MtOnTransferArgs {
                 sender_id: user_account.account_id().clone(),
-                previous_owner_ids: vec![author_account.account_id().clone()],
-                token_ids: defuse_token_ids.clone(),
+                previous_owner_ids: vec![
+                    author_account.account_id().clone();
+                    token_ids.len()
+                ],
+                token_ids: token_ids.clone(),
                 amounts: amounts.iter().copied().map(U128).collect(),
                 msg: String::new(),
             },
@@ -354,8 +357,11 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit()
             env.defuse.contract_id(),
             MtOnTransferArgs {
                 sender_id: user.account_id().clone(),
-                previous_owner_ids: vec![author_account.account_id().clone()],
-                token_ids: defuse_token_ids.clone(),
+                previous_owner_ids: vec![
+                    author_account.account_id().clone();
+                    token_ids.len()
+                ],
+                token_ids: token_ids.clone(),
                 amounts: amounts.iter().copied().map(U128).collect(),
                 msg: String::new(),
             },

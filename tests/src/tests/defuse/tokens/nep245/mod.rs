@@ -615,7 +615,7 @@ async fn multitoken_withdrawals() {
     let ft2_id = TokenId::Nep141(Nep141TokenId::new(ft2.contract_id().clone()));
     let ft3_id = TokenId::Nep141(Nep141TokenId::new(ft3.contract_id().clone()));
 
-    let defuse2_mt = env.contract::<Mt>(env.defuse.contract_id());
+    let defuse2_mt = env.contract::<Mt>(defuse2.account_id());
 
     // At this point, user1 in defuse2, has no balance of `"nep245:defuse.test.near:nep141:ft1.test.near"`, and others. We will fund it next.
     {
