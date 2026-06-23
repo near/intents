@@ -4,7 +4,7 @@ use defuse_sandbox::{
         OutlayerAppDeployerExt, OutlayerAppExt,
         contract::{Event, State as OutlayerState},
     },
-    kit::{Near, PublishMode, StateInit},
+    kit::{Near, PublishMode},
     root,
 };
 use defuse_test_utils::wasms::OUTLAYER_APP_WASM;

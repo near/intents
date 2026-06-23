@@ -1,7 +1,6 @@
 use anyhow::Result;
 use defuse_escrow_swap::{Params, Storage};
-use near_account_id::AccountId;
-use near_kit::{Final, Near};
+use near_kit::{AccountId, Final, Near};
 use serde::{Deserialize, Serialize};
 
 use crate::outcome::SuccessfulExecutionOutcome;

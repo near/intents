@@ -12,7 +12,7 @@ use defuse_sandbox::{
         },
     },
     global_contract::GlobalContract,
-    kit::{GlobalContractIdentifierView, Near, StateInit, StateInitV1},
+    kit::{Near, StateInit, StateInitV1},
     root,
 };
 use defuse_test_utils::wasms::WALLET_WASM;

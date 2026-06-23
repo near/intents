@@ -28,7 +28,6 @@ impl-tools.workspace = true
 libc = "0.2"
 near-contract-standards.workspace = true
 near-kit = {workspace = true, features = ["sandbox"] }
-near-account-id.workspace = true
 rstest.workspace = true
 serde_with.workspace = true
 serde.workspace = true

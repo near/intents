@@ -1,7 +1,6 @@
 use anyhow::Result;
 use defuse_outlayer_app::{AsHex, State as OutlayerState};
-use near_account_id::AccountId;
-use near_kit::{Final, GlobalContractId, Near, NearToken};
+use near_kit::{AccountId, Final, GlobalContractId, Near, NearToken};
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
 

@@ -6,10 +6,12 @@ use defuse_near_utils::{REFUND_MEMO, TOTAL_LOG_LENGTH_LIMIT};
 use defuse_randomness::Rng;
 use defuse_sandbox::{
     account::Account,
-    extensions::defuse::{
-        Defuse, MtOnTransferArgs,
-        nep245::{MtBurnEvent, MtEvent, MtMintEvent},
-        tokens::{DepositAction, DepositMessage},
+    extensions::{
+        defuse::{
+            nep245::{MtBurnEvent, MtEvent, MtMintEvent},
+            tokens::{DepositAction, DepositMessage},
+        },
+        mt::{Mt, MtOnTransferArgs},
     },
     kit::{ExecutionStatus, Near, NearToken},
 };
@@ -191,7 +193,7 @@ async fn run_deposit_resolve_gas_test(
     validate_mt_event_log_size(&receiver_id, &defuse_token_ids, &amounts)?;
     let execution_result = author_account
         .transaction(env.defuse.contract_id()) // defuse contract receives the deposit
-        .add_action(Defuse::mt_on_transfer(MtOnTransferArgs {
+        .add_action(Mt::mt_on_transfer(MtOnTransferArgs {
             sender_id: author_account.account_id().clone(), // sender_id (who the tokens are being deposited for)
             previous_owner_ids: vec![author_account.account_id().clone()],
             token_ids: defuse_token_ids,
@@ -381,7 +383,7 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
 
     let execution_result = author_account
         .transaction(receiver_stub.account_id())
-        .add_action(Defuse::mt_on_transfer(MtOnTransferArgs {
+        .add_action(Mt::mt_on_transfer(MtOnTransferArgs {
             sender_id: author_account.account_id().clone(),
             previous_owner_ids: vec![author_account.account_id().clone()],
             token_ids: vec!["testtoken1".to_string()],

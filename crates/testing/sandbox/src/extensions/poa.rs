@@ -1,13 +1,15 @@
 use anyhow::Result;
 use defuse_poa_factory::contract::Role;
-use near_account_id::AccountIdRef;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
-use near_kit::{AccountId, Final, FunctionCallAction, FungibleToken, Near, NearToken};
+use near_kit::{
+    AccountId, AccountIdRef, Final, FunctionCallAction, FungibleToken, Near, NearToken,
+};
+use near_sdk::json_types::U128;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
 
-use crate::{U128, account::Account, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
+use crate::{account::Account, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
 
 pub use defuse_poa_factory::contract;
 

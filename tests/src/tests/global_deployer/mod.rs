@@ -14,7 +14,7 @@ use defuse_sandbox::{
         },
     },
     global_contract::GlobalContract,
-    kit::{ExecutionStatus, Final, Near, StateInit},
+    kit::{ExecutionStatus, Final, Near},
     root,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::MT_RECEIVER_STUB_WASM};

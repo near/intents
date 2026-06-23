@@ -1,8 +1,7 @@
 use anyhow::Result;
 use borsh::BorshSerialize;
 use defuse_global_deployer::{AsHex, State as DeployerState};
-use near_account_id::AccountId;
-use near_kit::{Final, Gas, GlobalContractId, Near, NearToken};
+use near_kit::{AccountId, Final, Gas, GlobalContractId, Near, NearToken};
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
 use sha2::{Digest, Sha256};

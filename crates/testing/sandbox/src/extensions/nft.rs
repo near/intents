@@ -1,10 +1,10 @@
-use near_account_id::AccountIdRef;
 use near_contract_standards::non_fungible_token::{
     Token,
     metadata::{NFTContractMetadata, TokenMetadata},
 };
-use near_kit::{Action, Final, FunctionCallAction, Near, NonFungibleToken};
-use near_sdk::{AccountId, NearToken};
+use near_kit::{
+    AccountIdRef, Action, Final, FunctionCallAction, Near, NearToken, NonFungibleToken,
+};
 use serde_json::json;
 
 use crate::{account::Account, extensions::DEFAULT_GAS};
@@ -20,7 +20,7 @@ pub trait NftAdminExt {
 
     async fn mint_nft(
         &self,
-        collection: impl Into<AccountId>,
+        collection: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<str>,
         token_owner_id: impl AsRef<AccountIdRef>,
         token_metadata: &TokenMetadata,
@@ -61,12 +61,12 @@ impl NftAdminExt for Near {
 
     async fn mint_nft(
         &self,
-        collection: impl Into<AccountId>,
+        collection: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<str>,
         token_owner_id: impl AsRef<AccountIdRef>,
         token_metadata: &TokenMetadata,
     ) -> anyhow::Result<Token> {
-        self.transaction(collection.into())
+        self.transaction(collection.as_ref())
             .add_action(Action::FunctionCall(FunctionCallAction {
                 method_name: "nft_mint".to_string(),
                 args: json!({

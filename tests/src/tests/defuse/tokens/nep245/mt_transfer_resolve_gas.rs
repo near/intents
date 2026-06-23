@@ -9,13 +9,13 @@ use defuse_sandbox::{
     account::Account,
     extensions::{
         defuse::{
-            DefuseExt, MtOnTransferArgs,
             core::{
                 token_id::{TokenId, nep245::Nep245TokenId},
                 tokens::MAX_TOKEN_ID_LEN,
             },
             nep245::{MtEvent, MtTransferEvent},
         },
+        mt::MtOnTransferArgs,
         mt::{Mt, MtBalanceOfArgs, MtExt},
     },
     kit::Near,
@@ -150,7 +150,7 @@ async fn run_resolve_gas_test(
     // account id.
 
     author_account
-        .defuse_mt_on_transfer(
+        .mt_on_transfer(
             env.defuse.contract_id(),
             MtOnTransferArgs {
                 sender_id: user_account.account_id().clone(),
@@ -350,7 +350,7 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit()
     assert!(refund_log_size > TOTAL_LOG_LENGTH_LIMIT,);
 
     author_account
-        .defuse_mt_on_transfer(
+        .mt_on_transfer(
             env.defuse.contract_id(),
             MtOnTransferArgs {
                 sender_id: user.account_id().clone(),

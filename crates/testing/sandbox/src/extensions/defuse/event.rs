@@ -12,7 +12,7 @@ use defuse::core::{
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
     tokens::TransferEvent,
 };
-use near_account_id::AccountId;
+use near_kit::AccountId;
 use near_sdk::AsNep297Event;
 use std::borrow::Cow;
 

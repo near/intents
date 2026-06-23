@@ -1,6 +1,5 @@
 use anyhow::Result;
-use near_kit::{Final, GlobalContractId, KeyPair, Near, NearToken, PublishMode};
-use near_sdk::AccountIdRef;
+use near_kit::{AccountIdRef, Final, GlobalContractId, KeyPair, Near, NearToken, PublishMode};
 use sha2::{Digest, Sha256};
 
 pub trait GlobalContract {

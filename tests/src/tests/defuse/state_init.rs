@@ -2,15 +2,17 @@ use crate::tests::defuse::env::Env;
 use defuse_fees::Pips;
 use defuse_randomness::Rng;
 use defuse_sandbox::{
-    extensions::defuse::{
-        DefuseDeployerExt, DefuseExt, DefuseSignerExt, DoAuthCallArgs,
-        contract::{
-            Contract as DefuseContract,
-            config::{DefuseConfig, RolesConfig},
+    extensions::{
+        defuse::{
+            DefuseDeployerExt, DefuseExt, DefuseSignerExt, DoAuthCallArgs,
+            contract::{
+                Contract as DefuseContract,
+                config::{DefuseConfig, RolesConfig},
+            },
+            core::{fees::FeesConfig, intents::auth::AuthCall},
         },
-        core::{fees::FeesConfig, intents::auth::AuthCall},
+        mt_receiver::MtReceiverStubDeployerExt,
     },
-    global_contract::GlobalContract,
     kit::ExecutionStatus,
 };
 use defuse_test_utils::{
@@ -60,7 +62,7 @@ mod helpers {
 
     /// Simple helper to generate a `StateInit` with given parameters
     pub fn generate_state_init(
-        global_contract_id: &AccountId,
+        global_contract_id: &GlobalContractId,
         keys_count: u8,
         value_len: usize,
         rng: &mut impl Rng,
@@ -72,14 +74,14 @@ mod helpers {
 
         let raw_state = generate_raw_state(&keys, value_len, rng);
         StateInit::V1(StateInitV1 {
-            code: GlobalContractId::AccountId(global_contract_id.clone()),
+            code: global_contract_id.clone(),
             data: raw_state,
         })
     }
 }
 
 fn generate_auth_intent(
-    global_contract_id: &AccountId,
+    global_contract_id: &GlobalContractId,
     keys_count: u8,
     value_len: usize,
     rng: &mut impl Rng,
@@ -100,11 +102,14 @@ fn generate_auth_intent(
 /// Creates an auth call intent with the maximum possible state init
 /// that fits within zero balance account storage limits.
 fn auth_call_with_max_possible_state_init(
-    global_contract_id: &AccountId,
+    global_contract_id: &GlobalContractId,
     rng: &mut impl Rng,
     min_gas: Option<Gas>,
 ) -> (AccountId, AuthCall) {
-    let max_payload = helpers::max_single_entry_payload(global_contract_id);
+    let GlobalContractId::AccountId(account_id) = global_contract_id else {
+        panic!("expected AccountId-based global contract id");
+    };
+    let max_payload = helpers::max_single_entry_payload(account_id);
     generate_auth_intent(global_contract_id, 1, max_payload, rng, min_gas)
 }
 
@@ -127,14 +132,10 @@ async fn benchmark_auth_call_with_largest_possible_state_init(
 ) {
     let env = Env::builder().build().await;
 
-    let global_contract_id = env.account_id().sub_account("g").unwrap();
-    env.deploy_upgradable_global_contract(
-        global_contract_id.clone(),
-        MT_RECEIVER_STUB_WASM.clone(),
-        NearToken::from_near(40),
-    )
-    .await
-    .unwrap();
+    let global_contract_id = env
+        .deploy_mt_receiver_stub_global("g", MT_RECEIVER_STUB_WASM.clone())
+        .await
+        .unwrap();
 
     let (account, intent) =
         auth_call_with_max_possible_state_init(&global_contract_id, &mut rng, gas);
@@ -190,14 +191,10 @@ async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] 
 
     let env = Env::builder().build().await;
 
-    let global_contract_id = env.account_id().sub_account("g").unwrap();
-    env.deploy_upgradable_global_contract(
-        global_contract_id.clone(),
-        MT_RECEIVER_STUB_WASM.clone(),
-        NearToken::from_near(40),
-    )
-    .await
-    .unwrap();
+    let global_contract_id = env
+        .deploy_mt_receiver_stub_global("g", MT_RECEIVER_STUB_WASM.clone())
+        .await
+        .unwrap();
 
     // Deploy second defuse instance as the receiver
     let defuse = env
@@ -275,14 +272,10 @@ async fn test_auth_call_state_init_via_execute_intents(
 
     let env = Env::builder().build().await;
 
-    let global_contract_id = env.account_id().sub_account("g").unwrap();
-    env.deploy_upgradable_global_contract(
-        &global_contract_id,
-        MT_RECEIVER_STUB_WASM.clone(),
-        NearToken::from_near(40),
-    )
-    .await
-    .unwrap();
+    let global_contract_id = env
+        .deploy_mt_receiver_stub_global("g", MT_RECEIVER_STUB_WASM.clone())
+        .await
+        .unwrap();
 
     let user = env.create_named_user("user1").await;
 
@@ -399,14 +392,10 @@ async fn test_auth_call_state_init_via_do_auth_call(
 
     let env = Env::builder().build().await;
 
-    let global_contract_id = env.account_id().sub_account("g").unwrap();
-    env.deploy_upgradable_global_contract(
-        &global_contract_id,
-        MT_RECEIVER_STUB_WASM.clone(),
-        NearToken::from_near(40),
-    )
-    .await
-    .unwrap();
+    let global_contract_id = env
+        .deploy_mt_receiver_stub_global("g", MT_RECEIVER_STUB_WASM.clone())
+        .await
+        .unwrap();
 
     // Deploy second defuse instance as the receiver
     let defuse = env

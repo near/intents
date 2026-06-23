@@ -12,11 +12,11 @@ use defuse::{
 use defuse_core::{
     Nonce, PublicKey, Salt, fees::Pips, intents::auth::AuthCall, payload::multi::MultiPayload,
 };
-use defuse_nep245::TokenId;
 use defuse_serde_utils::base64::AsBase64;
-use near_account_id::AccountId;
-use near_kit::{Final, FinalExecutionOutcome, FunctionCallAction, Near, NearToken};
-use near_sdk::{AccountIdRef, json_types::U128};
+use near_kit::{
+    AccountId, AccountIdRef, Final, FinalExecutionOutcome, FunctionCallAction, Near, NearToken,
+};
+use near_sdk::json_types::U128;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use serde_with::{base64::Base64, serde_as};
@@ -153,15 +153,6 @@ pub struct DoAuthCallArgs {
     pub auth_call: AuthCall,
 }
 
-#[derive(Serialize)]
-pub struct MtOnTransferArgs {
-    pub sender_id: AccountId,
-    pub previous_owner_ids: Vec<AccountId>,
-    pub token_ids: Vec<TokenId>,
-    pub amounts: Vec<U128>,
-    pub msg: String,
-}
-
 #[near_kit::contract]
 pub trait Defuse {
     fn fee(&self) -> Pips;
@@ -241,9 +232,6 @@ pub trait Defuse {
     // NOTE: private method for testing purposes, not part of the public API
     #[call]
     fn do_auth_call(&mut self, args: DoAuthCallArgs);
-
-    #[call]
-    fn mt_on_transfer(&mut self, args: MtOnTransferArgs);
 }
 
 pub trait DefuseExt {
@@ -408,12 +396,6 @@ pub trait DefuseExt {
         args: DoAuthCallArgs,
         gas: near_kit::Gas,
     ) -> Result<FinalExecutionOutcome>;
-
-    async fn defuse_mt_on_transfer(
-        &self,
-        defuse: impl Into<AccountId>,
-        args: MtOnTransferArgs,
-    ) -> Result<(SuccessfulExecutionOutcome, Vec<U128>)>;
 }
 
 pub trait DefuseDeployerExt {
@@ -878,23 +860,5 @@ impl DefuseExt for Near {
             .wait_until(Final)
             .await
             .map_err(Into::into)
-    }
-
-    async fn defuse_mt_on_transfer(
-        &self,
-        defuse: impl Into<AccountId>,
-        args: MtOnTransferArgs,
-    ) -> Result<(SuccessfulExecutionOutcome, Vec<U128>)> {
-        let res = self
-            .transaction(defuse.into())
-            .add_action(
-                Defuse::mt_on_transfer(args)
-                    .gas(DEFAULT_GAS)
-                    .deposit(NearToken::from_near(0)),
-            )
-            .wait_until(Final)
-            .await?;
-        let amounts = res.json::<Vec<U128>>()?;
-        Ok((res.try_into()?, amounts))
     }
 }

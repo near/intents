@@ -1,6 +1,6 @@
-use near_account_id::AccountId;
 use near_kit::{
-    Action, Final, FunctionCallAction, InMemorySigner, KeyPair, Near, NearToken, PublicKey,
+    AccountId, Action, Final, FunctionCallAction, InMemorySigner, KeyPair, Near, NearToken,
+    PublicKey,
 };
 
 pub trait Account {

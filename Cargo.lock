@@ -1774,7 +1774,6 @@ dependencies = [
  "futures",
  "impl-tools",
  "libc",
- "near-account-id",
  "near-contract-standards",
  "near-kit",
  "near-sdk",

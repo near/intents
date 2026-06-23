@@ -1,27 +1,26 @@
 use defuse_fees::Pips;
-use defuse_sandbox::{
-    U128,
-    extensions::{
-        defuse::{
-            core::{
-                Deadline,
-                intents::tokens::NotifyOnTransfer,
-                token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
-            },
-            tokens::{DepositAction, DepositMessage},
+use defuse_sandbox::extensions::{
+    defuse::{
+        core::{
+            Deadline,
+            intents::tokens::NotifyOnTransfer,
+            token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
         },
-        escrow::{
-            Escrow,
-            contract::{
-                ContractStorage, Error, OverrideSend, Params, ProtocolFees,
-                action::{FillAction, TransferAction, TransferMessage},
-            },
-        },
-        mt::{Mt, MtBalanceOfArgs},
+        tokens::{DepositAction, DepositMessage},
     },
+    escrow::{
+        Escrow,
+        contract::{
+            ContractStorage, Error, OverrideSend, Params, ProtocolFees,
+            action::{FillAction, TransferAction, TransferMessage},
+        },
+    },
+    mt::{Mt, MtBalanceOfArgs},
 };
 use near_sdk::{
-    AccountId, serde_json,
+    AccountId,
+    json_types::U128,
+    serde_json,
     state_init::{StateInit, StateInitV1},
 };
 use rstest::rstest;

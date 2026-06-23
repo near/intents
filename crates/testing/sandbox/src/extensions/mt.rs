@@ -1,13 +1,12 @@
 use anyhow::Result;
 use core::str;
 use defuse_nep245::{Token, TokenId};
-use near_account_id::AccountId;
-use near_kit::{Final, Near, NearToken};
-use near_sdk::AccountIdRef;
+use near_kit::{AccountId, AccountIdRef, Final, Near, NearToken};
+use near_sdk::json_types::U128;
 use serde::{Deserialize, Serialize};
 use std::ops::RangeBounds;
 
-use crate::{U128, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
+use crate::{extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
 
 #[derive(Serialize, Deserialize)]
 pub struct MtTokenArgs {
@@ -87,7 +86,15 @@ pub struct MtTokensForOwnerArgs {
     pub limit: Option<usize>,
 }
 
-// TODO: may be also make ext helpers for view methods?
+#[derive(Serialize)]
+pub struct MtOnTransferArgs {
+    pub sender_id: AccountId,
+    pub previous_owner_ids: Vec<AccountId>,
+    pub token_ids: Vec<TokenId>,
+    pub amounts: Vec<U128>,
+    pub msg: String,
+}
+
 #[near_kit::contract]
 pub trait Mt {
     fn mt_token(&self, args: MtTokenArgs) -> Vec<Option<Token>>;
@@ -110,13 +117,16 @@ pub trait Mt {
 
     #[call]
     fn mt_batch_transfer_call(&mut self, args: MtBatchTransferCallArgs);
+
+    #[call]
+    fn mt_on_transfer(&mut self, args: MtOnTransferArgs);
 }
 
 pub trait MtExt {
     async fn mt_transfer(
         &self,
-        contract: impl Into<AccountId>,
-        receiver_id: impl Into<AccountId>,
+        contract: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_id: impl Into<TokenId>,
         amount: u128,
         memo: impl Into<Option<String>>,
@@ -124,8 +134,8 @@ pub trait MtExt {
 
     async fn mt_batch_transfer(
         &self,
-        contract: impl Into<AccountId>,
-        receiver_id: impl Into<AccountId>,
+        contract: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_ids: impl IntoIterator<Item = impl Into<TokenId>>,
         amounts: impl IntoIterator<Item = u128>,
         memo: impl Into<Option<String>>,
@@ -133,8 +143,8 @@ pub trait MtExt {
 
     async fn mt_transfer_call(
         &self,
-        contract: impl Into<AccountId>,
-        receiver_id: impl Into<AccountId>,
+        contract: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_id: impl Into<TokenId>,
         amount: u128,
         memo: impl Into<Option<String>>,
@@ -143,8 +153,8 @@ pub trait MtExt {
 
     async fn mt_batch_transfer_call(
         &self,
-        contract: impl Into<AccountId>,
-        receiver_id: impl Into<AccountId>,
+        contract: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_ids: impl IntoIterator<Item = impl Into<TokenId>>,
         amounts: impl IntoIterator<Item = u128>,
         memo: impl Into<Option<String>>,
@@ -159,25 +169,31 @@ pub trait MtExt {
 
     async fn mt_tokens_for_owner(
         &self,
-        contract: impl Into<AccountId>,
+        contract: impl AsRef<AccountIdRef>,
         account_id: impl AsRef<AccountIdRef>,
         range: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>>;
+
+    async fn mt_on_transfer(
+        &self,
+        defuse: impl AsRef<AccountIdRef>,
+        args: MtOnTransferArgs,
+    ) -> Result<(SuccessfulExecutionOutcome, Vec<U128>)>;
 }
 
 impl MtExt for Near {
     async fn mt_transfer(
         &self,
-        contract: impl Into<AccountId>,
-        receiver_id: impl Into<AccountId>,
+        contract: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_id: impl Into<TokenId>,
         amount: u128,
         memo: impl Into<Option<String>>,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(contract.into())
+        self.transaction(contract.as_ref())
             .add_action(
                 Mt::mt_transfer(MtTransferArgs {
-                    receiver_id: receiver_id.into(),
+                    receiver_id: receiver_id.as_ref().into(),
                     token_id: token_id.into(),
                     amount: amount.into(),
                     approval: None,
@@ -193,16 +209,16 @@ impl MtExt for Near {
 
     async fn mt_batch_transfer(
         &self,
-        contract: impl Into<AccountId>,
-        receiver_id: impl Into<AccountId>,
+        contract: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_ids: impl IntoIterator<Item = impl Into<TokenId>>,
         amounts: impl IntoIterator<Item = u128>,
         memo: impl Into<Option<String>>,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(contract.into())
+        self.transaction(contract.as_ref())
             .add_action(
                 Mt::mt_batch_transfer(MtBatchTransferArgs {
-                    receiver_id: receiver_id.into(),
+                    receiver_id: receiver_id.as_ref().into(),
                     token_ids: token_ids.into_iter().map(Into::into).collect(),
                     amounts: amounts.into_iter().map(Into::into).collect(),
                     approvals: None,
@@ -218,18 +234,18 @@ impl MtExt for Near {
 
     async fn mt_transfer_call(
         &self,
-        contract: impl Into<AccountId>,
-        receiver_id: impl Into<AccountId>,
+        contract: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_id: impl Into<TokenId>,
         amount: u128,
         memo: impl Into<Option<String>>,
         msg: impl Into<String>,
     ) -> Result<(SuccessfulExecutionOutcome, Vec<u128>)> {
         let outcome = self
-            .transaction(contract.into())
+            .transaction(contract.as_ref())
             .add_action(
                 Mt::mt_transfer_call(MtTransferCallArgs {
-                    receiver_id: receiver_id.into(),
+                    receiver_id: receiver_id.as_ref().into(),
                     token_id: token_id.into(),
                     amount: amount.into(),
                     approval: None,
@@ -249,18 +265,18 @@ impl MtExt for Near {
 
     async fn mt_batch_transfer_call(
         &self,
-        contract: impl Into<AccountId>,
-        receiver_id: impl Into<AccountId>,
+        contract: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_ids: impl IntoIterator<Item = impl Into<TokenId>>,
         amounts: impl IntoIterator<Item = u128>,
         memo: impl Into<Option<String>>,
         msg: impl Into<String>,
     ) -> Result<(SuccessfulExecutionOutcome, Vec<u128>)> {
         let outcome = self
-            .transaction(contract.into())
+            .transaction(contract.as_ref())
             .add_action(
                 Mt::mt_batch_transfer_call(MtBatchTransferCallArgs {
-                    receiver_id: receiver_id.into(),
+                    receiver_id: receiver_id.as_ref().into(),
                     token_ids: token_ids.into_iter().map(Into::into).collect(),
                     amounts: amounts.into_iter().map(Into::into).collect(),
                     approvals: None,
@@ -312,7 +328,7 @@ impl MtExt for Near {
 
     async fn mt_tokens_for_owner(
         &self,
-        contract: impl Into<AccountId>,
+        contract: impl AsRef<AccountIdRef>,
         account_id: impl AsRef<AccountIdRef>,
         range: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>> {
@@ -334,7 +350,7 @@ impl MtExt for Near {
             (Some(f), Some(t)) => Some(t - f),
         };
 
-        self.contract::<Mt>(contract.into())
+        self.contract::<Mt>(contract.as_ref())
             .mt_tokens_for_owner(MtTokensForOwnerArgs {
                 account_id: account_id.as_ref().into(),
                 from_index: from.map(|v| U128(v.try_into().unwrap())),
@@ -342,5 +358,23 @@ impl MtExt for Near {
             })
             .await
             .map_err(Into::into)
+    }
+
+    async fn mt_on_transfer(
+        &self,
+        defuse: impl AsRef<AccountIdRef>,
+        args: MtOnTransferArgs,
+    ) -> Result<(SuccessfulExecutionOutcome, Vec<U128>)> {
+        let res = self
+            .transaction(defuse.as_ref())
+            .add_action(
+                Mt::mt_on_transfer(args)
+                    .gas(DEFAULT_GAS)
+                    .deposit(NearToken::from_near(0)),
+            )
+            .wait_until(Final)
+            .await?;
+        let amounts = res.json::<Vec<U128>>()?;
+        Ok((res.try_into()?, amounts))
     }
 }
