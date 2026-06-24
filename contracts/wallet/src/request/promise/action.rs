@@ -75,7 +75,7 @@ pub struct TransferAction {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StateInitAction {
-    #[serde(flatten)]
+    #[serde(flatten)] // TODO
     pub state_init: StateInit,
 
     #[cfg_attr(

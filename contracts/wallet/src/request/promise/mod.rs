@@ -1,284 +1,146 @@
 mod action;
-mod iter;
-mod single;
+pub use self::action::*;
 
-pub use self::{action::*, iter::*, single::*};
+use near_sdk::{AccountId, Gas, NearToken, Promise, near, state_init::StateInit};
 
-use near_sdk::{Gas, NearToken, Promise, near};
-
-/// DAG of promises to execute
+/// A single outgoing receipt
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct PromiseDAG {
-    /// `PromiseDAG`s to be executed before `promises`, if any.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub after: Vec<Self>,
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct PromiseSingle {
+    /// Receiver of the receipt to be created.
+    ///
+    /// NOTE: self-calls are prohibited.
+    pub receiver_id: AccountId,
 
-    /// Promises to be executed concurrently after `after`, if any.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub then: Vec<PromiseSingle>,
+    /// Receiver for refunds of failed or unused deposits.
+    /// By default, it's the wallet-contract itself.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub refund_to: Option<AccountId>,
+
+    /// Actions to execute within a single promise.
+    pub actions: Vec<PromiseAction>,
 }
 
-impl PromiseDAG {
-    #[inline]
-    pub const fn new() -> Self {
-        Self {
-            after: Vec::new(),
-            then: Vec::new(),
-        }
-    }
-
-    /// Schedule another promise(s) to be executed concurrently to this one
+impl PromiseSingle {
     #[must_use]
-    pub fn and(mut self, other: impl Into<Self>) -> Self {
-        let other = other.into();
-
-        if self.after.is_empty() && other.after.is_empty()
-            || self.then.is_empty() && other.then.is_empty()
-        {
-            self.after.extend(other.after);
-            self.then.extend(other.then);
-            return self;
-        }
-
+    pub fn new(receiver_id: impl Into<AccountId>) -> Self {
         Self {
-            after: vec![self, other],
-            then: vec![],
+            receiver_id: receiver_id.into(),
+            refund_to: None,
+            actions: Vec::new(),
         }
     }
 
-    /// Schedule another promise to be executed right after this one
+    /// Set an account where all failed/unused deposits should be refunded
+    /// instead of the wallet-contract itself.
     #[must_use]
-    pub fn then(self, then: PromiseSingle) -> Self {
-        self.then_concurrent([then])
+    pub fn refund_to(mut self, account_id: impl Into<AccountId>) -> Self {
+        self.refund_to = Some(account_id.into());
+        self
     }
 
-    /// Schedule given promises to be executed concurrently right after this one
     #[must_use]
-    pub fn then_concurrent(mut self, then: impl IntoIterator<Item = PromiseSingle>) -> Self {
-        if self.then.is_empty() {
-            self.then.extend(then);
-            return self;
-        }
-
-        let then: Vec<_> = then.into_iter().collect();
-        if then.is_empty() {
-            return self;
-        }
-
-        Self {
-            after: vec![self],
-            then,
-        }
+    pub fn transfer(self, amount: NearToken) -> Self {
+        self.add_action(TransferAction { amount })
     }
 
+    #[must_use]
+    pub fn state_init(self, state_init: StateInit, deposit: NearToken) -> Self {
+        self.add_action(StateInitAction {
+            state_init,
+            deposit,
+        })
+    }
+
+    #[must_use]
+    pub fn function_call(self, action: FunctionCallAction) -> Self {
+        self.add_action(action)
+    }
+
+    fn add_action(mut self, action: impl Into<PromiseAction>) -> Self {
+        self.actions.push(action.into());
+        self
+    }
+
+    /// Returns whether the promise is no-op, i.e. list of actions is empty
     pub const fn is_empty(&self) -> bool {
-        self.after.is_empty() && self.then.is_empty()
+        self.actions.is_empty()
     }
 
-    pub fn iter(&self) -> Iter<'_> {
-        <&Self as IntoIterator>::into_iter(self)
-    }
-
-    /// Returns the length of the longest chain of subsequent action
-    /// receipts to be created.
-    pub fn depth(&self) -> usize {
-        let mut max_depth = 0;
-        // store (node, node_depth)
-        let mut stack = vec![(self, 0usize)];
-
-        while let Some((d, mut depth)) = stack.pop() {
-            depth = depth.saturating_add(d.then.len().min(1));
-            max_depth = max_depth.max(depth);
-            stack.extend(d.after.iter().map(|d| (d, depth)));
-        }
-
-        max_depth
-    }
-
-    /// Returns the total number of action receipts to be created.
-    pub fn total_count(&self) -> usize {
-        let mut stack = vec![self];
-        let mut total: usize = 0;
-        while let Some(d) = stack.pop() {
-            total = total.saturating_add(d.then.len());
-            stack.extend(&d.after);
-        }
-        total
-    }
-
-    /// Returns total NEAR deposit for all actions in all promises
+    /// Returns total NEAR deposit for all actions in this promise
     pub fn total_deposit(&self) -> NearToken {
-        self.iter()
-            .map(PromiseSingle::total_deposit)
+        self.actions
+            .iter()
+            .map(PromiseAction::deposit)
             .fold(NearToken::ZERO, NearToken::saturating_add)
     }
 
-    /// Returns an esitmate of mininum gas required to execute all promises
+    /// Returns an esitmate of mininum gas required to execute all
+    /// actions in this promise
     pub fn estimate_gas(&self) -> Gas {
-        self.iter()
-            .map(PromiseSingle::estimate_gas)
+        self.actions
+            .iter()
+            .map(PromiseAction::estimate_gas)
             .fold(Gas::from_gas(0), Gas::saturating_add)
     }
 
-    pub fn normalize(&mut self) {
-        // TODO: remove redundant nesting:
-        // { after: [{ after: [d1, d2, ...] }], then: [] } -> { after: [d1, d2, ...], then: [] }
-        self.after.retain_mut(|d| {
-            d.normalize();
-            !d.is_empty()
-        });
+    /// Build promise for execution
+    #[must_use]
+    pub fn build(self) -> Promise {
+        let mut p = Promise::new(self.receiver_id);
 
-        self.then.retain(|p| !p.is_empty());
-    }
+        if let Some(refund_to) = self.refund_to {
+            p = p.refund_to(refund_to);
+        }
 
-    /// Build promise DAG for execution
-    pub fn build(self) -> Option<Promise> {
-        let then = self.then.into_iter().filter_map(PromiseSingle::build);
-
-        let Some(after) = self
-            .after
+        self.actions
             .into_iter()
-            // We could have avoided the recusion here, but `Promise` is still
-            // constructed recursively in its `Drop` implementation. Moreover,
-            // both borsh and serde deserialize `PromiseDAG` recursively, too.
-            // So we would hit the stack overflow anyway.
-            .filter_map(Self::build)
-            .reduce(Promise::and)
-        else {
-            return then.reduce(Promise::and);
-        };
-
-        let mut then = then.peekable();
-        if then.peek().is_none() {
-            return Some(after);
-        }
-
-        // `.then_concurrent([single])` is equivalent to `.then(single)`
-        Some(after.then_concurrent(then).join())
-    }
-}
-
-impl From<PromiseSingle> for PromiseDAG {
-    #[inline]
-    fn from(promise: PromiseSingle) -> Self {
-        Self {
-            after: Vec::new(),
-            then: vec![promise],
-        }
-    }
-}
-
-impl From<Vec<PromiseSingle>> for PromiseDAG {
-    #[inline]
-    fn from(promises: Vec<PromiseSingle>) -> Self {
-        Self {
-            after: Vec::new(),
-            then: promises,
-        }
-    }
-}
-
-impl<const N: usize> From<[PromiseSingle; N]> for PromiseDAG {
-    fn from(promises: [PromiseSingle; N]) -> Self {
-        Vec::from(promises).into()
-    }
-}
-
-impl Extend<PromiseSingle> for PromiseDAG {
-    #[inline]
-    fn extend<T: IntoIterator<Item = PromiseSingle>>(&mut self, iter: T) {
-        self.then.extend(iter);
-    }
-}
-
-impl FromIterator<PromiseSingle> for PromiseDAG {
-    #[inline]
-    fn from_iter<T: IntoIterator<Item = PromiseSingle>>(iter: T) -> Self {
-        let mut p = Self::new();
-        p.extend(iter);
-        p
+            .fold(p, |p, action| action.append(p))
     }
 }
 
 #[cfg(test)]
 mod tests {
-
-    use defuse_test_utils::random::make_arbitrary;
-    use near_sdk::{AccountId, borsh, env, serde_json};
+    use arbitrary::{Arbitrary, Unstructured};
     use rstest::rstest;
 
     use super::*;
 
-    #[test]
-    fn and_assosiative() {
-        assert_eq!(p(1).and(p(2)).and(p(3)), p(1).and(p(2).and(p(3))));
-    }
-
-    #[test]
-    fn then_non_assosiative() {
-        assert_ne!(p(1).and(p(2)).then(p(3)), p(1).and(p(2).then(p(3))));
-    }
-
     #[rstest]
-    #[case(PromiseDAG::default(), 0)]
-    #[case(p(1), 1)]
-    #[case(p(1).then(p(2)).and(p(3)).then_concurrent([p(4), p(5)]).then(p(6)), 4)]
-    fn test_depth(#[case] p: impl Into<PromiseDAG>, #[case] depth: usize) {
-        assert_eq!(p.into().depth(), depth);
-    }
-
-    #[rstest]
-    #[case(PromiseDAG::default(), 0)]
-    #[case(p(1), 1)]
-    #[case(p(1).then(p(2)).and(p(3)).then_concurrent([p(4), p(5)]).then(p(6)), 6)]
-    fn test_total_count(#[case] p: impl Into<PromiseDAG>, #[case] total_count: usize) {
-        assert_eq!(p.into().total_count(), total_count);
-    }
-
-    #[rstest]
-    #[case(PromiseDAG::default(), [])]
-    #[case(p(1), [p(1)])]
+    #[case(p(0), Gas::from_gas(0))]
     #[case(
-        p(1).then(p(2)).and(p(3)).then_concurrent([p(4), p(5)]).then(p(6)),
-        [p(1), p(2), p(3), p(4), p(5), p(6)],
+        p(0).function_call(
+                FunctionCallAction::new("foo")
+                .min_gas(Gas::from_tgas(123))
+        ).function_call(
+                FunctionCallAction::new("fbaro")
+                .min_gas(Gas::from_tgas(45))
+        ), Gas::from_tgas(123 + 45)
     )]
-    fn test_iter(
-        #[case] d: impl Into<PromiseDAG>,
-        #[case] expected: impl Into<Vec<PromiseSingle>>,
-    ) {
-        let mut ps = d.into().into_iter().collect::<Vec<_>>();
-        let mut expected = expected.into();
-
-        // sort by hashes
-        ps.sort_by_key(|p| env::sha256(borsh::to_vec(p).unwrap()));
-        expected.sort_by_key(|p| env::sha256(borsh::to_vec(p).unwrap()));
-
-        assert_eq!(ps, expected);
+    fn estimate_gas(#[case] p: PromiseSingle, #[case] expected: Gas) {
+        assert_eq!(p.estimate_gas(), expected);
     }
 
     #[rstest]
-    #[case(PromiseDAG::default().then_concurrent([]).then_concurrent([]))]
-    fn test_normalize(#[case] mut d: PromiseDAG) {
-        d.normalize();
-        assert!(d.is_empty());
+    #[case(p(0), NearToken::ZERO)]
+    #[case(
+        p(0)
+            .transfer(NearToken::from_yoctonear(1))
+            .state_init(
+                Arbitrary::arbitrary(&mut Unstructured::new(&[])).unwrap(),
+                NearToken::from_yoctonear(2)
+            ).function_call(
+                FunctionCallAction::new("foo")
+                .attached_deposit(NearToken::from_yoctonear(3))
+            ),
+        NearToken::from_yoctonear(6),
+    )]
+    fn total_deposit(#[case] p: PromiseSingle, #[case] expected: NearToken) {
+        assert_eq!(p.total_deposit(), expected);
     }
 
-    #[rstest]
-    #[case(PromiseDAG::default())]
-    #[case(p(1))]
-    #[case(p(1).then(p(2)).and(p(3)).then_concurrent([p(4), p(5)]).then(p(6)))]
-    fn check_json(#[case] d: impl Into<PromiseDAG>) {
-        println!("{}", serde_json::to_string_pretty(&d.into()).unwrap());
-    }
-
-    #[rstest]
-    fn arbitrary_json(#[from(make_arbitrary)] d: PromiseDAG) {
-        check_json(d);
-    }
-
-    pub fn p(n: usize) -> PromiseSingle {
+    fn p(n: usize) -> PromiseSingle {
         PromiseSingle::new(format!("p{n}").parse::<AccountId>().unwrap())
     }
 }

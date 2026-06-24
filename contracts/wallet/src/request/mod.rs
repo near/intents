@@ -3,7 +3,7 @@ mod promise;
 
 pub use self::{ops::*, promise::*};
 
-use near_sdk::near;
+use near_sdk::{Gas, NearToken, near};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
@@ -12,8 +12,8 @@ pub struct Request {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub ops: Vec<WalletOp>,
 
-    #[serde(default, skip_serializing_if = "PromiseDAG::is_empty")]
-    pub out: PromiseDAG,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub out: Vec<PromiseSingle>,
 }
 
 impl Request {
@@ -21,7 +21,7 @@ impl Request {
     pub const fn new() -> Self {
         Self {
             ops: Vec::new(),
-            out: PromiseDAG::new(),
+            out: Vec::new(),
         }
     }
 
@@ -39,9 +39,26 @@ impl Request {
 
     #[must_use]
     #[inline]
-    pub fn out(mut self, out: impl Into<PromiseDAG>) -> Self {
-        self.out = out.into();
+    pub fn out(mut self, out: impl IntoIterator<Item = PromiseSingle>) -> Self {
+        self.out.extend(out);
         self
+    }
+
+    /// Returns total NEAR deposit for all promises in this request
+    pub fn total_deposit(&self) -> NearToken {
+        self.out
+            .iter()
+            .map(PromiseSingle::total_deposit)
+            .fold(NearToken::ZERO, NearToken::saturating_add)
+    }
+
+    /// Returns an esitmate of mininum gas required to execute all
+    /// promises in this request
+    pub fn estimate_gas(&self) -> Gas {
+        self.out
+            .iter()
+            .map(PromiseSingle::estimate_gas)
+            .fold(Gas::from_gas(0), Gas::saturating_add)
     }
 }
 
