@@ -1,6 +1,6 @@
 use anyhow::Result;
 use defuse_outlayer_app::{AsHex, State as OutlayerState};
-use near_kit::{AccountId, Final, GlobalContractId, Near, NearToken};
+use near_kit::{AccountId, AccountIdRef, Final, GlobalContractId, Near, NearToken};
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
 
@@ -66,7 +66,7 @@ impl OutlayerAppDeployerExt for Near {
 pub trait OutlayerAppExt {
     async fn oa_set_code(
         &self,
-        target: impl Into<AccountId>,
+        target: impl AsRef<AccountIdRef>,
         old_code_hash: [u8; 32],
         new_code_hash: [u8; 32],
         new_code_url: String,
@@ -74,7 +74,7 @@ pub trait OutlayerAppExt {
 
     async fn oa_transfer_admin(
         &self,
-        target: impl Into<AccountId>,
+        target: impl AsRef<AccountIdRef>,
         new_admin_id: impl Into<AccountId>,
     ) -> Result<SuccessfulExecutionOutcome>;
 }
@@ -82,12 +82,12 @@ pub trait OutlayerAppExt {
 impl OutlayerAppExt for Near {
     async fn oa_set_code(
         &self,
-        target: impl Into<AccountId>,
+        target: impl AsRef<AccountIdRef>,
         old_code_hash: [u8; 32],
         new_code_hash: [u8; 32],
         new_code_url: String,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(target.into())
+        self.transaction(target.as_ref())
             .add_action(
                 OutlayerApp::oa_set_code(OaSetCodeArgs {
                     old_code_hash: old_code_hash.into(),
@@ -103,10 +103,10 @@ impl OutlayerAppExt for Near {
 
     async fn oa_transfer_admin(
         &self,
-        target: impl Into<AccountId>,
+        target: impl AsRef<AccountIdRef>,
         new_admin_id: impl Into<AccountId>,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(target.into())
+        self.transaction(target.as_ref())
             .add_action(
                 OutlayerApp::oa_transfer_admin(OaTransferAdminArgs {
                     new_admin_id: new_admin_id.into(),

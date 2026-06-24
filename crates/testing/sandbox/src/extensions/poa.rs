@@ -16,13 +16,6 @@ pub use defuse_poa_factory::contract;
 pub const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
 
 #[derive(Serialize, Deserialize)]
-pub struct PoaInitArgs {
-    pub super_admins: HashSet<AccountId>,
-    pub admins: HashMap<Role, HashSet<AccountId>>,
-    pub grantees: HashMap<Role, HashSet<AccountId>>,
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct PoaDeployTokenArgs {
     pub token: String,
     pub metadata: Option<FungibleTokenMetadata>,
@@ -87,7 +80,7 @@ impl PoaFactoryDeployerExt for Near {
     ) -> PoaFactoryClient {
         let action = FunctionCallAction {
             method_name: "new".to_string(),
-            args: json!({
+            args: serde_json::to_vec(&json!({
                 "super_admins": super_admins.into_iter().collect::<HashSet<_>>(),
                 "admins": admins
                     .into_iter()
@@ -97,10 +90,8 @@ impl PoaFactoryDeployerExt for Near {
                     .into_iter()
                     .map(|(role, grantees)| (role, grantees.into_iter().collect::<HashSet<_>>()))
                     .collect::<HashMap<_, _>>(),
-            })
-            .to_string()
-            .as_bytes()
-            .to_vec(),
+            }))
+            .unwrap(),
             gas: DEFAULT_GAS,
             deposit: NearToken::from_near(0),
         };
@@ -117,14 +108,14 @@ impl PoaFactoryDeployerExt for Near {
 pub trait PoAFactoryExt {
     async fn poa_factory_deploy_token(
         &self,
-        factory: impl Into<AccountId>,
+        factory: impl AsRef<AccountIdRef>,
         token: impl AsRef<str>,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
     ) -> Result<FungibleToken>;
 
     async fn poa_factory_ft_deposit(
         &self,
-        factory: impl Into<AccountId>,
+        factory: impl AsRef<AccountIdRef>,
         token: impl AsRef<str>,
         owner_id: impl AsRef<AccountIdRef>,
         amount: u128,
@@ -136,12 +127,12 @@ pub trait PoAFactoryExt {
 impl PoAFactoryExt for Near {
     async fn poa_factory_deploy_token(
         &self,
-        factory: impl Into<AccountId>,
+        factory: impl AsRef<AccountIdRef>,
         token: impl AsRef<str>,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
     ) -> Result<FungibleToken> {
-        let factory = factory.into();
-        self.transaction(&factory)
+        let factory = factory.as_ref();
+        self.transaction(factory)
             .add_action(
                 PoaFactory::deploy_token(PoaDeployTokenArgs {
                     token: token.as_ref().to_string(),
@@ -159,14 +150,14 @@ impl PoAFactoryExt for Near {
 
     async fn poa_factory_ft_deposit(
         &self,
-        factory: impl Into<AccountId>,
+        factory: impl AsRef<AccountIdRef>,
         token: impl AsRef<str>,
         owner_id: impl AsRef<AccountIdRef>,
         amount: u128,
         msg: Option<String>,
         memo: Option<String>,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(&factory.into())
+        self.transaction(factory.as_ref())
             .add_action(
                 PoaFactory::ft_deposit(PoaFtDepositArgs {
                     token: token.as_ref().to_string(),

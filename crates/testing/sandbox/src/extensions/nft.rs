@@ -1,7 +1,4 @@
-use near_contract_standards::non_fungible_token::{
-    Token,
-    metadata::{NFTContractMetadata, TokenMetadata},
-};
+use near_contract_standards::non_fungible_token::{Token, metadata::NFTContractMetadata};
 use near_kit::{
     AccountIdRef, Action, Final, FunctionCallAction, Near, NearToken, NonFungibleToken,
 };
@@ -14,7 +11,7 @@ pub trait NftAdminExt {
         &self,
         token_name: impl AsRef<str>,
         owner_id: impl AsRef<AccountIdRef>,
-        metadata: NFTContractMetadata,
+        metadata: &NFTContractMetadata,
         wasm: impl Into<Vec<u8>>,
     ) -> NonFungibleToken;
 
@@ -23,7 +20,7 @@ pub trait NftAdminExt {
         collection: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<str>,
         token_owner_id: impl AsRef<AccountIdRef>,
-        token_metadata: &TokenMetadata,
+        token_metadata: &NFTContractMetadata,
     ) -> anyhow::Result<Token>;
 }
 
@@ -32,7 +29,7 @@ impl NftAdminExt for Near {
         &self,
         token_name: impl AsRef<str>,
         owner_id: impl AsRef<AccountIdRef>,
-        metadata: NFTContractMetadata,
+        metadata: &NFTContractMetadata,
         wasm: impl Into<Vec<u8>>,
     ) -> NonFungibleToken {
         let account = self
@@ -42,13 +39,11 @@ impl NftAdminExt for Near {
                 wasm,
                 Some(FunctionCallAction {
                     method_name: "new".to_string(),
-                    args: json!({
+                    args: serde_json::to_vec(&json!({
                         "owner_id": owner_id.as_ref(),
                         "metadata": metadata
-                    })
-                    .to_string()
-                    .as_bytes()
-                    .to_vec(),
+                    }))
+                    .unwrap(),
                     gas: DEFAULT_GAS,
                     deposit: NearToken::from_near(0),
                 }),
@@ -64,19 +59,17 @@ impl NftAdminExt for Near {
         collection: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<str>,
         token_owner_id: impl AsRef<AccountIdRef>,
-        token_metadata: &TokenMetadata,
+        token_metadata: &NFTContractMetadata,
     ) -> anyhow::Result<Token> {
         self.transaction(collection.as_ref())
             .add_action(Action::FunctionCall(FunctionCallAction {
                 method_name: "nft_mint".to_string(),
-                args: json!({
+                args: serde_json::to_vec(&json!({
                     "token_id": token_id.as_ref(),
                     "token_owner_id": token_owner_id.as_ref(),
                     "token_metadata": token_metadata,
-                })
-                .to_string()
-                .as_bytes()
-                .to_vec(),
+                }))
+                .unwrap(),
                 gas: DEFAULT_GAS,
                 deposit: NearToken::from_near(1),
             }))

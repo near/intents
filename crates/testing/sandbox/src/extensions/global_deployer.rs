@@ -1,7 +1,7 @@
 use anyhow::Result;
 use borsh::BorshSerialize;
 use defuse_global_deployer::{AsHex, State as DeployerState};
-use near_kit::{AccountId, Final, Gas, GlobalContractId, Near, NearToken};
+use near_kit::{AccountId, AccountIdRef, Final, Gas, GlobalContractId, Near, NearToken};
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
 
@@ -84,28 +84,28 @@ impl GDDeployerExt for Near {
 pub trait GlobalDeployerExt {
     async fn gd_approve_and_deploy(
         &self,
-        target: impl Into<AccountId>,
+        target: impl AsRef<AccountIdRef>,
         old_hash: impl Into<[u8; 32]>,
         new_code: impl AsRef<[u8]>,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn gd_approve(
         &self,
-        target: impl Into<AccountId>,
+        target: impl AsRef<AccountIdRef>,
         old_hash: impl Into<[u8; 32]>,
         new_hash: impl Into<[u8; 32]>,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn gd_deploy(
         &self,
-        target: impl Into<AccountId>,
+        target: impl AsRef<AccountIdRef>,
         code: impl AsRef<[u8]>,
         deposit: NearToken,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn gd_transfer_ownership(
         &self,
-        target: impl Into<AccountId>,
+        target: impl AsRef<AccountIdRef>,
         new_owner: impl Into<AccountId>,
     ) -> anyhow::Result<SuccessfulExecutionOutcome>;
 }
@@ -113,13 +113,13 @@ pub trait GlobalDeployerExt {
 impl GlobalDeployerExt for Near {
     async fn gd_approve_and_deploy(
         &self,
-        target: impl Into<AccountId>,
+        target: impl AsRef<AccountIdRef>,
         old_hash: impl Into<[u8; 32]>,
         new_code: impl AsRef<[u8]>,
     ) -> Result<SuccessfulExecutionOutcome> {
         let code = new_code.as_ref().to_vec();
 
-        self.transaction(target.into())
+        self.transaction(target.as_ref())
             .add_action(
                 GlobalDeployer::gd_approve(GDApproveArgs {
                     old_hash: old_hash.into().into(),
@@ -140,11 +140,11 @@ impl GlobalDeployerExt for Near {
 
     async fn gd_approve(
         &self,
-        target: impl Into<AccountId>,
+        target: impl AsRef<AccountIdRef>,
         old_hash: impl Into<[u8; 32]>,
         new_hash: impl Into<[u8; 32]>,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(target.into())
+        self.transaction(target.as_ref())
             .add_action(
                 GlobalDeployer::gd_approve(GDApproveArgs {
                     old_hash: old_hash.into().into(),
@@ -160,12 +160,12 @@ impl GlobalDeployerExt for Near {
 
     async fn gd_deploy(
         &self,
-        target: impl Into<AccountId>,
+        target: impl AsRef<AccountIdRef>,
         code: impl AsRef<[u8]>,
         deposit: NearToken,
     ) -> Result<SuccessfulExecutionOutcome> {
         let code = code.as_ref().to_vec();
-        self.transaction(target.into())
+        self.transaction(target.as_ref())
             .add_action(
                 GlobalDeployer::gd_deploy(GDDeployArgs { code })
                     .deposit(deposit)
@@ -178,10 +178,10 @@ impl GlobalDeployerExt for Near {
 
     async fn gd_transfer_ownership(
         &self,
-        target: impl Into<AccountId>,
+        target: impl AsRef<AccountIdRef>,
         new_owner: impl Into<AccountId>,
     ) -> anyhow::Result<SuccessfulExecutionOutcome> {
-        self.transaction(target.into())
+        self.transaction(target.as_ref())
             .add_action(
                 GlobalDeployer::gd_transfer_ownership(GDTransferOwnershipArgs {
                     receiver_id: new_owner.into(),

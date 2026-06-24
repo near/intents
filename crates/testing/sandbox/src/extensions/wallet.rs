@@ -1,6 +1,6 @@
 use anyhow::Result;
 use defuse_wallet::{Request, signature::Deadline, signature::RequestMessage};
-use near_kit::{AccountId, Final, Near, NearToken, StateInit};
+use near_kit::{AccountId, AccountIdRef, Final, Near, NearToken, StateInit};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
@@ -37,11 +37,10 @@ pub trait Wallet {
     fn w_last_cleaned_at(&self) -> Deadline;
 }
 
-#[allow(async_fn_in_trait)]
 pub trait WalletExt {
     async fn w_execute_signed(
         &self,
-        wallet_id: impl Into<AccountId>,
+        wallet_id: impl AsRef<AccountIdRef>,
         state_init: impl Into<Option<StateInit>>,
         msg: RequestMessage,
         proof: String,
@@ -50,7 +49,7 @@ pub trait WalletExt {
 
     async fn w_execute_extension(
         &self,
-        wallet_id: impl Into<AccountId>,
+        wallet_id: impl AsRef<AccountIdRef>,
         state_init: impl Into<Option<StateInit>>,
         request: Request,
         deposit: NearToken,
@@ -60,13 +59,13 @@ pub trait WalletExt {
 impl WalletExt for Near {
     async fn w_execute_signed(
         &self,
-        wallet_id: impl Into<AccountId>,
+        wallet_id: impl AsRef<AccountIdRef>,
         state_init: impl Into<Option<StateInit>>,
         msg: RequestMessage,
         proof: String,
         deposit: NearToken,
     ) -> Result<SuccessfulExecutionOutcome> {
-        let mut tx = self.transaction(&wallet_id.into());
+        let mut tx = self.transaction(wallet_id.as_ref());
 
         if let Some(state_init) = state_init.into() {
             tx = tx.state_init(state_init, NearToken::ZERO);
@@ -84,12 +83,12 @@ impl WalletExt for Near {
 
     async fn w_execute_extension(
         &self,
-        wallet_id: impl Into<AccountId>,
+        wallet_id: impl AsRef<AccountIdRef>,
         state_init: impl Into<Option<StateInit>>,
         request: Request,
         deposit: NearToken,
     ) -> Result<SuccessfulExecutionOutcome> {
-        let mut tx = self.transaction(&wallet_id.into());
+        let mut tx = self.transaction(wallet_id.as_ref());
 
         if let Some(state_init) = state_init.into() {
             tx = tx.state_init(state_init, NearToken::ZERO);

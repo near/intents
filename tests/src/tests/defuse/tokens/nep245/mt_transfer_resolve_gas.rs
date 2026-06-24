@@ -59,7 +59,7 @@ async fn make_account(mode: GenerationMode, env: &Env, user: &Near) -> Near {
                 .result()
                 .unwrap();
 
-            env.create_implicit(NearToken::from_near(1000)).await
+            env.create_implicit(NearToken::from_near(1000)).await.unwrap()
         }
     }
 }
@@ -308,7 +308,7 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
         .await
         .unwrap();
 
-    let author_account = env.create_implicit(NearToken::from_near(1000)).await;
+    let author_account = env.create_implicit(NearToken::from_near(1000)).await.unwrap();
 
     let receiver_stub = env
         .deploy_sub_contract(

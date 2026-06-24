@@ -7,20 +7,15 @@ pub mod helpers;
 pub mod nep616;
 pub mod outcome;
 
-use near_kit::{Near, sandbox::SandboxConfig};
-use std::sync::atomic::{AtomicUsize, Ordering};
-
-pub use anyhow;
 pub use near_kit as kit;
 
-use near_kit::NearToken;
+use near_kit::{Near, NearToken, sandbox::SandboxConfig};
 use rstest::fixture;
-use tracing::instrument;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::account::Account;
 
 #[fixture]
-#[instrument]
 pub async fn root(#[default(NearToken::from_near(100_000))] amount: NearToken) -> Near {
     // TODO: do we really need this counter?
     static SUB_COUNTER: AtomicUsize = AtomicUsize::new(0);

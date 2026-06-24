@@ -1,4 +1,4 @@
-use near_kit::{ExecutionOutcomeWithId, ExecutionStatus, FinalExecutionOutcome};
+use near_kit::{ExecutionOutcomeWithId, FinalExecutionOutcome};
 
 #[derive(Debug)]
 pub struct SuccessfulExecutionOutcome {
@@ -19,17 +19,6 @@ impl SuccessfulExecutionOutcome {
             )
             .cloned()
             .collect()
-    }
-
-    // TODO: use it where possible
-    pub fn is_success(&self) -> bool {
-        matches!(
-            self.transaction_outcome.outcome.status,
-            ExecutionStatus::SuccessValue(_)
-        ) && self
-            .receipts_outcome
-            .iter()
-            .all(|o| matches!(o.outcome.status, ExecutionStatus::SuccessValue(_)))
     }
 }
 

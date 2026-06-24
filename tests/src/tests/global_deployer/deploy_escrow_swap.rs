@@ -234,15 +234,10 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
 
     // near-sdk returns empty bytes for void methods; near-kit fails to JSON-parse them.
     // Only an Rpc error means the method doesn't exist.
-    let result = root
-        .contract::<MtReceiverStub>(escrow_instance.contract_id().clone())
+    root.contract::<MtReceiverStub>(escrow_instance.contract_id().clone())
         .dummy_method()
-        .await;
-
-    assert!(
-        matches!(result, Ok(()) | Err(KitError::Json(_))),
-        "escrow should have `dummy_method` method: {result:?}",
-    );
+        .await
+        .unwrap();
 
     bob.gd_approve(
         escrow_controller_instance.contract_id(),

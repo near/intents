@@ -22,7 +22,6 @@ use anyhow::Result;
 use near_kit::{AccountId, Final, FunctionCall, Gas, IntoNearToken, Near};
 
 pub const DEFAULT_GAS: Gas = Gas::from_tgas(300);
-pub const DEFAULT_DEPOSIT: Gas = Gas::from_tgas(300);
 
 pub trait FnCallTransaction {
     async fn fn_call(

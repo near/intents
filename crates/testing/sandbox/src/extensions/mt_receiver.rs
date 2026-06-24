@@ -22,9 +22,11 @@ impl MtReceiverStubDeployerExt for Near {
         name: impl AsRef<str>,
         wasm: impl Into<Vec<u8>>,
     ) -> Result<GlobalContractId> {
-        let account_id = self.account_id().sub_account(name.as_ref()).unwrap();
+        let account_id = self.account_id().sub_account(name.as_ref())?;
+
         self.deploy_upgradable_global_contract(&account_id, wasm, NearToken::from_near(40))
             .await?;
+
         Ok(GlobalContractId::AccountId(account_id))
     }
 }

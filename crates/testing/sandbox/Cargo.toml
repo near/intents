@@ -32,7 +32,6 @@ serde.workspace = true
 serde_json.workspace = true
 borsh.workspace = true
 tokio.workspace = true
-tracing.workspace = true
 # TODO: use only in defuse
 sha2.workspace = true
 # TODO: remove

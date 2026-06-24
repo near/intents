@@ -1,6 +1,6 @@
 use anyhow::Result;
 use defuse_escrow_swap::{Params, Storage};
-use near_kit::{AccountId, Final, Near};
+use near_kit::{AccountIdRef, Final, Near};
 use serde::{Deserialize, Serialize};
 
 use crate::outcome::SuccessfulExecutionOutcome;
@@ -26,13 +26,13 @@ pub trait Escrow {
 pub trait EscrowExt {
     async fn es_close(
         &self,
-        escrow_id: impl Into<AccountId>,
+        escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn es_lost_found(
         &self,
-        escrow_id: impl Into<AccountId>,
+        escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
     ) -> Result<SuccessfulExecutionOutcome>;
 }
@@ -40,10 +40,10 @@ pub trait EscrowExt {
 impl EscrowExt for Near {
     async fn es_close(
         &self,
-        escrow_id: impl Into<AccountId>,
+        escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(escrow_id.into())
+        self.transaction(escrow_id.as_ref())
             .add_action(Escrow::es_close(EsParams { params }))
             .wait_until(Final)
             .await?
@@ -52,10 +52,10 @@ impl EscrowExt for Near {
 
     async fn es_lost_found(
         &self,
-        escrow_id: impl Into<AccountId>,
+        escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(escrow_id.into())
+        self.transaction(escrow_id.as_ref())
             .add_action(Escrow::es_lost_found(EsParams { params }))
             .wait_until(Final)
             .await?

@@ -4,7 +4,7 @@ use defuse_nep245::{Token, TokenId};
 use near_kit::{AccountId, AccountIdRef, Final, Near, NearToken};
 use near_sdk::json_types::U128;
 use serde::{Deserialize, Serialize};
-use std::ops::RangeBounds;
+use std::ops::{Bound, RangeBounds};
 
 use crate::{extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
 
@@ -163,7 +163,7 @@ pub trait MtExt {
 
     async fn mt_tokens(
         &self,
-        contract: impl Into<AccountId>,
+        contract: impl AsRef<AccountIdRef>,
         range: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>>;
 
@@ -179,6 +179,25 @@ pub trait MtExt {
         defuse: impl AsRef<AccountIdRef>,
         args: MtOnTransferArgs,
     ) -> Result<(SuccessfulExecutionOutcome, Vec<U128>)>;
+}
+
+fn range_to_pagination(range: impl RangeBounds<usize>) -> (Option<U128>, Option<usize>) {
+    let from = match range.start_bound() {
+        Bound::Included(v) => Some(*v),
+        Bound::Excluded(v) => Some(*v + 1),
+        Bound::Unbounded => None,
+    };
+    let to = match range.end_bound() {
+        Bound::Included(v) => Some(*v + 1),
+        Bound::Excluded(v) => Some(*v),
+        Bound::Unbounded => None,
+    };
+    let limit = match (from, to) {
+        (_, None) => None,
+        (None, Some(v)) => Some(v),
+        (Some(f), Some(t)) => Some(t - f),
+    };
+    (from.map(|v| U128(v.try_into().unwrap())), limit)
 }
 
 impl MtExt for Near {
@@ -296,32 +315,12 @@ impl MtExt for Near {
 
     async fn mt_tokens(
         &self,
-        contract: impl Into<AccountId>,
+        contract: impl AsRef<AccountIdRef>,
         range: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>> {
-        let from = match range.start_bound() {
-            std::ops::Bound::Included(v) => Some(*v),
-            std::ops::Bound::Excluded(v) => Some(*v + 1),
-            std::ops::Bound::Unbounded => None,
-        };
-
-        let to = match range.end_bound() {
-            std::ops::Bound::Included(v) => Some(*v + 1),
-            std::ops::Bound::Excluded(v) => Some(*v),
-            std::ops::Bound::Unbounded => None,
-        };
-
-        let limit = match (from, to) {
-            (Some(_) | None, None) => None,
-            (None, Some(v)) => Some(v),
-            (Some(f), Some(t)) => Some(t - f),
-        };
-
-        self.contract::<Mt>(contract.into())
-            .mt_tokens(MtTokensArgs {
-                from_index: from.map(|v| U128(v.try_into().unwrap())),
-                limit,
-            })
+        let (from_index, limit) = range_to_pagination(range);
+        self.contract::<Mt>(contract.as_ref())
+            .mt_tokens(MtTokensArgs { from_index, limit })
             .await
             .map_err(Into::into)
     }
@@ -332,28 +331,11 @@ impl MtExt for Near {
         account_id: impl AsRef<AccountIdRef>,
         range: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>> {
-        let from = match range.start_bound() {
-            std::ops::Bound::Included(v) => Some(*v),
-            std::ops::Bound::Excluded(v) => Some(*v + 1),
-            std::ops::Bound::Unbounded => None,
-        };
-
-        let to = match range.end_bound() {
-            std::ops::Bound::Included(v) => Some(*v + 1),
-            std::ops::Bound::Excluded(v) => Some(*v),
-            std::ops::Bound::Unbounded => None,
-        };
-
-        let limit = match (from, to) {
-            (Some(_) | None, None) => None,
-            (None, Some(v)) => Some(v),
-            (Some(f), Some(t)) => Some(t - f),
-        };
-
+        let (from_index, limit) = range_to_pagination(range);
         self.contract::<Mt>(contract.as_ref())
             .mt_tokens_for_owner(MtTokensForOwnerArgs {
                 account_id: account_id.as_ref().into(),
-                from_index: from.map(|v| U128(v.try_into().unwrap())),
+                from_index,
                 limit,
             })
             .await

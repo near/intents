@@ -1,4 +1,4 @@
-use crate::{anyhow, extensions::defuse::DefuseClient};
+use crate::extensions::defuse::DefuseClient;
 use defuse::core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce};
 use defuse_core::{
     intents::DefuseIntents,
