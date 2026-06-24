@@ -49,28 +49,11 @@ async fn test_signed(#[future] env: Env) {
                         account_id: env.root().id().clone(),
                     },
                 ])
-                .out(
-                    PromiseSingle::new(receiver.id())
-                        .transfer(NearToken::from_yoctonear(1))
-                        .then(
-                            PromiseSingle::new(receiver.id())
-                                .transfer(NearToken::from_yoctonear(2)),
-                        )
-                        .and(
-                            PromiseSingle::new(receiver.id())
-                                .transfer(NearToken::from_yoctonear(3)),
-                        )
-                        .then_concurrent([
-                            PromiseSingle::new(receiver.id())
-                                .transfer(NearToken::from_yoctonear(4)),
-                            PromiseSingle::new(receiver.id())
-                                .transfer(NearToken::from_yoctonear(5)),
-                        ])
-                        .then(
-                            PromiseSingle::new(receiver.id())
-                                .transfer(NearToken::from_yoctonear(6)),
-                        ),
-                ),
+                .out([
+                    PromiseSingle::new(receiver.id()).transfer(NearToken::from_yoctonear(1)),
+                    PromiseSingle::new(receiver.id()).transfer(NearToken::from_yoctonear(2)),
+                    PromiseSingle::new(receiver.id()).transfer(NearToken::from_yoctonear(3)),
+                ]),
         )
         .unwrap();
 
@@ -113,36 +96,37 @@ async fn test_rotate(#[future] env: Env) {
                 .ops([WalletOp::AddExtension {
                     account_id: new_wallet.account_id().clone(),
                 }])
-                .out(
-                    PromiseSingle::new(new_wallet.account_id())
-                        .state_init(new_wallet.state_init(), NearToken::ZERO)
-                        .function_call(
-                            FunctionCallAction::new("w_execute_signed")
-                                .attached_deposit(NearToken::from_yoctonear(1))
-                                .min_gas(Gas::from_tgas(20))
-                                .args_json({
-                                    let (msg, proof) = new_wallet.sign(
-                                        Request::new().out(
-                                            PromiseSingle::new(old_wallet.account_id()).function_call(
-                                                FunctionCallAction::new("w_execute_extension")
-                                                    .attached_deposit(NearToken::from_yoctonear(1))
-                                                    .min_gas(Gas::from_tgas(10))
-                                                    .args_json(json!({
-                                                        "request": Request::new().ops([
-                                                            WalletOp::SetSignatureMode { enable: false }
-                                                        ])
-                                                    })),
-                                            ),
-                                        ),
-                                    ).unwrap();
+                .out([PromiseSingle::new(new_wallet.account_id())
+                    .state_init(new_wallet.state_init(), NearToken::ZERO)
+                    .function_call(
+                        FunctionCallAction::new("w_execute_signed")
+                            .attached_deposit(NearToken::from_yoctonear(1))
+                            .min_gas(Gas::from_tgas(20))
+                            .args_json({
+                                let (msg, proof) = new_wallet
+                                    .sign(
+                                        Request::new().out([PromiseSingle::new(
+                                            old_wallet.account_id(),
+                                        )
+                                        .function_call(
+                                            FunctionCallAction::new("w_execute_extension")
+                                                .attached_deposit(NearToken::from_yoctonear(1))
+                                                .min_gas(Gas::from_tgas(10))
+                                                .args_json(json!({
+                                                    "request": Request::new().ops([
+                                                        WalletOp::SetSignatureMode { enable: false }
+                                                    ])
+                                                })),
+                                        )]),
+                                    )
+                                    .unwrap();
 
-                                    json!({
-                                        "msg": msg,
-                                        "proof": proof,
-                                    })
-                                }),
-                        ),
-                ),
+                                json!({
+                                    "msg": msg,
+                                    "proof": proof,
+                                })
+                            }),
+                    )]),
         )
         .unwrap();
 
@@ -167,15 +151,13 @@ async fn test_rotate(#[future] env: Env) {
 
     let (msg, proof) = new_wallet
         .sign(
-            Request::new().out(
-                PromiseSingle::new(old_wallet.account_id()).function_call(
-                    FunctionCallAction::new("w_execute_extension")
-                        .attached_deposit(NearToken::from_yoctonear(1))
-                        .args_json(json!({
-                            "request": Request::new(),
-                        })),
-                ),
-            ),
+            Request::new().out([PromiseSingle::new(old_wallet.account_id()).function_call(
+                FunctionCallAction::new("w_execute_extension")
+                    .attached_deposit(NearToken::from_yoctonear(1))
+                    .args_json(json!({
+                        "request": Request::new(),
+                    })),
+            )]),
         )
         .unwrap();
 
@@ -221,11 +203,9 @@ async fn test_extension(#[future] env: Env) {
                 .ops([WalletOp::RemoveExtension {
                     account_id: extension.id().clone(),
                 }])
-                .out(
-                    PromiseSingle::new(receiver.id())
-                        .refund_to(refund_to.id())
-                        .transfer(NearToken::from_near(1)),
-                ),
+                .out([PromiseSingle::new(receiver.id())
+                    .refund_to(refund_to.id())
+                    .transfer(NearToken::from_near(1))]),
             NearToken::from_near(1),
         )
         .await

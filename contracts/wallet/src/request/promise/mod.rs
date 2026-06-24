@@ -86,7 +86,6 @@ impl PromiseSingle {
     }
 
     /// Build promise for execution
-    #[must_use]
     pub fn build(self) -> Promise {
         let mut p = Promise::new(self.receiver_id);
 
