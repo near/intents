@@ -232,7 +232,7 @@ mod tests {
         }
         {
             let mut t = signed.clone();
-            t.payload.timestamp = UnixTimestampSeconds::arbitrary_as(&mut u).unwrap().into();
+            t.payload.timestamp = UnixTimestampSeconds::arbitrary_as(&mut u).unwrap();
             dbg!(&t.payload.timestamp);
             verify_ok(&t, false);
         }

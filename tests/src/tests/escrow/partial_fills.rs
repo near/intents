@@ -1,5 +1,6 @@
+use defuse::core::Now;
 use defuse_sandbox::extensions::escrow::contract::{
-    ContractStorage, DateTime, OverrideSend, Params, Pips, ProtocolFees,
+    ContractStorage, OverrideSend, Params, Pips, ProtocolFees, Timestamp,
     action::{FillAction, TransferAction, TransferMessage},
     token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
@@ -57,7 +58,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
         dst_token: dst_token.clone(),
 
         price: "2".parse().unwrap(),
-        deadline: DateTime::timeout(TIMEOUT),
+        deadline: Timestamp::timeout(TIMEOUT),
 
         partial_fills_allowed: true,
 
@@ -169,7 +170,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
                                     params: params.clone(),
                                     action: FillAction {
                                         price: "2.1".parse().unwrap(),
-                                        deadline: DateTime::timeout(Duration::from_secs(10)),
+                                        deadline: Timestamp::timeout(Duration::from_secs(10)),
                                         receive_src_to: OverrideSend {
                                             memo: Some("taker memo".to_string()),
                                             // msg: Some("taker msg".to_string()),

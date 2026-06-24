@@ -3,15 +3,13 @@ mod concurrent;
 #[cfg(feature = "concurrent")]
 pub use self::concurrent::*;
 
-use core::{mem, time::Duration};
+use core::time::Duration;
 use std::collections::BTreeMap;
 
 use defuse_bitmap::BitMap;
 use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds, TimestampSeconds};
 use jiff::Timestamp;
 use near_sdk::near;
-
-use crate::{Error, Result};
 
 /// Dual-timeout window nonces
 #[near(serializers = [borsh])]
@@ -75,11 +73,25 @@ impl Nonces {
             current: BitMap::new(BTreeMap::new()),
         }
     }
+
+    #[inline]
+    pub const fn timeout(&self) -> Duration {
+        self.timeout
+    }
+
+    #[inline]
+    pub const fn last_cleaned_at(&self) -> Timestamp {
+        self.last_cleaned_at
+    }
 }
 
 #[cfg(feature = "contract")]
 const _: () = {
+    use core::mem;
+
     use defuse_time::Now;
+
+    use crate::{Error, Result};
 
     impl Nonces {
         pub fn commit(
@@ -132,16 +144,6 @@ const _: () = {
             // block timestamp, which is acceptable: we're just assuming the receipt
             // arrived a bit faster.
             Timestamp::from_second(now.as_second()).unwrap_or_else(|_| unreachable!())
-        }
-
-        #[inline]
-        pub const fn timeout(&self) -> Duration {
-            self.timeout
-        }
-
-        #[inline]
-        pub const fn last_cleaned_at(&self) -> Timestamp {
-            self.last_cleaned_at
         }
     }
 };

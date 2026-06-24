@@ -2,7 +2,7 @@ use defuse_sandbox::{
     assert_eq_defuse_event_logs,
     extensions::defuse::{
         contract::core::{
-            DateTime, Nonce,
+            Nonce, Timestamp,
             amounts::Amounts,
             intents::{DefuseIntents, tokens::Transfer},
             token_id::{TokenId, nep141::Nep141TokenId},
@@ -63,7 +63,7 @@ async fn execute_intent_with_legacy_nonce(#[from(make_arbitrary)] legacy_nonce: 
         .sign_defuse_message(
             env.defuse.id(),
             legacy_nonce,
-            DateTime::MAX,
+            Timestamp::MAX,
             DefuseIntents {
                 intents: vec![transfer_intent.into()],
             },

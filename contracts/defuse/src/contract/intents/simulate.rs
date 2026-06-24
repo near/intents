@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use defuse_core::{
-    Timestamp, Nonce,
+    Nonce, Timestamp,
     accounts::{AccountEvent, NonceEvent},
     engine::Inspector,
     events::DefuseEvent,

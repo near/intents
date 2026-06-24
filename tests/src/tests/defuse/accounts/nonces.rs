@@ -1,9 +1,10 @@
 #![allow(clippy::future_not_send)]
 
 use arbitrary::{Arbitrary, Unstructured};
+use defuse::core::Now;
 use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
-    core::{DateTime, Nonce, Salt, intents::DefuseIntents},
+    core::{Nonce, Salt, Timestamp, intents::DefuseIntents},
 };
 
 use futures::future::join_all;
@@ -42,7 +43,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
     // legacy nonce
     {
-        let deadline = DateTime::MAX;
+        let deadline = Timestamp::MAX;
         let legacy_nonce = rng.random();
 
         env.simulate_and_execute_intents(
@@ -69,7 +70,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
     // invalid salt
     {
-        let deadline = DateTime::timeout(Duration::from_hours(24));
+        let deadline = Timestamp::timeout(Duration::from_hours(24));
         let random_salt = Salt::arbitrary(u).unwrap();
         let salted = create_random_salted_nonce(random_salt, deadline, &mut rng);
 
@@ -90,7 +91,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
     // deadline is greater than nonce
     {
-        let deadline = DateTime::timeout(Duration::from_hours(24));
+        let deadline = Timestamp::timeout(Duration::from_hours(24));
         let expired_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
         env.simulate_and_execute_intents(
@@ -99,7 +100,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
                 .sign_defuse_message(
                     env.defuse.id(),
                     expired_nonce,
-                    DateTime::MAX,
+                    Timestamp::MAX,
                     DefuseIntents { intents: [].into() },
                 )
                 .await],
@@ -110,7 +111,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
     // nonce is expired
     {
-        let deadline = DateTime::now() - Duration::from_hours(24);
+        let deadline = Timestamp::now() - Duration::from_hours(24);
         let expired_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
         env.simulate_and_execute_intents(
@@ -130,7 +131,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
     // nonce can be committed
     {
-        let deadline = DateTime::timeout(Duration::from_hours(24));
+        let deadline = Timestamp::timeout(Duration::from_hours(24));
         let expirable_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
         env.simulate_and_execute_intents(
@@ -165,7 +166,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
             .await
             .expect("unable to rotate salt");
 
-        let deadline = DateTime::timeout(Duration::from_hours(24));
+        let deadline = Timestamp::timeout(Duration::from_hours(24));
         let old_salt_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
         env.simulate_and_execute_intents(
@@ -197,7 +198,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
             .await
             .expect("unable to invalidate salt");
 
-        let deadline = DateTime::timeout(Duration::from_hours(24));
+        let deadline = Timestamp::timeout(Duration::from_hours(24));
         let invalid_salt_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
         env.simulate_and_execute_intents(
@@ -226,9 +227,9 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
     let current_salt = env.defuse.current_salt().await.unwrap();
 
-    let deadline = DateTime::timeout(Duration::from_secs(1));
+    let deadline = Timestamp::timeout(Duration::from_secs(1));
 
-    let long_term_deadline = DateTime::timeout(Duration::from_hours(1));
+    let long_term_deadline = Timestamp::timeout(Duration::from_hours(1));
 
     let legacy_nonce: Nonce = rng.random();
     let expirable_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
@@ -379,7 +380,7 @@ async fn cleanup_multiple_nonces(
     for chunk in &(0..nonce_count).chunks(CHUNK_SIZE) {
         let intents = join_all(chunk.map(|_| {
             // commit expirable nonce
-            let deadline = DateTime::timeout(WAITING_TIME);
+            let deadline = Timestamp::timeout(WAITING_TIME);
             let expirable_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
             nonces.push(expirable_nonce);

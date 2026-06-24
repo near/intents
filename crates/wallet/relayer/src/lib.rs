@@ -153,7 +153,7 @@ impl Relayer {
         /// Signers are recommended to set `created_at` a bit in the past,
         /// so that transaction doesn't fail on-chain due to possible lag
         /// in block timestamps.
-        const BLOCKCHAIN_LAG: Duration = Duration::from_secs(60);
+        const BLOCKCHAIN_LAG: Duration = Duration::from_mins(1);
 
         let now = Timestamp::now();
 

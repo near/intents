@@ -1,10 +1,11 @@
 use crate::{Account, SigningAccount, anyhow};
 use defuse::core::{
-    DateTime, Nonce,
+    Nonce, Timestamp,
     intents::{DefuseIntents, Intent},
     nep413::Nep413Payload,
     payload::{multi::MultiPayload, nep413::Nep413DefuseMessage},
 };
+use defuse_core::Now;
 use near_sdk::{AccountIdRef, serde::Serialize, serde_json};
 
 use crate::extensions::defuse::nonce::generate_unique_nonce;
@@ -14,7 +15,7 @@ pub trait DefuseSignerExt {
         &self,
         defuse_contract: impl AsRef<AccountIdRef>,
         nonce: Nonce,
-        deadline: DateTime,
+        deadline: Timestamp,
         message: T,
     ) -> MultiPayload
     where
@@ -26,7 +27,7 @@ impl DefuseSignerExt for SigningAccount {
         &self,
         defuse_contract: impl AsRef<AccountIdRef>,
         nonce: Nonce,
-        deadline: DateTime,
+        deadline: Timestamp,
         message: T,
     ) -> MultiPayload
     where
@@ -60,7 +61,7 @@ pub trait DefaultDefuseSignerExt: DefuseSignerExt {
     where
         T: Into<Intent>,
     {
-        let deadline = DateTime::timeout(std::time::Duration::from_mins(2));
+        let deadline = Timestamp::timeout(std::time::Duration::from_mins(2));
         let nonce = generate_unique_nonce(defuse_contract, Some(deadline)).await?;
 
         let defuse_intents = DefuseIntents {

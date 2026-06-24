@@ -1,8 +1,9 @@
 use crate::extensions::defuse::state::SaltViewExt;
 use crate::{Account, anyhow};
 use defuse::core::payload::{DefusePayload, ExtractDefusePayload};
-use defuse::core::{DateTime, ExpirableNonce, Salt, SaltedNonce, VersionedNonce};
+use defuse::core::{ExpirableNonce, Salt, SaltedNonce, Timestamp, VersionedNonce};
 use defuse::core::{Nonce, intents::DefuseIntents, payload::multi::MultiPayload};
+use defuse_core::Now;
 use defuse_test_utils::random::{Rng, RngExt, TestRng};
 use near_sdk::serde_json;
 
@@ -20,9 +21,10 @@ impl ExtractNonceExt for MultiPayload {
 
 pub async fn generate_unique_nonce(
     defuse_contract: &Account,
-    deadline: Option<DateTime>,
+    deadline: Option<Timestamp>,
 ) -> anyhow::Result<Nonce> {
-    let deadline = deadline.unwrap_or_else(|| DateTime::timeout(std::time::Duration::from_mins(2)));
+    let deadline =
+        deadline.unwrap_or_else(|| Timestamp::timeout(std::time::Duration::from_mins(2)));
 
     let salt = defuse_contract.current_salt().await?;
 
@@ -33,7 +35,7 @@ pub async fn generate_unique_nonce(
     ))
 }
 
-pub fn create_random_salted_nonce(salt: Salt, deadline: DateTime, mut rng: impl Rng) -> Nonce {
+pub fn create_random_salted_nonce(salt: Salt, deadline: Timestamp, mut rng: impl Rng) -> Nonce {
     VersionedNonce::V1(SaltedNonce::new(
         salt,
         ExpirableNonce {

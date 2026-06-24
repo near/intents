@@ -13,7 +13,7 @@ use near_sdk::near;
 pub struct SimulationReport {
     pub intents_executed: Vec<MaybeIntentEvent<AccountEvent<'static, NonceEvent>>>,
     pub logs: Vec<String>,
-    
+
     #[serde_as(as = "defuse_serde_utils::jiff::Rfc3339")]
     pub min_deadline: Timestamp,
 }
