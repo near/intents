@@ -1,0 +1,32 @@
+lints.workspace = true
+
+[package]
+name = "defuse-time"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+defuse-borsh-utils = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+
+[target.'cfg(near)'.dependencies]
+near-sdk = { workspace = true, optional = true }
+
+[features]
+std = ["dep:near-sdk"]
+
+abi = ["defuse-borsh-utils?/abi", "schemars_v0_8"]
+borsh = ["dep:defuse-borsh-utils"]
+serde = ["dep:serde"]
+schemars_v0_8 = ["dep:schemars"]
+
+[dev-dependencies]
+borsh = { workspace = true, features = ["unstable__schema"] }
+defuse-borsh-utils = { workspace = true, features = ["chrono", "abi"] }
+defuse-time = { path = ".", features = ["std", "borsh", "serde", "schemars_v0_8"] }
+
+[target.'cfg(near)'.dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }

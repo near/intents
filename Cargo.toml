@@ -26,6 +26,7 @@ members = [
   "crates/num-utils",
   "crates/rand-compat",
   "crates/serde-utils",
+  "crates/time",
 
   "crates/near/admin-utils",
   "crates/near/auth-call",
@@ -34,7 +35,6 @@ members = [
   "crates/near/utils",
   "crates/near/wnear",
 
-  "crates/primitives/deadline",
   "crates/primitives/decimal",
   "crates/primitives/fees",
   "crates/primitives/token-id",
@@ -89,6 +89,7 @@ defuse-map-utils.path = "crates/map-utils"
 defuse-num-utils.path = "crates/num-utils"
 defuse-rand-compat.path = "crates/rand-compat"
 defuse-serde-utils.path = "crates/serde-utils"
+defuse-time.path = "crates/time"
 
 defuse-admin-utils.path = "crates/near/admin-utils"
 defuse-auth-call.path = "crates/near/auth-call"
@@ -97,7 +98,6 @@ defuse-near-utils.path = "crates/near/utils"
 defuse-nep245.path = "crates/near/nep245"
 defuse-wnear.path = "crates/near/wnear"
 
-defuse-deadline.path = "crates/primitives/deadline"
 defuse-decimal.path = "crates/primitives/decimal"
 defuse-fees.path = "crates/primitives/fees"
 defuse-token-id = { path = "crates/primitives/token-id", default-features = false }
