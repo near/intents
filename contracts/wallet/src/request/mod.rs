@@ -9,9 +9,14 @@ use near_sdk::{Gas, NearToken, near};
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Request {
+    /// Operations to apply
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub ops: Vec<WalletOp>,
 
+    /// Promises to execute (fan-out).
+    ///
+    /// NOTE: all created promises are executed concurrently and independently
+    /// of each other, without waiting on previous ones to complete.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub out: Vec<PromiseSingle>,
 }
