@@ -8,7 +8,7 @@ A generic minimalistic wallet smart-contract that enables for true *sharded* and
 
 ## Key Features
 
-* Execute *arbitrarily complex* [**promises**](#promises).
+* Execute *arbitrary* [**promises**](#promises) (i.e. cross-contract calls).
 * [**Extensions**](#extensions) can be implemented as *separate* third-party
   accounts/contracts on Near with their own arbitrary logic. Installed
   extensions have full control over the wallet-contract instance and can be
