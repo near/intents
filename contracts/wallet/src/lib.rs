@@ -62,9 +62,9 @@ pub trait Wallet {
     /// SHOULD be allowed to call `w_execute_extension()`.
     fn w_extensions(&self) -> BTreeSet<AccountId>;
 
-    /// Returns a timeout, i.e. validity timespan for each nonce.
+    /// Returns a timeout in seconds, i.e. validity timespan for each nonce.
     fn w_timeout_secs(&self) -> u32;
 
-    /// Returns a timestamp when nonces were last cleaned up.
-    fn w_last_cleaned_at(&self) -> Timestamp;
+    /// Returns a timestamp (in RFC-3339 format) when nonces were last cleaned up.
+    fn w_last_cleaned_at(&self) -> String;
 }

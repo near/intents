@@ -55,8 +55,9 @@ impl Wallet for Contract {
             .unwrap_or_else(|_| unreachable!())
     }
 
-    fn w_last_cleaned_at(&self) -> Timestamp {
-        self.nonces.last_cleaned_at()
+    // TODO: maybe rollback to jiff::Timestamp?
+    fn w_last_cleaned_at(&self) -> String {
+        self.nonces.last_cleaned_at().to_string()
     }
 }
 

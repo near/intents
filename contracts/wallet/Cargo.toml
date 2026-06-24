@@ -15,6 +15,7 @@ workspace = true
 [dependencies]
 defuse-bitmap = { workspace = true, features = ["borsh"] }
 defuse-borsh-utils = { workspace = true, features = ["jiff"] }
+defuse-serde-utils = { workspace = true, features = ["jiff"] }
 jiff = { workspace = true, features = ["serde"] }
 
 defuse-time = { workspace = true, features = ["jiff"], optional = true }
@@ -33,6 +34,7 @@ abi = [
   "defuse-bitmap/abi",
   "defuse-borsh-utils/abi",
   "defuse-crypto?/abi",
+  "defuse-serde-utils/abi",
   "defuse-webauthn?/abi",
   "near-sdk/abi",
   "serde_with/schemars_0_8",

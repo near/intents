@@ -11,6 +11,7 @@ pub mod webauthn;
 use std::time::Duration;
 
 use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds, TimestampSeconds};
+use defuse_serde_utils::jiff::Rfc3339;
 use jiff::Timestamp;
 use near_sdk::{AccountId, CryptoHash, env, near, serde_with::DurationSeconds};
 
@@ -57,6 +58,7 @@ pub struct RequestMessage {
     /// [`ConcurrentNonces`](crate::ConcurrentNonces) implementation.
     pub nonce: u32,
 
+    // `#[borsh]` doesn't support multiple attributes
     #[cfg_attr(
         not(feature = "abi"),
         borsh(
@@ -75,6 +77,7 @@ pub struct RequestMessage {
             ))
         )
     )]
+    #[serde_as(as = "Rfc3339")]
     /// Timestamp when this request was created (in RFC-3339 format).
     ///
     /// NOTE:
