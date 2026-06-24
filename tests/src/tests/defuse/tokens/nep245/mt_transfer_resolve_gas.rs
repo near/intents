@@ -1,5 +1,5 @@
 use super::binary_search_max;
-use crate::tests::defuse::env::Env;
+use crate::tests::defuse::env::{Env, env};
 use crate::tests::defuse::tokens::nep245::letter_gen::LetterCombinations;
 use anyhow::Context;
 use arbitrary::Arbitrary;
@@ -154,10 +154,7 @@ async fn run_resolve_gas_test(
             env.defuse.contract_id(),
             MtOnTransferArgs {
                 sender_id: user_account.account_id().clone(),
-                previous_owner_ids: vec![
-                    author_account.account_id().clone();
-                    token_ids.len()
-                ],
+                previous_owner_ids: vec![author_account.account_id().clone(); token_ids.len()],
                 token_ids: token_ids.clone(),
                 amounts: amounts.iter().copied().map(U128).collect(),
                 msg: String::new(),
@@ -237,11 +234,11 @@ async fn run_resolve_gas_test(
 
 #[rstest]
 #[tokio::test]
-async fn mt_transfer_resolve_gas(rng: impl Rng) {
+async fn mt_transfer_resolve_gas(#[future(awt)] env: Env, rng: impl Rng) {
     let rng = Arc::new(tokio::sync::Mutex::new(rng));
-    for gen_mode in GenerationMode::iter() {
-        let env = Arc::new(Env::new().await);
+    let env = Arc::new(env);
 
+    for gen_mode in GenerationMode::iter() {
         let user = env.create_user().await;
 
         env.transaction(env.defuse.contract_id())
@@ -299,9 +296,11 @@ async fn binary_search() {
     }
 }
 
+#[rstest]
 #[tokio::test]
-async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit() {
-    let env = Env::new().await;
+async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
+    #[future(awt)] env: Env,
+) {
     let user = env.create_named_user("user").await;
 
     env.transaction(env.defuse.contract_id())
@@ -357,10 +356,7 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit()
             env.defuse.contract_id(),
             MtOnTransferArgs {
                 sender_id: user.account_id().clone(),
-                previous_owner_ids: vec![
-                    author_account.account_id().clone();
-                    token_ids.len()
-                ],
+                previous_owner_ids: vec![author_account.account_id().clone(); token_ids.len()],
                 token_ids: token_ids.clone(),
                 amounts: amounts.iter().copied().map(U128).collect(),
                 msg: String::new(),

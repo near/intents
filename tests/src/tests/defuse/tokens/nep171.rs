@@ -26,7 +26,7 @@ use near_sdk::{NearToken, json_types::Base64VecU8};
 use rstest::rstest;
 use std::collections::HashMap;
 
-use crate::tests::defuse::env::Env;
+use crate::tests::defuse::env::{Env, env};
 
 const DUMMY_REFERENCE_HASH: [u8; 32] = [33; 32];
 const DUMMY_NFT1_ID: &str = "thisisdummynftid1";
@@ -34,9 +34,7 @@ const DUMMY_NFT2_ID: &str = "thisisdummythisisdummynnthisisdummynftid2";
 
 #[rstest]
 #[tokio::test]
-async fn transfer_nft_to_verifier() {
-    let env = Env::builder().build().await;
-
+async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
     let (user1, user2, user3) = futures::join!(
         env.create_named_user("nft_issuer_admin"),
         env.create_user(),
@@ -378,8 +376,8 @@ struct NftTransferCallExpectation {
 #[tokio::test]
 async fn nft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: NftTransferCallExpectation,
+    #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
 ) {
-    let env = Env::builder().deployer_as_super_admin().build().await;
 
     // Ensure the NFT issuer account name stays short enough to host `nft_test.<user>`
     // subaccounts; randomly generated names occasionally exceed the NEAR 64-char limit.

@@ -20,7 +20,7 @@ use near_sdk::AccountIdRef;
 use rstest::rstest;
 use std::collections::BTreeMap;
 
-use crate::tests::defuse::env::Env;
+use crate::tests::defuse::env::{Env, env};
 
 async fn balance_of(
     near: &Near,
@@ -43,12 +43,11 @@ async fn balance_of(
 
 #[rstest]
 #[tokio::test]
-async fn test_upgrade_with_persistence() {
-    let env = Env::builder()
-        .deployer_as_super_admin()
-        .defuse_wasm(DEFUSE_LEGACY_WASM.clone())
-        .build()
-        .await;
+async fn test_upgrade_with_persistence(
+    #[with(Env::builder().deployer_as_super_admin().defuse_wasm(DEFUSE_LEGACY_WASM.clone()))]
+    #[future(awt)]
+    env: Env,
+) {
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
     let ft = env.create_named_token("testtoken").await;

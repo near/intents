@@ -14,14 +14,11 @@ use defuse_sandbox::{
 };
 use rstest::rstest;
 
-use crate::tests::defuse::env::Env;
+use crate::tests::defuse::env::{Env, env};
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn imt_burn_intent() {
-    let env = Env::builder().build().await;
-
+async fn imt_burn_intent(#[future(awt)] env: Env) {
     let (user, other_user) = futures::join!(env.create_user(), env.create_user());
 
     let token_id = "sometoken.near".to_string();
@@ -78,11 +75,8 @@ async fn imt_burn_intent() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn failed_to_burn_tokens_with_intent() {
-    let env = Env::builder().build().await;
-
+async fn failed_to_burn_tokens_with_intent(#[future(awt)] env: Env) {
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
     let memo = "Some memo";

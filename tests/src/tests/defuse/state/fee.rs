@@ -1,4 +1,4 @@
-use crate::{tests::defuse::env::Env, utils::asserts::ResultAssertsExt};
+use crate::{tests::defuse::env::{Env, env}, utils::asserts::ResultAssertsExt};
 use defuse_sandbox::extensions::defuse::{
     DefuseExt,
     contract::Role,
@@ -12,8 +12,9 @@ use rstest::rstest;
 
 #[rstest]
 #[tokio::test]
-async fn set_fee() {
-    let env = Env::builder().deployer_as_super_admin().build().await;
+async fn set_fee(
+    #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+) {
     let prev_fee = env.defuse.fee().await.unwrap();
     let fee = Pips::from_pips(100).unwrap();
 
@@ -60,8 +61,9 @@ async fn set_fee() {
 
 #[rstest]
 #[tokio::test]
-async fn set_fee_collector() {
-    let env = Env::builder().deployer_as_super_admin().build().await;
+async fn set_fee_collector(
+    #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+) {
     let fee_collector: AccountId = "fee-collector.near".to_string().parse().unwrap();
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());

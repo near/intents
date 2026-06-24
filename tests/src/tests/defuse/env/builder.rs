@@ -15,12 +15,8 @@ use defuse_sandbox::{
         wnear::{WNearDeployerExt, WNearExt},
     },
     kit::{Action, Final, FunctionCallAction, Near, NearToken},
-    root,
 };
-use defuse_test_utils::{
-    random::Seed,
-    wasms::{DEFUSE_FAR_WASM, POA_FACTORY_WASM, WNEAR_WASM},
-};
+use defuse_test_utils::wasms::{DEFUSE_FAR_WASM, POA_FACTORY_WASM, WNEAR_WASM};
 use near_sdk::{AccountId, AccountIdRef, serde_json::json};
 
 use crate::tests::defuse::env::Env;
@@ -72,6 +68,11 @@ impl EnvBuilder {
         self
     }
 
+    pub fn defuse_wasm(mut self, wasm: Vec<u8>) -> Self {
+        self.defuse_wasm = Some(wasm);
+        self
+    }
+
     pub fn admin(mut self, role: Role, admin: AccountId) -> Self {
         self.roles.admins.entry(role).or_default().insert(admin);
         self
@@ -84,11 +85,6 @@ impl EnvBuilder {
 
     pub const fn no_registration(mut self, no_reg_value: bool) -> Self {
         self.disable_registration = no_reg_value;
-        self
-    }
-
-    pub fn defuse_wasm(mut self, wasm: Vec<u8>) -> Self {
-        self.defuse_wasm = Some(wasm);
         self
     }
 
@@ -124,7 +120,7 @@ impl EnvBuilder {
             .deploy(wasm)
             .add_action(Action::FunctionCall(FunctionCallAction {
                 method_name: "new".to_string(),
-                args: json!({"config": cfg}).to_string().as_bytes().to_vec(),
+                args: serde_json::to_vec(&json!({"config": cfg})).unwrap(),
                 gas: DEFAULT_GAS,
                 deposit: NearToken::from_near(0),
             }))
@@ -142,7 +138,7 @@ impl EnvBuilder {
         if self.self_as_super_admin {
             self.roles
                 .super_admins
-                .insert(format!("defuse.{}", root.as_ref()).parse().unwrap());
+                .insert(root.as_ref().sub_account("defuse").unwrap());
         }
 
         if self.deployer_as_super_admin {
@@ -150,9 +146,7 @@ impl EnvBuilder {
         }
     }
 
-    pub async fn build(&mut self) -> Env {
-        let root = root(NearToken::from_near(100_000)).await;
-
+    pub async fn build(mut self, root: Near) -> Env {
         self.grant_roles(root.account_id());
 
         let poa_factory = deploy_poa_factory(&root).await;
@@ -169,8 +163,6 @@ impl EnvBuilder {
             root,
             disable_ft_storage_deposit: self.disable_ft_storage_deposit,
             disable_registration: self.disable_registration,
-            seed: Seed::from_entropy(),
-            // next_user_index: AtomicUsize::new(0),
         };
 
         env.near_deposit(env.wnear.contract_id(), NearToken::from_near(100))

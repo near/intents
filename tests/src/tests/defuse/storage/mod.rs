@@ -1,4 +1,7 @@
-use crate::{sandbox::extensions::wnear::WNearExt, tests::defuse::env::Env};
+use crate::{
+    sandbox::extensions::wnear::WNearExt,
+    tests::defuse::env::{Env, env},
+};
 use defuse_sandbox::extensions::defuse::{
     DefuseExt, DefuseSignerExt, core::intents::tokens::StorageDeposit,
 };
@@ -27,9 +30,11 @@ const ONE_YOCTO_NEAR: NearToken = NearToken::from_yoctonear(1);
 async fn storage_deposit_success(
     #[case] amount_to_deposit: NearToken,
     #[case] expected_deposited: Option<NearToken>,
+    #[notrace]
+    #[with(Env::builder().disable_ft_storage_deposit())]
+    #[future(awt)]
+    env: Env,
 ) {
-    let env = Env::builder().disable_ft_storage_deposit().build().await;
-
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
@@ -124,8 +129,9 @@ async fn storage_deposit_success(
 
 #[rstest]
 #[tokio::test]
-async fn storage_deposit_fails_user_has_no_balance_in_intents() {
-    let env = Env::builder().disable_ft_storage_deposit().build().await;
+async fn storage_deposit_fails_user_has_no_balance_in_intents(
+    #[with(Env::builder().disable_ft_storage_deposit())] #[future(awt)] env: Env,
+) {
 
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());

@@ -20,16 +20,16 @@ use defuse_test_utils::wasms::DEFUSE_WASM;
 use near_sdk::{AccountId, Gas, NearToken};
 use rstest::rstest;
 
-use crate::{tests::defuse::env::Env, utils::asserts::ResultAssertsExt};
+use crate::{
+    tests::defuse::env::{Env, env},
+    utils::asserts::ResultAssertsExt,
+};
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn ft_withdraw_intent() {
+async fn ft_withdraw_intent(#[future(awt)] env: Env) {
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
-
-    let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
@@ -225,11 +225,8 @@ async fn ft_withdraw_intent() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn ft_withdraw_intent_msg() {
-    let env = Env::builder().build().await;
-
+async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
 

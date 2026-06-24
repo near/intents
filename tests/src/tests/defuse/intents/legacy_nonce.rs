@@ -17,14 +17,14 @@ use defuse_sandbox::{
 use defuse_test_utils::random::make_arbitrary;
 use rstest::rstest;
 
-use crate::tests::defuse::env::Env;
+use crate::tests::defuse::env::{Env, env};
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn execute_intent_with_legacy_nonce(#[from(make_arbitrary)] legacy_nonce: Nonce) {
-    let env = Env::builder().build().await;
-
+async fn execute_intent_with_legacy_nonce(
+    #[future(awt)] env: Env,
+    #[from(make_arbitrary)] legacy_nonce: Nonce,
+) {
     let (user1, user2, ft1) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 

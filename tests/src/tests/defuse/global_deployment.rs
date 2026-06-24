@@ -14,13 +14,13 @@ use rstest::rstest;
 
 use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 
-use crate::tests::defuse::env::Env;
+use crate::tests::defuse::env::{Env, env};
 
 #[rstest]
 #[tokio::test]
-async fn different_states_produce_different_addresses() -> anyhow::Result<()> {
-    let env = Env::builder().build().await;
-
+async fn different_states_produce_different_addresses(
+    #[future(awt)] env: Env,
+) -> anyhow::Result<()> {
     let global_contract_id = env
         .deploy_mt_receiver_stub_global("mt-receiver-global", MT_RECEIVER_STUB_WASM.clone())
         .await?;

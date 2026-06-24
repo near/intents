@@ -1,5 +1,8 @@
 use super::binary_search_max;
-use crate::tests::defuse::{env::Env, tokens::nep245::letter_gen::LetterCombinations};
+use crate::tests::defuse::{
+    env::{Env, env},
+    tokens::nep245::letter_gen::LetterCombinations,
+};
 use anyhow::Context;
 use defuse_core::intents::tokens::NotifyOnTransfer;
 use defuse_near_utils::{REFUND_MEMO, TOTAL_LOG_LENGTH_LIMIT};
@@ -194,13 +197,16 @@ async fn run_deposit_resolve_gas_test(
     validate_mt_event_log_size(&receiver_id, &defuse_token_ids, &amounts)?;
     let execution_result = author_account
         .transaction(env.defuse.contract_id()) // defuse contract receives the deposit
-        .add_action(Mt::mt_on_transfer(MtOnTransferArgs {
-            sender_id: author_account.account_id().clone(), // sender_id (who the tokens are being deposited for)
-            previous_owner_ids: vec![author_account.account_id().clone(); token_count],
-            token_ids,
-            amounts: amounts.iter().copied().map(U128).collect(),
-            msg: serde_json::to_string(&deposit_message).unwrap(),
-        }).gas(DEFAULT_GAS))
+        .add_action(
+            Mt::mt_on_transfer(MtOnTransferArgs {
+                sender_id: author_account.account_id().clone(), // sender_id (who the tokens are being deposited for)
+                previous_owner_ids: vec![author_account.account_id().clone(); token_count],
+                token_ids,
+                amounts: amounts.iter().copied().map(U128).collect(),
+                msg: serde_json::to_string(&deposit_message).unwrap(),
+            })
+            .gas(DEFAULT_GAS),
+        )
         .await
         .context("Failed at mt_on_transfer (RPC error)")?;
 
@@ -253,6 +259,7 @@ async fn run_deposit_resolve_gas_test(
 #[rstest]
 #[tokio::test]
 async fn mt_deposit_resolve_gas(
+    #[future(awt)] env: Env,
     #[values(
         TokenIdGenerationMode::Short,
         TokenIdGenerationMode::Medium,
@@ -274,7 +281,7 @@ async fn mt_deposit_resolve_gas(
     }
 
     let rng = Arc::new(tokio::sync::Mutex::new(rng));
-    let env = Arc::new(Env::new().await);
+    let env = Arc::new(env);
 
     env.transaction(env.defuse.contract_id())
         .transfer(NearToken::from_near(1000))
@@ -350,9 +357,12 @@ async fn mt_deposit_resolve_gas(
     }
 }
 
+#[rstest]
 #[tokio::test]
-async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notification() {
-    let env = Arc::new(Env::new().await);
+async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notification(
+    #[future(awt)] env: Env,
+) {
+    let env = Arc::new(env);
     let amount = 1u128;
 
     env.transaction(env.defuse.contract_id())
@@ -384,13 +394,16 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
 
     let execution_result = author_account
         .transaction(env.defuse.contract_id())
-        .add_action(Mt::mt_on_transfer(MtOnTransferArgs {
-            sender_id: author_account.account_id().clone(),
-            previous_owner_ids: vec![author_account.account_id().clone()],
-            token_ids: vec!["testtoken1".to_string()],
-            amounts: vec![U128(amount)],
-            msg: serde_json::to_string(&deposit_message).unwrap(),
-        }).gas(DEFAULT_GAS))
+        .add_action(
+            Mt::mt_on_transfer(MtOnTransferArgs {
+                sender_id: author_account.account_id().clone(),
+                previous_owner_ids: vec![author_account.account_id().clone()],
+                token_ids: vec!["testtoken1".to_string()],
+                amounts: vec![U128(amount)],
+                msg: serde_json::to_string(&deposit_message).unwrap(),
+            })
+            .gas(DEFAULT_GAS),
+        )
         .await
         .expect("Failed at mt_on_transfer (RPC error)");
 

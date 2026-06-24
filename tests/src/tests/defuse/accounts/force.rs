@@ -18,13 +18,19 @@ use near_sdk::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 
-use crate::{tests::defuse::env::Env, utils::asserts::ResultAssertsExt};
+use crate::{
+    tests::defuse::env::{Env, env},
+    utils::asserts::ResultAssertsExt,
+};
 
 #[rstest]
 #[tokio::test]
-async fn test_lock_account(public_key: PublicKey) {
-    let env = Env::builder().deployer_as_super_admin().build().await;
-
+async fn test_lock_account(
+    public_key: PublicKey,
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
+) {
     let (locked_account, account_locker, unlocked_account, ft) = futures::join!(
         env.create_user(),
         env.create_user(),
@@ -450,9 +456,12 @@ async fn test_lock_account(public_key: PublicKey) {
 
 #[rstest]
 #[tokio::test]
-async fn test_force_set_auth_by_predecessor_id(public_key: PublicKey) {
-    let env = Env::builder().deployer_as_super_admin().build().await;
-
+async fn test_force_set_auth_by_predecessor_id(
+    public_key: PublicKey,
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
+) {
     let (user_account, account_locker, account_unlocker) =
         futures::join!(env.create_user(), env.create_user(), env.create_user());
 

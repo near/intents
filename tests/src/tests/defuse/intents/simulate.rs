@@ -34,7 +34,10 @@ use defuse_sandbox::{
     kit::Final,
 };
 
-use crate::{tests::defuse::env::Env, utils::fixtures::public_key};
+use crate::{
+    tests::defuse::env::{Env, env},
+    utils::fixtures::public_key,
+};
 use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata,
@@ -43,11 +46,8 @@ use near_sdk::{NearToken, json_types::Base64VecU8};
 use rstest::rstest;
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn simulate_transfer_intent() {
-    let env = Env::builder().build().await;
-
+async fn simulate_transfer_intent(#[future(awt)] env: Env) {
     let (user1, user2, ft1) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
@@ -91,11 +91,8 @@ async fn simulate_transfer_intent() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn simulate_ft_withdraw_intent() {
-    let env = Env::builder().build().await;
-
+async fn simulate_ft_withdraw_intent(#[future(awt)] env: Env) {
     let (user1, user2, ft1) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
@@ -150,11 +147,8 @@ async fn simulate_ft_withdraw_intent() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn simulate_native_withdraw_intent() {
-    let env = Env::builder().build().await;
-
+async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
     env.initial_ft_storage_deposit(vec![user1.account_id(), user2.account_id()], &[])
@@ -222,11 +216,8 @@ pub const DUMMY_NFT_REFERENCE_HASH: [u8; 32] = [13; 32];
 pub const DUMMY_NFT_ID: &str = "thisisdummynftid";
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn simulate_nft_withdraw_intent() {
-    let env = Env::builder().build().await;
-
+async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
     let (user1, user2) =
         futures::join!(env.create_named_user("nft_issuer_admin"), env.create_user());
 
@@ -320,11 +311,8 @@ async fn simulate_nft_withdraw_intent() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn simulate_mt_withdraw_intent() {
-    let env = Env::builder().build().await;
-
+async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
     let (user1, user2, ft1) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
@@ -438,11 +426,8 @@ async fn simulate_mt_withdraw_intent() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn simulate_storage_deposit_intent() {
-    let env = Env::builder().build().await;
-
+async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
     let (user1, user2, ft1) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
@@ -507,11 +492,8 @@ async fn simulate_storage_deposit_intent() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn simulate_token_diff_intent() {
-    let env = Env::builder().fee(Pips::ZERO).build().await;
-
+async fn simulate_token_diff_intent(#[future(awt)] env: Env) {
     let (user1, user2, ft1, ft2) = futures::join!(
         env.create_user(),
         env.create_user(),
@@ -605,9 +587,12 @@ async fn simulate_token_diff_intent() {
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn simulate_add_public_key_intent(public_key: PublicKey) {
-    let env = Env::builder().build().await;
-
+async fn simulate_add_public_key_intent(
+    #[notrace]
+    #[future(awt)]
+    env: Env,
+    public_key: PublicKey,
+) {
     let user1 = env.create_user().await;
 
     let new_public_key = public_key;
@@ -635,9 +620,12 @@ async fn simulate_add_public_key_intent(public_key: PublicKey) {
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn simulate_remove_public_key_intent(public_key: PublicKey) {
-    let env = Env::builder().build().await;
-
+async fn simulate_remove_public_key_intent(
+    #[notrace]
+    #[future(awt)]
+    env: Env,
+    public_key: PublicKey,
+) {
     let user1 = env.create_user().await;
 
     let new_public_key = public_key;
@@ -676,11 +664,8 @@ async fn simulate_remove_public_key_intent(public_key: PublicKey) {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn simulate_set_auth_by_predecessor_id_intent() {
-    let env = Env::builder().build().await;
-
+async fn simulate_set_auth_by_predecessor_id_intent(#[future(awt)] env: Env) {
     let user1 = env.create_user().await;
 
     let set_auth_intent = SetAuthByPredecessorId { enabled: true };
@@ -702,11 +687,8 @@ async fn simulate_set_auth_by_predecessor_id_intent() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn simulate_auth_call_intent() {
-    let env = Env::builder().build().await;
-
+async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
     let (user1, ft1) = futures::join!(env.create_user(), env.create_token());
 
     env.initial_ft_storage_deposit(vec![user1.account_id()], vec![ft1.contract_id()])
@@ -772,11 +754,8 @@ async fn simulate_auth_call_intent() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn simulate_mint_intent() {
-    let env = Env::builder().build().await;
-
+async fn simulate_mint_intent(#[future(awt)] env: Env) {
     let user = env.create_user().await;
 
     let token_id = "sometoken.near".to_string();
@@ -807,11 +786,8 @@ async fn simulate_mint_intent() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn simulate_burn_intent() {
-    let env = Env::builder().build().await;
-
+async fn simulate_burn_intent(#[future(awt)] env: Env) {
     let user = env.create_user().await;
 
     let token_id = "sometoken.near".to_string();
@@ -858,11 +834,8 @@ async fn simulate_burn_intent() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn simulation_fails_on_used_nonce() {
-    let env = Env::builder().build().await;
-
+async fn simulation_fails_on_used_nonce(#[future(awt)] env: Env) {
     let user = env.create_user().await;
 
     let payload = user

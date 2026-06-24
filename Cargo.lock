@@ -3817,9 +3817,9 @@ dependencies = [
 
 [[package]]
 name = "near-kit"
-version = "0.11.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e6bdc4358f082c3d151be8f34bcc633377815dacf45a7c891176b9a13911a86"
+checksum = "190566ee02faabd4847ac9c5b63ae43f9ba07aea031423f42e73aeefdebbe634"
 dependencies = [
  "base64 0.22.1",
  "bip39",
@@ -3851,9 +3851,9 @@ dependencies = [
 
 [[package]]
 name = "near-kit-macros"
-version = "0.11.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fe75d34305a8562ae4ed7de107a71fe96a68cbcaa2b3906d63b650f24cbfdaf"
+checksum = "f0cf728729f56bf1832e38f37ba79a729ae2e58b486016f914c8ae130e062ae8"
 dependencies = [
  "proc-macro2",
  "quote",

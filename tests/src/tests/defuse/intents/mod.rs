@@ -21,7 +21,7 @@ use near_sdk::{AccountId, AccountIdRef, AsNep297Event, CryptoHash, serde_json};
 use rstest::rstest;
 use std::borrow::Cow;
 
-use crate::tests::defuse::env::Env;
+use crate::tests::defuse::env::{Env, env};
 
 pub struct AccountNonceIntentEvent(AccountId, Nonce, CryptoHash);
 
@@ -58,11 +58,8 @@ mod token_diff;
 mod transfer;
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
-    let env = Env::builder().build().await;
-
+async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: impl Rng) {
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
@@ -166,11 +163,9 @@ async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
 #[ignore = "TODO"]
 #[rstest]
 #[tokio::test]
-async fn webauthn() {
+async fn webauthn(#[future(awt)] env: Env) {
     const SIGNER_ID: &AccountIdRef =
         AccountIdRef::new_or_panic("0x3602b546589a8fcafdce7fad64a46f91db0e4d50");
-
-    let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(
         env.create_named_user("user1"),
@@ -233,7 +228,7 @@ async fn webauthn() {
 // #[tokio::test]
 // #[rstest]
 // #[trace]
-// async fn ton_connect_sign_intent_example() {
+// async fn ton_connect_sign_intent_example(#[future(awt)] env: Env) {
 //     pub const DUMMY_MSG_ADDRESS: MsgAddress = MsgAddress {
 //         workchain_id: 1234i32,
 //         address: [12u8; 32],

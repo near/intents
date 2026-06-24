@@ -1,4 +1,4 @@
-use crate::tests::defuse::env::Env;
+use crate::tests::defuse::env::{Env, env};
 use defuse_fees::Pips;
 use defuse_randomness::Rng;
 use defuse_sandbox::{
@@ -127,11 +127,10 @@ use StateInitExpectation::*;
 #[case(Some(Gas::from_tgas(100)))]
 #[tokio::test]
 async fn benchmark_auth_call_with_largest_possible_state_init(
+    #[future(awt)] env: Env,
     mut rng: impl Rng,
     #[case] gas: Option<Gas>,
 ) {
-    let env = Env::builder().build().await;
-
     let global_contract_id = env
         .deploy_mt_receiver_stub_global("g", MT_RECEIVER_STUB_WASM.clone())
         .await
@@ -182,14 +181,16 @@ async fn benchmark_auth_call_with_largest_possible_state_init(
 #[case(Some(Gas::from_tgas(10)))]
 #[case(Some(Gas::from_tgas(100)))]
 #[tokio::test]
-async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] gas: Option<Gas>) {
+async fn benchmark_gas_used_by_do_auth_call_callback(
+    #[future(awt)] env: Env,
+    mut rng: impl Rng,
+    #[case] gas: Option<Gas>,
+) {
     // NOTE: when do_auth_call is scheduled as callback to withdraw (because of
     // AuthCall::storage_deposit > 0) it needs to check status of withdrawal. We can't trigger
     // it in this case so we need to subtract gas for promise read (it's around 0.1Tgas) with
     // some overhead.
     const NEAR_WITHDRAW_PROMISE_READ_OVERHEAD: Gas = Gas::from_tgas(1);
-
-    let env = Env::builder().build().await;
 
     let global_contract_id = env
         .deploy_mt_receiver_stub_global("g", MT_RECEIVER_STUB_WASM.clone())
@@ -259,6 +260,7 @@ async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] 
 #[case(ExpectStateInitExceedsZeroBalanceAccountStorageLimit(17))]
 #[tokio::test]
 async fn test_auth_call_state_init_via_execute_intents(
+    #[future(awt)] env: Env,
     mut rng: impl Rng,
     #[case] expectation: StateInitExpectation,
 ) {
@@ -269,8 +271,6 @@ async fn test_auth_call_state_init_via_execute_intents(
 
     let num_keys: u8 = num_keys.try_into().unwrap();
     let concurrency_limit = 10;
-
-    let env = Env::builder().build().await;
 
     let global_contract_id = env
         .deploy_mt_receiver_stub_global("g", MT_RECEIVER_STUB_WASM.clone())
@@ -373,6 +373,7 @@ async fn test_auth_call_state_init_via_execute_intents(
 #[case(ExpectStateInitExceedsZeroBalanceAccountStorageLimit(17))]
 #[tokio::test]
 async fn test_auth_call_state_init_via_do_auth_call(
+    #[future(awt)] env: Env,
     mut rng: impl Rng,
     #[case] expectation: StateInitExpectation,
 ) {
@@ -389,8 +390,6 @@ async fn test_auth_call_state_init_via_do_auth_call(
 
     let num_keys: u8 = num_keys.try_into().unwrap();
     let concurrency_limit = 10;
-
-    let env = Env::builder().build().await;
 
     let global_contract_id = env
         .deploy_mt_receiver_stub_global("g", MT_RECEIVER_STUB_WASM.clone())

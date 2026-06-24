@@ -20,15 +20,17 @@ use near_sdk::NearToken;
 use rstest::rstest;
 
 use crate::{
-    tests::defuse::env::Env,
+    tests::defuse::env::{Env, env},
     utils::fixtures::{ed25519_pk, secp256k1_pk},
 };
 
 #[rstest]
 #[tokio::test]
-async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) {
-    let env = Env::new().await;
-
+async fn native_withdraw_intent(
+    #[future(awt)] env: Env,
+    ed25519_pk: PublicKey,
+    secp256k1_pk: PublicKey,
+) {
     let (user, other_user) = futures::join!(env.create_user(), env.create_user());
 
     env.initial_ft_storage_deposit(vec![user.account_id(), other_user.account_id()], &[])

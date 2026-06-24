@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use crate::{tests::defuse::env::Env, utils::asserts::ResultAssertsExt};
+use crate::{tests::defuse::env::{Env, env}, utils::asserts::ResultAssertsExt};
 use defuse_sandbox::extensions::defuse::{
     DefuseExt, SaltArgs,
     contract::Role,
@@ -11,8 +11,9 @@ use rstest::rstest;
 
 #[rstest]
 #[tokio::test]
-async fn update_current_salt() {
-    let env = Env::builder().deployer_as_super_admin().build().await;
+async fn update_current_salt(
+    #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+) {
     let prev_salt = env.defuse.current_salt().await.unwrap();
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
@@ -64,8 +65,9 @@ async fn update_current_salt() {
 
 #[rstest]
 #[tokio::test]
-async fn invalidate_salts() {
-    let env = Env::builder().deployer_as_super_admin().build().await;
+async fn invalidate_salts(
+    #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+) {
     let mut current_salt = env.defuse.current_salt().await.unwrap();
     let mut prev_salt = current_salt;
 

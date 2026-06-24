@@ -5,12 +5,18 @@ use defuse_sandbox::{
 };
 use rstest::rstest;
 
-use crate::{tests::defuse::env::Env, utils::asserts::ResultAssertsExt};
+use crate::{
+    tests::defuse::env::{Env, env},
+    utils::asserts::ResultAssertsExt,
+};
 
 #[rstest]
 #[tokio::test]
-async fn relayer_keys() {
-    let env = Env::builder().deployer_as_super_admin().build().await;
+async fn relayer_keys(
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
+) {
     let (user, other_user) = futures::join!(env.create_user(), env.create_user());
 
     env.defuse_acl_grant_role(

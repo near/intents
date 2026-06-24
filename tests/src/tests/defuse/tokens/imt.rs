@@ -11,13 +11,11 @@ use defuse_sandbox::extensions::{
 };
 use rstest::rstest;
 
-use crate::tests::defuse::env::Env;
+use crate::tests::defuse::env::{Env, env};
 
 #[rstest]
 #[tokio::test]
-async fn imt_burn_call() {
-    let env = Env::builder().build().await;
-
+async fn imt_burn_call(#[future(awt)] env: Env) {
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
     let token = "sometoken.near".to_string();
     let memo = "Some memo";
@@ -86,11 +84,8 @@ async fn imt_burn_call() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn failed_to_burn_tokens_by_fn_call() {
-    let env = Env::builder().build().await;
-
+async fn failed_to_burn_tokens_by_fn_call(#[future(awt)] env: Env) {
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
     let memo = "Some memo";

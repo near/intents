@@ -56,6 +56,15 @@ pub trait PoaFactory {
 
     fn tokens(&self) -> HashMap<String, AccountId>;
 }
+
+impl PoaFactoryClient {
+    pub fn ft_name(&self, ft: &AccountIdRef) -> String {
+        ft.as_str()
+            .trim_end_matches(&format!(".{}", self.contract_id()))
+            .to_string()
+    }
+}
+
 pub trait PoaFactoryDeployerExt {
     async fn deploy_poa_factory(
         &self,

@@ -19,16 +19,22 @@ use rstest::rstest;
 use std::borrow::Cow;
 
 use crate::{
-    tests::defuse::env::Env, tests::defuse::intents::AccountNonceIntentEvent,
+    tests::defuse::{
+        env::{Env, env},
+        intents::AccountNonceIntentEvent,
+    },
     utils::fixtures::public_key,
 };
 
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn execute_add_public_key_intent(public_key: PublicKey) {
-    let env = Env::builder().build().await;
-
+async fn execute_add_public_key_intent(
+    #[notrace]
+    #[future(awt)]
+    env: Env,
+    public_key: PublicKey,
+) {
     let user = env.create_user().await;
 
     let new_public_key = public_key;
@@ -76,9 +82,12 @@ async fn execute_add_public_key_intent(public_key: PublicKey) {
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn execute_remove_public_key_intent(public_key: PublicKey) {
-    let env = Env::builder().build().await;
-
+async fn execute_remove_public_key_intent(
+    #[notrace]
+    #[future(awt)]
+    env: Env,
+    public_key: PublicKey,
+) {
     let user = env.create_user().await;
 
     let new_public_key = public_key;

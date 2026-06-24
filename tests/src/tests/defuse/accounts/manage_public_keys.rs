@@ -13,14 +13,17 @@ use defuse_test_utils::fixtures::public_key;
 use near_sdk::AsNep297Event;
 use rstest::rstest;
 
-use crate::tests::defuse::env::Env;
+use crate::tests::defuse::env::{Env, env};
 
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn test_add_public_key(public_key: PublicKey) {
-    let env = Env::builder().build().await;
-
+async fn test_add_public_key(
+    #[notrace]
+    #[future(awt)]
+    env: Env,
+    public_key: PublicKey,
+) {
     let user = env.create_user().await;
 
     assert!(
@@ -63,9 +66,12 @@ async fn test_add_public_key(public_key: PublicKey) {
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn test_add_and_remove_public_key(public_key: PublicKey) {
-    let env = Env::builder().build().await;
-
+async fn test_add_and_remove_public_key(
+    #[notrace]
+    #[future(awt)]
+    env: Env,
+    public_key: PublicKey,
+) {
     let user = env.create_user().await;
 
     user.defuse_add_public_key(env.defuse.contract_id(), public_key)

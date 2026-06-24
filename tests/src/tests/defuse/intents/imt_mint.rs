@@ -23,15 +23,15 @@ use rstest::rstest;
 
 use near_sdk::{AccountId, Gas, NearToken};
 
-use crate::tests::defuse::{env::Env, intents::transfer::TransferCallExpectation};
+use crate::tests::defuse::{
+    env::{Env, env},
+    intents::transfer::TransferCallExpectation,
+};
 use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn imt_mint_intent() {
-    let env = Env::builder().build().await;
-
+async fn imt_mint_intent(#[future(awt)] env: Env) {
     let user = env.create_user().await;
 
     let token = "sometoken.near".to_string();
@@ -72,11 +72,8 @@ async fn imt_mint_intent() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn failed_imt_mint_intent() {
-    let env = Env::builder().build().await;
-
+async fn failed_imt_mint_intent(#[future(awt)] env: Env) {
     let user = env.create_user().await;
 
     let token = ["a"; MAX_TOKEN_ID_LEN + 1].join("");
@@ -99,11 +96,8 @@ async fn failed_imt_mint_intent() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn imt_mint_intent_to_defuse() {
-    let env = Env::builder().build().await;
-
+async fn imt_mint_intent_to_defuse(#[future(awt)] env: Env) {
     let user = env.create_user().await;
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
 
@@ -218,7 +212,6 @@ async fn imt_mint_intent_to_defuse() {
 }
 
 #[rstest]
-#[trace]
 #[case::nothing_to_refund(TransferCallExpectation{
     mode: MTReceiverMode::AcceptAll,
     intent_transfer_amount: Some(1_000),
@@ -250,12 +243,13 @@ async fn imt_mint_intent_to_defuse() {
     expected_receiver_balance: 0,
 })]
 #[tokio::test]
-async fn imt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCallExpectation) {
+async fn imt_mint_intent_with_msg_to_receiver_smc(
+    #[future(awt)] env: Env,
+    #[case] expectation: TransferCallExpectation,
+) {
     let initial_amount = expectation
         .intent_transfer_amount
         .expect("Transfer amount should be specified");
-
-    let env = Env::builder().build().await;
 
     let user = env.create_user().await;
     let mt_receiver = env

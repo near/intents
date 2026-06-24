@@ -22,14 +22,11 @@ use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::{NearToken, json_types::U128};
 use rstest::rstest;
 
-use crate::tests::defuse::env::Env;
+use crate::tests::defuse::env::{Env, env};
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn deposit_withdraw() {
-    let env = Env::builder().build().await;
-
+async fn deposit_withdraw(#[future(awt)] env: Env) {
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
     env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
@@ -85,9 +82,7 @@ async fn deposit_withdraw() {
 
 #[rstest]
 #[tokio::test]
-async fn poa_deposit() {
-    let env = Env::builder().build().await;
-
+async fn poa_deposit(#[future(awt)] env: Env) {
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
     let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
@@ -97,7 +92,7 @@ async fn poa_deposit() {
 
     env.poa_factory_ft_deposit(
         env.poa_factory.contract_id(),
-        &env.poa_ft_name(ft.contract_id()),
+        &env.poa_factory.ft_name(ft.contract_id()),
         user.account_id(),
         1000,
         Some(DepositMessage::new(user.account_id().clone()).to_string()),
@@ -121,11 +116,8 @@ async fn poa_deposit() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn deposit_withdraw_intent() {
-    let env = Env::builder().build().await;
-
+async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
@@ -137,7 +129,7 @@ async fn deposit_withdraw_intent() {
 
     env.poa_factory_ft_deposit(
         env.poa_factory.contract_id(),
-        &env.poa_ft_name(ft.contract_id()),
+        &env.poa_factory.ft_name(ft.contract_id()),
         user.account_id(),
         1000,
         None,
@@ -219,11 +211,8 @@ async fn deposit_withdraw_intent() {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn deposit_withdraw_intent_refund() {
-    let env = Env::builder().build().await;
-
+async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
     env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
@@ -231,7 +220,7 @@ async fn deposit_withdraw_intent_refund() {
 
     env.poa_factory_ft_deposit(
         env.poa_factory.contract_id(),
-        &env.poa_ft_name(ft.contract_id()),
+        &env.poa_factory.ft_name(ft.contract_id()),
         user.account_id(),
         1000,
         None,
@@ -296,9 +285,11 @@ async fn deposit_withdraw_intent_refund() {
 
 #[rstest]
 #[tokio::test]
-async fn ft_force_withdraw() {
-    let env = Env::builder().deployer_as_super_admin().build().await;
-
+async fn ft_force_withdraw(
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
+) {
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
@@ -432,9 +423,10 @@ struct TransferCallExpectation {
 #[tokio::test]
 async fn ft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: TransferCallExpectation,
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
 ) {
-    let env = Env::builder().deployer_as_super_admin().build().await;
-
     let (user, intent_receiver, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 

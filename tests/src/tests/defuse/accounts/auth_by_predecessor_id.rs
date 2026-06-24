@@ -1,4 +1,4 @@
-use crate::tests::defuse::env::Env;
+use crate::tests::defuse::env::{Env, env};
 use defuse_sandbox::extensions::{
     defuse::{
         AccountArgs, DefuseExt, DefuseSignerExt, ToEventLog,
@@ -20,8 +20,7 @@ use std::borrow::Cow;
 
 #[rstest]
 #[tokio::test]
-async fn auth_by_predecessor_id() {
-    let env = Env::new().await;
+async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 

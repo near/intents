@@ -17,7 +17,7 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use crate::tests::defuse::env::Env;
+use crate::tests::defuse::env::{Env, env};
 
 fn generate_public_keys(
     mut rng: &mut impl Rng,
@@ -38,8 +38,10 @@ fn generate_public_keys(
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
-    let env = Env::builder().deployer_as_super_admin().build().await;
+async fn test_force_add_public_keys(
+    #[notrace] mut rng: impl Rng,
+    #[notrace] #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+) {
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
@@ -109,8 +111,10 @@ async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
-    let env = Env::builder().deployer_as_super_admin().build().await;
+async fn test_force_add_and_remove_public_keys(
+    #[notrace] mut rng: impl Rng,
+    #[notrace] #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+) {
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 

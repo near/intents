@@ -1,8 +1,6 @@
-#![allow(dead_code)]
-
 mod builder;
 
-use anyhow::{Ok, Result, anyhow};
+use anyhow::{Result, anyhow};
 use arbitrary::Unstructured;
 use defuse_randomness::{RngExt, make_true_rng};
 use defuse_sandbox::{
@@ -17,13 +15,14 @@ use defuse_sandbox::{
         poa::{PoAFactoryExt, PoaFactoryClient},
     },
     kit::{Final, FungibleToken, Near},
+    root,
 };
-use defuse_test_utils::random::{Seed, rng};
+use defuse_test_utils::random::Seed;
 use futures::future::try_join_all;
 use impl_tools::autoimpl;
 use near_sdk::{
     AccountId, AccountIdRef, NearToken, account_id::arbitrary::ArbitraryNamedAccountId,
-    env::sha256, json_types::U128,
+    json_types::U128,
 };
 use rstest::fixture;
 
@@ -32,7 +31,14 @@ use crate::tests::defuse::env::builder::EnvBuilder;
 const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_near(1);
 const INITIAL_USER_BALANCE: NearToken = NearToken::from_near(10);
 
-// TODO: implement it as a fixture
+#[fixture]
+pub async fn env(
+    #[default(EnvBuilder::default())] builder: EnvBuilder,
+    #[future(awt)] root: Near,
+) -> Env {
+    builder.build(root).await
+}
+
 #[autoimpl(Deref using self.root)]
 pub struct Env {
     pub root: Near,
@@ -44,22 +50,27 @@ pub struct Env {
 
     pub disable_ft_storage_deposit: bool,
     pub disable_registration: bool,
-
-    pub seed: Seed,
 }
 
-#[fixture]
-pub async fn defuse_env() -> Env {
-    Env::new().await
+impl std::fmt::Debug for Env {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Env")
+            .field("root", &self.root.account_id())
+            .field("defuse", &self.defuse.contract_id())
+            .field("wnear", &self.wnear.contract_id())
+            .field("poa_factory", &self.poa_factory.contract_id())
+            .field(
+                "disable_ft_storage_deposit",
+                &self.disable_ft_storage_deposit,
+            )
+            .field("disable_registration", &self.disable_registration)
+            .finish()
+    }
 }
 
 impl Env {
     pub fn builder() -> EnvBuilder {
         EnvBuilder::default()
-    }
-
-    pub async fn new() -> Self {
-        Self::builder().build().await
     }
 
     pub async fn defuse_ft_deposit_to(
@@ -76,7 +87,11 @@ impl Env {
 
         if self
             .ft(AccountId::from(token_id))?
-            .transfer_call(self.defuse.contract_id(), amount, msg.to_string())
+            .transfer_call(
+                self.defuse.contract_id(),
+                amount,
+                serde_json::to_string(&msg).unwrap(),
+            )
             .gas(DEFAULT_GAS)
             .wait_until(Final)
             .await?
@@ -201,7 +216,7 @@ impl Env {
     async fn ft_deposit_to_root(&self, token: &AccountIdRef) -> Result<()> {
         self.poa_factory_ft_deposit(
             self.poa_factory.contract_id().clone(),
-            self.poa_ft_name(token),
+            self.poa_factory.ft_name(token),
             self.account_id(),
             1_000_000_000,
             None,
@@ -209,13 +224,6 @@ impl Env {
         )
         .await
         .map(|_| ())
-    }
-
-    // TODO: may be move it to poa?
-    pub fn poa_ft_name(&self, ft: &AccountIdRef) -> String {
-        ft.as_str()
-            .trim_end_matches(&format!(".{}", self.poa_factory.contract_id()))
-            .to_string()
     }
 
     pub async fn upgrade_defuse(&self, wasm: impl Into<Vec<u8>>) {
@@ -244,24 +252,6 @@ impl Env {
 
 fn generate_random_account_id(parent_id: &AccountId) -> Result<AccountId> {
     let mut rng = make_true_rng();
-    ArbitraryNamedAccountId::arbitrary_subaccount(
-        &mut Unstructured::new(&rng.random::<[u8; 64]>()),
-        Some(parent_id),
-    )
-    .map_err(|e| anyhow::anyhow!("failed to generate account ID : {e}"))
-}
-
-fn generate_legacy_user_account_id(
-    parent_id: &AccountId,
-    index: usize,
-    seed: Seed,
-) -> Result<AccountId> {
-    let bytes = sha256((seed.as_u64() + u64::try_from(index)?).to_be_bytes())[..8]
-        .try_into()
-        .map_err(|_| anyhow::anyhow!("failed to create new account seed"))?;
-    let seed = Seed::from_u64(u64::from_be_bytes(bytes));
-    let mut rng = rng(seed);
-
     ArbitraryNamedAccountId::arbitrary_subaccount(
         &mut Unstructured::new(&rng.random::<[u8; 64]>()),
         Some(parent_id),
