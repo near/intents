@@ -2,8 +2,8 @@
 mod schema;
 
 use defuse_crypto::Ed25519;
-use defuse_time::DateTime;
 use impl_tools::autoimpl;
+use jiff::Timestamp;
 use tlb_ton::MsgAddress;
 
 use defuse_crypto::Payload;
@@ -18,6 +18,7 @@ pub use tlb_ton;
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TonConnectPayload {
@@ -26,33 +27,21 @@ pub struct TonConnectPayload {
     pub address: MsgAddress,
     /// dApp domain
     pub domain: String,
-    /// UNIX timestamp (in seconds or RFC3339) at the time of singing
+    /// UNIX timestamp (RFC3339 or in seconds) at the time of singing
+    #[cfg_attr(
+        feature = "arbitrary",
+        arbitrary(with = ::arbitrary_with::As::<::tlb_ton::UnixTimestampSeconds>::arbitrary),
+    )]
     #[cfg_attr(
         feature = "serde",
-        serde_as(as = "::serde_with::PickFirst<(_, ::serde_with::TimestampSeconds)>"),
-        // Unfortunately, `JsonSchemaAs<DateTime> for TimestampSeconds`
-        // cannot be implemented, since 
-        // `serde_with::schemars_0_8::timespan::TimespanSchemaTarget`
-        // is private
-        cfg_attr(feature = "abi", schemars(with = "String")),
+        serde_as(as = "::serde_with::PickFirst<(
+            ::defuse_serde_utils::jiff::Rfc3339,
+            ::defuse_serde_utils::jiff::TimestampSeconds<::serde_with::DisplayFromStr>,
+            ::defuse_serde_utils::jiff::TimestampSeconds,
+        )>")
     )]
-    pub timestamp: DateTime,
+    pub timestamp: Timestamp,
     pub payload: TonConnectPayloadSchema,
-}
-
-// `serde_as` requires `cfg_eval`, which pre-expands field `cfg_attr`s during derive
-// pre-processing — before the compiler resolves derive helper attributes in the re-emitted
-// item. This breaks fields that combine `serde_as` and `#[arbitrary(with = ...)]`.
-#[cfg(feature = "arbitrary")]
-impl<'a> arbitrary::Arbitrary<'a> for TonConnectPayload {
-    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-        Ok(Self {
-            address: u.arbitrary()?,
-            domain: u.arbitrary()?,
-            timestamp: ::tlb_ton::UnixTimestamp::arbitrary(u).map(Into::into)?,
-            payload: u.arbitrary()?,
-        })
-    }
 }
 
 impl TonConnectPayload {
@@ -63,8 +52,7 @@ impl TonConnectPayload {
 
         let timestamp: u64 = self
             .timestamp
-            .into_inner()
-            .timestamp()
+            .as_second()
             .try_into()
             .map_err(|_| Error::custom("negative timestamp"))?;
 
@@ -139,12 +127,12 @@ mod tests {
     use super::*;
 
     use arbitrary::{Arbitrary, Unstructured};
+    use arbitrary_with::ArbitraryAs;
     use defuse_crypto::SignedPayload;
     use defuse_test_utils::random::random_bytes;
-    use defuse_time::chrono;
     use hex_literal::hex;
     use rstest::rstest;
-    use tlb_ton::UnixTimestamp;
+    use tlb_ton::UnixTimestampSeconds;
 
     #[rstest]
     fn verify_text(random_bytes: Vec<u8>) {
@@ -155,9 +143,7 @@ mod tests {
                         .parse()
                         .unwrap(),
                     domain: "ton-connect.github.io".to_string(),
-                    timestamp: chrono::DateTime::from_timestamp(1747759882, 0)
-                        .unwrap()
-                        .into(),
+                    timestamp: Timestamp::from_second(1747759882).unwrap(),
                     payload: TonConnectPayloadSchema::text("Hello, TON!".repeat(100)),
                 },
                 public_key: hex!(
@@ -180,9 +166,7 @@ mod tests {
                         .parse()
                         .unwrap(),
                     domain: "ton-connect.github.io".to_string(),
-                    timestamp: chrono::DateTime::from_timestamp(1747760435, 0)
-                        .unwrap()
-                        .into(),
+                    timestamp: Timestamp::from_second(1747760435).unwrap(),
                     payload: TonConnectPayloadSchema::binary(hex!("48656c6c6f2c20544f4e21")),
                 },
                 public_key: hex!(
@@ -207,9 +191,7 @@ mod tests {
                         .parse()
                         .unwrap(),
                     domain: "ton-connect.github.io".to_string(),
-                    timestamp: chrono::DateTime::from_timestamp(1747772412, 0)
-                        .unwrap()
-                        .into(),
+                    timestamp: Timestamp::from_second(1747772412).unwrap(),
                     payload: TonConnectPayloadSchema::cell(
                         0x2eccd0c1,
                         BagOfCells::parse_base64("te6cckEBAQEAEQAAHgAAAABIZWxsbywgVE9OIb7WCx4=")
@@ -250,7 +232,7 @@ mod tests {
         }
         {
             let mut t = signed.clone();
-            t.payload.timestamp = UnixTimestamp::arbitrary(&mut u).unwrap().into();
+            t.payload.timestamp = UnixTimestampSeconds::arbitrary_as(&mut u).unwrap().into();
             dbg!(&t.payload.timestamp);
             verify_ok(&t, false);
         }

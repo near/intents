@@ -1,5 +1,5 @@
 use defuse_core::{
-    DateTime, Result, Salt,
+    Result, Salt, Timestamp,
     accounts::{AccountEvent, NonceEvent},
     engine::deltas::InvariantViolated,
     fees::Pips,
@@ -13,7 +13,9 @@ use near_sdk::near;
 pub struct SimulationReport {
     pub intents_executed: Vec<MaybeIntentEvent<AccountEvent<'static, NonceEvent>>>,
     pub logs: Vec<String>,
-    pub min_deadline: DateTime,
+    
+    #[serde_as(as = "defuse_serde_utils::jiff::Rfc3339")]
+    pub min_deadline: Timestamp,
 }
 
 #[near(serializers = [json])]

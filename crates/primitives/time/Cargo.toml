@@ -8,33 +8,42 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-chrono.workspace = true
+jiff = { workspace = true, features = ["std"], optional = true }
 
-arbitrary = { workspace = true, features = ["derive"], optional = true }
-borsh = { workspace = true, optional = true }
-defuse-borsh-utils = { workspace = true, features = ["chrono"], optional = true }
-schemars = { workspace = true, features = ["derive"], optional = true }
-serde = { workspace = true, features = ["derive"], optional = true }
-serde_with = { workspace = true, features = ["chrono_0_4"], optional = true }
+# arbitrary = { workspace = true, features = ["derive"], optional = true }
+# borsh = { workspace = true, optional = true }
+# cfg_eval = { workspace = true, optional = true }
+# defuse-borsh-utils = { workspace = true, features = ["jiff"], optional = true }
+# defuse-serde-utils = { workspace = true, features = ["time"], optional = true }
+# schemars = { workspace = true, features = ["derive"], optional = true }
+# serde = { workspace = true, features = ["derive"], optional = true }
+# serde_with = { workspace = true, features = ["time_0_3"], optional = true }
 
 [target.'cfg(near)'.dependencies]
 near-sdk.workspace = true
 
 [features]
-now = ["chrono/now"]
+jiff = ["dep:jiff"]
 
-abi = [
-  "borsh?/unstable__schema",
-  "defuse-borsh-utils?/abi",
-  "dep:schemars",
-  "serde_with?/schemars_0_8",
-]
-arbitrary = ["chrono/arbitrary", "dep:arbitrary"]
-borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
-serde = ["chrono/serde", "dep:serde", "dep:serde_with"]
+# # TODO: large-dates?
+# abi = [
+#   "borsh?/unstable__schema",
+#   "defuse-borsh-utils?/abi",
+#   "dep:schemars",
+#   "serde_with?/schemars_0_8",
+# ]
+# arbitrary = ["dep:arbitrary"]
+# borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
+# serde = [
+#   "dep:cfg_eval",
+#   "dep:defuse-serde-utils",
+#   "dep:serde",
+#   "dep:serde_with",
+#   "time/serde",
+# ]
 
 [dev-dependencies]
-defuse-time = { path = ".", features = ["abi", "borsh", "now", "serde"] }
+defuse-time = { path = ".", features = ["jiff"] }
 
 [target.'cfg(near)'.dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }

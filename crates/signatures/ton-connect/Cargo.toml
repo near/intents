@@ -10,13 +10,14 @@ repository.workspace = true
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
-defuse-time = { workspace = true, features = ["serde"] }
 impl-tools.workspace = true
+jiff.workspace = true
 tlb-ton = { workspace = true, features = ["serde"] }
 
 arbitrary = { workspace = true, optional = true }
+arbitrary_with = { workspace = true, optional = true }
 cfg_eval = { workspace = true, optional = true }
-defuse-serde-utils = { workspace = true, features = ["tlb"], optional = true }
+defuse-serde-utils = { workspace = true, features = ["jiff", "tlb"], optional = true }
 schemars = { workspace = true, features = ["chrono"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, features = ["base64", "chrono_0_4"], optional = true }
@@ -26,22 +27,21 @@ default = ["binary", "cell", "text"]
 abi = [
   "defuse-crypto/abi",
   "defuse-serde-utils?/abi",
-  "defuse-time/abi",
   "dep:schemars",
   "serde_with?/schemars_0_8",
   "tlb-ton/schemars_0_8",
 ]
-arbitrary = ["dep:arbitrary", "tlb-ton/arbitrary"]
+arbitrary = ["dep:arbitrary", "dep:arbitrary_with", "tlb-ton/arbitrary"]
 binary = []
 cell = []
 near-contract = ["defuse-crypto/near-contract"]
 serde = [
   "defuse-crypto/serde",
-  "defuse-time/serde",
   "dep:cfg_eval",
   "dep:defuse-serde-utils",
   "dep:serde",
   "dep:serde_with",
+  "jiff/serde",
 ]
 text = []
 

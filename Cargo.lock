@@ -729,7 +729,6 @@ version = "0.4.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aa79e62e7697b8e29b513a68abacf485adcd1fe8284a4316c5ae868e6633327"
 dependencies = [
- "arbitrary",
  "iana-time-zone",
  "js-sys",
  "num-traits",
@@ -1336,13 +1335,44 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4ae5f15dda3c708c0ade84bfee31ccab44a3da4f88015ed22f63732abe300c8"
 
 [[package]]
+name = "defmt"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6e524506490a1953d237cb87b1cfc1e46f88c18f10a22dfe0f507dc6bfc7f7f"
+dependencies = [
+ "bitflags 1.3.2",
+ "defmt-macros",
+]
+
+[[package]]
+name = "defmt-macros"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0a27770e9c8f719a79d8b638281f4d828f77d8fd61e0bd94451b9b85e576a0b"
+dependencies = [
+ "defmt-parser",
+ "proc-macro-error2",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.118",
+]
+
+[[package]]
+name = "defmt-parser"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10d60334b3b2e7c9d91ef8150abfb6fa4c1c39ebbcf4a81c2e346aad939fee3e"
+dependencies = [
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "defuse"
 version = "0.4.2"
 dependencies = [
  "anyhow",
  "arbitrary",
  "bitflags 2.13.0",
- "chrono",
  "defuse-admin-utils",
  "defuse-auth-call",
  "defuse-bitmap",
@@ -1402,9 +1432,9 @@ dependencies = [
  "array-util",
  "base64 0.22.1",
  "borsh",
- "chrono",
  "defuse-io-utils",
  "impl-tools",
+ "jiff",
 ]
 
 [[package]]
@@ -1448,6 +1478,7 @@ dependencies = [
  "defuse-nep413",
  "defuse-num-utils",
  "defuse-sep53",
+ "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-time",
  "defuse-tip191",
@@ -1459,6 +1490,7 @@ dependencies = [
  "hex-literal",
  "impl-tools",
  "itertools",
+ "jiff",
  "near-api-types",
  "near-contract-standards",
  "near-sdk",
@@ -1552,6 +1584,7 @@ dependencies = [
  "hex",
  "impl-tools",
  "itertools",
+ "jiff",
  "near-contract-standards",
  "near-sdk",
  "rstest",
@@ -1818,7 +1851,9 @@ dependencies = [
 name = "defuse-serde-utils"
 version = "0.1.0"
 dependencies = [
+ "defuse-serde-utils",
  "derive_more",
+ "jiff",
  "schemars 0.8.22",
  "serde",
  "serde_json",
@@ -1873,15 +1908,9 @@ dependencies = [
 name = "defuse-time"
 version = "0.1.0"
 dependencies = [
- "arbitrary",
- "borsh",
- "chrono",
- "defuse-borsh-utils",
  "defuse-time",
+ "jiff",
  "near-sdk",
- "schemars 0.8.22",
- "serde",
- "serde_with",
 ]
 
 [[package]]
@@ -1926,15 +1955,16 @@ name = "defuse-ton-connect"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "arbitrary_with",
  "cfg_eval",
  "defuse-crypto",
  "defuse-digest",
  "defuse-serde-utils",
  "defuse-test-utils",
- "defuse-time",
  "defuse-ton-connect",
  "hex-literal",
  "impl-tools",
+ "jiff",
  "near-sdk",
  "rstest",
  "schemars 0.8.22",
@@ -1969,6 +1999,7 @@ dependencies = [
  "defuse-time",
  "defuse-webauthn",
  "derive_more",
+ "jiff",
  "near-sdk",
  "rand 0.10.1",
  "rand_core 0.10.1",
@@ -1981,12 +2012,12 @@ dependencies = [
 name = "defuse-wallet-relayer"
 version = "0.1.0"
 dependencies = [
- "chrono",
  "defuse-wallet",
  "defuse-wallet-sdk",
  "ed25519-dalek",
  "futures",
  "hex",
+ "jiff",
  "near-kit",
  "near-sdk",
  "rand 0.10.1",
@@ -2002,6 +2033,7 @@ name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
  "borsh",
+ "defuse-time",
  "defuse-wallet",
  "ed25519-dalek",
  "impl-tools",
@@ -3285,6 +3317,31 @@ name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
+
+[[package]]
+name = "jiff"
+version = "0.2.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34f877a98676d2fb664698d74cc6a51ce6c484ce8c770f05d0108ec9090aeb46"
+dependencies = [
+ "defmt",
+ "jiff-static",
+ "log",
+ "portable-atomic",
+ "portable-atomic-util",
+ "serde_core",
+]
+
+[[package]]
+name = "jiff-static"
+version = "0.2.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0666b5ab5ecaca213fc2a85b8c0083d9004e84ee2d5f9a7e0017aaf50986f25f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.118",
+]
 
 [[package]]
 name = "jni"
@@ -4838,6 +4895,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c33a9471896f1c69cecef8d20cbe2f7accd12527ce60845ff44c153bb2a21b49"
 
 [[package]]
+name = "portable-atomic-util"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2a106d1259c23fac8e543272398ae0e3c0b8d33c88ed73d0cc71b0f1d902618"
+dependencies = [
+ "portable-atomic",
+]
+
+[[package]]
 name = "postcard"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4955,6 +5021,7 @@ dependencies = [
  "proc-macro-error-attr2",
  "proc-macro2",
  "quote",
+ "syn 2.0.118",
 ]
 
 [[package]]
@@ -6584,9 +6651,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tlb"
-version = "0.8.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b194c80dcf81a1e3493eb1befb496c49499e418e4efff5a75d9bc10c87bf7fef"
+checksum = "35099624066cea58bbbe1630302a9017803550284a8e074e7773021392f44314"
 dependencies = [
  "arbitrary",
  "array-util",
@@ -6602,17 +6669,18 @@ dependencies = [
 
 [[package]]
 name = "tlb-ton"
-version = "0.8.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "212abe1ba9ed8b4a43265256a48e6cb84e55a862783501afd333fa464ccc0063"
+checksum = "2c6b466e65e4cb8ffe08e7952a28b2fcd9468a8fee36f00b7062fcf4f4971c82"
 dependencies = [
  "arbitrary",
+ "arbitrary_with",
  "base64 0.21.7",
- "chrono",
  "crc",
  "digest 0.11.3",
  "hex",
  "impl-tools",
+ "jiff",
  "lazy_static",
  "num-bigint 0.4.6",
  "num-traits",
@@ -6624,9 +6692,9 @@ dependencies = [
 
 [[package]]
 name = "tlbits"
-version = "0.8.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b4d9b7ad7b69fc715873f7096a7c68320ab6fb78223654b218cc08cf6ca28eb"
+checksum = "e7d5cd92163f2db1d687110ecc166e961670047cd7cbad02fbc17970392a773a"
 dependencies = [
  "array-util",
  "bitvec",

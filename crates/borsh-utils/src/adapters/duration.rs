@@ -1,6 +1,8 @@
-use crate::adapters::{BorshDeserializeAs, BorshSerializeAs};
+use core::{fmt::Display, marker::PhantomData, time::Duration};
+
 use borsh::{BorshDeserialize, BorshSerialize, io};
-use std::{fmt::Display, marker::PhantomData, time::Duration};
+
+use crate::adapters::{BorshDeserializeAs, BorshSerializeAs};
 
 pub struct DurationSeconds<I = u64>(PhantomData<I>);
 

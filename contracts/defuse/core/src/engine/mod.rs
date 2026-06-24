@@ -4,9 +4,10 @@ mod state;
 pub use self::{inspector::*, state::*};
 
 use defuse_crypto::{Payload, SignedPayload};
+use defuse_time::Now;
 
 use crate::{
-    DateTime, DefuseError, ExpirableNonce, Nonce, Result, SaltedNonce, VersionedNonce,
+    DefuseError, ExpirableNonce, Nonce, Result, SaltedNonce, Timestamp, VersionedNonce,
     intents::{DefuseIntents, ExecutableIntent},
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
 };
@@ -85,7 +86,7 @@ where
     }
 
     #[inline]
-    fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: DateTime) -> Result<()> {
+    fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Timestamp) -> Result<()> {
         let Some(nonce) = VersionedNonce::maybe_from(nonce) else {
             return Ok(());
         };

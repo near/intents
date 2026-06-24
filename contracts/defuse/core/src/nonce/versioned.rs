@@ -46,9 +46,10 @@ impl From<VersionedNonce> for Nonce {
 mod tests {
     use super::*;
 
-    use crate::{DateTime, nonce::salted::Salt};
+    use crate::{Timestamp, nonce::salted::Salt};
     use arbitrary::Unstructured;
     use defuse_test_utils::random::random_bytes;
+    use defuse_time::Now;
     use rstest::rstest;
 
     #[rstest]
@@ -61,7 +62,7 @@ mod tests {
 
         let mut u = Unstructured::new(&random_bytes);
         let nonce_bytes: [u8; 15] = u.arbitrary().unwrap();
-        let now = DateTime::now();
+        let now = <Timestamp as Now>::now();
         let salt: Salt = u.arbitrary().unwrap();
 
         let salted = SaltedNonce::new(salt, ExpirableNonce::new(now, nonce_bytes));

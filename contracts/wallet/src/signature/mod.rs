@@ -11,7 +11,7 @@ pub mod webauthn;
 use std::time::Duration;
 
 use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds, TimestampSeconds};
-pub use defuse_time::DateTime;
+use jiff::Timestamp;
 use near_sdk::{AccountId, CryptoHash, env, near, serde_with::DurationSeconds};
 
 use crate::Request;
@@ -85,7 +85,7 @@ pub struct RequestMessage {
     /// are recommended to set `created_at` slightly (e.g. 60 seconds) before
     /// the actual time of signing, so that it doesn't fail on-chain if it
     /// arrives too fast.
-    pub created_at: DateTime,
+    pub created_at: Timestamp,
 
     #[cfg_attr(
         feature = "abi",

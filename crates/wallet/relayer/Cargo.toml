@@ -9,9 +9,9 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-chrono.workspace = true
 defuse-wallet.workspace = true
 futures.workspace = true
+jiff = { workspace = true, features = ["std"] }
 near-kit.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
 serde.workspace = true

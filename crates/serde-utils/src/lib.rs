@@ -6,3 +6,6 @@ pub mod hex;
 
 #[cfg(feature = "tlb")]
 pub mod tlb;
+
+#[cfg(feature = "jiff")]
+pub mod jiff;

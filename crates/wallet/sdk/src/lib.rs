@@ -3,12 +3,10 @@ pub mod ed25519;
 
 use std::time::Duration;
 
+use defuse_time::Now;
 pub use defuse_wallet as wallet;
 
-use defuse_wallet::{
-    ConcurrentNonces, Request, State,
-    signature::{DateTime, RequestMessage},
-};
+use defuse_wallet::{ConcurrentNonces, Request, State, Timestamp, signature::RequestMessage};
 use impl_tools::autoimpl;
 use near_sdk::{AccountId, GlobalContractId, borsh::BorshSerialize, state_init::StateInit};
 use rand::{make_rng, rngs::SmallRng};
@@ -136,7 +134,7 @@ where
             nonce: self.nonces.next(),
             // set `created_at` slightly before the actual time of signing,
             // so it doesn't fail on-chain if arrives too fast.
-            created_at: DateTime::now() - self.optimal_lag(),
+            created_at: <Timestamp as Now>::now() - self.optimal_lag(),
             timeout: self.state.nonces.timeout(),
             request,
         }

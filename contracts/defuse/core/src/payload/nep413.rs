@@ -6,7 +6,7 @@ use near_sdk::{
     serde_json,
 };
 
-use crate::DateTime;
+use crate::Timestamp;
 
 use super::{DefusePayload, ExtractDefusePayload};
 
@@ -17,7 +17,8 @@ use super::{DefusePayload, ExtractDefusePayload};
 pub struct Nep413DefuseMessage<T> {
     pub signer_id: AccountId,
 
-    pub deadline: DateTime,
+    #[serde_as(as = "defuse_serde_utils::jiff::Rfc3339")]
+    pub deadline: Timestamp,
 
     #[serde(flatten)]
     pub message: T,

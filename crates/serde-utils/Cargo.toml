@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-serde-utils"
 edition.workspace = true
@@ -10,18 +12,18 @@ derive_more = { workspace = true, features = ["from"] }
 serde = { workspace = true, features = ["derive"] }
 serde_with.workspace = true
 
-schemars = { workspace = true, optional = true, features = ["derive"] }
+jiff = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
 tlb-ton = { workspace = true, optional = true }
 
-[dev-dependencies]
-serde_json.workspace = true
-
 [features]
-
-abi = ["dep:schemars", "serde_with/schemars_0_8"]
+abi = ["schemars_0_8"]
 base64 = ["serde_with/base64"]
 hex = ["serde_with/hex"]
+jiff = ["dep:jiff"]
+schemars_0_8 = ["dep:schemars", "serde_with/schemars_0_8"]
 tlb = ["dep:tlb-ton"]
 
-[lints]
-workspace = true
+[dev-dependencies]
+defuse-serde-utils = { path = ".", features = ["abi", "base64", "hex", "jiff", "tlb"] }
+serde_json.workspace = true

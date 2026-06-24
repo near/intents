@@ -5,7 +5,7 @@ pub use self::impl_::*;
 
 use std::collections::BTreeSet;
 
-use defuse_time::DateTime;
+use jiff::Timestamp;
 use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near};
 
 use crate::{
@@ -55,7 +55,7 @@ impl Wallet for Contract {
             .unwrap_or_else(|_| unreachable!())
     }
 
-    fn w_last_cleaned_at(&self) -> DateTime {
+    fn w_last_cleaned_at(&self) -> Timestamp {
         self.nonces.last_cleaned_at()
     }
 }

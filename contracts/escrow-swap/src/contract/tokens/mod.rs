@@ -4,6 +4,7 @@ mod nep141;
 mod nep245;
 
 use defuse_near_utils::{promise_result_checked_json, promise_result_checked_void};
+use defuse_time::Now;
 use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, json_types::U128, near, serde_json};
 use serde_with::DisplayFromStr;
 

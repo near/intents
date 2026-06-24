@@ -21,8 +21,8 @@ pub use self::{error::*, state::*};
 
 pub use defuse_decimal as decimal;
 pub use defuse_fees::Pips;
-pub use defuse_time::DateTime;
 pub use defuse_token_id as token_id;
+pub use jiff::Timestamp;
 
 use near_sdk::{PromiseOrValue, ext_contract};
 

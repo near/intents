@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 
 use defuse_bitmap::BitMap;
 use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds, TimestampSeconds};
-use defuse_time::DateTime;
+use jiff::Timestamp;
 use near_sdk::near;
 
 use crate::{Error, Result};
@@ -57,7 +57,7 @@ pub struct Nonces {
         )
     )]
     /// The last timestamp when nonces were rotated
-    last_cleaned_at: DateTime,
+    last_cleaned_at: Timestamp,
 
     /// Previous nonces, i.e. within `[now - 2*timeout, now - timeout)`
     old: BitMap<BTreeMap<u32, u32>>,
@@ -70,64 +70,78 @@ impl Nonces {
     pub const fn new(timeout: Duration) -> Self {
         Self {
             timeout,
-            last_cleaned_at: DateTime::UNIX_EPOCH,
+            last_cleaned_at: Timestamp::UNIX_EPOCH,
             old: BitMap::new(BTreeMap::new()),
             current: BitMap::new(BTreeMap::new()),
         }
     }
-
-    pub fn commit(&mut self, nonce: u32, created_at: DateTime, timeout: Duration) -> Result<()> {
-        self.check_cleanup();
-
-        let now = Self::now();
-        // check that `created_at` is in `[now - min(self.timeout, msg.timeout), now]`
-        if !(now - self.timeout.min(timeout) <= created_at && created_at <= now) {
-            return Err(Error::ExpiredOrFuture);
-        }
-
-        if self.old.get_bit(nonce) || self.current.set_bit(nonce) {
-            return Err(Error::AlreadyExecuted);
-        }
-
-        Ok(())
-    }
-
-    /// Rotate and cleanup if it's time
-    pub fn check_cleanup(&mut self) {
-        let now = Self::now();
-        let last_valid_nonce_at = now - self.timeout;
-
-        // check if it's time to rotate
-        if self.last_cleaned_at < last_valid_nonce_at {
-            // rotate current -> old
-            self.old = mem::take(&mut self.current);
-            // check if `2 * timeout` has passed since last rotation
-            if self.last_cleaned_at < last_valid_nonce_at - self.timeout {
-                // cleanup old nonces
-                self.old = BitMap::new(BTreeMap::new());
-            }
-            // update last rotation time
-            self.last_cleaned_at = now;
-        }
-    }
-
-    #[inline]
-    fn now() -> DateTime {
-        // We need to truncate the current timestamp down to seconds, since
-        // `self.last_cleaned_at` is serialized as `TimestampSeconds<u32>`.
-        // As a result, `now()` might be (less than 1 second) behind the actual
-        // block timestamp, which is acceptable: we're just assuming the receipt
-        // arrived a bit faster.
-        DateTime::now().trunc_subsecs()
-    }
-
-    #[inline]
-    pub const fn timeout(&self) -> Duration {
-        self.timeout
-    }
-
-    #[inline]
-    pub const fn last_cleaned_at(&self) -> DateTime {
-        self.last_cleaned_at
-    }
 }
+
+#[cfg(feature = "contract")]
+const _: () = {
+    use defuse_time::Now;
+
+    impl Nonces {
+        pub fn commit(
+            &mut self,
+            nonce: u32,
+            created_at: Timestamp,
+            timeout: Duration,
+        ) -> Result<()> {
+            self.check_cleanup();
+
+            let now = Self::now();
+            // check that `created_at` is in `[now - min(self.timeout, msg.timeout), now]`
+            if !(now - self.timeout.min(timeout) <= created_at && created_at <= now) {
+                return Err(Error::ExpiredOrFuture);
+            }
+
+            if self.old.get_bit(nonce) || self.current.set_bit(nonce) {
+                return Err(Error::AlreadyExecuted);
+            }
+
+            Ok(())
+        }
+
+        /// Rotate and cleanup if it's time
+        pub fn check_cleanup(&mut self) {
+            let now = Self::now();
+            let last_valid_nonce_at = now - self.timeout;
+
+            // check if it's time to rotate
+            if self.last_cleaned_at < last_valid_nonce_at {
+                // rotate current -> old
+                self.old = mem::take(&mut self.current);
+                // check if `2 * timeout` has passed since last rotation
+                if self.last_cleaned_at < last_valid_nonce_at - self.timeout {
+                    // cleanup old nonces
+                    self.old = BitMap::new(BTreeMap::new());
+                }
+                // update last rotation time
+                self.last_cleaned_at = now;
+            }
+        }
+
+        #[inline]
+        fn now() -> Timestamp {
+            let now = <Timestamp as Now>::now();
+
+            // We need to truncate the current timestamp down to seconds, since
+            // `self.last_cleaned_at` is serialized as `TimestampSeconds<u32>`.
+            // As a result, `now()` might be (less than 1 second) behind the actual
+            // block timestamp, which is acceptable: we're just assuming the receipt
+            // arrived a bit faster.
+            Timestamp::from_second(now.as_second()).unwrap_or_else(|_| unreachable!())
+        }
+
+        #[inline]
+        pub const fn timeout(&self) -> Duration {
+            self.timeout
+        }
+
+        #[inline]
+        pub const fn last_cleaned_at(&self) -> Timestamp {
+            self.last_cleaned_at
+        }
+    }
+};

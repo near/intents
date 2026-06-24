@@ -21,3 +21,4 @@ pub use defuse_time::*;
 pub use defuse_tip191 as tip191;
 pub use defuse_token_id as token_id;
 pub use defuse_ton_connect as ton_connect;
+pub use jiff::Timestamp;

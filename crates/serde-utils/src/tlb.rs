@@ -57,7 +57,7 @@ where
     }
 }
 
-#[cfg(feature = "abi")]
+#[cfg(feature = "schemars_0_8")]
 const _: () = {
     use schemars::{SchemaGenerator, schema::Schema};
     use serde_with::schemars_0_8::JsonSchemaAs;

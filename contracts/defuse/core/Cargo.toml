@@ -7,6 +7,7 @@ repository.workspace = true
 
 [dependencies]
 defuse-bitmap = { workspace = true, features = ["borsh"] }
+defuse-borsh-utils = { workspace = true, features = ["jiff"] }
 defuse-crypto = { workspace = true, features = ["borsh", "ed25519", "secp256k1", "p256", "near-contract", "serde"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-erc191 = { workspace = true, features = ["near-contract", "serde"] }
@@ -17,17 +18,18 @@ defuse-nep245.workspace = true
 defuse-nep413 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-num-utils.workspace = true
 defuse-sep53 = { workspace = true, features = ["near-contract", "serde"] }
-defuse-time = { workspace = true, features = ["borsh", "serde", "now"] }
+defuse-serde-utils = { workspace = true, features = ["jiff"] }
+defuse-time = { workspace = true, features = ["jiff"] }
 defuse-tip191 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245", "borsh", "serde"] }
 defuse-ton-connect = { workspace = true, features = ["near-contract", "serde"] }
 defuse-webauthn = { workspace = true, features = ["borsh", "near-contract", "ed25519", "p256"] }
 
-defuse-borsh-utils = { workspace = true, features = ["chrono"] }
 derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
 hex-literal.workspace = true
 impl-tools.workspace = true
+jiff.workspace = true
 near-contract-standards.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 serde_with = { workspace = true, features = ["base58", "base64"] }
@@ -45,7 +47,6 @@ abi = [
   "defuse-fees/abi",
   "defuse-nep413/abi",
   "defuse-sep53/abi",
-  "defuse-time/abi",
   "defuse-tip191/abi",
   "defuse-token-id/abi",
   "defuse-ton-connect/abi",
@@ -57,7 +58,6 @@ abi = [
 arbitrary = [
   "defuse-bitmap/arbitrary",
   "defuse-crypto/arbitrary",
-  "defuse-time/arbitrary",
   "defuse-token-id/arbitrary",
   "defuse-ton-connect/arbitrary",
   "dep:arbitrary",

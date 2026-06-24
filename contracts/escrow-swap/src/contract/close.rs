@@ -1,3 +1,4 @@
+use defuse_time::Now;
 use near_sdk::{AccountIdRef, Promise, PromiseOrValue};
 
 use crate::{Error, Params, Result, State, event::CloseReason};

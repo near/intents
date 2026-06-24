@@ -19,7 +19,7 @@ defuse-controller.workspace = true
 defuse-core.workspace = true
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
-defuse-serde-utils = { workspace = true, features = ["base64"] }
+defuse-serde-utils = { workspace = true, features = ["base64", "jiff"] }
 
 impl-tools.workspace = true
 itertools.workspace = true
@@ -84,7 +84,6 @@ defuse-randomness.workspace = true
 defuse-tests.workspace = true
 
 anyhow.workspace = true
-chrono.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
 arbitrary.workspace = true

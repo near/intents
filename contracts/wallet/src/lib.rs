@@ -11,14 +11,14 @@ mod request;
 pub mod signature;
 mod state;
 
+pub use self::{error::*, events::*, nonces::*, request::*, state::*};
+pub use jiff::Timestamp;
+
 use std::collections::BTreeSet;
 
-use defuse_time::DateTime;
 use near_sdk::{AccountId, ext_contract};
 
 use crate::signature::RequestMessage;
-
-pub use self::{error::*, events::*, nonces::*, request::*, state::*};
 
 /// Deterministic single-key Wallet Contract.
 #[ext_contract(ext_wallet)]
@@ -66,5 +66,5 @@ pub trait Wallet {
     fn w_timeout_secs(&self) -> u32;
 
     /// Returns a timestamp when nonces were last cleaned up.
-    fn w_last_cleaned_at(&self) -> DateTime;
+    fn w_last_cleaned_at(&self) -> Timestamp;
 }

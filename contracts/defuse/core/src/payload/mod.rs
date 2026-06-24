@@ -13,7 +13,7 @@ use impl_tools::autoimpl;
 use near_sdk::{AccountId, near};
 use serde_with::base64::Base64;
 
-use crate::{DateTime, Nonce};
+use crate::{Nonce, Timestamp};
 
 // TODO: add version
 #[near(serializers = [json])]
@@ -22,8 +22,12 @@ use crate::{DateTime, Nonce};
 #[derive(Debug, Clone)]
 pub struct DefusePayload<T> {
     pub signer_id: AccountId,
+
     pub verifying_contract: AccountId,
-    pub deadline: DateTime,
+
+    #[serde_as(as = "defuse_serde_utils::jiff::Rfc3339")]
+    pub deadline: Timestamp,
+
     #[serde_as(as = "Base64")]
     #[cfg_attr(feature = "abi", schemars(example = "self::examples::nonce"))]
     pub nonce: Nonce,
