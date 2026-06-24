@@ -20,7 +20,7 @@ use defuse_test_utils::wasms::{MT_RECEIVER_STUB_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_contract_standards::non_fungible_token::{
     Token,
-    metadata::{NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata},
+    metadata::{NFT_METADATA_SPEC, NFTContractMetadata},
 };
 use near_sdk::json_types::Base64VecU8;
 use rstest::rstest;
@@ -52,7 +52,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
         .deploy_vanilla_nft_issuer(
             "nft1",
             user1.account_id(),
-            NFTContractMetadata {
+            &NFTContractMetadata {
                 reference: Some("http://abc.com/xyz/".to_string()),
                 reference_hash: Some(Base64VecU8(DUMMY_REFERENCE_HASH.to_vec())),
                 spec: NFT_METADATA_SPEC.to_string(),
@@ -76,7 +76,6 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             nft_issuer_contract.contract_id(),
             &DUMMY_NFT1_ID.to_string(),
             user2.account_id(),
-            &TokenMetadata::default(),
         )
         .await
         .unwrap();
@@ -95,7 +94,6 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             nft_issuer_contract.contract_id(),
             &DUMMY_NFT2_ID.to_string(),
             user3.account_id(),
-            &TokenMetadata::default(),
         )
         .await
         .unwrap();
@@ -408,7 +406,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
         .deploy_vanilla_nft_issuer(
             "nft_test",
             user.account_id(),
-            NFTContractMetadata {
+            &NFTContractMetadata {
                 reference: Some("http://test.com/".to_string()),
                 reference_hash: Some(Base64VecU8(DUMMY_REFERENCE_HASH.to_vec())),
                 spec: NFT_METADATA_SPEC.to_string(),
@@ -426,7 +424,6 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
             nft_issuer_contract.contract_id(),
             &DUMMY_NFT1_ID.to_string(),
             user.account_id(),
-            &TokenMetadata::default(),
         )
         .await
         .unwrap();

@@ -209,8 +209,8 @@ const _: () = {
     impl From<NearPublicKey> for PublicKey {
         fn from(pk: NearPublicKey) -> Self {
             match pk {
-                NearPublicKey::Ed25519(pk) => PublicKey::Ed25519(pk),
-                NearPublicKey::Secp256k1(pk) => PublicKey::Secp256k1(pk),
+                NearPublicKey::Ed25519(pk) => Self::Ed25519(pk),
+                NearPublicKey::Secp256k1(pk) => Self::Secp256k1(pk),
             }
         }
     }

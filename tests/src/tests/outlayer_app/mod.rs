@@ -29,7 +29,7 @@ pub async fn outlayer_app_env(#[future(awt)] root: Near) -> OutlayerAppEnv {
 
     OutlayerAppEnv {
         root,
-        global_id: GlobalContractId::CodeHash(sha256_hash(&*OUTLAYER_APP_WASM).into()),
+        global_id: GlobalContractId::CodeHash(sha256_hash(&OUTLAYER_APP_WASM)),
     }
 }
 

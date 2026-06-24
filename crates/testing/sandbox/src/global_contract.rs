@@ -49,7 +49,7 @@ impl GlobalContract for Near {
     ) -> Result<GlobalContractId> {
         let code = code.into();
 
-        let id = GlobalContractId::CodeHash(sha256_hash(&code).into());
+        let id = GlobalContractId::CodeHash(sha256_hash(&code));
 
         self.transaction(target.as_ref())
             .create_account()

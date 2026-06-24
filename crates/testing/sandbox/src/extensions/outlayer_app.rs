@@ -90,8 +90,8 @@ impl OutlayerAppExt for Near {
         self.transaction(target.as_ref())
             .add_action(
                 OutlayerApp::oa_set_code(OaSetCodeArgs {
-                    old_code_hash: old_code_hash.into(),
-                    new_code_hash: new_code_hash.into(),
+                    old_code_hash,
+                    new_code_hash,
                     new_code_url,
                 })
                 .deposit(NearToken::from_yoctonear(1)),

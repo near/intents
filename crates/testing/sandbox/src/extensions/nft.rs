@@ -20,7 +20,6 @@ pub trait NftAdminExt {
         collection: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<str>,
         token_owner_id: impl AsRef<AccountIdRef>,
-        token_metadata: &NFTContractMetadata,
     ) -> anyhow::Result<Token>;
 }
 
@@ -59,7 +58,6 @@ impl NftAdminExt for Near {
         collection: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<str>,
         token_owner_id: impl AsRef<AccountIdRef>,
-        token_metadata: &NFTContractMetadata,
     ) -> anyhow::Result<Token> {
         self.transaction(collection.as_ref())
             .add_action(Action::FunctionCall(FunctionCallAction {
@@ -67,7 +65,6 @@ impl NftAdminExt for Near {
                 args: serde_json::to_vec(&json!({
                     "token_id": token_id.as_ref(),
                     "token_owner_id": token_owner_id.as_ref(),
-                    "token_metadata": token_metadata,
                 }))
                 .unwrap(),
                 gas: DEFAULT_GAS,

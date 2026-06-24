@@ -89,8 +89,8 @@ async fn test_force_add_public_keys(
                 assert!(
                     env.defuse
                         .has_public_key(HasPublicKeyArgs {
-                            account_id: account_id,
-                            public_key: public_key
+                            account_id,
+                            public_key,
                         })
                         .await
                         .unwrap(),
@@ -180,8 +180,8 @@ async fn test_force_add_and_remove_public_keys(
                 assert!(
                     !env.defuse
                         .has_public_key(HasPublicKeyArgs {
-                            account_id: account_id,
-                            public_key: public_key
+                            account_id,
+                            public_key,
                         })
                         .await
                         .unwrap(),

@@ -23,7 +23,7 @@ impl Account for Near {
         &self,
         name: impl AsRef<str>,
         balance: impl Into<Option<NearToken>>,
-    ) -> Near {
+    ) -> Self {
         let kp = KeyPair::random();
         let account_id = self
             .account_id()
@@ -49,7 +49,7 @@ impl Account for Near {
         self.with_signer(InMemorySigner::from_secret_key(account_id, kp.secret_key).unwrap())
     }
 
-    async fn create_implicit(&self, balance: impl Into<Option<NearToken>>) -> Near {
+    async fn create_implicit(&self, balance: impl Into<Option<NearToken>>) -> Self {
         let kp = KeyPair::random();
         let account_id = defuse_core::PublicKey::Ed25519(
             *kp.public_key
@@ -78,7 +78,7 @@ impl Account for Near {
         balance: NearToken,
         code: impl Into<Vec<u8>>,
         init_call: impl Into<Option<FunctionCallAction>>,
-    ) -> anyhow::Result<Near> {
+    ) -> anyhow::Result<Self> {
         let kp = KeyPair::random();
         let account_id = self
             .account_id()

@@ -62,7 +62,7 @@ impl WNearExt for Near {
         contract_id: impl Into<AccountId>,
         amount: NearToken,
     ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(&contract_id.into())
+        self.transaction(contract_id.into())
             .add_action(WNear::near_deposit(amount).deposit(amount))
             .wait_until(Final)
             .await?

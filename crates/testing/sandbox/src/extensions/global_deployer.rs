@@ -22,7 +22,7 @@ pub struct GDApproveArgs {
 }
 
 // Standard borsh serialization would prepend a 4-byte length
-fn serialize_code_remainder<W: std::io::Write>(v: &Vec<u8>, w: &mut W) -> std::io::Result<()> {
+fn serialize_code_remainder<W: std::io::Write>(v: &[u8], w: &mut W) -> std::io::Result<()> {
     w.write_all(v)
 }
 
@@ -86,7 +86,7 @@ pub trait GlobalDeployerExt {
         &self,
         target: impl AsRef<AccountIdRef>,
         old_hash: impl Into<[u8; 32]>,
-        new_code: impl AsRef<[u8]>,
+        new_code: &[u8],
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn gd_approve(
@@ -99,7 +99,7 @@ pub trait GlobalDeployerExt {
     async fn gd_deploy(
         &self,
         target: impl AsRef<AccountIdRef>,
-        code: impl AsRef<[u8]>,
+        code: &[u8],
         deposit: NearToken,
     ) -> Result<SuccessfulExecutionOutcome>;
 
@@ -115,15 +115,15 @@ impl GlobalDeployerExt for Near {
         &self,
         target: impl AsRef<AccountIdRef>,
         old_hash: impl Into<[u8; 32]>,
-        new_code: impl AsRef<[u8]>,
+        new_code: &[u8],
     ) -> Result<SuccessfulExecutionOutcome> {
-        let code = new_code.as_ref().to_vec();
+        let code = new_code.to_vec();
 
         self.transaction(target.as_ref())
             .add_action(
                 GlobalDeployer::gd_approve(GDApproveArgs {
-                    old_hash: old_hash.into().into(),
-                    new_hash: sha256_hash(&code).into(),
+                    old_hash: old_hash.into(),
+                    new_hash: sha256_hash(&code),
                 })
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(10)),
@@ -147,8 +147,8 @@ impl GlobalDeployerExt for Near {
         self.transaction(target.as_ref())
             .add_action(
                 GlobalDeployer::gd_approve(GDApproveArgs {
-                    old_hash: old_hash.into().into(),
-                    new_hash: new_hash.into().into(),
+                    old_hash: old_hash.into(),
+                    new_hash: new_hash.into(),
                 })
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(10)),
@@ -161,10 +161,10 @@ impl GlobalDeployerExt for Near {
     async fn gd_deploy(
         &self,
         target: impl AsRef<AccountIdRef>,
-        code: impl AsRef<[u8]>,
+        code: &[u8],
         deposit: NearToken,
     ) -> Result<SuccessfulExecutionOutcome> {
-        let code = code.as_ref().to_vec();
+        let code = code.to_vec();
         self.transaction(target.as_ref())
             .add_action(
                 GlobalDeployer::gd_deploy(GDDeployArgs { code })

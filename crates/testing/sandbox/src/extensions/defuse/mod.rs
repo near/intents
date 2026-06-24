@@ -358,6 +358,7 @@ pub trait DefuseExt {
         msg: Option<String>,
     ) -> Result<(SuccessfulExecutionOutcome, u128)>;
 
+    #[allow(clippy::too_many_arguments)]
     async fn defuse_ft_force_withdraw(
         &self,
         defuse: impl Into<AccountId>,
@@ -369,6 +370,7 @@ pub trait DefuseExt {
         msg: Option<String>,
     ) -> Result<u128>;
 
+    #[allow(clippy::too_many_arguments)]
     async fn defuse_mt_withdraw(
         &self,
         defuse: impl Into<AccountId>,
@@ -413,7 +415,7 @@ impl DefuseDeployerExt for Near {
         name: impl AsRef<str>,
         config: DefuseConfig,
         wasm: impl Into<Vec<u8>>,
-    ) -> Near {
+    ) -> Self {
         self.deploy_sub_contract(
             name,
             NearToken::from_near(100),

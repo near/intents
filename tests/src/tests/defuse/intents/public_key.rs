@@ -76,7 +76,7 @@ async fn execute_add_public_key_intent(
             .to_event_log(),
     ];
 
-    assert_eq!(result.logs().clone(), events);
+    assert_eq!(result.logs(), events);
 }
 
 #[rstest]

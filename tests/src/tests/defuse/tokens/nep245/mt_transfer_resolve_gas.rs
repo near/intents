@@ -59,7 +59,7 @@ async fn make_account(mode: GenerationMode, env: &Env, user: &Near) -> Near {
                 .result()
                 .unwrap();
 
-            env.create_implicit(NearToken::from_near(1000)).await.unwrap()
+            env.create_implicit(NearToken::from_near(1000)).await
         }
     }
 }
@@ -219,7 +219,7 @@ async fn run_resolve_gas_test(
             .is_empty(),
     );
 
-    let longest_emited_log = res.logs().iter().map(|s| s.len()).max().unwrap();
+    let longest_emited_log = res.logs().iter().map(String::len).max().unwrap();
 
     assert_eq!(
         longest_emited_log, expected_transfer_log,
@@ -308,7 +308,7 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
         .await
         .unwrap();
 
-    let author_account = env.create_implicit(NearToken::from_near(1000)).await.unwrap();
+    let author_account = env.create_implicit(NearToken::from_near(1000)).await;
 
     let receiver_stub = env
         .deploy_sub_contract(

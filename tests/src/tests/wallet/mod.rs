@@ -77,7 +77,7 @@ async fn test_signed(#[future] env: Env) {
 
     env.w_execute_signed(
         wallet.account_id(),
-        Some(wallet.state_init().into()),
+        Some(wallet.state_init()),
         msg,
         proof,
         NearToken::from_near(1),

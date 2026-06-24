@@ -40,7 +40,7 @@ use crate::{
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use near_contract_standards::non_fungible_token::metadata::{
-    NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata,
+    NFT_METADATA_SPEC, NFTContractMetadata,
 };
 use near_sdk::json_types::Base64VecU8;
 use rstest::rstest;
@@ -230,7 +230,7 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
         .deploy_vanilla_nft_issuer(
             "nft1",
             user1.account_id(),
-            NFTContractMetadata {
+            &NFTContractMetadata {
                 reference: Some(DUMMY_NFT_URL.to_string()),
                 reference_hash: Some(Base64VecU8(DUMMY_NFT_REFERENCE_HASH.to_vec())),
                 spec: NFT_METADATA_SPEC.to_string(),
@@ -248,7 +248,6 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
             nft_contract.contract_id(),
             &DUMMY_NFT_ID.to_string(),
             user1.account_id(),
-            &TokenMetadata::default(),
         )
         .await
         .unwrap();

@@ -54,11 +54,10 @@ async fn make_author_account(mode: TokenIdGenerationMode, env: &Env) -> Near {
             let name = "a".repeat(name_len);
             env.create_subaccount(name, NearToken::from_near(1000))
                 .await
-                .unwrap()
         }
         TokenIdGenerationMode::Long => {
             // Use implicit account (64 hex chars) for longest account ID
-            env.create_implicit(NearToken::from_near(1000)).await.unwrap()
+            env.create_implicit(NearToken::from_near(1000)).await
         }
     }
 }
@@ -381,7 +380,7 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
         .await
         .unwrap();
 
-    let author_account = env.create_implicit(NearToken::from_near(1000)).await.unwrap();
+    let author_account = env.create_implicit(NearToken::from_near(1000)).await;
     let deposit_message = DepositMessage {
         receiver_id: receiver_stub.account_id().clone(),
         action: Some(DepositAction::Notify(

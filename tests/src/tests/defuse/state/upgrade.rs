@@ -36,8 +36,7 @@ async fn balance_of(
         .unwrap()
         .into_iter()
         .next()
-        .map(|v| v.0)
-        .unwrap_or(0)
+        .map_or(0, |v| v.0)
 }
 
 #[rstest]

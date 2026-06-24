@@ -32,7 +32,6 @@ pub struct EnvBuilder {
     self_as_super_admin: bool,
     deployer_as_super_admin: bool,
     disable_ft_storage_deposit: bool,
-    disable_registration: bool,
 
     defuse_wasm: Option<Vec<u8>>,
 }
@@ -80,11 +79,6 @@ impl EnvBuilder {
 
     pub fn grantee(mut self, role: Role, grantee: AccountId) -> Self {
         self.roles.grantees.entry(role).or_default().insert(grantee);
-        self
-    }
-
-    pub const fn no_registration(mut self, no_reg_value: bool) -> Self {
-        self.disable_registration = no_reg_value;
         self
     }
 
@@ -156,13 +150,12 @@ impl EnvBuilder {
             .await;
 
         let env = Env {
-            defuse: defuse.into(),
+            defuse,
             defuse_near,
-            wnear: wnear.into(),
-            poa_factory: poa_factory.into(),
+            wnear,
+            poa_factory,
             root,
             disable_ft_storage_deposit: self.disable_ft_storage_deposit,
-            disable_registration: self.disable_registration,
         };
 
         env.near_deposit(env.wnear.contract_id(), NearToken::from_near(100))

@@ -18,7 +18,7 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBalanceOfArgs},
     },
-    kit::{AccountId, StateInit, StateInitV1},
+    kit::{AccountId, Near, StateInit, StateInitV1},
 };
 use near_sdk::json_types::U128;
 use rstest::rstest;
@@ -219,7 +219,7 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
         partial_fills_allowed: true,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
-        taker_whitelist: env.takers.iter().map(|a| a.account_id()).cloned().collect(),
+        taker_whitelist: env.takers.iter().map(Near::account_id).cloned().collect(),
         protocol_fees: ProtocolFees {
             fee: Pips::from_percent(1).unwrap(),
             surplus: Pips::from_percent(100).unwrap(),

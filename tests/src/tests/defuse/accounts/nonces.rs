@@ -10,7 +10,6 @@ use defuse_sandbox::{
     kit::AccountId,
 };
 use futures::future::join_all;
-use itertools::Itertools;
 use rstest::rstest;
 use std::time::Duration;
 use tokio::time::sleep;
@@ -402,11 +401,11 @@ async fn test_cleanup_nonces(
 #[rstest]
 #[tokio::test]
 async fn cleanup_multiple_nonces(
-    mut rng: impl Rng,
-    #[values(1, 10, 100)] nonce_count: usize,
     #[with(Env::builder().deployer_as_super_admin())]
     #[future(awt)]
     env: Env,
+    #[notrace] mut rng: impl Rng,
+    #[values(1, 10, 100)] nonce_count: usize,
 ) {
     use futures::StreamExt;
 
@@ -425,10 +424,11 @@ async fn cleanup_multiple_nonces(
     .await
     .expect("failed to grant role");
 
-    for chunk in &(0..nonce_count).chunks(CHUNK_SIZE) {
+    for start in (0..nonce_count).step_by(CHUNK_SIZE) {
+        let end = (start + CHUNK_SIZE).min(nonce_count);
         let current_timestamp = Utc::now();
 
-        let intents = join_all(chunk.map(|_| {
+        let intents = join_all((start..end).map(|_| {
             // commit expirable nonce
             let deadline =
                 Deadline::new(current_timestamp.checked_add_signed(WAITING_TIME).unwrap());

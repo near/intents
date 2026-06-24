@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod builder;
 
 use anyhow::{Result, anyhow};
@@ -45,23 +47,6 @@ pub struct Env {
     pub poa_factory: PoaFactoryClient,
 
     pub disable_ft_storage_deposit: bool,
-    pub disable_registration: bool,
-}
-
-impl std::fmt::Debug for Env {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Env")
-            .field("root", &self.root.account_id())
-            .field("defuse", &self.defuse.contract_id())
-            .field("wnear", &self.wnear.contract_id())
-            .field("poa_factory", &self.poa_factory.contract_id())
-            .field(
-                "disable_ft_storage_deposit",
-                &self.disable_ft_storage_deposit,
-            )
-            .field("disable_registration", &self.disable_registration)
-            .finish()
-    }
 }
 
 impl Env {
