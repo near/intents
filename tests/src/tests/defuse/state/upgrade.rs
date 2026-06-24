@@ -13,10 +13,9 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBatchBalanceOfArgs},
     },
-    kit::Near,
+    kit::{AccountIdRef, Near},
 };
 use defuse_test_utils::wasms::{DEFUSE_LEGACY_WASM, DEFUSE_WASM};
-use near_sdk::AccountIdRef;
 use rstest::rstest;
 use std::collections::BTreeMap;
 
@@ -48,7 +47,6 @@ async fn test_upgrade_with_persistence(
     #[future(awt)]
     env: Env,
 ) {
-
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
     let ft = env.create_named_token("testtoken").await;
 

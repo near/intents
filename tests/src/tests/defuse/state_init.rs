@@ -13,17 +13,14 @@ use defuse_sandbox::{
         },
         mt_receiver::MtReceiverStubDeployerExt,
     },
-    kit::ExecutionStatus,
+    kit::{AccountId, ExecutionStatus, Gas, GlobalContractId, NearToken, StateInit, StateInitV1},
 };
 use defuse_test_utils::{
     random::rng,
     wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM},
 };
 use futures::stream::{self, StreamExt};
-use near_sdk::{
-    AccountId, Gas, GlobalContractId, NearToken,
-    state_init::{StateInit, StateInitV1},
-};
+
 use rstest::rstest;
 use std::collections::BTreeMap;
 

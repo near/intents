@@ -12,13 +12,12 @@ use defuse_sandbox::{
         },
     },
     global_contract::GlobalContract,
-    kit::{Near, StateInit, StateInitV1},
+    kit::{Gas, GlobalContractId, Near, NearToken, StateInit, StateInitV1},
     root,
 };
 use defuse_test_utils::wasms::WALLET_WASM;
 use futures::{StreamExt, TryStreamExt, stream};
 use impl_tools::autoimpl;
-use near_sdk::{Gas, GlobalContractId, NearToken};
 use rstest::{fixture, rstest};
 use serde_json::json;
 

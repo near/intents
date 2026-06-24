@@ -16,12 +16,11 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBalanceOfArgs, MtExt},
     },
+    kit::{AccountId, Gas, NearToken},
 };
 use defuse_test_utils::asserts::ResultAssertsExt;
 use multi_token_receiver_stub::MTReceiverMode;
 use rstest::rstest;
-
-use near_sdk::{AccountId, Gas, NearToken};
 
 use crate::tests::defuse::{
     env::{Env, env},

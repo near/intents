@@ -17,14 +17,14 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtOnTransferArgs},
     },
-    kit::{ExecutionStatus, Near, NearToken},
+    kit::{AccountId, ExecutionStatus, Gas, Near, NearToken},
 };
 use defuse_test_utils::{
     random::{gen_random_string, rng},
     wasms::MT_RECEIVER_STUB_WASM,
 };
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::{AccountId, AsNep297Event, Gas, json_types::U128};
+use near_sdk::{AsNep297Event, json_types::U128};
 use rstest::rstest;
 use std::{borrow::Cow, sync::Arc};
 

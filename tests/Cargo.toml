@@ -55,36 +55,28 @@ outlayer = [
 long = []
 
 [dependencies]
-defuse-sandbox = { workspace = true }
-multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
-
+anyhow.workspace = true
+arbitrary.workspace = true
+borsh.workspace = true
+chrono.workspace = true
+defuse-core = { workspace = true, features = ["near-kit"] }
 defuse-fees.workspace = true
 defuse-near-utils = { workspace = true }
 defuse-randomness.workspace = true
+defuse-sandbox = { workspace = true }
 defuse-serde-utils = { workspace = true, features = ["hex"] }
 defuse-test-utils = { workspace = true, features = ["near-contract"] }
-defuse-core = { workspace = true, features = ["near-kit"] }
-
-# defuse = { workspace = true, features = ["contract", "arbitrary", "far"], optional = true }
-# defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = true }
-# defuse-global-deployer = { workspace = true, optional = true }
-# defuse-outlayer-app = { workspace = true, optional = true }
-
-near-contract-standards.workspace = true
-near-crypto.workspace = true
-# TODO: replace it with near-sdk-core?
-near-sdk.workspace = true
-
-anyhow.workspace = true
-arbitrary.workspace = true
-chrono.workspace = true
 derive_more.workspace = true
 futures = "0.3"
 impl-tools.workspace = true
 itertools.workspace = true
-
+multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
+near-contract-standards.workspace = true
+near-crypto.workspace = true
+# TODO: remove it when near kit will contain necessary types
+near-sdk.workspace = true
 rstest.workspace = true
 serde_json.workspace = true
+serde_with.workspace = true
 strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
-serde_with.workspace = true

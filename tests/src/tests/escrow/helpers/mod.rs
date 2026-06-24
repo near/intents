@@ -14,13 +14,12 @@ use defuse_sandbox::{
         wnear::WNearDeployerExt,
     },
     global_contract::GlobalContract,
-    kit::{FungibleToken, Near},
+    kit::{FungibleToken, GlobalContractId, Near, NearToken},
     root,
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, ESCROW_SWAP_WASM, POA_FACTORY_WASM, WNEAR_WASM};
 use futures::{future::try_join_all, try_join};
 use impl_tools::autoimpl;
-use near_sdk::{GlobalContractId, NearToken};
 use rstest::fixture;
 
 #[fixture]

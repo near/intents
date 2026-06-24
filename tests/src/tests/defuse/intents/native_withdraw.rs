@@ -14,9 +14,8 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs},
         wnear::WNearExt,
     },
-    kit::Final,
+    kit::{Final, NearToken},
 };
-use near_sdk::NearToken;
 use rstest::rstest;
 
 use crate::{

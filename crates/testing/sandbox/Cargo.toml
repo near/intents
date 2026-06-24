@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [features]
-defuse = ["dep:defuse", "dep:defuse-serde-utils", "dep:defuse-test-utils"]
+defuse = ["dep:defuse", "dep:defuse-nep413", "dep:defuse-serde-utils", "dep:defuse-test-utils"]
 poa = ["dep:defuse-poa-factory"]
 deployer = ["dep:defuse-global-deployer", "dep:defuse-serde-utils"]
 escrow = ["dep:defuse-escrow-swap"]
@@ -20,12 +20,10 @@ outlayer = ["dep:defuse-outlayer-app", "dep:defuse-serde-utils"]
 [dependencies]
 defuse-core = { workspace = true, features = ["near-kit"] }
 defuse-nep245.workspace = true
-defuse-nep413 = { workspace = true, features = ["near-kit", "serde"] }
+defuse-nep413 = { workspace = true, optional = true, features = ["near-kit", "serde"] }
 
 anyhow.workspace = true
 futures.workspace = true
-impl-tools.workspace = true
-libc = "0.2"
 near-contract-standards.workspace = true
 near-kit = {workspace = true, features = ["sandbox"] }
 rstest.workspace = true

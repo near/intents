@@ -14,16 +14,11 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBatchBalanceOfArgs},
     },
-    kit::{Final, Gas, Near},
+    kit::{AccountId, AccountIdRef, Final, Gas, Near, StateInit, StateInitV1},
 };
 use futures::{TryStreamExt, stream::FuturesOrdered};
 use itertools::Itertools;
-use near_sdk::{
-    AccountId, AccountIdRef,
-    json_types::U128,
-    serde_json,
-    state_init::{StateInit, StateInitV1},
-};
+use near_sdk::json_types::U128;
 use std::time::Duration;
 
 use rstest::rstest;

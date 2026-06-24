@@ -1772,8 +1772,6 @@ dependencies = [
  "defuse-wallet",
  "defuse-wallet-sdk",
  "futures",
- "impl-tools",
- "libc",
  "near-contract-standards",
  "near-kit",
  "near-sdk",
@@ -1834,6 +1832,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "arbitrary",
+ "borsh",
  "chrono",
  "defuse-core",
  "defuse-fees",

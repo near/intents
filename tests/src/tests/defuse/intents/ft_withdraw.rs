@@ -14,10 +14,9 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs},
         wnear::WNearExt,
     },
-    kit::Final,
+    kit::{AccountId, Final, Gas, NearToken},
 };
 use defuse_test_utils::wasms::DEFUSE_WASM;
-use near_sdk::{AccountId, Gas, NearToken};
 use rstest::rstest;
 
 use crate::{

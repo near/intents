@@ -4,11 +4,12 @@ use defuse_sandbox::{
         OutlayerAppDeployerExt, OutlayerAppExt,
         contract::{Event, State as OutlayerState},
     },
-    kit::{Near, PublishMode},
+    helpers::sha256_hash,
+    kit::{GlobalContractId, Near, NearToken, PublishMode},
     root,
 };
 use defuse_test_utils::wasms::OUTLAYER_APP_WASM;
-use near_sdk::{AsNep297Event, GlobalContractId, NearToken, env::sha256_array};
+use near_sdk::AsNep297Event;
 use rstest::{fixture, rstest};
 
 const EXAMPLE_URL: &str = "https://example.com/contract.wasm";
@@ -28,7 +29,7 @@ pub async fn outlayer_app_env(#[future(awt)] root: Near) -> OutlayerAppEnv {
 
     OutlayerAppEnv {
         root,
-        global_id: GlobalContractId::CodeHash(sha256_array(&*OUTLAYER_APP_WASM).into()),
+        global_id: GlobalContractId::CodeHash(sha256_hash(&*OUTLAYER_APP_WASM).into()),
     }
 }
 
@@ -61,7 +62,7 @@ async fn test_deploy(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
 #[tokio::test]
 async fn test_deploy_with_pre_approved_hash(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     let root = outlayer_app_env.root;
-    let code_hash = sha256_array(b"some-wasm-bytes");
+    let code_hash = sha256_hash(b"some-wasm-bytes");
     let state = OutlayerState::new(
         root.account_id().clone(),
         code_hash,

@@ -52,10 +52,11 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBalanceOfArgs},
     },
+    kit::NearToken,
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
-use near_sdk::{AsNep297Event, NearToken, json_types::U128};
+use near_sdk::{AsNep297Event, json_types::U128};
 
 use crate::{
     sandbox::extensions::mt::MtExt,
@@ -998,9 +999,10 @@ struct MtTransferCallExpectation {
 #[tokio::test]
 async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     #[case] expectation: MtTransferCallExpectation,
-    #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
 ) {
-
     let (user, intent_receiver, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
@@ -1196,9 +1198,10 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
 #[tokio::test]
 async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     #[case] expectation: MtTransferCallExpectation,
-    #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
 ) {
-
     let (user, intent_receiver, ft1, ft2) = futures::join!(
         env.create_user(),
         env.create_user(),
@@ -1387,9 +1390,10 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
 #[rstest]
 #[tokio::test]
 async fn mt_transfer_call_circullar_callback(
-    #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
 ) {
-
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
     let defuse2 = env
@@ -1516,9 +1520,10 @@ async fn mt_transfer_call_circullar_callback(
 #[rstest]
 #[tokio::test]
 async fn mt_transfer_call_circullar_deposit(
-    #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
 ) {
-
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
     let defuse2 = env
@@ -1617,9 +1622,10 @@ async fn mt_transfer_call_circullar_deposit(
 #[rstest]
 #[tokio::test]
 async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
-    #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
 ) {
-
     let (user, another_receiver, ft1, ft2) = futures::join!(
         env.create_user(),
         env.create_user(),

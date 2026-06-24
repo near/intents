@@ -14,10 +14,10 @@ use defuse_sandbox::{
         poa::{PoaFactoryClient, PoaFactoryDeployerExt, contract::Role as POAFactoryRole},
         wnear::{WNearDeployerExt, WNearExt},
     },
-    kit::{Action, Final, FunctionCallAction, Near, NearToken},
+    kit::{AccountId, AccountIdRef, Action, Final, FunctionCallAction, Near, NearToken},
 };
 use defuse_test_utils::wasms::{DEFUSE_FAR_WASM, POA_FACTORY_WASM, WNEAR_WASM};
-use near_sdk::{AccountId, AccountIdRef, serde_json::json};
+use serde_json::json;
 
 use crate::tests::defuse::env::Env;
 

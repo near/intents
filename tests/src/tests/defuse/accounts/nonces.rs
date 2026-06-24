@@ -1,14 +1,16 @@
 use arbitrary::{Arbitrary, Unstructured};
 use chrono::{TimeDelta, Utc};
-use defuse_sandbox::extensions::defuse::{
-    DefuseExt, DefuseSignerExt, IsNonceUsedArgs,
-    contract::Role,
-    core::{Deadline, Nonce, Salt, intents::DefuseIntents},
-    create_random_salted_nonce,
+use defuse_sandbox::{
+    extensions::defuse::{
+        DefuseExt, DefuseSignerExt, IsNonceUsedArgs,
+        contract::Role,
+        core::{Deadline, Nonce, Salt, intents::DefuseIntents},
+        create_random_salted_nonce,
+    },
+    kit::AccountId,
 };
 use futures::future::join_all;
 use itertools::Itertools;
-use near_sdk::AccountId;
 use rstest::rstest;
 use std::time::Duration;
 use tokio::time::sleep;

@@ -8,11 +8,12 @@ use defuse_sandbox::{
         },
         mt_receiver::MtReceiverStub,
     },
-    kit::Error as KitError,
+    helpers::sha256_hash,
+    kit::AccountId,
     nep616::DeployDeterministicAccountExt,
 };
 use defuse_test_utils::wasms::ESCROW_SWAP_WASM;
-use near_sdk::AccountId;
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     time::Duration,
@@ -65,9 +66,10 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
     )
     .await
     .unwrap();
+
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
-        sha256_array(&*DEPLOYER_WASM),
+        sha256_hash(&*DEPLOYER_WASM),
     );
 
     let upgradable_state = DeployerState::new(alice.account_id().clone());
@@ -90,7 +92,7 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
             .await
             .unwrap()
             .0,
-        sha256_array(&*DEPLOYER_WASM),
+        sha256_hash(&*DEPLOYER_WASM),
     );
 
     let escrow_state = DeployerState::new(bob.account_id().clone());
@@ -111,7 +113,7 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
     .unwrap();
     assert_eq!(
         escrow_controller_instance.gd_code_hash().await.unwrap().0,
-        sha256_array(&*ESCROW_SWAP_WASM),
+        sha256_hash(&*ESCROW_SWAP_WASM),
     );
 
     let escrow_instance_params = dummy_escrow_params(root.account_id());
@@ -165,7 +167,7 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
     .unwrap();
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
-        sha256_array(&*DEPLOYER_WASM),
+        sha256_hash(&*DEPLOYER_WASM),
     );
 
     let upgradable_state = DeployerState::new(alice.account_id().clone());
@@ -188,7 +190,7 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
             .await
             .unwrap()
             .0,
-        sha256_array(&*DEPLOYER_WASM),
+        sha256_hash(&*DEPLOYER_WASM),
     );
 
     let escrow_state = DeployerState::new(bob.account_id().clone());
@@ -209,7 +211,7 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
     .unwrap();
     assert_eq!(
         escrow_controller_instance.gd_code_hash().await.unwrap().0,
-        sha256_array(&*MT_RECEIVER_STUB_WASM),
+        sha256_hash(&*MT_RECEIVER_STUB_WASM),
     );
 
     let escrow_instance_params = dummy_escrow_params(root.account_id());
@@ -244,8 +246,8 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
 
     bob.gd_approve(
         escrow_controller_instance.contract_id(),
-        sha256_array(&*MT_RECEIVER_STUB_WASM),
-        sha256_array(&*ESCROW_SWAP_WASM),
+        sha256_hash(&*MT_RECEIVER_STUB_WASM),
+        sha256_hash(&*ESCROW_SWAP_WASM),
     )
     .await
     .unwrap();
@@ -259,7 +261,7 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
     .unwrap();
     assert_eq!(
         escrow_controller_instance.gd_code_hash().await.unwrap().0,
-        sha256_array(&*ESCROW_SWAP_WASM),
+        sha256_hash(&*ESCROW_SWAP_WASM),
     );
     let storage = escrow_instance
         .es_view()

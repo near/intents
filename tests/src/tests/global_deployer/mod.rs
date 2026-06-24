@@ -14,12 +14,13 @@ use defuse_sandbox::{
         },
     },
     global_contract::GlobalContract,
-    kit::{ExecutionStatus, Final, Near},
+    helpers::sha256_hash,
+    kit::{ExecutionStatus, Final, Gas, GlobalContractId, Near, NearToken},
     root,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::MT_RECEIVER_STUB_WASM};
 use futures::future::join_all;
-use near_sdk::{AsNep297Event, Gas, GlobalContractId, NearToken, env::sha256_array};
+use near_sdk::AsNep297Event;
 use rstest::{fixture, rstest};
 use std::{
     future::IntoFuture,
@@ -103,7 +104,7 @@ async fn test_deploy_controller_instance(
 
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
-        sha256_array(&*DEPLOYER_WASM),
+        sha256_hash(&*DEPLOYER_WASM),
     );
 
     let mutable_controller_instance = root
@@ -182,7 +183,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
         .gd_approve(
             controller_instance.contract_id(),
             storage.code_hash,
-            sha256_array(&*DEPLOYER_WASM),
+            sha256_hash(&*DEPLOYER_WASM),
         )
         .await
         .unwrap();
@@ -239,7 +240,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
     bob.gd_approve(
         controller_instance.contract_id(),
         storage.code_hash,
-        sha256_array(&*DEPLOYER_WASM),
+        sha256_hash(&*DEPLOYER_WASM),
     )
     .await
     .assert_err_contains(ERR_UNAUTHORIZED);
@@ -294,7 +295,7 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
     root.gd_approve(
         controller_instance.contract_id(),
         storage.code_hash,
-        sha256_array(&*DEPLOYER_WASM),
+        sha256_hash(&*DEPLOYER_WASM),
     )
     .await
     .unwrap();
@@ -308,7 +309,7 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
         .await
         .unwrap();
 
-    let deployed_hash = sha256_array(&*DEPLOYER_WASM);
+    let deployed_hash = sha256_hash(&*DEPLOYER_WASM);
     assert_eq!(
         result.logs(),
         vec![
@@ -355,14 +356,14 @@ async fn test_deploy_event_old_hash_after_upgrade(
     .await
     .unwrap();
 
-    let deployer_hash = sha256_array(&*DEPLOYER_WASM);
+    let deployer_hash = sha256_hash(&*DEPLOYER_WASM);
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
         deployer_hash,
     );
 
     // Step 2: Approve + deploy upgrade to MT_RECEIVER_STUB_WASM
-    let mt_stub_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
+    let mt_stub_hash = sha256_hash(&*MT_RECEIVER_STUB_WASM);
     let result = root
         .gd_approve_and_deploy(
             controller_instance.contract_id(),
@@ -425,16 +426,16 @@ async fn test_concurrent_upgrades_only_one_succeeds(
     .unwrap();
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
-        sha256_array(&*DEPLOYER_WASM),
+        sha256_hash(&*DEPLOYER_WASM),
     );
 
-    let old_hash = sha256_array(&*DEPLOYER_WASM);
+    let old_hash = sha256_hash(&*DEPLOYER_WASM);
 
     // Approve the upgrade before firing concurrent calls
     root.gd_approve(
         controller_instance.contract_id(),
         old_hash,
-        sha256_array(&*MT_RECEIVER_STUB_WASM),
+        sha256_hash(&*MT_RECEIVER_STUB_WASM),
     )
     .await
     .unwrap();
@@ -466,7 +467,7 @@ async fn test_concurrent_upgrades_only_one_succeeds(
     assert_eq!(wrong_hash_failures, 9);
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
-        sha256_array(&*MT_RECEIVER_STUB_WASM),
+        sha256_hash(&*MT_RECEIVER_STUB_WASM),
     );
 }
 
@@ -486,7 +487,7 @@ async fn test_second_approval_overwrites_first(
         .unwrap();
 
     // First approval
-    let first_hash = sha256_array(&*DEPLOYER_WASM);
+    let first_hash = sha256_hash(&*DEPLOYER_WASM);
     root.gd_approve(
         controller_instance.contract_id(),
         state.code_hash,
@@ -496,7 +497,7 @@ async fn test_second_approval_overwrites_first(
     .unwrap();
 
     // Second approval with different new_hash overwrites the first
-    let second_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
+    let second_hash = sha256_hash(&*MT_RECEIVER_STUB_WASM);
     root.gd_approve(
         controller_instance.contract_id(),
         state.code_hash,
@@ -529,7 +530,7 @@ async fn test_approve_revoke_resets_to_code_hash(
         .unwrap();
 
     // Approve some arbitrary hash
-    let arbitrary_hash = sha256_array(&*DEPLOYER_WASM);
+    let arbitrary_hash = sha256_hash(&*DEPLOYER_WASM);
     root.gd_approve(
         controller_instance.contract_id(),
         state.code_hash,
@@ -583,7 +584,7 @@ async fn test_permissionless_deploy_with_approval(
         .unwrap();
 
     // Owner approves deployment
-    let new_code_hash = sha256_array(&*DEPLOYER_WASM);
+    let new_code_hash = sha256_hash(&*DEPLOYER_WASM);
     alice
         .gd_approve(
             controller_instance.contract_id(),
@@ -663,7 +664,7 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
         .gd_approve(
             controller_instance.contract_id(),
             storage.code_hash,
-            sha256_array(&*DEPLOYER_WASM),
+            sha256_hash(&*DEPLOYER_WASM),
         )
         .await
         .unwrap();
@@ -703,7 +704,7 @@ async fn test_state_init_pre_approve_allows_immediate_deploy(
     // Pre-set approved_hash so gd_deploy can be called immediately without gd_approve
     let state = DeployerState::new(root.account_id().clone())
         .with_index(unique_index)
-        .pre_approve(sha256_array(&*DEPLOYER_WASM));
+        .pre_approve(sha256_hash(&*DEPLOYER_WASM));
 
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), state.clone())
@@ -721,7 +722,7 @@ async fn test_state_init_pre_approve_allows_immediate_deploy(
 
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
-        sha256_array(&*DEPLOYER_WASM),
+        sha256_hash(&*DEPLOYER_WASM),
     );
 
     assert_eq!(
@@ -740,7 +741,7 @@ async fn test_state_init_same_code_hash_and_pre_approve_allows_deploy(
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
     let dummy_wasm: Vec<u8> = vec![1u8; 64];
-    let dummy_hash = sha256_array(&dummy_wasm);
+    let dummy_hash = sha256_hash(&dummy_wasm);
 
     // State where code_hash == approved_hash == hash(dummy_wasm)
     let mut state = DeployerState::new(root.account_id().clone())
@@ -810,7 +811,7 @@ async fn test_post_deploy_does_not_run_on_failed_deploy(
         NearToken::from_near(0)
     );
 
-    let new_hash = sha256_array(&*DEPLOYER_WASM);
+    let new_hash = sha256_hash(&*DEPLOYER_WASM);
 
     owner
         .gd_approve(
@@ -868,7 +869,7 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
         .await
         .unwrap();
 
-    let new_hash = sha256_array(&*DEPLOYER_WASM);
+    let new_hash = sha256_hash(&*DEPLOYER_WASM);
 
     // First attempt: gd_approve_and_deploy with insufficient deposit (1 NEAR)
     owner
@@ -939,8 +940,8 @@ async fn test_post_deploy_fails_when_approval_changed(
     .await
     .unwrap();
 
-    let deployer_hash = sha256_array(&*DEPLOYER_WASM);
-    let mt_stub_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
+    let deployer_hash = sha256_hash(&*DEPLOYER_WASM);
+    let mt_stub_hash = sha256_hash(&*MT_RECEIVER_STUB_WASM);
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
         deployer_hash,
@@ -1058,7 +1059,7 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
         .gd_approve(
             controller_instance.contract_id(),
             storage.code_hash,
-            sha256_array(&*DEPLOYER_WASM),
+            sha256_hash(&*DEPLOYER_WASM),
         )
         .await
         .unwrap();
@@ -1074,7 +1075,7 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
 
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
-        sha256_array(&*DEPLOYER_WASM),
+        sha256_hash(&*DEPLOYER_WASM),
     );
 }
 
@@ -1104,13 +1105,13 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
         )
         .await
         .unwrap();
-    let deployer_hash = sha256_array(&*DEPLOYER_WASM);
+    let deployer_hash = sha256_hash(&*DEPLOYER_WASM);
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
         deployer_hash,
     );
 
-    let mt_stub_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
+    let mt_stub_hash = sha256_hash(&*MT_RECEIVER_STUB_WASM);
     owner
         .gd_approve(
             controller_instance.contract_id(),
@@ -1213,7 +1214,7 @@ async fn test_gd_deploy_accepts_raw_bytes(
         .gd_approve(
             controller_instance.contract_id(),
             storage.code_hash,
-            sha256_array(&*DEPLOYER_WASM),
+            sha256_hash(&*DEPLOYER_WASM),
         )
         .await
         .unwrap();
@@ -1229,6 +1230,6 @@ async fn test_gd_deploy_accepts_raw_bytes(
 
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
-        sha256_array(&*DEPLOYER_WASM),
+        sha256_hash(&*DEPLOYER_WASM),
     );
 }

@@ -31,7 +31,7 @@ use defuse_sandbox::{
         nft::NftAdminExt,
         wnear::WNearExt,
     },
-    kit::Final,
+    kit::{Final, NearToken},
 };
 
 use crate::{
@@ -42,7 +42,7 @@ use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata,
 };
-use near_sdk::{NearToken, json_types::Base64VecU8};
+use near_sdk::json_types::Base64VecU8;
 use rstest::rstest;
 
 #[rstest]

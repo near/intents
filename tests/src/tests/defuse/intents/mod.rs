@@ -1,23 +1,26 @@
 use defuse_core::intents::MaybeIntentEvent;
 use defuse_randomness::{Rng, RngExt};
-use defuse_sandbox::extensions::{
-    defuse::{
-        DefuseExt, DefuseSignerExt, MultiPayloadArgs,
-        core::{
-            Deadline, Nonce,
-            accounts::{AccountEvent, NonceEvent},
-            amounts::Amounts,
-            crypto::Payload,
-            events::DefuseEvent,
-            intents::{DefuseIntents, tokens::Transfer},
-            token_id::{TokenId, nep141::Nep141TokenId},
-            tokens::TransferEvent,
+use defuse_sandbox::{
+    extensions::{
+        defuse::{
+            DefuseExt, DefuseSignerExt, MultiPayloadArgs,
+            core::{
+                Deadline, Nonce,
+                accounts::{AccountEvent, NonceEvent},
+                amounts::Amounts,
+                crypto::Payload,
+                events::DefuseEvent,
+                intents::{DefuseIntents, tokens::Transfer},
+                token_id::{TokenId, nep141::Nep141TokenId},
+                tokens::TransferEvent,
+            },
         },
+        mt::{Mt, MtBalanceOfArgs},
     },
-    mt::{Mt, MtBalanceOfArgs},
+    kit::{AccountId, AccountIdRef, CryptoHash},
 };
 use defuse_test_utils::random::rng;
-use near_sdk::{AccountId, AccountIdRef, AsNep297Event, CryptoHash, serde_json};
+use near_sdk::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 
@@ -32,14 +35,15 @@ impl AccountNonceIntentEvent {
         payload: &impl Payload,
     ) -> Self {
         let acc = account_id.as_ref().to_owned();
-        Self(acc, nonce, payload.hash())
+        // TODO: update payload hash to near kit crypto hash
+        Self(acc, nonce, payload.hash().into())
     }
 
     pub fn into_event(self) -> DefuseEvent<'static> {
         DefuseEvent::IntentsExecuted(
             vec![MaybeIntentEvent::new_intent(
                 AccountEvent::new(self.0, NonceEvent::new(self.1)),
-                self.2,
+                *self.2.as_bytes(),
             )]
             .into(),
         )

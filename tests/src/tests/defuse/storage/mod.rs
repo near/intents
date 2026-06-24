@@ -1,11 +1,10 @@
 use crate::{
-    sandbox::extensions::wnear::WNearExt,
+    sandbox::{extensions::wnear::WNearExt, kit::NearToken},
     tests::defuse::env::{Env, env},
 };
 use defuse_sandbox::extensions::defuse::{
     DefuseExt, DefuseSignerExt, core::intents::tokens::StorageDeposit,
 };
-use near_sdk::NearToken;
 use rstest::rstest;
 
 const MIN_FT_STORAGE_DEPOSIT_VALUE: NearToken =
@@ -130,9 +129,10 @@ async fn storage_deposit_success(
 #[rstest]
 #[tokio::test]
 async fn storage_deposit_fails_user_has_no_balance_in_intents(
-    #[with(Env::builder().disable_ft_storage_deposit())] #[future(awt)] env: Env,
+    #[with(Env::builder().disable_ft_storage_deposit())]
+    #[future(awt)]
+    env: Env,
 ) {
-
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 

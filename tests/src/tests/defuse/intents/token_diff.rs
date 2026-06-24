@@ -10,9 +10,9 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBatchBalanceOfArgs},
     },
-    kit::Near,
+    kit::{AccountId, Near},
 };
-use near_sdk::{AccountId, json_types::U128, serde_json};
+use near_sdk::json_types::U128;
 use rstest::rstest;
 use std::collections::BTreeMap;
 
@@ -93,7 +93,9 @@ async fn swap_p2p(
 #[tokio::test]
 async fn swap_many(
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
-    #[with(Env::builder().fee(fee))] #[future(awt)] env: Env,
+    #[with(Env::builder().fee(fee))]
+    #[future(awt)]
+    env: Env,
 ) {
     let (user1, user2, user3, ft1, ft2, ft3) = futures::join!(
         env.create_user(),
@@ -376,7 +378,10 @@ async fn invariant_violated(#[future(awt)] env: Env) {
 #[tokio::test]
 async fn solver_user_closure(
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
-    #[notrace] #[with(Env::builder().fee(fee))] #[future(awt)] env: Env,
+    #[notrace]
+    #[with(Env::builder().fee(fee))]
+    #[future(awt)]
+    env: Env,
 ) {
     const USER_BALANCE: u128 = 1100;
     const SOLVER_BALANCE: u128 = 2100;

@@ -1,27 +1,29 @@
 use crate::tests::defuse::env::{Env, env};
-use defuse_sandbox::extensions::{
-    defuse::{
-        AccountArgs, DefuseExt, DefuseSignerExt, ToEventLog,
-        core::{
-            DefuseError,
-            accounts::AccountEvent,
-            amounts::Amounts,
-            events::DefuseEvent,
-            intents::{MaybeIntentEvent, account::SetAuthByPredecessorId, tokens::Transfer},
-            token_id::{TokenId, nep141::Nep141TokenId},
+use defuse_sandbox::{
+    extensions::{
+        defuse::{
+            AccountArgs, DefuseExt, DefuseSignerExt, ToEventLog,
+            core::{
+                DefuseError,
+                accounts::AccountEvent,
+                amounts::Amounts,
+                events::DefuseEvent,
+                intents::{MaybeIntentEvent, account::SetAuthByPredecessorId, tokens::Transfer},
+                token_id::{TokenId, nep141::Nep141TokenId},
+            },
         },
+        mt::{Mt, MtBalanceOfArgs, MtExt},
     },
-    mt::{Mt, MtBalanceOfArgs, MtExt},
+    kit::AccountId,
 };
 use defuse_test_utils::asserts::ResultAssertsExt;
-use near_sdk::{AccountId, AsNep297Event};
+use near_sdk::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 
 #[rstest]
 #[tokio::test]
 async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
-
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
     env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])

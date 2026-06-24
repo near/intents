@@ -1,19 +1,27 @@
-use crate::{tests::defuse::env::{Env, env}, utils::asserts::ResultAssertsExt};
-use defuse_sandbox::extensions::defuse::{
-    DefuseExt,
-    contract::Role,
-    core::{
-        events::DefuseEvent,
-        fees::{FeeChangedEvent, FeeCollectorChangedEvent, Pips},
-    },
+use crate::{
+    tests::defuse::env::{Env, env},
+    utils::asserts::ResultAssertsExt,
 };
-use near_sdk::{AccountId, AsNep297Event};
+use defuse_sandbox::{
+    extensions::defuse::{
+        DefuseExt,
+        contract::Role,
+        core::{
+            events::DefuseEvent,
+            fees::{FeeChangedEvent, FeeCollectorChangedEvent, Pips},
+        },
+    },
+    kit::AccountId,
+};
+use near_sdk::AsNep297Event;
 use rstest::rstest;
 
 #[rstest]
 #[tokio::test]
 async fn set_fee(
-    #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
 ) {
     let prev_fee = env.defuse.fee().await.unwrap();
     let fee = Pips::from_pips(100).unwrap();
@@ -62,7 +70,9 @@ async fn set_fee(
 #[rstest]
 #[tokio::test]
 async fn set_fee_collector(
-    #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
 ) {
     let fee_collector: AccountId = "fee-collector.near".to_string().parse().unwrap();
 

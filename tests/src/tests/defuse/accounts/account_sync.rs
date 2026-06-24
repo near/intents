@@ -1,16 +1,19 @@
 use defuse_randomness::{Rng, RngExt};
-use defuse_sandbox::extensions::defuse::{
-    DefuseExt, HasPublicKeyArgs,
-    contract::Role,
-    core::{
-        PublicKey,
-        accounts::{AccountEvent, PublicKeyEvent},
-        events::DefuseEvent,
-        intents::MaybeIntentEvent,
+use defuse_sandbox::{
+    extensions::defuse::{
+        DefuseExt, HasPublicKeyArgs,
+        contract::Role,
+        core::{
+            PublicKey,
+            accounts::{AccountEvent, PublicKeyEvent},
+            events::DefuseEvent,
+            intents::MaybeIntentEvent,
+        },
     },
+    kit::AccountId,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, fixtures::public_key, random::rng};
-use near_sdk::{AccountId, AsNep297Event};
+use near_sdk::AsNep297Event;
 use rstest::rstest;
 use std::{
     borrow::Cow,
@@ -40,9 +43,11 @@ fn generate_public_keys(
 #[tokio::test]
 async fn test_force_add_public_keys(
     #[notrace] mut rng: impl Rng,
-    #[notrace] #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+    #[notrace]
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
 ) {
-
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
     let public_keys = generate_public_keys(
@@ -113,9 +118,11 @@ async fn test_force_add_public_keys(
 #[tokio::test]
 async fn test_force_add_and_remove_public_keys(
     #[notrace] mut rng: impl Rng,
-    #[notrace] #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+    #[notrace]
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
 ) {
-
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
     let public_keys = generate_public_keys(

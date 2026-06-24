@@ -14,16 +14,12 @@ use defuse_sandbox::{
         },
         poa::{PoAFactoryExt, PoaFactoryClient},
     },
-    kit::{Final, FungibleToken, Near},
+    kit::{AccountId, AccountIdRef, Final, FungibleToken, Near, NearToken},
     root,
 };
-use defuse_test_utils::random::Seed;
 use futures::future::try_join_all;
 use impl_tools::autoimpl;
-use near_sdk::{
-    AccountId, AccountIdRef, NearToken, account_id::arbitrary::ArbitraryNamedAccountId,
-    json_types::U128,
-};
+use near_sdk::{account_id::arbitrary::ArbitraryNamedAccountId, json_types::U128};
 use rstest::fixture;
 
 use crate::tests::defuse::env::builder::EnvBuilder;

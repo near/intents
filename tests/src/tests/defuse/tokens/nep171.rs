@@ -14,7 +14,7 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs, MtExt},
         nft::NftAdminExt,
     },
-    kit::Final,
+    kit::{Final, NearToken},
 };
 use defuse_test_utils::wasms::{MT_RECEIVER_STUB_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
@@ -22,7 +22,7 @@ use near_contract_standards::non_fungible_token::{
     Token,
     metadata::{NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata},
 };
-use near_sdk::{NearToken, json_types::Base64VecU8};
+use near_sdk::json_types::Base64VecU8;
 use rstest::rstest;
 use std::collections::HashMap;
 
@@ -376,9 +376,10 @@ struct NftTransferCallExpectation {
 #[tokio::test]
 async fn nft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: NftTransferCallExpectation,
-    #[with(Env::builder().deployer_as_super_admin())] #[future(awt)] env: Env,
+    #[with(Env::builder().deployer_as_super_admin())]
+    #[future(awt)]
+    env: Env,
 ) {
-
     // Ensure the NFT issuer account name stays short enough to host `nft_test.<user>`
     // subaccounts; randomly generated names occasionally exceed the NEAR 64-char limit.
     let (user, intent_receiver) = futures::join!(
