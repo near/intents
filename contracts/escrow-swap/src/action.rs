@@ -1,3 +1,4 @@
+use defuse_serde_utils::jiff::Rfc3339;
 use derive_more::From;
 use near_sdk::near;
 
@@ -26,6 +27,7 @@ pub enum TransferAction {
 pub struct FillAction {
     pub price: UD128,
 
+    #[serde_as(as = "Rfc3339")]
     pub deadline: Timestamp,
 
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]

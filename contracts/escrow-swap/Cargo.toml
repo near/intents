@@ -16,6 +16,7 @@ defuse-decimal = { workspace = true, features = ["borsh", "serde"] }
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-nep245.workspace = true
 defuse-num-utils.workspace = true
+defuse-serde-utils = { workspace = true, features = ["jiff"] }
 defuse-token-id = { workspace = true, features = ["borsh", "serde"] }
 
 near-contract-standards.workspace = true
@@ -50,6 +51,7 @@ nep245 = ["defuse-token-id/nep245"]
 abi = [
   "defuse-decimal/abi",
   "defuse-fees/abi",
+  "defuse-serde-utils/abi",
   "defuse-token-id/abi",
   "near-sdk/abi",
   "serde_with/schemars_0_8",

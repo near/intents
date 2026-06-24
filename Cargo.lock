@@ -1577,6 +1577,7 @@ dependencies = [
  "defuse-nep245",
  "defuse-num-utils",
  "defuse-sandbox",
+ "defuse-serde-utils",
  "defuse-time",
  "defuse-token-id",
  "derive_more",

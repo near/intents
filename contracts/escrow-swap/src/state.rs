@@ -4,6 +4,7 @@ use defuse_borsh_utils::adapters::{
     As as BorshAs, TimestampNanoSeconds as BorshTimestampNanoSeconds,
 };
 use defuse_fees::Pips;
+use defuse_serde_utils::jiff::Rfc3339;
 use defuse_token_id::TokenId;
 use near_sdk::{AccountId, CryptoHash, Gas, borsh, env, near};
 use serde_with::{DisplayFromStr, hex::Hex};
@@ -98,6 +99,7 @@ pub struct Params {
     // TODO: direction? src per 1 dst vs dst per 1 src?
     pub price: UD128, // TODO: dutch auction
 
+    #[serde_as(as = "Rfc3339")]
     #[borsh(
         serialize_with = "BorshAs::<BorshTimestampNanoSeconds>::serialize",
         deserialize_with = "BorshAs::<BorshTimestampNanoSeconds>::deserialize",
@@ -265,6 +267,7 @@ pub struct State {
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub maker_dst_lost: u128,
 
+    #[serde_as(as = "Rfc3339")]
     #[borsh(
         serialize_with = "BorshAs::<BorshTimestampNanoSeconds>::serialize",
         deserialize_with = "BorshAs::<BorshTimestampNanoSeconds>::deserialize",
