@@ -77,7 +77,7 @@ serde_as! {
         from_millis,
     }
 
-    pub struct TimestampMicroSeconds: i64 {
+    pub struct TimestampMicroSeconds: i128 {
         as_micros,
         from_micros,
     }
@@ -106,7 +106,7 @@ const _: () = {
             schema.metadata().examples = [
                 Self::UNIX_EPOCH,
                 #[allow(clippy::inconsistent_digit_grouping)]
-                Self::from_nanos(1782415800_123456789).unwrap(),
+                Self::from_nanos(1782395622_123456789).unwrap(),
             ]
             .iter()
             .map(serde_json::to_value)

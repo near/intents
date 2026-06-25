@@ -1872,15 +1872,16 @@ dependencies = [
  "arbitrary",
  "arbitrary_with",
  "borsh",
- "chrono",
  "defuse-borsh-utils",
  "defuse-time",
  "near-sdk",
+ "rstest",
  "schemars 0.8.22",
  "serde",
  "serde_json",
  "serde_with",
  "thiserror 2.0.18",
+ "time",
 ]
 
 [[package]]

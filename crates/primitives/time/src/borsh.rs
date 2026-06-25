@@ -82,7 +82,7 @@ borsh_as! {
         from_millis,
     }
 
-    pub struct TimestampMicroSeconds: i64 {
+    pub struct TimestampMicroSeconds: i128 {
         as_micros,
         from_micros,
     }
