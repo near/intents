@@ -4,7 +4,7 @@ use near_sdk::{
     require,
 };
 
-use defuse_borsh_utils::adapters::{AsWrap, Remainder};
+use defuse_borsh_utils::{AsWrap, Remainder};
 
 use crate::{
     Event, GlobalDeployer, Reason, State,

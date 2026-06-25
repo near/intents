@@ -10,7 +10,7 @@ use defuse_randomness::{RngExt, make_true_rng};
 use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
     core::{
-        Deadline, Nonce, PublicKey,
+        Nonce, PublicKey, Timestamp,
         intents::{DefuseIntents, Intent, account::AddPublicKey},
         token_id::{TokenId, nep141::Nep141TokenId},
     },
@@ -131,7 +131,7 @@ impl Env {
                 [acc.sign_defuse_message(
                     self.defuse.id(),
                     make_true_rng().random(),
-                    Deadline::MAX,
+                    Timestamp::MAX,
                     DefuseIntents { intents },
                 )
                 .await],
@@ -146,7 +146,7 @@ impl Env {
             acc.sign_defuse_message(
                 self.defuse.id(),
                 *nonce,
-                Deadline::MAX,
+                Timestamp::MAX,
                 DefuseIntents { intents: vec![] },
             )
         }))

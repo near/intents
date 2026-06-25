@@ -1,7 +1,7 @@
 use defuse::core::intents::MaybeIntentEvent;
 use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::extensions::defuse::contract::core::{
-    Deadline, Nonce,
+    Nonce, Timestamp,
     accounts::{AccountEvent, NonceEvent},
     amounts::Amounts,
     crypto::Payload,
@@ -86,7 +86,7 @@ async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
         .sign_defuse_message(
             env.defuse.id(),
             nonce,
-            Deadline::MAX,
+            Timestamp::MAX,
             DefuseIntents {
                 intents: vec![transfer_intent.clone().into()],
             },

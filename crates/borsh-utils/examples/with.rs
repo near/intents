@@ -1,5 +1,5 @@
 use borsh::{self, BorshDeserialize, BorshSerialize};
-use defuse_borsh_utils::adapters::{As, TryFromInto};
+use defuse_borsh_utils::{As, TryFromInto};
 
 #[derive(Debug, Clone, PartialEq, BorshSerialize, BorshDeserialize)]
 struct MyInt(

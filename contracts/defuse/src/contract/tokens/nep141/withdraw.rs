@@ -9,9 +9,7 @@ use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::FtWithdraw,
     token_id::nep141::Nep141TokenId,
 };
-use defuse_near_utils::{
-    REFUND_MEMO, UnwrapOrPanic, promise_result_checked_json, promise_result_checked_void,
-};
+use defuse_near_utils::{REFUND_MEMO, promise_result_checked_json, promise_result_checked_void};
 
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{
@@ -19,8 +17,8 @@ use near_contract_standards::{
 };
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    AccountId, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env, json_types::U128,
-    near, require,
+    AccountId, FunctionError, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env,
+    json_types::U128, near, require,
 };
 
 #[near]
@@ -49,7 +47,7 @@ impl FungibleTokenWithdrawer for Contract {
             },
             false,
         )
-        .unwrap_or_panic()
+        .unwrap_or_else(|err| err.panic())
     }
 }
 
@@ -91,7 +89,7 @@ impl Contract {
                             Self::DO_FT_WITHDRAW_GAS
                                 .checked_add(withdraw.min_gas())
                                 .ok_or(DefuseError::GasOverflow)
-                                .unwrap_or_panic(),
+                                .unwrap_or_else(|err| err.panic()),
                         )
                         .do_ft_withdraw(withdraw.clone()),
                 )
@@ -185,7 +183,7 @@ impl FungibleTokenWithdrawResolver for Contract {
                 [(Nep141TokenId::new(token).into(), refund)],
                 Some(REFUND_MEMO),
             )
-            .unwrap_or_panic();
+            .unwrap_or_else(|err| err.panic());
         }
 
         U128(used)
@@ -219,6 +217,6 @@ impl FungibleTokenForceWithdrawer for Contract {
             },
             true,
         )
-        .unwrap_or_panic()
+        .unwrap_or_else(|err| err.panic())
     }
 }

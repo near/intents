@@ -35,7 +35,7 @@ near-plugins.workspace = true
 near-sdk.workspace = true
 
 [dev-dependencies]
-defuse-sandbox = { workspace = true }
+defuse-sandbox.workspace = true
 futures.workspace = true
 rstest.workspace = true
 tokio = { workspace = true, features = ["macros"] }

@@ -13,7 +13,7 @@ mod state;
 
 use std::collections::BTreeSet;
 
-use defuse_deadline::Deadline;
+pub use defuse_time::Timestamp;
 use near_sdk::{AccountId, ext_contract};
 
 use crate::signature::RequestMessage;
@@ -66,5 +66,5 @@ pub trait Wallet {
     fn w_timeout_secs(&self) -> u32;
 
     /// Returns a timestamp when nonces were last cleaned up.
-    fn w_last_cleaned_at(&self) -> Deadline;
+    fn w_last_cleaned_at(&self) -> Timestamp;
 }

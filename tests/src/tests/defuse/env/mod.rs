@@ -10,7 +10,7 @@ use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse_randomness::{RngExt, make_true_rng};
 use defuse_sandbox::extensions::defuse::contract::{
-    core::{Deadline, Nonce},
+    core::{Nonce, Timestamp},
     tokens::{DepositAction, DepositMessage},
 };
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
@@ -67,7 +67,7 @@ impl Env {
         self.sandbox.root()
     }
 
-    pub async fn get_unique_nonce(&self, deadline: Option<Deadline>) -> anyhow::Result<Nonce> {
+    pub async fn get_unique_nonce(&self, deadline: Option<Timestamp>) -> anyhow::Result<Nonce> {
         generate_unique_nonce(&self.defuse, deadline).await
     }
 

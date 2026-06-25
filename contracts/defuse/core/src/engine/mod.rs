@@ -6,7 +6,7 @@ pub use self::{inspector::*, state::*};
 use defuse_crypto::{Payload, SignedPayload};
 
 use crate::{
-    Deadline, DefuseError, ExpirableNonce, Nonce, Result, SaltedNonce, VersionedNonce,
+    DefuseError, ExpirableNonce, Nonce, Result, SaltedNonce, Timestamp, VersionedNonce,
     intents::{DefuseIntents, ExecutableIntent},
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
 };
@@ -65,7 +65,7 @@ where
         self.inspector.on_deadline(deadline);
 
         // make sure message is still valid
-        if deadline.has_expired() {
+        if deadline < Timestamp::now() {
             return Err(DefuseError::DeadlineExpired);
         }
 
@@ -85,7 +85,7 @@ where
     }
 
     #[inline]
-    fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()> {
+    fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Timestamp) -> Result<()> {
         let Some(nonce) = VersionedNonce::maybe_from(nonce) else {
             return Ok(());
         };
@@ -103,7 +103,7 @@ where
                     return Err(DefuseError::DeadlineGreaterThanNonce);
                 }
 
-                if deadline.has_expired() {
+                if deadline < Timestamp::now() {
                     return Err(DefuseError::NonceExpired);
                 }
             }

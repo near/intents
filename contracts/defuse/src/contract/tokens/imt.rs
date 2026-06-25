@@ -8,9 +8,8 @@ use defuse_core::{
     tokens::imt::ImtTokens,
 };
 
-use defuse_near_utils::UnwrapOrPanic;
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, assert_one_yocto, near};
+use near_sdk::{AccountId, FunctionError, assert_one_yocto, near};
 
 use crate::{
     contract::{Contract, ContractExt},
@@ -27,7 +26,7 @@ impl ImtBurner for Contract {
         let owner_id = self.ensure_auth_predecessor_id();
 
         State::imt_burn(self, &owner_id, &minter_id, tokens.clone(), memo.clone())
-            .unwrap_or_panic();
+            .unwrap_or_else(|err| err.panic());
 
         DefuseEvent::ImtBurn(Cow::Borrowed(
             [MaybeIntentEvent::new_fn_call(AccountEvent::new(
