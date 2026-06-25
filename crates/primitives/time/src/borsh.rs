@@ -34,6 +34,7 @@ macro_rules! borsh_as {
             I: TryInto<$int> + BorshDeserialize,
             I::Error: Display,
         {
+            #[inline]
             fn deserialize_as<R>(reader: &mut R) -> io::Result<Timestamp>
             where
                 R: io::Read,
@@ -54,10 +55,12 @@ macro_rules! borsh_as {
             where
                 I: BorshSchema,
             {
+                #[inline]
                 fn declaration_as() -> borsh::schema::Declaration {
                     <I as BorshSchema>::declaration()
                 }
 
+                #[inline]
                 fn add_definitions_recursively_as(
                     definitions: &mut std::collections::BTreeMap<
                         Declaration,

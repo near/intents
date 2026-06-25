@@ -16,6 +16,7 @@ macro_rules! serde_as {
         where
             F: SerializeAs<$int> + ?Sized,
         {
+            #[inline]
             fn serialize_as<S>(source: &Timestamp, serializer: S) -> Result<S::Ok, S::Error>
             where
                 S: Serializer,
@@ -29,6 +30,7 @@ macro_rules! serde_as {
         where
             F: DeserializeAs<'de, $int> + ?Sized,
         {
+            #[inline]
             fn deserialize_as<D>(deserializer: D) -> Result<Timestamp, D::Error>
             where
                 D: Deserializer<'de>,
@@ -93,10 +95,12 @@ const _: () = {
     use schemars::{JsonSchema, SchemaGenerator, schema::Schema};
 
     impl JsonSchema for Timestamp {
+        #[inline]
         fn is_referenceable() -> bool {
             true
         }
 
+        #[inline]
         fn schema_name() -> String {
             stringify!(Timestamp).to_string()
         }

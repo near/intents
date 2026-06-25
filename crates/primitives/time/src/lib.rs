@@ -60,6 +60,7 @@ impl Timestamp {
         };
         Some(Self(ts))
     }
+
     #[must_use]
     #[inline]
     pub fn checked_add_unsigned(self, rhs: Duration) -> Option<Self> {
