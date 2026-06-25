@@ -127,6 +127,8 @@ mod tests {
     use std::fmt::Debug;
 
     use rstest::rstest;
+
+    use serde_json::json;
     use serde_with::{DisplayFromStr, de::DeserializeAsWrap, ser::SerializeAsWrap};
 
     use super::*;
@@ -179,5 +181,32 @@ mod tests {
             &deserialized, orig,
             "deserialized value differs from the original one"
         );
+    }
+
+    #[rstest]
+    #[case(json!("1970-01-01T00:00:00Z"), None)]
+    #[case(json!("1970-01-01T00:00:00+00:00"), json!("1970-01-01T00:00:00Z"))]
+    #[case(json!("1970-01-01T10:00:00+04:00"), json!("1970-01-01T06:00:00Z"))]
+    #[case(json!("1970-01-01T10:00:00-02:30"), json!("1970-01-01T12:30:00Z"))]
+    #[case(json!("2026-06-25T13:53:42.123456789Z"), None)]
+    #[case(
+        json!("2026-06-25T13:53:42.123456789+00:00"),
+        json!("2026-06-25T13:53:42.123456789Z"),
+    )]
+    #[case(
+        json!("2026-06-25T13:53:42.123456789+02:30"),
+        json!("2026-06-25T11:23:42.123456789Z"),
+    )]
+    #[case(
+        json!("2026-06-25T13:53:42.123456789-05:00"),
+        json!("2026-06-25T18:53:42.123456789Z"),
+    )]
+    fn roundtrip(
+        #[case] orig: serde_json::Value,
+        #[case] expected: impl Into<Option<serde_json::Value>>,
+    ) {
+        let ts: Timestamp = serde_json::from_value(orig.clone()).expect("JSON: deserialize");
+        let got = serde_json::to_value(ts).expect("JSON: serialize");
+        assert_eq!(got, expected.into().unwrap_or(orig));
     }
 }
