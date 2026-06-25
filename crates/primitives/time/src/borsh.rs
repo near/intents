@@ -3,7 +3,7 @@ use std::{fmt::Display, io, marker::PhantomData};
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_borsh_utils::adapters::{BorshDeserializeAs, BorshSerializeAs};
 
-use crate::Timestamp;
+use crate::{Overflow, Timestamp};
 
 macro_rules! borsh_as {
     ($($vis:vis struct $name:ident: $int:ty {
@@ -22,7 +22,7 @@ macro_rules! borsh_as {
             where
                 W: io::Write,
             {
-                let timestamp: $int = source.0.$as();
+                let timestamp: $int = source.$as();
                 I::try_from(timestamp)
                     .map_err(|err| io::Error::other(err.to_string()))?
                     .serialize(writer)
@@ -41,7 +41,7 @@ macro_rules! borsh_as {
                 let timestamp: $int = I::deserialize_reader(reader)?
                     .try_into()
                     .map_err(|err| io::Error::other(err.to_string()))?;
-                chrono::DateTime::$from(timestamp).map(Timestamp).ok_or_else(|| io::Error::other("overflow"))
+                Timestamp::$from(timestamp).ok_or(Overflow).map_err( io::Error::other)
             }
         }
 
@@ -73,56 +73,98 @@ macro_rules! borsh_as {
 
 borsh_as! {
     pub struct TimestampSeconds: i64 {
-        timestamp,
-        from_timestamp_secs,
+        as_secs,
+        from_secs,
     }
 
     pub struct TimestampMilliSeconds: i64 {
-        timestamp_millis,
-        from_timestamp_millis,
+        as_millis,
+        from_millis,
     }
 
     pub struct TimestampMicroSeconds: i64 {
-        timestamp_micros,
-        from_timestamp_micros,
+        as_micros,
+        from_micros,
     }
 
-    pub struct TimestampNanoSeconds: i64 {
-        timestamp_nanos,
-        from_timestamp_micros,// TODO
+    pub struct TimestampNanoSeconds: i128 {
+        as_nanos,
+        from_nanos,
     }
 }
 
 // TODO
-// #[cfg(test)]
-// mod tests {
-//     use crate::adapters::tests::roundtrip_as;
+#[cfg(test)]
+mod tests {
+    use core::fmt::Debug;
 
-//     use super::*;
+    use super::*;
 
-//     #[test]
-//     fn timestamp_seconds_i64_roundtrip() {
-//         roundtrip_as::<_, TimestampSeconds<i64>>(&Timestamp::from_second(1_600_000_000).unwrap());
-//     }
+    #[test]
+    fn timestamp_seconds_i64_roundtrip() {
+        roundtrip_as::<_, TimestampSeconds<i64>>(&Timestamp::from_secs(1_600_000_000).unwrap());
+    }
 
-//     #[test]
-//     fn timestamp_milliseconds_i64_roundtrip() {
-//         roundtrip_as::<_, TimestampMilliSeconds<i64>>(
-//             &Timestamp::from_millisecond(1_600_000_000_123).unwrap(),
-//         );
-//     }
+    #[test]
+    fn timestamp_milliseconds_i64_roundtrip() {
+        roundtrip_as::<_, TimestampMilliSeconds<i64>>(
+            &Timestamp::from_millis(1_600_000_000_123).unwrap(),
+        );
+    }
 
-//     #[test]
-//     fn timestamp_microseconds_i64_roundtrip() {
-//         roundtrip_as::<_, TimestampMicroSeconds<i64>>(
-//             &Timestamp::from_microsecond(1_600_000_000_123_456).unwrap(),
-//         );
-//     }
+    #[test]
+    fn timestamp_microseconds_i64_roundtrip() {
+        roundtrip_as::<_, TimestampMicroSeconds<i64>>(
+            &Timestamp::from_micros(1_600_000_000_123_456).unwrap(),
+        );
+    }
 
-//     #[test]
-//     fn timestamp_nanoseconds_i64_roundtrip() {
-//         roundtrip_as::<_, TimestampNanoSeconds<i64>>(
-//             &Timestamp::from_nanosecond(1_600_000_000_123_456_789).unwrap(),
-//         );
-//     }
-// }
+    #[test]
+    fn timestamp_nanoseconds_i64_roundtrip() {
+        roundtrip_as::<_, TimestampNanoSeconds<i64>>(
+            &Timestamp::from_nanos(1_600_000_000_123_456_789).unwrap(),
+        );
+    }
+
+    // Helper roundtrip
+    #[track_caller]
+    fn roundtrip_as<T, As>(orig: &T)
+    where
+        As: BorshSerializeAs<T> + BorshDeserializeAs<T>,
+        T: PartialEq + Debug,
+    {
+        let mut buf = Vec::new();
+        As::serialize_as(orig, &mut buf).expect("serialize_as");
+        let deserialized = As::deserialize_as(&mut buf.as_slice()).expect("deserialize_as");
+        assert_eq!(
+            &deserialized, orig,
+            "deserialized value differs from the original one"
+        );
+    }
+
+    #[test]
+    fn schema_as_usage() {
+        use borsh::BorshSchema;
+        use defuse_borsh_utils::adapters::As;
+
+        #[derive(BorshSerialize, BorshDeserialize, BorshSchema)]
+        struct S {
+            #[borsh(
+                serialize_with = "As::<TimestampNanoSeconds<i64>>::serialize",
+                deserialize_with = "As::<TimestampNanoSeconds<i64>>::deserialize",
+                schema(with_funcs(
+                    declaration = "As::<TimestampNanoSeconds<i64>>::declaration",
+                    definitions = "As::<TimestampNanoSeconds<i64>>::add_definitions_recursively",
+                ))
+            )]
+            pub deadline: Timestamp,
+        }
+
+        let val = S {
+            deadline: Timestamp::from_nanos(1_600_000_000_123_456_789).unwrap(),
+        };
+        let bytes = borsh::to_vec(&val).unwrap();
+        let decoded = S::try_from_slice(&bytes).unwrap();
+        assert_eq!(val.deadline, decoded.deadline);
+    }
+}

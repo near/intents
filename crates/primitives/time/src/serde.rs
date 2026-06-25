@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 use serde::{Deserializer, Serializer, de};
 use serde_with::{DeserializeAs, Same, SerializeAs};
 
-use crate::Timestamp;
+use crate::{Overflow, Timestamp};
 
 macro_rules! serde_as {
     ($($vis:vis struct $name:ident: $int:ty {
@@ -20,7 +20,8 @@ macro_rules! serde_as {
             where
                 S: Serializer,
             {
-                <F as SerializeAs<$int>>::serialize_as(&source.0.$as(), serializer)
+                let timestamp: $int = source.$as();
+                <F as SerializeAs<$int>>::serialize_as(&timestamp, serializer)
             }
         }
 
@@ -32,9 +33,8 @@ macro_rules! serde_as {
             where
                 D: Deserializer<'de>,
             {
-
                 let timestamp = <F as DeserializeAs<'de, $int>>::deserialize_as(deserializer)?;
-                ::chrono::DateTime::$from(timestamp).map(Timestamp).ok_or_else(|| de::Error::custom("overflow"))
+                Timestamp::$from(timestamp).ok_or(Overflow).map_err( de::Error::custom)
             }
         }
 
@@ -68,23 +68,23 @@ macro_rules! serde_as {
 
 serde_as! {
     pub struct TimestampSeconds: i64 {
-        timestamp,
-        from_timestamp_secs,
+        as_secs,
+        from_secs,
     }
 
     pub struct TimestampMilliSeconds: i64 {
-        timestamp_millis,
-        from_timestamp_millis,
+        as_millis,
+        from_millis,
     }
 
     pub struct TimestampMicroSeconds: i64 {
-        timestamp_micros,
-        from_timestamp_micros,
+        as_micros,
+        from_micros,
     }
 
-    pub struct TimestampNanoSeconds: i64 {
-        timestamp_nanos,
-        from_timestamp_micros,// TODO
+    pub struct TimestampNanoSeconds: i128 {
+        as_nanos,
+        from_nanos,
     }
 }
 
