@@ -6,9 +6,9 @@ use defuse_sandbox::{
     extensions::{
         FnCallTransaction,
         global_deployer::{
-            GDApproveArgs, GDDeployArgs, GDDeployerExt, GlobalDeployer, GlobalDeployerExt,
+            GDApproveArgs, GDDeployerExt, GlobalDeployer, GlobalDeployerExt,
             contract::{
-                Event, Reason, State as DeployerState,
+                AsWrap, Event, Reason, State as DeployerState,
                 error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_UNAUTHORIZED},
             },
         },
@@ -193,9 +193,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
     owner
         .fn_call(
             controller_instance.contract_id(),
-            GlobalDeployer::gd_deploy(GDDeployArgs {
-                code: DEPLOYER_WASM.clone(),
-            }),
+            GlobalDeployer::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone())),
             storage_deposit,
         )
         .await
@@ -672,9 +670,7 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
     owner
         .fn_call(
             controller_instance.contract_id(),
-            GlobalDeployer::gd_deploy(GDDeployArgs {
-                code: DEPLOYER_WASM.clone(),
-            }),
+            GlobalDeployer::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone())),
             NearToken::from_near(100), // attach more than enough to cover storage
         )
         .await
@@ -883,11 +879,9 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
             .gas(Gas::from_tgas(10)),
         )
         .add_action(
-            GlobalDeployer::gd_deploy(GDDeployArgs {
-                code: DEPLOYER_WASM.clone(),
-            })
-            .deposit(NearToken::from_near(1))
-            .gas(Gas::from_tgas(290)),
+            GlobalDeployer::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
+                .deposit(NearToken::from_near(1))
+                .gas(Gas::from_tgas(290)),
         )
         .await
         .unwrap()
@@ -967,11 +961,9 @@ async fn test_post_deploy_fails_when_approval_changed(
     let result = root
         .transaction(controller_instance.contract_id())
         .add_action(
-            GlobalDeployer::gd_deploy(GDDeployArgs {
-                code: DEPLOYER_WASM.clone(),
-            })
-            .deposit(NearToken::from_near(50))
-            .gas(Gas::from_tgas(140)),
+            GlobalDeployer::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
+                .deposit(NearToken::from_near(50))
+                .gas(Gas::from_tgas(140)),
         )
         .add_action(
             GlobalDeployer::gd_approve(GDApproveArgs {

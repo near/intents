@@ -1,7 +1,7 @@
 pub mod mt_receiver;
 pub mod nft;
 pub mod wnear;
-// TODO: remove after near kit release
+// TODO: remove when mt will be part of near kit extensions
 pub mod mt;
 
 #[cfg(feature = "defuse")]

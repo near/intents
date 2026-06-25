@@ -35,7 +35,6 @@ impl AccountNonceIntentEvent {
         payload: &impl Payload,
     ) -> Self {
         let acc = account_id.as_ref().to_owned();
-        // TODO: update payload hash to near kit crypto hash
         Self(acc, nonce, payload.hash().into())
     }
 

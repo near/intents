@@ -10,39 +10,37 @@ workspace = true
 
 [features]
 defuse = ["dep:defuse", "dep:defuse-nep413", "dep:defuse-serde-utils", "dep:defuse-test-utils"]
-poa = ["dep:defuse-poa-factory"]
 deployer = ["dep:defuse-global-deployer", "dep:defuse-serde-utils"]
 escrow = ["dep:defuse-escrow-swap"]
 imt = ["defuse", "defuse/imt"]
-wallet = ["dep:defuse-wallet", "dep:defuse-wallet-sdk"]
 outlayer = ["dep:defuse-outlayer-app", "dep:defuse-serde-utils"]
+poa = ["dep:defuse-poa-factory"]
+wallet = ["dep:defuse-wallet", "dep:defuse-wallet-sdk"]
 
 [dependencies]
+anyhow.workspace = true
 defuse-core = { workspace = true, features = ["near-kit"] }
 defuse-nep245.workspace = true
-defuse-nep413 = { workspace = true, optional = true, features = ["near-kit", "serde"] }
-
-anyhow.workspace = true
 futures.workspace = true
 near-contract-standards.workspace = true
-near-kit = {workspace = true, features = ["sandbox"] }
+near-kit = { workspace = true, features = ["sandbox"] }
+# TODO: remove it when near kit will contain necessary types
+near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
-serde_with.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-borsh.workspace = true
-tokio.workspace = true
-# TODO: use only in defuse
+serde_with.workspace = true
 sha2.workspace = true
-# TODO: remove
-near-sdk = { workspace = true, features = ["unit-testing", "deterministic-account-ids"] }
+tokio.workspace = true
 
+borsh = { workspace = true, optional = true }
+defuse = { workspace = true, optional = true, features = ["contract"] }
 defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }
 defuse-global-deployer = { workspace = true, optional = true }
+defuse-nep413 = { workspace = true, optional = true, features = ["near-kit", "serde"] }
 defuse-outlayer-app = { workspace = true, optional = true }
 defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
-defuse-wallet = { workspace = true, features = ["arbitrary", "concurrent"], optional = true }
-defuse-wallet-sdk = { workspace = true, optional = true }
-defuse = { workspace = true, optional = true, features = ["contract"] }
 defuse-serde-utils = { workspace = true, optional = true, features = ["base64", "hex"] }
 defuse-test-utils = { workspace = true, optional = true }
+defuse-wallet = { workspace = true, optional = true, features = ["arbitrary", "concurrent"] }
+defuse-wallet-sdk = { workspace = true, optional = true }

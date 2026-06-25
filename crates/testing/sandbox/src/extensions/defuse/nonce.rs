@@ -1,6 +1,6 @@
 use crate::extensions::defuse::DefuseClient;
-use defuse::core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce};
 use defuse_core::{
+    Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce,
     intents::DefuseIntents,
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
 };

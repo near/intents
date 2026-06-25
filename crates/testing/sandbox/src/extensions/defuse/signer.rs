@@ -49,7 +49,6 @@ pub trait DefuseSignerExt {
 }
 
 impl DefuseSignerExt for Near {
-    // TODO: may be make it as part of defuse_nep413 crate?
     async fn sign_defuse_message<T>(
         &self,
         defuse_contract: impl AsRef<AccountIdRef>,

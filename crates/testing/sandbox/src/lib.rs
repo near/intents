@@ -17,7 +17,6 @@ use crate::account::Account;
 
 #[fixture]
 pub async fn root(#[default(NearToken::from_near(100_000))] amount: NearToken) -> Near {
-    // TODO: do we really need this counter?
     static SUB_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
     SandboxConfig::shared()

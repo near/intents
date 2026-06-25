@@ -1,6 +1,7 @@
 use near_contract_standards::non_fungible_token::{Token, metadata::NFTContractMetadata};
 use near_kit::{
-    AccountIdRef, Action, Final, FunctionCallAction, Near, NearToken, NonFungibleToken,
+    AccountIdRef, Action, Final, FunctionCallAction, Near, NearToken, NftContractMetadata,
+    NonFungibleToken,
 };
 use serde_json::json;
 
@@ -65,6 +66,15 @@ impl NftAdminExt for Near {
                 args: serde_json::to_vec(&json!({
                     "token_id": token_id.as_ref(),
                     "token_owner_id": token_owner_id.as_ref(),
+                    "token_metadata": NftContractMetadata {
+                        spec: String::default(),
+                        name: String::default(),
+                        symbol: String::default(),
+                        icon: None,
+                        base_uri: None,
+                        reference: None,
+                        reference_hash: None
+                    },
                 }))
                 .unwrap(),
                 gas: DEFAULT_GAS,

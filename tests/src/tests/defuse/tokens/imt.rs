@@ -1,15 +1,23 @@
-use defuse_sandbox::extensions::{
-    defuse::{
+use defuse_sandbox::{
+    assert_eq_defuse_event_logs,
+    extensions::defuse::{
         DefuseExt, DefuseImtExt, DefuseSignerExt,
         core::{
+            accounts::AccountEvent,
             amounts::Amounts,
-            intents::imt::ImtMint,
+            events::DefuseEvent,
+            intents::{
+                MaybeIntentEvent,
+                imt::{ImtBurn, ImtMint},
+            },
             token_id::{TokenId, imt::ImtTokenId, nep141::Nep141TokenId},
         },
     },
-    mt::{Mt, MtBalanceOfArgs},
+    extensions::mt::{Mt, MtBalanceOfArgs},
 };
+use near_sdk::AsNep297Event;
 use rstest::rstest;
+use std::borrow::Cow;
 
 use crate::tests::defuse::env::{Env, env};
 
@@ -55,7 +63,7 @@ async fn imt_burn_call(#[future(awt)] env: Env) {
         );
     }
 
-    user2
+    let result = user2
         .defuse_imt_burn(
             env.defuse.contract_id(),
             user1.account_id().clone(),
@@ -77,7 +85,18 @@ async fn imt_burn_call(#[future(awt)] env: Env) {
         0
     );
 
-    // TODO: compare events
+    let expected = DefuseEvent::ImtBurn(Cow::Owned(vec![MaybeIntentEvent::new_fn_call(
+        AccountEvent::new(
+            user2.account_id(),
+            Cow::Owned(ImtBurn {
+                minter_id: user1.account_id().clone(),
+                tokens: Amounts::new(std::iter::once((token.clone(), amount)).collect()),
+                memo: Some(memo.to_string()),
+            }),
+        ),
+    )]));
+
+    assert_eq_defuse_event_logs!([expected.to_nep297_event().to_event_log()], result.logs());
 }
 
 #[rstest]

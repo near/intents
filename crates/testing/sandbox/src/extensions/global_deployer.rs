@@ -1,6 +1,5 @@
 use anyhow::Result;
-use borsh::BorshSerialize;
-use defuse_global_deployer::{AsHex, State as DeployerState};
+use defuse_global_deployer::{AsHex, AsWrap, Remainder, State as DeployerState};
 use near_kit::{AccountId, AccountIdRef, Final, Gas, GlobalContractId, Near, NearToken};
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
@@ -21,21 +20,9 @@ pub struct GDApproveArgs {
     pub new_hash: [u8; 32],
 }
 
-// Standard borsh serialization would prepend a 4-byte length
-fn serialize_code_remainder<W: std::io::Write>(v: &[u8], w: &mut W) -> std::io::Result<()> {
-    w.write_all(v)
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct GDTransferOwnershipArgs {
     pub receiver_id: AccountId,
-}
-
-// TODO: remove this after near kit fix (passing raw data)
-#[derive(BorshSerialize)]
-pub struct GDDeployArgs {
-    #[borsh(serialize_with = "serialize_code_remainder")]
-    pub code: Vec<u8>,
 }
 
 #[near_kit::contract]
@@ -45,7 +32,7 @@ pub trait GlobalDeployer {
 
     #[call]
     #[borsh]
-    fn gd_deploy(&mut self, args: GDDeployArgs) -> bool;
+    fn gd_deploy(&mut self, code: AsWrap<Vec<u8>, Remainder>) -> bool;
 
     #[call]
     fn gd_transfer_ownership(&mut self, args: GDTransferOwnershipArgs);
@@ -129,7 +116,7 @@ impl GlobalDeployerExt for Near {
                 .gas(Gas::from_tgas(10)),
             )
             .add_action(
-                GlobalDeployer::gd_deploy(GDDeployArgs { code })
+                GlobalDeployer::gd_deploy(AsWrap::new(code))
                     .deposit(NearToken::from_near(50))
                     .gas(Gas::from_tgas(290)),
             )
@@ -167,7 +154,7 @@ impl GlobalDeployerExt for Near {
         let code = code.to_vec();
         self.transaction(target.as_ref())
             .add_action(
-                GlobalDeployer::gd_deploy(GDDeployArgs { code })
+                GlobalDeployer::gd_deploy(AsWrap::new(code))
                     .deposit(deposit)
                     .gas(Gas::from_tgas(290)),
             )

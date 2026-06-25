@@ -1666,7 +1666,6 @@ dependencies = [
  "defuse-crypto",
  "defuse-digest",
  "defuse-nep461",
- "defuse-serde-utils",
  "impl-tools",
  "near-kit",
  "schemars 0.8.22",
