@@ -201,7 +201,7 @@ mod tests {
         json!("2026-06-25T13:53:42.123456789-05:00"),
         json!("2026-06-25T18:53:42.123456789Z"),
     )]
-    fn roundtrip(
+    fn semi_roundtrip(
         #[case] orig: serde_json::Value,
         #[case] expected: impl Into<Option<serde_json::Value>>,
     ) {
