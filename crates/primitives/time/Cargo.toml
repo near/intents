@@ -1,0 +1,50 @@
+lints.workspace = true
+
+[package]
+name = "defuse-time"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+time.workspace = true
+
+arbitrary = { workspace = true, optional = true }
+arbitrary_with = { workspace = true, optional = true }
+borsh = { workspace = true, optional = true }
+defuse-borsh-utils = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+serde_with = { workspace = true, optional = true }
+
+[target.'cfg(near)'.dependencies]
+near-sdk = { workspace = true, optional = true }
+
+[features]
+default = ["std"]
+
+std = ["dep:near-sdk", "time/std"]
+formatting = ["std", "time/formatting"]
+parsing = ["std", "time/parsing"]
+
+abi = ["defuse-borsh-utils?/schema", "schemars-v0_8"]
+borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
+serde = ["dep:serde", "dep:serde_with", "formatting", "parsing"]
+schemars-v0_8 = [
+  "dep:schemars",
+  "dep:serde_json",
+  "serde",
+  "serde_with/schemars_0_8",
+]
+
+arbitrary = ["dep:arbitrary", "dep:arbitrary_with"]
+
+[dev-dependencies]
+defuse-time = { path = ".", features = ["std", "arbitrary", "abi", "borsh", "formatting", "parsing", "serde", "schemars-v0_8"] }
+rstest.workspace = true
+
+[target.'cfg(near)'.dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }

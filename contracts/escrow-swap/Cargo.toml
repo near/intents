@@ -27,12 +27,12 @@ container_build_command = [
 ]
 
 [dependencies]
-defuse-borsh-utils = { workspace = true, features = ["chrono"] }
-defuse-deadline = { workspace = true, features = ["borsh", "near-contract", "serde"] }
+defuse-borsh-utils.workspace = true
 defuse-decimal = { workspace = true, features = ["borsh", "serde"] }
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-nep245.workspace = true
 defuse-num-utils.workspace = true
+defuse-time = { workspace = true, features = ["borsh", "serde"] }
 defuse-token-id = { workspace = true, features = ["borsh", "serde"] }
 
 near-contract-standards.workspace = true
@@ -41,14 +41,14 @@ near-sdk.workspace = true
 derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
 impl-tools.workspace = true
-serde_with = { workspace = true, features = ["chrono_0_4", "hex"] }
+serde_with = { workspace = true, features = ["hex"] }
 thiserror.workspace = true
 
 defuse-auth-call = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true, optional = true }
 
 [dev-dependencies]
-defuse-sandbox = { workspace = true }
+defuse-sandbox.workspace = true
 
 futures.workspace = true
 itertools.workspace = true
@@ -63,9 +63,9 @@ nep141 = ["defuse-token-id/nep141"]
 nep245 = ["defuse-token-id/nep245"]
 
 abi = [
-  "defuse-deadline/abi",
   "defuse-decimal/abi",
   "defuse-fees/abi",
+  "defuse-time/abi",
   "defuse-token-id/abi",
   "near-sdk/abi",
   "serde_with/schemars_0_8",

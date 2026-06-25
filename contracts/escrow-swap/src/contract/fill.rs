@@ -2,6 +2,7 @@ use std::{borrow::Cow, collections::BTreeMap};
 
 use defuse_near_utils::{PromiseExt, UnwrapOrPanic};
 use defuse_num_utils::{CheckedDiv, CheckedMul};
+use defuse_time::Timestamp;
 use near_sdk::{AccountId, AccountIdRef, Promise, PromiseOrValue};
 
 use crate::{
@@ -28,7 +29,7 @@ impl State {
         if msg.price < params.price {
             return Err(Error::PriceTooLow);
         }
-        if msg.deadline.has_expired() {
+        if msg.deadline < Timestamp::now() {
             return Err(Error::DeadlineExpired);
         }
 

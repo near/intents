@@ -3,9 +3,9 @@ mod contract;
 use std::time::Duration;
 
 pub use defuse_wallet as wallet;
+use defuse_wallet::Timestamp;
 pub use near_kit;
 
-use chrono::{TimeDelta, Utc};
 use near_kit::{
     CryptoHash, ExecutedOptimistic, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken,
 };
@@ -153,27 +153,26 @@ impl Relayer {
         /// Signers are recommended to set `created_at` a bit in the past,
         /// so that transaction doesn't fail on-chain due to possible lag
         /// in block timestamps.
-        const SIGNER_LAG: TimeDelta = TimeDelta::seconds(60);
+        const BLOCKCHAIN_LAG: Duration = Duration::from_mins(1);
 
-        let timeout = TimeDelta::from_std(msg.timeout).map_err(|_| Error::InvalidTimeout)?;
+        let now = Timestamp::now();
 
-        if !msg.created_at.has_expired() {
+        if now < msg.created_at {
+            // Since block timestamps can lag a bit behind, failing here can
+            // only encourage signers to take this lag into account and set
+            // `created_at` a bit in the past.
             return Err(Error::FromTheFuture);
         }
 
         let deadline = msg
             .created_at
-            .into_timestamp()
-            .checked_add_signed(timeout)
-            .ok_or(Error::InvalidTimeout)?
-            // add more buffer for short-living requests
-            .checked_add_signed(SIGNER_LAG)
+            .checked_add_unsigned(msg.timeout)
             .ok_or(Error::InvalidTimeout)?;
 
-        deadline
-            .signed_duration_since(Utc::now())
-            .to_std()
-            .map_err(|_| Error::Expired)
+        let timeout: Duration = deadline.duration_since(now).map_err(|_| Error::Expired)?;
+
+        // add more buffer for short-living requests
+        Ok(timeout.saturating_add(BLOCKCHAIN_LAG))
     }
 }
 

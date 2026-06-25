@@ -1,8 +1,8 @@
 //! TON Connect [signData](https://github.com/ton-blockchain/ton-connect/blob/main/requests-responses.md#sign-data)
 mod schema;
 
-use chrono::{DateTime, Utc};
 use defuse_crypto::Ed25519;
+use defuse_time::Timestamp;
 use impl_tools::autoimpl;
 use tlb_ton::MsgAddress;
 
@@ -18,6 +18,7 @@ pub use tlb_ton;
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TonConnectPayload {
@@ -28,26 +29,21 @@ pub struct TonConnectPayload {
     pub domain: String,
     /// UNIX timestamp (in seconds or RFC3339) at the time of singing
     #[cfg_attr(
-        feature = "serde",
-        serde_as(as = "::serde_with::PickFirst<(_, ::serde_with::TimestampSeconds)>")
+        feature = "arbitrary",
+        arbitrary(with = ::arbitrary_with::As::<
+            ::defuse_time::arbitrary::SinceUnixEpoch
+        >::arbitrary)
     )]
-    pub timestamp: DateTime<Utc>,
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "::serde_with::PickFirst<(
+            _,
+            ::defuse_time::serde::TimestampSeconds<::serde_with::DisplayFromStr>,
+            ::defuse_time::serde::TimestampSeconds,
+        )>")
+    )]
+    pub timestamp: Timestamp,
     pub payload: TonConnectPayloadSchema,
-}
-
-// `serde_as` requires `cfg_eval`, which pre-expands field `cfg_attr`s during derive
-// pre-processing — before the compiler resolves derive helper attributes in the re-emitted
-// item. This breaks fields that combine `serde_as` and `#[arbitrary(with = ...)]`.
-#[cfg(feature = "arbitrary")]
-impl<'a> arbitrary::Arbitrary<'a> for TonConnectPayload {
-    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-        Ok(Self {
-            address: u.arbitrary()?,
-            domain: u.arbitrary()?,
-            timestamp: ::tlb_ton::UnixTimestamp::arbitrary(u)?,
-            payload: u.arbitrary()?,
-        })
-    }
 }
 
 impl TonConnectPayload {
@@ -58,9 +54,9 @@ impl TonConnectPayload {
 
         let timestamp: u64 = self
             .timestamp
-            .timestamp()
+            .as_secs()
             .try_into()
-            .map_err(|_| Error::custom("negative timestamp"))?;
+            .map_err(|_| Error::custom("timestamp overflow"))?;
 
         let context = TonConnectPayloadContext {
             address: self.address,
@@ -71,6 +67,7 @@ impl TonConnectPayload {
         self.payload.hash_with_context(context)
     }
 
+    #[track_caller]
     pub fn hash(&self) -> defuse_crypto::CryptoHash {
         self.try_hash().expect("ton-connect hash")
     }
@@ -137,7 +134,6 @@ mod tests {
     use defuse_test_utils::random::random_bytes;
     use hex_literal::hex;
     use rstest::rstest;
-    use tlb_ton::UnixTimestamp;
 
     #[cfg(all(feature = "text", feature = "serde"))]
     #[rstest]
@@ -149,7 +145,7 @@ mod tests {
                         .parse()
                         .unwrap(),
                     domain: "ton-connect.github.io".to_string(),
-                    timestamp: DateTime::from_timestamp(1747759882, 0).unwrap(),
+                    timestamp: Timestamp::from_secs(1747759882).unwrap(),
                     payload: TonConnectPayloadSchema::text("Hello, TON!".repeat(100)),
                 },
                 public_key: hex!(
@@ -173,7 +169,7 @@ mod tests {
                         .parse()
                         .unwrap(),
                     domain: "ton-connect.github.io".to_string(),
-                    timestamp: DateTime::from_timestamp(1747760435, 0).unwrap(),
+                    timestamp: Timestamp::from_secs(1747760435).unwrap(),
                     payload: TonConnectPayloadSchema::binary(hex!("48656c6c6f2c20544f4e21")),
                 },
                 public_key: hex!(
@@ -199,7 +195,7 @@ mod tests {
                         .parse()
                         .unwrap(),
                     domain: "ton-connect.github.io".to_string(),
-                    timestamp: DateTime::from_timestamp(1747772412, 0).unwrap(),
+                    timestamp: Timestamp::from_secs(1747772412).unwrap(),
                     payload: TonConnectPayloadSchema::cell(
                         0x2eccd0c1,
                         BagOfCells::parse_base64("te6cckEBAQEAEQAAHgAAAABIZWxsbywgVE9OIb7WCx4=")
@@ -240,8 +236,11 @@ mod tests {
             verify_ok(&t, false);
         }
         {
+            use arbitrary_with::ArbitraryAs;
+            use defuse_time::arbitrary::SinceUnixEpoch;
+
             let mut t = signed.clone();
-            t.payload.timestamp = UnixTimestamp::arbitrary(&mut u).unwrap();
+            t.payload.timestamp = SinceUnixEpoch::arbitrary_as(&mut u).unwrap();
             dbg!(&t.payload.timestamp);
             verify_ok(&t, false);
         }
@@ -263,6 +262,7 @@ mod tests {
     }
 
     #[cfg(feature = "serde")]
+    #[track_caller]
     fn verify_ok(signed: &SignedTonConnectPayload, ok: bool) {
         let serialized = serde_json::to_string_pretty(signed).unwrap();
         println!("{}", &serialized);
