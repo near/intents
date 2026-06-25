@@ -1,3 +1,5 @@
+#[cfg(feature = "arbitrary")]
+pub mod arbitrary;
 #[cfg(feature = "borsh")]
 pub mod borsh;
 #[cfg(feature = "serde")]
@@ -197,19 +199,6 @@ const _: () = {
         #[inline]
         pub fn has_passed(&self) -> bool {
             *self < Self::now()
-        }
-    }
-};
-
-#[cfg(feature = "arbitrary")]
-const _: () = {
-    use arbitrary::Arbitrary;
-
-    impl<'a> Arbitrary<'a> for Timestamp {
-        #[inline]
-        fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-            let nanos = u.int_in_range(Self::MIN.as_nanos()..=Self::MAX.as_nanos())?;
-            Ok(Self::from_nanos(nanos).ok_or(Overflow).unwrap())
         }
     }
 };

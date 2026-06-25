@@ -15,6 +15,7 @@ impl-tools.workspace = true
 tlb-ton.workspace = true
 
 arbitrary = { workspace = true, optional = true }
+arbitrary_with = { workspace = true, optional = true }
 cfg_eval = { workspace = true, optional = true }
 defuse-serde-utils = { workspace = true, features = ["tlb"], optional = true }
 schemars = { workspace = true, features = ["chrono"], optional = true }
@@ -31,7 +32,7 @@ abi = [
   "serde_with?/schemars_0_8",
   "tlb-ton/schemars_0_8",
 ]
-arbitrary = ["dep:arbitrary", "tlb-ton/arbitrary"]
+arbitrary = ["defuse-time/arbitrary", "dep:arbitrary", "tlb-ton/arbitrary", "dep:arbitrary_with"]
 binary = []
 cell = []
 near-contract = ["defuse-crypto/near-contract"]

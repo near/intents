@@ -29,6 +29,12 @@ pub struct TonConnectPayload {
     pub domain: String,
     /// UNIX timestamp (in seconds or RFC3339) at the time of singing
     #[cfg_attr(
+        feature = "arbitrary",
+        arbitrary(with = ::arbitrary_with::As::<
+            ::defuse_time::arbitrary::SinceUnixEpoch
+        >::arbitrary)
+    )]
+    #[cfg_attr(
         feature = "serde",
         serde_as(as = "::serde_with::PickFirst<(
             _,
@@ -61,6 +67,7 @@ impl TonConnectPayload {
         self.payload.hash_with_context(context)
     }
 
+    #[track_caller]
     pub fn hash(&self) -> defuse_crypto::CryptoHash {
         self.try_hash().expect("ton-connect hash")
     }
@@ -229,8 +236,11 @@ mod tests {
             verify_ok(&t, false);
         }
         {
+            use arbitrary_with::ArbitraryAs;
+            use defuse_time::arbitrary::SinceUnixEpoch;
+
             let mut t = signed.clone();
-            t.payload.timestamp = Arbitrary::arbitrary(&mut u).unwrap();
+            t.payload.timestamp = SinceUnixEpoch::arbitrary_as(&mut u).unwrap();
             dbg!(&t.payload.timestamp);
             verify_ok(&t, false);
         }

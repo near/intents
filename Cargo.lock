@@ -1870,6 +1870,7 @@ name = "defuse-time"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "arbitrary_with",
  "borsh",
  "chrono",
  "defuse-borsh-utils",
@@ -1924,6 +1925,7 @@ name = "defuse-ton-connect"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "arbitrary_with",
  "cfg_eval",
  "defuse-crypto",
  "defuse-digest",
