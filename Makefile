@@ -99,10 +99,15 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
      ($$vval.container_build_command | join(" ")) as $$non_reproducible_cmd | \
      (if $$reproducible != "" then $$reproducible_cmd else $$non_reproducible_cmd end) as $$cmd | \
      (if $$vkey == "" then "" else ".\($$vkey)" end) as $$suffix | \
-     ($$vval.container_build_command | map(select(startswith("--features="))) | if length > 0 then " " + first else "" end) as $$features_flag | \
+     ($$vval.container_build_command | map(select( \
+        startswith("--features=") \
+        or startswith("--no-default-features") \
+        or startswith("--locked") \
+        or startswith("--profile=") \
+      )) | join(" ")) as $$features_flag | \
      "$$(eval .PHONY: check-contracts/\($$tname))", \
      "$$(eval CHECK_TARGETS += check-contracts/\($$tname))", \
-     "$$(eval check-contracts/\($$tname):; cargo clippy -p \($$name) --no-deps --target wasm32-unknown-unknown\($$features_flag))", \
+     "$$(eval check-contracts/\($$tname):; RUSTFLAGS='--cfg=near' RUSTDOCFLAGS='--cfg=near' cargo clippy -p \($$name) --no-deps --target wasm32-unknown-unknown \($$features_flag))", \
      "$$(eval check-contracts/\($$name)/all:: check-contracts/\($$tname))", \
      "$$(eval .PHONY: \($$tname))", \
      "$$(eval ALL_TARGETS += \($$tname))", \
