@@ -4,7 +4,3 @@ pub const TOTAL_LOG_LENGTH_LIMIT: usize = 16384;
 
 /// Memo used for refund events.
 pub const REFUND_MEMO: &str = "refund";
-
-pub trait NearSdkLog {
-    fn to_near_sdk_log(&self) -> String;
-}

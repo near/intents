@@ -1,5 +1,5 @@
 mod event;
-pub use event::{NearSdkLog, REFUND_MEMO, TOTAL_LOG_LENGTH_LIMIT};
+pub use event::{REFUND_MEMO, TOTAL_LOG_LENGTH_LIMIT};
 mod gas;
 mod lock;
 mod panic_on_clone;
