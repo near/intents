@@ -32,7 +32,12 @@ abi = [
   "serde_with?/schemars_0_8",
   "tlb-ton/schemars_0_8",
 ]
-arbitrary = ["defuse-time/arbitrary", "dep:arbitrary", "tlb-ton/arbitrary", "dep:arbitrary_with"]
+arbitrary = [
+  "defuse-time/arbitrary",
+  "dep:arbitrary",
+  "dep:arbitrary_with",
+  "tlb-ton/arbitrary",
+]
 binary = []
 cell = []
 near-contract = ["defuse-crypto/near-contract"]

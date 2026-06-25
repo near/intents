@@ -136,8 +136,8 @@ near-workspaces = "0.22.2"
 # TODO: `features = ["derive"]` needed because near-sdk uses `derive(Arbitrary)`
 # but doesn't enable the feature itself. Remove once fixed upstream in near-sdk.
 anyhow = "1"
-arbitrary_with = "0.3.2" 
 arbitrary = { version = "1", features = ["derive"] }
+arbitrary_with = "0.3.2"
 array-util = "1"
 async-trait = "0.1.89"
 base64 = "0.22.1"
