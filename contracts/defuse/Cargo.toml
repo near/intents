@@ -84,7 +84,6 @@ defuse-randomness.workspace = true
 defuse-tests.workspace = true
 
 anyhow.workspace = true
-chrono.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
 arbitrary.workspace = true

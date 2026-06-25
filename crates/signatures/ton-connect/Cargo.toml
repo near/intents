@@ -8,9 +8,9 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-chrono = { workspace = true, features = ["serde"] }
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
+defuse-time = { workspace = true }
 impl-tools.workspace = true
 tlb-ton = { workspace = true, features = ["serde"] }
 
@@ -36,6 +36,7 @@ cell = []
 near-contract = ["defuse-crypto/near-contract"]
 serde = [
   "defuse-crypto/serde",
+  "defuse-time/serde",
   "dep:cfg_eval",
   "dep:defuse-serde-utils",
   "dep:serde",

@@ -1,8 +1,8 @@
 //! TON Connect [signData](https://github.com/ton-blockchain/ton-connect/blob/main/requests-responses.md#sign-data)
 mod schema;
 
-use chrono::{DateTime, Utc};
 use defuse_crypto::Ed25519;
+use defuse_time::Timestamp;
 use impl_tools::autoimpl;
 use tlb_ton::MsgAddress;
 
@@ -18,6 +18,7 @@ pub use tlb_ton;
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
 )]
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TonConnectPayload {
@@ -29,25 +30,14 @@ pub struct TonConnectPayload {
     /// UNIX timestamp (in seconds or RFC3339) at the time of singing
     #[cfg_attr(
         feature = "serde",
-        serde_as(as = "::serde_with::PickFirst<(_, ::serde_with::TimestampSeconds)>")
+        serde_as(as = "::serde_with::PickFirst<(
+            _,
+            ::defuse_time::serde::TimestampSeconds<::serde_with::DisplayFromStr>,
+            ::defuse_time::serde::TimestampSeconds,
+        )>")
     )]
-    pub timestamp: DateTime<Utc>,
+    pub timestamp: Timestamp,
     pub payload: TonConnectPayloadSchema,
-}
-
-// `serde_as` requires `cfg_eval`, which pre-expands field `cfg_attr`s during derive
-// pre-processing — before the compiler resolves derive helper attributes in the re-emitted
-// item. This breaks fields that combine `serde_as` and `#[arbitrary(with = ...)]`.
-#[cfg(feature = "arbitrary")]
-impl<'a> arbitrary::Arbitrary<'a> for TonConnectPayload {
-    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
-        Ok(Self {
-            address: u.arbitrary()?,
-            domain: u.arbitrary()?,
-            timestamp: ::tlb_ton::UnixTimestamp::arbitrary(u)?,
-            payload: u.arbitrary()?,
-        })
-    }
 }
 
 impl TonConnectPayload {
@@ -58,9 +48,9 @@ impl TonConnectPayload {
 
         let timestamp: u64 = self
             .timestamp
-            .timestamp()
+            .as_nanos()
             .try_into()
-            .map_err(|_| Error::custom("negative timestamp"))?;
+            .map_err(|_| Error::custom("timestamp overflow"))?;
 
         let context = TonConnectPayloadContext {
             address: self.address,
@@ -241,7 +231,7 @@ mod tests {
         }
         {
             let mut t = signed.clone();
-            t.payload.timestamp = UnixTimestamp::arbitrary(&mut u).unwrap();
+            t.payload.timestamp = Arbitrary::arbitrary(&mut u).unwrap();
             dbg!(&t.payload.timestamp);
             verify_ok(&t, false);
         }

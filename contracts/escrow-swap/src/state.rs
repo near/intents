@@ -8,7 +8,7 @@ use defuse_token_id::TokenId;
 use near_sdk::{AccountId, CryptoHash, Gas, borsh, env, near};
 use serde_with::{DisplayFromStr, hex::Hex};
 
-use crate::{Deadline, Error, Result, decimal::UD128};
+use crate::{Error, Result, Timestamp, decimal::UD128};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -106,7 +106,7 @@ pub struct Params {
             definitions = "i64::add_definitions_recursively",
         ))
     )]
-    pub deadline: Deadline,
+    pub deadline: Timestamp,
 
     #[serde(default)]
     pub partial_fills_allowed: bool,

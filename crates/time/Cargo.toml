@@ -8,25 +8,36 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+jiff.workspace = true
+
+arbitrary = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
+serde_json = { workspace = true, optional = true }
+serde_with = { workspace = true, optional = true }
 
 [target.'cfg(near)'.dependencies]
 near-sdk = { workspace = true, optional = true }
 
 [features]
-std = ["dep:near-sdk"]
+default = ["std"]
 
-abi = ["defuse-borsh-utils?/abi", "schemars_v0_8"]
+std = ["dep:near-sdk", "jiff/std"]
+arbitrary = ["dep:arbitrary"]
+abi = ["defuse-borsh-utils?/abi", "schemars-v0_8"]
 borsh = ["dep:defuse-borsh-utils"]
-serde = ["dep:serde"]
-schemars_v0_8 = ["dep:schemars"]
+serde = ["dep:serde", "dep:serde_with"]
+schemars-v0_8 = [
+  "dep:schemars",
+  "dep:serde_json",
+  "serde",
+  "serde_with/schemars_0_8",
+]
 
 [dev-dependencies]
-borsh = { workspace = true, features = ["unstable__schema"] }
-defuse-borsh-utils = { workspace = true, features = ["chrono", "abi"] }
-defuse-time = { path = ".", features = ["std", "borsh", "serde", "schemars_v0_8"] }
+defuse-time = { path = ".", features = ["std", "arbitrary", "abi", "borsh", "serde", "schemars-v0_8"] }
+
 
 [target.'cfg(near)'.dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }

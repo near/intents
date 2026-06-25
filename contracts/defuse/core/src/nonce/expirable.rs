@@ -1,7 +1,7 @@
 use defuse_borsh_utils::adapters::{As, TimestampNanoSeconds};
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 
-use crate::Deadline;
+use crate::Timestamp;
 
 /// Expirable nonces contain deadline which is 8 bytes of timestamp in nanoseconds
 #[derive(Clone, Debug, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
@@ -14,7 +14,7 @@ where
         serialize_with = "As::<TimestampNanoSeconds>::serialize",
         deserialize_with = "As::<TimestampNanoSeconds>::deserialize"
     )]
-    pub deadline: Deadline,
+    pub deadline: Timestamp,
     pub nonce: T,
 }
 
@@ -22,13 +22,13 @@ impl<T> ExpirableNonce<T>
 where
     T: BorshSerialize + BorshDeserialize,
 {
-    pub const fn new(deadline: Deadline, nonce: T) -> Self {
+    pub const fn new(deadline: Timestamp, nonce: T) -> Self {
         Self { deadline, nonce }
     }
 
     #[inline]
     pub fn has_expired(&self) -> bool {
-        self.deadline.has_expired()
+        self.deadline.has_passed()
     }
 }
 

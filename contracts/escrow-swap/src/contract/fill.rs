@@ -28,7 +28,7 @@ impl State {
         if msg.price < params.price {
             return Err(Error::PriceTooLow);
         }
-        if msg.deadline.has_expired() {
+        if msg.deadline.has_passed() {
             return Err(Error::DeadlineExpired);
         }
 
