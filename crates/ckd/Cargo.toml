@@ -19,7 +19,13 @@ pairing.workspace = true
 rand_core.workspace = true
 # zeroize = { workspace = true, features = ["derive"] }
 
+[target.'cfg(near)'.dependencies]
+near-sdk.workspace = true
+
 [dev-dependencies]
 hex-literal.workspace = true
 rand = { workspace = true, features = ["sys_rng"] }
 rstest.workspace = true
+
+[target.'cfg(near)'.dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }

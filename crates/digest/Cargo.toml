@@ -1,0 +1,34 @@
+lints.workspace = true
+
+[package]
+name = "defuse-digest"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+digest.workspace = true
+
+[target.'cfg(not(near))'.dependencies]
+ripemd = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
+sha3 = { workspace = true, optional = true }
+
+[target.'cfg(near)'.dependencies]
+near-sdk-env.workspace = true
+impl-tools.workspace = true
+
+[features]
+ripemd = ["dep:ripemd"]
+sha2 = ["dep:sha2"]
+sha3 = ["dep:sha3"]
+
+[dev-dependencies]
+defuse-digest = { path = ".", features = ["ripemd", "sha2", "sha3"] }
+
+hex-literal.workspace = true
+rstest.workspace = true
+
+[target.'cfg(near)'.dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }

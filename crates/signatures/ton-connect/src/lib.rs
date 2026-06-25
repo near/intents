@@ -50,7 +50,6 @@ impl<'a> arbitrary::Arbitrary<'a> for TonConnectPayload {
     }
 }
 
-#[cfg(any(feature = "near-contract", feature = "sha2"))]
 impl TonConnectPayload {
     pub fn try_hash(&self) -> Result<defuse_crypto::CryptoHash, tlb_ton::StringError> {
         use crate::schema::{PayloadSchema, TonConnectPayloadContext};

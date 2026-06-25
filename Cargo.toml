@@ -17,6 +17,7 @@ members = [
   "crates/borsh-utils",
   "crates/crypto",
   "crates/ckd",
+  "crates/digest",
   "crates/io-utils",
   "crates/kdf",
   "crates/kdf/crypto",
@@ -35,7 +36,6 @@ members = [
 
   "crates/primitives/deadline",
   "crates/primitives/decimal",
-  "crates/primitives/digest",
   "crates/primitives/fees",
   "crates/primitives/token-id",
 
@@ -80,6 +80,7 @@ defuse-bitmap.path = "crates/bitmap"
 defuse-borsh-utils.path = "crates/borsh-utils"
 defuse-ckd = { path = "crates/ckd", default-features = false }
 defuse-crypto = { path = "crates/crypto", default-features = false }
+defuse-digest.path = "crates/digest"
 defuse-io-utils.path = "crates/io-utils"
 defuse-kdf = { path = "crates/kdf", default-features = false }
 defuse-kdf-crypto = { path = "crates/kdf/crypto", default-features = false }
@@ -98,7 +99,6 @@ defuse-wnear.path = "crates/near/wnear"
 
 defuse-deadline.path = "crates/primitives/deadline"
 defuse-decimal.path = "crates/primitives/decimal"
-defuse-digest.path = "crates/primitives/digest"
 defuse-fees.path = "crates/primitives/fees"
 defuse-token-id = { path = "crates/primitives/token-id", default-features = false }
 
@@ -123,13 +123,14 @@ cargo-near-build = "0.11.3"
 near-account-id = "2.6.0"
 near-api = "0.8.6"
 near-api-types = "0.8.6"
-near-contract-standards = "5.28.1"
+near-contract-standards = "5.28.2"
 near-crypto = "0.36.0"
 near-kit = { version = "0.11.2", default-features = false }
 near-openapi-types = "0.8.0"
-near-plugins = "0.5.2"
+near-plugins = "0.5.3"
 near-sandbox = "0.3.11"
-near-sdk = "5.28.1"
+near-sdk = "5.28.2"
+near-sdk-env = "0.1.1"
 near-workspaces = "0.22.2"
 
 # TODO: `features = ["derive"]` needed because near-sdk uses `derive(Arbitrary)`
@@ -166,7 +167,8 @@ pairing = "0.23"                                              # TODO: features
 proptest = "1.5"
 rand = "0.10"
 rand_core = "0.10"
-rstest = "0.25"
+ripemd = "0.2"
+rstest = "0.26"
 schemars = { version = "0.8", default-features = false }
 serde = "1"
 serde_json = "1"
@@ -183,6 +185,9 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 url = "2"
 zeroize = { version = "1.9", features = ["derive"] }
+
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(near)"] }
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }

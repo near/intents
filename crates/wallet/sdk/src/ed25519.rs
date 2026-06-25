@@ -1,12 +1,12 @@
 use core::convert::Infallible;
 
-use defuse_digest::{Digest, Sha256};
 use defuse_wallet::signature::{
     RequestMessage, WALLET_DOMAIN,
     ed25519::{Ed25519PublicKey, Ed25519Signature},
 };
 use ed25519_dalek::ed25519::signature::Signer as Ed25519Signer;
 pub use ed25519_dalek::{self, SigningKey};
+use sha2::{Digest, Sha256};
 
 use crate::{Proof, Signer};
 

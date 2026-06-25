@@ -18,7 +18,6 @@ pub struct BinaryPayload {
     pub bytes: Vec<u8>,
 }
 
-#[cfg(any(feature = "near-contract", feature = "sha2"))]
 impl crate::schema::PayloadSchema for BinaryPayload {
     fn hash_with_context(
         &self,

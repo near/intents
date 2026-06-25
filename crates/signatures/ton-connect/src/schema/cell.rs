@@ -68,7 +68,6 @@ where
     }
 }
 
-#[cfg(any(feature = "near-contract", feature = "sha2"))]
 impl crate::schema::PayloadSchema for CellPayload {
     fn hash_with_context(
         &self,
@@ -84,6 +83,6 @@ impl crate::schema::PayloadSchema for CellPayload {
         .to_cell(())?;
 
         // use host function for recursive hash calculation
-        Ok(cell.hash_digest::<defuse_digest::Sha256>())
+        Ok(cell.hash_digest::<defuse_digest::sha2::Sha256>())
     }
 }

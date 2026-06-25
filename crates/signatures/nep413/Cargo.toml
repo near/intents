@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-nep413"
 edition.workspace = true
@@ -7,8 +9,9 @@ repository.workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
-defuse-digest.workspace = true
+defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-nep461.workspace = true
+digest-io.workspace = true
 impl-tools.workspace = true
 
 borsh = { workspace = true, features = ["derive"], optional = true }
@@ -26,17 +29,10 @@ abi = [
   "serde_with?/schemars_0_8",
 ]
 borsh = ["defuse-crypto/borsh", "dep:borsh"]
-near-contract = [
-  "borsh",
-  "defuse-crypto/near-contract",
-  "defuse-digest/near-contract",
-]
+near-contract = ["borsh", "defuse-crypto/near-contract"]
 serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
 near-kit = ["dep:near-kit"]
 sha2 = ["defuse-digest/sha2"]
 
 [dev-dependencies]
 serde_json.workspace = true
-
-[lints]
-workspace = true
