@@ -25,6 +25,20 @@ impl Timestamp {
     pub const UNIX_EPOCH: Self = Self(::time::Timestamp::UNIX_EPOCH);
     pub const MAX: Self = Self(::time::Timestamp::MAX);
 
+    #[cfg(feature = "std")]
+    #[must_use]
+    #[inline]
+    pub fn now() -> Self {
+        cfg_select! {
+            near => {
+                Self::from_nanos(
+                    ::near_sdk::env::block_timestamp().into(),
+                ).ok_or(Overflow).unwrap()
+            }
+            _ => Self(::time::Timestamp::now()),
+        }
+    }
+
     #[must_use]
     #[inline]
     pub const fn from_nanos(nanos: i128) -> Option<Self> {
@@ -183,30 +197,6 @@ const _: () = {
         #[inline]
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             ::time::Timestamp::parse(s, &Rfc3339).map(Self)
-        }
-    }
-};
-
-#[cfg(feature = "std")]
-const _: () = {
-    impl Timestamp {
-        #[must_use]
-        #[inline]
-        pub fn now() -> Self {
-            cfg_select! {
-                near => {
-                    Self::from_nanos(
-                        ::near_sdk::env::block_timestamp().into(),
-                    ).ok_or(Overflow).unwrap()
-                }
-                _ => Self(::time::Timestamp::now()),
-            }
-        }
-
-        #[must_use]
-        #[inline]
-        pub fn timeout(duration: Duration) -> Self {
-            Self::now() + duration
         }
     }
 };

@@ -22,8 +22,7 @@ pub async fn generate_unique_nonce(
     defuse_contract: &Account,
     deadline: Option<Timestamp>,
 ) -> anyhow::Result<Nonce> {
-    let deadline =
-        deadline.unwrap_or_else(|| Timestamp::timeout(std::time::Duration::from_mins(2)));
+    let deadline = deadline.unwrap_or_else(|| Timestamp::now() + std::time::Duration::from_mins(2));
 
     let salt = defuse_contract.current_salt().await?;
 

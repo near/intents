@@ -57,7 +57,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
         dst_token: dst_token.clone(),
 
         price: "2".parse().unwrap(),
-        deadline: Timestamp::timeout(TIMEOUT),
+        deadline: Timestamp::now() + TIMEOUT,
 
         partial_fills_allowed: true,
 
@@ -169,7 +169,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
                                     params: params.clone(),
                                     action: FillAction {
                                         price: "2.1".parse().unwrap(),
-                                        deadline: Timestamp::timeout(Duration::from_secs(10)),
+                                        deadline: Timestamp::now() + Duration::from_secs(10),
                                         receive_src_to: OverrideSend {
                                             memo: Some("taker memo".to_string()),
                                             // msg: Some("taker msg".to_string()),
