@@ -161,11 +161,11 @@ impl SubAssign<Duration> for Timestamp {
 const _: () = {
     use core::fmt::{self, Display};
 
+    use time::format_description::well_known::Rfc3339;
+
     impl Display for Timestamp {
         #[inline]
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            use time::format_description::well_known::Rfc3339;
-
             f.write_str(&self.0.format(&Rfc3339).map_err(|_| fmt::Error)?)
         }
     }
