@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-core"
 edition.workspace = true
@@ -64,9 +66,6 @@ arbitrary = [
 imt = ["defuse-token-id/imt"]
 near-api-types = ["dep:near-api-types"]
 
-# [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-# chrono = { workspace = true, features = ["now"] }
-
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-test-utils.workspace = true
@@ -75,6 +74,3 @@ hex-literal.workspace = true
 itertools.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
-
-[lints]
-workspace = true

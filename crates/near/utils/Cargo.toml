@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-near-utils"
 edition.workspace = true
@@ -11,13 +13,8 @@ defuse-borsh-utils.workspace = true
 impl-tools.workspace = true
 near-sdk.workspace = true
 
-[features]
-
 [dev-dependencies]
 defuse-test-utils.workspace = true
 
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
-
-[lints]
-workspace = true

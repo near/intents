@@ -10,9 +10,9 @@ repository.workspace = true
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
-defuse-time = { workspace = true }
+defuse-time.workspace = true
 impl-tools.workspace = true
-tlb-ton = { workspace = true, features = ["serde"] }
+tlb-ton.workspace = true
 
 arbitrary = { workspace = true, optional = true }
 cfg_eval = { workspace = true, optional = true }
@@ -26,6 +26,7 @@ default = ["binary", "cell", "text"]
 abi = [
   "defuse-crypto/abi",
   "defuse-serde-utils?/abi",
+  "defuse-time/abi",
   "dep:schemars",
   "serde_with?/schemars_0_8",
   "tlb-ton/schemars_0_8",
@@ -41,6 +42,7 @@ serde = [
   "dep:defuse-serde-utils",
   "dep:serde",
   "dep:serde_with",
+  "tlb-ton/serde",
 ]
 text = []
 
