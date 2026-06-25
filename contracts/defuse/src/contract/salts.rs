@@ -14,7 +14,6 @@ impl SaltManager for Contract {
     #[payable]
     fn update_current_salt(&mut self) -> Salt {
         assert_one_yocto();
-        ::near_sdk::env::setup_panic_hook();
 
         self.salts.set_new().unwrap();
         let current = self.salts.current();
