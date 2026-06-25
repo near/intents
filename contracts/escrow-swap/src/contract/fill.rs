@@ -1,6 +1,6 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
-use defuse_near_utils::{PromiseExt, UnwrapOrPanic};
+use defuse_near_utils::PromiseExt;
 use defuse_num_utils::{CheckedDiv, CheckedMul};
 use defuse_time::Timestamp;
 use near_sdk::{AccountId, AccountIdRef, Promise, PromiseOrValue};
@@ -167,7 +167,7 @@ impl State {
                 *out = out
                     .checked_sub(*fee_amount)
                     .ok_or(Error::ExcessiveFees)
-                    .unwrap_or_panic(); // avoid too much nesting
+                    .unwrap(); // avoid too much nesting
             })
             .map(|(collector, fee_amount)| {
                 token.clone().send(

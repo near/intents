@@ -9,7 +9,6 @@ mod resolve;
 mod return_value;
 mod tokens;
 
-use defuse_near_utils::UnwrapOrPanic;
 use impl_tools::autoimpl;
 use near_sdk::{PanicOnDefault, PromiseOrValue, env, near};
 
@@ -26,16 +25,15 @@ impl Escrow for Contract {
         self.try_as_alive()
             // if cleanup is in progress, the contract will be
             // soon deleted anyway, so it's ok to panic here
-            .unwrap_or_panic()
+            .unwrap()
     }
 
     fn es_close(&mut self, params: Params) -> PromiseOrValue<bool> {
-        self.close(&env::predecessor_account_id(), params)
-            .unwrap_or_panic()
+        self.close(&env::predecessor_account_id(), params).unwrap()
     }
 
     fn es_lost_found(&mut self, params: Params) -> PromiseOrValue<bool> {
-        self.lost_found(params).unwrap_or_panic()
+        self.lost_found(params).unwrap()
     }
 }
 

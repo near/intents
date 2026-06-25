@@ -6,7 +6,7 @@ mod nep245;
 
 use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
-use defuse_near_utils::{Lock, REFUND_MEMO, UnwrapOrPanic, promise_result_checked_json_with_len};
+use defuse_near_utils::{Lock, REFUND_MEMO, promise_result_checked_json_with_len};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
 use near_sdk::{AccountId, AccountIdRef, Gas, env, json_types::U128};
@@ -202,14 +202,14 @@ impl Contract {
                 .token_balances
                 .sub(token_id.clone(), refund_amount)
                 .ok_or(DefuseError::BalanceOverflow)
-                .unwrap_or_panic();
+                .unwrap();
 
             self.storage
                 .state
                 .total_supplies
                 .sub(token_id, refund_amount)
                 .ok_or(DefuseError::BalanceOverflow)
-                .unwrap_or_panic();
+                .unwrap();
         }
 
         if !burn_event.amounts.is_empty() {

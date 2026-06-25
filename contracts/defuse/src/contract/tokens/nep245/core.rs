@@ -2,7 +2,6 @@ use crate::contract::{Contract, ContractExt};
 use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::NotifyOnTransfer, token_id::TokenId,
 };
-use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{
@@ -52,7 +51,7 @@ impl MultiTokenCore for Contract {
             memo.as_deref(),
             false,
         )
-        .unwrap_or_panic()
+        .unwrap()
     }
 
     #[pause(name = "mt_transfer")]
@@ -99,7 +98,7 @@ impl MultiTokenCore for Contract {
             msg,
             false,
         )
-        .unwrap_or_panic()
+        .unwrap()
     }
 
     fn mt_token(
@@ -313,14 +312,14 @@ impl Contract {
         // where `n` is the number of tokens.
         const MT_RESOLVE_TRANSFER_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
         const MT_RESOLVE_TRANSFER_BASE_GAS: Gas = Gas::from_tgas(8);
-        let token_count: u64 = token_count.try_into().unwrap_or_panic_display();
+        let token_count: u64 = token_count.try_into().unwrap();
 
         MT_RESOLVE_TRANSFER_BASE_GAS
             .checked_add(
                 MT_RESOLVE_TRANSFER_PER_TOKEN_GAS
                     .checked_mul(token_count)
-                    .unwrap_or_panic(),
+                    .unwrap(),
             )
-            .unwrap_or_panic()
+            .unwrap()
     }
 }

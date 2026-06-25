@@ -1,4 +1,3 @@
-use defuse_near_utils::UnwrapOrPanic;
 use near_sdk::{Gas, Promise, near};
 
 use crate::{
@@ -18,8 +17,7 @@ impl Contract {
         maker_src: Option<Sent>,
         maker_dst: Option<Sent>,
     ) -> bool {
-        self.resolve_transfers(maker_src, maker_dst)
-            .unwrap_or_panic()
+        self.resolve_transfers(maker_src, maker_dst).unwrap()
     }
 }
 

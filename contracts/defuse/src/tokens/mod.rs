@@ -10,7 +10,6 @@ use core::{
 };
 
 use defuse_core::{intents::tokens::NotifyOnTransfer, payload::multi::MultiPayload};
-use defuse_near_utils::UnwrapOrPanicError;
 use near_sdk::{AccountId, account_id::ParseAccountError, near, serde_json};
 use thiserror::Error as ThisError;
 
@@ -48,7 +47,7 @@ impl Display for DepositMessage {
             Some(DepositAction::Execute(exec)) if exec.execute_intents.is_empty() => {
                 f.write_str(self.receiver_id.as_str())
             }
-            Some(_) => f.write_str(&serde_json::to_string(self).unwrap_or_panic_display()),
+            Some(_) => f.write_str(&serde_json::to_string(self).unwrap()),
         }
     }
 }

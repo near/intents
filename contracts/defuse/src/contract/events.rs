@@ -1,6 +1,5 @@
 use std::mem;
 
-use defuse_near_utils::UnwrapOrPanicError;
 use defuse_nep245::{ErrorLogTooLong, MtBurnEvent, MtEvent};
 
 #[derive(Debug, Default)]
@@ -25,6 +24,6 @@ impl Drop for PostponedMtBurnEvents {
     fn drop(&mut self) {
         // NOTE: `check_refund()` fails only when the refund event would exceed
         // maximum log size. Checking here prevents panics during withdrawal resolution.
-        self.flush().unwrap_or_panic_display();
+        self.flush().unwrap();
     }
 }

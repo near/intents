@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use defuse_core::{Salt, accounts::SaltRotationEvent, events::DefuseIntentEmit};
-use defuse_near_utils::UnwrapOrPanic;
+
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{assert_one_yocto, near};
 
@@ -14,8 +14,9 @@ impl SaltManager for Contract {
     #[payable]
     fn update_current_salt(&mut self) -> Salt {
         assert_one_yocto();
+        ::near_sdk::env::setup_panic_hook();
 
-        self.salts.set_new().unwrap_or_panic();
+        self.salts.set_new().unwrap();
         let current = self.salts.current();
 
         SaltRotationEvent {

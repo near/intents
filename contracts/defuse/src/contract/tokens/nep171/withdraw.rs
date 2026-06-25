@@ -11,9 +11,7 @@ use defuse_core::{
     intents::tokens::NftWithdraw,
     token_id::{nep141::Nep141TokenId, nep171::Nep171TokenId},
 };
-use defuse_near_utils::{
-    REFUND_MEMO, UnwrapOrPanic, promise_result_checked_json, promise_result_checked_void,
-};
+use defuse_near_utils::{REFUND_MEMO, promise_result_checked_json, promise_result_checked_void};
 
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{
@@ -53,7 +51,7 @@ impl NonFungibleTokenWithdrawer for Contract {
             },
             false,
         )
-        .unwrap_or_panic()
+        .unwrap()
     }
 }
 
@@ -95,7 +93,7 @@ impl Contract {
                             Self::DO_NFT_WITHDRAW_GAS
                                 .checked_add(withdraw.min_gas())
                                 .ok_or(DefuseError::GasOverflow)
-                                .unwrap_or_panic(),
+                                .unwrap(),
                         )
                         .do_nft_withdraw(withdraw.clone()),
                 )
@@ -190,7 +188,7 @@ impl NonFungibleTokenWithdrawResolver for Contract {
                 [(Nep171TokenId::new(token, token_id).into(), 1)],
                 Some(REFUND_MEMO),
             )
-            .unwrap_or_panic();
+            .unwrap();
         }
 
         used
@@ -224,6 +222,6 @@ impl NonFungibleTokenForceWithdrawer for Contract {
             },
             true,
         )
-        .unwrap_or_panic()
+        .unwrap()
     }
 }
