@@ -41,7 +41,7 @@ macro_rules! borsh_as {
                 let timestamp: $int = I::deserialize_reader(reader)?
                     .try_into()
                     .map_err(|err| io::Error::other(err.to_string()))?;
-                jiff::Timestamp::$from(timestamp).map(Timestamp).map_err(io::Error::other)
+                chrono::DateTime::$from(timestamp).map(Timestamp).ok_or_else(|| io::Error::other("overflow"))
             }
         }
 
@@ -73,23 +73,23 @@ macro_rules! borsh_as {
 
 borsh_as! {
     pub struct TimestampSeconds: i64 {
-        as_second,
-        from_second,
+        timestamp,
+        from_timestamp_secs,
     }
 
     pub struct TimestampMilliSeconds: i64 {
-        as_millisecond,
-        from_millisecond,
+        timestamp_millis,
+        from_timestamp_millis,
     }
 
     pub struct TimestampMicroSeconds: i64 {
-        as_microsecond,
-        from_microsecond,
+        timestamp_micros,
+        from_timestamp_micros,
     }
 
-    pub struct TimestampNanoSeconds: i128 {
-        as_nanosecond,
-        from_nanosecond,
+    pub struct TimestampNanoSeconds: i64 {
+        timestamp_nanos,
+        from_timestamp_micros,// TODO
     }
 }
 

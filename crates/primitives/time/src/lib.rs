@@ -4,6 +4,8 @@ pub mod borsh;
 pub mod serde;
 
 mod error;
+use chrono::{DateTime, SubsecRound, TimeDelta, Utc};
+
 pub use self::error::*;
 
 use core::{
@@ -18,55 +20,60 @@ use core::{
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Timestamp(pub(crate) jiff::Timestamp);
+pub struct Timestamp(pub(crate) DateTime<Utc>);
 
 impl Timestamp {
-    pub const MIN: Self = Self(jiff::Timestamp::MIN);
-    pub const UNIX_EPOCH: Self = Self(jiff::Timestamp::UNIX_EPOCH);
-    pub const MAX: Self = Self(jiff::Timestamp::MAX);
+    pub const MIN: Self = Self(DateTime::<Utc>::MIN_UTC);
+    pub const UNIX_EPOCH: Self = Self(DateTime::<Utc>::UNIX_EPOCH);
+    pub const MAX: Self = Self(DateTime::<Utc>::MAX_UTC);
 
     #[must_use]
     #[inline]
     pub fn from_nanos(nanos: i128) -> Option<Self> {
-        jiff::Timestamp::from_nanosecond(nanos).ok().map(Self)
+        nanos
+            .try_into()
+            .map(DateTime::<Utc>::from_timestamp_nanos)
+            .map(Self)
+            .ok()
+        // jiff::Timestamp::from_nanosecond(nanos).ok().map(Self)
     }
 
     pub fn from_secs(secs: i64) -> Option<Self> {
-        jiff::Timestamp::from_second(secs).ok().map(Self)
+        DateTime::<Utc>::from_timestamp_secs(secs).map(Self)
     }
 
     #[must_use]
     #[inline]
     pub fn checked_add_unsigned(self, rhs: Duration) -> Option<Self> {
-        self.0.checked_add(rhs).ok().map(Self)
+        self.0
+            .checked_add_signed(TimeDelta::from_std(rhs).ok()?)
+            .map(Self)
     }
 
     #[must_use]
     #[inline]
     pub fn checked_sub_unsigned(self, rhs: Duration) -> Option<Self> {
-        self.0.checked_sub(rhs).ok().map(Self)
+        self.0
+            .checked_sub_signed(TimeDelta::from_std(rhs).ok()?)
+            .map(Self)
     }
 
     #[inline]
     pub fn duration_since(&self, other: Self) -> Result<Duration, Duration> {
-        let dur = self.0.duration_since(other.0);
-        if dur.is_negative() {
-            return Err(dur.unsigned_abs());
-        }
-        Ok(dur.unsigned_abs())
+        let dur = self.0.signed_duration_since(other.0);
+        dur.to_std().map_err(|_| (-dur).to_std().unwrap())
     }
 
     #[must_use]
     #[inline]
     pub fn truncate_subsecs(self) -> Self {
-        // TODO
-        Self(jiff::Timestamp::from_second(self.0.as_second()).unwrap())
+        Self(self.0.trunc_subsecs(0))
     }
 
     #[must_use]
     #[inline]
     pub fn as_nanos(&self) -> i128 {
-        self.0.as_nanosecond()
+        self.0.timestamp_nanos_opt().unwrap().into()
     }
 }
 
@@ -110,7 +117,7 @@ impl SubAssign<Duration> for Timestamp {
 }
 
 impl FromStr for Timestamp {
-    type Err = jiff::Error;
+    type Err = chrono::ParseError;
 
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -139,7 +146,7 @@ const _: () = {
                         ::near_sdk::env::block_timestamp().into(),
                     ).ok_or(Overflow).unwrap()
                 }
-                _ => Self(jiff::Timestamp::now()),
+                _ => Self(Utc::now()),
             }
         }
 

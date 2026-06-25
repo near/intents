@@ -34,7 +34,7 @@ macro_rules! serde_as {
             {
 
                 let timestamp = <F as DeserializeAs<'de, $int>>::deserialize_as(deserializer)?;
-                ::jiff::Timestamp::$from(timestamp).map(Timestamp).map_err(de::Error::custom)
+                ::chrono::DateTime::$from(timestamp).map(Timestamp).ok_or_else(|| de::Error::custom("overflow"))
             }
         }
 
@@ -68,23 +68,23 @@ macro_rules! serde_as {
 
 serde_as! {
     pub struct TimestampSeconds: i64 {
-        as_second,
-        from_second,
+        timestamp,
+        from_timestamp_secs,
     }
 
     pub struct TimestampMilliSeconds: i64 {
-        as_millisecond,
-        from_millisecond,
+        timestamp_millis,
+        from_timestamp_millis,
     }
 
     pub struct TimestampMicroSeconds: i64 {
-        as_microsecond,
-        from_microsecond,
+        timestamp_micros,
+        from_timestamp_micros,
     }
 
-    pub struct TimestampNanoSeconds: i128 {
-        as_nanosecond,
-        from_nanosecond,
+    pub struct TimestampNanoSeconds: i64 {
+        timestamp_nanos,
+        from_timestamp_micros,// TODO
     }
 }
 

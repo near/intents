@@ -8,7 +8,7 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-jiff.workspace = true
+chrono.workspace = true
 
 arbitrary = { workspace = true, optional = true }
 borsh = { workspace = true, optional = true }
@@ -24,7 +24,7 @@ near-sdk = { workspace = true, optional = true }
 [features]
 default = ["std"]
 
-std = ["dep:near-sdk", "jiff/std"]
+std = ["chrono/now", "dep:near-sdk"]
 arbitrary = ["dep:arbitrary"]
 abi = ["defuse-borsh-utils?/abi", "schemars-v0_8"]
 borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
