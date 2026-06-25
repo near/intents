@@ -18,7 +18,7 @@ arbitrary = { workspace = true, optional = true }
 arbitrary_with = { workspace = true, optional = true }
 cfg_eval = { workspace = true, optional = true }
 defuse-serde-utils = { workspace = true, features = ["tlb"], optional = true }
-schemars = { workspace = true, features = ["chrono"], optional = true }
+schemars = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, features = ["base64"], optional = true }
 
