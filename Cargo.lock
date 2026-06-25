@@ -1398,7 +1398,6 @@ name = "defuse-borsh-utils"
 version = "0.1.0"
 dependencies = [
  "array-util",
- "base64 0.22.1",
  "borsh",
  "defuse-io-utils",
  "impl-tools",

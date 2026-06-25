@@ -48,7 +48,7 @@ impl TonConnectPayload {
 
         let timestamp: u64 = self
             .timestamp
-            .as_nanos()
+            .as_secs()
             .try_into()
             .map_err(|_| Error::custom("timestamp overflow"))?;
 
@@ -252,6 +252,7 @@ mod tests {
     }
 
     #[cfg(feature = "serde")]
+    #[track_caller]
     fn verify_ok(signed: &SignedTonConnectPayload, ok: bool) {
         let serialized = serde_json::to_string_pretty(signed).unwrap();
         println!("{}", &serialized);
