@@ -27,7 +27,7 @@ where
 
     #[inline]
     pub fn has_expired(&self) -> bool {
-        self.deadline.has_passed()
+        self.deadline < Timestamp::now()
     }
 }
 

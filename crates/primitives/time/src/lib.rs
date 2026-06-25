@@ -208,12 +208,6 @@ const _: () = {
         pub fn timeout(duration: Duration) -> Self {
             Self::now() + duration
         }
-
-        #[must_use]
-        #[inline]
-        pub fn has_passed(&self) -> bool {
-            *self < Self::now()
-        }
     }
 };
 

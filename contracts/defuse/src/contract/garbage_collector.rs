@@ -1,4 +1,4 @@
-use defuse_core::{ExpirableNonce, Nonce, SaltedNonce, VersionedNonce, engine::State};
+use defuse_core::{ExpirableNonce, Nonce, SaltedNonce, Timestamp, VersionedNonce, engine::State};
 use defuse_serde_utils::base64::AsBase64;
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{AccountId, assert_one_yocto, near};
@@ -38,7 +38,7 @@ impl Contract {
             VersionedNonce::V1(SaltedNonce {
                 salt,
                 nonce: ExpirableNonce { deadline, .. },
-            }) => deadline.has_passed() || !self.is_valid_salt(salt),
+            }) => deadline < Timestamp::now() || !self.is_valid_salt(salt),
         }
     }
 }

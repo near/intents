@@ -1,3 +1,4 @@
+use defuse_time::Timestamp;
 use near_sdk::{AccountIdRef, Promise, PromiseOrValue};
 
 use crate::{Error, Params, Result, State, event::CloseReason};
@@ -30,7 +31,7 @@ impl State {
         params: Params,
     ) -> Result<Option<Promise>> {
         if !self.closed {
-            let reason = if self.deadline.has_passed() {
+            let reason = if self.deadline < Timestamp::now() {
                 CloseReason::DeadlineExpired
             } else if self.maker_src_remaining == 0 && signer_id == params.maker {
                 CloseReason::ByMaker

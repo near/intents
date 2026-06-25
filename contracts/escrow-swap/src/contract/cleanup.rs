@@ -1,6 +1,7 @@
 use core::mem;
 
 use defuse_near_utils::UnwrapOrPanicError;
+use defuse_time::Timestamp;
 use near_sdk::{Promise, env};
 
 use crate::{
@@ -97,7 +98,8 @@ impl State {
     #[must_use]
     #[inline]
     fn should_cleanup(&mut self) -> bool {
-        if !self.closed && self.deadline.has_passed() {
+        let expired = self.deadline < Timestamp::now();
+        if !self.closed && expired {
             self.close_unchecked(CloseReason::DeadlineExpired);
         }
 
@@ -105,6 +107,6 @@ impl State {
             && self.in_flight == 0
             && self.maker_src_remaining == 0
             && self.maker_dst_lost == 0
-            && self.deadline.has_passed()
+            && expired
     }
 }

@@ -65,7 +65,7 @@ where
         self.inspector.on_deadline(deadline);
 
         // make sure message is still valid
-        if deadline.has_passed() {
+        if deadline < Timestamp::now() {
             return Err(DefuseError::DeadlineExpired);
         }
 
@@ -103,7 +103,7 @@ where
                     return Err(DefuseError::DeadlineGreaterThanNonce);
                 }
 
-                if deadline.has_passed() {
+                if deadline < Timestamp::now() {
                     return Err(DefuseError::NonceExpired);
                 }
             }
