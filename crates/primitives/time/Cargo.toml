@@ -11,6 +11,7 @@ repository.workspace = true
 jiff.workspace = true
 
 arbitrary = { workspace = true, optional = true }
+borsh = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
@@ -26,7 +27,7 @@ default = ["std"]
 std = ["dep:near-sdk", "jiff/std"]
 arbitrary = ["dep:arbitrary"]
 abi = ["defuse-borsh-utils?/abi", "schemars-v0_8"]
-borsh = ["dep:defuse-borsh-utils"]
+borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
 serde = ["dep:serde", "dep:serde_with"]
 schemars-v0_8 = [
   "dep:schemars",
@@ -37,7 +38,6 @@ schemars-v0_8 = [
 
 [dev-dependencies]
 defuse-time = { path = ".", features = ["std", "arbitrary", "abi", "borsh", "serde", "schemars-v0_8"] }
-
 
 [target.'cfg(near)'.dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }

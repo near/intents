@@ -127,7 +127,6 @@ mod tests {
     use defuse_test_utils::random::random_bytes;
     use hex_literal::hex;
     use rstest::rstest;
-    use tlb_ton::UnixTimestamp;
 
     #[cfg(all(feature = "text", feature = "serde"))]
     #[rstest]
@@ -139,7 +138,7 @@ mod tests {
                         .parse()
                         .unwrap(),
                     domain: "ton-connect.github.io".to_string(),
-                    timestamp: DateTime::from_timestamp(1747759882, 0).unwrap(),
+                    timestamp: Timestamp::from_secs(1747759882).unwrap(),
                     payload: TonConnectPayloadSchema::text("Hello, TON!".repeat(100)),
                 },
                 public_key: hex!(
@@ -163,7 +162,7 @@ mod tests {
                         .parse()
                         .unwrap(),
                     domain: "ton-connect.github.io".to_string(),
-                    timestamp: DateTime::from_timestamp(1747760435, 0).unwrap(),
+                    timestamp: Timestamp::from_secs(1747760435).unwrap(),
                     payload: TonConnectPayloadSchema::binary(hex!("48656c6c6f2c20544f4e21")),
                 },
                 public_key: hex!(
@@ -189,7 +188,7 @@ mod tests {
                         .parse()
                         .unwrap(),
                     domain: "ton-connect.github.io".to_string(),
-                    timestamp: DateTime::from_timestamp(1747772412, 0).unwrap(),
+                    timestamp: Timestamp::from_secs(1747772412).unwrap(),
                     payload: TonConnectPayloadSchema::cell(
                         0x2eccd0c1,
                         BagOfCells::parse_base64("te6cckEBAQEAEQAAHgAAAABIZWxsbywgVE9OIb7WCx4=")

@@ -1,14 +1,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use defuse_borsh_utils::adapters::{
-    As as BorshAs, TimestampNanoSeconds as BorshTimestampNanoSeconds,
-};
+use defuse_borsh_utils::adapters::As as BorshAs;
 use defuse_fees::Pips;
+use defuse_time::{Timestamp, borsh::TimestampNanoSeconds as BorshTimestampNanoSeconds};
 use defuse_token_id::TokenId;
 use near_sdk::{AccountId, CryptoHash, Gas, borsh, env, near};
 use serde_with::{DisplayFromStr, hex::Hex};
 
-use crate::{Error, Result, Timestamp, decimal::UD128};
+use crate::{Error, Result, decimal::UD128};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -99,8 +98,8 @@ pub struct Params {
     pub price: UD128, // TODO: dutch auction
 
     #[borsh(
-        serialize_with = "BorshAs::<BorshTimestampNanoSeconds>::serialize",
-        deserialize_with = "BorshAs::<BorshTimestampNanoSeconds>::deserialize",
+        serialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::serialize",
+        deserialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::deserialize",
         schema(with_funcs(
             declaration = "i64::declaration",
             definitions = "i64::add_definitions_recursively",
@@ -266,14 +265,14 @@ pub struct State {
     pub maker_dst_lost: u128,
 
     #[borsh(
-        serialize_with = "BorshAs::<BorshTimestampNanoSeconds>::serialize",
-        deserialize_with = "BorshAs::<BorshTimestampNanoSeconds>::deserialize",
+        serialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::serialize",
+        deserialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::deserialize",
         schema(with_funcs(
             declaration = "i64::declaration",
             definitions = "i64::add_definitions_recursively",
         ))
     )]
-    pub deadline: Deadline,
+    pub deadline: Timestamp,
 
     #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
     pub closed: bool,

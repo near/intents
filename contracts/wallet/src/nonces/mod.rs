@@ -7,9 +7,9 @@ use core::{mem, time::Duration};
 use std::collections::BTreeMap;
 
 use defuse_bitmap::BitMap;
-use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds, TimestampSeconds};
+use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds};
 
-use defuse_time::Timestamp;
+use defuse_time::{Timestamp, borsh::TimestampSeconds};
 use near_sdk::near;
 
 use crate::{Error, Result};
@@ -119,7 +119,7 @@ impl Nonces {
         // As a result, `now()` might be (less than 1 second) behind the actual
         // block timestamp, which is acceptable: we're just assuming the receipt
         // arrived a bit faster.
-        Timestamp::now().trunc_subsecs()
+        Timestamp::now().truncate_subsecs()
     }
 
     #[inline]

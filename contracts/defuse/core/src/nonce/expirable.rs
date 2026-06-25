@@ -1,7 +1,6 @@
-use defuse_borsh_utils::adapters::{As, TimestampNanoSeconds};
+use defuse_borsh_utils::adapters::As;
+use defuse_time::{Timestamp, borsh::TimestampNanoSeconds};
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
-
-use crate::Timestamp;
 
 /// Expirable nonces contain deadline which is 8 bytes of timestamp in nanoseconds
 #[derive(Clone, Debug, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
@@ -11,8 +10,8 @@ where
     T: BorshSerialize + BorshDeserialize,
 {
     #[borsh(
-        serialize_with = "As::<TimestampNanoSeconds>::serialize",
-        deserialize_with = "As::<TimestampNanoSeconds>::deserialize"
+        serialize_with = "As::<TimestampNanoSeconds<i64>>::serialize",
+        deserialize_with = "As::<TimestampNanoSeconds<i64>>::deserialize"
     )]
     pub deadline: Timestamp,
     pub nonce: T,
@@ -34,28 +33,22 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::*;
 
-    use chrono::{Days, Utc};
     use defuse_test_utils::random::random_bytes;
     use rstest::rstest;
 
     #[rstest]
     fn expirable_test(random_bytes: Vec<u8>) {
-        let current_timestamp = Utc::now();
         let mut u = arbitrary::Unstructured::new(&random_bytes);
         let nonce: [u8; 24] = u.arbitrary().unwrap();
 
-        let expired = ExpirableNonce::new(
-            Deadline::new(current_timestamp.checked_sub_days(Days::new(1)).unwrap()),
-            nonce,
-        );
+        let expired = ExpirableNonce::new(Timestamp::now() - Duration::from_hours(24), nonce);
         assert!(expired.has_expired());
 
-        let not_expired = ExpirableNonce::new(
-            Deadline::new(current_timestamp.checked_add_days(Days::new(1)).unwrap()),
-            nonce,
-        );
+        let not_expired = ExpirableNonce::new(Timestamp::now() + Duration::from_hours(24), nonce);
         assert!(!not_expired.has_expired());
     }
 }

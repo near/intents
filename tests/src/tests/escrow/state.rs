@@ -1,5 +1,5 @@
 use defuse_sandbox::extensions::escrow::contract::{
-    ContractStorage, Deadline, OverrideSend, Params,
+    ContractStorage, OverrideSend, Params, Timestamp,
     token_id::{TokenId, nep141::Nep141TokenId},
 };
 use rstest::rstest;
@@ -21,7 +21,7 @@ async fn init_state_has_single_empty_key(#[future(awt)] env: Env) {
         src_token,
         dst_token,
         price: "1".parse().unwrap(),
-        deadline: Deadline::timeout(Duration::from_mins(1)),
+        deadline: Timestamp::timeout(Duration::from_mins(1)),
         partial_fills_allowed: false,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),

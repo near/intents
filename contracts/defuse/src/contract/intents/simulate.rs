@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use defuse_core::{
-    Deadline, Nonce,
+    Nonce, Timestamp,
     accounts::{AccountEvent, NonceEvent},
     engine::Inspector,
     events::DefuseEvent,
@@ -14,7 +14,7 @@ use crate::simulation_output::SimulationReport;
 pub struct SimulateInspector {
     intents_executed: Vec<MaybeIntentEvent<AccountEvent<'static, NonceEvent>>>,
     recorded_events: Vec<JsonValue>,
-    min_deadline: Deadline,
+    min_deadline: Timestamp,
 }
 
 impl SimulateInspector {
@@ -41,7 +41,7 @@ impl Default for SimulateInspector {
     fn default() -> Self {
         Self {
             intents_executed: Vec::new(),
-            min_deadline: Deadline::MAX,
+            min_deadline: Timestamp::MAX,
             recorded_events: Vec::new(),
         }
     }
@@ -49,7 +49,7 @@ impl Default for SimulateInspector {
 
 impl Inspector for SimulateInspector {
     #[inline]
-    fn on_deadline(&mut self, deadline: Deadline) {
+    fn on_deadline(&mut self, deadline: Timestamp) {
         self.min_deadline = self.min_deadline.min(deadline);
     }
 

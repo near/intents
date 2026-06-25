@@ -1,3 +1,5 @@
+#[cfg(feature = "borsh")]
+pub mod borsh;
 #[cfg(feature = "serde")]
 pub mod serde;
 
@@ -29,16 +31,36 @@ impl Timestamp {
         jiff::Timestamp::from_nanosecond(nanos).ok().map(Self)
     }
 
-    #[must_use]
-    #[inline]
-    pub fn checked_add(self, rhs: Duration) -> Option<Self> {
-        todo!()
+    pub fn from_secs(secs: i64) -> Option<Self> {
+        jiff::Timestamp::from_second(secs).ok().map(Self)
     }
 
     #[must_use]
     #[inline]
-    pub fn checked_sub(self, rhs: Duration) -> Option<Self> {
-        todo!()
+    pub fn checked_add_unsigned(self, rhs: Duration) -> Option<Self> {
+        self.0.checked_add(rhs).ok().map(Self)
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn checked_sub_unsigned(self, rhs: Duration) -> Option<Self> {
+        self.0.checked_sub(rhs).ok().map(Self)
+    }
+
+    #[inline]
+    pub fn duration_since(&self, other: Self) -> Result<Duration, Duration> {
+        let dur = self.0.duration_since(other.0);
+        if dur.is_negative() {
+            return Err(dur.unsigned_abs());
+        }
+        Ok(dur.unsigned_abs())
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn truncate_subsecs(self) -> Self {
+        // TODO
+        Self(jiff::Timestamp::from_second(self.0.as_second()).unwrap())
     }
 
     #[must_use]
@@ -60,7 +82,7 @@ impl Add<Duration> for Timestamp {
 
     #[inline]
     fn add(self, rhs: Duration) -> Self::Output {
-        self.checked_add(rhs).ok_or(Overflow).unwrap()
+        self.checked_add_unsigned(rhs).ok_or(Overflow).unwrap()
     }
 }
 
@@ -76,7 +98,7 @@ impl Sub<Duration> for Timestamp {
 
     #[inline]
     fn sub(self, rhs: Duration) -> Self::Output {
-        self.checked_sub(rhs).ok_or(Overflow).unwrap()
+        self.checked_sub_unsigned(rhs).ok_or(Overflow).unwrap()
     }
 }
 
@@ -111,15 +133,18 @@ const _: () = {
         #[must_use]
         #[inline]
         pub fn now() -> Self {
-            Self(cfg_select! {
-                // TODO
-                // near => {
-                //     Self::
-                // }
-                _ => jiff::Timestamp::now(),
-            })
+            cfg_select! {
+                near => {
+                    Self::from_nanos(
+                        ::near_sdk::env::block_timestamp().into(),
+                    ).ok_or(Overflow).unwrap()
+                }
+                _ => Self(jiff::Timestamp::now()),
+            }
         }
 
+        #[must_use]
+        #[inline]
         pub fn timeout(duration: Duration) -> Self {
             Self::now() + duration
         }

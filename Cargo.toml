@@ -26,7 +26,6 @@ members = [
   "crates/num-utils",
   "crates/rand-compat",
   "crates/serde-utils",
-  "crates/time",
 
   "crates/near/admin-utils",
   "crates/near/auth-call",
@@ -37,6 +36,7 @@ members = [
 
   "crates/primitives/decimal",
   "crates/primitives/fees",
+  "crates/primitives/time",
   "crates/primitives/token-id",
 
   "crates/signatures/erc191",
@@ -89,7 +89,6 @@ defuse-map-utils.path = "crates/map-utils"
 defuse-num-utils.path = "crates/num-utils"
 defuse-rand-compat.path = "crates/rand-compat"
 defuse-serde-utils.path = "crates/serde-utils"
-defuse-time.path = "crates/time"
 
 defuse-admin-utils.path = "crates/near/admin-utils"
 defuse-auth-call.path = "crates/near/auth-call"
@@ -100,6 +99,7 @@ defuse-wnear.path = "crates/near/wnear"
 
 defuse-decimal.path = "crates/primitives/decimal"
 defuse-fees.path = "crates/primitives/fees"
+defuse-time.path = "crates/primitives/time"
 defuse-token-id = { path = "crates/primitives/token-id", default-features = false }
 
 defuse-erc191.path = "crates/signatures/erc191"
@@ -178,7 +178,7 @@ sha3 = "0.11"
 stellar-strkey = "0.0.13"
 strum = { version = "0.28", features = ["derive"] }
 thiserror = "2"
-tlb-ton = { version = "0.8", default-features = false }
+tlb-ton = { version = "0.11", default-features = false }
 tokio = { version = "1.45", default-features = false }
 tokio-util = { version = "0.7", default-features = false }
 tracing = "0.1"

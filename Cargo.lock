@@ -729,7 +729,6 @@ version = "0.4.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aa79e62e7697b8e29b513a68abacf485adcd1fe8284a4316c5ae868e6633327"
 dependencies = [
- "arbitrary",
  "iana-time-zone",
  "js-sys",
  "num-traits",
@@ -1904,6 +1903,7 @@ name = "defuse-time"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "borsh",
  "defuse-borsh-utils",
  "defuse-time",
  "jiff",
@@ -6648,9 +6648,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tlb"
-version = "0.8.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b194c80dcf81a1e3493eb1befb496c49499e418e4efff5a75d9bc10c87bf7fef"
+checksum = "bbe6584645f987d8ad0ea4f8a356098983363f39212a1b66d5fb475c42361b69"
 dependencies = [
  "arbitrary",
  "array-util",
@@ -6666,13 +6666,13 @@ dependencies = [
 
 [[package]]
 name = "tlb-ton"
-version = "0.8.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "212abe1ba9ed8b4a43265256a48e6cb84e55a862783501afd333fa464ccc0063"
+checksum = "21f3236eba716e899a318aa5c3c14ee3fed630aaebd2411f4173fb480eea3eeb"
 dependencies = [
  "arbitrary",
+ "arbitrary_with",
  "base64 0.21.7",
- "chrono",
  "crc",
  "digest 0.11.3",
  "hex",
@@ -6688,9 +6688,9 @@ dependencies = [
 
 [[package]]
 name = "tlbits"
-version = "0.8.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b4d9b7ad7b69fc715873f7096a7c68320ab6fb78223654b218cc08cf6ca28eb"
+checksum = "a0e75274064dd8a0ba4c6f2f36d3b211921f33dd27f1651214e5ff57dea73b59"
 dependencies = [
  "array-util",
  "bitvec",

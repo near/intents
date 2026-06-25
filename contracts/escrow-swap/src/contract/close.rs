@@ -30,7 +30,7 @@ impl State {
         params: Params,
     ) -> Result<Option<Promise>> {
         if !self.closed {
-            let reason = if self.deadline.has_expired() {
+            let reason = if self.deadline.has_passed() {
                 CloseReason::DeadlineExpired
             } else if self.maker_src_remaining == 0 && signer_id == params.maker {
                 CloseReason::ByMaker

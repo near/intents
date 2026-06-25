@@ -38,7 +38,7 @@ impl Contract {
             VersionedNonce::V1(SaltedNonce {
                 salt,
                 nonce: ExpirableNonce { deadline, .. },
-            }) => deadline.has_expired() || !self.is_valid_salt(salt),
+            }) => deadline.has_passed() || !self.is_valid_salt(salt),
         }
     }
 }

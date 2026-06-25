@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use defuse_core::{
-    Deadline, Nonce,
+    Nonce, Timestamp,
     accounts::{AccountEvent, NonceEvent},
     engine::Inspector,
     events::DefuseEvent,
@@ -16,7 +16,7 @@ pub struct ExecuteInspector {
 
 impl Inspector for ExecuteInspector {
     #[inline]
-    fn on_deadline(&mut self, _deadline: Deadline) {}
+    fn on_deadline(&mut self, _deadline: Timestamp) {}
 
     fn on_event(&mut self, event: DefuseEvent<'_>) {
         event.emit();

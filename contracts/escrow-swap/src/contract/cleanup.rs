@@ -97,7 +97,7 @@ impl State {
     #[must_use]
     #[inline]
     fn should_cleanup(&mut self) -> bool {
-        if !self.closed && self.deadline.has_expired() {
+        if !self.closed && self.deadline.has_passed() {
             self.close_unchecked(CloseReason::DeadlineExpired);
         }
 
@@ -105,6 +105,6 @@ impl State {
             && self.in_flight == 0
             && self.maker_src_remaining == 0
             && self.maker_dst_lost == 0
-            && self.deadline.has_expired()
+            && self.deadline.has_passed()
     }
 }

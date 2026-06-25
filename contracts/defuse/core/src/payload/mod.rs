@@ -13,7 +13,7 @@ use impl_tools::autoimpl;
 use near_sdk::{AccountId, near};
 use serde_with::base64::Base64;
 
-use crate::{Timestamp, Nonce};
+use crate::{Nonce, Timestamp};
 
 // TODO: add version
 #[near(serializers = [json])]
