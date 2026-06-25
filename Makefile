@@ -107,7 +107,7 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
       )) | join(" ")) as $$features_flag | \
      "$$(eval .PHONY: check-contracts/\($$tname))", \
      "$$(eval CHECK_TARGETS += check-contracts/\($$tname))", \
-     "$$(eval check-contracts/\($$tname):; RUSTFLAGS='--cfg=near' RUSTDOCFLAGS='--cfg=near' cargo clippy -p \($$name) --no-deps --target wasm32-unknown-unknown \($$features_flag))", \
+     "$$(eval check-contracts/\($$tname):; RUSTFLAGS='--cfg=near' RUSTDOCFLAGS='--cfg=near' cargo clippy -p \($$name) --target wasm32-unknown-unknown \($$features_flag))", \
      "$$(eval check-contracts/\($$name)/all:: check-contracts/\($$tname))", \
      "$$(eval .PHONY: \($$tname))", \
      "$$(eval ALL_TARGETS += \($$tname))", \
