@@ -37,13 +37,9 @@ escrow-swap = [
   "defuse-test-utils/poa",
   # "dep:defuse-escrow-swap",
 ]
-wallet = [
-  "defuse-sandbox/wallet",
-  "defuse-test-utils/wallet",
-  "deployer",
-]
+wallet = ["defuse-sandbox/wallet", "defuse-test-utils/wallet", "deployer"]
 
-deployer = ["defuse-sandbox/deployer"] 
+deployer = ["defuse-sandbox/deployer"]
 # "dep:defuse-global-deployer"]
 
 outlayer = [

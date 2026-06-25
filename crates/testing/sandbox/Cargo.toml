@@ -9,7 +9,12 @@ repository.workspace = true
 workspace = true
 
 [features]
-defuse = ["dep:defuse", "dep:defuse-nep413", "dep:defuse-serde-utils", "dep:defuse-test-utils"]
+defuse = [
+  "dep:defuse",
+  "dep:defuse-nep413",
+  "dep:defuse-serde-utils",
+  "dep:defuse-test-utils",
+]
 deployer = ["dep:defuse-global-deployer", "dep:defuse-serde-utils"]
 escrow = ["dep:defuse-escrow-swap"]
 imt = ["defuse", "defuse/imt"]
