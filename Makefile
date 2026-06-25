@@ -33,7 +33,7 @@ clean: clean-out-dir
 
 .PHONY: test
 test:
-	cargo test --workspace --all-targets
+	cargo test --all
 
 .PHONY: check
 check: check-contracts
