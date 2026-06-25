@@ -1,8 +1,6 @@
 use std::borrow::Cow;
 
-use defuse_near_utils::{
-    Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError, promise_result_checked_json_with_len,
-};
+use defuse_near_utils::{Lock, REFUND_MEMO, promise_result_checked_json_with_len};
 use defuse_nep245::{
     ClearedApproval, MtEvent, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };
@@ -35,11 +33,11 @@ impl MultiTokenResolver for Contract {
             .filter(|refund| refund.len() == amounts.len())
             .unwrap_or_else(|| amounts.clone());
 
-        let sender_id = previous_owner_ids.first().cloned().unwrap_or_panic();
+        let sender_id = previous_owner_ids.first().cloned().unwrap();
 
         for ((token_id, previous_owner_id), (amount, refund)) in token_ids
             .iter()
-            .map(|token_id| token_id.parse().unwrap_or_panic_display())
+            .map(|token_id| token_id.parse().unwrap_or_else(|e| panic!("{e}")))
             .zip(previous_owner_ids)
             .zip(amounts.iter_mut().zip(&mut refunds))
         {
@@ -81,7 +79,7 @@ impl MultiTokenResolver for Contract {
             receiver
                 .token_balances
                 .sub(token_id.clone(), refund.0)
-                .unwrap_or_panic();
+                .unwrap();
             // deposit refund
             self.accounts
                 .get_or_create(previous_owner_id)
@@ -89,7 +87,7 @@ impl MultiTokenResolver for Contract {
                 .as_inner_unchecked_mut()
                 .token_balances
                 .add(token_id, refund.0)
-                .unwrap_or_panic();
+                .unwrap();
 
             // update as used amount in-place
             amount.0 -= refund.0;

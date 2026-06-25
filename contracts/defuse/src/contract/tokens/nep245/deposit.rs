@@ -1,8 +1,7 @@
 use defuse_core::{DefuseError, token_id::nep245::Nep245TokenId, tokens::MAX_TOKEN_ID_LEN};
-use defuse_near_utils::{PanicError, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::receiver::MultiTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, PromiseOrValue, env, json_types::U128, near, require};
+use near_sdk::{AccountId, FunctionError, PromiseOrValue, env, json_types::U128, near, require};
 
 use crate::{
     contract::{Contract, ContractExt},
@@ -48,7 +47,7 @@ impl MultiTokenReceiver for Contract {
             .iter()
             .inspect(|token_id| {
                 if token_id.len() > MAX_TOKEN_ID_LEN {
-                    DefuseError::TokenIdTooLarge(token_id.len()).panic_display();
+                    DefuseError::TokenIdTooLarge(token_id.len()).panic();
                 }
             })
             .cloned()
@@ -61,7 +60,7 @@ impl MultiTokenReceiver for Contract {
         } = if msg.is_empty() {
             DepositMessage::new(sender_id.clone())
         } else {
-            msg.parse().unwrap_or_panic_display()
+            msg.parse().unwrap_or_else(|e| panic!("{e}"))
         };
 
         self.deposit(
@@ -71,7 +70,7 @@ impl MultiTokenReceiver for Contract {
                 .zip(amounts.iter().map(|amount| amount.0)),
             Some("deposit"),
         )
-        .unwrap_or_panic();
+        .unwrap_or_else(|err| err.panic());
 
         let Some(action) = action else {
             return PromiseOrValue::Value(vec![U128(0); token_ids.len()]);
