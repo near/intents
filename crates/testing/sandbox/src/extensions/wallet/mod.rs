@@ -1,6 +1,6 @@
 use std::{collections::BTreeSet, time::Duration};
 
-use defuse_wallet::{Request, signature::Deadline, signature::RequestMessage};
+use defuse_wallet::{Request, signature::RequestMessage, signature::Timestamp};
 use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json, state_init::StateInit};
 
@@ -37,7 +37,7 @@ pub trait WalletViewExt {
     ) -> anyhow::Result<bool>;
     async fn w_extensions(&self) -> anyhow::Result<BTreeSet<AccountId>>;
     async fn w_timeout(&self) -> anyhow::Result<Duration>;
-    async fn w_last_cleaned_at(&self) -> anyhow::Result<Deadline>;
+    async fn w_last_cleaned_at(&self) -> anyhow::Result<Timestamp>;
 }
 
 impl WalletExt for SigningAccount {
@@ -123,7 +123,7 @@ impl WalletViewExt for Account {
             .map(Duration::from_secs)
     }
 
-    async fn w_last_cleaned_at(&self) -> anyhow::Result<Deadline> {
+    async fn w_last_cleaned_at(&self) -> anyhow::Result<Timestamp> {
         self.call_view_function_json("w_last_cleaned_at", ()).await
     }
 }

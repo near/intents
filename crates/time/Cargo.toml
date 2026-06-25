@@ -8,9 +8,13 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+# TODO: remove
+chrono = { workspace = true }
+
 defuse-borsh-utils = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
+serde_with = { workspace = true, optional = true }
 
 [target.'cfg(near)'.dependencies]
 near-sdk = { workspace = true, optional = true }
@@ -20,8 +24,8 @@ std = ["dep:near-sdk"]
 
 abi = ["defuse-borsh-utils?/abi", "schemars_v0_8"]
 borsh = ["dep:defuse-borsh-utils"]
-serde = ["dep:serde"]
-schemars_v0_8 = ["dep:schemars"]
+serde = ["dep:serde", "dep:serde_with"]
+schemars_v0_8 = ["dep:schemars", "serde_with?/schemars_0_8"]
 
 [dev-dependencies]
 borsh = { workspace = true, features = ["unstable__schema"] }
