@@ -1,6 +1,5 @@
 use core::mem;
 
-use defuse_near_utils::UnwrapOrPanicError;
 use defuse_time::Timestamp;
 use near_sdk::{Promise, env};
 
@@ -72,7 +71,7 @@ impl State {
             .in_flight
             .checked_add(1)
             .ok_or("too many callbacks in flight")
-            .unwrap_or_panic_static_str();
+            .unwrap();
         Contract::ext(env::current_account_id())
     }
 
@@ -82,7 +81,7 @@ impl State {
             .in_flight
             .checked_sub(1)
             .ok_or("unregistered callback")
-            .unwrap_or_panic_static_str();
+            .unwrap();
     }
 
     /// Returns whether just closed

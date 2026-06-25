@@ -1,9 +1,10 @@
 #![allow(clippy::too_many_arguments)]
 
-use defuse_near_utils::UnwrapOrPanic;
 use defuse_nep245::TokenId;
 use near_plugins::{AccessControllable, access_control_any};
-use near_sdk::{AccountId, PromiseOrValue, assert_one_yocto, json_types::U128, near, require};
+use near_sdk::{
+    AccountId, FunctionError, PromiseOrValue, assert_one_yocto, json_types::U128, near, require,
+};
 
 use crate::{
     contract::{Contract, ContractExt, Role},
@@ -55,7 +56,7 @@ impl MultiTokenForcedCore for Contract {
             memo.as_deref(),
             true,
         )
-        .unwrap_or_panic()
+        .unwrap_or_else(|err| err.panic())
     }
 
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedWithdrawer))]
@@ -105,6 +106,6 @@ impl MultiTokenForcedCore for Contract {
             msg,
             true,
         )
-        .unwrap_or_panic()
+        .unwrap_or_else(|err| err.panic())
     }
 }

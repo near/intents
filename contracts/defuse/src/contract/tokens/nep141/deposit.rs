@@ -1,8 +1,7 @@
 use defuse_core::token_id::{TokenId, nep141::Nep141TokenId};
-use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, PromiseOrValue, env, json_types::U128, near, require};
+use near_sdk::{AccountId, FunctionError, PromiseOrValue, env, json_types::U128, near, require};
 
 use crate::{
     contract::{Contract, ContractExt},
@@ -33,7 +32,7 @@ impl FungibleTokenReceiver for Contract {
         } = if msg.is_empty() {
             DepositMessage::new(sender_id.clone())
         } else {
-            msg.parse().unwrap_or_panic_display()
+            msg.parse().unwrap_or_else(|e| panic!("{e}"))
         };
 
         self.deposit(
@@ -41,7 +40,7 @@ impl FungibleTokenReceiver for Contract {
             [(token_id.clone(), amount.0)],
             Some("deposit"),
         )
-        .unwrap_or_panic();
+        .unwrap_or_else(|err| err.panic());
 
         let Some(action) = action else {
             return PromiseOrValue::Value(0.into());

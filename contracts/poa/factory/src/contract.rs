@@ -2,7 +2,7 @@ use core::iter;
 use std::collections::{HashMap, HashSet};
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
-use defuse_near_utils::{UnwrapOrPanicError, gas_left};
+use defuse_near_utils::gas_left;
 use defuse_poa_token::ext_poa_fungible_token;
 use near_contract_standards::fungible_token::{core::ext_ft_core, metadata::FungibleTokenMetadata};
 use near_plugins::{
@@ -120,7 +120,7 @@ impl PoaFactory for Contract {
                 serde_json::to_vec(&json!({
                     "metadata": metadata,
                 }))
-                .unwrap_or_panic_display(),
+                .unwrap_or_else(|e| panic!("{e}")),
                 NearToken::from_yoctonear(0),
                 POA_TOKEN_NEW_GAS,
             )
@@ -200,7 +200,7 @@ impl Contract {
         require!(!token.contains('.'), "invalid token name");
         format!("{token}.{}", env::current_account_id())
             .parse()
-            .unwrap_or_panic_display()
+            .unwrap_or_else(|e| panic!("{e}"))
     }
 }
 

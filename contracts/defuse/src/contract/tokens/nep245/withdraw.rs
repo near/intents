@@ -13,16 +13,15 @@ use defuse_core::{
     token_id::{nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
 use defuse_near_utils::{
-    REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError, promise_result_checked_json_with_len,
-    promise_result_checked_void,
+    REFUND_MEMO, promise_result_checked_json_with_len, promise_result_checked_void,
 };
 use defuse_nep245::ext_mt_core;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::storage_management::ext_storage_management;
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    AccountId, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env, json_types::U128,
-    near, require,
+    AccountId, FunctionError, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env,
+    json_types::U128, near, require,
 };
 
 #[near]
@@ -53,7 +52,7 @@ impl MultiTokenWithdrawer for Contract {
             },
             false,
         )
-        .unwrap_or_panic()
+        .unwrap_or_else(|err| err.panic())
     }
 }
 
@@ -102,7 +101,7 @@ impl Contract {
                             Self::DO_MT_WITHDRAW_GAS
                                 .checked_add(withdraw.min_gas())
                                 .ok_or(DefuseError::GasOverflow)
-                                .unwrap_or_panic(),
+                                .unwrap_or_else(|err| err.panic()),
                         )
                         .do_mt_withdraw(withdraw.clone()),
                 )
@@ -131,15 +130,17 @@ impl Contract {
         const MT_RESOLVE_WITHDRAW_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
         const MT_RESOLVE_WITHDRAW_BASE_GAS: Gas = Gas::from_tgas(8);
 
-        let token_count: u64 = token_count.try_into().unwrap_or_panic_display();
+        let token_count: u64 = token_count.try_into().unwrap();
 
         MT_RESOLVE_WITHDRAW_BASE_GAS
             .checked_add(
                 MT_RESOLVE_WITHDRAW_PER_TOKEN_GAS
                     .checked_mul(token_count)
-                    .unwrap_or_panic(),
+                    .ok_or(DefuseError::GasOverflow)
+                    .unwrap_or_else(|err| err.panic()),
             )
-            .unwrap_or_panic()
+            .ok_or(DefuseError::GasOverflow)
+            .unwrap_or_else(|err| err.panic())
     }
 }
 
@@ -248,7 +249,7 @@ impl MultiTokenWithdrawResolver for Contract {
                 }),
             Some(REFUND_MEMO),
         )
-        .unwrap_or_panic();
+        .unwrap_or_else(|err| err.panic());
 
         used
     }
@@ -283,6 +284,6 @@ impl MultiTokenForcedWithdrawer for Contract {
             },
             true,
         )
-        .unwrap_or_panic()
+        .unwrap_or_else(|err| err.panic())
     }
 }
