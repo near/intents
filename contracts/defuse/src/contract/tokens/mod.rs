@@ -144,9 +144,11 @@ impl Contract {
             .checked_add(
                 MT_RESOLVE_DEPOSIT_PER_TOKEN_GAS
                     .checked_mul(token_count)
-                    .unwrap_or_else(|| env::panic_str("gas calculation overflow")),
+                    .ok_or(DefuseError::GasOverflow)
+                    .unwrap_or_else(|err| err.panic()),
             )
-            .unwrap_or_else(|| env::panic_str("gas calculation overflow"))
+            .ok_or(DefuseError::GasOverflow)
+            .unwrap_or_else(|err| err.panic())
     }
 
     pub fn resolve_deposit_internal<'a, I>(&mut self, receiver_id: &AccountIdRef, tokens: I)

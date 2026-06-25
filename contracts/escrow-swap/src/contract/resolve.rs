@@ -1,4 +1,4 @@
-use near_sdk::{Gas, Promise, near};
+use near_sdk::{FunctionError, Gas, Promise, near};
 
 use crate::{
     Error, Result, State,
@@ -17,7 +17,8 @@ impl Contract {
         maker_src: Option<Sent>,
         maker_dst: Option<Sent>,
     ) -> bool {
-        self.resolve_transfers(maker_src, maker_dst).unwrap()
+        self.resolve_transfers(maker_src, maker_dst)
+            .unwrap_or_else(|err| err.panic())
     }
 }
 

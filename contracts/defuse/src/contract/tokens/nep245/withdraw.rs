@@ -101,7 +101,7 @@ impl Contract {
                             Self::DO_MT_WITHDRAW_GAS
                                 .checked_add(withdraw.min_gas())
                                 .ok_or(DefuseError::GasOverflow)
-                                .unwrap(),
+                                .unwrap_or_else(|err| err.panic()),
                         )
                         .do_mt_withdraw(withdraw.clone()),
                 )
@@ -136,9 +136,11 @@ impl Contract {
             .checked_add(
                 MT_RESOLVE_WITHDRAW_PER_TOKEN_GAS
                     .checked_mul(token_count)
-                    .unwrap(),
+                    .ok_or(DefuseError::GasOverflow)
+                    .unwrap_or_else(|err| err.panic()),
             )
-            .unwrap()
+            .ok_or(DefuseError::GasOverflow)
+            .unwrap_or_else(|err| err.panic())
     }
 }
 

@@ -3,7 +3,7 @@ use std::{borrow::Cow, collections::BTreeMap};
 use defuse_near_utils::PromiseExt;
 use defuse_num_utils::{CheckedDiv, CheckedMul};
 use defuse_time::Timestamp;
-use near_sdk::{AccountId, AccountIdRef, Promise, PromiseOrValue};
+use near_sdk::{AccountId, AccountIdRef, FunctionError, Promise, PromiseOrValue};
 
 use crate::{
     Error, Params, ProtocolFees, Result, State,
@@ -167,7 +167,7 @@ impl State {
                 *out = out
                     .checked_sub(*fee_amount)
                     .ok_or(Error::ExcessiveFees)
-                    .unwrap(); // avoid too much nesting
+                    .unwrap_or_else(|err| err.panic()); // avoid too much nesting
             })
             .map(|(collector, fee_amount)| {
                 token.clone().send(

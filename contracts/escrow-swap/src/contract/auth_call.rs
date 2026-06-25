@@ -1,5 +1,5 @@
 use defuse_auth_call::AuthCallee;
-use near_sdk::{AccountId, AccountIdRef, PromiseOrValue, env, near, serde_json};
+use near_sdk::{AccountId, AccountIdRef, FunctionError, PromiseOrValue, env, near, serde_json};
 
 use crate::{
     Error, Result,
@@ -11,7 +11,8 @@ use super::{Contract, ContractExt};
 #[near]
 impl AuthCallee for Contract {
     fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
-        self.internal_on_auth(&signer_id, &msg).unwrap()
+        self.internal_on_auth(&signer_id, &msg)
+            .unwrap_or_else(|err| err.panic())
     }
 }
 

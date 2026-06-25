@@ -47,7 +47,7 @@ impl Display for DepositMessage {
             Some(DepositAction::Execute(exec)) if exec.execute_intents.is_empty() => {
                 f.write_str(self.receiver_id.as_str())
             }
-            Some(_) => f.write_str(&serde_json::to_string(self).unwrap()),
+            Some(_) => f.write_str(&serde_json::to_string(self).unwrap_or_else(|e| panic!("{e}"))),
         }
     }
 }

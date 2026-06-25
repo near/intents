@@ -318,8 +318,10 @@ impl Contract {
             .checked_add(
                 MT_RESOLVE_TRANSFER_PER_TOKEN_GAS
                     .checked_mul(token_count)
-                    .unwrap(),
+                    .ok_or(DefuseError::GasOverflow)
+                    .unwrap_or_else(|err| err.panic()),
             )
-            .unwrap()
+            .ok_or(DefuseError::GasOverflow)
+            .unwrap_or_else(|err| err.panic())
     }
 }

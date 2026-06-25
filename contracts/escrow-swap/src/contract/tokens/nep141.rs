@@ -1,5 +1,7 @@
 use near_contract_standards::fungible_token::{core::ext_ft_core, receiver::FungibleTokenReceiver};
-use near_sdk::{AccountId, Gas, NearToken, Promise, PromiseOrValue, env, json_types::U128, near};
+use near_sdk::{
+    AccountId, FunctionError, Gas, NearToken, Promise, PromiseOrValue, env, json_types::U128, near,
+};
 
 use crate::{
     contract::{Contract, ContractExt, tokens::Sendable},
@@ -18,7 +20,7 @@ impl FungibleTokenReceiver for Contract {
 
         match self
             .on_receive(sender_id, &token_id, amount.0, &msg)
-            .unwrap()
+            .unwrap_or_else(|err| err.panic())
         {
             PromiseOrValue::Promise(p) => PromiseOrValue::Promise(p),
             PromiseOrValue::Value(refund) => PromiseOrValue::Value(U128(refund)),
