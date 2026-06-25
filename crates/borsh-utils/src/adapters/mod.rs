@@ -17,11 +17,6 @@ mod schema;
 #[cfg(feature = "abi")]
 pub use self::schema::*;
 
-#[cfg(feature = "chrono")]
-mod chrono;
-#[cfg(feature = "chrono")]
-pub use self::chrono::*;
-
 mod duration;
 pub use self::duration::*;
 

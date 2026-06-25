@@ -30,9 +30,12 @@ impl Timestamp {
     #[must_use]
     #[inline]
     pub fn from_nanos(nanos: i128) -> Option<Self> {
-        // `DateTime::from_timestamp_nanos` panics on overflows
+        // `DateTime::from_timestamp_nanos` panics on overflows,
+        // so we need to convert manually
         let secs: i64 = nanos.div_euclid(1_000_000_000).try_into().ok()?;
-        let nsecs = nanos.rem_euclid(1_000_000_000) as u32;
+        // SAFETY: `rem_euclid` returns non-negative number
+        let nsecs: u32 = nanos.rem_euclid(1_000_000_000).try_into().unwrap();
+
         DateTime::from_timestamp(secs, nsecs).map(Self)
     }
 
@@ -71,7 +74,7 @@ impl Timestamp {
     #[inline]
     pub fn duration_since(&self, other: Self) -> Result<Duration, Duration> {
         let dur = self.0.signed_duration_since(other.0);
-        dur.to_std().map_err(|_| (-dur).to_std().unwrap())
+        dur.to_std().map_err(|_| dur.abs().to_std().unwrap())
     }
 
     #[must_use]
@@ -83,21 +86,29 @@ impl Timestamp {
     #[must_use]
     #[inline]
     pub fn as_nanos(&self) -> i128 {
-        self.0.timestamp_nanos_opt().unwrap().into()
+        // `DateTime::timestamp_nanos_opt` uses i64 and might overflow,
+        // so we need to covert manually here
+        let secs: i128 = self.0.timestamp().into();
+        let subsec_nanos: i128 = self.0.timestamp_subsec_nanos().into();
+
+        secs * 1_000_000_000 + subsec_nanos
     }
 
+    #[allow(clippy::missing_const_for_fn)]
     #[must_use]
     #[inline]
     pub fn as_micros(&self) -> i64 {
         self.0.timestamp_micros()
     }
 
+    #[allow(clippy::missing_const_for_fn)]
     #[must_use]
     #[inline]
     pub fn as_millis(&self) -> i64 {
         self.0.timestamp_millis()
     }
 
+    #[allow(clippy::missing_const_for_fn)]
     #[must_use]
     #[inline]
     pub fn as_secs(&self) -> i64 {
@@ -198,7 +209,7 @@ const _: () = {
         #[inline]
         fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
             let nanos = u.int_in_range(Self::MIN.as_nanos()..=Self::MAX.as_nanos())?;
-            Ok(Self::from_nanos(nanos).expect("nanos overflow"))
+            Ok(Self::from_nanos(nanos).ok_or(Overflow).unwrap())
         }
     }
 };
