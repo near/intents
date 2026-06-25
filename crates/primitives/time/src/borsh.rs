@@ -93,7 +93,6 @@ borsh_as! {
     }
 }
 
-// TODO
 #[cfg(test)]
 mod tests {
     use core::fmt::Debug;
