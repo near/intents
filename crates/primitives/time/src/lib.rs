@@ -224,6 +224,7 @@ mod tests {
 
     #[rstest]
     #[case(0, "1970-01-01T00:00:00Z")]
+    #[allow(clippy::inconsistent_digit_grouping)]
     #[case(1782395622_123456789, "2026-06-25T13:53:42.123456789Z")]
     fn rfc3339_roundtrip(#[case] nanos: i128, #[case] s: &str) {
         let ts = Timestamp::from_nanos(nanos).unwrap();
