@@ -27,7 +27,7 @@ default = ["std"]
 
 std = ["chrono/now", "dep:near-sdk"]
 arbitrary = ["dep:arbitrary"]
-abi = ["defuse-borsh-utils?/abi", "schemars-v0_8"]
+abi = ["defuse-borsh-utils?/schema", "schemars-v0_8"]
 borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
 serde = ["dep:serde", "dep:serde_with"]
 schemars-v0_8 = [

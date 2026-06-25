@@ -1,7 +1,7 @@
 mod event;
 mod state;
 
-use defuse_borsh_utils::adapters::As;
+use defuse_borsh_utils::As;
 use defuse_nep245::{TokenId, receiver::MultiTokenReceiver};
 use impl_tools::autoimpl;
 use near_sdk::json_types::U128;

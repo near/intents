@@ -1,7 +1,7 @@
 use std::{fmt::Display, io, marker::PhantomData};
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use defuse_borsh_utils::adapters::{BorshDeserializeAs, BorshSerializeAs};
+use defuse_borsh_utils::{BorshDeserializeAs, BorshSerializeAs};
 
 use crate::{Overflow, Timestamp};
 
@@ -48,7 +48,7 @@ macro_rules! borsh_as {
         #[cfg(feature = "abi")]
         const _: () = {
             use borsh::{BorshSchema, schema::{Declaration, Definition}};
-            use defuse_borsh_utils::adapters::BorshSchemaAs;
+            use defuse_borsh_utils::BorshSchemaAs;
 
             impl<I> BorshSchemaAs<Timestamp> for $name<I>
             where
@@ -145,7 +145,7 @@ mod tests {
     #[test]
     fn schema_as_usage() {
         use borsh::BorshSchema;
-        use defuse_borsh_utils::adapters::As;
+        use defuse_borsh_utils::As;
 
         #[derive(BorshSerialize, BorshDeserialize, BorshSchema)]
         struct S {

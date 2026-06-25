@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use defuse_borsh_utils::adapters::{BorshDeserializeAs, BorshSerializeAs};
+use defuse_borsh_utils::{BorshDeserializeAs, BorshSerializeAs};
 use defuse_near_utils::PanicOnClone;
 use near_sdk::{
     borsh::{BorshDeserialize, BorshSerialize, io},

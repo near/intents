@@ -11,8 +11,11 @@ repository.workspace = true
 defuse-io-utils.workspace = true
 
 array-util.workspace = true
-borsh = { workspace = true, features = ["derive"] }
+borsh.workspace = true
 impl-tools.workspace = true
 
 [features]
-abi = ["borsh/unstable__schema"]
+schema = ["borsh/unstable__schema"]
+
+[dev-dependencies]
+borsh = { workspace = true, features = ["derive"] }

@@ -30,7 +30,7 @@ rand_core = { workspace = true, optional = true }
 [features]
 abi = [
   "defuse-bitmap/abi",
-  "defuse-borsh-utils/abi",
+  "defuse-borsh-utils/schema",
   "defuse-crypto?/abi",
   "defuse-time/abi",
   "defuse-webauthn?/abi",

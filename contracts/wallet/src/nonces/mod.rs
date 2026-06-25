@@ -7,7 +7,7 @@ use core::{mem, time::Duration};
 use std::collections::BTreeMap;
 
 use defuse_bitmap::BitMap;
-use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds};
+use defuse_borsh_utils::{As, DurationSeconds as BorshDurationSeconds};
 
 use defuse_time::{Timestamp, borsh::TimestampSeconds};
 use near_sdk::near;

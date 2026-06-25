@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use defuse_borsh_utils::adapters::As as BorshAs;
+use defuse_borsh_utils::As as BorshAs;
 use defuse_fees::Pips;
 use defuse_time::{Timestamp, borsh::TimestampNanoSeconds as BorshTimestampNanoSeconds};
 use defuse_token_id::TokenId;

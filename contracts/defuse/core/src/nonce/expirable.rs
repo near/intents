@@ -1,4 +1,4 @@
-use defuse_borsh_utils::adapters::As;
+use defuse_borsh_utils::As;
 use defuse_time::{Timestamp, borsh::TimestampNanoSeconds};
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 
