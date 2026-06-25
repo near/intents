@@ -14,7 +14,7 @@ defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-erc191 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-map-utils = { workspace = true, features = ["near"] }
-defuse-near-utils = { workspace = true }
+defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-nep413 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-num-utils.workspace = true
@@ -25,7 +25,7 @@ defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245", 
 defuse-ton-connect = { workspace = true, features = ["near-contract", "serde"] }
 defuse-webauthn = { workspace = true, features = ["borsh", "near-contract", "ed25519", "p256"] }
 
-defuse-borsh-utils = { workspace = true }
+defuse-borsh-utils.workspace = true
 derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
 hex-literal.workspace = true

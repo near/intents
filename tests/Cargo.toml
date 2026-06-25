@@ -56,11 +56,11 @@ outlayer = [
 long = []
 
 [dependencies]
-defuse-sandbox = { workspace = true }
+defuse-sandbox.workspace = true
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 
 defuse-fees.workspace = true
-defuse-near-utils = { workspace = true }
+defuse-near-utils.workspace = true
 defuse-randomness.workspace = true
 defuse-serde-utils = { workspace = true, features = ["hex"] }
 defuse-test-utils = { workspace = true, features = ["near-contract"] }

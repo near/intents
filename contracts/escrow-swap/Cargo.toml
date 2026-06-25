@@ -27,7 +27,7 @@ container_build_command = [
 ]
 
 [dependencies]
-defuse-borsh-utils = { workspace = true }
+defuse-borsh-utils.workspace = true
 defuse-decimal = { workspace = true, features = ["borsh", "serde"] }
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-nep245.workspace = true
@@ -48,7 +48,7 @@ defuse-auth-call = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true, optional = true }
 
 [dev-dependencies]
-defuse-sandbox = { workspace = true }
+defuse-sandbox.workspace = true
 
 futures.workspace = true
 itertools.workspace = true

@@ -90,5 +90,5 @@ arbitrary.workspace = true
 futures.workspace = true
 itertools.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
-proptest = { workspace = true }
+proptest.workspace = true
 rstest.workspace = true
