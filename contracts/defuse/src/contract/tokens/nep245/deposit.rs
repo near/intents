@@ -60,7 +60,7 @@ impl MultiTokenReceiver for Contract {
         } = if msg.is_empty() {
             DepositMessage::new(sender_id.clone())
         } else {
-            msg.parse().unwrap()
+            msg.parse().unwrap_or_else(|e| panic!("{e}"))
         };
 
         self.deposit(
@@ -70,7 +70,7 @@ impl MultiTokenReceiver for Contract {
                 .zip(amounts.iter().map(|amount| amount.0)),
             Some("deposit"),
         )
-        .unwrap();
+        .unwrap_or_else(|err| err.panic());
 
         let Some(action) = action else {
             return PromiseOrValue::Value(vec![U128(0); token_ids.len()]);

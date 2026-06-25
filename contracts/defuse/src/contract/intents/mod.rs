@@ -27,14 +27,17 @@ impl Intents for Contract {
     fn execute_intents(&mut self, signed: Vec<MultiPayload>) {
         if let Some(event) = Engine::new(self, ExecuteInspector::default())
             .execute_signed_intents(signed)
-            .unwrap()
+            .unwrap_or_else(|e| e.panic())
             .as_mt_event()
         {
             // NOTE: Not all `mt_transfer` events are refundable, but it's safe to check them
             // all at once since non-refundable transfers only increase the potential refund
             // log size without affecting correctness. This can actually prevent resolve transfer
             // from failing due to too long event log !!!
-            event.check_refund().unwrap().emit();
+            event
+                .check_refund()
+                .unwrap_or_else(|err| err.panic())
+                .emit();
         }
     }
 

@@ -20,8 +20,8 @@ use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::storage_management::ext_storage_management;
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    AccountId, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env, json_types::U128,
-    near, require,
+    AccountId, FunctionError, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env,
+    json_types::U128, near, require,
 };
 
 #[near]
@@ -52,7 +52,7 @@ impl MultiTokenWithdrawer for Contract {
             },
             false,
         )
-        .unwrap()
+        .unwrap_or_else(|err| err.panic())
     }
 }
 
@@ -247,7 +247,7 @@ impl MultiTokenWithdrawResolver for Contract {
                 }),
             Some(REFUND_MEMO),
         )
-        .unwrap();
+        .unwrap_or_else(|err| err.panic());
 
         used
     }
@@ -282,6 +282,6 @@ impl MultiTokenForcedWithdrawer for Contract {
             },
             true,
         )
-        .unwrap()
+        .unwrap_or_else(|err| err.panic())
     }
 }

@@ -1,6 +1,7 @@
 use std::mem;
 
 use defuse_nep245::{ErrorLogTooLong, MtBurnEvent, MtEvent};
+use near_sdk::FunctionError;
 
 #[derive(Debug, Default)]
 pub struct PostponedMtBurnEvents(Vec<MtBurnEvent<'static>>);
@@ -24,6 +25,6 @@ impl Drop for PostponedMtBurnEvents {
     fn drop(&mut self) {
         // NOTE: `check_refund()` fails only when the refund event would exceed
         // maximum log size. Checking here prevents panics during withdrawal resolution.
-        self.flush().unwrap();
+        self.flush().unwrap_or_else(|err| err.panic());
     }
 }

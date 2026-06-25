@@ -5,8 +5,8 @@ use defuse_core::{
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{
-    AccountId, AccountIdRef, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env,
-    json_types::U128, near, require,
+    AccountId, AccountIdRef, FunctionError, Gas, NearToken, Promise, PromiseOrValue,
+    assert_one_yocto, env, json_types::U128, near, require,
 };
 use std::borrow::Cow;
 
@@ -51,7 +51,7 @@ impl MultiTokenCore for Contract {
             memo.as_deref(),
             false,
         )
-        .unwrap()
+        .unwrap_or_else(|err| err.panic())
     }
 
     #[pause(name = "mt_transfer")]
@@ -98,7 +98,7 @@ impl MultiTokenCore for Contract {
             msg,
             false,
         )
-        .unwrap()
+        .unwrap_or_else(|err| err.panic())
     }
 
     fn mt_token(

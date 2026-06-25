@@ -17,8 +17,8 @@ use near_contract_standards::{
 };
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    AccountId, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env, json_types::U128,
-    near, require,
+    AccountId, FunctionError, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env,
+    json_types::U128, near, require,
 };
 
 #[near]
@@ -47,7 +47,7 @@ impl FungibleTokenWithdrawer for Contract {
             },
             false,
         )
-        .unwrap()
+        .unwrap_or_else(|err| err.panic())
     }
 }
 
@@ -89,7 +89,7 @@ impl Contract {
                             Self::DO_FT_WITHDRAW_GAS
                                 .checked_add(withdraw.min_gas())
                                 .ok_or(DefuseError::GasOverflow)
-                                .unwrap(),
+                                .unwrap_or_else(|err| err.panic()),
                         )
                         .do_ft_withdraw(withdraw.clone()),
                 )
@@ -183,7 +183,7 @@ impl FungibleTokenWithdrawResolver for Contract {
                 [(Nep141TokenId::new(token).into(), refund)],
                 Some(REFUND_MEMO),
             )
-            .unwrap();
+            .unwrap_or_else(|err| err.panic());
         }
 
         U128(used)
@@ -217,6 +217,6 @@ impl FungibleTokenForceWithdrawer for Contract {
             },
             true,
         )
-        .unwrap()
+        .unwrap_or_else(|err| err.panic())
     }
 }

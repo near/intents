@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use defuse_core::{Salt, accounts::SaltRotationEvent, events::DefuseIntentEmit};
 
 use near_plugins::{AccessControllable, access_control_any};
-use near_sdk::{assert_one_yocto, near};
+use near_sdk::{FunctionError, assert_one_yocto, near};
 
 use super::{Contract, ContractExt, Role};
 use crate::salts::SaltManager;
@@ -15,7 +15,7 @@ impl SaltManager for Contract {
     fn update_current_salt(&mut self) -> Salt {
         assert_one_yocto();
 
-        self.salts.set_new().unwrap();
+        self.salts.set_new().unwrap_or_else(|err| err.panic());
         let current = self.salts.current();
 
         SaltRotationEvent {

@@ -70,7 +70,7 @@ impl AccountManager for Contract {
             false,
             false,
         )
-        .unwrap();
+        .unwrap_or_else(|err| err.panic());
     }
 }
 
@@ -134,7 +134,8 @@ impl Contract {
         account_id: &AccountIdRef,
         public_key: PublicKey,
     ) {
-        State::add_public_key(self, account_id.into(), public_key).unwrap();
+        State::add_public_key(self, account_id.into(), public_key)
+            .unwrap_or_else(|err| err.panic());
 
         DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_fn_call(AccountEvent::new(
             Cow::Borrowed(account_id),
@@ -150,7 +151,8 @@ impl Contract {
         account_id: &AccountIdRef,
         public_key: PublicKey,
     ) {
-        State::remove_public_key(self, account_id.into(), public_key).unwrap();
+        State::remove_public_key(self, account_id.into(), public_key)
+            .unwrap_or_else(|err| err.panic());
 
         DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_fn_call(AccountEvent::new(
             Cow::Borrowed(account_id),

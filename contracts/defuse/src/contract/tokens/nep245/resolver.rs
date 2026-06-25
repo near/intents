@@ -37,7 +37,7 @@ impl MultiTokenResolver for Contract {
 
         for ((token_id, previous_owner_id), (amount, refund)) in token_ids
             .iter()
-            .map(|token_id| token_id.parse().unwrap())
+            .map(|token_id| token_id.parse().unwrap_or_else(|e| panic!("{e}")))
             .zip(previous_owner_ids)
             .zip(amounts.iter_mut().zip(&mut refunds))
         {

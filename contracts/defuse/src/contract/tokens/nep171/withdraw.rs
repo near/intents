@@ -20,8 +20,8 @@ use near_contract_standards::{
 };
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    AccountId, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env, json_types::U128,
-    near, require,
+    AccountId, FunctionError, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env,
+    json_types::U128, near, require,
 };
 use std::iter;
 
@@ -51,7 +51,7 @@ impl NonFungibleTokenWithdrawer for Contract {
             },
             false,
         )
-        .unwrap()
+        .unwrap_or_else(|err| err.panic())
     }
 }
 
@@ -93,7 +93,7 @@ impl Contract {
                             Self::DO_NFT_WITHDRAW_GAS
                                 .checked_add(withdraw.min_gas())
                                 .ok_or(DefuseError::GasOverflow)
-                                .unwrap(),
+                                .unwrap_or_else(|err| err.panic()),
                         )
                         .do_nft_withdraw(withdraw.clone()),
                 )
@@ -188,7 +188,7 @@ impl NonFungibleTokenWithdrawResolver for Contract {
                 [(Nep171TokenId::new(token, token_id).into(), 1)],
                 Some(REFUND_MEMO),
             )
-            .unwrap();
+            .unwrap_or_else(|err| err.panic());
         }
 
         used
@@ -222,6 +222,6 @@ impl NonFungibleTokenForceWithdrawer for Contract {
             },
             true,
         )
-        .unwrap()
+        .unwrap_or_else(|err| err.panic())
     }
 }
