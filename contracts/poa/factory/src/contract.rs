@@ -120,7 +120,7 @@ impl PoaFactory for Contract {
                 serde_json::to_vec(&json!({
                     "metadata": metadata,
                 }))
-                .unwrap(),
+                .unwrap_or_else(|e| panic!("{e}")),
                 NearToken::from_yoctonear(0),
                 POA_TOKEN_NEW_GAS,
             )
@@ -200,7 +200,7 @@ impl Contract {
         require!(!token.contains('.'), "invalid token name");
         format!("{token}.{}", env::current_account_id())
             .parse()
-            .unwrap()
+            .unwrap_or_else(|e| panic!("{e}"))
     }
 }
 
