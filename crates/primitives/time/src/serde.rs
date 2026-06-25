@@ -116,3 +116,64 @@ const _: () = {
         }
     }
 };
+
+#[cfg(test)]
+#[allow(clippy::inconsistent_digit_grouping)]
+mod tests {
+    use std::fmt::Debug;
+
+    use rstest::rstest;
+    use serde_with::{DisplayFromStr, de::DeserializeAsWrap, ser::SerializeAsWrap};
+
+    use super::*;
+
+    #[rstest]
+    fn timestamp_secs_roundtrip(#[values(0, 1782395622, -1782395622)] secs: i64) {
+        let ts = Timestamp::from_secs(secs).unwrap();
+        roundtrip_as::<_, TimestampSeconds>(&ts);
+        roundtrip_as::<_, TimestampSeconds<DisplayFromStr>>(&ts);
+    }
+
+    #[rstest]
+    fn timestamp_millis_roundtrip(#[values(0, 1782395622_123, -1782395622_123)] millis: i64) {
+        let ts = Timestamp::from_millis(millis).unwrap();
+        roundtrip_as::<_, TimestampMilliSeconds>(&ts);
+        roundtrip_as::<_, TimestampMilliSeconds<DisplayFromStr>>(&ts);
+    }
+
+    #[rstest]
+    fn timestamp_micros_roundtrip(
+        #[values(0, 1782395622_123456, -1782395622_123456)] micros: i128,
+    ) {
+        let ts = Timestamp::from_micros(micros).unwrap();
+        roundtrip_as::<_, TimestampMicroSeconds>(&ts);
+        roundtrip_as::<_, TimestampMicroSeconds<DisplayFromStr>>(&ts);
+    }
+
+    #[rstest]
+    fn timestamp_nanos_roundtrip(
+        #[values(0, 1782395622_123456789, -1782395622_123456789)] nanos: i128,
+    ) {
+        let ts = Timestamp::from_nanos(nanos).unwrap();
+        roundtrip_as::<_, TimestampNanoSeconds>(&ts);
+        roundtrip_as::<_, TimestampNanoSeconds<DisplayFromStr>>(&ts);
+    }
+
+    // Helper roundtrip
+    #[track_caller]
+    fn roundtrip_as<T, As>(orig: &T)
+    where
+        for<'de> As: SerializeAs<T> + DeserializeAs<'de, T>,
+        T: PartialEq + Debug,
+    {
+        let serialized =
+            serde_json::to_string(&SerializeAsWrap::<T, As>::new(orig)).expect("JSON: serialize");
+        let deserialized: T = serde_json::from_str::<DeserializeAsWrap<T, As>>(&serialized)
+            .expect("JSON: deserialize")
+            .into_inner();
+        assert_eq!(
+            &deserialized, orig,
+            "deserialized value differs from the original one"
+        );
+    }
+}

@@ -217,14 +217,62 @@ const _: () = {
 };
 
 #[cfg(test)]
+#[allow(clippy::inconsistent_digit_grouping)]
 mod tests {
     use rstest::rstest;
 
     use super::*;
 
     #[rstest]
+    fn nanos_roundtrip(
+        #[values(
+            0, 123, -123,
+            123456, -123456,
+            1782395622_123456789, -1782395622_123456789,
+        )]
+        nanos: i128,
+    ) {
+        assert_eq!(nanos, Timestamp::from_nanos(nanos).unwrap().as_nanos());
+    }
+
+    #[rstest]
+    fn micros_roundtrip(
+        #[values(
+            0, 123, -123,
+            123456, -123456,
+            1782395622_123456, -1782395622_123456,
+        )]
+        micros: i128,
+    ) {
+        assert_eq!(micros, Timestamp::from_micros(micros).unwrap().as_micros());
+    }
+
+    #[rstest]
+    fn millis_roundtrip(
+        #[values(
+            0, 123, -123,
+            123456, -123456,
+            1782395622_123, -1782395622_123,
+        )]
+        millis: i64,
+    ) {
+        assert_eq!(millis, Timestamp::from_millis(millis).unwrap().as_millis());
+    }
+
+    #[rstest]
+    fn secs_roundtrip(
+        #[values(
+            0, 123, -123,
+            123456, -123456,
+            1782395622, -1782395622,
+        )]
+        secs: i64,
+    ) {
+        assert_eq!(secs, Timestamp::from_secs(secs).unwrap().as_secs());
+    }
+
+    #[rstest]
     #[case(0, "1970-01-01T00:00:00Z")]
-    #[allow(clippy::inconsistent_digit_grouping)]
     #[case(1782395622_123456789, "2026-06-25T13:53:42.123456789Z")]
     fn rfc3339_roundtrip(#[case] nanos: i128, #[case] s: &str) {
         let ts = Timestamp::from_nanos(nanos).unwrap();
@@ -232,5 +280,24 @@ mod tests {
 
         let got: Timestamp = s.parse().expect("parse");
         assert_eq!(got.as_nanos(), nanos);
+    }
+
+    #[rstest]
+    #[case("1970-01-01T00:00:00+00:00", "1970-01-01T00:00:00Z")]
+    #[case(
+        "2026-06-25T09:53:42.123456789-04:00",
+        "2026-06-25T13:53:42.123456789Z"
+    )]
+    #[case(
+        "2026-06-25T13:53:42.123456789+00:00",
+        "2026-06-25T13:53:42.123456789Z"
+    )]
+    #[case(
+        "2026-06-25T17:53:42.123456789+04:00",
+        "2026-06-25T13:53:42.123456789Z"
+    )]
+    fn rfc3339_normalize_offset(#[case] offset: &str, #[case] normalized: &str) {
+        let ts: Timestamp = offset.parse().unwrap();
+        assert_eq!(ts.to_string(), normalized);
     }
 }

@@ -20,7 +20,7 @@ cfg_eval = { workspace = true, optional = true }
 defuse-serde-utils = { workspace = true, features = ["tlb"], optional = true }
 schemars = { workspace = true, features = ["chrono"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
-serde_with = { workspace = true, features = ["base64", "chrono_0_4"], optional = true }
+serde_with = { workspace = true, features = ["base64"], optional = true }
 
 [features]
 default = ["binary", "cell", "text"]

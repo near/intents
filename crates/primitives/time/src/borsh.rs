@@ -94,34 +94,95 @@ borsh_as! {
 }
 
 #[cfg(test)]
+#[allow(clippy::inconsistent_digit_grouping)]
 mod tests {
-    use core::fmt::Debug;
+    use std::fmt::Debug;
+
+    use rstest::rstest;
 
     use super::*;
 
-    #[test]
-    fn timestamp_seconds_i64_roundtrip() {
-        roundtrip_as::<_, TimestampSeconds<i64>>(&Timestamp::from_secs(1_600_000_000).unwrap());
-    }
-
-    #[test]
-    fn timestamp_milliseconds_i64_roundtrip() {
-        roundtrip_as::<_, TimestampMilliSeconds<i64>>(
-            &Timestamp::from_millis(1_600_000_000_123).unwrap(),
+    #[rstest]
+    fn timestamp_secs_roundtrip<I>(
+        #[values(
+            0i64, 0u64, 0i32, 0u32,
+            1_600_000_000i64, 1_600_000_000u64,
+            1782395622i64, 1782395622u64,
+            -1782395622i64, -1782395622i32,
+        )]
+        secs: I,
+    ) where
+        I: TryInto<i64, Error: Debug + Display>
+            + TryFrom<i64, Error: Display>
+            + BorshSerialize
+            + BorshDeserialize,
+    {
+        roundtrip_as::<_, TimestampSeconds<I>>(
+            &Timestamp::from_secs(secs.try_into().unwrap()).unwrap(),
         );
     }
 
-    #[test]
-    fn timestamp_microseconds_i64_roundtrip() {
-        roundtrip_as::<_, TimestampMicroSeconds<i64>>(
-            &Timestamp::from_micros(1_600_000_000_123_456).unwrap(),
+    #[rstest]
+    fn timestamp_millis_roundtrip<I>(
+        #[values(
+            0i64, 0u64, 0i32, 0u32,
+            1_600_000_000i64, 1_600_000_000u64,
+            1782395622_123i64, 1782395622_123u64,
+            -1782395622_123i64
+        )]
+        millis: I,
+    ) where
+        I: TryInto<i64, Error: Debug + Display>
+            + TryFrom<i64, Error: Display>
+            + BorshSerialize
+            + BorshDeserialize,
+    {
+        roundtrip_as::<_, TimestampMilliSeconds<I>>(
+            &Timestamp::from_millis(millis.try_into().unwrap()).unwrap(),
         );
     }
 
-    #[test]
-    fn timestamp_nanoseconds_i64_roundtrip() {
-        roundtrip_as::<_, TimestampNanoSeconds<i64>>(
-            &Timestamp::from_nanos(1_600_000_000_123_456_789).unwrap(),
+    #[rstest]
+    fn timestamp_micros_roundtrip<I>(
+        #[values(
+            0i128, 0u128, 0i64, 0u64, 0i32, 0u32,
+            1_600_000_000i128, 1_600_000_000u128,
+            1_600_000_000i64, 1_600_000_000u64,
+            1782395622_123456i128, 1782395622_123456u128,
+            -1782395622_123456i128, 1782395622_123456i64,
+            -1782395622_123456i64, 1782395622_123456u64,
+        )]
+        micros: I,
+    ) where
+        I: TryInto<i128, Error: Debug + Display>
+            + TryFrom<i128, Error: Display>
+            + BorshSerialize
+            + BorshDeserialize,
+    {
+        roundtrip_as::<_, TimestampMicroSeconds<I>>(
+            &Timestamp::from_micros(micros.try_into().unwrap()).unwrap(),
+        );
+    }
+
+    #[rstest]
+    fn timestamp_nanos_roundtrip<I>(
+        #[values(
+            0i128, 0u128, 0i64, 0u64, 0i32, 0u32,
+            1_600_000_000i128, 1_600_000_000u128,
+            1_600_000_000i64, 1_600_000_000u64,
+            1782395622_123456789i128, 1782395622_123456789u128,
+            -1782395622_123456789i128, 1782395622_123456789i64,
+            -1782395622_123456789i64, 1782395622_123456789u64,
+        )]
+        nanos: I,
+    ) where
+        I: TryInto<i128, Error: Debug + Display>
+            + TryFrom<i128, Error: Display>
+            + BorshSerialize
+            + BorshDeserialize,
+    {
+        roundtrip_as::<_, TimestampNanoSeconds<I>>(
+            &Timestamp::from_nanos(nanos.try_into().unwrap()).unwrap(),
         );
     }
 
