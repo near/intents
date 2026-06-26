@@ -301,7 +301,7 @@ async fn binary_search() {
 async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
     #[future(awt)] env: Env,
 ) {
-    let user = env.create_named_user("user").await;
+    let user = env.create_named_user("u").await;
 
     env.transaction(env.defuse.contract_id())
         .transfer(NearToken::from_near(1000))
@@ -312,7 +312,7 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
 
     let receiver_stub = env
         .deploy_sub_contract(
-            "receiver",
+            "r",
             NearToken::from_near(100),
             MT_RECEIVER_STUB_WASM.to_vec(),
             None,
