@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 mod builder;
+pub use self::builder::*;
 
 use anyhow::{Result, anyhow};
 use arbitrary::Unstructured;
@@ -22,8 +23,6 @@ use futures::future::try_join_all;
 use impl_tools::autoimpl;
 use near_sdk::{account_id::arbitrary::ArbitraryNamedAccountId, json_types::U128};
 use rstest::fixture;
-
-use crate::tests::defuse::env::builder::EnvBuilder;
 
 const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_near(1);
 const INITIAL_USER_BALANCE: NearToken = NearToken::from_near(10);

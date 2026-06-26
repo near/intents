@@ -19,14 +19,14 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBalanceOfArgs},
     },
-    kit::{AccountId, AccountIdRef, CryptoHash},
+    kit::{AccountId, AccountIdRef, CryptoHash, sandbox::SandboxConfig},
 };
 use defuse_test_utils::random::rng;
 use near_sdk::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 
-use crate::tests::defuse::env::{Env, env};
+use crate::tests::defuse::env::{Env, EnvBuilder, env};
 
 pub struct AccountNonceIntentEvent(AccountId, Nonce, CryptoHash);
 
@@ -164,13 +164,16 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
     );
 }
 
-// TODO: fix this - update genesis account to test.near or update hardcoded payload
-#[ignore = "TODO"]
 #[rstest]
 #[tokio::test]
-async fn webauthn(#[future(awt)] env: Env) {
+async fn webauthn() {
+    const ROOT_ID: &AccountIdRef = AccountIdRef::new_or_panic("test.near");
     const SIGNER_ID: &AccountIdRef =
         AccountIdRef::new_or_panic("0x3602b546589a8fcafdce7fad64a46f91db0e4d50");
+
+    let sandbox = SandboxConfig::builder().root_account(ROOT_ID).fresh().await;
+
+    let env = EnvBuilder::default().build(sandbox.client()).await;
 
     let (user, ft) = futures::join!(
         env.create_named_user("user1"),
