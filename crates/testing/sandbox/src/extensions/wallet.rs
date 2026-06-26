@@ -1,11 +1,11 @@
 use anyhow::Result;
 use defuse_core::Timestamp;
 use defuse_wallet::{Request, signature::RequestMessage};
-use near_kit::{AccountId, AccountIdRef, Final, Near, NearToken, StateInit};
+use near_kit::{AccountId, AccountIdRef, Final, Gas, Near, NearToken, StateInit};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-use crate::{extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
+use crate::outcome::SuccessfulExecutionOutcome;
 
 pub use defuse_wallet as contract;
 pub use defuse_wallet_sdk as sdk;
@@ -75,7 +75,7 @@ impl WalletExt for Near {
         tx.add_action(
             Wallet::w_execute_signed(ExecuteSignedArgs { msg, proof })
                 .deposit(deposit)
-                .gas(DEFAULT_GAS),
+                .gas(Gas::from_tgas(300)),
         )
         .wait_until(Final)
         .await?
@@ -97,7 +97,7 @@ impl WalletExt for Near {
         tx.add_action(
             Wallet::w_execute_extension(ExecuteExtensionArgs { request })
                 .deposit(deposit)
-                .gas(DEFAULT_GAS),
+                .gas(Gas::from_tgas(300)),
         )
         .wait_until(Final)
         .await?

@@ -2,7 +2,6 @@ use defuse_fees::Pips;
 use defuse_sandbox::{
     account::Account,
     extensions::{
-        DEFAULT_GAS,
         defuse::{
             Defuse, DefuseClient,
             contract::{
@@ -14,7 +13,7 @@ use defuse_sandbox::{
         poa::{PoaFactoryClient, PoaFactoryDeployerExt, contract::Role as POAFactoryRole},
         wnear::{WNearDeployerExt, WNearExt},
     },
-    kit::{AccountId, AccountIdRef, Action, Final, FunctionCallAction, Near, NearToken},
+    kit::{AccountId, AccountIdRef, Action, Final, FunctionCallAction, Gas, Near, NearToken},
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, POA_FACTORY_WASM, WNEAR_WASM};
 use serde_json::json;
@@ -115,7 +114,7 @@ impl EnvBuilder {
             .add_action(Action::FunctionCall(FunctionCallAction {
                 method_name: "new".to_string(),
                 args: serde_json::to_vec(&json!({"config": cfg})).unwrap(),
-                gas: DEFAULT_GAS,
+                gas: Gas::from_tgas(30),
                 deposit: NearToken::from_near(0),
             }))
             .wait_until(Final)

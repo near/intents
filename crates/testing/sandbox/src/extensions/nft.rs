@@ -1,11 +1,11 @@
 use near_contract_standards::non_fungible_token::{Token, metadata::NFTContractMetadata};
 use near_kit::{
-    AccountIdRef, Action, Final, FunctionCallAction, Near, NearToken, NftContractMetadata,
+    AccountIdRef, Action, Final, FunctionCallAction, Gas, Near, NearToken, NftContractMetadata,
     NonFungibleToken,
 };
 use serde_json::json;
 
-use crate::{account::Account, extensions::DEFAULT_GAS};
+use crate::account::Account;
 
 pub trait NftAdminExt {
     async fn deploy_vanilla_nft_issuer(
@@ -44,7 +44,7 @@ impl NftAdminExt for Near {
                         "metadata": metadata
                     }))
                     .unwrap(),
-                    gas: DEFAULT_GAS,
+                    gas: Gas::from_tgas(30),
                     deposit: NearToken::from_near(0),
                 }),
             )
@@ -77,7 +77,7 @@ impl NftAdminExt for Near {
                     },
                 }))
                 .unwrap(),
-                gas: DEFAULT_GAS,
+                gas: Gas::from_tgas(50),
                 deposit: NearToken::from_near(1),
             }))
             .wait_until(Final)

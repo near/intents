@@ -54,11 +54,11 @@ async fn different_states_produce_different_addresses(
         .mt_on_transfer(
             account_a.clone(),
             MtOnTransferArgs {
-                sender_id: env.account_id().clone(),
-                previous_owner_ids: vec![],
-                token_ids: vec!["token1".to_string()],
-                amounts: vec![U128(100)],
-                msg: accept_all_msg.clone(),
+                sender_id: env.account_id(),
+                previous_owner_ids: &[],
+                token_ids: &["token1".to_string()],
+                amounts: &[100],
+                msg: &accept_all_msg,
             },
         )
         .await?;
@@ -68,11 +68,11 @@ async fn different_states_produce_different_addresses(
         .mt_on_transfer(
             account_b,
             MtOnTransferArgs {
-                sender_id: env.account_id().clone(),
-                previous_owner_ids: vec![],
-                token_ids: vec!["token1".to_string()],
-                amounts: vec![U128(200)],
-                msg: accept_all_msg,
+                sender_id: env.account_id(),
+                previous_owner_ids: &[],
+                token_ids: &["token1".to_string()],
+                amounts: &[200],
+                msg: &accept_all_msg,
             },
         )
         .await?;
@@ -83,11 +83,11 @@ async fn different_states_produce_different_addresses(
         .mt_on_transfer(
             account_a,
             MtOnTransferArgs {
-                sender_id: env.account_id().clone(),
-                previous_owner_ids: vec![],
-                token_ids: vec!["token1".to_string()],
-                amounts: vec![U128(500)],
-                msg: refund_all_msg,
+                sender_id: env.account_id(),
+                previous_owner_ids: &[],
+                token_ids: &["token1".to_string()],
+                amounts: &[500],
+                msg: &refund_all_msg,
             },
         )
         .await?;

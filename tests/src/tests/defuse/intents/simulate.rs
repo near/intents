@@ -2,7 +2,6 @@
 
 use defuse_sandbox::{
     extensions::{
-        DEFAULT_GAS,
         defuse::{
             Defuse, DefuseDeployerExt, DefuseExt, DefuseSignerExt, ExtractNonceExt,
             IsNonceUsedArgs, MultiPayloadArgs, ToEventLog,
@@ -32,7 +31,7 @@ use defuse_sandbox::{
         nft::NftAdminExt,
         wnear::WNearExt,
     },
-    kit::{Final, NearToken},
+    kit::{Final, Gas, NearToken},
 };
 
 use crate::{
@@ -175,7 +174,7 @@ async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
             wnear_amount.as_yoctonear(),
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
-        .gas(DEFAULT_GAS)
+        .gas(Gas::from_tgas(300))
         .wait_until(Final)
         .await
         .unwrap();
@@ -270,7 +269,7 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
             DUMMY_NFT_ID,
             user1.account_id().as_str(),
         )
-        .gas(DEFAULT_GAS)
+        .gas(Gas::from_tgas(300))
         .wait_until(Final)
         .await
         .unwrap();
@@ -453,7 +452,7 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
             wnear_amount.as_yoctonear(),
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
-        .gas(DEFAULT_GAS)
+        .gas(Gas::from_tgas(300))
         .wait_until(Final)
         .await
         .unwrap();
@@ -712,7 +711,7 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
             wnear_amount.as_yoctonear(),
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
-        .gas(DEFAULT_GAS)
+        .gas(Gas::from_tgas(300))
         .wait_until(Final)
         .await
         .unwrap();

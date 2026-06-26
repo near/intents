@@ -2,14 +2,14 @@ use anyhow::Result;
 use defuse_poa_factory::contract::Role;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_kit::{
-    AccountId, AccountIdRef, Final, FunctionCallAction, FungibleToken, Near, NearToken,
+    AccountId, AccountIdRef, Final, FunctionCallAction, FungibleToken, Gas, Near, NearToken,
 };
 use near_sdk::json_types::U128;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
 
-use crate::{account::Account, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
+use crate::{account::Account, outcome::SuccessfulExecutionOutcome};
 
 pub use defuse_poa_factory::contract;
 
@@ -92,7 +92,7 @@ impl PoaFactoryDeployerExt for Near {
                     .collect::<HashMap<_, _>>(),
             }))
             .unwrap(),
-            gas: DEFAULT_GAS,
+            gas: Gas::from_tgas(30),
             deposit: NearToken::from_near(0),
         };
 
@@ -139,7 +139,7 @@ impl PoAFactoryExt for Near {
                     metadata: metadata.into(),
                 })
                 .deposit(POA_TOKEN_INIT_BALANCE)
-                .gas(DEFAULT_GAS),
+                .gas(Gas::from_tgas(300)),
             )
             .wait_until(Final)
             .await?
@@ -167,7 +167,7 @@ impl PoAFactoryExt for Near {
                     memo,
                 })
                 .deposit(NearToken::from_millinear(4))
-                .gas(DEFAULT_GAS),
+                .gas(Gas::from_tgas(300)),
             )
             .wait_until(Final)
             .await?

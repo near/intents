@@ -12,18 +12,14 @@ use defuse_core::{
     Nonce, PublicKey, Salt, fees::Pips, intents::auth::AuthCall, payload::multi::MultiPayload,
 };
 use near_kit::{
-    AccountId, AccountIdRef, Final, FinalExecutionOutcome, FunctionCallAction, Near, NearToken,
+    AccountId, AccountIdRef, Final, FinalExecutionOutcome, FunctionCallAction, Gas, Near, NearToken,
 };
 use near_sdk::json_types::U128;
 use serde::Serialize;
 use serde_json::json;
 use serde_with::{DisplayFromStr, base64::Base64, serde_as};
 
-use crate::{
-    account::Account,
-    extensions::{DEFAULT_GAS, FnCallTransaction},
-    outcome::SuccessfulExecutionOutcome,
-};
+use crate::{account::Account, extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};
 
 pub use event::*;
 #[cfg(feature = "imt")]
@@ -411,7 +407,7 @@ impl DefuseDeployerExt for Near {
             Some(FunctionCallAction {
                 method_name: "new".to_string(),
                 args: json!({"config": config}).to_string().as_bytes().to_vec(),
-                gas: DEFAULT_GAS,
+                gas: Gas::from_tgas(30),
                 deposit: NearToken::from_near(0),
             }),
         )
@@ -430,8 +426,9 @@ impl DefuseExt for Near {
             defuse,
             Defuse::add_public_key(PublicKeyArgs {
                 public_key: public_key.into(),
-            }),
-            NearToken::from_yoctonear(1),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(30)),
         )
         .await
     }
@@ -445,8 +442,9 @@ impl DefuseExt for Near {
             defuse,
             Defuse::remove_public_key(PublicKeyArgs {
                 public_key: public_key.into(),
-            }),
-            NearToken::from_yoctonear(1),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(30)),
         )
         .await
     }
@@ -457,8 +455,9 @@ impl DefuseExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.fn_call(
             defuse,
-            Defuse::disable_auth_by_predecessor_id(),
-            NearToken::from_yoctonear(1),
+            Defuse::disable_auth_by_predecessor_id()
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(30)),
         )
         .await
     }
@@ -470,8 +469,9 @@ impl DefuseExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.fn_call(
             defuse,
-            Defuse::set_fee(FeeArgs { fee }),
-            NearToken::from_yoctonear(1),
+            Defuse::set_fee(FeeArgs { fee })
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(30)),
         )
         .await
     }
@@ -485,8 +485,9 @@ impl DefuseExt for Near {
             defuse,
             Defuse::set_fee_collector(FeeCollectorArgs {
                 fee_collector: fee_collector.as_ref(),
-            }),
-            NearToken::from_yoctonear(1),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(30)),
         )
         .await
     }
@@ -499,8 +500,8 @@ impl DefuseExt for Near {
             .transaction(defuse.into())
             .add_action(
                 Defuse::update_current_salt()
-                    .gas(DEFAULT_GAS)
-                    .deposit(NearToken::from_yoctonear(1)),
+                    .deposit(NearToken::from_yoctonear(1))
+                    .gas(Gas::from_tgas(30)),
             )
             .wait_until(Final)
             .await?;
@@ -519,7 +520,7 @@ impl DefuseExt for Near {
                 Defuse::invalidate_salts(InvalidateSaltArgs {
                     salts: &salts.into_iter().collect::<Vec<_>>(),
                 })
-                .gas(DEFAULT_GAS)
+                .gas(Gas::from_tgas(300))
                 .deposit(NearToken::from_yoctonear(1)),
             )
             .wait_until(Final)
@@ -537,8 +538,9 @@ impl DefuseExt for Near {
             defuse,
             Defuse::execute_intents(MultiPayloadArgs {
                 signed: &signed.into_iter().collect::<Vec<_>>(),
-            }),
-            NearToken::from_near(0),
+            })
+            .deposit(NearToken::from_near(0))
+            .gas(Gas::from_tgas(300)),
         )
         .await
     }
@@ -571,8 +573,9 @@ impl DefuseExt for Near {
             defuse,
             Defuse::add_relayer_key(PublicKeyArgs {
                 public_key: *public_key,
-            }),
-            NearToken::from_yoctonear(1),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(30)),
         )
         .await
     }
@@ -586,8 +589,9 @@ impl DefuseExt for Near {
             defuse,
             Defuse::delete_relayer_key(PublicKeyArgs {
                 public_key: *public_key,
-            }),
-            NearToken::from_yoctonear(1),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(30)),
         )
         .await
     }
@@ -604,8 +608,9 @@ impl DefuseExt for Near {
                     .into_iter()
                     .map(|(account_id, ns)| (account_id, ns.into_iter().collect()))
                     .collect::<Vec<_>>(),
-            }),
-            NearToken::from_yoctonear(1),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(300)),
         )
         .await
     }
@@ -624,8 +629,9 @@ impl DefuseExt for Near {
                         (account_id, public_keys.into_iter().collect())
                     })
                     .collect(),
-            }),
-            NearToken::from_yoctonear(1),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(300)),
         )
         .await
     }
@@ -644,8 +650,9 @@ impl DefuseExt for Near {
                         (account_id, public_keys.into_iter().collect())
                     })
                     .collect(),
-            }),
-            NearToken::from_yoctonear(1),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(300)),
         )
         .await
     }
@@ -661,8 +668,8 @@ impl DefuseExt for Near {
                 Defuse::force_lock_account(AccountArgs {
                     account_id: account_id.as_ref(),
                 })
-                .gas(DEFAULT_GAS)
-                .deposit(NearToken::from_yoctonear(1)),
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(30)),
             )
             .wait_until(Final)
             .await?;
@@ -682,8 +689,8 @@ impl DefuseExt for Near {
                 Defuse::force_unlock_account(AccountArgs {
                     account_id: account_id.as_ref(),
                 })
-                .gas(DEFAULT_GAS)
-                .deposit(NearToken::from_yoctonear(1)),
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(30)),
             )
             .wait_until(Final)
             .await?;
@@ -701,8 +708,9 @@ impl DefuseExt for Near {
             defuse,
             Defuse::force_enable_auth_by_predecessor_ids(MultipleAccountsArgs {
                 account_ids: &account_ids.into_iter().map(Into::into).collect::<Vec<_>>(),
-            }),
-            NearToken::from_yoctonear(1),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(300)),
         )
         .await
     }
@@ -716,8 +724,9 @@ impl DefuseExt for Near {
             defuse,
             Defuse::force_disable_auth_by_predecessor_ids(MultipleAccountsArgs {
                 account_ids: &account_ids.into_iter().map(Into::into).collect::<Vec<_>>(),
-            }),
-            NearToken::from_yoctonear(1),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(300)),
         )
         .await
     }
@@ -741,8 +750,8 @@ impl DefuseExt for Near {
                     memo,
                     msg,
                 })
-                .gas(DEFAULT_GAS)
-                .deposit(NearToken::from_yoctonear(1)),
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(300)),
             )
             .wait_until(Final)
             .await?;
@@ -771,8 +780,8 @@ impl DefuseExt for Near {
                     memo,
                     msg,
                 })
-                .gas(DEFAULT_GAS)
-                .deposit(NearToken::from_yoctonear(1)),
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(300)),
             )
             .wait_until(Final)
             .await?;
@@ -800,8 +809,8 @@ impl DefuseExt for Near {
                     memo,
                     msg,
                 })
-                .gas(DEFAULT_GAS)
-                .deposit(NearToken::from_yoctonear(1)),
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(300)),
             )
             .wait_until(Final)
             .await?;
@@ -828,8 +837,8 @@ impl DefuseExt for Near {
                     memo,
                     msg,
                 })
-                .gas(DEFAULT_GAS)
-                .deposit(NearToken::from_yoctonear(1)),
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(300)),
             )
             .wait_until(Final)
             .await?;
@@ -841,7 +850,7 @@ impl DefuseExt for Near {
         &self,
         defuse: impl Into<AccountId>,
         args: DoAuthCallArgs<'_>,
-        gas: near_kit::Gas,
+        gas: Gas,
     ) -> Result<FinalExecutionOutcome> {
         self.transaction(defuse.into())
             .add_action(Defuse::do_auth_call(args).gas(gas))

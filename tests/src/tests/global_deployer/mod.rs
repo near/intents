@@ -193,8 +193,9 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
     owner
         .fn_call(
             controller_instance.contract_id(),
-            GlobalDeployer::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone())),
-            storage_deposit,
+            GlobalDeployer::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
+                .deposit(storage_deposit)
+                .gas(Gas::from_tgas(300)),
         )
         .await
         .assert_err_contains("NEAR to cover storage cost");
@@ -670,8 +671,10 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
     owner
         .fn_call(
             controller_instance.contract_id(),
-            GlobalDeployer::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone())),
-            NearToken::from_near(100), // attach more than enough to cover storage
+            GlobalDeployer::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
+                // attach more than enough to cover storage
+                .deposit(NearToken::from_near(100))
+                .gas(Gas::from_tgas(300)),
         )
         .await
         .unwrap();

@@ -20,16 +20,13 @@ pub mod wallet;
 
 use crate::outcome::SuccessfulExecutionOutcome;
 use anyhow::Result;
-use near_kit::{AccountId, Final, FunctionCall, Gas, IntoNearToken, Near};
-
-pub const DEFAULT_GAS: Gas = Gas::from_tgas(300);
+use near_kit::{AccountId, Final, FunctionCall, Near};
 
 pub trait FnCallTransaction {
     async fn fn_call(
         &self,
         contract: impl Into<AccountId>,
-        action: impl Into<FunctionCall>,
-        deposit: impl IntoNearToken,
+        action: FunctionCall,
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
@@ -37,11 +34,10 @@ impl FnCallTransaction for Near {
     async fn fn_call(
         &self,
         contract: impl Into<AccountId>,
-        action: impl Into<FunctionCall>,
-        deposit: impl IntoNearToken,
+        action: FunctionCall,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(contract.into())
-            .add_action(action.into().gas(DEFAULT_GAS).deposit(deposit))
+            .add_action(action)
             .wait_until(Final)
             .await?
             .try_into()

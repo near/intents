@@ -1,7 +1,6 @@
 use defuse_sandbox::{
     account::Account,
     extensions::{
-        DEFAULT_GAS,
         acl::AccessControllableExt,
         defuse::{
             DefuseExt, DefuseSignerExt,
@@ -16,7 +15,7 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs},
         poa::PoAFactoryExt,
     },
-    kit::{Final, NearToken},
+    kit::{Final, Gas, NearToken},
 };
 use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
@@ -508,7 +507,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
             1000u128,
             deposit_message.to_string(),
         )
-        .gas(DEFAULT_GAS)
+        .gas(Gas::from_tgas(300))
         .wait_until(Final)
         .await
         .unwrap()

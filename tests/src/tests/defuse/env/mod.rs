@@ -8,7 +8,6 @@ use defuse_randomness::{RngExt, make_true_rng};
 use defuse_sandbox::{
     account::Account,
     extensions::{
-        DEFAULT_GAS,
         defuse::{
             DefuseClient, DefuseExt, HasPublicKeyArgs,
             core::PublicKey as DefusePublicKey,
@@ -16,7 +15,7 @@ use defuse_sandbox::{
         },
         poa::{PoAFactoryExt, PoaFactoryClient},
     },
-    kit::{AccountId, AccountIdRef, Final, FungibleToken, Near, NearToken},
+    kit::{AccountId, AccountIdRef, Final, FungibleToken, Gas, Near, NearToken},
     root,
 };
 use futures::future::try_join_all;
@@ -73,7 +72,7 @@ impl Env {
                 amount,
                 serde_json::to_string(&msg).unwrap(),
             )
-            .gas(DEFAULT_GAS)
+            .gas(Gas::from_tgas(300))
             .wait_until(Final)
             .await?
             .json::<U128>()

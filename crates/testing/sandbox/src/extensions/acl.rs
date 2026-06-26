@@ -1,5 +1,5 @@
 use anyhow::Result;
-use near_kit::{AccountId, AccountIdRef, Near, NearToken};
+use near_kit::{AccountId, AccountIdRef, Gas, Near};
 use serde::Serialize;
 
 use crate::{extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};
@@ -38,8 +38,8 @@ impl AccessControllableExt for Near {
             AccessControllable::acl_grant_role(AclRoleArgs {
                 role: &role.into(),
                 account_id: account_id.as_ref(),
-            }),
-            NearToken::from_near(0),
+            })
+            .gas(Gas::from_tgas(30)),
         )
         .await
     }

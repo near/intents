@@ -1,6 +1,5 @@
 use defuse_sandbox::{
     extensions::{
-        DEFAULT_GAS,
         defuse::{
             DefuseDeployerExt, DefuseExt, DefuseSignerExt, ToEventLog,
             contract::config::{DefuseConfig, RolesConfig},
@@ -138,7 +137,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
             STORAGE_DEPOSIT.as_yoctonear(),
             String::new(),
         )
-        .gas(DEFAULT_GAS)
+        .gas(Gas::from_tgas(300))
         .wait_until(Final)
         .await
         .unwrap();

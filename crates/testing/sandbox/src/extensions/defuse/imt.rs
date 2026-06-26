@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use anyhow::Result;
 use defuse::core::tokens::imt::ImtTokens;
 use defuse_core::amounts::Amounts;
-use near_kit::{AccountId, AccountIdRef, Near, NearToken};
+use near_kit::{AccountId, AccountIdRef, Gas, Near, NearToken};
 use serde::Serialize;
 
 use crate::{extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};
@@ -52,8 +52,9 @@ impl DefuseImtExt for Near {
                 minter_id: minter_id.as_ref(),
                 tokens,
                 memo: memo.into(),
-            }),
-            NearToken::from_yoctonear(1),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(30)),
         )
         .await
     }

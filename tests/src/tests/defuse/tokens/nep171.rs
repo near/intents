@@ -1,7 +1,6 @@
 use defuse_sandbox::{
     account::Account,
     extensions::{
-        DEFAULT_GAS,
         defuse::{
             DefuseExt, DefuseSignerExt,
             core::{
@@ -14,7 +13,7 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs, MtExt},
         nft::NftAdminExt,
     },
-    kit::{Final, NearToken},
+    kit::{Final, Gas, NearToken},
 };
 use defuse_test_utils::wasms::{MT_RECEIVER_STUB_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
@@ -116,7 +115,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                     ))
                     .unwrap(),
                 )
-                .gas(DEFAULT_GAS)
+                .gas(Gas::from_tgas(300))
                 .wait_until(Final)
                 .await
                 .unwrap();
@@ -170,7 +169,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                     ))
                     .unwrap(),
                 )
-                .gas(DEFAULT_GAS)
+                .gas(Gas::from_tgas(300))
                 .wait_until(Final)
                 .await
                 .unwrap();
@@ -478,7 +477,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
             nft.token_id.clone(),
             near_sdk::serde_json::to_string(&deposit_message).unwrap(),
         )
-        .gas(DEFAULT_GAS)
+        .gas(Gas::from_tgas(300))
         .wait_until(Final)
         .await
         .unwrap();

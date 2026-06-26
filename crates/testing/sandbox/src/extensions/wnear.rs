@@ -1,7 +1,7 @@
 use anyhow::Result;
-use near_kit::{AccountId, Action, Final, FunctionCallAction, FungibleToken, Near, NearToken};
+use near_kit::{AccountId, Action, Final, FunctionCallAction, FungibleToken, Gas, Near, NearToken};
 
-use crate::{account::Account, extensions::DEFAULT_GAS, outcome::SuccessfulExecutionOutcome};
+use crate::{account::Account, outcome::SuccessfulExecutionOutcome};
 
 #[near_kit::contract]
 pub trait WNear {
@@ -35,7 +35,7 @@ impl WNearDeployerExt for Near {
             .add_action(Action::FunctionCall(FunctionCallAction {
                 method_name: "new".to_string(),
                 args: vec![],
-                gas: DEFAULT_GAS,
+                gas: Gas::from_tgas(10),
                 deposit: NearToken::from_near(0),
             }))
             .wait_until(Final)
