@@ -27,7 +27,6 @@ defuse-sep53 = { path = ".", features = ["near-contract"] }
 
 defuse-test-utils.workspace = true
 ed25519-dalek.workspace = true
-near-crypto.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
 stellar-strkey.workspace = true

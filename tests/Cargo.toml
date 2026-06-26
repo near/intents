@@ -66,7 +66,6 @@ impl-tools.workspace = true
 itertools.workspace = true
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 near-contract-standards.workspace = true
-near-crypto.workspace = true
 # TODO: remove it when near kit will contain necessary types
 near-sdk.workspace = true
 rstest.workspace = true
