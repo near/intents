@@ -7,7 +7,7 @@ use defuse_sandbox::{
         escrow::{
             Escrow, EscrowClient, EscrowExt,
             contract::{
-                ContractStorage, Deadline, OverrideSend, Params, Pips, ProtocolFees,
+                ContractStorage, OverrideSend, Params, Pips, ProtocolFees, Timestamp,
                 action::{FillAction, TransferAction, TransferMessage},
                 token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
             },
@@ -59,7 +59,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
         dst_token: dst_token.clone(),
 
         price: "2".parse().unwrap(),
-        deadline: Deadline::timeout(TIMEOUT),
+        deadline: Timestamp::now() + TIMEOUT,
 
         partial_fills_allowed: true,
 
@@ -176,7 +176,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
                                     params: params.clone(),
                                     action: FillAction {
                                         price: "2.1".parse().unwrap(),
-                                        deadline: Deadline::timeout(Duration::from_secs(10)),
+                                        deadline: Timestamp::now() + Duration::from_secs(10),
                                         receive_src_to: OverrideSend {
                                             memo: Some("taker memo".to_string()),
                                             // msg: Some("taker msg".to_string()),

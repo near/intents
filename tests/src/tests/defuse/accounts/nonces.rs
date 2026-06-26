@@ -1,10 +1,9 @@
 use arbitrary::{Arbitrary, Unstructured};
-use chrono::{TimeDelta, Utc};
 use defuse_sandbox::{
     extensions::defuse::{
         DefuseExt, DefuseSignerExt, IsNonceUsedArgs,
         contract::Role,
-        core::{Deadline, Nonce, Salt, intents::DefuseIntents},
+        core::{Nonce, Salt, Timestamp, intents::DefuseIntents},
         create_random_salted_nonce,
     },
     kit::AccountId,
@@ -31,16 +30,16 @@ async fn test_commit_nonces(
     #[future(awt)]
     env: Env,
 ) {
-    let current_timestamp = Utc::now();
+    let current_timestamp = Timestamp::now();
     let current_salt = env.defuse.current_salt().await.unwrap();
-    let timeout_delta = TimeDelta::days(1);
+    let timeout_delta = Duration::from_hours(24);
     let u = &mut Unstructured::new(&random_bytes);
 
     let user = env.create_user().await;
 
     // legacy nonce
     {
-        let deadline = Deadline::MAX;
+        let deadline = Timestamp::MAX;
         let legacy_nonce = rng.random();
 
         env.defuse_simulate_and_execute_intents(
@@ -70,7 +69,7 @@ async fn test_commit_nonces(
 
     // invalid salt
     {
-        let deadline = Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap());
+        let deadline = current_timestamp + timeout_delta;
         let random_salt = Salt::arbitrary(u).unwrap();
         let salted = create_random_salted_nonce(random_salt, deadline, &mut rng);
 
@@ -91,7 +90,7 @@ async fn test_commit_nonces(
 
     // deadline is greater than nonce
     {
-        let deadline = Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap());
+        let deadline = current_timestamp + timeout_delta;
         let expired_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
         env.defuse_simulate_and_execute_intents(
@@ -100,7 +99,7 @@ async fn test_commit_nonces(
                 .sign_defuse_message(
                     env.defuse.contract_id(),
                     expired_nonce,
-                    Deadline::MAX,
+                    Timestamp::MAX,
                     DefuseIntents { intents: [].into() },
                 )
                 .await],
@@ -111,7 +110,7 @@ async fn test_commit_nonces(
 
     // nonce is expired
     {
-        let deadline = Deadline::new(current_timestamp.checked_sub_signed(timeout_delta).unwrap());
+        let deadline = current_timestamp - timeout_delta;
         let expired_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
         env.defuse_simulate_and_execute_intents(
@@ -131,7 +130,7 @@ async fn test_commit_nonces(
 
     // nonce can be committed
     {
-        let deadline = Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap());
+        let deadline = current_timestamp + timeout_delta;
         let expirable_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
         env.defuse_simulate_and_execute_intents(
@@ -173,7 +172,7 @@ async fn test_commit_nonces(
             .await
             .expect("unable to rotate salt");
 
-        let deadline = Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap());
+        let deadline = current_timestamp + timeout_delta;
         let old_salt_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
         env.defuse_simulate_and_execute_intents(
@@ -208,7 +207,7 @@ async fn test_commit_nonces(
             .await
             .expect("unable to invalidate salt");
 
-        let deadline = Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap());
+        let deadline = current_timestamp + timeout_delta;
         let invalid_salt_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
         env.defuse_simulate_and_execute_intents(
@@ -235,23 +234,14 @@ async fn test_cleanup_nonces(
     #[future(awt)]
     env: Env,
 ) {
-    const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
+    const WAITING_TIME: Duration = Duration::from_secs(3);
     let user = env.create_user().await;
 
-    let current_timestamp = Utc::now();
+    let current_timestamp = Timestamp::now();
     let current_salt = env.defuse.current_salt().await.unwrap();
 
-    let deadline = Deadline::new(
-        current_timestamp
-            .checked_add_signed(TimeDelta::seconds(1))
-            .unwrap(),
-    );
-
-    let long_term_deadline = Deadline::new(
-        current_timestamp
-            .checked_add_signed(TimeDelta::hours(1))
-            .unwrap(),
-    );
+    let deadline = current_timestamp + Duration::from_secs(1);
+    let long_term_deadline = current_timestamp + Duration::from_hours(1);
 
     let legacy_nonce: Nonce = rng.random();
     let expirable_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
@@ -288,7 +278,7 @@ async fn test_cleanup_nonces(
         .unwrap();
     }
 
-    sleep(Duration::from_secs_f64(WAITING_TIME.as_seconds_f64())).await;
+    sleep(WAITING_TIME).await;
 
     // only DAO or garbage collector can cleanup nonces
     {
@@ -410,7 +400,7 @@ async fn cleanup_multiple_nonces(
     use futures::StreamExt;
 
     const CHUNK_SIZE: usize = 10;
-    const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
+    const WAITING_TIME: Duration = Duration::from_secs(3);
     let user = env.create_user().await;
 
     let mut nonces = Vec::with_capacity(nonce_count);
@@ -426,12 +416,11 @@ async fn cleanup_multiple_nonces(
 
     for start in (0..nonce_count).step_by(CHUNK_SIZE) {
         let end = (start + CHUNK_SIZE).min(nonce_count);
-        let current_timestamp = Utc::now();
+        let current_timestamp = Timestamp::now();
 
         let intents = join_all((start..end).map(|_| {
             // commit expirable nonce
-            let deadline =
-                Deadline::new(current_timestamp.checked_add_signed(WAITING_TIME).unwrap());
+            let deadline = current_timestamp + WAITING_TIME;
             let expirable_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
             nonces.push(expirable_nonce);
@@ -450,7 +439,7 @@ async fn cleanup_multiple_nonces(
             .unwrap();
     }
 
-    sleep(Duration::from_secs_f64(WAITING_TIME.as_seconds_f64())).await;
+    sleep(WAITING_TIME).await;
 
     user.defuse_cleanup_nonces(
         env.defuse.contract_id(),

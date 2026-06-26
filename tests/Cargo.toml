@@ -54,13 +54,11 @@ long = []
 anyhow.workspace = true
 arbitrary.workspace = true
 borsh.workspace = true
-chrono.workspace = true
 defuse-core = { workspace = true, features = ["near-kit"] }
 defuse-fees.workspace = true
-defuse-near-utils = { workspace = true }
+defuse-near-utils.workspace = true
 defuse-randomness.workspace = true
 defuse-sandbox = { workspace = true }
-defuse-serde-utils = { workspace = true, features = ["hex"] }
 defuse-test-utils = { workspace = true, features = ["near-contract"] }
 derive_more.workspace = true
 futures = "0.3"
@@ -73,6 +71,5 @@ near-crypto.workspace = true
 near-sdk.workspace = true
 rstest.workspace = true
 serde_json.workspace = true
-serde_with.workspace = true
 strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }

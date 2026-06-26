@@ -26,7 +26,6 @@ wallet = ["dep:defuse-wallet", "dep:defuse-wallet-sdk"]
 anyhow.workspace = true
 defuse-core = { workspace = true, features = ["near-kit"] }
 defuse-nep245.workspace = true
-futures.workspace = true
 near-contract-standards.workspace = true
 near-kit = { workspace = true, features = ["sandbox"] }
 # TODO: remove it when near kit will contain necessary types
@@ -36,9 +35,7 @@ serde.workspace = true
 serde_json.workspace = true
 serde_with.workspace = true
 sha2.workspace = true
-tokio.workspace = true
 
-borsh = { workspace = true, optional = true }
 defuse = { workspace = true, optional = true, features = ["contract"] }
 defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }
 defuse-global-deployer = { workspace = true, optional = true }

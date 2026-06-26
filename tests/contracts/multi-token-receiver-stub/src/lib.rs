@@ -1,6 +1,6 @@
 use defuse::core::payload::multi::MultiPayload;
 use defuse::intents::ext_intents;
-use defuse_borsh_utils::adapters::{As, Remainder};
+use defuse_borsh_utils::{As, Remainder};
 use defuse_nep245::{TokenId, receiver::MultiTokenReceiver};
 use near_sdk::{
     AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, env, json_types::U128, near,

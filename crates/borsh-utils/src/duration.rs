@@ -1,6 +1,8 @@
-use crate::adapters::{BorshDeserializeAs, BorshSerializeAs};
+use core::{fmt::Display, marker::PhantomData, time::Duration};
+
 use borsh::{BorshDeserialize, BorshSerialize, io};
-use std::{fmt::Display, marker::PhantomData, time::Duration};
+
+use crate::{BorshDeserializeAs, BorshSerializeAs};
 
 pub struct DurationSeconds<I = u64>(PhantomData<I>);
 
@@ -134,9 +136,9 @@ where
     }
 }
 
-#[cfg(feature = "abi")]
+#[cfg(feature = "schema")]
 const _: () = {
-    use crate::adapters::schema::impl_borsh_schema_as;
+    use crate::schema::impl_borsh_schema_as;
 
     impl_borsh_schema_as!(Duration, DurationSeconds);
     impl_borsh_schema_as!(Duration, DurationMilliSeconds);

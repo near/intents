@@ -5,7 +5,7 @@ use defuse_sandbox::{
         defuse::{
             DefuseExt, DefuseSignerExt, MultiPayloadArgs,
             core::{
-                Deadline, Nonce,
+                Nonce, Timestamp,
                 accounts::{AccountEvent, NonceEvent},
                 amounts::Amounts,
                 crypto::Payload,
@@ -92,7 +92,7 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
         .sign_defuse_message(
             env.defuse.contract_id(),
             nonce,
-            Deadline::MAX,
+            Timestamp::MAX,
             DefuseIntents {
                 intents: vec![transfer_intent.clone().into()],
             },

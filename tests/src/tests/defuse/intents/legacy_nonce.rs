@@ -4,7 +4,7 @@ use defuse_sandbox::{
         defuse::{
             DefuseExt, DefuseSignerExt, ToEventLog,
             core::{
-                Deadline, Nonce,
+                Nonce, Timestamp,
                 amounts::Amounts,
                 intents::{DefuseIntents, tokens::Transfer},
                 token_id::{TokenId, nep141::Nep141TokenId},
@@ -74,7 +74,7 @@ async fn execute_intent_with_legacy_nonce(
         .sign_defuse_message(
             env.defuse.contract_id(),
             legacy_nonce,
-            Deadline::MAX,
+            Timestamp::MAX,
             DefuseIntents {
                 intents: vec![transfer_intent.into()],
             },

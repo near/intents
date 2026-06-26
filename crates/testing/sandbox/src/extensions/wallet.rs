@@ -1,5 +1,6 @@
 use anyhow::Result;
-use defuse_wallet::{Request, signature::Deadline, signature::RequestMessage};
+use defuse_core::Timestamp;
+use defuse_wallet::{Request, signature::RequestMessage};
 use near_kit::{AccountId, AccountIdRef, Final, Near, NearToken, StateInit};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
@@ -34,7 +35,7 @@ pub trait Wallet {
     fn w_is_extension_enabled(&self, account_id: AccountId) -> bool;
     fn w_extensions(&self) -> BTreeSet<AccountId>;
     fn w_timeout_secs(&self) -> u64;
-    fn w_last_cleaned_at(&self) -> Deadline;
+    fn w_last_cleaned_at(&self) -> Timestamp;
 }
 
 pub trait WalletExt {

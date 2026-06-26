@@ -7,8 +7,9 @@ use core::{mem, time::Duration};
 use std::collections::BTreeMap;
 
 use defuse_bitmap::BitMap;
-use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds, TimestampSeconds};
-use defuse_deadline::Deadline;
+use defuse_borsh_utils::{As, DurationSeconds as BorshDurationSeconds};
+
+use defuse_time::{Timestamp, borsh::TimestampSeconds};
 use near_sdk::near;
 
 use crate::{Error, Result};
@@ -57,7 +58,7 @@ pub struct Nonces {
         )
     )]
     /// The last timestamp when nonces were rotated
-    last_cleaned_at: Deadline,
+    last_cleaned_at: Timestamp,
 
     /// Previous nonces, i.e. within `[now - 2*timeout, now - timeout)`
     old: BitMap<BTreeMap<u32, u32>>,
@@ -70,13 +71,13 @@ impl Nonces {
     pub const fn new(timeout: Duration) -> Self {
         Self {
             timeout,
-            last_cleaned_at: Deadline::UNIX_EPOCH,
+            last_cleaned_at: Timestamp::UNIX_EPOCH,
             old: BitMap::new(BTreeMap::new()),
             current: BitMap::new(BTreeMap::new()),
         }
     }
 
-    pub fn commit(&mut self, nonce: u32, created_at: Deadline, timeout: Duration) -> Result<()> {
+    pub fn commit(&mut self, nonce: u32, created_at: Timestamp, timeout: Duration) -> Result<()> {
         self.check_cleanup();
 
         let now = Self::now();
@@ -112,13 +113,13 @@ impl Nonces {
     }
 
     #[inline]
-    fn now() -> Deadline {
+    fn now() -> Timestamp {
         // We need to truncate the current timestamp down to seconds, since
         // `self.last_cleaned_at` is serialized as `TimestampSeconds<u32>`.
         // As a result, `now()` might be (less than 1 second) behind the actual
         // block timestamp, which is acceptable: we're just assuming the receipt
         // arrived a bit faster.
-        Deadline::now().trunc_subsecs()
+        Timestamp::now().truncate_subsecs()
     }
 
     #[inline]
@@ -127,7 +128,7 @@ impl Nonces {
     }
 
     #[inline]
-    pub const fn last_cleaned_at(&self) -> Deadline {
+    pub const fn last_cleaned_at(&self) -> Timestamp {
         self.last_cleaned_at
     }
 }

@@ -47,7 +47,8 @@ const _: () = {
         }
 
         fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Self::Error> {
-            Ok(self.0.fill_bytes(dst))
+            self.0.fill_bytes(dst);
+            Ok(())
         }
     }
 

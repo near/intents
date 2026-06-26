@@ -9,7 +9,7 @@ pub trait BorshSchemaAs<T: ?Sized> {
 
 macro_rules! impl_borsh_schema_as {
     ($target:ty, $adapter:ident) => {
-        impl<I> $crate::adapters::BorshSchemaAs<$target> for $adapter<I>
+        impl<I> $crate::BorshSchemaAs<$target> for $adapter<I>
         where
             I: borsh::BorshSchema,
         {

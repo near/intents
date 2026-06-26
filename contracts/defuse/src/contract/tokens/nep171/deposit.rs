@@ -3,10 +3,9 @@ use defuse_core::{
     token_id::{TokenId, nep171::Nep171TokenId},
     tokens::MAX_TOKEN_ID_LEN,
 };
-use defuse_near_utils::{PanicError, UnwrapOrPanic, UnwrapOrPanicError};
 use near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, PromiseOrValue, env, json_types::U128, near};
+use near_sdk::{AccountId, FunctionError, PromiseOrValue, env, json_types::U128, near};
 
 use crate::{
     contract::{Contract, ContractExt},
@@ -29,7 +28,7 @@ impl NonFungibleTokenReceiver for Contract {
         msg: String,
     ) -> PromiseOrValue<bool> {
         if token_id.len() > MAX_TOKEN_ID_LEN {
-            DefuseError::TokenIdTooLarge(token_id.len()).panic_display();
+            DefuseError::TokenIdTooLarge(token_id.len()).panic();
         }
 
         let DepositMessage {
@@ -38,7 +37,7 @@ impl NonFungibleTokenReceiver for Contract {
         } = if msg.is_empty() {
             DepositMessage::new(sender_id.clone())
         } else {
-            msg.parse().unwrap_or_panic_display()
+            msg.parse().unwrap_or_else(|e| panic!("{e}"))
         };
 
         let core_token_id: TokenId =
@@ -49,7 +48,7 @@ impl NonFungibleTokenReceiver for Contract {
             [(core_token_id.clone(), 1)],
             Some("deposit"),
         )
-        .unwrap_or_panic();
+        .unwrap_or_else(|err| err.panic());
 
         let Some(action) = action else {
             return PromiseOrValue::Value(false);

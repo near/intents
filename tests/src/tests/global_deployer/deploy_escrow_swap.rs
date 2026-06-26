@@ -1,10 +1,11 @@
 use super::*;
 
+use defuse_core::Timestamp;
 use defuse_sandbox::{
     extensions::{
         escrow::{
             Escrow,
-            contract::{ContractStorage, Deadline, OverrideSend, Params},
+            contract::{ContractStorage, OverrideSend, Params},
         },
         mt_receiver::MtReceiverStub,
     },
@@ -13,7 +14,6 @@ use defuse_sandbox::{
     nep616::DeployDeterministicAccountExt,
 };
 use defuse_test_utils::wasms::ESCROW_SWAP_WASM;
-
 use std::{
     collections::{BTreeMap, BTreeSet},
     time::Duration,
@@ -29,7 +29,7 @@ fn dummy_escrow_params(root: &AccountId) -> Params {
         src_token: format!("nep141:{src_token}").parse().unwrap(),
         dst_token: format!("nep141:{dst_token}").parse().unwrap(),
         price: "1".parse().unwrap(),
-        deadline: Deadline::timeout(Duration::from_hours(1)),
+        deadline: Timestamp::now() + Duration::from_hours(1),
         partial_fills_allowed: false,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),

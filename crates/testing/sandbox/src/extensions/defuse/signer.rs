@@ -1,6 +1,6 @@
 use crate::extensions::defuse::DefuseClient;
 use defuse::core::{
-    Deadline, Nonce,
+    Nonce, Timestamp,
     intents::{DefuseIntents, Intent},
     nep413::Nep413Payload,
     payload::{multi::MultiPayload, nep413::Nep413DefuseMessage},
@@ -17,7 +17,7 @@ pub trait DefuseSignerExt {
         &self,
         defuse_contract: impl AsRef<AccountIdRef>,
         nonce: Nonce,
-        deadline: Deadline,
+        deadline: Timestamp,
         message: T,
     ) -> MultiPayload
     where
@@ -31,7 +31,7 @@ pub trait DefuseSignerExt {
     where
         T: Into<Intent>,
     {
-        let deadline = Deadline::timeout(std::time::Duration::from_mins(2));
+        let deadline = Timestamp::now() + std::time::Duration::from_mins(2);
         let nonce = generate_unique_nonce(defuse_contract, Some(deadline)).await?;
 
         let defuse_intents = DefuseIntents {
@@ -53,7 +53,7 @@ impl DefuseSignerExt for Near {
         &self,
         defuse_contract: impl AsRef<AccountIdRef>,
         nonce: Nonce,
-        deadline: Deadline,
+        deadline: Timestamp,
         message: T,
     ) -> MultiPayload
     where

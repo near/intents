@@ -1,6 +1,6 @@
 use std::io;
 
-use defuse_borsh_utils::adapters::{AsWrap, BorshDeserializeAs, BorshSerializeAs};
+use defuse_borsh_utils::{AsWrap, BorshDeserializeAs, BorshSerializeAs};
 use near_sdk::{
     borsh::{BorshDeserialize, BorshSerialize},
     near,
