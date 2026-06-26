@@ -1,3 +1,5 @@
+#![allow(clippy::cloned_ref_to_slice_refs)]
+
 use defuse_sandbox::{
     extensions::{
         defuse::{
@@ -234,9 +236,7 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
 
     // simulate
     env.defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: signed.clone(),
-        })
+        .simulate_intents(MultiPayloadArgs { signed: &signed })
         .await
         .unwrap()
         .into_result()
@@ -332,9 +332,7 @@ async fn invariant_violated(#[future(awt)] env: Env) {
 
     assert_eq!(
         env.defuse
-            .simulate_intents(MultiPayloadArgs {
-                signed: signed.clone(),
-            })
+            .simulate_intents(MultiPayloadArgs { signed: &signed })
             .await
             .unwrap()
             .invariant_violated
@@ -444,7 +442,7 @@ async fn solver_user_closure(
     let simulation_before_return_quote = env
         .defuse
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![solver_commitment.clone()],
+            signed: &[solver_commitment.clone()],
         })
         .await
         .unwrap();
@@ -500,7 +498,7 @@ async fn solver_user_closure(
     // simulating both solver's and user's intents now should succeed
     env.defuse
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![solver_commitment.clone(), user_commitment.clone()],
+            signed: &[solver_commitment.clone(), user_commitment.clone()],
         })
         .await
         .unwrap()

@@ -58,7 +58,7 @@ async fn deposit_withdraw(#[future(awt)] env: Env) {
             user.account_id(),
             1000,
             None,
-            None
+            None,
         )
         .await
         .unwrap()

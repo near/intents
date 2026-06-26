@@ -254,7 +254,7 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
                 user1.account_id(),
                 1000,
                 None,
-                None
+                None,
             )
             .await
             .unwrap()
@@ -773,8 +773,8 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
                 defuse2.account_id(),
                 env.defuse.contract_id(),
                 user2.account_id(),
-                tokens.iter().cloned().map(|v| v.0).collect(),
-                tokens.iter().map(|v| v.1).collect(),
+                tokens.iter().cloned().map(|v| v.0),
+                tokens.iter().map(|v| v.1),
                 None,
                 None,
             )
@@ -852,8 +852,8 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
                 defuse2.account_id(),
                 env.defuse.contract_id(),
                 user2.account_id(),
-                tokens.iter().cloned().map(|v| v.0).collect(),
-                tokens.iter().map(|v| v.1).collect(),
+                tokens.iter().cloned().map(|v| v.0),
+                tokens.iter().map(|v| v.1),
                 None,
                 None,
             )
@@ -883,8 +883,8 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
                 defuse2.account_id(),
                 env.defuse.contract_id(),
                 user2.account_id(),
-                tokens.iter().cloned().map(|v| v.0).collect(),
-                tokens.iter().map(|v| v.1).collect(),
+                tokens.iter().cloned().map(|v| v.0),
+                tokens.iter().map(|v| v.1),
                 None,
                 None,
             )

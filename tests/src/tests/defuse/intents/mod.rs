@@ -1,3 +1,5 @@
+#![allow(clippy::cloned_ref_to_slice_refs)]
+
 use defuse_core::intents::MaybeIntentEvent;
 use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::{
@@ -101,7 +103,7 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
     let result = env
         .defuse
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![transfer_intent_payload.clone()],
+            signed: &[transfer_intent_payload.clone()],
         })
         .await
         .unwrap();

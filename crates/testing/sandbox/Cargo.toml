@@ -8,16 +8,11 @@ rust-version.workspace = true
 repository.workspace = true
 
 [features]
-defuse = [
-  "dep:defuse",
-  "dep:defuse-nep413",
-  "dep:defuse-serde-utils",
-  "dep:defuse-test-utils",
-]
-deployer = ["dep:defuse-global-deployer", "dep:defuse-serde-utils"]
+defuse = ["dep:defuse", "dep:defuse-nep413", "dep:defuse-test-utils"]
+deployer = ["dep:defuse-global-deployer"]
 escrow = ["dep:defuse-escrow-swap"]
 imt = ["defuse", "defuse/imt"]
-outlayer = ["dep:defuse-outlayer-app", "dep:defuse-serde-utils"]
+outlayer = ["dep:defuse-outlayer-app"]
 poa = ["dep:defuse-poa-factory"]
 wallet = ["dep:defuse-wallet", "dep:defuse-wallet-sdk"]
 
@@ -41,7 +36,6 @@ defuse-global-deployer = { workspace = true, optional = true }
 defuse-nep413 = { workspace = true, optional = true, features = ["near-kit", "serde"] }
 defuse-outlayer-app = { workspace = true, optional = true }
 defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
-defuse-serde-utils = { workspace = true, optional = true, features = ["base64", "hex"] }
 defuse-test-utils = { workspace = true, optional = true }
 defuse-wallet = { workspace = true, optional = true, features = ["arbitrary", "concurrent"] }
 defuse-wallet-sdk = { workspace = true, optional = true }

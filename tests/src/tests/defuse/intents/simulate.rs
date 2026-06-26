@@ -1,3 +1,5 @@
+#![allow(clippy::cloned_ref_to_slice_refs)]
+
 use defuse_sandbox::{
     extensions::{
         DEFAULT_GAS,
@@ -84,7 +86,7 @@ async fn simulate_transfer_intent(#[future(awt)] env: Env) {
     let result = env
         .defuse
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![transfer_intent_payload.clone()],
+            signed: &[transfer_intent_payload.clone()],
         })
         .await
         .unwrap();
@@ -140,7 +142,7 @@ async fn simulate_ft_withdraw_intent(#[future(awt)] env: Env) {
     let result = env
         .defuse
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![ft_withdraw_payload.clone()],
+            signed: &[ft_withdraw_payload.clone()],
         })
         .await
         .unwrap();
@@ -205,7 +207,7 @@ async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
     let result = env
         .defuse
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![native_withdraw_payload.clone()],
+            signed: &[native_withdraw_payload.clone()],
         })
         .await
         .unwrap();
@@ -303,7 +305,7 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
     let result = env
         .defuse
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![nft_withdraw_payload.clone()],
+            signed: &[nft_withdraw_payload.clone()],
         })
         .await
         .unwrap();
@@ -418,7 +420,7 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
     // Simulate the intent on defuse2 (which has the tokens)
     let result = defuse2
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![mt_withdraw_payload.clone()],
+            signed: &[mt_withdraw_payload.clone()],
         })
         .await
         .unwrap();
@@ -484,7 +486,7 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
     let result = env
         .defuse
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![storage_deposit_payload.clone()],
+            signed: &[storage_deposit_payload.clone()],
         })
         .await
         .unwrap();
@@ -576,9 +578,7 @@ async fn simulate_token_diff_intent(#[future(awt)] env: Env) {
     let payloads = [user1_payload, user2_payload];
     let result = env
         .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: payloads.to_vec(),
-        })
+        .simulate_intents(MultiPayloadArgs { signed: &payloads })
         .await
         .unwrap();
 
@@ -610,7 +610,7 @@ async fn simulate_add_public_key_intent(
     let result = env
         .defuse
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![add_public_key_payload.clone()],
+            signed: &[add_public_key_payload.clone()],
         })
         .await
         .unwrap();
@@ -656,7 +656,7 @@ async fn simulate_remove_public_key_intent(
     let result = env
         .defuse
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![remove_public_key_payload.clone()],
+            signed: &[remove_public_key_payload.clone()],
         })
         .await
         .unwrap();
@@ -679,7 +679,7 @@ async fn simulate_set_auth_by_predecessor_id_intent(#[future(awt)] env: Env) {
     let result = env
         .defuse
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![set_auth_payload.clone()],
+            signed: &[set_auth_payload.clone()],
         })
         .await
         .unwrap();
@@ -746,7 +746,7 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
     let result = env
         .defuse
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![auth_call_payload.clone()],
+            signed: &[auth_call_payload.clone()],
         })
         .await
         .unwrap();
@@ -778,7 +778,7 @@ async fn simulate_mint_intent(#[future(awt)] env: Env) {
     let result = env
         .defuse
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![mint_payload.clone()],
+            signed: &[mint_payload.clone()],
         })
         .await
         .unwrap();
@@ -826,7 +826,7 @@ async fn simulate_burn_intent(#[future(awt)] env: Env) {
     let result = env
         .defuse
         .simulate_intents(MultiPayloadArgs {
-            signed: vec![burn_payload.clone()],
+            signed: &[burn_payload.clone()],
         })
         .await
         .unwrap();
@@ -860,9 +860,7 @@ async fn simulation_fails_on_used_nonce(#[future(awt)] env: Env) {
 
     let result = env
         .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: vec![payload],
-        })
+        .simulate_intents(MultiPayloadArgs { signed: &[payload] })
         .await;
 
     assert!(result.is_err());

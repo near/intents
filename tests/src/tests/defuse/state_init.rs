@@ -222,8 +222,8 @@ async fn benchmark_gas_used_by_do_auth_call_callback(
         .defuse_do_auth_call(
             defuse.account_id(),
             DoAuthCallArgs {
-                signer_id: account,
-                auth_call: intent,
+                signer_id: &account,
+                auth_call: &intent,
             },
             callback_gas,
         )
@@ -430,8 +430,8 @@ async fn test_auth_call_state_init_via_do_auth_call(
                     .defuse_do_auth_call(
                         defuse.account_id(),
                         DoAuthCallArgs {
-                            signer_id: account_id.clone(),
-                            auth_call: auth_intent,
+                            signer_id: &account_id,
+                            auth_call: &auth_intent,
                         },
                         callback_gas,
                     )
