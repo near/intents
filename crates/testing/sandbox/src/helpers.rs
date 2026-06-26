@@ -1,4 +1,3 @@
-#[cfg(feature = "defuse")]
 use std::fmt::Display;
 
 /// Assert that collection `a` contains collection `b`.
