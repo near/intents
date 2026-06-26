@@ -48,6 +48,7 @@ async fn execute_add_public_key_intent(
         )
         .await
         .unwrap();
+
     let nonce = add_public_key_payload.extract_nonce().unwrap();
 
     let (result, _) = env

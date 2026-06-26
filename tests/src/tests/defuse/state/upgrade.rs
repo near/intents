@@ -1,3 +1,5 @@
+use defuse_core::PublicKey;
+use defuse_core::intents::account::RemovePublicKey;
 use defuse_sandbox::{
     extensions::{
         defuse::{
@@ -19,7 +21,10 @@ use defuse_test_utils::wasms::{DEFUSE_LEGACY_WASM, DEFUSE_WASM};
 use rstest::rstest;
 use std::collections::BTreeMap;
 
-use crate::tests::defuse::env::{Env, env};
+use crate::{
+    tests::defuse::env::{Env, env},
+    utils::fixtures::public_key,
+};
 
 async fn balance_of(
     near: &Near,
@@ -45,6 +50,7 @@ async fn test_upgrade_with_persistence(
     #[with(Env::builder().deployer_as_super_admin().defuse_wasm(DEFUSE_LEGACY_WASM.clone()))]
     #[future(awt)]
     env: Env,
+    public_key: PublicKey,
 ) {
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
     let ft = env.create_named_token("testtoken").await;
@@ -53,6 +59,7 @@ async fn test_upgrade_with_persistence(
         .await;
 
     let deposit_amount = 10_000u128;
+
     futures::future::try_join_all([
         env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user1.account_id(), None),
         env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user2.account_id(), None),
@@ -102,6 +109,7 @@ async fn test_upgrade_with_persistence(
             .await
             .unwrap()
     );
+
     assert!(
         env.defuse
             .has_public_key(HasPublicKeyArgs {
@@ -113,6 +121,11 @@ async fn test_upgrade_with_persistence(
     );
 
     let fee_before = env.defuse.fee().await.unwrap();
+
+    user1
+        .defuse_add_public_key(env.defuse.contract_id(), public_key)
+        .await
+        .unwrap();
 
     env.upgrade_defuse(DEFUSE_WASM.clone()).await;
 
@@ -289,6 +302,18 @@ async fn test_upgrade_with_persistence(
         )
         .await
         .expect("failed to set fee after upgrade");
+
+    let remove_public_key_payload = user1
+        .sign_defuse_payload_default(&env.defuse, [RemovePublicKey { public_key }])
+        .await
+        .unwrap();
+
+    env.defuse_simulate_and_execute_intents(
+        env.defuse.contract_id(),
+        [remove_public_key_payload.clone()],
+    )
+    .await
+    .unwrap();
 
     assert_ne!(env.defuse.fee().await.unwrap(), fee_before);
 }

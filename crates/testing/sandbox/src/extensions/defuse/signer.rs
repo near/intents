@@ -6,6 +6,7 @@ use defuse::core::{
     payload::{multi::MultiPayload, nep413::Nep413DefuseMessage},
 };
 use defuse_nep413::SignedNep413Payload;
+use defuse_test_utils::random::{RngExt, TestRng};
 use near_kit::{AccountIdRef, Near};
 use serde::Serialize;
 use serde_json;
