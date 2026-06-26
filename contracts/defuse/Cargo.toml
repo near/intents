@@ -47,7 +47,6 @@ container_build_command = [
   "--locked",
   "--features=contract",
   "--abi-features=abi,contract",
-  "--no-embed-abi",
 ]
 
 [package.metadata.near.reproducible_build.variant.far]
@@ -62,7 +61,6 @@ container_build_command = [
   "--locked",
   "--features=contract,far",
   "--abi-features=abi,contract,far",
-  "--no-embed-abi",
 ]
 
 [features]
