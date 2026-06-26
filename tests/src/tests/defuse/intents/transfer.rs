@@ -95,7 +95,7 @@ async fn transfer_intent(#[future(awt)] env: Env) {
         1000
     );
 
-    assert_eq_defuse_event_logs!(initial_transfer_payload.to_event_log(), res.logs());
+    assert_eq_defuse_event_logs(initial_transfer_payload.to_event_log(), res.logs());
 }
 
 #[rstest]
@@ -195,7 +195,7 @@ async fn transfer_intent_to_defuse(#[future(awt)] env: Env) {
             .await
             .unwrap();
 
-        assert_eq_defuse_event_logs!(transfer_payload.to_event_log(), res.logs());
+        assert_eq_defuse_event_logs(transfer_payload.to_event_log(), res.logs());
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
@@ -346,7 +346,7 @@ async fn transfer_intent_with_msg_to_receiver_smc(
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(transfer_payload.to_event_log(), res.logs());
+    assert_eq_defuse_event_logs(transfer_payload.to_event_log(), res.logs());
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())

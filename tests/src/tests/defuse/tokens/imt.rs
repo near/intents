@@ -96,7 +96,7 @@ async fn imt_burn_call(#[future(awt)] env: Env) {
         ),
     )]));
 
-    assert_eq_defuse_event_logs!([expected.to_nep297_event().to_event_log()], result.logs());
+    assert_eq_defuse_event_logs([expected.to_nep297_event().to_event_log()], result.logs());
 }
 
 #[rstest]

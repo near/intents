@@ -67,7 +67,7 @@ async fn imt_mint_intent(#[future(awt)] env: Env) {
         amount
     );
 
-    assert_eq_defuse_event_logs!(mint_payload.to_event_log(), result.logs());
+    assert_eq_defuse_event_logs(mint_payload.to_event_log(), result.logs());
 }
 
 #[rstest]
@@ -165,7 +165,7 @@ async fn imt_mint_intent_to_defuse(#[future(awt)] env: Env) {
             .await
             .unwrap();
 
-        assert_eq_defuse_event_logs!(mint_payload.to_event_log(), res.logs());
+        assert_eq_defuse_event_logs(mint_payload.to_event_log(), res.logs());
 
         let mt_token = TokenId::from(ImtTokenId::new(user.account_id().clone(), ft.clone()));
 
@@ -282,7 +282,7 @@ async fn imt_mint_intent_with_msg_to_receiver_smc(
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(mint_payload.to_event_log(), res.logs());
+    assert_eq_defuse_event_logs(mint_payload.to_event_log(), res.logs());
 
     let mt_token = TokenId::from(ImtTokenId::new(user.account_id().clone(), ft1.clone()));
 

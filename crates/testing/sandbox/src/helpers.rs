@@ -1,3 +1,6 @@
+#[cfg(feature = "defuse")]
+use std::fmt::Display;
+
 #[macro_export]
 macro_rules! assert_eq_event_logs {
     ($left:expr, $right:expr) => {{
@@ -7,49 +10,48 @@ macro_rules! assert_eq_event_logs {
     }};
 }
 
-#[cfg(feature = "defuse")]
-#[macro_export]
-macro_rules! assert_eq_defuse_event_logs {
-    ($left:expr, $right:expr) => {{
-        let standard = "\"standard\":\"dip4\"";
-
-        let left: Vec<String> = $left
-            .iter()
-            .map(ToString::to_string)
-            .filter(|s| s.contains(standard))
-            .collect();
-
-        let right: Vec<String> = $right
-            .iter()
-            .map(ToString::to_string)
-            .filter(|s| s.contains(standard))
-            .collect();
-
-        assert_eq!(left, right);
-    }};
-}
-
 /// Assert that collection `a` contains collection `b`.
 /// Checks that all elements in `b` are present in `a`.
 ///
 /// # Examples
 /// ```ignore
-/// assert_a_contains_b!(a: all_logs, b: [expected_event1, expected_event2]);
+/// assert_a_contains_b(a: all_logs, b: [expected_event1, expected_event2]);
 /// ```
-#[macro_export]
-macro_rules! assert_a_contains_b {
-    (a: $a:expr, b: $b:expr) => {{
-        let a: Vec<String> = $a.iter().map(ToString::to_string).collect();
-        let b: Vec<String> = $b.iter().map(ToString::to_string).collect();
+#[track_caller]
+pub fn assert_a_contains_b(
+    a: impl IntoIterator<Item: Display>,
+    b: impl IntoIterator<Item: Display>,
+) {
+    let a: Vec<String> = a.into_iter().map(|v| v.to_string()).collect();
+    let b: Vec<String> = b.into_iter().map(|v| v.to_string()).collect();
 
-        for expected_event in &b {
-            if !a.contains(expected_event) {
-                panic!(
-                    "\n\nExpected event not found in 'a':\n{}\n\nActual event logs in 'a':\n{:#?}\n",
-                    expected_event,
-                    a
-                );
-            }
-        }
-    }};
+    for expected_event in &b {
+        assert!(
+            a.contains(expected_event),
+            "\n\nExpected event not found in 'a':\n{expected_event}\n\nActual event logs in 'a':\n{a:#?}\n",
+        );
+    }
+}
+
+#[cfg(feature = "defuse")]
+#[track_caller]
+pub fn assert_eq_defuse_event_logs(
+    left: impl IntoIterator<Item: Display>,
+    right: impl IntoIterator<Item: Display>,
+) {
+    let standard = "\"standard\":\"dip4\"";
+
+    let left: Vec<String> = left
+        .into_iter()
+        .map(|v| v.to_string())
+        .filter(|s| s.contains(standard))
+        .collect();
+
+    let right: Vec<String> = right
+        .into_iter()
+        .map(|v| v.to_string())
+        .filter(|s| s.contains(standard))
+        .collect();
+
+    assert_eq!(left, right);
 }

@@ -71,7 +71,7 @@ async fn imt_burn_intent(#[future(awt)] env: Env) {
         0
     );
 
-    assert_eq_defuse_event_logs!(burn_payload.to_event_log(), result.logs());
+    assert_eq_defuse_event_logs(burn_payload.to_event_log(), result.logs());
 }
 
 #[rstest]

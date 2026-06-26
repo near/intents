@@ -1758,12 +1758,12 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
     }];
     let expected_mt_transfer = MtEvent::MtTransfer(Cow::Borrowed(&transfer_events));
 
-    assert_a_contains_b!(
-        a: result.logs(),
-        b: [
+    assert_a_contains_b(
+        result.logs(),
+        [
             expected_mt_burn.to_nep297_event().to_event_log(),
             expected_mt_transfer.to_nep297_event().to_event_log(),
-        ]
+        ],
     );
 
     assert_eq!(

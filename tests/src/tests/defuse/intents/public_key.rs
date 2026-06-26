@@ -124,5 +124,5 @@ async fn execute_remove_public_key_intent(
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(remove_public_key_payload.to_event_log(), result.logs());
+    assert_eq_defuse_event_logs(remove_public_key_payload.to_event_log(), result.logs());
 }

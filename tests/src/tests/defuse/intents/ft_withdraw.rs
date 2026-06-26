@@ -80,7 +80,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(initial_withdraw_payload.to_event_log(), res.logs());
+    assert_eq_defuse_event_logs(initial_withdraw_payload.to_event_log(), res.logs());
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
@@ -185,7 +185,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(valid_payload.to_event_log(), res.logs());
+    assert_eq_defuse_event_logs(valid_payload.to_event_log(), res.logs());
 
     let new_defuse_balance = env.account(env.defuse.contract_id()).await.unwrap().amount;
 
@@ -283,7 +283,7 @@ async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
             .await
             .unwrap();
 
-        assert_eq_defuse_event_logs!(low_min_gas_payload.to_event_log(), res.logs());
+        assert_eq_defuse_event_logs(low_min_gas_payload.to_event_log(), res.logs());
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
@@ -343,7 +343,7 @@ async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(remaining_withdraw_payload.to_event_log(), res.logs());
+    assert_eq_defuse_event_logs(remaining_withdraw_payload.to_event_log(), res.logs());
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())

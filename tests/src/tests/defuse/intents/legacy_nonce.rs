@@ -89,7 +89,7 @@ async fn execute_intent_with_legacy_nonce(
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(transfer_intent_payload.to_event_log(), res.logs());
+    assert_eq_defuse_event_logs(transfer_intent_payload.to_event_log(), res.logs());
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())

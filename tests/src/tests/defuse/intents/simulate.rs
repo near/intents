@@ -87,7 +87,7 @@ async fn simulate_transfer_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(transfer_intent_payload.to_event_log(), result.report.logs);
+    assert_eq_defuse_event_logs(transfer_intent_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -143,7 +143,7 @@ async fn simulate_ft_withdraw_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(ft_withdraw_payload.to_event_log(), result.report.logs);
+    assert_eq_defuse_event_logs(ft_withdraw_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -208,7 +208,7 @@ async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(native_withdraw_payload.to_event_log(), result.report.logs);
+    assert_eq_defuse_event_logs(native_withdraw_payload.to_event_log(), result.report.logs);
 }
 
 pub const DUMMY_NFT_URL: &str = "http://example.com/nft/";
@@ -306,7 +306,7 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(nft_withdraw_payload.to_event_log(), result.report.logs);
+    assert_eq_defuse_event_logs(nft_withdraw_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -421,7 +421,7 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(mt_withdraw_payload.to_event_log(), result.report.logs);
+    assert_eq_defuse_event_logs(mt_withdraw_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -487,7 +487,7 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(storage_deposit_payload.to_event_log(), result.report.logs);
+    assert_eq_defuse_event_logs(storage_deposit_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -580,7 +580,7 @@ async fn simulate_token_diff_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(payloads.to_event_log(), result.report.logs);
+    assert_eq_defuse_event_logs(payloads.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -613,7 +613,7 @@ async fn simulate_add_public_key_intent(
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(add_public_key_payload.to_event_log(), result.report.logs);
+    assert_eq_defuse_event_logs(add_public_key_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -659,7 +659,7 @@ async fn simulate_remove_public_key_intent(
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(remove_public_key_payload.to_event_log(), result.report.logs);
+    assert_eq_defuse_event_logs(remove_public_key_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -682,7 +682,7 @@ async fn simulate_set_auth_by_predecessor_id_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(set_auth_payload.to_event_log(), result.report.logs);
+    assert_eq_defuse_event_logs(set_auth_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -749,7 +749,7 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(auth_call_payload.to_event_log(), result.report.logs);
+    assert_eq_defuse_event_logs(auth_call_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -781,7 +781,7 @@ async fn simulate_mint_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(mint_payload.to_event_log(), result.report.logs);
+    assert_eq_defuse_event_logs(mint_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -829,7 +829,7 @@ async fn simulate_burn_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(burn_payload.to_event_log(), result.report.logs);
+    assert_eq_defuse_event_logs(burn_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]

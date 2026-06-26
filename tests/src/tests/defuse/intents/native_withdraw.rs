@@ -106,7 +106,7 @@ async fn native_withdraw_intent(
         .await
         .expect("execute_intents: failed to withdraw native NEAR to receivers");
 
-    assert_eq_defuse_event_logs!(withdraw_payload.to_event_log(), res.logs());
+    assert_eq_defuse_event_logs(withdraw_payload.to_event_log(), res.logs());
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
