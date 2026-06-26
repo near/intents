@@ -17,6 +17,20 @@ digest_cfg! {
     }
 }
 
+digest_cfg! {
+    pub struct Sha3_256 {
+        // TODO: cfg(near)
+        _ => ::sha3::Sha3_256,
+    }
+}
+
+digest_cfg! {
+    pub struct Sha3_512 {
+        // TODO: cfg(near)
+        _ => ::sha3::Sha3_512,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use digest::Digest;
@@ -49,5 +63,31 @@ mod tests {
     )]
     fn keccak512_has_not_changed(#[case] data: &[u8], #[case] output: [u8; 64]) {
         assert!(Keccak512::digest(data) == output, "has changed");
+    }
+
+    #[rstest]
+    #[case(
+        b"",
+        hex!("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"),
+    )]
+    #[case(
+        b"test",
+        hex!("36f028580bb02cc8272a9a020f4200e346e276ae664e45ee80745574e2f5ab80"),
+    )]
+    fn sha3_256_has_not_changed(#[case] data: &[u8], #[case] output: [u8; 32]) {
+        assert!(Sha3_256::digest(data) == output, "has changed");
+    }
+
+    #[rstest]
+    #[case(
+        b"",
+        hex!("a69f73cca23a9ac5c8b567dc185a756e97c982164fe25859e0d1dcc1475c80a615b2123af1f5f94c11e3e9402c3ac558f500199d95b6d3e301758586281dcd26"),
+    )]
+    #[case(
+        b"test",
+        hex!("9ece086e9bac491fac5c1d1046ca11d737b92a2b2ebd93f005d7b710110c0a678288166e7fbe796883a4f2e9b3ca9f484f521d0ce464345cc1aec96779149c14"),
+    )]
+    fn sha3_512_has_not_changed(#[case] data: &[u8], #[case] output: [u8; 64]) {
+        assert!(Sha3_512::digest(data) == output, "has changed");
     }
 }

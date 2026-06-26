@@ -7,6 +7,7 @@ pub trait DigestFinalizer: OutputSizeUser {
     fn digest(bytes: &[u8]) -> Output<Self>;
 }
 
+#[cfg_attr(feature = "zeroize", derive(::zeroize::ZeroizeOnDrop))]
 #[autoimpl(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DigestFn<F> {
     data: Vec<u8>,
