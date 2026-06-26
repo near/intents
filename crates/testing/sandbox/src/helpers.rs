@@ -1,15 +1,6 @@
 #[cfg(feature = "defuse")]
 use std::fmt::Display;
 
-#[macro_export]
-macro_rules! assert_eq_event_logs {
-    ($left:expr, $right:expr) => {{
-        let left: Vec<String> = $left.iter().map(ToString::to_string).collect();
-        let right: Vec<String> = $right.iter().map(ToString::to_string).collect();
-        assert_eq!(left, right);
-    }};
-}
-
 /// Assert that collection `a` contains collection `b`.
 /// Checks that all elements in `b` are present in `a`.
 ///
