@@ -1,8 +1,8 @@
-use defuse_sandbox::kit::Final;
 use defuse_sandbox::{
     account::Account,
     extensions::{
         DEFAULT_GAS,
+        acl::AccessControllableExt,
         defuse::{
             DefuseExt, DefuseSignerExt,
             contract::Role,
@@ -16,7 +16,7 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs},
         poa::PoAFactoryExt,
     },
-    kit::NearToken,
+    kit::{Final, NearToken},
 };
 use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
@@ -335,7 +335,7 @@ async fn ft_force_withdraw(
         0
     );
 
-    env.defuse_acl_grant_role(
+    env.acl_grant_role(
         env.defuse.contract_id(),
         Role::UnrestrictedWithdrawer,
         other_user.account_id(),

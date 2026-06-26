@@ -1,6 +1,9 @@
 use defuse_core::PublicKey;
 use defuse_sandbox::{
-    extensions::defuse::{DefuseExt, contract::Role},
+    extensions::{
+        acl::AccessControllableExt,
+        defuse::{DefuseExt, contract::Role},
+    },
     kit::{InMemorySigner, KeyPair},
 };
 use rstest::rstest;
@@ -19,7 +22,7 @@ async fn relayer_keys(
 ) {
     let (user, other_user) = futures::join!(env.create_user(), env.create_user());
 
-    env.defuse_acl_grant_role(
+    env.acl_grant_role(
         env.defuse.contract_id(),
         Role::RelayerKeysManager,
         user.account_id(),

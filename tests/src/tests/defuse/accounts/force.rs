@@ -1,4 +1,5 @@
 use defuse_sandbox::extensions::{
+    acl::AccessControllableExt,
     defuse::{
         AccountArgs, DefuseExt, DefuseSignerExt, ExtractNonceExt, HasPublicKeyArgs,
         IsNonceUsedArgs,
@@ -76,7 +77,7 @@ async fn test_lock_account(
         }
 
         // grant UnrestrictedAccountLocker role
-        env.defuse_acl_grant_role(
+        env.acl_grant_role(
             env.defuse.contract_id(),
             Role::UnrestrictedAccountLocker,
             account_locker.account_id(),
@@ -379,7 +380,7 @@ async fn test_lock_account(
         }
 
         // grant UnrestrictedAccountLocker role
-        env.defuse_acl_grant_role(
+        env.acl_grant_role(
             env.defuse.contract_id(),
             Role::UnrestrictedAccountUnlocker,
             account_locker.account_id(),
@@ -491,7 +492,7 @@ async fn test_force_set_auth_by_predecessor_id(
         }
 
         // grant UnrestrictedAccountLocker role
-        env.defuse_acl_grant_role(
+        env.acl_grant_role(
             env.defuse.contract_id(),
             Role::UnrestrictedAccountLocker,
             account_locker.account_id(),
@@ -575,7 +576,7 @@ async fn test_force_set_auth_by_predecessor_id(
         }
 
         // grant UnrestrictedAccountUnlocker role
-        env.defuse_acl_grant_role(
+        env.acl_grant_role(
             env.defuse.contract_id(),
             Role::UnrestrictedAccountUnlocker,
             account_unlocker.account_id(),

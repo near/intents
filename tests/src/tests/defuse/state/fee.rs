@@ -3,12 +3,15 @@ use crate::{
     utils::asserts::ResultAssertsExt,
 };
 use defuse_sandbox::{
-    extensions::defuse::{
-        DefuseExt,
-        contract::Role,
-        core::{
-            events::DefuseEvent,
-            fees::{FeeChangedEvent, FeeCollectorChangedEvent, Pips},
+    extensions::{
+        acl::AccessControllableExt,
+        defuse::{
+            DefuseExt,
+            contract::Role,
+            core::{
+                events::DefuseEvent,
+                fees::{FeeChangedEvent, FeeCollectorChangedEvent, Pips},
+            },
         },
     },
     kit::AccountId,
@@ -38,7 +41,7 @@ async fn set_fee(
 
     // set fee by fee manager
     {
-        env.defuse_acl_grant_role(
+        env.acl_grant_role(
             env.defuse.contract_id().clone(),
             Role::FeesManager,
             user1.account_id().clone(),
@@ -88,7 +91,7 @@ async fn set_fee_collector(
 
     // set fee by fee manager
     {
-        env.defuse_acl_grant_role(
+        env.acl_grant_role(
             env.defuse.contract_id().clone(),
             Role::FeesManager,
             user1.account_id().clone(),

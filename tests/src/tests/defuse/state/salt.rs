@@ -4,10 +4,13 @@ use crate::{
     tests::defuse::env::{Env, env},
     utils::asserts::ResultAssertsExt,
 };
-use defuse_sandbox::extensions::defuse::{
-    DefuseExt, SaltArgs,
-    contract::Role,
-    core::{accounts::SaltRotationEvent, events::DefuseEvent},
+use defuse_sandbox::extensions::{
+    acl::AccessControllableExt,
+    defuse::{
+        DefuseExt, SaltArgs,
+        contract::Role,
+        core::{accounts::SaltRotationEvent, events::DefuseEvent},
+    },
 };
 use near_sdk::AsNep297Event;
 use rstest::rstest;
@@ -33,7 +36,7 @@ async fn update_current_salt(
 
     // rotate salt by salt manager
     {
-        env.defuse_acl_grant_role(
+        env.acl_grant_role(
             env.defuse.contract_id().clone(),
             Role::SaltManager,
             user1.account_id().clone(),
@@ -90,7 +93,7 @@ async fn invalidate_salts(
 
     // invalidate prev salt by salt manager
     {
-        env.defuse_acl_grant_role(
+        env.acl_grant_role(
             env.defuse.contract_id().clone(),
             Role::SaltManager,
             user1.account_id().clone(),

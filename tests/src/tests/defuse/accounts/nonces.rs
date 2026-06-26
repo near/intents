@@ -1,10 +1,13 @@
 use arbitrary::{Arbitrary, Unstructured};
 use defuse_sandbox::{
-    extensions::defuse::{
-        DefuseExt, DefuseSignerExt, IsNonceUsedArgs,
-        contract::Role,
-        core::{Nonce, Salt, Timestamp, intents::DefuseIntents},
-        create_random_salted_nonce,
+    extensions::{
+        acl::AccessControllableExt,
+        defuse::{
+            DefuseExt, DefuseSignerExt, IsNonceUsedArgs,
+            contract::Role,
+            core::{Nonce, Salt, Timestamp, intents::DefuseIntents},
+            create_random_salted_nonce,
+        },
     },
     kit::AccountId,
 };
@@ -160,7 +163,7 @@ async fn test_commit_nonces(
 
     // nonce can be committed with previous salt
     {
-        env.defuse_acl_grant_role(
+        env.acl_grant_role(
             env.defuse.contract_id(),
             Role::SaltManager,
             user.account_id(),
@@ -292,7 +295,7 @@ async fn test_cleanup_nonces(
 
     // nonce is expired
     {
-        env.defuse_acl_grant_role(
+        env.acl_grant_role(
             env.defuse.contract_id(),
             Role::GarbageCollector,
             user.account_id(),
@@ -357,7 +360,7 @@ async fn test_cleanup_nonces(
 
     // clean invalid salt
     {
-        env.defuse_acl_grant_role(
+        env.acl_grant_role(
             env.defuse.contract_id(),
             Role::SaltManager,
             user.account_id(),
@@ -406,7 +409,7 @@ async fn cleanup_multiple_nonces(
     let mut nonces = Vec::with_capacity(nonce_count);
     let current_salt = env.defuse.current_salt().await.unwrap();
 
-    env.defuse_acl_grant_role(
+    env.acl_grant_role(
         env.defuse.contract_id(),
         Role::GarbageCollector,
         user.account_id(),

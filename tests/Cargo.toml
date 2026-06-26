@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-tests"
 version.workspace = true
@@ -5,8 +7,29 @@ edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
-[lints]
-workspace = true
+[dependencies]
+anyhow.workspace = true
+arbitrary.workspace = true
+borsh.workspace = true
+defuse-core = { workspace = true, features = ["near-kit"] }
+defuse-digest = { workspace = true, features = ["sha2"] }
+defuse-fees.workspace = true
+defuse-near-utils.workspace = true
+defuse-randomness.workspace = true
+defuse-sandbox = { workspace = true }
+defuse-test-utils = { workspace = true, features = ["near-contract"] }
+derive_more.workspace = true
+futures = "0.3"
+impl-tools.workspace = true
+itertools.workspace = true
+multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
+near-contract-standards.workspace = true
+# TODO: remove it when near kit will contain necessary types
+near-sdk.workspace = true
+rstest.workspace = true
+serde_json.workspace = true
+strum.workspace = true
+tokio = { workspace = true, features = ["macros"] }
 
 [features]
 default = [
@@ -49,27 +72,3 @@ outlayer = [
 ]
 
 long = []
-
-[dependencies]
-anyhow.workspace = true
-arbitrary.workspace = true
-borsh.workspace = true
-defuse-core = { workspace = true, features = ["near-kit"] }
-defuse-digest = { workspace = true, features = ["sha2"] }
-defuse-fees.workspace = true
-defuse-near-utils.workspace = true
-defuse-randomness.workspace = true
-defuse-sandbox = { workspace = true }
-defuse-test-utils = { workspace = true, features = ["near-contract"] }
-derive_more.workspace = true
-futures = "0.3"
-impl-tools.workspace = true
-itertools.workspace = true
-multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
-near-contract-standards.workspace = true
-# TODO: remove it when near kit will contain necessary types
-near-sdk.workspace = true
-rstest.workspace = true
-serde_json.workspace = true
-strum.workspace = true
-tokio = { workspace = true, features = ["macros"] }

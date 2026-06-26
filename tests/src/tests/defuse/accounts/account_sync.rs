@@ -1,13 +1,16 @@
 use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::{
-    extensions::defuse::{
-        DefuseExt, HasPublicKeyArgs,
-        contract::Role,
-        core::{
-            PublicKey,
-            accounts::{AccountEvent, PublicKeyEvent},
-            events::DefuseEvent,
-            intents::MaybeIntentEvent,
+    extensions::{
+        acl::AccessControllableExt,
+        defuse::{
+            DefuseExt, HasPublicKeyArgs,
+            contract::Role,
+            core::{
+                PublicKey,
+                accounts::{AccountEvent, PublicKeyEvent},
+                events::DefuseEvent,
+                intents::MaybeIntentEvent,
+            },
         },
     },
     kit::AccountId,
@@ -63,7 +66,7 @@ async fn test_force_add_public_keys(
 
     // Add public keys
     {
-        env.defuse_acl_grant_role(
+        env.acl_grant_role(
             env.defuse.contract_id(),
             Role::UnrestrictedAccountManager,
             user1.account_id(),
@@ -128,7 +131,7 @@ async fn test_force_add_and_remove_public_keys(
 
     // Add public keys
     {
-        env.defuse_acl_grant_role(
+        env.acl_grant_role(
             env.defuse.contract_id(),
             Role::UnrestrictedAccountManager,
             user1.account_id(),
@@ -152,7 +155,7 @@ async fn test_force_add_and_remove_public_keys(
 
     // Remove public keys
     {
-        env.defuse_acl_grant_role(
+        env.acl_grant_role(
             env.defuse.contract_id(),
             Role::UnrestrictedAccountManager,
             user2.account_id(),

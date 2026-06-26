@@ -2,6 +2,7 @@ use defuse_core::PublicKey;
 use defuse_core::intents::account::RemovePublicKey;
 use defuse_sandbox::{
     extensions::{
+        acl::AccessControllableExt,
         defuse::{
             DefuseExt, DefuseSignerExt, HasPublicKeyArgs,
             contract::Role,
@@ -287,7 +288,7 @@ async fn test_upgrade_with_persistence(
     );
 
     // acl and fee management still works
-    env.defuse_acl_grant_role(
+    env.acl_grant_role(
         env.defuse.contract_id().clone(),
         Role::FeesManager,
         user1.account_id().clone(),

@@ -4,11 +4,10 @@ mod imt;
 mod nonce;
 mod signer;
 
+use std::collections::{HashMap, HashSet};
+
 use anyhow::Result;
-use defuse::{
-    contract::{Role, config::DefuseConfig},
-    simulation_output::SimulationOutput,
-};
+use defuse::{contract::config::DefuseConfig, simulation_output::SimulationOutput};
 use defuse_core::{
     Nonce, PublicKey, Salt, fees::Pips, intents::auth::AuthCall, payload::multi::MultiPayload,
 };
@@ -20,7 +19,6 @@ use near_sdk::json_types::U128;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use serde_with::{base64::Base64, serde_as};
-use std::collections::{HashMap, HashSet};
 
 use crate::{
     account::Account,
@@ -76,12 +74,6 @@ pub struct FeeArgs {
 #[derive(Serialize)]
 pub struct FeeCollectorArgs<'a> {
     pub fee_collector: &'a AccountIdRef,
-}
-
-#[derive(Serialize)]
-pub struct AclRoleArgs<'a> {
-    pub role: Role,
-    pub account_id: &'a AccountIdRef,
 }
 
 #[derive(Serialize)]
@@ -177,10 +169,6 @@ pub trait Defuse {
     #[call]
     fn set_fee_collector(&mut self, args: FeeCollectorArgs);
 
-    fn acl_has_role(&self, args: AclRoleArgs) -> bool;
-    #[call]
-    fn acl_grant_role(&mut self, args: AclRoleArgs) -> Option<bool>;
-
     fn current_salt(&self) -> Salt;
     fn is_valid_salt(&self, salt: SaltArgs) -> bool;
 
@@ -262,13 +250,6 @@ pub trait DefuseExt {
         &self,
         defuse: impl Into<AccountId>,
         fee_collector: impl Into<AccountId>,
-    ) -> Result<SuccessfulExecutionOutcome>;
-
-    async fn defuse_acl_grant_role(
-        &self,
-        defuse: impl Into<AccountId>,
-        role: Role,
-        account_id: impl Into<AccountId>,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn defuse_update_current_salt(
@@ -499,23 +480,6 @@ impl DefuseExt for Near {
                 fee_collector: &fee_collector.into(),
             }),
             NearToken::from_yoctonear(1),
-        )
-        .await
-    }
-
-    async fn defuse_acl_grant_role(
-        &self,
-        defuse: impl Into<AccountId>,
-        role: Role,
-        account_id: impl Into<AccountId>,
-    ) -> Result<SuccessfulExecutionOutcome> {
-        self.fn_call(
-            defuse,
-            Defuse::acl_grant_role(AclRoleArgs {
-                role,
-                account_id: &account_id.into(),
-            }),
-            NearToken::from_near(0),
         )
         .await
     }
