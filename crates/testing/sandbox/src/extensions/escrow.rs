@@ -1,6 +1,6 @@
 use anyhow::Result;
 use defuse_escrow_swap::{Params, Storage};
-use near_kit::{AccountIdRef, Final, Near};
+use near_kit::{AccountIdRef, Final, Gas, Near};
 use serde::{Deserialize, Serialize};
 
 use crate::outcome::SuccessfulExecutionOutcome;
@@ -44,7 +44,7 @@ impl EscrowExt for Near {
         params: Params,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(escrow_id.as_ref())
-            .add_action(Escrow::es_close(EsParams { params }))
+            .add_action(Escrow::es_close(EsParams { params }).gas(Gas::from_tgas(300)))
             .wait_until(Final)
             .await?
             .try_into()
@@ -56,7 +56,7 @@ impl EscrowExt for Near {
         params: Params,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(escrow_id.as_ref())
-            .add_action(Escrow::es_lost_found(EsParams { params }))
+            .add_action(Escrow::es_lost_found(EsParams { params }).gas(Gas::from_tgas(300)))
             .wait_until(Final)
             .await?
             .try_into()

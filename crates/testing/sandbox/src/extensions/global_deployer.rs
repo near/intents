@@ -171,7 +171,8 @@ impl GlobalDeployerExt for Near {
                 GlobalDeployer::gd_transfer_ownership(GDTransferOwnershipArgs {
                     receiver_id: new_owner.into(),
                 })
-                .deposit(NearToken::from_yoctonear(1)),
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(30)),
             )
             .wait_until(Final)
             .await?

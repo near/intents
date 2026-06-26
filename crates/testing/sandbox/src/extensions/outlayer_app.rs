@@ -1,6 +1,6 @@
 use anyhow::Result;
 use defuse_outlayer_app::{AsHex, State as OutlayerState};
-use near_kit::{AccountId, AccountIdRef, Final, GlobalContractId, Near, NearToken};
+use near_kit::{AccountId, AccountIdRef, Final, Gas, GlobalContractId, Near, NearToken};
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
 
@@ -94,7 +94,8 @@ impl OutlayerAppExt for Near {
                     new_code_hash,
                     new_code_url,
                 })
-                .deposit(NearToken::from_yoctonear(1)),
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(10)),
             )
             .wait_until(Final)
             .await?
@@ -111,7 +112,8 @@ impl OutlayerAppExt for Near {
                 OutlayerApp::oa_transfer_admin(OaTransferAdminArgs {
                     new_admin_id: new_admin_id.into(),
                 })
-                .deposit(NearToken::from_yoctonear(1)),
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(30)),
             )
             .wait_until(Final)
             .await?
