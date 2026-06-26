@@ -236,7 +236,6 @@ async fn benchmark_gas_used_by_do_auth_call_callback(
 //that initializes a deterministic account
 //in each case its expected to create receipt for calling
 //`on_auth` on deterministic account id
-#[cfg(feature = "long")]
 #[rstest]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(1))]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(2))]
@@ -255,6 +254,7 @@ async fn benchmark_gas_used_by_do_auth_call_callback(
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(15))]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(16))]
 #[case(ExpectStateInitExceedsZeroBalanceAccountStorageLimit(17))]
+#[cfg_attr(not(feature = "long"), ignore = "`long` feature is disabled")]
 #[tokio::test]
 async fn test_auth_call_state_init_via_execute_intents(
     #[future(awt)] env: Env,
@@ -349,7 +349,6 @@ async fn test_auth_call_state_init_via_execute_intents(
 //create a promise that initializes a deterministic account
 //in each case its expected to create receipt for calling
 //`on_auth` on deterministic account id
-#[cfg(feature = "long")]
 #[rstest]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(1))]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(2))]
@@ -368,6 +367,7 @@ async fn test_auth_call_state_init_via_execute_intents(
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(15))]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(16))]
 #[case(ExpectStateInitExceedsZeroBalanceAccountStorageLimit(17))]
+#[cfg_attr(not(feature = "long"), ignore = "`long` feature is disabled")]
 #[tokio::test]
 async fn test_auth_call_state_init_via_do_auth_call(
     #[future(awt)] env: Env,

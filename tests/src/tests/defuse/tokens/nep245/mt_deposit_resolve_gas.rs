@@ -266,20 +266,8 @@ async fn mt_deposit_resolve_gas(
         TokenIdGenerationMode::Long
     )]
     gen_mode: TokenIdGenerationMode,
-    #[values(true, false)] full_coverage: bool,
     rng: impl Rng,
 ) {
-    // Skip full_coverage=true when 'long' feature is disabled
-    #[cfg(not(feature = "long"))]
-    if full_coverage {
-        return;
-    }
-    // Skip full_coverage=false when 'long' feature is enabled
-    #[cfg(feature = "long")]
-    if !full_coverage {
-        return;
-    }
-
     let rng = Arc::new(tokio::sync::Mutex::new(rng));
     let env = Arc::new(env);
 
@@ -340,7 +328,7 @@ async fn mt_deposit_resolve_gas(
 
     // When using full coverage mode, run the test for all token counts from 1 to max
     // to ensure the invariant holds for every count, not just the maximum.
-    if full_coverage {
+    if cfg!(feature = "long") {
         println!("Running exhaustive test for all token counts from 1 to {max_deposited_count}:");
         for token_count in 1..=max_deposited_count {
             run_deposit_resolve_gas_test(
