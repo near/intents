@@ -7,7 +7,7 @@ use crate::Schema;
 /// ```rust
 /// use defuse_kdf::{digest::Digest, Schema};
 /// # use hex_literal::hex;
-/// use sha3::Sha3_256;
+/// use defuse_digest::sha3::Sha3_256;
 ///
 /// let schema = Digest::<Sha3_256>::default();
 /// assert_eq!(
@@ -27,7 +27,7 @@ where
     /// ```rust
     /// use defuse_kdf::{digest::Digest, Schema};
     /// # use hex_literal::hex;
-    /// use sha3::{Digest as _, Sha3_256};
+    /// use defuse_digest::{Digest as _, sha3::Sha3_256};
     ///
     /// let schema = Digest::new(Sha3_256::new_with_prefix(b"prefix"));
     /// assert_eq!(

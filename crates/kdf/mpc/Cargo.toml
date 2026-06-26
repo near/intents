@@ -24,3 +24,6 @@ secp256k1 = ["defuse-kdf/secp256k1"]
 [dev-dependencies]
 hex-literal.workspace = true
 rstest.workspace = true
+
+[target.'cfg(near)'.dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }

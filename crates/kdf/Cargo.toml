@@ -40,3 +40,6 @@ defuse-kdf = { workspace = true, features = ["borsh", "digest", "ed25519", "secp
 defuse-digest = { workspace = true, features = ["sha3"] }
 hex-literal.workspace = true
 rstest.workspace = true
+
+[target.'cfg(near)'.dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }

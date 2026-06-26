@@ -1613,6 +1613,7 @@ dependencies = [
  "hex-literal",
  "impl-tools",
  "k256",
+ "near-sdk",
  "rstest",
 ]
 
@@ -1635,6 +1636,7 @@ dependencies = [
  "hex-literal",
  "impl-tools",
  "near-account-id",
+ "near-sdk",
  "rstest",
 ]
 
@@ -1679,6 +1681,7 @@ dependencies = [
  "digest-io",
  "impl-tools",
  "near-api",
+ "near-sdk",
  "schemars 0.8.22",
  "serde",
  "serde_json",
