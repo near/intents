@@ -14,7 +14,6 @@ use defuse_sandbox::{
                     Intent,
                     account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId},
                     auth::AuthCall,
-                    imt::{ImtBurn, ImtMint},
                     token_diff::{TokenDeltas, TokenDiff},
                     tokens::{
                         FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit,
@@ -33,6 +32,12 @@ use defuse_sandbox::{
     },
     kit::{Final, Gas, NearToken},
 };
+use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
+use near_contract_standards::non_fungible_token::metadata::{
+    NFT_METADATA_SPEC, NFTContractMetadata,
+};
+use near_sdk::json_types::Base64VecU8;
+use rstest::rstest;
 
 use crate::{
     tests::defuse::{
@@ -41,12 +46,6 @@ use crate::{
     },
     utils::fixtures::public_key,
 };
-use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
-use near_contract_standards::non_fungible_token::metadata::{
-    NFT_METADATA_SPEC, NFTContractMetadata,
-};
-use near_sdk::json_types::Base64VecU8;
-use rstest::rstest;
 
 #[rstest]
 #[tokio::test]
@@ -753,114 +752,129 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
     assert_eq_defuse_event_logs(auth_call_payload.to_event_log(), result.report.logs);
 }
 
-#[rstest]
-#[tokio::test]
-async fn simulate_mint_intent(#[future(awt)] env: Env) {
-    let user = env.create_user().await;
+#[cfg(feature = "imt")]
+mod imt {
+    use defuse_core::intents::imt::{ImtBurn, ImtMint};
 
-    let token_id = "sometoken.near".to_string();
-    let memo = "Some memo";
-    let amount = 1000;
+    use super::*;
 
-    let mint_intent = ImtMint {
-        tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
-        memo: Some(memo.to_string()),
-        receiver_id: user.account_id().clone(),
-        notification: None,
-    };
+    #[rstest]
+    #[tokio::test]
+    async fn simulate_mint_intent(
+        #[future(awt)]
+        #[with(Env::builder().imt())]
+        env: Env,
+    ) {
+        let user = env.create_user().await;
 
-    let mint_payload = user
-        .sign_defuse_payload_default(&env.defuse, [mint_intent.clone()])
-        .await
-        .unwrap();
+        let token_id = "sometoken.near".to_string();
+        let memo = "Some memo";
+        let amount = 1000;
 
-    let result = env
-        .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[mint_payload.clone()],
-        })
-        .await
-        .unwrap();
+        let mint_intent = ImtMint {
+            tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
+            memo: Some(memo.to_string()),
+            receiver_id: user.account_id().clone(),
+            notification: None,
+        };
 
-    assert_eq_defuse_event_logs(mint_payload.to_event_log(), result.report.logs);
-}
+        let mint_payload = user
+            .sign_defuse_payload_default(&env.defuse, [mint_intent.clone()])
+            .await
+            .unwrap();
 
-#[rstest]
-#[tokio::test]
-async fn simulate_burn_intent(#[future(awt)] env: Env) {
-    let user = env.create_user().await;
-
-    let token_id = "sometoken.near".to_string();
-    let memo = "Some memo";
-    let amount = 1000;
-
-    let mint_payload = user
-        .sign_defuse_payload_default(
-            &env.defuse,
-            [ImtMint {
-                tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
-                memo: Some(memo.to_string()),
-                receiver_id: user.account_id().clone(),
-                notification: None,
-            }],
-        )
-        .await
-        .unwrap();
-
-    env.defuse_simulate_and_execute_intents(env.defuse.contract_id(), [mint_payload])
-        .await
-        .unwrap();
-
-    let burn_intent = ImtBurn {
-        minter_id: user.account_id().clone(),
-        tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
-        memo: Some(memo.to_string()),
-    };
-
-    let burn_payload = user
-        .sign_defuse_payload_default(&env.defuse, [burn_intent.clone()])
-        .await
-        .unwrap();
-
-    let result = env
-        .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[burn_payload.clone()],
-        })
-        .await
-        .unwrap();
-
-    assert_eq_defuse_event_logs(burn_payload.to_event_log(), result.report.logs);
-}
-
-#[rstest]
-#[tokio::test]
-async fn simulation_fails_on_used_nonce(#[future(awt)] env: Env) {
-    let user = env.create_user().await;
-
-    let payload = user
-        .sign_defuse_payload_default(&env.defuse, Vec::<Intent>::new())
-        .await
-        .unwrap();
-
-    env.defuse_execute_intents(env.defuse.contract_id(), [payload.clone()])
-        .await
-        .unwrap();
-
-    assert!(
-        env.defuse
-            .is_nonce_used(IsNonceUsedArgs {
-                account_id: user.account_id(),
-                nonce: &payload.extract_nonce().unwrap(),
+        let result = env
+            .defuse
+            .simulate_intents(MultiPayloadArgs {
+                signed: &[mint_payload.clone()],
             })
             .await
-            .unwrap(),
-    );
+            .unwrap();
 
-    let result = env
-        .defuse
-        .simulate_intents(MultiPayloadArgs { signed: &[payload] })
-        .await;
+        assert_eq_defuse_event_logs(mint_payload.to_event_log(), result.report.logs);
+    }
 
-    assert!(result.is_err());
+    #[rstest]
+    #[tokio::test]
+    async fn simulate_burn_intent(
+        #[future(awt)]
+        #[with(Env::builder().imt())]
+        env: Env,
+    ) {
+        let user = env.create_user().await;
+
+        let token_id = "sometoken.near".to_string();
+        let memo = "Some memo";
+        let amount = 1000;
+
+        let mint_payload = user
+            .sign_defuse_payload_default(
+                &env.defuse,
+                [ImtMint {
+                    tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
+                    memo: Some(memo.to_string()),
+                    receiver_id: user.account_id().clone(),
+                    notification: None,
+                }],
+            )
+            .await
+            .unwrap();
+
+        env.defuse_simulate_and_execute_intents(env.defuse.contract_id(), [mint_payload])
+            .await
+            .unwrap();
+
+        let burn_intent = ImtBurn {
+            minter_id: user.account_id().clone(),
+            tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
+            memo: Some(memo.to_string()),
+        };
+
+        let burn_payload = user
+            .sign_defuse_payload_default(&env.defuse, [burn_intent.clone()])
+            .await
+            .unwrap();
+
+        let result = env
+            .defuse
+            .simulate_intents(MultiPayloadArgs {
+                signed: &[burn_payload.clone()],
+            })
+            .await
+            .unwrap();
+
+        assert_eq_defuse_event_logs(burn_payload.to_event_log(), result.report.logs);
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn simulation_fails_on_used_nonce(#[future(awt)] env: Env) {
+        let user = env.create_user().await;
+
+        let payload = user
+            .sign_defuse_payload_default(&env.defuse, Vec::<Intent>::new())
+            .await
+            .unwrap();
+
+        env.defuse_execute_intents(env.defuse.contract_id(), [payload.clone()])
+            .await
+            .unwrap();
+
+        assert!(
+            env.defuse
+                .is_nonce_used(IsNonceUsedArgs {
+                    account_id: user.account_id(),
+                    nonce: &payload.extract_nonce().unwrap(),
+                })
+                .await
+                .unwrap(),
+        );
+
+        let result = env
+            .defuse
+            .simulate_intents(MultiPayloadArgs { signed: &[payload] })
+            .await;
+
+        assert!(result.is_err());
+    }
 }

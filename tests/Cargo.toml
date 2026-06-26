@@ -36,21 +36,20 @@ default = [
   "defuse",
   "deployer",
   "escrow-swap",
+  "imt",
   "long",
   "outlayer",
   "poa",
   "wallet",
 ]
 
-poa = ["defuse-sandbox/poa", "defuse-test-utils/poa"]
 defuse = [
   "defuse-sandbox/defuse",
-  "defuse-sandbox/imt",
   "defuse-sandbox/poa",
   "defuse-test-utils/defuse",
   "defuse-test-utils/poa",
-  # "dep:defuse",
 ]
+deployer = ["defuse-sandbox/deployer"]
 escrow-swap = [
   "defuse-sandbox/defuse",
   "defuse-sandbox/escrow",
@@ -58,17 +57,10 @@ escrow-swap = [
   "defuse-test-utils/defuse",
   "defuse-test-utils/escrow",
   "defuse-test-utils/poa",
-  # "dep:defuse-escrow-swap",
 ]
+imt = ["defuse", "defuse-sandbox/imt"]
+outlayer = ["defuse-sandbox/outlayer", "defuse-test-utils/outlayer"]
+poa = ["defuse-sandbox/poa", "defuse-test-utils/poa"]
 wallet = ["defuse-sandbox/wallet", "defuse-test-utils/wallet", "deployer"]
-
-deployer = ["defuse-sandbox/deployer"]
-# "dep:defuse-global-deployer"]
-
-outlayer = [
-  "defuse-sandbox/outlayer",
-  "defuse-test-utils/outlayer",
-  # "dep:defuse-outlayer-app",
-]
 
 long = []

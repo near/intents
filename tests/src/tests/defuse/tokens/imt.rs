@@ -19,13 +19,17 @@ use rstest::rstest;
 use std::borrow::Cow;
 
 use crate::tests::defuse::{
-    env::{Env, env},
+    env::{Env, EnvBuilder, env},
     utils::assert_eq_defuse_event_logs,
 };
 
 #[rstest]
 #[tokio::test]
-async fn imt_burn_call(#[future(awt)] env: Env) {
+async fn imt_burn_call(
+    #[future(awt)]
+    #[with(EnvBuilder::default().imt())]
+    env: Env,
+) {
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
     let token = "sometoken.near".to_string();
     let memo = "Some memo";

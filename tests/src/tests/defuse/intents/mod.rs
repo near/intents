@@ -52,7 +52,9 @@ impl AccountNonceIntentEvent {
 }
 
 mod ft_withdraw;
+#[cfg(feature = "imt")]
 mod imt_burn;
+#[cfg(feature = "imt")]
 mod imt_mint;
 mod legacy_nonce;
 mod native_withdraw;
@@ -168,12 +170,18 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
 #[tokio::test]
 async fn webauthn() {
     const ROOT_ID: &AccountIdRef = AccountIdRef::new_or_panic("test.near");
+    const DEFUSE_NAME: &str = "defuse";
+    const POA_FACTORY_NAME: &str = "poa-factory";
     const SIGNER_ID: &AccountIdRef =
         AccountIdRef::new_or_panic("0x3602b546589a8fcafdce7fad64a46f91db0e4d50");
 
     let sandbox = SandboxConfig::builder().root_account(ROOT_ID).fresh().await;
 
-    let env = EnvBuilder::default().build(sandbox.client()).await;
+    let env = EnvBuilder::default()
+        .defuse_name(DEFUSE_NAME)
+        .poa_factory_name(POA_FACTORY_NAME)
+        .build(sandbox.client())
+        .await;
 
     let (user, ft) = futures::join!(
         env.create_named_user("user1"),

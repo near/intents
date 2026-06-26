@@ -22,7 +22,7 @@ use multi_token_receiver_stub::MTReceiverMode;
 use rstest::rstest;
 
 use crate::tests::defuse::{
-    env::{Env, env},
+    env::{Env, EnvBuilder, env},
     intents::transfer::TransferCallExpectation,
     utils::assert_eq_defuse_event_logs,
 };
@@ -30,7 +30,11 @@ use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 
 #[rstest]
 #[tokio::test]
-async fn imt_mint_intent(#[future(awt)] env: Env) {
+async fn imt_mint_intent(
+    #[future(awt)]
+    #[with(EnvBuilder::default().imt())]
+    env: Env,
+) {
     let user = env.create_user().await;
 
     let token = "sometoken.near".to_string();
@@ -72,7 +76,11 @@ async fn imt_mint_intent(#[future(awt)] env: Env) {
 
 #[rstest]
 #[tokio::test]
-async fn failed_imt_mint_intent(#[future(awt)] env: Env) {
+async fn failed_imt_mint_intent(
+    #[future(awt)]
+    #[with(EnvBuilder::default().imt())]
+    env: Env,
+) {
     let user = env.create_user().await;
 
     let token = ["a"; MAX_TOKEN_ID_LEN + 1].join("");
@@ -96,7 +104,11 @@ async fn failed_imt_mint_intent(#[future(awt)] env: Env) {
 
 #[rstest]
 #[tokio::test]
-async fn imt_mint_intent_to_defuse(#[future(awt)] env: Env) {
+async fn imt_mint_intent_to_defuse(
+    #[future(awt)]
+    #[with(EnvBuilder::default().imt())]
+    env: Env,
+) {
     let user = env.create_user().await;
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
 
@@ -243,7 +255,9 @@ async fn imt_mint_intent_to_defuse(#[future(awt)] env: Env) {
 })]
 #[tokio::test]
 async fn imt_mint_intent_with_msg_to_receiver_smc(
-    #[future(awt)] env: Env,
+    #[future(awt)]
+    #[with(EnvBuilder::default().imt())]
+    env: Env,
     #[case] expectation: TransferCallExpectation,
 ) {
     let initial_amount = expectation

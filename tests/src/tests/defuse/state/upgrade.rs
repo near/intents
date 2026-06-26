@@ -18,7 +18,7 @@ use defuse_sandbox::{
     },
     kit::{AccountIdRef, Near},
 };
-use defuse_test_utils::wasms::{DEFUSE_LEGACY_WASM, DEFUSE_WASM};
+use defuse_test_utils::wasms::DEFUSE_WASM;
 use rstest::rstest;
 use std::collections::BTreeMap;
 
@@ -48,7 +48,7 @@ async fn balance_of(
 #[rstest]
 #[tokio::test]
 async fn test_upgrade_with_persistence(
-    #[with(Env::builder().deployer_as_super_admin().defuse_wasm(DEFUSE_LEGACY_WASM.clone()))]
+    #[with(Env::builder().deployer_as_super_admin().legacy())]
     #[future(awt)]
     env: Env,
     public_key: PublicKey,

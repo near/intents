@@ -21,7 +21,7 @@ use serde_json::json;
 use crate::tests::defuse::env::Env;
 
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct EnvBuilder {
     fee: Pips,
     fee_collector: Option<AccountId>,
@@ -32,7 +32,26 @@ pub struct EnvBuilder {
     deployer_as_super_admin: bool,
     disable_ft_storage_deposit: bool,
 
-    defuse_wasm: Option<Vec<u8>>,
+    defuse_name: String,
+    defuse_wasm: Vec<u8>,
+
+    poa_factory_name: String,
+}
+
+impl Default for EnvBuilder {
+    fn default() -> Self {
+        Self {
+            fee: Pips::ZERO,
+            fee_collector: None, // self
+            roles: RolesConfig::default(),
+            self_as_super_admin: false,
+            deployer_as_super_admin: false,
+            disable_ft_storage_deposit: false,
+            defuse_name: "defuse".to_string(),
+            defuse_wasm: DEFUSE_WASM.clone(),
+            poa_factory_name: "poa-factory".to_string(),
+        }
+    }
 }
 
 impl EnvBuilder {
@@ -66,11 +85,6 @@ impl EnvBuilder {
         self
     }
 
-    pub fn defuse_wasm(mut self, wasm: Vec<u8>) -> Self {
-        self.defuse_wasm = Some(wasm);
-        self
-    }
-
     pub fn admin(mut self, role: Role, admin: AccountId) -> Self {
         self.roles.admins.entry(role).or_default().insert(admin);
         self
@@ -78,6 +92,31 @@ impl EnvBuilder {
 
     pub fn grantee(mut self, role: Role, grantee: AccountId) -> Self {
         self.roles.grantees.entry(role).or_default().insert(grantee);
+        self
+    }
+
+    pub fn defuse_name(mut self, name: impl Into<String>) -> Self {
+        self.defuse_name = name.into();
+        self
+    }
+
+    pub fn poa_factory_name(mut self, name: impl Into<String>) -> Self {
+        self.poa_factory_name = name.into();
+        self
+    }
+
+    pub fn legacy(mut self) -> Self {
+        use defuse_test_utils::wasms::DEFUSE_LEGACY_WASM;
+
+        self.defuse_wasm = DEFUSE_LEGACY_WASM.clone();
+        self
+    }
+
+    #[cfg(feature = "imt")]
+    pub fn imt(mut self) -> Self {
+        use defuse_test_utils::wasms::DEFUSE_FAR_WASM;
+
+        self.defuse_wasm = DEFUSE_FAR_WASM.clone();
         self
     }
 
@@ -100,17 +139,12 @@ impl EnvBuilder {
             roles: self.roles.clone(),
         };
 
-        let wasm = self
-            .defuse_wasm
-            .clone()
-            .unwrap_or_else(|| DEFUSE_WASM.clone());
-
         let account = root
             .create_subaccount(name, NearToken::from_near(100))
             .await;
 
         account
-            .deploy(wasm)
+            .deploy(self.defuse_wasm.clone())
             .add_action(Action::FunctionCall(FunctionCallAction {
                 method_name: "new".to_string(),
                 args: serde_json::to_vec(&json!({"config": cfg})).unwrap(),
@@ -131,7 +165,7 @@ impl EnvBuilder {
         if self.self_as_super_admin {
             self.roles
                 .super_admins
-                .insert(root.as_ref().sub_account("defuse").unwrap());
+                .insert(root.as_ref().sub_account(&self.defuse_name).unwrap());
         }
 
         if self.deployer_as_super_admin {
@@ -142,10 +176,10 @@ impl EnvBuilder {
     pub async fn build(mut self, root: Near) -> Env {
         self.grant_roles(root.account_id());
 
-        let poa_factory = deploy_poa_factory(&root).await;
+        let poa_factory = self.deploy_poa_factory(&root).await;
         let wnear = root.deploy_wrap_near("wnear", WNEAR_WASM.clone()).await;
         let (defuse, defuse_near) = self
-            .deploy_defuse("defuse", &root, wnear.contract_id())
+            .deploy_defuse(&self.defuse_name, &root, wnear.contract_id())
             .await;
 
         let env = Env {
@@ -163,22 +197,22 @@ impl EnvBuilder {
 
         env
     }
-}
 
-async fn deploy_poa_factory(root: &Near) -> PoaFactoryClient {
-    let root_id = root.account_id();
-    root.deploy_poa_factory(
-        "poa-factory",
-        [root.account_id().clone()],
-        [
-            (POAFactoryRole::TokenDeployer, [root_id.clone()]),
-            (POAFactoryRole::TokenDepositer, [root_id.clone()]),
-        ],
-        [
-            (POAFactoryRole::TokenDeployer, [root_id.clone()]),
-            (POAFactoryRole::TokenDepositer, [root_id.clone()]),
-        ],
-        POA_FACTORY_WASM.clone(),
-    )
-    .await
+    async fn deploy_poa_factory(&self, root: &Near) -> PoaFactoryClient {
+        let root_id = root.account_id();
+        root.deploy_poa_factory(
+            &self.poa_factory_name,
+            [root.account_id().clone()],
+            [
+                (POAFactoryRole::TokenDeployer, [root_id.clone()]),
+                (POAFactoryRole::TokenDepositer, [root_id.clone()]),
+            ],
+            [
+                (POAFactoryRole::TokenDeployer, [root_id.clone()]),
+                (POAFactoryRole::TokenDepositer, [root_id.clone()]),
+            ],
+            POA_FACTORY_WASM.clone(),
+        )
+        .await
+    }
 }

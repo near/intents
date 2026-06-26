@@ -45,7 +45,7 @@ fn generate_public_keys(
 #[tokio::test]
 async fn test_force_add_public_keys(
     mut rng: impl Rng,
-    #[with(Env::builder().deployer_as_super_admin())]
+    #[with(Env::builder().deployer_as_super_admin().imt())]
     #[future(awt)]
     env: Env,
 ) {
@@ -118,7 +118,7 @@ async fn test_force_add_public_keys(
 #[tokio::test]
 async fn test_force_add_and_remove_public_keys(
     mut rng: impl Rng,
-    #[with(Env::builder().deployer_as_super_admin())]
+    #[with(Env::builder().deployer_as_super_admin().imt())]
     #[future(awt)]
     env: Env,
 ) {
