@@ -1,5 +1,4 @@
 use defuse_sandbox::{
-    assert_eq_defuse_event_logs,
     extensions::defuse::{
         DefuseExt, DefuseImtExt, DefuseSignerExt,
         core::{
@@ -19,7 +18,10 @@ use near_sdk::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 
-use crate::tests::defuse::env::{Env, env};
+use crate::tests::defuse::{
+    env::{Env, env},
+    utils::assert_eq_defuse_event_logs,
+};
 
 #[rstest]
 #[tokio::test]

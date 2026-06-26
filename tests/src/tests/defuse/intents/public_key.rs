@@ -1,16 +1,13 @@
-use defuse_sandbox::{
-    assert_eq_defuse_event_logs,
-    extensions::defuse::{
-        DefuseExt, DefuseSignerExt, ExtractNonceExt, ToEventLog,
-        core::{
-            PublicKey,
-            accounts::{AccountEvent, PublicKeyEvent},
-            crypto::Payload,
-            events::DefuseEvent,
-            intents::{
-                MaybeIntentEvent,
-                account::{AddPublicKey, RemovePublicKey},
-            },
+use defuse_sandbox::extensions::defuse::{
+    DefuseExt, DefuseSignerExt, ExtractNonceExt, ToEventLog,
+    core::{
+        PublicKey,
+        accounts::{AccountEvent, PublicKeyEvent},
+        crypto::Payload,
+        events::DefuseEvent,
+        intents::{
+            MaybeIntentEvent,
+            account::{AddPublicKey, RemovePublicKey},
         },
     },
 };
@@ -22,6 +19,7 @@ use crate::{
     tests::defuse::{
         env::{Env, env},
         intents::AccountNonceIntentEvent,
+        utils::assert_eq_defuse_event_logs,
     },
     utils::fixtures::public_key,
 };

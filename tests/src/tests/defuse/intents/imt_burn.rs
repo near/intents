@@ -1,20 +1,20 @@
-use defuse_sandbox::{
-    assert_eq_defuse_event_logs,
-    extensions::{
-        defuse::{
-            DefuseExt, DefuseSignerExt, ToEventLog,
-            core::{
-                amounts::Amounts,
-                intents::imt::{ImtBurn, ImtMint},
-                token_id::{TokenId, imt::ImtTokenId, nep141::Nep141TokenId},
-            },
+use defuse_sandbox::extensions::{
+    defuse::{
+        DefuseExt, DefuseSignerExt, ToEventLog,
+        core::{
+            amounts::Amounts,
+            intents::imt::{ImtBurn, ImtMint},
+            token_id::{TokenId, imt::ImtTokenId, nep141::Nep141TokenId},
         },
-        mt::{Mt, MtBalanceOfArgs},
     },
+    mt::{Mt, MtBalanceOfArgs},
 };
 use rstest::rstest;
 
-use crate::tests::defuse::env::{Env, env};
+use crate::tests::defuse::{
+    env::{Env, env},
+    utils::assert_eq_defuse_event_logs,
+};
 
 #[rstest]
 #[tokio::test]

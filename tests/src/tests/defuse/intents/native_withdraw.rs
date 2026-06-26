@@ -1,5 +1,4 @@
 use defuse_sandbox::{
-    assert_eq_defuse_event_logs,
     extensions::{
         DEFAULT_GAS,
         defuse::{
@@ -19,7 +18,10 @@ use defuse_sandbox::{
 use rstest::rstest;
 
 use crate::{
-    tests::defuse::env::{Env, env},
+    tests::defuse::{
+        env::{Env, env},
+        utils::assert_eq_defuse_event_logs,
+    },
     utils::fixtures::{ed25519_pk, secp256k1_pk},
 };
 

@@ -36,7 +36,6 @@ use defuse_fees::Pips;
 use defuse_near_utils::REFUND_MEMO;
 use defuse_sandbox::{
     account::Account,
-    assert_a_contains_b,
     extensions::{
         defuse::{
             Defuse, DefuseDeployerExt, DefuseExt, DefuseSignerExt,
@@ -60,7 +59,10 @@ use near_sdk::{AsNep297Event, json_types::U128};
 
 use crate::{
     sandbox::extensions::mt::MtExt,
-    tests::defuse::env::{Env, env},
+    tests::{
+        defuse::env::{Env, env},
+        utils::assert_a_contains_b,
+    },
 };
 use rstest::rstest;
 

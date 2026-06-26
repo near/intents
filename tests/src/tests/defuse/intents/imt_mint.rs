@@ -1,7 +1,6 @@
 use defuse_fees::Pips;
 use defuse_sandbox::{
     account::Account,
-    assert_eq_defuse_event_logs,
     extensions::{
         defuse::{
             DefuseDeployerExt, DefuseExt, DefuseSignerExt, ToEventLog,
@@ -25,6 +24,7 @@ use rstest::rstest;
 use crate::tests::defuse::{
     env::{Env, env},
     intents::transfer::TransferCallExpectation,
+    utils::assert_eq_defuse_event_logs,
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 

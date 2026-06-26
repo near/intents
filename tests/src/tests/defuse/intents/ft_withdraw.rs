@@ -1,5 +1,4 @@
 use defuse_sandbox::{
-    assert_eq_defuse_event_logs,
     extensions::{
         DEFAULT_GAS,
         defuse::{
@@ -20,7 +19,10 @@ use defuse_test_utils::wasms::DEFUSE_WASM;
 use rstest::rstest;
 
 use crate::{
-    tests::defuse::env::{Env, env},
+    tests::defuse::{
+        env::{Env, env},
+        utils::assert_eq_defuse_event_logs,
+    },
     utils::asserts::ResultAssertsExt,
 };
 
