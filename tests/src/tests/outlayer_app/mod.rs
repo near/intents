@@ -1,10 +1,10 @@
+use defuse_digest::{Digest, sha2::Sha256};
 use defuse_sandbox::{
     account::Account,
     extensions::outlayer_app::{
         OutlayerAppDeployerExt, OutlayerAppExt,
         contract::{Event, State as OutlayerState},
     },
-    helpers::sha256_hash,
     kit::{GlobalContractId, Near, NearToken, PublishMode},
     root,
 };
@@ -29,7 +29,7 @@ pub async fn outlayer_app_env(#[future(awt)] root: Near) -> OutlayerAppEnv {
 
     OutlayerAppEnv {
         root,
-        global_id: GlobalContractId::CodeHash(sha256_hash(&OUTLAYER_APP_WASM)),
+        global_id: GlobalContractId::CodeHash(Sha256::digest(&*OUTLAYER_APP_WASM).into()),
     }
 }
 
@@ -62,7 +62,7 @@ async fn test_deploy(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
 #[tokio::test]
 async fn test_deploy_with_pre_approved_hash(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     let root = outlayer_app_env.root;
-    let code_hash = sha256_hash(b"some-wasm-bytes");
+    let code_hash = Sha256::digest(b"some-wasm-bytes");
     let state = OutlayerState::new(
         root.account_id().clone(),
         code_hash,

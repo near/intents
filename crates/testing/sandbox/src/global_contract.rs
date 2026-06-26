@@ -1,7 +1,6 @@
 use anyhow::Result;
+use defuse_digest::{Digest, sha2::Sha256};
 use near_kit::{AccountIdRef, Final, GlobalContractId, KeyPair, Near, NearToken, PublishMode};
-
-use crate::helpers::sha256_hash;
 
 pub trait GlobalContract {
     async fn deploy_upgradable_global_contract(
@@ -49,7 +48,7 @@ impl GlobalContract for Near {
     ) -> Result<GlobalContractId> {
         let code = code.into();
 
-        let id = GlobalContractId::CodeHash(sha256_hash(&code));
+        let id = GlobalContractId::CodeHash(Sha256::digest(&code).into());
 
         self.transaction(target.as_ref())
             .create_account()

@@ -1,13 +1,11 @@
 use anyhow::Result;
+use defuse_digest::{Digest, sha2::Sha256};
 use defuse_global_deployer::{AsHex, AsWrap, Remainder, State as DeployerState};
 use near_kit::{AccountId, AccountIdRef, Final, Gas, GlobalContractId, Near, NearToken};
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
 
-use crate::{
-    helpers::sha256_hash, nep616::DeployDeterministicAccountExt,
-    outcome::SuccessfulExecutionOutcome,
-};
+use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
 
 pub use defuse_global_deployer as contract;
 
@@ -110,7 +108,7 @@ impl GlobalDeployerExt for Near {
             .add_action(
                 GlobalDeployer::gd_approve(GDApproveArgs {
                     old_hash: old_hash.into(),
-                    new_hash: sha256_hash(&code),
+                    new_hash: Sha256::digest(&code).into(),
                 })
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(10)),

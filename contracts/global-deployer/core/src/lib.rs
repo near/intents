@@ -44,8 +44,8 @@ impl<'a> State<'a> {
     }
 
     #[must_use]
-    pub const fn pre_approve(mut self, hash: [u8; 32]) -> Self {
-        self.approved_hash = hash;
+    pub fn pre_approve(mut self, hash: impl Into<[u8; 32]>) -> Self {
+        self.approved_hash = hash.into();
         self
     }
 

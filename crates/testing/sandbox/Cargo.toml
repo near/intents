@@ -24,6 +24,7 @@ wallet = ["dep:defuse-wallet", "dep:defuse-wallet-sdk"]
 [dependencies]
 anyhow.workspace = true
 defuse-core = { workspace = true, features = ["near-kit"] }
+defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-nep245.workspace = true
 near-contract-standards.workspace = true
 near-kit = { workspace = true, features = ["sandbox"] }
@@ -33,7 +34,6 @@ rstest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_with.workspace = true
-sha2.workspace = true
 
 defuse = { workspace = true, optional = true, features = ["contract"] }
 defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }

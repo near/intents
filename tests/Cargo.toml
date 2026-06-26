@@ -55,6 +55,7 @@ anyhow.workspace = true
 arbitrary.workspace = true
 borsh.workspace = true
 defuse-core = { workspace = true, features = ["near-kit"] }
+defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-fees.workspace = true
 defuse-near-utils.workspace = true
 defuse-randomness.workspace = true
