@@ -11,6 +11,7 @@ workspace = true
 [features]
 poa = []
 defuse = []
+imt = ["defuse"]
 escrow = []
 wallet = []
 outlayer = []

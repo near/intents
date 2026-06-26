@@ -35,11 +35,16 @@ pub fn read_wasm(mode: &ReadWasmMode, path: impl AsRef<Path>) -> Vec<u8> {
 }
 
 #[cfg(feature = "defuse")]
-pub static DEFUSE_FAR_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse.far.wasm"));
-#[cfg(feature = "defuse")]
-pub static DEFUSE_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse.wasm"));
+pub static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
+    read_wasm(
+        &ReadWasmMode::BuildArtifact,
+        if cfg!(feature = "imt") {
+            "defuse.far.wasm"
+        } else {
+            "defuse.wasm"
+        },
+    )
+});
 #[cfg(feature = "defuse")]
 pub static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::WorkspaceRoot, "releases/previous.wasm"));

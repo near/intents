@@ -16,7 +16,7 @@ use defuse_sandbox::{
     },
     kit::{AccountId, AccountIdRef, Action, Final, FunctionCallAction, Near, NearToken},
 };
-use defuse_test_utils::wasms::{DEFUSE_FAR_WASM, POA_FACTORY_WASM, WNEAR_WASM};
+use defuse_test_utils::wasms::{DEFUSE_WASM, POA_FACTORY_WASM, WNEAR_WASM};
 use serde_json::json;
 
 use crate::tests::defuse::env::Env;
@@ -104,7 +104,7 @@ impl EnvBuilder {
         let wasm = self
             .defuse_wasm
             .clone()
-            .unwrap_or_else(|| DEFUSE_FAR_WASM.clone());
+            .unwrap_or_else(|| DEFUSE_WASM.clone());
 
         let account = root
             .create_subaccount(name, NearToken::from_near(100))
