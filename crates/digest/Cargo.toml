@@ -10,10 +10,12 @@ repository.workspace = true
 [dependencies]
 digest.workspace = true
 
+sha3 = { workspace = true, optional = true }
+zeroize = { workspace = true, features = ["derive"], optional = true }
+
 [target.'cfg(not(near))'.dependencies]
 ripemd = { workspace = true, optional = true }
 sha2 = { workspace = true, optional = true }
-sha3 = { workspace = true, optional = true }
 
 [target.'cfg(near)'.dependencies]
 near-sdk-env.workspace = true
@@ -24,8 +26,16 @@ ripemd = ["dep:ripemd"]
 sha2 = ["dep:sha2"]
 sha3 = ["dep:sha3"]
 
+zeroize = [
+  "dep:zeroize",
+  "digest/zeroize",
+  "ripemd?/zeroize",
+  "sha2?/zeroize",
+  "sha3?/zeroize",
+]
+
 [dev-dependencies]
-defuse-digest = { path = ".", features = ["ripemd", "sha2", "sha3"] }
+defuse-digest = { path = ".", features = ["ripemd", "sha2", "sha3", "zeroize"] }
 
 hex-literal.workspace = true
 rstest.workspace = true

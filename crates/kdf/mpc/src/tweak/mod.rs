@@ -5,10 +5,10 @@ mod secp256k1;
 
 use core::marker::PhantomData;
 
+use defuse_digest::{Digest as _, sha3::Sha3_256};
 use defuse_kdf::{CurveArithmetic, Derive, DeriveExt, Schema, digest::Digest};
 use impl_tools::autoimpl;
 use near_account_id::AccountIdRef;
-use sha3::{Digest as _, Sha3_256};
 
 use crate::derive_from_path;
 
