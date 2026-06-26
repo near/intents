@@ -36,3 +36,6 @@ sha2 = ["defuse-digest/sha2"]
 
 [dev-dependencies]
 serde_json.workspace = true
+
+[target.'cfg(near)'.dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }
