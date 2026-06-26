@@ -3,10 +3,10 @@ mod tweak;
 
 pub use self::{ckd::*, tweak::*};
 
+use defuse_digest::{Digest as _, sha3::Sha3_256};
 pub use defuse_kdf as kdf;
 use defuse_kdf::digest::Digest;
 use near_account_id::AccountIdRef;
-use sha3::{Digest as _, Sha3_256};
 
 /// See <https://github.com/near/mpc/blob/f07b9145b17e2372be768aa67a2106be9989a7d7/crates/near-mpc-crypto-types/src/kdf.rs#L25-L39>
 fn derive_from_path(

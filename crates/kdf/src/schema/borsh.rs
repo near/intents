@@ -77,7 +77,7 @@ const _: () = {
     /// ```rust
     /// use defuse_kdf::{borsh::{Borsh, IoWrapper}, Schema};
     /// # use hex_literal::hex;
-    /// use sha3::{Digest, Sha3_256};
+    /// use defuse_digest::sha3::Sha3_256;
     ///
     /// let schema = Borsh::<IoWrapper<Sha3_256>>::default();
     /// assert_eq!(

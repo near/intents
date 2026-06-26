@@ -1,6 +1,6 @@
+use defuse_digest::{Digest as _, sha3::Sha3_256};
 use defuse_kdf::digest::Digest;
 use near_account_id::AccountIdRef;
-use sha3::{Digest as _, Sha3_256};
 
 use crate::derive_from_path;
 
