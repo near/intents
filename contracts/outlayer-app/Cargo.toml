@@ -38,5 +38,4 @@ container_build_command = [
   "--locked",
   "--features=contract",
   "--abi-features=abi,contract",
-  "--no-embed-abi",
 ]
