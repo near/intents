@@ -90,16 +90,15 @@ impl Account for Near {
             .create_account()
             .transfer(balance)
             .add_full_access_key(kp.public_key)
-            .deploy(code.into());
+            .deploy(code);
 
         if let Some(init_call) = init_call.into() {
             tx = tx.add_action(Action::FunctionCall(init_call));
         }
 
-        tx.wait_until(Final)
-            .await?
-            .result()
-            .map_err(|e| anyhow::anyhow!("failed to deploy sub contract: {e:?}"))?;
+        tx.wait_until(Final).await?.result().map_err(|e| {
+            anyhow::anyhow!("failed to deploy sub contract to '{account_id}': {e:?}")
+        })?;
 
         Ok(self.with_signer(InMemorySigner::from_secret_key(account_id, kp.secret_key).unwrap()))
     }

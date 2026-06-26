@@ -124,7 +124,6 @@ near-contract-standards = "5.28.2"
 near-crypto = "0.36.0"
 near-kit = { version = "0.11.2", default-features = false }
 near-plugins = "0.5.3"
-near-sandbox = "0.3.11"
 near-sdk = "5.28.2"
 near-sdk-env = "0.1.1"
 
