@@ -15,7 +15,7 @@ use defuse_sandbox::extensions::{
     mt::{Mt, MtBalanceOfArgs, MtExt},
 };
 use defuse_test_utils::fixtures::public_key;
-use near_sdk::AsNep297Event;
+use near_sdk_core::events::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 

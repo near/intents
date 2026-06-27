@@ -11,7 +11,7 @@ use defuse_sandbox::extensions::defuse::{
         },
     },
 };
-use near_sdk::AsNep297Event;
+use near_sdk_core::events::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 

@@ -2,7 +2,7 @@ use anyhow::Result;
 use core::str;
 use defuse_nep245::{Token, TokenId};
 use near_kit::{AccountId, AccountIdRef, Final, Gas, Near, NearToken};
-use near_sdk::json_types::U128;
+use near_sdk_core::json_types::U128;
 use serde::Serialize;
 use serde_with::{DisplayFromStr, serde_as};
 use std::{

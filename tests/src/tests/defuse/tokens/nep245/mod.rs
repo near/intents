@@ -55,7 +55,7 @@ use defuse_sandbox::{
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
-use near_sdk::{AsNep297Event, json_types::U128};
+use near_sdk_core::{events::AsNep297Event, json_types::U128};
 
 use crate::{
     sandbox::extensions::mt::MtExt,
@@ -1113,7 +1113,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
         &ft_id.to_string(),
         1000,
         None,
-        near_sdk::serde_json::to_string(&deposit_message).unwrap(),
+        serde_json::to_string(&deposit_message).unwrap(),
     )
     .await
     .unwrap();
@@ -1331,7 +1331,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
         vec![ft1_id.to_string(), ft2_id.to_string()],
         vec![1000, 2000],
         None,
-        near_sdk::serde_json::to_string(&deposit_message).unwrap(),
+        serde_json::to_string(&deposit_message).unwrap(),
     )
     .await
     .unwrap();
@@ -1459,7 +1459,7 @@ async fn mt_transfer_call_circullar_callback(
             &ft_id.to_string(),
             600,
             None,
-            near_sdk::serde_json::to_string(&deposit_message).unwrap(),
+            serde_json::to_string(&deposit_message).unwrap(),
         )
         .await
         .expect("mt_transfer_call should succeed");
@@ -1716,7 +1716,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
     let deposit_message = DepositMessage {
         receiver_id: stub_receiver.account_id().clone(),
         action: Some(DepositAction::Notify(NotifyOnTransfer::new(
-            near_sdk::serde_json::to_string(&stub_action).unwrap(),
+            serde_json::to_string(&stub_action).unwrap(),
         ))),
     };
 
@@ -1727,7 +1727,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
             vec![ft1_id.to_string(), ft2_id.to_string(), ft1_id.to_string()],
             transfer_amounts.into_iter().map(|a| a.0),
             None,
-            near_sdk::serde_json::to_string(&deposit_message).unwrap(),
+            serde_json::to_string(&deposit_message).unwrap(),
         )
         .await
         .unwrap()

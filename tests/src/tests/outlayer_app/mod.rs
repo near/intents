@@ -9,7 +9,7 @@ use defuse_sandbox::{
     root,
 };
 use defuse_test_utils::wasms::OUTLAYER_APP_WASM;
-use near_sdk::AsNep297Event;
+use near_sdk_core::events::AsNep297Event;
 use rstest::{fixture, rstest};
 
 const EXAMPLE_URL: &str = "https://example.com/contract.wasm";

@@ -20,7 +20,7 @@ use defuse_sandbox::{
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::MT_RECEIVER_STUB_WASM};
 use futures::future::join_all;
-use near_sdk::AsNep297Event;
+use near_sdk_core::events::AsNep297Event;
 use rstest::{fixture, rstest};
 use std::{
     future::IntoFuture,

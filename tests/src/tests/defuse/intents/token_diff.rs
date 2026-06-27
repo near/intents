@@ -14,7 +14,7 @@ use defuse_sandbox::{
     },
     kit::{AccountId, Near},
 };
-use near_sdk::json_types::U128;
+use near_sdk_core::json_types::U128;
 use rstest::rstest;
 use std::collections::BTreeMap;
 

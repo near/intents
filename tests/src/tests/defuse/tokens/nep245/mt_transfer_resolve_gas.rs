@@ -25,7 +25,7 @@ use defuse_test_utils::{
     wasms::MT_RECEIVER_STUB_WASM,
 };
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::{AsNep297Event, json_types::U128};
+use near_sdk_core::{events::AsNep297Event, json_types::U128};
 use rstest::rstest;
 use std::{borrow::Cow, sync::Arc};
 use strum::IntoEnumIterator;

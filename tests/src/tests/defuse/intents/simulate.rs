@@ -36,7 +36,8 @@ use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata,
 };
-use near_sdk::json_types::Base64VecU8;
+use near_sdk_core::json_types::Base64VecU8;
+use near_sdk_core::json_types::U128;
 use rstest::rstest;
 
 use crate::{
@@ -125,7 +126,7 @@ async fn simulate_ft_withdraw_intent(#[future(awt)] env: Env) {
     let ft_withdraw_intent = FtWithdraw {
         token: ft1.contract_id().clone(),
         receiver_id: user2.account_id().clone(),
-        amount: near_sdk::json_types::U128(500),
+        amount: U128(500),
         memo: None,
         msg: None,
         storage_deposit: None,
@@ -402,7 +403,7 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
         token: env.defuse.contract_id().clone(), // External NEP-245 contract (defuse1)
         receiver_id: user2.account_id().clone(), // Withdraw to user2's account in defuse1
         token_ids: vec![ft1_id.to_string()],     // The FT token ID within defuse1
-        amounts: vec![near_sdk::json_types::U128(200)],
+        amounts: vec![U128(200)],
         memo: None,
         msg: None,
         storage_deposit: None,

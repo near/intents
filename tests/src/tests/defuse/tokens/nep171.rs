@@ -21,7 +21,7 @@ use near_contract_standards::non_fungible_token::{
     Token,
     metadata::{NFT_METADATA_SPEC, NFTContractMetadata},
 };
-use near_sdk::json_types::Base64VecU8;
+use near_sdk_core::json_types::Base64VecU8;
 use rstest::rstest;
 use std::collections::HashMap;
 
@@ -110,10 +110,8 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                 .transfer_call(
                     env.defuse.contract_id(),
                     nft1.token_id.clone(),
-                    near_sdk::serde_json::to_string(&DepositMessage::new(
-                        user3.account_id().clone(),
-                    ))
-                    .unwrap(),
+                    serde_json::to_string(&DepositMessage::new(user3.account_id().clone()))
+                        .unwrap(),
                 )
                 .gas(Gas::from_tgas(300))
                 .wait_until(Final)
@@ -164,10 +162,8 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                 .transfer_call(
                     env.defuse.contract_id(),
                     nft2.token_id.clone(),
-                    near_sdk::serde_json::to_string(&DepositMessage::new(
-                        user1.account_id().clone(),
-                    ))
-                    .unwrap(),
+                    serde_json::to_string(&DepositMessage::new(user1.account_id().clone()))
+                        .unwrap(),
                 )
                 .gas(Gas::from_tgas(300))
                 .wait_until(Final)
@@ -457,7 +453,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
         DepositMessage {
             receiver_id: receiver.account_id().clone(),
             action: Some(DepositAction::Notify(NotifyOnTransfer::new(
-                near_sdk::serde_json::to_string(&expectation.action).unwrap(),
+                serde_json::to_string(&expectation.action).unwrap(),
             ))),
         }
     } else {
@@ -475,7 +471,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
         .transfer_call(
             env.defuse.contract_id(),
             nft.token_id.clone(),
-            near_sdk::serde_json::to_string(&deposit_message).unwrap(),
+            serde_json::to_string(&deposit_message).unwrap(),
         )
         .gas(Gas::from_tgas(300))
         .wait_until(Final)

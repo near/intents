@@ -12,7 +12,7 @@ use defuse_sandbox::extensions::{
         core::{accounts::SaltRotationEvent, events::DefuseEvent},
     },
 };
-use near_sdk::AsNep297Event;
+use near_sdk_core::events::AsNep297Event;
 use rstest::rstest;
 
 #[rstest]

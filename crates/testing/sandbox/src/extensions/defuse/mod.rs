@@ -14,7 +14,7 @@ use defuse_core::{
 use near_kit::{
     AccountId, AccountIdRef, Final, FinalExecutionOutcome, FunctionCallAction, Gas, Near, NearToken,
 };
-use near_sdk::json_types::U128;
+use near_sdk_core::json_types::U128;
 use serde::Serialize;
 use serde_json::json;
 use serde_with::{DisplayFromStr, base64::Base64, serde_as};

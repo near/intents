@@ -18,7 +18,7 @@ use defuse_sandbox::{
 };
 use futures::{TryStreamExt, stream::FuturesOrdered};
 use itertools::Itertools;
-use near_sdk::json_types::U128;
+use near_sdk_core::json_types::U128;
 use std::time::Duration;
 
 use rstest::rstest;

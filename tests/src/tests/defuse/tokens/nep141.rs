@@ -19,7 +19,7 @@ use defuse_sandbox::{
 };
 use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
-use near_sdk::json_types::U128;
+use near_sdk_core::json_types::U128;
 use rstest::rstest;
 
 use crate::tests::defuse::env::{Env, env};

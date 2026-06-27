@@ -9,7 +9,7 @@ use defuse_sandbox::{
     nep616::DeployDeterministicAccountExt,
 };
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::json_types::U128;
+use near_sdk_core::json_types::U128;
 use rstest::rstest;
 
 use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
