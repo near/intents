@@ -1,108 +1,122 @@
-use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
-use defuse_outlayer_app::State as OutlayerState;
-use defuse_serde_utils::hex::AsHex;
-use near_api::types::transaction::result::ExecutionSuccess;
-use near_sdk::{
-    AccountId, GlobalContractId, NearToken,
-    serde_json::json,
-    state_init::{StateInit, StateInitV1},
-};
+use anyhow::Result;
+use defuse_outlayer_app::{AsHex, State as OutlayerState};
+use near_kit::{AccountId, AccountIdRef, Final, Gas, GlobalContractId, Near, NearToken};
+use serde::{Deserialize, Serialize};
+use serde_with::{hex::Hex, serde_as};
 
-#[allow(async_fn_in_trait)]
-pub trait OutlayerAppExt {
+use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
+
+pub use defuse_outlayer_app as contract;
+
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+pub struct OaSetCodeArgs {
+    #[serde_as(as = "Hex")]
+    pub old_code_hash: [u8; 32],
+    #[serde_as(as = "Hex")]
+    pub new_code_hash: [u8; 32],
+    pub new_code_url: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct OaTransferAdminArgs {
+    pub new_admin_id: AccountId,
+}
+
+#[near_kit::contract]
+pub trait OutlayerApp {
+    #[call]
+    fn oa_set_code(&mut self, args: OaSetCodeArgs);
+
+    #[call]
+    fn oa_transfer_admin(&mut self, args: OaTransferAdminArgs);
+
+    fn oa_admin_id(&self) -> AccountId;
+    fn oa_code_hash(&self) -> AsHex<[u8; 32]>;
+    fn oa_code_url(&self) -> String;
+}
+
+pub trait OutlayerAppDeployerExt {
     /// Deploy a new `outlayer-app` instance via `StateInit`.
     async fn deploy_outlayer_app(
         &self,
         global_contract_id: GlobalContractId,
         state: OutlayerState<'static>,
-    ) -> anyhow::Result<Account>;
-
-    async fn oa_set_code(
-        &self,
-        target: &AccountId,
-        old_code_hash: [u8; 32],
-        code_hash: [u8; 32],
-        code_url: String,
-    ) -> anyhow::Result<ExecutionSuccess>;
-
-    async fn oa_transfer_admin(
-        &self,
-        target: &AccountId,
-        new_admin_id: &AccountId,
-    ) -> anyhow::Result<ExecutionSuccess>;
+    ) -> OutlayerAppClient;
 }
 
-#[allow(async_fn_in_trait)]
-pub trait OutlayerAppViewExt {
-    async fn oa_admin_id(&self) -> anyhow::Result<AccountId>;
-    async fn oa_code_hash(&self) -> anyhow::Result<[u8; 32]>;
-    async fn oa_code_url(&self) -> anyhow::Result<String>;
-}
-
-impl OutlayerAppExt for SigningAccount {
+impl OutlayerAppDeployerExt for Near {
     async fn deploy_outlayer_app(
         &self,
         global_contract_id: GlobalContractId,
         state: OutlayerState<'static>,
-    ) -> anyhow::Result<Account> {
-        let account_id = self
-            .state_init(
-                StateInit::V1(StateInitV1 {
-                    code: global_contract_id,
-                    data: state.state_init(),
-                }),
+    ) -> OutlayerAppClient {
+        self.contract::<OutlayerApp>(
+            self.deploy_deterministic_account(
+                global_contract_id,
+                state.state_init(),
                 NearToken::ZERO,
             )
-            .await?;
-        Ok(Account::new(account_id, self.network_config().clone()))
+            .await
+            .unwrap(),
+        )
     }
+}
 
+pub trait OutlayerAppExt {
     async fn oa_set_code(
         &self,
-        target: &AccountId,
+        target: impl AsRef<AccountIdRef>,
         old_code_hash: [u8; 32],
         new_code_hash: [u8; 32],
         new_code_url: String,
-    ) -> anyhow::Result<ExecutionSuccess> {
-        self.tx(target)
-            .function_call(
-                FnCallBuilder::new("oa_set_code")
-                    .json_args(json!({
-                        "old_code_hash": AsHex(old_code_hash),
-                        "new_code_hash": AsHex(new_code_hash),
-                        "new_code_url": new_code_url,
-                    }))
-                    .with_deposit(NearToken::from_yoctonear(1)),
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn oa_transfer_admin(
+        &self,
+        target: impl AsRef<AccountIdRef>,
+        new_admin_id: impl Into<AccountId>,
+    ) -> Result<SuccessfulExecutionOutcome>;
+}
+
+impl OutlayerAppExt for Near {
+    async fn oa_set_code(
+        &self,
+        target: impl AsRef<AccountIdRef>,
+        old_code_hash: [u8; 32],
+        new_code_hash: [u8; 32],
+        new_code_url: String,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(target.as_ref())
+            .add_action(
+                OutlayerApp::oa_set_code(OaSetCodeArgs {
+                    old_code_hash,
+                    new_code_hash,
+                    new_code_url,
+                })
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(10)),
             )
-            .await
+            .wait_until(Final)
+            .await?
+            .try_into()
     }
 
     async fn oa_transfer_admin(
         &self,
-        target: &AccountId,
-        new_admin_id: &AccountId,
-    ) -> anyhow::Result<ExecutionSuccess> {
-        self.tx(target)
-            .function_call(
-                FnCallBuilder::new("oa_transfer_admin")
-                    .json_args(json!({"new_admin_id": new_admin_id}))
-                    .with_deposit(NearToken::from_yoctonear(1)),
+        target: impl AsRef<AccountIdRef>,
+        new_admin_id: impl Into<AccountId>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(target.as_ref())
+            .add_action(
+                OutlayerApp::oa_transfer_admin(OaTransferAdminArgs {
+                    new_admin_id: new_admin_id.into(),
+                })
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(30)),
             )
-            .await
-    }
-}
-
-impl OutlayerAppViewExt for Account {
-    async fn oa_admin_id(&self) -> anyhow::Result<AccountId> {
-        self.call_view_function_json("oa_admin_id", ()).await
-    }
-
-    async fn oa_code_hash(&self) -> anyhow::Result<[u8; 32]> {
-        let hash: AsHex<[u8; 32]> = self.call_view_function_json("oa_code_hash", ()).await?;
-        Ok(hash.into_inner())
-    }
-
-    async fn oa_code_url(&self) -> anyhow::Result<String> {
-        self.call_view_function_json("oa_code_url", ()).await
+            .wait_until(Final)
+            .await?
+            .try_into()
     }
 }

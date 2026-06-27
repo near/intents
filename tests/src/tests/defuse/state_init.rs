@@ -1,28 +1,28 @@
-use crate::tests::defuse::env::Env;
-use defuse::contract::Contract as DefuseContract;
-use defuse::{
-    contract::config::{DefuseConfig, RolesConfig},
-    core::fees::FeesConfig,
-};
+use crate::tests::defuse::env::{Env, env};
 use defuse_fees::Pips;
 use defuse_randomness::Rng;
-use defuse_sandbox::FnCallBuilder;
-use defuse_sandbox::api::types::transaction::actions::GlobalContractDeployMode;
-use defuse_sandbox::extensions::defuse::contract::core::intents::auth::AuthCall;
-use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
-use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
-use defuse_test_utils::random::rng;
-use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
-use futures::stream::{self, StreamExt};
-use near_sdk::Gas;
-use near_sdk::{
-    AccountId, GlobalContractId, NearToken, serde_json::json, state_init::StateInit,
-    state_init::StateInitV1,
+use defuse_sandbox::{
+    extensions::{
+        defuse::{
+            DefuseDeployerExt, DefuseExt, DefuseSignerExt, DoAuthCallArgs,
+            contract::{
+                Contract as DefuseContract,
+                config::{DefuseConfig, RolesConfig},
+            },
+            core::{fees::FeesConfig, intents::auth::AuthCall},
+        },
+        mt_receiver::MtReceiverStubDeployerExt,
+    },
+    kit::{AccountId, ExecutionStatus, Gas, GlobalContractId, NearToken, StateInit, StateInitV1},
 };
+use defuse_test_utils::{
+    random::rng,
+    wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM},
+};
+use futures::stream::{self, StreamExt};
+
 use rstest::rstest;
 use std::collections::BTreeMap;
-
-use defuse_sandbox::extensions::defuse::deployer::DefuseExt;
 
 mod helpers {
     use super::*;
@@ -59,7 +59,7 @@ mod helpers {
 
     /// Simple helper to generate a `StateInit` with given parameters
     pub fn generate_state_init(
-        global_contract_id: &AccountId,
+        global_contract_id: &GlobalContractId,
         keys_count: u8,
         value_len: usize,
         rng: &mut impl Rng,
@@ -71,14 +71,14 @@ mod helpers {
 
         let raw_state = generate_raw_state(&keys, value_len, rng);
         StateInit::V1(StateInitV1 {
-            code: GlobalContractId::AccountId(global_contract_id.clone()),
+            code: global_contract_id.clone(),
             data: raw_state,
         })
     }
 }
 
 fn generate_auth_intent(
-    global_contract_id: &AccountId,
+    global_contract_id: &GlobalContractId,
     keys_count: u8,
     value_len: usize,
     rng: &mut impl Rng,
@@ -99,11 +99,14 @@ fn generate_auth_intent(
 /// Creates an auth call intent with the maximum possible state init
 /// that fits within zero balance account storage limits.
 fn auth_call_with_max_possible_state_init(
-    global_contract_id: &AccountId,
+    global_contract_id: &GlobalContractId,
     rng: &mut impl Rng,
     min_gas: Option<Gas>,
 ) -> (AccountId, AuthCall) {
-    let max_payload = helpers::max_single_entry_payload(global_contract_id);
+    let GlobalContractId::AccountId(account_id) = global_contract_id else {
+        panic!("expected AccountId-based global contract id");
+    };
+    let max_payload = helpers::max_single_entry_payload(account_id);
     generate_auth_intent(global_contract_id, 1, max_payload, rng, min_gas)
 }
 
@@ -121,31 +124,27 @@ use StateInitExpectation::*;
 #[case(Some(Gas::from_tgas(100)))]
 #[tokio::test]
 async fn benchmark_auth_call_with_largest_possible_state_init(
+    #[future(awt)] env: Env,
     mut rng: impl Rng,
     #[case] gas: Option<Gas>,
 ) {
-    let env = Env::builder().build().await;
-    env.root()
-        .deploy_global_contract(
-            MT_RECEIVER_STUB_WASM.clone(),
-            GlobalContractDeployMode::AccountId,
-        )
+    let global_contract_id = env
+        .deploy_mt_receiver_stub_global("g", MT_RECEIVER_STUB_WASM.clone())
         .await
         .unwrap();
-    let global_contract_id = env.root().id();
 
     let (account, intent) =
-        auth_call_with_max_possible_state_init(global_contract_id, &mut rng, gas);
+        auth_call_with_max_possible_state_init(&global_contract_id, &mut rng, gas);
 
     let user = env.create_named_user("user1").await;
 
     // Register defuse with WNEAR and deposit WNEAR to user's defuse account
-    env.initial_ft_storage_deposit(vec![user.id()], vec![])
+    env.initial_ft_storage_deposit(vec![user.account_id()], vec![])
         .await;
     env.defuse_ft_deposit_to(
-        env.wnear.id(),
+        env.wnear.contract_id(),
         NearToken::from_near(1).as_yoctonear(),
-        user.id(),
+        user.account_id(),
         None,
     )
     .await
@@ -157,18 +156,20 @@ async fn benchmark_auth_call_with_largest_possible_state_init(
         .unwrap();
 
     let result = env
-        .root()
-        .execute_intents_raw(env.defuse.id(), [signed_intent])
+        .defuse_execute_intents(env.defuse.contract_id(), [signed_intent])
         .await
         .unwrap();
-    assert!(result.is_success());
+
     let on_auth_result = result
-        .outcomes()
+        .receipts_outcome
         .iter()
-        .find(|outcome| outcome.executor_id == account)
-        .copied()
+        .find(|outcome| outcome.outcome.executor_id == account)
         .unwrap();
-    assert!(on_auth_result.is_success());
+
+    assert!(matches!(
+        on_auth_result.outcome.status,
+        ExecutionStatus::SuccessValue(_)
+    ));
 }
 
 #[rstest]
@@ -177,64 +178,57 @@ async fn benchmark_auth_call_with_largest_possible_state_init(
 #[case(Some(Gas::from_tgas(10)))]
 #[case(Some(Gas::from_tgas(100)))]
 #[tokio::test]
-async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] gas: Option<Gas>) {
+async fn benchmark_gas_used_by_do_auth_call_callback(
+    #[future(awt)] env: Env,
+    mut rng: impl Rng,
+    #[case] gas: Option<Gas>,
+) {
     // NOTE: when do_auth_call is scheduled as callback to withdraw (because of
     // AuthCall::storage_deposit > 0) it needs to check status of withdrawal. We can't trigger
     // it in this case so we need to subtract gas for promise read (it's around 0.1Tgas) with
     // some overhead.
     const NEAR_WITHDRAW_PROMISE_READ_OVERHEAD: Gas = Gas::from_tgas(1);
 
-    let env = Env::builder().build().await;
-    env.root()
-        .deploy_global_contract(
-            MT_RECEIVER_STUB_WASM.clone(),
-            GlobalContractDeployMode::AccountId,
-        )
+    let global_contract_id = env
+        .deploy_mt_receiver_stub_global("g", MT_RECEIVER_STUB_WASM.clone())
         .await
         .unwrap();
-    let global_contract_id = env.root().id();
 
     // Deploy second defuse instance as the receiver
     let defuse = env
-        .root()
         .deploy_defuse(
             "defuse2",
             DefuseConfig {
-                wnear_id: env.wnear.id().clone(),
+                wnear_id: env.wnear.contract_id().clone(),
                 fees: FeesConfig {
                     fee: Pips::ZERO,
-                    fee_collector: env.id().clone(),
+                    fee_collector: env.account_id().clone(),
                 },
                 roles: RolesConfig::default(),
             },
             DEFUSE_WASM.clone(),
         )
-        .await
-        .unwrap();
+        .await;
 
     let (account, mut intent) =
-        auth_call_with_max_possible_state_init(global_contract_id, &mut rng, gas);
+        auth_call_with_max_possible_state_init(&global_contract_id, &mut rng, gas);
     // required to opt out from promise status check
     intent.attached_deposit = NearToken::from_near(0);
     let callback_gas = DefuseContract::auth_call_callback_gas(&intent)
         .unwrap()
         .saturating_sub(NEAR_WITHDRAW_PROMISE_READ_OVERHEAD);
 
-    let result = defuse
-        .tx(defuse.id())
-        .function_call(
-            FnCallBuilder::new("do_auth_call")
-                .with_gas(callback_gas)
-                .json_args(json!({
-                    "signer_id": account,
-                    "auth_call": intent
-                })),
+    defuse
+        .defuse_do_auth_call(
+            defuse.account_id(),
+            DoAuthCallArgs {
+                signer_id: &account,
+                auth_call: &intent,
+            },
+            callback_gas,
         )
-        .exec_transaction()
         .await
         .unwrap();
-
-    assert!(result.is_success());
 }
 
 //NOTE: this test make sure that do_auth_call can always
@@ -242,7 +236,6 @@ async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] 
 //that initializes a deterministic account
 //in each case its expected to create receipt for calling
 //`on_auth` on deterministic account id
-#[cfg(feature = "long")]
 #[rstest]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(1))]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(2))]
@@ -261,8 +254,10 @@ async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] 
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(15))]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(16))]
 #[case(ExpectStateInitExceedsZeroBalanceAccountStorageLimit(17))]
+#[cfg_attr(not(feature = "long"), ignore = "`long` feature is disabled")]
 #[tokio::test]
 async fn test_auth_call_state_init_via_execute_intents(
+    #[future(awt)] env: Env,
     mut rng: impl Rng,
     #[case] expectation: StateInitExpectation,
 ) {
@@ -274,28 +269,20 @@ async fn test_auth_call_state_init_via_execute_intents(
     let num_keys: u8 = num_keys.try_into().unwrap();
     let concurrency_limit = 10;
 
-    let env = Env::builder()
-        .concurrency_limit(concurrency_limit)
-        .build()
-        .await;
-    env.root()
-        .deploy_global_contract(
-            MT_RECEIVER_STUB_WASM.clone(),
-            GlobalContractDeployMode::AccountId,
-        )
+    let global_contract_id = env
+        .deploy_mt_receiver_stub_global("g", MT_RECEIVER_STUB_WASM.clone())
         .await
         .unwrap();
-    let global_contract = env.root();
 
     let user = env.create_named_user("user1").await;
 
     // Register defuse with WNEAR and deposit WNEAR to user's defuse account
-    env.initial_ft_storage_deposit(vec![user.id()], vec![])
+    env.initial_ft_storage_deposit(vec![user.account_id()], vec![])
         .await;
     env.defuse_ft_deposit_to(
-        env.wnear.id(),
+        env.wnear.contract_id(),
         NearToken::from_near(1).as_yoctonear(),
-        user.id(),
+        user.account_id(),
         None,
     )
     .await
@@ -304,13 +291,15 @@ async fn test_auth_call_state_init_via_execute_intents(
     // Sign all intents in parallel
     let sign_futures = (0..=800)
         .step_by(10)
-        .map(|value_len| generate_auth_intent(global_contract, num_keys, value_len, &mut rng, None))
+        .map(|value_len| {
+            generate_auth_intent(&global_contract_id, num_keys, value_len, &mut rng, None)
+        })
         .map(|(derived_account, intent)| {
             let user = user.clone();
-            let defuse = env.defuse.clone();
+            let defuse_id = &env.defuse;
             async move {
                 let signed_intent = user
-                    .sign_defuse_payload_default(&defuse, [intent])
+                    .sign_defuse_payload_default(defuse_id, [intent])
                     .await
                     .unwrap();
                 (derived_account, signed_intent)
@@ -323,22 +312,28 @@ async fn test_auth_call_state_init_via_execute_intents(
         signed_intents_with_accounts
             .into_iter()
             .map(|(derived_account, signed_intent)| {
-                let root = env.root().clone();
-                let defuse_id = env.defuse.id().clone();
+                let root = env.clone();
+                let defuse_id = env.defuse.contract_id().clone();
                 async move {
                     let result = root
-                        .execute_intents_raw(&defuse_id, [signed_intent])
+                        .defuse_execute_intents(&defuse_id, [signed_intent])
                         .await
                         .unwrap();
 
                     // Check if receipt was created on the deterministic account
                     // Returns None if no receipt, Some(status) if receipt found
-                    result
-                        .outcomes()
-                        .iter()
-                        .find(|outcome| outcome.executor_id == derived_account)
-                        .expect("should have enough gas to pay for state init and create promise")
-                        .is_success()
+                    matches!(
+                        result
+                            .receipts_outcome
+                            .iter()
+                            .find(|outcome| outcome.outcome.executor_id == derived_account)
+                            .expect(
+                                "should have enough gas to pay for state init and create promise"
+                            )
+                            .outcome
+                            .status,
+                        ExecutionStatus::SuccessValue(_)
+                    )
                 }
             });
 
@@ -354,7 +349,6 @@ async fn test_auth_call_state_init_via_execute_intents(
 //create a promise that initializes a deterministic account
 //in each case its expected to create receipt for calling
 //`on_auth` on deterministic account id
-#[cfg(feature = "long")]
 #[rstest]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(1))]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(2))]
@@ -373,8 +367,10 @@ async fn test_auth_call_state_init_via_execute_intents(
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(15))]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(16))]
 #[case(ExpectStateInitExceedsZeroBalanceAccountStorageLimit(17))]
+#[cfg_attr(not(feature = "long"), ignore = "`long` feature is disabled")]
 #[tokio::test]
 async fn test_auth_call_state_init_via_do_auth_call(
+    #[future(awt)] env: Env,
     mut rng: impl Rng,
     #[case] expectation: StateInitExpectation,
 ) {
@@ -392,44 +388,33 @@ async fn test_auth_call_state_init_via_do_auth_call(
     let num_keys: u8 = num_keys.try_into().unwrap();
     let concurrency_limit = 10;
 
-    let env = Env::builder()
-        .concurrency_limit(concurrency_limit)
-        .build()
-        .await;
-
-    env.root()
-        .deploy_global_contract(
-            MT_RECEIVER_STUB_WASM.clone(),
-            GlobalContractDeployMode::AccountId,
-        )
+    let global_contract_id = env
+        .deploy_mt_receiver_stub_global("g", MT_RECEIVER_STUB_WASM.clone())
         .await
         .unwrap();
-    let global_contract_id = env.root().id();
 
     // Deploy second defuse instance as the receiver
     let defuse = env
-        .root()
         .deploy_defuse(
             "defuse2",
             DefuseConfig {
-                wnear_id: env.wnear.id().clone(),
+                wnear_id: env.wnear.contract_id().clone(),
                 fees: FeesConfig {
                     fee: Pips::ZERO,
-                    fee_collector: env.id().clone(),
+                    fee_collector: env.account_id().clone(),
                 },
                 roles: RolesConfig::default(),
             },
             DEFUSE_WASM.clone(),
         )
-        .await
-        .unwrap();
+        .await;
 
     // Execute all do_auth_call in parallel
     let futures = (0..=800)
         .step_by(10)
         .map(|value_len| {
             let (account_id, mut auth_intent) =
-                generate_auth_intent(global_contract_id, num_keys, value_len, &mut rng, None);
+                generate_auth_intent(&global_contract_id, num_keys, value_len, &mut rng, None);
             auth_intent.attached_deposit = NearToken::from_near(0);
 
             let callback_gas = DefuseContract::auth_call_callback_gas(&auth_intent)
@@ -439,28 +424,31 @@ async fn test_auth_call_state_init_via_do_auth_call(
         })
         .map(|(account_id, auth_intent, callback_gas)| {
             let defuse = defuse.clone();
+
             async move {
                 let result = defuse
-                    .tx(defuse.id())
-                    .function_call(
-                        FnCallBuilder::new("do_auth_call")
-                            .with_gas(callback_gas)
-                            .json_args(json!({
-                                "signer_id": account_id,
-                                "auth_call": auth_intent
-                            })),
+                    .defuse_do_auth_call(
+                        defuse.account_id(),
+                        DoAuthCallArgs {
+                            signer_id: &account_id,
+                            auth_call: &auth_intent,
+                        },
+                        callback_gas,
                     )
-                    .exec_transaction()
                     .await
                     .unwrap();
 
                 // Verify receipt was created on derived account
-                result
-                    .outcomes()
-                    .iter()
-                    .find(|outcome| outcome.executor_id == account_id)
-                    .expect("should have enough gas to pay for state init and create promise")
-                    .is_success()
+                matches!(
+                    result
+                        .receipts_outcome
+                        .iter()
+                        .find(|outcome| outcome.outcome.executor_id == account_id)
+                        .expect("should have enough gas to pay for state init and create promise")
+                        .outcome
+                        .status,
+                    ExecutionStatus::SuccessValue(_)
+                )
             }
         });
 

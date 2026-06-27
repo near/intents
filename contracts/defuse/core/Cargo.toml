@@ -36,7 +36,7 @@ serde_with = { workspace = true, features = ["base58", "base64"] }
 thiserror.workspace = true
 
 arbitrary = { workspace = true, optional = true }
-near-api-types = { workspace = true, optional = true }
+near-kit = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 
 [features]
@@ -64,7 +64,7 @@ arbitrary = [
   "dep:arbitrary",
 ]
 imt = ["defuse-token-id/imt"]
-near-api-types = ["dep:near-api-types"]
+near-kit = ["dep:near-kit"]
 
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }

@@ -27,12 +27,12 @@ impl<'a> State<'a> {
 
     pub fn new(
         admin_id: impl Into<Cow<'a, AccountIdRef>>,
-        code_hash: [u8; 32],
+        code_hash: impl Into<[u8; 32]>,
         code_url: impl Into<Cow<'a, str>>,
     ) -> Self {
         Self {
             admin_id: admin_id.into(),
-            code_hash,
+            code_hash: code_hash.into(),
             code_url: code_url.into(),
         }
     }

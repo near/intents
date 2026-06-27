@@ -1,52 +1,46 @@
-use defuse_sandbox::extensions::{
-    defuse::{
-        contract::{
+use defuse_fees::Pips;
+use defuse_sandbox::{
+    account::Account,
+    extensions::{
+        defuse::{
+            Defuse, DefuseClient, DefuseDeployerExt,
             contract::config::{DefuseConfig, RolesConfig},
             core::fees::FeesConfig,
         },
-        deployer::DefuseExt,
+        poa::{
+            PoAFactoryExt, PoaFactoryClient, PoaFactoryDeployerExt,
+            contract::Role as PoAFactoryRole,
+        },
+        wnear::WNearDeployerExt,
     },
-    escrow::contract::Pips,
-    poa::{PoAFactoryDeployerExt, PoAFactoryExt, contract::contract::Role as PoAFactoryRole},
+    global_contract::GlobalContract,
+    kit::{FungibleToken, GlobalContractId, Near, NearToken},
+    root,
 };
-use defuse_sandbox::{
-    Account, Sandbox, SigningAccount, anyhow,
-    api::types::transaction::actions::GlobalContractDeployMode,
-    extensions::{storage_management::StorageManagementExt, wnear::WNearDeployerExt},
-    sandbox,
-};
-use futures::{FutureExt, future::try_join_all, try_join};
+use defuse_test_utils::wasms::{DEFUSE_WASM, ESCROW_SWAP_WASM, POA_FACTORY_WASM, WNEAR_WASM};
+use futures::{future::try_join_all, try_join};
 use impl_tools::autoimpl;
-use near_sdk::{GlobalContractId, NearToken};
 use rstest::fixture;
 
-use defuse_test_utils::wasms::{DEFUSE_WASM, ESCROW_SWAP_WASM, POA_FACTORY_WASM, WNEAR_WASM};
-
 #[fixture]
-pub async fn env(#[future(awt)] sandbox: Sandbox) -> Env {
-    Env::new(sandbox).boxed().await
+pub async fn env(#[future(awt)] root: Near) -> Env {
+    Env::new(root).await
 }
 
-#[autoimpl(Deref using self.sandbox)]
+#[autoimpl(Deref using self.root)]
 pub struct Env {
     pub escrow_global_id: GlobalContractId,
-    pub verifier: Account,
-
-    pub src_ft: Account,
-    pub dst_ft: Account,
-
-    pub maker: SigningAccount,
-    pub takers: [SigningAccount; 3],
-
-    pub fee_collectors: [SigningAccount; 3],
-
-    sandbox: Sandbox,
+    pub verifier: DefuseClient,
+    pub src_ft: FungibleToken,
+    pub dst_ft: FungibleToken,
+    pub maker: Near,
+    pub takers: [Near; 3],
+    pub fee_collectors: [Near; 3],
+    root: Near,
 }
 
 impl Env {
-    pub async fn new(sandbox: Sandbox) -> Self {
-        let root = sandbox.root();
-
+    pub async fn new(root: Near) -> Self {
         let (
             escrow_global_id,
             verifier,
@@ -58,43 +52,43 @@ impl Env {
             fee_collector1,
             fee_collector2,
             fee_collector3,
-        ) = try_join!(
-            Self::deploy_global_escrow_swap(root),
-            Self::deploy_verifier(root),
-            Self::deploy_poa_factory(root),
-            root.generate_subaccount("maker", NearToken::from_near(100)),
-            root.generate_subaccount("taker1", NearToken::from_near(100)),
-            root.generate_subaccount("taker2", NearToken::from_near(100)),
-            root.generate_subaccount("taker3", NearToken::from_near(100)),
-            root.generate_subaccount("fee-collector1", None),
-            root.generate_subaccount("fee-collector2", None),
-            root.generate_subaccount("fee-collector3", None),
-        )
-        .unwrap();
+        ) = futures::join!(
+            Self::deploy_global_escrow_swap(&root),
+            Self::deploy_verifier(&root),
+            Self::deploy_poa_factory(&root),
+            root.create_subaccount("maker", NearToken::from_near(100)),
+            root.create_subaccount("taker1", NearToken::from_near(100)),
+            root.create_subaccount("taker2", NearToken::from_near(100)),
+            root.create_subaccount("taker3", NearToken::from_near(100)),
+            root.create_subaccount("fee-collector1", None::<NearToken>),
+            root.create_subaccount("fee-collector2", None::<NearToken>),
+            root.create_subaccount("fee-collector3", None::<NearToken>),
+        );
 
         let (src_ft, dst_ft) = try_join!(
-            root.poa_factory_deploy_token(poa_factory.id(), "src-ft", None),
-            root.poa_factory_deploy_token(poa_factory.id(), "dst-ft", None),
+            root.poa_factory_deploy_token(poa_factory.contract_id().clone(), "src-ft", None),
+            root.poa_factory_deploy_token(poa_factory.contract_id().clone(), "dst-ft", None),
         )
         .unwrap();
 
-        try_join_all([src_ft.id(), dst_ft.id()].into_iter().map(|token| {
-            root.storage_deposit(token, verifier.id().as_ref(), NearToken::from_millinear(2))
+        try_join_all([&src_ft, &dst_ft].into_iter().map(|ft| {
+            ft.storage_deposit(verifier.contract_id(), NearToken::from_millinear(2))
+                .into_future()
         }))
         .await
         .unwrap();
 
         try_join_all(
             [
-                ("src-ft", maker.id()),
-                ("dst-ft", taker1.id()),
-                ("dst-ft", taker2.id()),
-                ("dst-ft", taker3.id()),
+                ("src-ft", maker.account_id()),
+                ("dst-ft", taker1.account_id()),
+                ("dst-ft", taker2.account_id()),
+                ("dst-ft", taker3.account_id()),
             ]
             .into_iter()
             .map(|(token, owner_id)| {
                 root.poa_factory_ft_deposit(
-                    poa_factory.id(),
+                    poa_factory.contract_id().clone(),
                     token,
                     owner_id,
                     1_000_000,
@@ -114,57 +108,55 @@ impl Env {
             maker,
             takers: [taker1, taker2, taker3],
             fee_collectors: [fee_collector1, fee_collector2, fee_collector3],
-            sandbox,
+            root,
         }
     }
 
-    async fn deploy_global_escrow_swap(root: &SigningAccount) -> anyhow::Result<GlobalContractId> {
-        let account_id = root.id().sub_account("escrow-swap").unwrap();
-        root.tx(account_id.clone())
-            .create_account()
-            .transfer(NearToken::from_near(100))
-            .deploy_global(
-                ESCROW_SWAP_WASM.clone(),
-                GlobalContractDeployMode::AccountId,
-            )
-            .await?;
-        Ok(GlobalContractId::AccountId(account_id))
-    }
-
-    async fn deploy_verifier(root: &SigningAccount) -> anyhow::Result<Account> {
-        let wnear = root.deploy_wrap_near("wnear", WNEAR_WASM.clone()).await?;
-
-        root.deploy_defuse(
-            "intents",
-            DefuseConfig {
-                wnear_id: wnear.id().clone(),
-                fees: FeesConfig {
-                    fee: Pips::ZERO,
-                    fee_collector: root.id().clone(),
-                },
-                roles: RolesConfig::default(),
-            },
-            DEFUSE_WASM.clone(),
+    async fn deploy_global_escrow_swap(root: &Near) -> GlobalContractId {
+        let account_id = root.account_id().sub_account("escrow-swap").unwrap();
+        root.deploy_upgradable_global_contract(
+            account_id,
+            ESCROW_SWAP_WASM.clone(),
+            NearToken::from_near(100),
         )
         .await
-        .map(Into::into)
+        .unwrap()
     }
 
-    async fn deploy_poa_factory(root: &SigningAccount) -> anyhow::Result<Account> {
+    async fn deploy_verifier(root: &Near) -> DefuseClient {
+        let wnear = root.deploy_wrap_near("wnear", WNEAR_WASM.clone()).await;
+        let defuse = root
+            .deploy_defuse(
+                "intents",
+                DefuseConfig {
+                    wnear_id: wnear.contract_id().clone(),
+                    fees: FeesConfig {
+                        fee: Pips::ZERO,
+                        fee_collector: root.account_id().clone(),
+                    },
+                    roles: RolesConfig::default(),
+                },
+                DEFUSE_WASM.clone(),
+            )
+            .await;
+
+        defuse.contract::<Defuse>(defuse.account_id())
+    }
+
+    async fn deploy_poa_factory(root: &Near) -> PoaFactoryClient {
         root.deploy_poa_factory(
             "poa-factory",
-            [root.id().clone()],
+            [root.account_id().clone()],
             [
-                (PoAFactoryRole::TokenDeployer, [root.id().clone()]),
-                (PoAFactoryRole::TokenDepositer, [root.id().clone()]),
+                (PoAFactoryRole::TokenDeployer, [root.account_id().clone()]),
+                (PoAFactoryRole::TokenDepositer, [root.account_id().clone()]),
             ],
             [
-                (PoAFactoryRole::TokenDeployer, [root.id().clone()]),
-                (PoAFactoryRole::TokenDepositer, [root.id().clone()]),
+                (PoAFactoryRole::TokenDeployer, [root.account_id().clone()]),
+                (PoAFactoryRole::TokenDepositer, [root.account_id().clone()]),
             ],
             POA_FACTORY_WASM.clone(),
         )
         .await
-        .map(Into::into)
     }
 }

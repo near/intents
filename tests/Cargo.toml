@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-tests"
 version.workspace = true
@@ -5,29 +7,48 @@ edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
-[lints]
-workspace = true
+[dependencies]
+anyhow.workspace = true
+arbitrary.workspace = true
+borsh.workspace = true
+defuse-core = { workspace = true, features = ["near-kit"] }
+defuse-digest = { workspace = true, features = ["sha2"] }
+defuse-fees.workspace = true
+defuse-near-utils.workspace = true
+defuse-randomness.workspace = true
+defuse-sandbox = { workspace = true }
+defuse-test-utils = { workspace = true, features = ["near-contract"] }
+derive_more.workspace = true
+futures = "0.3"
+impl-tools.workspace = true
+itertools.workspace = true
+multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
+near-contract-standards.workspace = true
+near-sdk-core.workspace = true
+rstest.workspace = true
+serde_json.workspace = true
+strum.workspace = true
+tokio = { workspace = true, features = ["macros"] }
 
 [features]
 default = [
   "defuse",
   "deployer",
   "escrow-swap",
+  "imt",
   "long",
   "outlayer",
   "poa",
   "wallet",
 ]
 
-poa = ["defuse-sandbox/poa", "defuse-test-utils/poa"]
 defuse = [
   "defuse-sandbox/defuse",
-  "defuse-sandbox/imt",
   "defuse-sandbox/poa",
   "defuse-test-utils/defuse",
   "defuse-test-utils/poa",
-  "dep:defuse",
 ]
+deployer = ["defuse-sandbox/deployer"]
 escrow-swap = [
   "defuse-sandbox/defuse",
   "defuse-sandbox/escrow",
@@ -35,55 +56,10 @@ escrow-swap = [
   "defuse-test-utils/defuse",
   "defuse-test-utils/escrow",
   "defuse-test-utils/poa",
-  "dep:defuse-escrow-swap",
 ]
-wallet = [
-  "defuse-sandbox/wallet",
-  "defuse-test-utils/wallet",
-  "dep:defuse-wallet",
-  "dep:defuse-wallet-sdk",
-  "deployer",
-]
-
-deployer = ["defuse-sandbox/deployer", "dep:defuse-global-deployer"]
-
-outlayer = [
-  "defuse-sandbox/outlayer",
-  "defuse-test-utils/outlayer",
-  "dep:defuse-outlayer-app",
-]
+imt = ["defuse", "defuse-sandbox/imt"]
+outlayer = ["defuse-sandbox/outlayer", "defuse-test-utils/outlayer"]
+poa = ["defuse-sandbox/poa", "defuse-test-utils/poa"]
+wallet = ["defuse-sandbox/wallet", "defuse-test-utils/wallet", "deployer"]
 
 long = []
-
-[dependencies]
-defuse-sandbox.workspace = true
-multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
-
-defuse-fees.workspace = true
-defuse-near-utils.workspace = true
-defuse-randomness.workspace = true
-defuse-serde-utils = { workspace = true, features = ["hex"] }
-defuse-test-utils = { workspace = true, features = ["near-contract"] }
-
-defuse = { workspace = true, features = ["contract", "arbitrary", "far"], optional = true }
-defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = true }
-defuse-global-deployer = { workspace = true, optional = true }
-defuse-outlayer-app = { workspace = true, optional = true }
-defuse-wallet = { workspace = true, features = ["arbitrary", "concurrent", "ed25519"], optional = true }
-defuse-wallet-sdk = { workspace = true, features = ["ed25519"], optional = true }
-
-near-contract-standards.workspace = true
-near-crypto.workspace = true
-near-sdk.workspace = true
-
-anyhow.workspace = true
-arbitrary.workspace = true
-derive_more.workspace = true
-futures = "0.3"
-impl-tools.workspace = true
-itertools.workspace = true
-
-rstest.workspace = true
-serde_json.workspace = true
-strum.workspace = true
-tokio = { workspace = true, features = ["macros"] }

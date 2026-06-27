@@ -1,25 +1,24 @@
-use defuse_sandbox::extensions::escrow::contract::{
-    ContractStorage, OverrideSend, Params, Pips, ProtocolFees, Timestamp,
-    action::{FillAction, TransferAction, TransferMessage},
-    token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
-};
-use defuse_sandbox::extensions::{
-    defuse::contract::{
-        core::intents::tokens::NotifyOnTransfer,
-        tokens::{DepositAction, DepositMessage},
-    },
-    escrow::{EscrowExt, EscrowExtView},
-};
 use defuse_sandbox::{
-    Account, anyhow,
-    extensions::{ft::FtExt, mt::MtViewExt},
+    extensions::{
+        defuse::{
+            core::intents::tokens::NotifyOnTransfer,
+            tokens::{DepositAction, DepositMessage},
+        },
+        escrow::{
+            Escrow, EscrowClient, EscrowExt,
+            contract::{
+                ContractStorage, OverrideSend, Params, Pips, ProtocolFees, Timestamp,
+                action::{FillAction, TransferAction, TransferMessage},
+                token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
+            },
+        },
+        mt::{Mt, MtBatchBalanceOfArgs},
+    },
+    kit::{AccountId, AccountIdRef, Final, Gas, Near, StateInit, StateInitV1},
 };
 use futures::{TryStreamExt, stream::FuturesOrdered};
 use itertools::Itertools;
-use near_sdk::{
-    AccountIdRef, serde_json,
-    state_init::{StateInit, StateInitV1},
-};
+use near_sdk_core::json_types::U128;
 use std::time::Duration;
 
 use rstest::rstest;
@@ -34,24 +33,27 @@ async fn partial_fills(#[future(awt)] env: Env) {
     const TIMEOUT: Duration = Duration::from_mins(1);
 
     // try_join!(
-    //     env.src_deposit_to_verifier(env.maker.id(), SRC_TOKEN_ID, MAKER_AMOUNT),
-    //     env.dst_deposit_to_verifier(env.takers[0].id(), DST_TOKEN_ID, TAKER_AMOUNT),
-    //     env.dst_deposit_to_verifier(env.takers[1].id(), DST_TOKEN_ID, TAKER_AMOUNT),
-    //     env.dst_deposit_to_verifier(env.takers[2].id(), DST_TOKEN_ID, TAKER_AMOUNT),
+    //     env.src_deposit_to_verifier(env.maker.account_id(), SRC_TOKEN_ID, MAKER_AMOUNT),
+    //     env.dst_deposit_to_verifier(env.takers[0].account_id(), DST_TOKEN_ID, TAKER_AMOUNT),
+    //     env.dst_deposit_to_verifier(env.takers[1].account_id(), DST_TOKEN_ID, TAKER_AMOUNT),
+    //     env.dst_deposit_to_verifier(env.takers[2].account_id(), DST_TOKEN_ID, TAKER_AMOUNT),
     // )
     // .unwrap();
 
-    let [src_verifier_asset, dst_verifier_asset] = [env.src_ft.id(), env.dst_ft.id()]
-        .map(Clone::clone)
-        .map(Nep141TokenId::new)
-        .map(TokenId::from);
+    let [src_verifier_asset, dst_verifier_asset] =
+        [env.src_ft.contract_id(), env.dst_ft.contract_id()]
+            .map(Clone::clone)
+            .map(Nep141TokenId::new)
+            .map(TokenId::from);
 
     let [src_token, dst_token] = [&src_verifier_asset, &dst_verifier_asset]
-        .map(|token_id| Nep245TokenId::new(env.verifier.id().clone(), token_id.to_string()))
+        .map(|token_id| {
+            Nep245TokenId::new(env.verifier.contract_id().clone(), token_id.to_string())
+        })
         .map(Into::<TokenId>::into);
 
     let params = Params {
-        maker: env.maker.id().clone(),
+        maker: env.maker.account_id().clone(),
 
         src_token: src_token.clone(),
         dst_token: dst_token.clone(),
@@ -64,17 +66,17 @@ async fn partial_fills(#[future(awt)] env: Env) {
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
         // taker_whitelist: Default::default(),
-        taker_whitelist: env.takers.iter().map(|a| a.id()).cloned().collect(),
+        taker_whitelist: env.takers.iter().map(Near::account_id).cloned().collect(),
         protocol_fees: ProtocolFees {
             fee: Pips::from_percent(1).unwrap(),
             surplus: Pips::from_percent(10).unwrap(),
-            collector: env.fee_collectors[0].id().clone(),
+            collector: env.fee_collectors[0].account_id().clone(),
         }
         .into(),
         integrator_fees: env
             .fee_collectors
             .iter()
-            .map(|a| a.id())
+            .map(Near::account_id)
             .cloned()
             .enumerate()
             .map(|(percent, a)| {
@@ -85,7 +87,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
             })
             .skip(1)
             .collect(),
-        auth_caller: Some(env.verifier.id().clone()),
+        auth_caller: Some(env.verifier.contract_id().clone()),
         salt: [0; 32],
     };
     let state_init = StateInit::V1(StateInitV1 {
@@ -93,14 +95,16 @@ async fn partial_fills(#[future(awt)] env: Env) {
         data: ContractStorage::init_state(&params).unwrap(),
     });
 
-    let escrow = env.account(state_init.derive_account_id());
+    let escrow_id = state_init.derive_account_id();
+    let escrow = env.contract::<Escrow>(escrow_id.clone());
 
     show_verifier_balances(
-        &env.verifier,
-        [escrow.id(), env.maker.id()]
+        &env,
+        env.verifier.contract_id(),
+        [escrow.contract_id(), env.maker.account_id()]
             .into_iter()
-            .chain(env.takers.iter().map(|a| a.id()))
-            .chain(env.fee_collectors.iter().map(|a| a.id()))
+            .chain(env.takers.iter().map(Near::account_id))
+            .chain(env.fee_collectors.iter().map(Near::account_id))
             .map(AsRef::as_ref),
         &[&src_verifier_asset, &dst_verifier_asset],
     )
@@ -111,60 +115,63 @@ async fn partial_fills(#[future(awt)] env: Env) {
         for amount in [MAKER_AMOUNT - 100, 100] {
             let deposited = env
                 .maker
-                .ft_transfer_call(
-                    env.src_ft.id(),
-                    env.verifier.id(),
+                .ft(env.src_ft.contract_id().clone())
+                .unwrap()
+                .transfer_call(
+                    env.verifier.contract_id().clone(),
                     amount,
-                    None,
                     serde_json::to_string(
-                        &DepositMessage::new(escrow.id().clone()).with_action(
-                            DepositAction::Notify(
-                                NotifyOnTransfer::new(
-                                    serde_json::to_string(&TransferMessage {
-                                        params: params.clone(),
-                                        action: TransferAction::Fund,
-                                    })
-                                    .unwrap(),
-                                )
-                                .with_state_init(state_init.clone()),
-                            ),
-                        ),
+                        &DepositMessage::new(escrow_id.clone()).with_action(DepositAction::Notify(
+                            NotifyOnTransfer::new(
+                                serde_json::to_string(&TransferMessage {
+                                    params: params.clone(),
+                                    action: TransferAction::Fund,
+                                })
+                                .unwrap(),
+                            )
+                            .with_state_init(state_init.clone()),
+                        )),
                     )
                     .unwrap(),
                 )
+                .wait_until(Final)
                 .await
-                .unwrap();
+                .unwrap()
+                .json::<U128>()
+                .unwrap()
+                .0;
 
             println!("maker sent: {amount}, deposited: {deposited}");
 
             show_verifier_balances(
-                &env.verifier,
-                [escrow.id(), env.maker.id()]
+                &env,
+                env.verifier.contract_id(),
+                [escrow.contract_id(), env.maker.account_id()]
                     .into_iter()
-                    .chain(env.takers.iter().map(|a| a.id()))
-                    .chain(env.fee_collectors.iter().map(|a| a.id()))
+                    .chain(env.takers.iter().map(Near::account_id))
+                    .chain(env.fee_collectors.iter().map(Near::account_id))
                     .map(AsRef::as_ref),
                 &[&src_verifier_asset, &dst_verifier_asset],
             )
             .await;
 
             assert_eq!(deposited, amount);
-            maybe_view_escrow(&escrow).await;
+            maybe_view_escrow(&env, &escrow).await;
         }
     }
 
     // takers deposit
     {
-        for (taker, amount) in env.takers.iter().zip([10000, 5000, 20000]) {
+        for (taker, amount) in env.takers.iter().zip([10000_u128, 5000, 20000]) {
             let deposited = taker
-                .ft_transfer_call(
-                    env.dst_ft.id(),
-                    env.verifier.id(),
+                .ft(env.dst_ft.contract_id().clone())
+                .unwrap()
+                .transfer_call(
+                    env.verifier.contract_id().clone(),
                     amount,
-                    None,
                     serde_json::to_string(
-                        &DepositMessage::new(escrow.id().clone()).with_action(
-                            DepositAction::Notify(NotifyOnTransfer::new(
+                        &DepositMessage::new(escrow_id.clone()).with_action(DepositAction::Notify(
+                            NotifyOnTransfer::new(
                                 serde_json::to_string(&TransferMessage {
                                     params: params.clone(),
                                     action: FillAction {
@@ -179,22 +186,28 @@ async fn partial_fills(#[future(awt)] env: Env) {
                                     .into(),
                                 })
                                 .unwrap(),
-                            )),
-                        ),
+                            ),
+                        )),
                     )
                     .unwrap(),
                 )
+                .gas(Gas::from_tgas(300))
+                .wait_until(Final)
                 .await
-                .unwrap();
+                .unwrap()
+                .json::<U128>()
+                .unwrap()
+                .0;
 
             println!("taker sent: {amount}, deposited: {deposited}");
 
             show_verifier_balances(
-                &env.verifier,
-                [escrow.id(), env.maker.id()]
+                &env,
+                env.verifier.contract_id(),
+                [escrow.contract_id(), env.maker.account_id()]
                     .into_iter()
-                    .chain(env.takers.iter().map(|a| a.id()))
-                    .chain(env.fee_collectors.iter().map(|a| a.id()))
+                    .chain(env.takers.iter().map(Near::account_id))
+                    .chain(env.fee_collectors.iter().map(Near::account_id))
                     .map(AsRef::as_ref),
                 &[&src_verifier_asset, &dst_verifier_asset],
             )
@@ -202,7 +215,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
 
             // assert_eq!(sent, amount);
         }
-        maybe_view_escrow(&escrow).await;
+        maybe_view_escrow(&env, &escrow).await;
     }
 
     // TODO: fast-forward
@@ -210,37 +223,49 @@ async fn partial_fills(#[future(awt)] env: Env) {
 
     // maker closes the escrow
     {
-        env.maker.es_close(escrow.id(), &params).await.unwrap();
+        env.maker
+            .es_close(escrow.contract_id().clone(), params.clone())
+            .await
+            .unwrap();
 
         show_verifier_balances(
-            &env.verifier,
-            [escrow.id(), env.maker.id()]
+            &env,
+            env.verifier.contract_id(),
+            [escrow.contract_id(), env.maker.account_id()]
                 .into_iter()
-                .chain(env.takers.iter().map(|a| a.id()))
-                .chain(env.fee_collectors.iter().map(|a| a.id()))
+                .chain(env.takers.iter().map(Near::account_id))
+                .chain(env.fee_collectors.iter().map(Near::account_id))
                 .map(AsRef::as_ref),
             &[&src_verifier_asset, &dst_verifier_asset],
         )
         .await;
-        maybe_view_escrow(&escrow).await;
+        maybe_view_escrow(&env, &escrow).await;
 
         // escrow
-        //     .view()
+        //     .es_view()
         //     .await
         //     .expect_err("cleanup should have been performed");
     }
 }
 
 pub async fn show_verifier_balances(
-    verifier: &Account,
+    near: &Near,
+    verifier: &AccountId,
     accounts: impl IntoIterator<Item = &AccountIdRef>,
     token_ids: &[&TokenId],
 ) {
     let mut balances = accounts
         .into_iter()
         .map(|account_id| async move {
-            let balances = verifier
-                .mt_batch_balance_of(account_id, token_ids.iter().map(ToString::to_string))
+            let balances = near
+                .contract::<Mt>(verifier)
+                .mt_batch_balance_of(MtBatchBalanceOfArgs {
+                    account_id,
+                    token_ids: &token_ids
+                        .iter()
+                        .map(ToString::to_string)
+                        .collect::<Vec<_>>(),
+                })
                 .await?;
             anyhow::Ok((account_id, balances))
         })
@@ -250,21 +275,24 @@ pub async fn show_verifier_balances(
         println!(
             "{:<64} {}",
             account_id,
-            balances.into_iter().map(|b| format!("{b:<30}")).join(" ")
+            balances
+                .into_iter()
+                .map(|b| format!("{:<30}", b.0))
+                .join(" ")
         );
     }
 }
 
-async fn maybe_view_escrow(escrow: &Account) {
-    let Ok(account) = escrow.view().await else {
-        println!("{} does not exist", escrow.id());
+async fn maybe_view_escrow(root: &Near, escrow: &EscrowClient) {
+    let Ok(account) = root.account(escrow.contract_id()).await else {
+        println!("{} does not exist", escrow.contract_id());
         return;
     };
-    println!("{}: {:?}", escrow.id(), account);
+    println!("{}: {:?}", escrow.contract_id(), account);
     let s = escrow.es_view().await.unwrap();
     println!(
         "{}::es_view() -> {:#}",
-        escrow.id(),
+        escrow.contract_id(),
         serde_json::to_value(&s).unwrap()
     );
 }

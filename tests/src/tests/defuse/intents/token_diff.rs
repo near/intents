@@ -1,28 +1,33 @@
-use defuse_sandbox::extensions::defuse::contract::core::token_id::{
-    TokenId, nep141::Nep141TokenId,
-};
-use defuse_sandbox::extensions::defuse::contract::core::{
-    fees::Pips,
-    intents::token_diff::{TokenDeltas, TokenDiff},
-};
-use defuse_sandbox::extensions::defuse::{
-    intents::{ExecuteIntentsExt, SimulateIntents},
-    signer::DefaultDefuseSignerExt,
-};
+#![allow(clippy::cloned_ref_to_slice_refs)]
 
-use crate::{sandbox::SigningAccount, sandbox::extensions::mt::MtViewExt, tests::defuse::env::Env};
-use near_sdk::{AccountId, serde_json};
+use defuse_sandbox::{
+    extensions::{
+        defuse::{
+            DefuseExt, DefuseSignerExt, MultiPayloadArgs,
+            core::{
+                fees::Pips,
+                intents::token_diff::{TokenDeltas, TokenDiff},
+                token_id::{TokenId, nep141::Nep141TokenId},
+            },
+        },
+        mt::{Mt, MtBatchBalanceOfArgs},
+    },
+    kit::{AccountId, Near},
+};
+use near_sdk_core::json_types::U128;
 use rstest::rstest;
 use std::collections::BTreeMap;
 
+use crate::tests::defuse::env::{Env, env};
+
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
-    use defuse_sandbox::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
-
-    let env = Env::builder().fee(fee).build().await;
-
+async fn swap_p2p(
+    #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
+    #[with(Env::builder().fee(fee))]
+    #[future(awt)]
+    env: Env,
+) {
     let (user1, user2, ft1, ft2) = futures::join!(
         env.create_user(),
         env.create_user(),
@@ -30,18 +35,21 @@ async fn swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: P
         env.create_token()
     );
 
-    let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.id().clone()));
-    let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.id().clone()));
+    let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.contract_id().clone()));
+    let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.contract_id().clone()));
 
-    env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], vec![ft1.id(), ft2.id()])
-        .await;
+    env.initial_ft_storage_deposit(
+        vec![user1.account_id(), user2.account_id()],
+        vec![ft1.contract_id(), ft2.contract_id()],
+    )
+    .await;
 
     test_ft_diffs(
         &env,
         [
             AccountFtDiff {
                 account: &user1,
-                init_balances: std::iter::once((ft1.id(), 100)).collect(),
+                init_balances: std::iter::once((ft1.contract_id(), 100)).collect(),
                 diff: [TokenDeltas::default()
                     .with_apply_deltas([
                         (ft1_token_id.clone(), -100),
@@ -53,14 +61,14 @@ async fn swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: P
                     .unwrap()]
                 .into(),
                 result_balances: std::iter::once((
-                    ft2.id(),
+                    ft2.contract_id(),
                     TokenDiff::closure_delta(&ft2_token_id, -200, fee).unwrap(),
                 ))
                 .collect(),
             },
             AccountFtDiff {
                 account: &user2,
-                init_balances: std::iter::once((ft2.id(), 200)).collect(),
+                init_balances: std::iter::once((ft2.contract_id(), 200)).collect(),
                 diff: [TokenDeltas::default()
                     .with_apply_deltas([
                         (
@@ -72,7 +80,7 @@ async fn swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: P
                     .unwrap()]
                 .into(),
                 result_balances: std::iter::once((
-                    ft1.id(),
+                    ft1.contract_id(),
                     TokenDiff::closure_delta(&ft1_token_id, -100, fee).unwrap(),
                 ))
                 .collect(),
@@ -84,11 +92,13 @@ async fn swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: P
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn swap_many(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
-    let env = Env::builder().fee(fee).build().await;
-
+async fn swap_many(
+    #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
+    #[with(Env::builder().fee(fee))]
+    #[future(awt)]
+    env: Env,
+) {
     let (user1, user2, user3, ft1, ft2, ft3) = futures::join!(
         env.create_user(),
         env.create_user(),
@@ -98,13 +108,13 @@ async fn swap_many(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: 
         env.create_token()
     );
 
-    let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.id().clone()));
-    let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.id().clone()));
-    let ft3_token_id = TokenId::from(Nep141TokenId::new(ft3.id().clone()));
+    let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.contract_id().clone()));
+    let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.contract_id().clone()));
+    let ft3_token_id = TokenId::from(Nep141TokenId::new(ft3.contract_id().clone()));
 
     env.initial_ft_storage_deposit(
-        vec![user1.id(), user2.id(), user3.id()],
-        vec![ft1.id(), ft2.id(), ft3.id()],
+        vec![user1.account_id(), user2.account_id(), user3.account_id()],
+        vec![ft1.contract_id(), ft2.contract_id(), ft3.contract_id()],
     )
     .await;
 
@@ -113,16 +123,16 @@ async fn swap_many(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: 
         [
             AccountFtDiff {
                 account: &user1,
-                init_balances: std::iter::once((ft1.id(), 100)).collect(),
+                init_balances: std::iter::once((ft1.contract_id(), 100)).collect(),
                 diff: [TokenDeltas::default()
                     .with_apply_deltas([(ft1_token_id.clone(), -100), (ft2_token_id.clone(), 200)])
                     .unwrap()]
                 .into(),
-                result_balances: std::iter::once((ft2.id(), 200)).collect(),
+                result_balances: std::iter::once((ft2.contract_id(), 200)).collect(),
             },
             AccountFtDiff {
                 account: &user2,
-                init_balances: std::iter::once((ft2.id(), 1000)).collect(),
+                init_balances: std::iter::once((ft2.contract_id(), 1000)).collect(),
                 diff: [
                     TokenDeltas::default()
                         .with_apply_deltas([
@@ -152,16 +162,16 @@ async fn swap_many(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: 
                 .into(),
                 result_balances: [
                     (
-                        ft1.id(),
+                        ft1.contract_id(),
                         TokenDiff::closure_delta(&ft1_token_id, -100, fee).unwrap(),
                     ),
                     (
-                        ft2.id(),
+                        ft2.contract_id(),
                         1000 + TokenDiff::closure_delta(&ft2_token_id, 200, fee).unwrap()
                             + TokenDiff::closure_delta(&ft2_token_id, 300, fee).unwrap(),
                     ),
                     (
-                        ft3.id(),
+                        ft3.contract_id(),
                         TokenDiff::closure_delta(&ft3_token_id, -500, fee).unwrap(),
                     ),
                 ]
@@ -170,12 +180,12 @@ async fn swap_many(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: 
             },
             AccountFtDiff {
                 account: &user3,
-                init_balances: std::iter::once((ft3.id(), 500)).collect(),
+                init_balances: std::iter::once((ft3.contract_id(), 500)).collect(),
                 diff: [TokenDeltas::default()
                     .with_apply_deltas([(ft2_token_id.clone(), 300), (ft3_token_id.clone(), -500)])
                     .unwrap()]
                 .into(),
-                result_balances: std::iter::once((ft2.id(), 300)).collect(),
+                result_balances: std::iter::once((ft2.contract_id(), 300)).collect(),
             },
         ]
         .into(),
@@ -186,7 +196,7 @@ async fn swap_many(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: 
 type FtBalances<'a> = BTreeMap<&'a AccountId, i128>;
 
 struct AccountFtDiff<'a> {
-    account: &'a SigningAccount,
+    account: &'a Near,
     init_balances: FtBalances<'a>,
     diff: Vec<TokenDeltas>,
     result_balances: FtBalances<'a>,
@@ -201,7 +211,7 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
                 env.defuse_ft_deposit_to(
                     token_id,
                     (*balance).try_into().unwrap(),
-                    account.account.id(),
+                    account.account.account_id(),
                     None,
                 )
             })
@@ -226,14 +236,14 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
 
     // simulate
     env.defuse
-        .simulate_intents(signed.clone())
+        .simulate_intents(MultiPayloadArgs { signed: &signed })
         .await
         .unwrap()
         .into_result()
         .unwrap();
 
     // verify
-    env.execute_intents(env.defuse.id(), signed.clone())
+    env.defuse_execute_intents(env.defuse.contract_id(), signed.clone())
         .await
         .unwrap();
 
@@ -245,13 +255,17 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
             .map(|(t, b)| {
                 (
                     TokenId::from(Nep141TokenId::new(t.clone())).to_string(),
-                    u128::try_from(b).unwrap(),
+                    U128(u128::try_from(b).unwrap()),
                 )
             })
             .unzip();
+
         assert_eq!(
-            env.defuse
-                .mt_batch_balance_of(account.account.id(), tokens)
+            env.contract::<Mt>(env.defuse.contract_id())
+                .mt_batch_balance_of(MtBatchBalanceOfArgs {
+                    account_id: account.account.account_id(),
+                    token_ids: &tokens,
+                })
                 .await
                 .unwrap(),
             balances
@@ -260,11 +274,8 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn invariant_violated() {
-    let env = Env::builder().build().await;
-
+async fn invariant_violated(#[future(awt)] env: Env) {
     let (user1, user2, ft1, ft2) = futures::join!(
         env.create_user(),
         env.create_user(),
@@ -272,16 +283,19 @@ async fn invariant_violated() {
         env.create_token(),
     );
 
-    let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.id().clone()));
-    let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.id().clone()));
+    let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.contract_id().clone()));
+    let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.contract_id().clone()));
 
-    env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], vec![ft1.id(), ft2.id()])
-        .await;
+    env.initial_ft_storage_deposit(
+        vec![user1.account_id(), user2.account_id()],
+        vec![ft1.contract_id(), ft2.contract_id()],
+    )
+    .await;
 
     // deposit
     futures::try_join!(
-        env.defuse_ft_deposit_to(ft1.id(), 1000, user1.id(), None),
-        env.defuse_ft_deposit_to(ft2.id(), 2000, user2.id(), None)
+        env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.account_id(), None),
+        env.defuse_ft_deposit_to(ft2.contract_id(), 2000, user2.account_id(), None)
     )
     .expect("Failed to deposit tokens");
 
@@ -318,7 +332,7 @@ async fn invariant_violated() {
 
     assert_eq!(
         env.defuse
-            .simulate_intents(signed.clone())
+            .simulate_intents(MultiPayloadArgs { signed: &signed })
             .await
             .unwrap()
             .invariant_violated
@@ -329,44 +343,49 @@ async fn invariant_violated() {
         ))
     );
 
-    env.execute_intents(env.defuse.id(), signed)
+    env.defuse_execute_intents(env.defuse.contract_id(), signed)
         .await
         .unwrap_err();
 
     // balances should stay the same
     assert_eq!(
-        env.defuse
-            .mt_batch_balance_of(
-                user1.id(),
-                [ft1_token_id.to_string(), ft2_token_id.to_string()]
-            )
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_batch_balance_of(MtBatchBalanceOfArgs {
+                account_id: user1.account_id(),
+                token_ids: &[ft1_token_id.to_string(), ft2_token_id.to_string()],
+            })
             .await
             .unwrap(),
-        [1000, 0]
+        [U128(1000), U128(0)]
     );
+
     assert_eq!(
-        env.defuse
-            .mt_batch_balance_of(
-                user2.id(),
-                [ft1_token_id.to_string(), ft2_token_id.to_string()]
-            )
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_batch_balance_of(MtBatchBalanceOfArgs {
+                account_id: user2.account_id(),
+                token_ids: &[ft1_token_id.to_string(), ft2_token_id.to_string()],
+            })
             .await
             .unwrap(),
-        [0, 2000]
+        [U128(0), U128(2000)]
     );
 }
 
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn solver_user_closure(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
+async fn solver_user_closure(
+    #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
+    #[notrace]
+    #[with(Env::builder().fee(fee))]
+    #[future(awt)]
+    env: Env,
+) {
     const USER_BALANCE: u128 = 1100;
     const SOLVER_BALANCE: u128 = 2100;
 
     // RFQ: 1000 token_in -> ??? token_out
     const USER_DELTA_IN: i128 = -1000;
-
-    let env = Env::builder().fee(fee).build().await;
 
     let (user, solver, ft1, ft2) = futures::join!(
         env.create_user(),
@@ -375,18 +394,21 @@ async fn solver_user_closure(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCE
         env.create_token()
     );
 
-    env.initial_ft_storage_deposit(vec![user.id(), solver.id()], vec![ft1.id(), ft2.id()])
-        .await;
+    env.initial_ft_storage_deposit(
+        vec![user.account_id(), solver.account_id()],
+        vec![ft1.contract_id(), ft2.contract_id()],
+    )
+    .await;
 
     // deposit
     futures::try_join!(
-        env.defuse_ft_deposit_to(ft1.id(), USER_BALANCE, user.id(), None),
-        env.defuse_ft_deposit_to(ft2.id(), SOLVER_BALANCE, solver.id(), None)
+        env.defuse_ft_deposit_to(ft1.contract_id(), USER_BALANCE, user.account_id(), None),
+        env.defuse_ft_deposit_to(ft2.contract_id(), SOLVER_BALANCE, solver.account_id(), None)
     )
     .expect("Failed to deposit tokens");
 
-    let token_in = TokenId::from(Nep141TokenId::new(ft1.id().clone()));
-    let token_out = TokenId::from(Nep141TokenId::new(ft2.id().clone()));
+    let token_in = TokenId::from(Nep141TokenId::new(ft1.contract_id().clone()));
+    let token_out = TokenId::from(Nep141TokenId::new(ft2.contract_id().clone()));
 
     dbg!(USER_DELTA_IN);
     // propagate RFQ to solver with adjusted amount_in
@@ -419,7 +441,9 @@ async fn solver_user_closure(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCE
     // simulate before returning quote
     let simulation_before_return_quote = env
         .defuse
-        .simulate_intents([solver_commitment.clone()])
+        .simulate_intents(MultiPayloadArgs {
+            signed: &[solver_commitment.clone()],
+        })
         .await
         .unwrap();
     println!(
@@ -473,36 +497,47 @@ async fn solver_user_closure(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCE
 
     // simulating both solver's and user's intents now should succeed
     env.defuse
-        .simulate_intents([solver_commitment.clone(), user_commitment.clone()])
+        .simulate_intents(MultiPayloadArgs {
+            signed: &[solver_commitment.clone(), user_commitment.clone()],
+        })
         .await
         .unwrap()
         .into_result()
         .unwrap();
 
     // execute intents
-    env.simulate_and_execute_intents(env.defuse.id(), [solver_commitment, user_commitment])
-        .await
-        .unwrap();
+    env.defuse_simulate_and_execute_intents(
+        env.defuse.contract_id(),
+        [solver_commitment, user_commitment],
+    )
+    .await
+    .unwrap();
 
     assert_eq!(
-        env.defuse
-            .mt_batch_balance_of(user.id(), [token_in.to_string(), token_out.to_string()])
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_batch_balance_of(MtBatchBalanceOfArgs {
+                account_id: user.account_id(),
+                token_ids: &[token_in.to_string(), token_out.to_string()],
+            })
             .await
             .unwrap(),
         [
-            USER_BALANCE - USER_DELTA_IN.unsigned_abs(),
-            user_delta_out.unsigned_abs()
+            U128(USER_BALANCE - USER_DELTA_IN.unsigned_abs()),
+            U128(user_delta_out.unsigned_abs())
         ]
     );
 
     assert_eq!(
-        env.defuse
-            .mt_batch_balance_of(solver.id(), [token_in.to_string(), token_out.to_string()])
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_batch_balance_of(MtBatchBalanceOfArgs {
+                account_id: solver.account_id(),
+                token_ids: &[token_in.to_string(), token_out.to_string()],
+            })
             .await
             .unwrap(),
         [
-            solver_delta_in.unsigned_abs(),
-            SOLVER_BALANCE - solver_delta_out.unsigned_abs()
+            U128(solver_delta_in.unsigned_abs()),
+            U128(SOLVER_BALANCE - solver_delta_out.unsigned_abs())
         ]
     );
 }

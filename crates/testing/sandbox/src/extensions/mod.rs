@@ -1,12 +1,9 @@
-#![allow(async_fn_in_trait)]
-
 pub mod acl;
-pub mod ft;
-pub mod mt;
 pub mod mt_receiver;
 pub mod nft;
-pub mod storage_management;
 pub mod wnear;
+// TODO: remove when mt will be part of near kit extensions
+pub mod mt;
 
 #[cfg(feature = "defuse")]
 pub mod defuse;
@@ -20,3 +17,29 @@ pub mod outlayer_app;
 pub mod poa;
 #[cfg(feature = "wallet")]
 pub mod wallet;
+
+use crate::outcome::SuccessfulExecutionOutcome;
+use anyhow::Result;
+use near_kit::{AccountId, Final, FunctionCall, Near};
+
+pub trait FnCallTransaction {
+    async fn fn_call(
+        &self,
+        contract: impl Into<AccountId>,
+        action: FunctionCall,
+    ) -> Result<SuccessfulExecutionOutcome>;
+}
+
+impl FnCallTransaction for Near {
+    async fn fn_call(
+        &self,
+        contract: impl Into<AccountId>,
+        action: FunctionCall,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(contract.into())
+            .add_action(action)
+            .wait_until(Final)
+            .await?
+            .try_into()
+    }
+}

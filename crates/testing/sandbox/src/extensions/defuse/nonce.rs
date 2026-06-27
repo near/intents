@@ -1,10 +1,10 @@
-use crate::extensions::defuse::state::SaltViewExt;
-use crate::{Account, anyhow};
-use defuse::core::payload::{DefusePayload, ExtractDefusePayload};
-use defuse::core::{ExpirableNonce, Salt, SaltedNonce, Timestamp, VersionedNonce};
-use defuse::core::{Nonce, intents::DefuseIntents, payload::multi::MultiPayload};
+use crate::extensions::defuse::DefuseClient;
+use defuse_core::{
+    ExpirableNonce, Nonce, Salt, SaltedNonce, Timestamp, VersionedNonce,
+    intents::DefuseIntents,
+    payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
+};
 use defuse_test_utils::random::{Rng, RngExt, TestRng};
-use near_sdk::serde_json;
 
 pub trait ExtractNonceExt {
     fn extract_nonce(&self) -> Result<Nonce, serde_json::Error>;
@@ -19,7 +19,7 @@ impl ExtractNonceExt for MultiPayload {
 }
 
 pub async fn generate_unique_nonce(
-    defuse_contract: &Account,
+    defuse_contract: &DefuseClient,
     deadline: Option<Timestamp>,
 ) -> anyhow::Result<Nonce> {
     let deadline = deadline.unwrap_or_else(|| Timestamp::now() + std::time::Duration::from_mins(2));

@@ -80,10 +80,12 @@ mod tests {
     use crate::{Sep53Payload, SignedSep53Payload};
     use base64::{Engine, engine::general_purpose::STANDARD};
     use defuse_crypto::{Payload, SignedPayload};
+    use defuse_digest::Digest;
+    use defuse_digest::sha2::Sha256;
     use defuse_test_utils::random::{CryptoRng, gen_random_string, random_bytes, rng};
     use defuse_test_utils::tamper::{tamper_bytes, tamper_string};
-    use ed25519_dalek::Verifier;
-    use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut};
+    use ed25519_dalek::SigningKey;
+    use ed25519_dalek::{Signer, Verifier};
     use near_sdk::base64;
     use rstest::rstest;
     use stellar_strkey::Strkey;
@@ -98,7 +100,7 @@ mod tests {
         };
 
         // 2) Build SigningKey + VerifyingKey
-        let mut signing_key = SigningKey::from_bytes(&raw_key);
+        let signing_key = SigningKey::from_bytes(&raw_key);
         let verifying_key = signing_key.verifying_key();
 
         let vectors = [
@@ -118,7 +120,7 @@ mod tests {
             let mut payload = "Stellar Signed Message:\n".to_string();
             payload += msg;
 
-            let hash = near_sdk::env::sha256_array(payload.as_bytes());
+            let hash = Sha256::digest(payload.as_bytes());
             let sig = signing_key.sign(hash.as_ref());
             let actual_b64 = STANDARD.encode(sig.to_bytes());
 
@@ -131,26 +133,11 @@ mod tests {
             let payload = Sep53Payload::new(msg.to_string());
 
             let hash = payload.hash();
-            let secret_key = near_crypto::SecretKey::ED25519(near_crypto::ED25519SecretKey(
-                signing_key
-                    .as_bytes()
-                    .iter()
-                    .chain(verifying_key.as_bytes())
-                    .copied()
-                    .collect::<Vec<_>>()
-                    .try_into()
-                    .unwrap(),
-            ));
-            let generic_sig = secret_key.sign(hash.as_ref());
-            let sig = match generic_sig {
-                near_crypto::Signature::ED25519(signature) => signature,
-                near_crypto::Signature::SECP256K1(_) => unreachable!(),
-            };
 
+            let sig = signing_key.sign(hash.as_ref());
             let actual_sig_b64 = STANDARD.encode(sig.to_bytes());
-
             assert_eq!(actual_sig_b64, *expected_sig_b64);
-            assert!(generic_sig.verify(hash.as_ref(), &secret_key.public_key()));
+            assert!(signing_key.verify(hash.as_ref(), &sig).is_ok());
 
             let signed_payload = SignedSep53Payload {
                 payload,
@@ -166,45 +153,30 @@ mod tests {
     }
 
     /// Decode our test seed into a NEAR ED25519 secret + public key
-    fn make_ed25519_key(rng: &mut impl CryptoRng) -> near_crypto::SecretKey {
+    fn make_ed25519_key(rng: &mut impl CryptoRng) -> SigningKey {
         // We have to use dalek because near interface doesn't support making keys from bytes
         // so we start from dalek, generate a random key, then use it in a new near_crypto key
         let key_len = ed25519_dalek::SECRET_KEY_LENGTH;
         let bytes = random_bytes(key_len..=key_len, rng);
-        let signing_key = SigningKey::from_bytes(&bytes.try_into().unwrap());
-        let verifying_key = signing_key.verifying_key();
-
-        near_crypto::SecretKey::ED25519(near_crypto::ED25519SecretKey(
-            signing_key
-                .as_bytes()
-                .iter()
-                .chain(verifying_key.as_bytes())
-                .copied()
-                .collect::<Vec<_>>()
-                .try_into()
-                .unwrap(),
-        ))
+        SigningKey::from_bytes(&bytes.try_into().unwrap())
     }
 
     #[rstest]
     fn tampered_message_fails(mut rng: impl CryptoRng) {
         let sk = make_ed25519_key(&mut rng);
-        let pk = sk.public_key();
+        let pk = sk.verifying_key();
 
         let msg = gen_random_string(&mut rng, 100..1000);
 
         // sign the “good” message
         let payload = Sep53Payload::new(msg.clone());
         let hash = payload.hash();
-        let sig = match sk.sign(hash.as_ref()) {
-            near_crypto::Signature::ED25519(signature) => signature,
-            near_crypto::Signature::SECP256K1(_) => unreachable!(),
-        };
+        let sig = sk.sign(hash.as_ref());
 
         {
             let signed_good = SignedSep53Payload {
                 payload,
-                public_key: pk.key_data().try_into().unwrap(),
+                public_key: pk.to_bytes(),
                 signature: sig.to_bytes(),
             };
             assert!(signed_good.verify().is_some());
@@ -218,7 +190,7 @@ mod tests {
             let bad_payload = Sep53Payload::new(tempered_message);
             let signed_bad = SignedSep53Payload {
                 payload: bad_payload,
-                public_key: pk.key_data().try_into().unwrap(),
+                public_key: pk.to_bytes(),
                 signature: sig.to_bytes(),
             };
             assert_eq!(signed_bad.verify(), None);
@@ -228,22 +200,19 @@ mod tests {
     #[rstest]
     fn tampered_signature_fails(mut rng: impl CryptoRng) {
         let sk = make_ed25519_key(&mut rng);
-        let pk = sk.public_key();
+        let pk = sk.verifying_key();
 
         let msg = gen_random_string(&mut rng, 100..1000);
 
         // sign the canonical payload
         let payload = Sep53Payload::new(msg);
         let hash = payload.hash();
-        let sig = match sk.sign(hash.as_ref()) {
-            near_crypto::Signature::ED25519(signature) => signature,
-            near_crypto::Signature::SECP256K1(_) => unreachable!(),
-        };
+        let sig = sk.sign(hash.as_ref());
 
         {
             let signed_good = SignedSep53Payload {
                 payload: payload.clone(),
-                public_key: pk.key_data().try_into().unwrap(),
+                public_key: pk.to_bytes(),
                 signature: sig.into(),
             };
             assert!(signed_good.verify().is_some());
@@ -255,7 +224,7 @@ mod tests {
 
             let signed_bad = SignedSep53Payload {
                 payload,
-                public_key: pk.key_data().try_into().unwrap(),
+                public_key: pk.to_bytes(),
                 signature: bad_bytes.try_into().unwrap(),
             };
             assert!(signed_bad.verify().is_none());

@@ -1,17 +1,19 @@
-use defuse::core::accounts::{AccountEvent, NonceEvent, PublicKeyEvent};
-use defuse::core::amounts::Amounts;
-use defuse::core::crypto::Payload;
-use defuse::core::events::DefuseEvent;
-use defuse::core::intents::account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId};
-use defuse::core::intents::token_diff::{TokenDiff, TokenDiffEvent};
-use defuse::core::intents::tokens::{
-    FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer,
+use defuse::core::{
+    accounts::{AccountEvent, NonceEvent, PublicKeyEvent},
+    amounts::Amounts,
+    crypto::Payload,
+    events::DefuseEvent,
+    intents::{
+        DefuseIntents, Intent, MaybeIntentEvent,
+        account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId},
+        token_diff::{TokenDiff, TokenDiffEvent},
+        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
+    },
+    payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
+    tokens::TransferEvent,
 };
-use defuse::core::intents::{Intent, MaybeIntentEvent};
-use defuse::core::payload::{DefusePayload, ExtractDefusePayload};
-use defuse::core::tokens::TransferEvent;
-use defuse::core::{intents::DefuseIntents, payload::multi::MultiPayload};
-use near_sdk::{AccountId, AsNep297Event, CryptoHash};
+use near_kit::AccountId;
+use near_sdk_core::{events::AsNep297Event, types::CryptoHash};
 use std::borrow::Cow;
 
 #[cfg(feature = "imt")]

@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-sandbox"
 version.workspace = true
@@ -5,43 +7,34 @@ edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
-[lints]
-workspace = true
-
-[features]
-defuse = ["dep:defuse", "dep:defuse-serde-utils", "dep:defuse-test-utils"]
-poa = ["dep:defuse-poa-factory"]
-deployer = ["dep:defuse-global-deployer", "dep:defuse-serde-utils"]
-escrow = ["dep:defuse-escrow-swap"]
-imt = ["defuse", "defuse/imt"]
-wallet = ["dep:defuse-wallet"]
-outlayer = ["dep:defuse-outlayer-app", "dep:defuse-serde-utils"]
-
 [dependencies]
-defuse-core = { workspace = true, features = ["near-api-types"] }
-defuse-nep245.workspace = true
-defuse-nep413 = { workspace = true, features = ["near-api", "serde"] }
-rstest.workspace = true
-tokio.workspace = true
-
 anyhow.workspace = true
-futures.workspace = true
-impl-tools.workspace = true
-libc = "0.2"
-near-api.workspace = true
-near-openapi-types.workspace = true
-near-sandbox.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing", "deterministic-account-ids"] }
-tracing.workspace = true
-
+defuse-core = { workspace = true, features = ["near-kit"] }
+defuse-digest = { workspace = true, features = ["sha2"] }
+defuse-nep245.workspace = true
 near-contract-standards.workspace = true
-
-defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }
-defuse-global-deployer = { workspace = true, optional = true }
-defuse-outlayer-app = { workspace = true, optional = true }
-defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
-defuse-wallet = { workspace = true, optional = true }
+near-kit = { workspace = true, features = ["sandbox"] }
+near-sdk-core.workspace = true
+rstest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_with.workspace = true
 
 defuse = { workspace = true, optional = true, features = ["contract"] }
-defuse-serde-utils = { workspace = true, optional = true, features = ["base64", "hex"] }
+defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }
+defuse-global-deployer = { workspace = true, optional = true }
+defuse-nep413 = { workspace = true, optional = true, features = ["near-kit", "serde"] }
+defuse-outlayer-app = { workspace = true, optional = true }
+defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
 defuse-test-utils = { workspace = true, optional = true }
+defuse-wallet = { workspace = true, optional = true, features = ["arbitrary", "concurrent"] }
+defuse-wallet-sdk = { workspace = true, optional = true }
+
+[features]
+defuse = ["dep:defuse", "dep:defuse-nep413", "dep:defuse-test-utils"]
+deployer = ["dep:defuse-global-deployer"]
+escrow = ["dep:defuse-escrow-swap"]
+imt = ["defuse", "defuse-test-utils?/imt", "defuse/imt"]
+outlayer = ["dep:defuse-outlayer-app"]
+poa = ["dep:defuse-poa-factory"]
+wallet = ["dep:defuse-wallet", "dep:defuse-wallet-sdk"]
