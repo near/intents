@@ -30,7 +30,6 @@ async fn storage_deposit_success(
     #[case] amount_to_deposit: NearToken,
     #[case] expected_deposited: Option<NearToken>,
     #[notrace]
-    #[with(Env::builder().disable_ft_storage_deposit())]
     #[future(awt)]
     env: Env,
 ) {
@@ -129,7 +128,7 @@ async fn storage_deposit_success(
 #[rstest]
 #[tokio::test]
 async fn storage_deposit_fails_user_has_no_balance_in_intents(
-    #[with(Env::builder().disable_ft_storage_deposit())]
+    #[with(Env::builder())]
     #[future(awt)]
     env: Env,
 ) {

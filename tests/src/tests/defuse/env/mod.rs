@@ -45,8 +45,6 @@ pub struct Env {
     pub wnear: FungibleToken,
     pub defuse: DefuseClient,
     pub poa_factory: PoaFactoryClient,
-
-    pub disable_ft_storage_deposit: bool,
 }
 
 impl Env {
@@ -147,10 +145,6 @@ impl Env {
         accounts: impl IntoIterator<Item: Into<AccountId>>,
         tokens: impl IntoIterator<Item = &'a AccountId>,
     ) {
-        if self.disable_ft_storage_deposit {
-            return;
-        }
-
         let all_accounts: HashSet<_> = accounts
             .into_iter()
             .map(Into::into)

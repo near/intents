@@ -31,7 +31,6 @@ pub struct EnvBuilder {
     roles: RolesConfig,
     self_as_super_admin: bool,
     deployer_as_super_admin: bool,
-    disable_ft_storage_deposit: bool,
 
     defuse_name: String,
     defuse_wasm: Vec<u8>,
@@ -47,7 +46,6 @@ impl Default for EnvBuilder {
             roles: RolesConfig::default(),
             self_as_super_admin: false,
             deployer_as_super_admin: false,
-            disable_ft_storage_deposit: false,
             defuse_name: "defuse".to_string(),
             defuse_wasm: DEFUSE_WASM.clone(),
             poa_factory_name: "poa-factory".to_string(),
@@ -78,11 +76,6 @@ impl EnvBuilder {
 
     pub const fn deployer_as_super_admin(mut self) -> Self {
         self.deployer_as_super_admin = true;
-        self
-    }
-
-    pub const fn disable_ft_storage_deposit(mut self) -> Self {
-        self.disable_ft_storage_deposit = true;
         self
     }
 
@@ -187,12 +180,11 @@ impl EnvBuilder {
             });
 
         Env {
-            defuse,
+            root,
             defuse_near,
             wnear,
+            defuse,
             poa_factory,
-            root,
-            disable_ft_storage_deposit: self.disable_ft_storage_deposit,
         }
     }
 
