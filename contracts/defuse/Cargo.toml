@@ -47,7 +47,6 @@ container_build_command = [
   "--locked",
   "--features=contract",
   "--abi-features=abi,contract",
-  "--no-embed-abi",
 ]
 
 [package.metadata.near.reproducible_build.variant.far]
@@ -62,7 +61,6 @@ container_build_command = [
   "--locked",
   "--features=contract,far",
   "--abi-features=abi,contract,far",
-  "--no-embed-abi",
 ]
 
 [features]
@@ -84,12 +82,11 @@ defuse-randomness.workspace = true
 defuse-tests.workspace = true
 
 anyhow.workspace = true
-chrono.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
 arbitrary.workspace = true
 futures.workspace = true
 itertools.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
-proptest = { workspace = true }
+proptest.workspace = true
 rstest.workspace = true

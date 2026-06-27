@@ -9,7 +9,6 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-chrono.workspace = true
 defuse-wallet.workspace = true
 futures.workspace = true
 near-kit.workspace = true

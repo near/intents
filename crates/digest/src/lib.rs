@@ -40,6 +40,9 @@ macro_rules! digest_cfg {
         }
 
         impl ::digest::HashMarker for $name {}
+
+        #[cfg(feature = "zeroize")]
+        impl ::zeroize::ZeroizeOnDrop for $name {}
     };
 }
 pub(crate) use digest_cfg;

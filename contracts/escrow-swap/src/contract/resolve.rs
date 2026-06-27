@@ -1,5 +1,4 @@
-use defuse_near_utils::UnwrapOrPanic;
-use near_sdk::{Gas, Promise, near};
+use near_sdk::{FunctionError, Gas, Promise, near};
 
 use crate::{
     Error, Result, State,
@@ -19,7 +18,7 @@ impl Contract {
         maker_dst: Option<Sent>,
     ) -> bool {
         self.resolve_transfers(maker_src, maker_dst)
-            .unwrap_or_panic()
+            .unwrap_or_else(|err| err.panic())
     }
 }
 

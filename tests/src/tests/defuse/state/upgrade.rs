@@ -1,231 +1,348 @@
-use defuse_sandbox::extensions::defuse::contract::{
-    contract::Role,
-    core::{
-        PublicKey,
-        amounts::Amounts,
-        fees::Pips,
-        intents::tokens::Transfer,
-        token_id::{TokenId, nep141::Nep141TokenId},
+use defuse_core::PublicKey;
+use defuse_core::intents::account::RemovePublicKey;
+use defuse_sandbox::{
+    extensions::{
+        acl::AccessControllableExt,
+        defuse::{
+            DefuseExt, DefuseSignerExt, HasPublicKeyArgs,
+            contract::Role,
+            core::{
+                PublicKey as DefusePublicKey,
+                amounts::Amounts,
+                fees::Pips,
+                intents::tokens::{FtWithdraw, Transfer},
+                token_id::{TokenId, nep141::Nep141TokenId},
+            },
+        },
+        mt::{Mt, MtBatchBalanceOfArgs},
     },
-    nep245::Token,
-};
-
-use crate::{
-    sandbox::{
-        Sandbox, SigningAccount,
-        extensions::{acl::AclExt, mt::MtViewExt},
-        near_sandbox::FetchData,
-    },
-    utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk},
-};
-use defuse_sandbox::extensions::defuse::{
-    account_manager::{AccountManagerExt, AccountViewExt},
-    intents::ExecuteIntentsExt,
-    signer::DefaultDefuseSignerExt,
-    state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt},
+    kit::{AccountIdRef, Near},
 };
 use defuse_test_utils::wasms::DEFUSE_WASM;
-use itertools::Itertools;
-use near_sdk::AccountId;
 use rstest::rstest;
+use std::collections::BTreeMap;
 
-use futures::future::try_join_all;
+use crate::{
+    tests::defuse::env::{Env, env},
+    utils::fixtures::public_key,
+};
 
-use crate::tests::defuse::env::Env;
+async fn balance_of(
+    near: &Near,
+    defuse_id: impl AsRef<AccountIdRef>,
+    account_id: impl AsRef<AccountIdRef>,
+    token_id: &str,
+) -> u128 {
+    near.contract::<Mt>(defuse_id.as_ref())
+        .mt_batch_balance_of(MtBatchBalanceOfArgs {
+            account_id: account_id.as_ref(),
+            token_ids: &[token_id.to_string()],
+        })
+        .await
+        .unwrap()
+        .into_iter()
+        .next()
+        .map_or(0, |v| v.0)
+}
 
-#[ignore = "only for simple upgrades"]
 #[rstest]
 #[tokio::test]
-async fn upgrade(ed25519_pk: PublicKey, secp256k1_pk: PublicKey, p256_pk: PublicKey) {
-    let sandbox = Sandbox::new("near".parse::<AccountId>().unwrap()).await;
-    let root = sandbox.root();
+async fn test_upgrade_with_persistence(
+    #[with(Env::builder().deployer_as_super_admin().legacy())]
+    #[future(awt)]
+    env: Env,
+    public_key: PublicKey,
+) {
+    let (user1, user2, ft) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_named_token("testtoken")
+    );
 
-    let contract = SigningAccount::new(root.sub_account("intents").unwrap(), root.signer().clone());
+    env.initial_ft_storage_deposit([user1.account_id(), user2.account_id()], [ft.contract_id()])
+        .await;
 
-    sandbox
-        .sandbox()
-        .patch_state(contract.id().clone())
-        .fetch_from("https://nearrpc.aurora.dev", FetchData::new().code())
+    let deposit_amount = 10_000u128;
+
+    futures::try_join!(
+        env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user1.account_id(), None),
+        env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user2.account_id(), None)
+    )
+    .unwrap();
+
+    let token_id = TokenId::Nep141(Nep141TokenId::new(ft.contract_id().clone())).to_string();
+
+    let get_pubkey = |near: &Near| {
+        let near_pubkey = near.public_key().expect("must have signer");
+        DefusePublicKey::Ed25519(
+            *near_pubkey
+                .as_ed25519_bytes()
+                .expect("ed25519 key required"),
+        )
+    };
+
+    let user1_pubkey = get_pubkey(&user1);
+    let user2_pubkey = get_pubkey(&user2);
+
+    // record state before upgrade
+    futures::join!(
+        async {
+            assert_eq!(
+                balance_of(
+                    &env,
+                    env.defuse.contract_id(),
+                    user1.account_id(),
+                    &token_id,
+                )
+                .await,
+                deposit_amount
+            );
+        },
+        async {
+            assert_eq!(
+                balance_of(
+                    &env,
+                    env.defuse.contract_id(),
+                    user2.account_id(),
+                    &token_id
+                )
+                .await,
+                deposit_amount
+            );
+        },
+        async {
+            assert!(
+                env.defuse
+                    .has_public_key(HasPublicKeyArgs {
+                        account_id: user1.account_id(),
+                        public_key: &user1_pubkey,
+                    })
+                    .await
+                    .unwrap()
+            );
+        },
+        async {
+            assert!(
+                env.defuse
+                    .has_public_key(HasPublicKeyArgs {
+                        account_id: user2.account_id(),
+                        public_key: &user2_pubkey,
+                    })
+                    .await
+                    .unwrap()
+            );
+        },
+    );
+
+    let fee_before = env.defuse.fee().await.unwrap();
+
+    user1
+        .defuse_add_public_key(env.defuse.contract_id(), public_key)
         .await
         .unwrap();
 
-    contract
-        .tx(contract.id().clone())
-        .deploy(DEFUSE_WASM.to_vec())
+    env.upgrade_defuse(DEFUSE_WASM.clone()).await;
+
+    // state persists after upgrade
+    futures::join!(
+        async {
+            assert_eq!(
+                balance_of(
+                    &env,
+                    env.defuse.contract_id(),
+                    user1.account_id(),
+                    &token_id
+                )
+                .await,
+                deposit_amount
+            );
+        },
+        async {
+            assert_eq!(
+                balance_of(
+                    &env,
+                    env.defuse.contract_id(),
+                    user2.account_id(),
+                    &token_id
+                )
+                .await,
+                deposit_amount
+            );
+        },
+        async {
+            assert!(
+                env.defuse
+                    .has_public_key(HasPublicKeyArgs {
+                        account_id: user1.account_id(),
+                        public_key: &user1_pubkey,
+                    })
+                    .await
+                    .unwrap()
+            );
+        },
+        async {
+            assert!(
+                env.defuse
+                    .has_public_key(HasPublicKeyArgs {
+                        account_id: user2.account_id(),
+                        public_key: &user2_pubkey,
+                    })
+                    .await
+                    .unwrap()
+            );
+        },
+        async {
+            assert_eq!(env.defuse.fee().await.unwrap(), fee_before);
+        }
+    );
+
+    // existing user can still receive deposits
+    let extra = 5_000u128;
+    env.defuse_ft_deposit_to(ft.contract_id(), extra, user1.account_id(), None)
         .await
         .unwrap();
 
     assert_eq!(
-        contract
-            .mt_balance_of(
-                "user.near".parse::<AccountId>().unwrap(),
-                "non-existent-token",
-            )
-            .await
-            .unwrap(),
-        0
-    );
-
-    for public_key in [ed25519_pk, secp256k1_pk, p256_pk] {
-        assert!(
-            contract
-                .has_public_key(&public_key.to_implicit_account_id(), &public_key)
-                .await
-                .unwrap()
-        );
-
-        assert!(
-            !contract
-                .has_public_key(contract.id(), &public_key)
-                .await
-                .unwrap()
-        );
-    }
-}
-
-// TODO: enable after fixing state migration
-#[ignore = "TODO"]
-#[rstest]
-#[tokio::test]
-async fn test_upgrade_with_persistence() {
-    // initialize with persistent state and migration from legacy
-    let env = Env::builder().build_with_migration().await;
-
-    // Make some changes existing users + create new users and token
-    let (user1, user2, user3, user4, ft1) = futures::join!(
-        env.create_user(),
-        env.create_user(),
-        env.create_named_user("first_new_user"),
-        env.create_named_user("second_new_user"),
-        env.create_token()
-    );
-
-    let existing_tokens = env.defuse.mt_tokens(..).await.unwrap();
-
-    // Check users
-    {
-        env.initial_ft_storage_deposit(
-            vec![user1.id(), user2.id(), user3.id(), user4.id()],
-            vec![ft1.id()],
+        balance_of(
+            &env,
+            env.defuse.contract_id(),
+            user1.account_id(),
+            &token_id
         )
-        .await;
+        .await,
+        deposit_amount + extra
+    );
 
-        let users = [&user1, &user2, &user3, &user4];
-
-        // Additional deposits to new users
-        try_join_all(
-            users
-                .iter()
-                .map(|user| env.defuse_ft_deposit_to(ft1.id(), 10_000, user.id(), None)),
+    // Transfer: user1 sends tokens to user2 within defuse
+    let transfer_amount = 1_000u128;
+    let transfer_payload = user1
+        .sign_defuse_payload_default(
+            &env.defuse,
+            [Transfer {
+                receiver_id: user2.account_id().clone(),
+                tokens: Amounts::new(BTreeMap::from([(
+                    TokenId::Nep141(Nep141TokenId::new(ft.contract_id().clone())),
+                    transfer_amount,
+                )])),
+                memo: None,
+                notification: None,
+            }],
         )
         .await
-        .expect("Failed to deposit to users");
+        .unwrap();
 
-        // Interactions between new and old users
-        {
-            let payloads =
-                futures::future::try_join_all(users.iter().combinations(2).map(|accounts| {
-                    let sender = accounts[0];
-                    let receiver = accounts[1];
-                    sender.sign_defuse_payload_default(
-                        &env.defuse,
-                        [Transfer {
-                            receiver_id: receiver.id().clone(),
-                            tokens: Amounts::new(
-                                [(TokenId::Nep141(Nep141TokenId::new(ft1.id().clone())), 1000)]
-                                    .into(),
-                            ),
-                            memo: None,
-                            notification: None,
-                        }],
-                    )
-                }))
-                .await
-                .unwrap();
+    env.defuse_simulate_and_execute_intents(env.defuse.contract_id().clone(), [transfer_payload])
+        .await
+        .unwrap();
 
-            env.simulate_and_execute_intents(env.defuse.id(), payloads)
-                .await
-                .unwrap();
-        }
-
-        // Check auth_by_predecessor
-        {
-            // On old user
-            user1
-                .disable_auth_by_predecessor_id(env.defuse.id())
-                .await
-                .unwrap();
-
-            assert!(
-                !env.defuse
-                    .is_auth_by_predecessor_id_enabled(user1.id())
-                    .await
-                    .unwrap()
+    futures::join!(
+        async {
+            assert_eq!(
+                balance_of(
+                    &env,
+                    env.defuse.contract_id(),
+                    user1.account_id(),
+                    &token_id
+                )
+                .await,
+                deposit_amount + extra - transfer_amount
             );
-
-            // On new user
-            user3
-                .disable_auth_by_predecessor_id(env.defuse.id())
-                .await
-                .unwrap();
-
-            assert!(
-                !env.defuse
-                    .is_auth_by_predecessor_id_enabled(user3.id())
-                    .await
-                    .unwrap()
+        },
+        async {
+            assert_eq!(
+                balance_of(
+                    &env,
+                    env.defuse.contract_id(),
+                    user2.account_id(),
+                    &token_id
+                )
+                .await,
+                deposit_amount + transfer_amount
             );
-        }
-    }
+        },
+    );
 
-    // Check tokens
-    {
-        let tokens = env.defuse.mt_tokens(..).await.unwrap();
+    // FtWithdraw: user2 withdraws tokens from defuse to their FT account
+    let withdraw_amount = 500u128;
+    let withdraw_payload = user2
+        .sign_defuse_payload_default(
+            &env.defuse,
+            [FtWithdraw {
+                token: ft.contract_id().clone(),
+                receiver_id: user2.account_id().clone(),
+                amount: withdraw_amount.into(),
+                memo: None,
+                msg: None,
+                storage_deposit: None,
+                min_gas: None,
+            }],
+        )
+        .await
+        .unwrap();
 
-        // New token
-        let expected: Vec<_> = existing_tokens
-            .clone()
-            .into_iter()
-            .chain(std::iter::once(Token {
-                token_id: TokenId::Nep141(Nep141TokenId::new(ft1.id().clone())).to_string(),
-                owner_id: None,
-            }))
-            .collect();
+    env.defuse_simulate_and_execute_intents(env.defuse.contract_id().clone(), [withdraw_payload])
+        .await
+        .unwrap();
 
-        assert_eq!(tokens, expected);
-    }
+    assert_eq!(
+        balance_of(
+            &env,
+            env.defuse.contract_id(),
+            user2.account_id(),
+            &token_id
+        )
+        .await,
+        deposit_amount + transfer_amount - withdraw_amount,
+    );
 
-    // Check fee
-    {
-        let fee = Pips::from_pips(100).unwrap();
+    // new user can register and deposit
+    let user3 = env.create_user().await;
+    env.initial_ft_storage_deposit([user3.account_id()], [ft.contract_id()])
+        .await;
 
-        env.acl_grant_role(env.defuse.id(), Role::FeesManager, user1.id())
-            .await
-            .expect("failed to grant role");
+    env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user3.account_id(), None)
+        .await
+        .unwrap();
 
-        user1
-            .set_fee(env.defuse.id(), fee)
-            .await
-            .expect("unable to set fee");
+    assert_eq!(
+        balance_of(
+            &env,
+            env.defuse.contract_id(),
+            user3.account_id(),
+            &token_id
+        )
+        .await,
+        deposit_amount
+    );
 
-        let current_fee = env.defuse.fee().await.unwrap();
+    // acl and fee management still works
+    env.acl_grant_role(
+        env.defuse.contract_id().clone(),
+        Role::FeesManager,
+        user1.account_id().clone(),
+    )
+    .await
+    .expect("failed to grant role after upgrade");
 
-        assert_eq!(current_fee, fee);
-    }
+    user1
+        .defuse_set_fee(
+            env.defuse.contract_id().clone(),
+            Pips::from_pips(100).unwrap(),
+        )
+        .await
+        .expect("failed to set fee after upgrade");
 
-    // Check salts
-    {
-        env.acl_grant_role(env.defuse.id(), Role::SaltManager, user1.id())
-            .await
-            .expect("failed to grant role");
+    let remove_public_key_payload = user1
+        .sign_defuse_payload_default(&env.defuse, [RemovePublicKey { public_key }])
+        .await
+        .unwrap();
 
-        let (_, new_salt) = user1
-            .update_current_salt(env.defuse.id())
-            .await
-            .expect("unable to rotate salt");
+    env.defuse_simulate_and_execute_intents(
+        env.defuse.contract_id(),
+        [remove_public_key_payload.clone()],
+    )
+    .await
+    .unwrap();
 
-        let current_salt = env.defuse.current_salt().await.unwrap();
-
-        assert_eq!(new_salt, current_salt);
-    }
+    assert_ne!(env.defuse.fee().await.unwrap(), fee_before);
 }

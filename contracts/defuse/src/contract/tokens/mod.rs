@@ -6,10 +6,10 @@ mod nep245;
 
 use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
-use defuse_near_utils::{Lock, REFUND_MEMO, UnwrapOrPanic, promise_result_checked_json_with_len};
+use defuse_near_utils::{Lock, REFUND_MEMO, promise_result_checked_json_with_len};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
-use near_sdk::{AccountId, AccountIdRef, Gas, env, json_types::U128};
+use near_sdk::{AccountId, AccountIdRef, FunctionError, Gas, env, json_types::U128};
 use std::borrow::Cow;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
@@ -144,9 +144,11 @@ impl Contract {
             .checked_add(
                 MT_RESOLVE_DEPOSIT_PER_TOKEN_GAS
                     .checked_mul(token_count)
-                    .unwrap_or_else(|| env::panic_str("gas calculation overflow")),
+                    .ok_or(DefuseError::GasOverflow)
+                    .unwrap_or_else(|err| err.panic()),
             )
-            .unwrap_or_else(|| env::panic_str("gas calculation overflow"))
+            .ok_or(DefuseError::GasOverflow)
+            .unwrap_or_else(|err| err.panic())
     }
 
     pub fn resolve_deposit_internal<'a, I>(&mut self, receiver_id: &AccountIdRef, tokens: I)
@@ -202,14 +204,14 @@ impl Contract {
                 .token_balances
                 .sub(token_id.clone(), refund_amount)
                 .ok_or(DefuseError::BalanceOverflow)
-                .unwrap_or_panic();
+                .unwrap_or_else(|err| err.panic());
 
             self.storage
                 .state
                 .total_supplies
                 .sub(token_id, refund_amount)
                 .ok_or(DefuseError::BalanceOverflow)
-                .unwrap_or_panic();
+                .unwrap_or_else(|err| err.panic());
         }
 
         if !burn_event.amounts.is_empty() {

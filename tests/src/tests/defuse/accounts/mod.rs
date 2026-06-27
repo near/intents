@@ -1,3 +1,4 @@
+#[cfg(feature = "imt")]
 mod account_sync;
 mod auth_by_predecessor_id;
 mod force;

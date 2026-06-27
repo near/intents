@@ -1,181 +1,88 @@
-use near_api::types::nft::NFTContractMetadata;
-use near_contract_standards::non_fungible_token::{Token, TokenId, metadata::TokenMetadata};
-use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
+use near_contract_standards::non_fungible_token::{Token, metadata::NFTContractMetadata};
+use near_kit::{
+    AccountIdRef, Action, Final, FunctionCallAction, Gas, Near, NearToken, NftContractMetadata,
+    NonFungibleToken,
+};
+use serde_json::json;
 
-use crate::{Account, SigningAccount, tx::FnCallBuilder};
+use crate::account::Account;
 
-pub trait NftExt {
-    async fn nft_transfer(
+pub trait NftAdminExt {
+    async fn deploy_vanilla_nft_issuer(
         &self,
-        collection: impl Into<AccountId>,
-        receiver_id: impl AsRef<AccountIdRef>,
-        token_id: impl AsRef<str>,
-        memo: Option<String>,
-    ) -> anyhow::Result<()>;
+        token_name: impl AsRef<str>,
+        owner_id: impl AsRef<AccountIdRef>,
+        metadata: &NFTContractMetadata,
+        wasm: impl Into<Vec<u8>>,
+    ) -> NonFungibleToken;
 
-    async fn nft_transfer_call(
+    async fn mint_nft(
         &self,
-        collection: impl Into<AccountId>,
-        receiver_id: impl AsRef<AccountIdRef>,
-        token_id: impl AsRef<str>,
-        memo: Option<String>,
-        msg: String,
-    ) -> anyhow::Result<bool>;
-
-    async fn nft_on_transfer(
-        &self,
-        sender_id: impl AsRef<AccountIdRef>,
-        receiver_id: impl Into<AccountId>,
-        previous_owner_id: impl AsRef<AccountIdRef>,
-        token_id: impl AsRef<str>,
-        msg: impl AsRef<str>,
-    ) -> anyhow::Result<bool>;
-
-    async fn nft_mint(
-        &self,
-        collection: impl Into<AccountId>,
+        collection: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<str>,
         token_owner_id: impl AsRef<AccountIdRef>,
-        token_metadata: &TokenMetadata,
     ) -> anyhow::Result<Token>;
 }
 
-impl NftExt for SigningAccount {
-    async fn nft_transfer(
+impl NftAdminExt for Near {
+    async fn deploy_vanilla_nft_issuer(
         &self,
-        collection: impl Into<AccountId>,
-        receiver_id: impl AsRef<AccountIdRef>,
-        token_id: impl AsRef<str>,
-        memo: Option<String>,
-    ) -> anyhow::Result<()> {
-        self.tx(collection)
-            .function_call(
-                FnCallBuilder::new("nft_transfer")
-                    .json_args(json!({
-                        "receiver_id": receiver_id.as_ref(),
-                        "token_id": token_id.as_ref(),
-                        "memo": memo,
+        token_name: impl AsRef<str>,
+        owner_id: impl AsRef<AccountIdRef>,
+        metadata: &NFTContractMetadata,
+        wasm: impl Into<Vec<u8>>,
+    ) -> NonFungibleToken {
+        let account = self
+            .deploy_sub_contract(
+                token_name,
+                NearToken::from_near(100),
+                wasm,
+                Some(FunctionCallAction {
+                    method_name: "new".to_string(),
+                    args: serde_json::to_vec(&json!({
+                        "owner_id": owner_id.as_ref(),
+                        "metadata": metadata
                     }))
-                    .with_deposit(NearToken::from_yoctonear(1)),
+                    .unwrap(),
+                    gas: Gas::from_tgas(30),
+                    deposit: NearToken::from_near(0),
+                }),
             )
-            .await?;
+            .await
+            .unwrap();
 
-        Ok(())
+        self.nft(account.account_id()).unwrap()
     }
 
-    async fn nft_transfer_call(
+    async fn mint_nft(
         &self,
-        collection: impl Into<AccountId>,
-        receiver_id: impl AsRef<AccountIdRef>,
-        token_id: impl AsRef<str>,
-        memo: Option<String>,
-        msg: String,
-    ) -> anyhow::Result<bool> {
-        self.tx(collection)
-            .function_call(
-                FnCallBuilder::new("nft_transfer_call")
-                    .json_args(json!({
-                            "receiver_id": receiver_id.as_ref(),
-                            "token_id": token_id.as_ref(),
-                            "memo": memo,
-                        "msg": msg,
-
-                    }))
-                    .with_deposit(NearToken::from_yoctonear(1)),
-            )
-            .await?
-            .json()
-            .map_err(Into::into)
-    }
-
-    async fn nft_on_transfer(
-        &self,
-        sender_id: impl AsRef<AccountIdRef>,
-        receiver_id: impl Into<AccountId>,
-        previous_owner_id: impl AsRef<AccountIdRef>,
-        token_id: impl AsRef<str>,
-        msg: impl AsRef<str>,
-    ) -> anyhow::Result<bool> {
-        self.tx(receiver_id)
-            .function_call(FnCallBuilder::new("nft_on_transfer").json_args(json!({
-                    "sender_id": sender_id.as_ref(),
-                    "previous_owner_id": previous_owner_id.as_ref(),
-                    "token_id": token_id.as_ref(),
-                    "msg": msg.as_ref(),
-
-            })))
-            .await?
-            .json()
-            .map_err(Into::into)
-    }
-
-    async fn nft_mint(
-        &self,
-        collection: impl Into<AccountId>,
+        collection: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<str>,
         token_owner_id: impl AsRef<AccountIdRef>,
-        token_metadata: &TokenMetadata,
     ) -> anyhow::Result<Token> {
-        self.tx(collection)
-            .function_call(
-                FnCallBuilder::new("nft_mint")
-                    .json_args(json!({
-                            "token_id": token_id.as_ref(),
-                            "token_owner_id": token_owner_id.as_ref(),
-                            "token_metadata": token_metadata,
-
-                    }))
-                    .with_deposit(NearToken::from_near(1)),
-            )
+        self.transaction(collection.as_ref())
+            .add_action(Action::FunctionCall(FunctionCallAction {
+                method_name: "nft_mint".to_string(),
+                args: serde_json::to_vec(&json!({
+                    "token_id": token_id.as_ref(),
+                    "token_owner_id": token_owner_id.as_ref(),
+                    "token_metadata": NftContractMetadata {
+                        spec: String::default(),
+                        name: String::default(),
+                        symbol: String::default(),
+                        icon: None,
+                        base_uri: None,
+                        reference: None,
+                        reference_hash: None
+                    },
+                }))
+                .unwrap(),
+                gas: Gas::from_tgas(50),
+                deposit: NearToken::from_near(1),
+            }))
+            .wait_until(Final)
             .await?
             .json()
             .map_err(Into::into)
-    }
-}
-
-pub trait NftDeployerExt {
-    async fn deploy_vanilla_nft_issuer(
-        &self,
-        token_name: impl AsRef<str>,
-        owner_id: impl AsRef<AccountIdRef>,
-        metadata: NFTContractMetadata,
-        wasm: impl Into<Vec<u8>>,
-    ) -> anyhow::Result<SigningAccount>;
-}
-
-impl NftDeployerExt for SigningAccount {
-    async fn deploy_vanilla_nft_issuer(
-        &self,
-        token_name: impl AsRef<str>,
-        owner_id: impl AsRef<AccountIdRef>,
-        metadata: NFTContractMetadata,
-        wasm: impl Into<Vec<u8>>,
-    ) -> anyhow::Result<Self> {
-        self.deploy_sub_contract(
-            token_name,
-            NearToken::from_near(100),
-            wasm.into(),
-            FnCallBuilder::new("new").json_args(json!({
-                "owner_id": owner_id.as_ref(),
-                "metadata": metadata
-            })),
-        )
-        .await
-    }
-}
-
-pub trait NftViewExt {
-    async fn nft_token(&self, token_id: &TokenId) -> anyhow::Result<Option<Token>>;
-}
-
-impl NftViewExt for Account {
-    async fn nft_token(&self, token_id: &TokenId) -> anyhow::Result<Option<Token>> {
-        self.call_view_function_json(
-            "nft_token",
-            json!({
-                "token_id": token_id
-            }),
-        )
-        .await
     }
 }

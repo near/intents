@@ -1,24 +1,32 @@
-use defuse::core::intents::MaybeIntentEvent;
+#![allow(clippy::cloned_ref_to_slice_refs)]
+
+use defuse_core::intents::MaybeIntentEvent;
 use defuse_randomness::{Rng, RngExt};
-use defuse_sandbox::extensions::defuse::contract::core::{
-    Deadline, Nonce,
-    accounts::{AccountEvent, NonceEvent},
-    amounts::Amounts,
-    crypto::Payload,
-    events::DefuseEvent,
-    intents::{DefuseIntents, tokens::Transfer},
-    token_id::{TokenId, nep141::Nep141TokenId},
-    tokens::TransferEvent,
+use defuse_sandbox::{
+    extensions::{
+        defuse::{
+            DefuseExt, DefuseSignerExt, MultiPayloadArgs,
+            core::{
+                Nonce, Timestamp,
+                accounts::{AccountEvent, NonceEvent},
+                amounts::Amounts,
+                crypto::Payload,
+                events::DefuseEvent,
+                intents::{DefuseIntents, tokens::Transfer},
+                token_id::{TokenId, nep141::Nep141TokenId},
+                tokens::TransferEvent,
+            },
+        },
+        mt::{Mt, MtBalanceOfArgs},
+    },
+    kit::{AccountId, AccountIdRef, CryptoHash, sandbox::SandboxConfig},
 };
-use defuse_sandbox::extensions::defuse::{
-    intents::{ExecuteIntentsExt, SimulateIntents},
-    signer::DefuseSignerExt,
-};
-use near_sdk::{AccountId, AccountIdRef, AsNep297Event, CryptoHash, serde_json};
+use defuse_test_utils::random::rng;
+use near_sdk_core::events::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 
-use crate::{sandbox::extensions::mt::MtViewExt, tests::defuse::env::Env, utils::random::rng};
+use crate::tests::defuse::env::{Env, EnvBuilder, env};
 
 pub struct AccountNonceIntentEvent(AccountId, Nonce, CryptoHash);
 
@@ -29,14 +37,14 @@ impl AccountNonceIntentEvent {
         payload: &impl Payload,
     ) -> Self {
         let acc = account_id.as_ref().to_owned();
-        Self(acc, nonce, payload.hash())
+        Self(acc, nonce, payload.hash().into())
     }
 
     pub fn into_event(self) -> DefuseEvent<'static> {
         DefuseEvent::IntentsExecuted(
             vec![MaybeIntentEvent::new_intent(
                 AccountEvent::new(self.0, NonceEvent::new(self.1)),
-                self.2,
+                *self.2.as_bytes(),
             )]
             .into(),
         )
@@ -44,7 +52,9 @@ impl AccountNonceIntentEvent {
 }
 
 mod ft_withdraw;
+#[cfg(feature = "imt")]
 mod imt_burn;
+#[cfg(feature = "imt")]
 mod imt_mint;
 mod legacy_nonce;
 mod native_withdraw;
@@ -55,28 +65,28 @@ mod token_diff;
 mod transfer;
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
-    let env = Env::builder().build().await;
-
+async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: impl Rng) {
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
-    let ft_id = TokenId::from(Nep141TokenId::new(ft.id().clone()));
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
 
-    env.initial_ft_storage_deposit(vec![user.id(), other_user.id()], vec![ft.id()])
-        .await;
+    env.initial_ft_storage_deposit(
+        vec![user.account_id(), other_user.account_id()],
+        vec![ft.contract_id()],
+    )
+    .await;
 
     // deposit
-    env.defuse_ft_deposit_to(ft.id(), 1000, user.id(), None)
+    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.account_id(), None)
         .await
         .unwrap();
 
     let nonce = rng.random();
 
     let transfer_intent = Transfer {
-        receiver_id: other_user.id().clone(),
+        receiver_id: other_user.account_id().clone(),
         tokens: Amounts::new(std::iter::once((ft_id.clone(), 1000)).collect()),
         memo: None,
         notification: None,
@@ -84,9 +94,9 @@ async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
 
     let transfer_intent_payload = user
         .sign_defuse_message(
-            env.defuse.id(),
+            env.defuse.contract_id(),
             nonce,
-            Deadline::MAX,
+            Timestamp::MAX,
             DefuseIntents {
                 intents: vec![transfer_intent.clone().into()],
             },
@@ -94,7 +104,9 @@ async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
         .await;
     let result = env
         .defuse
-        .simulate_intents([transfer_intent_payload.clone()])
+        .simulate_intents(MultiPayloadArgs {
+            signed: &[transfer_intent_payload.clone()],
+        })
         .await
         .unwrap();
 
@@ -103,7 +115,7 @@ async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
     // Prepare expected transfer event
     let expected_log = DefuseEvent::Transfer(Cow::Owned(vec![MaybeIntentEvent::new_intent(
         AccountEvent {
-            account_id: user.id().clone().into(),
+            account_id: user.account_id().clone().into(),
             event: TransferEvent {
                 receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
                 tokens: transfer_intent.tokens,
@@ -131,48 +143,63 @@ async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
 
     // Verify balances haven't changed (simulate is a view method)
     assert_eq!(
-        env.defuse
-            .mt_balance_of(user.id(), &ft_id.to_string())
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: user.account_id(),
+                token_id: &ft_id.to_string()
+            })
             .await
-            .unwrap(),
+            .unwrap()
+            .0,
         1000
     );
     assert_eq!(
-        env.defuse
-            .mt_balance_of(other_user.id(), &ft_id.to_string())
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: other_user.account_id(),
+                token_id: &ft_id.to_string()
+            })
             .await
-            .unwrap(),
+            .unwrap()
+            .0,
         0
     );
 }
 
-// TODO: fix this - update genesis account to test.near or update hardcoded payload
-#[ignore = "TODO"]
 #[rstest]
 #[tokio::test]
 async fn webauthn() {
+    const ROOT_ID: &AccountIdRef = AccountIdRef::new_or_panic("test.near");
+    const DEFUSE_NAME: &str = "defuse";
+    const POA_FACTORY_NAME: &str = "poa-factory";
     const SIGNER_ID: &AccountIdRef =
         AccountIdRef::new_or_panic("0x3602b546589a8fcafdce7fad64a46f91db0e4d50");
 
-    let env = Env::builder().build().await;
+    let sandbox = SandboxConfig::builder().root_account(ROOT_ID).fresh().await;
+
+    let env = EnvBuilder::default()
+        .defuse_name(DEFUSE_NAME)
+        .poa_factory_name(POA_FACTORY_NAME)
+        .build(sandbox.client())
+        .await;
 
     let (user, ft) = futures::join!(
         env.create_named_user("user1"),
         env.create_named_token("ft1")
     );
 
-    let ft_id = TokenId::from(Nep141TokenId::new(ft.id().clone()));
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
 
-    env.initial_ft_storage_deposit(vec![user.id()], vec![ft.id()])
+    env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
         .await;
 
     // deposit
-    env.defuse_ft_deposit_to(ft.id(), 2000, SIGNER_ID, None)
+    env.defuse_ft_deposit_to(ft.contract_id(), 2000, SIGNER_ID, None)
         .await
         .unwrap();
 
     env
-        .simulate_and_execute_intents(env.defuse.id(), [serde_json::from_str(r#"{
+        .defuse_simulate_and_execute_intents(env.defuse.contract_id(), [serde_json::from_str(r#"{
   "standard": "webauthn",
   "payload": "{\"signer_id\":\"0x3602b546589a8fcafdce7fad64a46f91db0e4d50\",\"verifying_contract\":\"defuse.test.near\",\"deadline\":\"2050-03-30T00:00:00Z\",\"nonce\":\"A3nsY1GMVjzyXL3mUzOOP3KT+5a0Ruy+QDNWPhchnxM=\",\"intents\":[{\"intent\":\"transfer\",\"receiver_id\":\"user1.test.near\",\"tokens\":{\"nep141:ft1.poa-factory.test.near\":\"1000\"}}]}",
   "public_key": "p256:2V8Np9vGqLiwVZ8qmMmpkxU7CTRqje4WtwFeLimSwuuyF1rddQK5fELiMgxUnYbVjbZHCNnGc6fAe4JeDcVxgj3Q",
@@ -191,17 +218,25 @@ async fn webauthn() {
         .unwrap();
 
     assert_eq!(
-        env.defuse
-            .mt_balance_of(user.id(), &ft_id.to_string())
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: user.account_id(),
+                token_id: &ft_id.to_string()
+            })
             .await
-            .unwrap(),
+            .unwrap()
+            .0,
         2000
     );
     assert_eq!(
-        env.defuse
-            .mt_balance_of(&SIGNER_ID.to_owned(), &ft_id.to_string())
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: SIGNER_ID,
+                token_id: &ft_id.to_string()
+            })
             .await
-            .unwrap(),
+            .unwrap()
+            .0,
         0
     );
 }
@@ -209,7 +244,7 @@ async fn webauthn() {
 // #[tokio::test]
 // #[rstest]
 // #[trace]
-// async fn ton_connect_sign_intent_example() {
+// async fn ton_connect_sign_intent_example(#[future(awt)] env: Env) {
 //     pub const DUMMY_MSG_ADDRESS: MsgAddress = MsgAddress {
 //         workchain_id: 1234i32,
 //         address: [12u8; 32],

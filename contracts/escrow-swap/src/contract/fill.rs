@@ -1,8 +1,9 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
-use defuse_near_utils::{PromiseExt, UnwrapOrPanic};
+use defuse_near_utils::PromiseExt;
 use defuse_num_utils::{CheckedDiv, CheckedMul};
-use near_sdk::{AccountId, AccountIdRef, Promise, PromiseOrValue};
+use defuse_time::Timestamp;
+use near_sdk::{AccountId, AccountIdRef, FunctionError, Promise, PromiseOrValue};
 
 use crate::{
     Error, Params, ProtocolFees, Result, State,
@@ -28,7 +29,7 @@ impl State {
         if msg.price < params.price {
             return Err(Error::PriceTooLow);
         }
-        if msg.deadline.has_expired() {
+        if msg.deadline < Timestamp::now() {
             return Err(Error::DeadlineExpired);
         }
 
@@ -166,7 +167,7 @@ impl State {
                 *out = out
                     .checked_sub(*fee_amount)
                     .ok_or(Error::ExcessiveFees)
-                    .unwrap_or_panic(); // avoid too much nesting
+                    .unwrap_or_else(|err| err.panic()); // avoid too much nesting
             })
             .map(|(collector, fee_amount)| {
                 token.clone().send(

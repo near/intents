@@ -14,7 +14,7 @@ use defuse_core::{
     intents::{MaybeIntentEvent, account::SetAuthByPredecessorId},
 };
 
-use defuse_near_utils::{Lock, NestPrefix, UnwrapOrPanic};
+use defuse_near_utils::{Lock, NestPrefix};
 use defuse_serde_utils::base64::AsBase64;
 
 use near_sdk::{
@@ -70,7 +70,7 @@ impl AccountManager for Contract {
             false,
             false,
         )
-        .unwrap_or_panic();
+        .unwrap_or_else(|err| err.panic());
     }
 }
 
@@ -134,7 +134,8 @@ impl Contract {
         account_id: &AccountIdRef,
         public_key: PublicKey,
     ) {
-        State::add_public_key(self, account_id.into(), public_key).unwrap_or_panic();
+        State::add_public_key(self, account_id.into(), public_key)
+            .unwrap_or_else(|err| err.panic());
 
         DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_fn_call(AccountEvent::new(
             Cow::Borrowed(account_id),
@@ -150,7 +151,8 @@ impl Contract {
         account_id: &AccountIdRef,
         public_key: PublicKey,
     ) {
-        State::remove_public_key(self, account_id.into(), public_key).unwrap_or_panic();
+        State::remove_public_key(self, account_id.into(), public_key)
+            .unwrap_or_else(|err| err.panic());
 
         DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_fn_call(AccountEvent::new(
             Cow::Borrowed(account_id),

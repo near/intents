@@ -1,156 +1,46 @@
-use near_api::{Account as NearApiAccount, PublicKey, types::AccessKey};
-use near_sdk::{AccountId, AccountIdRef, serde_json::json};
+use anyhow::Result;
+use near_kit::{AccountId, AccountIdRef, Gas, Near};
+use serde::Serialize;
 
-use crate::{Account, SigningAccount, tx::FnCallBuilder};
+use crate::{extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};
 
-pub trait AclViewExt {
-    async fn view_access_keys(&self) -> anyhow::Result<Vec<(PublicKey, AccessKey)>>;
+#[near_kit::contract]
+pub trait AccessControllable {
+    fn acl_has_role(&self, args: AclRoleArgs) -> bool;
+    #[call]
+    fn acl_grant_role(&mut self, args: AclRoleArgs) -> Option<bool>;
 }
 
-pub trait AclExt {
-    async fn acl_add_super_admin(
-        &self,
-        contract_id: impl Into<AccountId>,
-        account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()>;
+#[derive(Serialize)]
+pub struct AclRoleArgs<'a> {
+    pub role: &'a str,
+    pub account_id: &'a AccountIdRef,
+}
 
-    async fn acl_revoke_super_admin(
-        &self,
-        contract_id: impl Into<AccountId>,
-        account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()>;
-
-    async fn acl_add_admin(
-        &self,
-        contract_id: impl Into<AccountId>,
-        role: impl Into<String>,
-        account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()>;
-
-    async fn acl_revoke_admin(
-        &self,
-        contract_id: impl Into<AccountId>,
-        role: impl Into<String>,
-        account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()>;
-
+pub trait AccessControllableExt {
     async fn acl_grant_role(
         &self,
         contract_id: impl Into<AccountId>,
         role: impl Into<String>,
         account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()>;
-
-    async fn acl_revoke_role(
-        &self,
-        contract_id: impl Into<AccountId>,
-        role: impl Into<String>,
-        account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()>;
+    ) -> Result<SuccessfulExecutionOutcome>;
 }
 
-impl AclViewExt for Account {
-    async fn view_access_keys(&self) -> anyhow::Result<Vec<(PublicKey, AccessKey)>> {
-        NearApiAccount(self.id().clone())
-            .list_keys()
-            .fetch_from(self.network_config())
-            .await
-            .map(|d| d.data)
-            .map_err(Into::into)
-    }
-}
-
-impl AclExt for SigningAccount {
-    async fn acl_add_super_admin(
-        &self,
-        contract_id: impl Into<AccountId>,
-        account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()> {
-        self.tx(contract_id)
-            .function_call(FnCallBuilder::new("acl_add_super_admin").json_args(json!({
-            "account_id": account_id.as_ref(),
-            })))
-            .await?;
-
-        Ok(())
-    }
-
-    async fn acl_revoke_super_admin(
-        &self,
-        contract_id: impl Into<AccountId>,
-        account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()> {
-        self.tx(contract_id)
-            .function_call(
-                FnCallBuilder::new("acl_revoke_super_admin").json_args(json!({
-                "account_id": account_id.as_ref(),
-                })),
-            )
-            .await?;
-
-        Ok(())
-    }
-
-    async fn acl_add_admin(
-        &self,
-        contract_id: impl Into<AccountId>,
-        role: impl Into<String>,
-        account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()> {
-        self.tx(contract_id)
-            .function_call(FnCallBuilder::new("acl_add_admin").json_args(json!({
-                "role": role.into(),
-                "account_id": account_id.as_ref(),                })))
-            .await?;
-
-        Ok(())
-    }
-
-    async fn acl_revoke_admin(
-        &self,
-        contract_id: impl Into<AccountId>,
-        role: impl Into<String>,
-        account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()> {
-        self.tx(contract_id)
-            .function_call(FnCallBuilder::new("acl_revoke_admin").json_args(json!({
-                "role": role.into(),
-                "account_id": account_id.as_ref(),
-            })))
-            .await?;
-
-        Ok(())
-    }
-
+impl AccessControllableExt for Near {
     async fn acl_grant_role(
         &self,
         contract_id: impl Into<AccountId>,
         role: impl Into<String>,
         account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()> {
-        self.tx(contract_id)
-            .function_call(FnCallBuilder::new("acl_grant_role").json_args(json!({
-                "role": role.into(),
-                "account_id": account_id.as_ref(),
-            })))
-            .await?;
-
-        Ok(())
-    }
-
-    async fn acl_revoke_role(
-        &self,
-        contract_id: impl Into<AccountId>,
-        role: impl Into<String>,
-        account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()> {
-        self.tx(contract_id)
-            .function_call(FnCallBuilder::new("acl_revoke_role").json_args(json!({
-                "role": role.into(),
-                "account_id": account_id.as_ref(),
-            })))
-            .await?;
-
-        Ok(())
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.fn_call(
+            contract_id,
+            AccessControllable::acl_grant_role(AclRoleArgs {
+                role: &role.into(),
+                account_id: account_id.as_ref(),
+            })
+            .gas(Gas::from_tgas(30)),
+        )
+        .await
     }
 }

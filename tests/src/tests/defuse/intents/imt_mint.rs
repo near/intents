@@ -1,35 +1,40 @@
-use defuse::contract::config::{DefuseConfig, RolesConfig};
-use defuse::core::amounts::Amounts;
-use defuse::core::fees::FeesConfig;
-use defuse::core::intents::{imt::ImtMint, tokens::NotifyOnTransfer};
-use defuse::core::token_id::TokenId;
-use defuse::core::token_id::imt::ImtTokenId;
-use defuse::core::token_id::nep245::Nep245TokenId;
-use defuse::core::tokens::MAX_TOKEN_ID_LEN;
 use defuse_fees::Pips;
-use defuse_sandbox::extensions::defuse::event::ToEventLog;
-use defuse_sandbox::extensions::mt::MtViewExt;
-use defuse_sandbox::tx::FnCallBuilder;
+use defuse_sandbox::{
+    account::Account,
+    extensions::{
+        defuse::{
+            DefuseDeployerExt, DefuseExt, DefuseSignerExt, ToEventLog,
+            contract::config::{DefuseConfig, RolesConfig},
+            core::{
+                amounts::Amounts,
+                fees::FeesConfig,
+                intents::{imt::ImtMint, tokens::NotifyOnTransfer},
+                token_id::{TokenId, imt::ImtTokenId, nep245::Nep245TokenId},
+                tokens::MAX_TOKEN_ID_LEN,
+            },
+        },
+        mt::{Mt, MtBalanceOfArgs, MtExt},
+    },
+    kit::{AccountId, Gas, NearToken},
+};
 use defuse_test_utils::asserts::ResultAssertsExt;
 use multi_token_receiver_stub::MTReceiverMode;
 use rstest::rstest;
 
-use near_sdk::{AccountId, Gas, NearToken};
-
-use crate::tests::defuse::env::Env;
-use crate::tests::defuse::intents::transfer::TransferCallExpectation;
-use defuse_sandbox::assert_eq_defuse_event_logs;
-use defuse_sandbox::extensions::defuse::deployer::DefuseExt;
-use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
-use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
+use crate::tests::defuse::{
+    env::{Env, EnvBuilder, env},
+    intents::transfer::TransferCallExpectation,
+    utils::assert_eq_defuse_event_logs,
+};
 use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn imt_mint_intent() {
-    let env = Env::builder().build().await;
-
+async fn imt_mint_intent(
+    #[future(awt)]
+    #[with(EnvBuilder::default().imt())]
+    env: Env,
+) {
     let user = env.create_user().await;
 
     let token = "sometoken.near".to_string();
@@ -39,7 +44,7 @@ async fn imt_mint_intent() {
     let intent = ImtMint {
         tokens: Amounts::new(std::iter::once((token.clone(), amount)).collect()),
         memo: Some(memo.to_string()),
-        receiver_id: user.id().clone(),
+        receiver_id: user.account_id().clone(),
         notification: None,
     };
     let mint_payload = user
@@ -47,30 +52,35 @@ async fn imt_mint_intent() {
         .await
         .unwrap();
 
-    let result = env
-        .simulate_and_execute_intents(env.defuse.id(), [mint_payload.clone()])
+    let (result, _) = env
+        .defuse_simulate_and_execute_intents(env.defuse.contract_id(), [mint_payload.clone()])
         .await
         .unwrap();
 
-    let mt_id = TokenId::from(ImtTokenId::new(user.id().clone(), token.clone()));
+    let mt_id = TokenId::from(ImtTokenId::new(user.account_id().clone(), token.clone()));
 
     assert_eq!(
-        env.defuse
-            .mt_balance_of(user.id(), &mt_id.to_string())
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: user.account_id(),
+                token_id: &mt_id.to_string()
+            })
             .await
-            .unwrap(),
+            .unwrap()
+            .0,
         amount
     );
 
-    assert_eq_defuse_event_logs!(mint_payload.to_event_log(), result.logs());
+    assert_eq_defuse_event_logs(mint_payload.to_event_log(), result.logs());
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn failed_imt_mint_intent() {
-    let env = Env::builder().build().await;
-
+async fn failed_imt_mint_intent(
+    #[future(awt)]
+    #[with(EnvBuilder::default().imt())]
+    env: Env,
+) {
     let user = env.create_user().await;
 
     let token = ["a"; MAX_TOKEN_ID_LEN + 1].join("");
@@ -79,7 +89,7 @@ async fn failed_imt_mint_intent() {
     let intent = ImtMint {
         tokens: Amounts::new(std::iter::once((token.clone(), amount)).collect()),
         memo: None,
-        receiver_id: user.id().clone(),
+        receiver_id: user.account_id().clone(),
         notification: None,
     };
     let mint_payload = user
@@ -87,17 +97,18 @@ async fn failed_imt_mint_intent() {
         .await
         .unwrap();
 
-    env.simulate_and_execute_intents(env.defuse.id(), [mint_payload.clone()])
+    env.defuse_simulate_and_execute_intents(env.defuse.contract_id(), [mint_payload.clone()])
         .await
         .assert_err_contains("token_id is too long");
 }
 
 #[rstest]
-#[trace]
 #[tokio::test]
-async fn imt_mint_intent_to_defuse() {
-    let env = Env::builder().build().await;
-
+async fn imt_mint_intent_to_defuse(
+    #[future(awt)]
+    #[with(EnvBuilder::default().imt())]
+    env: Env,
+) {
     let user = env.create_user().await;
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
 
@@ -105,24 +116,22 @@ async fn imt_mint_intent_to_defuse() {
         .deploy_defuse(
             "defuse2",
             DefuseConfig {
-                wnear_id: env.wnear.id().clone(),
+                wnear_id: env.wnear.contract_id().clone(),
                 fees: FeesConfig {
                     fee: Pips::ZERO,
-                    fee_collector: env.id().clone(),
+                    fee_collector: env.account_id().clone(),
                 },
                 roles: RolesConfig::default(),
             },
             DEFUSE_WASM.clone(),
         )
-        .await
-        .unwrap();
-
+        .await;
     let ft = "newtoken.near".to_string();
 
     // large gas limit
     {
         let mint_intent = ImtMint {
-            receiver_id: defuse2.id().clone(),
+            receiver_id: defuse2.account_id().clone(),
             tokens: Amounts::new(std::iter::once((ft.clone(), 1000)).collect()),
             memo: None,
             notification: NotifyOnTransfer::new(other_user_id.to_string())
@@ -135,7 +144,7 @@ async fn imt_mint_intent_to_defuse() {
             .await
             .unwrap();
 
-        env.simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
+        env.defuse_simulate_and_execute_intents(env.defuse.contract_id(), [transfer_payload])
             .await
             .expect_err("Exceeded the prepaid gas");
     }
@@ -143,7 +152,7 @@ async fn imt_mint_intent_to_defuse() {
     // Should pass default gas limit in case of low gas
     {
         let mint_intent = ImtMint {
-            receiver_id: defuse2.id().clone(),
+            receiver_id: defuse2.account_id().clone(),
             tokens: Amounts::new(std::iter::once((ft.clone(), 1000)).collect()),
             memo: None,
             notification: NotifyOnTransfer::new(other_user_id.to_string())
@@ -156,29 +165,40 @@ async fn imt_mint_intent_to_defuse() {
             .await
             .unwrap();
 
-        assert!(defuse2.mt_tokens(..).await.unwrap().is_empty());
+        assert!(
+            env.mt_tokens(defuse2.account_id(), ..)
+                .await
+                .unwrap()
+                .is_empty()
+        );
 
-        let res = env
-            .simulate_and_execute_intents(env.defuse.id(), [mint_payload.clone()])
+        let (res, _) = env
+            .defuse_simulate_and_execute_intents(env.defuse.contract_id(), [mint_payload.clone()])
             .await
             .unwrap();
 
-        assert_eq_defuse_event_logs!(mint_payload.to_event_log(), res.logs());
+        assert_eq_defuse_event_logs(mint_payload.to_event_log(), res.logs());
 
-        let mt_token = TokenId::from(ImtTokenId::new(user.id().clone(), ft.clone()));
+        let mt_token = TokenId::from(ImtTokenId::new(user.account_id().clone(), ft.clone()));
 
         assert_eq!(
-            env.defuse
-                .mt_balance_of(defuse2.id(), &mt_token.to_string())
+            env.contract::<Mt>(env.defuse.contract_id())
+                .mt_balance_of(MtBalanceOfArgs {
+                    account_id: defuse2.account_id(),
+                    token_id: &mt_token.to_string(),
+                })
                 .await
-                .unwrap(),
+                .unwrap()
+                .0,
             1000
         );
 
-        assert_eq!(defuse2.mt_tokens(..).await.unwrap().len(), 1);
         assert_eq!(
-            defuse2
-                .mt_tokens_for_owner(&other_user_id, ..)
+            env.mt_tokens(defuse2.account_id(), ..).await.unwrap().len(),
+            1
+        );
+        assert_eq!(
+            env.mt_tokens_for_owner(defuse2.account_id(), &other_user_id, ..)
                 .await
                 .unwrap()
                 .len(),
@@ -186,20 +206,23 @@ async fn imt_mint_intent_to_defuse() {
         );
 
         let defuse_ft1: TokenId =
-            Nep245TokenId::new(env.defuse.id().clone(), mt_token.to_string()).into();
+            Nep245TokenId::new(env.defuse.contract_id().clone(), mt_token.to_string()).into();
 
         assert_eq!(
-            defuse2
-                .mt_balance_of(&other_user_id, &defuse_ft1.to_string())
+            env.contract::<Mt>(defuse2.account_id())
+                .mt_balance_of(MtBalanceOfArgs {
+                    account_id: &other_user_id,
+                    token_id: &defuse_ft1.to_string(),
+                })
                 .await
-                .unwrap(),
+                .unwrap()
+                .0,
             1000
         );
     }
 }
 
 #[rstest]
-#[trace]
 #[case::nothing_to_refund(TransferCallExpectation{
     mode: MTReceiverMode::AcceptAll,
     intent_transfer_amount: Some(1_000),
@@ -231,12 +254,15 @@ async fn imt_mint_intent_to_defuse() {
     expected_receiver_balance: 0,
 })]
 #[tokio::test]
-async fn imt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCallExpectation) {
+async fn imt_mint_intent_with_msg_to_receiver_smc(
+    #[future(awt)]
+    #[with(EnvBuilder::default().imt())]
+    env: Env,
+    #[case] expectation: TransferCallExpectation,
+) {
     let initial_amount = expectation
         .intent_transfer_amount
         .expect("Transfer amount should be specified");
-
-    let env = Env::builder().build().await;
 
     let user = env.create_user().await;
     let mt_receiver = env
@@ -244,7 +270,7 @@ async fn imt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferC
             "receiver_stub",
             NearToken::from_near(100),
             MT_RECEIVER_STUB_WASM.to_vec(),
-            None::<FnCallBuilder>,
+            None,
         )
         .await
         .unwrap();
@@ -254,7 +280,7 @@ async fn imt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferC
     let msg = serde_json::to_string(&expectation.mode).unwrap();
 
     let mint_intent = ImtMint {
-        receiver_id: mt_receiver.id().clone(),
+        receiver_id: mt_receiver.account_id().clone(),
         tokens: Amounts::new(std::iter::once((ft1.clone(), initial_amount)).collect()),
         memo: None,
         notification: NotifyOnTransfer::new(msg).into(),
@@ -265,28 +291,36 @@ async fn imt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferC
         .await
         .unwrap();
 
-    let res = env
-        .simulate_and_execute_intents(env.defuse.id(), [mint_payload.clone()])
+    let (res, _) = env
+        .defuse_simulate_and_execute_intents(env.defuse.contract_id(), [mint_payload.clone()])
         .await
         .unwrap();
 
-    assert_eq_defuse_event_logs!(mint_payload.to_event_log(), res.logs());
+    assert_eq_defuse_event_logs(mint_payload.to_event_log(), res.logs());
 
-    let mt_token = TokenId::from(ImtTokenId::new(user.id().clone(), ft1.clone()));
+    let mt_token = TokenId::from(ImtTokenId::new(user.account_id().clone(), ft1.clone()));
 
     assert_eq!(
-        env.defuse
-            .mt_balance_of(user.id(), &mt_token.to_string())
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: user.account_id(),
+                token_id: &mt_token.to_string(),
+            })
             .await
-            .unwrap(),
+            .unwrap()
+            .0,
         expectation.expected_sender_balance
     );
 
     assert_eq!(
-        env.defuse
-            .mt_balance_of(mt_receiver.id(), &mt_token.to_string())
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: mt_receiver.account_id(),
+                token_id: &mt_token.to_string(),
+            })
             .await
-            .unwrap(),
+            .unwrap()
+            .0,
         expectation.expected_receiver_balance
     );
 }

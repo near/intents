@@ -107,8 +107,8 @@ still important to generate them efficiently to reduce the storage usage. The
 more sequential nonces are, the less space they consume.
 
 * For a **single** signer, it's recommended to generate nonces *incrementally*:
-
-  ```rust
+  
+  ```rust,ignore
   let nonce = self.next_nonce;
   self.next_nonce += 1;
   ```
@@ -117,7 +117,7 @@ more sequential nonces are, the less space they consume.
   requests concurrently with the same key from different devices), it's
   recommended to generate nonces *semi-sequentially*, i.e. where the nonce is randomized after each 32 sequential ones:
 
-  ```rust
+  ```rust,ignore
   const BIT_POS_MASK: u32 = 0b11111;
 
   if self.next_nonce & BIT_POS_MASK == 0 {

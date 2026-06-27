@@ -1,51 +1,21 @@
-use near_sdk::{AccountId, NearToken, serde_json::json};
+use anyhow::Result;
+use near_kit::{AccountId, Action, Final, FunctionCallAction, FungibleToken, Gas, Near, NearToken};
+use serde::Serialize;
 
-use super::ft::FtExt;
-use crate::{SigningAccount, tx::FnCallBuilder};
+use crate::{account::Account, outcome::SuccessfulExecutionOutcome};
 
-pub trait WNearExt: FtExt {
-    async fn near_deposit(
-        &self,
-        wnear_id: impl Into<AccountId>,
-        amount: NearToken,
-    ) -> anyhow::Result<()>;
-    async fn near_withdraw(
-        &self,
-        wnear_id: impl Into<AccountId>,
-        amount: NearToken,
-    ) -> anyhow::Result<()>;
+#[near_kit::contract]
+pub trait WNear {
+    #[call]
+    fn near_deposit(&mut self);
+
+    #[call]
+    fn near_withdraw(&mut self, args: WNearAmount);
 }
 
-impl WNearExt for SigningAccount {
-    async fn near_deposit(
-        &self,
-        wnear_id: impl Into<AccountId>,
-        amount: NearToken,
-    ) -> anyhow::Result<()> {
-        self.tx(wnear_id)
-            .function_call(FnCallBuilder::new("near_deposit").with_deposit(amount))
-            .await?;
-
-        Ok(())
-    }
-
-    async fn near_withdraw(
-        &self,
-        wnear_id: impl Into<AccountId>,
-        amount: NearToken,
-    ) -> anyhow::Result<()> {
-        self.tx(wnear_id)
-            .function_call(
-                FnCallBuilder::new("near_withdraw")
-                    .json_args(json!({
-                        "amount": amount,
-                    }))
-                    .with_deposit(NearToken::from_yoctonear(1)),
-            )
-            .await?;
-
-        Ok(())
-    }
+#[derive(Serialize)]
+pub struct WNearAmount {
+    pub amount: NearToken,
 }
 
 pub trait WNearDeployerExt {
@@ -53,21 +23,59 @@ pub trait WNearDeployerExt {
         &self,
         name: impl AsRef<str>,
         wasm: impl Into<Vec<u8>>,
-    ) -> anyhow::Result<SigningAccount>;
+    ) -> FungibleToken;
 }
 
-impl WNearDeployerExt for SigningAccount {
+impl WNearDeployerExt for Near {
     async fn deploy_wrap_near(
         &self,
         name: impl AsRef<str>,
         wasm: impl Into<Vec<u8>>,
-    ) -> anyhow::Result<Self> {
-        self.deploy_sub_contract(
-            name,
-            NearToken::from_near(100),
-            wasm.into(),
-            FnCallBuilder::new("new"),
-        )
-        .await
+    ) -> FungibleToken {
+        let account = self
+            .create_subaccount(name, NearToken::from_near(100))
+            .await;
+
+        account
+            .deploy(wasm)
+            .add_action(Action::FunctionCall(FunctionCallAction {
+                method_name: "new".to_string(),
+                args: vec![],
+                gas: Gas::from_tgas(10),
+                deposit: NearToken::from_near(0),
+            }))
+            .wait_until(Final)
+            .await
+            .unwrap()
+            .result()
+            .unwrap();
+
+        self.ft(account.account_id()).unwrap()
+    }
+}
+
+pub trait WNearExt {
+    async fn near_deposit(
+        &self,
+        contract_id: impl Into<AccountId>,
+        amount: NearToken,
+    ) -> Result<SuccessfulExecutionOutcome>;
+}
+
+impl WNearExt for Near {
+    async fn near_deposit(
+        &self,
+        contract_id: impl Into<AccountId>,
+        amount: NearToken,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(contract_id.into())
+            .add_action(
+                WNear::near_deposit()
+                    .deposit(amount)
+                    .gas(Gas::from_tgas(10)),
+            )
+            .wait_until(Final)
+            .await?
+            .try_into()
     }
 }

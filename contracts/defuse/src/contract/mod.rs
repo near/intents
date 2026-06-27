@@ -15,7 +15,7 @@ mod versioned;
 
 use core::iter;
 
-use defuse_borsh_utils::adapters::As;
+use defuse_borsh_utils::As;
 use defuse_core::Result;
 use impl_tools::autoimpl;
 use near_plugins::{AccessControlRole, AccessControllable, Pausable, access_control};

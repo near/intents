@@ -1,34 +1,28 @@
-use std::sync::atomic::AtomicUsize;
-
-use defuse_sandbox::extensions::{
-    defuse::deployer::DefuseExt,
-    poa::{PoAFactoryDeployerExt, contract::contract::Role as POAFactoryRole},
-};
+use defuse_fees::Pips;
 use defuse_sandbox::{
-    Account, SigningAccount,
-    extensions::wnear::{WNearDeployerExt, WNearExt},
-    sandbox,
-};
-use defuse_sandbox::{
-    DEFAULT_CONCURRENCY_LIMIT,
-    extensions::defuse::contract::{
-        contract::{
-            Role,
-            config::{DefuseConfig, RolesConfig},
+    account::Account,
+    extensions::{
+        defuse::{
+            Defuse, DefuseClient,
+            contract::{
+                Role,
+                config::{DefuseConfig, RolesConfig},
+            },
+            core::fees::FeesConfig,
         },
-        core::fees::{FeesConfig, Pips},
+        poa::{PoaFactoryClient, PoaFactoryDeployerExt, contract::Role as POAFactoryRole},
+        wnear::{WNearDeployerExt, WNearExt},
     },
+    kit::{AccountId, AccountIdRef, FunctionCallAction, Gas, Near, NearToken},
 };
-use defuse_test_utils::{random::Seed, wasms::DEFUSE_FAR_WASM};
-use near_sdk::{AccountId, NearToken};
+use defuse_test_utils::wasms::{DEFUSE_WASM, POA_FACTORY_WASM, WNEAR_WASM};
+use futures::FutureExt;
+use serde_json::json;
 
-use super::Env;
-use defuse_test_utils::wasms::{DEFUSE_LEGACY_WASM, POA_FACTORY_WASM, WNEAR_WASM};
-
-const MIGRATE_FROM_LEGACY_ENV_NAME: &str = "DEFUSE_MIGRATE_FROM_LEGACY";
+use crate::tests::defuse::env::Env;
 
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct EnvBuilder {
     fee: Pips,
     fee_collector: Option<AccountId>,
@@ -37,13 +31,26 @@ pub struct EnvBuilder {
     roles: RolesConfig,
     self_as_super_admin: bool,
     deployer_as_super_admin: bool,
-    disable_ft_storage_deposit: bool,
-    disable_registration: bool,
 
-    // Create only unique users (no reusing from persistent state)
-    create_unique_users: bool,
+    defuse_name: String,
+    defuse_wasm: Vec<u8>,
 
-    concurrency_limit: Option<usize>,
+    poa_factory_name: String,
+}
+
+impl Default for EnvBuilder {
+    fn default() -> Self {
+        Self {
+            fee: Pips::ZERO,
+            fee_collector: None, // self
+            roles: RolesConfig::default(),
+            self_as_super_admin: false,
+            deployer_as_super_admin: false,
+            defuse_name: "defuse".to_string(),
+            defuse_wasm: DEFUSE_WASM.clone(),
+            poa_factory_name: "poa-factory".to_string(),
+        }
+    }
 }
 
 impl EnvBuilder {
@@ -72,11 +79,6 @@ impl EnvBuilder {
         self
     }
 
-    pub const fn disable_ft_storage_deposit(mut self) -> Self {
-        self.disable_ft_storage_deposit = true;
-        self
-    }
-
     pub fn admin(mut self, role: Role, admin: AccountId) -> Self {
         self.roles.admins.entry(role).or_default().insert(admin);
         self
@@ -87,147 +89,120 @@ impl EnvBuilder {
         self
     }
 
-    pub const fn no_registration(mut self, no_reg_value: bool) -> Self {
-        self.disable_registration = no_reg_value;
+    pub fn defuse_name(mut self, name: impl Into<String>) -> Self {
+        self.defuse_name = name.into();
         self
     }
 
-    pub const fn create_unique_users(mut self) -> Self {
-        self.create_unique_users = true;
+    pub fn poa_factory_name(mut self, name: impl Into<String>) -> Self {
+        self.poa_factory_name = name.into();
         self
     }
 
-    pub const fn concurrency_limit(mut self, limit: usize) -> Self {
-        self.concurrency_limit = Some(limit);
+    pub fn legacy(mut self) -> Self {
+        use defuse_test_utils::wasms::DEFUSE_LEGACY_WASM;
+
+        self.defuse_wasm = DEFUSE_LEGACY_WASM.clone();
+        self
+    }
+
+    #[cfg(feature = "imt")]
+    pub fn imt(mut self) -> Self {
+        use defuse_test_utils::wasms::DEFUSE_FAR_WASM;
+
+        self.defuse_wasm = DEFUSE_FAR_WASM.clone();
         self
     }
 
     async fn deploy_defuse(
         &self,
-        root: &SigningAccount,
-        wnear: &Account,
-        legacy: bool,
-    ) -> SigningAccount {
-        let id = "defuse";
-        let cfg = DefuseConfig {
-            wnear_id: wnear.id().clone(),
-            fees: FeesConfig {
-                fee: self.fee,
-                fee_collector: self
-                    .fee_collector
-                    .as_ref()
-                    .unwrap_or_else(|| root.id())
-                    .clone(),
-            },
-            roles: self.roles.clone(),
-        };
+        name: &str,
+        root: &Near,
+        wnear: impl AsRef<AccountIdRef>,
+    ) -> (DefuseClient, Near) {
+        let account = root
+            .deploy_sub_contract(
+                name,
+                NearToken::from_near(100),
+                self.defuse_wasm.clone(),
+                Some(FunctionCallAction {
+                    method_name: "new".to_string(),
+                    args: serde_json::to_vec(&json!({
+                        "config": DefuseConfig {
+                            wnear_id: wnear.as_ref().into(),
+                            fees: FeesConfig {
+                                fee: self.fee,
+                                fee_collector: self
+                                    .fee_collector
+                                    .as_ref()
+                                    .unwrap_or_else(|| root.account_id())
+                                    .clone(),
+                            },
+                            roles: self.roles.clone(),
+                    }}))
+                    .unwrap(),
+                    gas: Gas::from_tgas(30),
+                    deposit: NearToken::from_near(0),
+                }),
+            )
+            .await
+            .unwrap();
 
-        root.deploy_defuse(
-            id,
-            cfg,
-            if legacy {
-                DEFUSE_LEGACY_WASM.clone()
-            } else {
-                // far feature enabled by default in tests
-                DEFUSE_FAR_WASM.clone()
-            },
-        )
-        .await
-        .unwrap()
+        let client = root.contract::<Defuse>(account.account_id());
+        (client, account)
     }
 
-    fn grant_roles(&mut self, root: &Account, deploy_legacy: bool) {
+    fn grant_roles(&mut self, root: impl AsRef<AccountIdRef>) {
         if self.self_as_super_admin {
             self.roles
                 .super_admins
-                .insert(format!("defuse.{}", root.id()).parse().unwrap());
+                .insert(root.as_ref().sub_account(&self.defuse_name).unwrap());
         }
 
-        if self.deployer_as_super_admin || deploy_legacy {
-            self.roles.super_admins.insert(root.id().clone());
+        if self.deployer_as_super_admin {
+            self.roles.super_admins.insert(root.as_ref().into());
         }
     }
 
-    pub async fn build_env(&mut self, deploy_legacy: bool) -> Env {
-        let sandbox = sandbox(
-            NearToken::from_near(100_000),
-            self.concurrency_limit.unwrap_or(DEFAULT_CONCURRENCY_LIMIT),
+    pub async fn build(mut self, root: Near) -> Env {
+        self.grant_roles(root.account_id());
+
+        let (poa_factory, (wnear, defuse, defuse_near)) =
+            futures::join!(self.deploy_poa_factory(&root), async {
+                let wnear = root.deploy_wrap_near("wnear", WNEAR_WASM.clone()).await;
+                let ((defuse, defuse_near), _) = futures::try_join!(
+                    self.deploy_defuse(&self.defuse_name, &root, wnear.contract_id())
+                        .map(Ok),
+                    root.near_deposit(wnear.contract_id(), NearToken::from_near(100))
+                )
+                .unwrap();
+                (wnear, defuse, defuse_near)
+            });
+
+        Env {
+            root,
+            defuse_near,
+            wnear,
+            defuse,
+            poa_factory,
+        }
+    }
+
+    async fn deploy_poa_factory(&self, root: &Near) -> PoaFactoryClient {
+        let root_id = root.account_id();
+        root.deploy_poa_factory(
+            &self.poa_factory_name,
+            [root.account_id().clone()],
+            [
+                (POAFactoryRole::TokenDeployer, [root_id.clone()]),
+                (POAFactoryRole::TokenDepositer, [root_id.clone()]),
+            ],
+            [
+                (POAFactoryRole::TokenDeployer, [root_id.clone()]),
+                (POAFactoryRole::TokenDepositer, [root_id.clone()]),
+            ],
+            POA_FACTORY_WASM.clone(),
         )
-        .await;
-        let root = sandbox.root();
-
-        let poa_factory = deploy_poa_factory(root).await;
-        let wnear = root
-            .deploy_wrap_near("wnear", WNEAR_WASM.clone())
-            .await
-            .unwrap();
-
-        self.grant_roles(root, deploy_legacy);
-
-        let defuse = self.deploy_defuse(root, &wnear, deploy_legacy).await;
-
-        let env = Env {
-            defuse: defuse.into(),
-            wnear: wnear.into(),
-            poa_factory: poa_factory.into(),
-            sandbox,
-            disable_ft_storage_deposit: self.disable_ft_storage_deposit,
-            disable_registration: self.disable_registration,
-            seed: Seed::from_entropy(),
-            next_user_index: AtomicUsize::new(0),
-        };
-
-        if deploy_legacy {
-            // Legacy version deployed -> arbitrary data applied to the
-            // contract before upgrade -> upgrade to the latest version ->
-            // verify that the data is preserved after the upgrade
-            env.upgrade_legacy(!self.create_unique_users).await;
-        }
-
-        env.near_deposit(env.wnear.id(), NearToken::from_near(100))
-            .await
-            .unwrap();
-
-        env
+        .await
     }
-
-    pub async fn build_with_migration(&mut self) -> Env {
-        self.build_env(true).await
-    }
-
-    pub async fn build(&mut self) -> Env {
-        // TODO: enable migration tests
-        let migrate_from_legacy = false;
-        // let migrate_from_legacy = std::env::var(MIGRATE_FROM_LEGACY_ENV_NAME)
-        //     .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
-
-        println!(
-            "Test migration mode: {}",
-            if migrate_from_legacy {
-                "enabled"
-            } else {
-                "disabled"
-            }
-        );
-
-        self.build_env(migrate_from_legacy).await
-    }
-}
-
-async fn deploy_poa_factory(root: &SigningAccount) -> SigningAccount {
-    root.deploy_poa_factory(
-        "poa-factory",
-        [root.id().clone()],
-        [
-            (POAFactoryRole::TokenDeployer, [root.id().clone()]),
-            (POAFactoryRole::TokenDepositer, [root.id().clone()]),
-        ],
-        [
-            (POAFactoryRole::TokenDeployer, [root.id().clone()]),
-            (POAFactoryRole::TokenDepositer, [root.id().clone()]),
-        ],
-        POA_FACTORY_WASM.clone(),
-    )
-    .await
-    .unwrap()
 }

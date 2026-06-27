@@ -1,6 +1,6 @@
 use core::mem;
 
-use defuse_near_utils::UnwrapOrPanicError;
+use defuse_time::Timestamp;
 use near_sdk::{Promise, env};
 
 use crate::{
@@ -71,7 +71,7 @@ impl State {
             .in_flight
             .checked_add(1)
             .ok_or("too many callbacks in flight")
-            .unwrap_or_panic_static_str();
+            .unwrap();
         Contract::ext(env::current_account_id())
     }
 
@@ -81,7 +81,7 @@ impl State {
             .in_flight
             .checked_sub(1)
             .ok_or("unregistered callback")
-            .unwrap_or_panic_static_str();
+            .unwrap();
     }
 
     /// Returns whether just closed
@@ -97,7 +97,8 @@ impl State {
     #[must_use]
     #[inline]
     fn should_cleanup(&mut self) -> bool {
-        if !self.closed && self.deadline.has_expired() {
+        let expired = self.deadline < Timestamp::now();
+        if !self.closed && expired {
             self.close_unchecked(CloseReason::DeadlineExpired);
         }
 
@@ -105,6 +106,6 @@ impl State {
             && self.in_flight == 0
             && self.maker_src_remaining == 0
             && self.maker_dst_lost == 0
-            && self.deadline.has_expired()
+            && expired
     }
 }

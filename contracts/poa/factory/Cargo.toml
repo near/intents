@@ -22,7 +22,6 @@ container_build_command = [
   "non-reproducible-wasm",
   "--locked",
   "--features=contract",
-  "--no-embed-abi",
 ]
 
 [dependencies]
@@ -35,7 +34,7 @@ near-plugins.workspace = true
 near-sdk.workspace = true
 
 [dev-dependencies]
-defuse-sandbox = { workspace = true }
+defuse-sandbox.workspace = true
 futures.workspace = true
 rstest.workspace = true
 tokio = { workspace = true, features = ["macros"] }

@@ -4,7 +4,7 @@ pub mod error;
 
 use std::borrow::Cow;
 
-pub use defuse_borsh_utils::adapters::{AsWrap, Remainder};
+pub use defuse_borsh_utils::{AsWrap, Remainder};
 pub use defuse_global_deployer_core::State;
 pub use defuse_serde_utils::hex::AsHex;
 use near_sdk::{

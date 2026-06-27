@@ -1,29 +1,33 @@
 use super::binary_search_max;
-use crate::tests::defuse::env::Env;
+use crate::tests::defuse::env::{Env, env};
 use crate::tests::defuse::tokens::nep245::letter_gen::LetterCombinations;
 use anyhow::Context;
 use arbitrary::Arbitrary;
-use defuse::{
-    core::{
-        token_id::{TokenId, nep245::Nep245TokenId},
-        tokens::MAX_TOKEN_ID_LEN,
-    },
-    nep245::{MtEvent, MtTransferEvent},
-};
 use defuse_near_utils::REFUND_MEMO;
 use defuse_randomness::Rng;
 use defuse_sandbox::{
-    SigningAccount,
-    extensions::mt::{MtExt, MtViewExt},
-    tx::FnCallBuilder,
+    account::Account,
+    extensions::{
+        defuse::{
+            core::{
+                token_id::{TokenId, nep245::Nep245TokenId},
+                tokens::MAX_TOKEN_ID_LEN,
+            },
+            nep245::{MtEvent, MtTransferEvent},
+        },
+        mt::MtOnTransferArgs,
+        mt::{Mt, MtBalanceOfArgs, MtExt},
+    },
+    kit::{AccountId, Near, NearToken},
 };
-use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
-use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
+use defuse_test_utils::{
+    random::{gen_random_string, random_bytes, rng},
+    wasms::MT_RECEIVER_STUB_WASM,
+};
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::{AccountId, AsNep297Event, NearToken, json_types::U128};
+use near_sdk_core::{events::AsNep297Event, json_types::U128};
 use rstest::rstest;
-use std::borrow::Cow;
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 use strum::IntoEnumIterator;
 
 const TOTAL_LOG_LENGTH_LIMIT: usize = 16384;
@@ -36,22 +40,26 @@ enum GenerationMode {
     LongestPossible,
 }
 
-async fn make_account(mode: GenerationMode, env: &Env, user: &SigningAccount) -> SigningAccount {
+async fn make_account(mode: GenerationMode, env: &Env, user: &Near) -> Near {
     match mode {
         GenerationMode::ShortestPossible => {
-            env.tx(user.id())
+            env.transaction(user.account_id())
                 .transfer(NearToken::from_near(1000))
                 .await
+                .unwrap()
+                .result()
                 .unwrap();
             user.clone()
         }
         GenerationMode::LongestPossible => {
-            env.tx(env.defuse.id())
+            env.transaction(env.defuse.contract_id())
                 .transfer(NearToken::from_near(1000))
                 .await
+                .unwrap()
+                .result()
                 .unwrap();
 
-            env.fund_implicit(NearToken::from_near(1000)).await.unwrap()
+            env.create_implicit(NearToken::from_near(1000)).await
         }
     }
 }
@@ -111,8 +119,8 @@ async fn run_resolve_gas_test(
     gen_mode: GenerationMode,
     token_count: usize,
     env: Arc<Env>,
-    user_account: SigningAccount,
-    author_account: SigningAccount,
+    user_account: Near,
+    author_account: Near,
     rng: Arc<tokio::sync::Mutex<impl Rng>>,
 ) -> anyhow::Result<()> {
     println!("token count: {token_count}");
@@ -129,7 +137,7 @@ async fn run_resolve_gas_test(
         .iter()
         .map(|token_id| {
             TokenId::Nep245(Nep245TokenId::new(
-                author_account.id().clone(),
+                author_account.account_id().clone(),
                 token_id.clone(),
             ))
             .to_string()
@@ -143,10 +151,14 @@ async fn run_resolve_gas_test(
 
     author_account
         .mt_on_transfer(
-            user_account.id(),
-            env.defuse.id(),
-            token_ids.iter().zip(amounts.clone()),
-            "",
+            env.defuse.contract_id(),
+            MtOnTransferArgs {
+                sender_id: user_account.account_id(),
+                previous_owner_ids: &vec![author_account.account_id().clone(); token_ids.len()],
+                token_ids: &token_ids,
+                amounts: &amounts,
+                msg: "",
+            },
         )
         .await
         .inspect_err(|e| {
@@ -160,7 +172,7 @@ async fn run_resolve_gas_test(
     // events that serialize more fields. These transfer logs approach the hard log-size limit, so
     // we pre-calculate the worst-case payload to fail fast if the limit would be exceeded.
     let expected_transfer_log = validate_mt_batch_transfer_log_size(
-        user_account.id(),
+        user_account.account_id(),
         &non_existent_account,
         &defuse_token_ids,
         &amounts,
@@ -169,8 +181,7 @@ async fn run_resolve_gas_test(
     println!("Non-existent account: {non_existent_account}");
 
     assert!(
-        env.defuse
-            .mt_tokens_for_owner(&non_existent_account, ..=2) // 2 because we only need to check the first N tokens. Good enough.
+        env.mt_tokens_for_owner(env.defuse.contract_id(), &non_existent_account, ..=2)
             .await
             .unwrap()
             .is_empty(),
@@ -180,11 +191,11 @@ async fn run_resolve_gas_test(
 
     // We attempt to do a transfer of fictitious token ids from defuse to an arbitrary user.
     // These will fail, but there should be enough gas to do refunds successfully.
-    let res = user_account
+    let (res, transferred_amounts) = user_account
         .mt_batch_transfer_call(
-            env.defuse.id(),
+            env.defuse.contract_id(),
             // Non-existing account id
-            &non_existent_account,
+            non_existent_account.clone(),
             defuse_token_ids.clone(),
             amounts.clone(),
             None,
@@ -196,28 +207,19 @@ async fn run_resolve_gas_test(
                 "`mt_batch_transfer_call` failed (expected) for token count `{token_count}`: {e}"
             );
         })
-        .unwrap();
+        .context("Failed at mt_batch_transfer_call")?;
 
     // Assert that a refund happened, since the receiver is non-existent.
     // This is necessary because near-workspaces fails if *any* of the receipts fail within a call.
     // If this doesn't happen, it means that the last call failed at mt_transfer_resolve(). REALLY BAD, BECAUSE NO REFUND HAPPENED!
     assert!(
-        env.defuse
-            .mt_tokens_for_owner(&non_existent_account, ..=2) // 2 because we only need to check the first N tokens. Good enough.
+        env.mt_tokens_for_owner(env.defuse.contract_id(), &non_existent_account, ..=2)
             .await
             .unwrap()
             .is_empty(),
     );
 
-    println!("{{{token_count}, {}}},", res.total_gas_burnt);
-
-    let transferred_amounts = res
-        .clone()
-        .json::<Vec<U128>>()
-        .map(|refunds| refunds.into_iter().map(|a| a.0).collect::<Vec<u128>>())
-        .context("Failed to parse refunds from mt_batch_transfer_call")?;
-
-    let longest_emited_log = res.logs().iter().map(|s| s.len()).max().unwrap();
+    let longest_emited_log = res.logs().iter().map(String::len).max().unwrap();
 
     assert_eq!(
         longest_emited_log, expected_transfer_log,
@@ -232,14 +234,14 @@ async fn run_resolve_gas_test(
 
 #[rstest]
 #[tokio::test]
-async fn mt_transfer_resolve_gas(rng: impl Rng) {
+async fn mt_transfer_resolve_gas(#[future(awt)] env: Env, rng: impl Rng) {
     let rng = Arc::new(tokio::sync::Mutex::new(rng));
-    for gen_mode in GenerationMode::iter() {
-        let env = Arc::new(Env::new().await);
+    let env = Arc::new(env);
 
+    for gen_mode in GenerationMode::iter() {
         let user = env.create_user().await;
 
-        env.tx(env.defuse.id())
+        env.transaction(env.defuse.contract_id())
             .transfer(NearToken::from_near(1000))
             .await
             .unwrap();
@@ -294,24 +296,26 @@ async fn binary_search() {
     }
 }
 
+#[rstest]
 #[tokio::test]
-async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit() {
-    let env = Env::new().await;
-    let user = env.create_named_user("user").await;
+async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
+    #[future(awt)] env: Env,
+) {
+    let user = env.create_named_user("u").await;
 
-    env.tx(env.defuse.id())
+    env.transaction(env.defuse.contract_id())
         .transfer(NearToken::from_near(1000))
         .await
         .unwrap();
 
-    let author_account = env.fund_implicit(NearToken::from_near(1000)).await.unwrap();
+    let author_account = env.create_implicit(NearToken::from_near(1000)).await;
 
     let receiver_stub = env
         .deploy_sub_contract(
-            "receiver",
+            "r",
             NearToken::from_near(100),
             MT_RECEIVER_STUB_WASM.to_vec(),
-            None::<FnCallBuilder>,
+            None,
         )
         .await
         .unwrap();
@@ -330,49 +334,59 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit()
         .iter()
         .map(|token_id| {
             TokenId::Nep245(Nep245TokenId::new(
-                author_account.id().clone(),
+                author_account.account_id().clone(),
                 token_id.clone(),
             ))
             .to_string()
         })
         .collect();
 
-    let (transfer_log_size, refund_log_size) =
-        calculate_log_sizes(user.id(), receiver_stub.id(), &defuse_token_ids, &amounts);
+    let (transfer_log_size, refund_log_size) = calculate_log_sizes(
+        user.account_id(),
+        receiver_stub.account_id(),
+        &defuse_token_ids,
+        &amounts,
+    );
 
     assert!(transfer_log_size <= TOTAL_LOG_LENGTH_LIMIT,);
     assert!(refund_log_size > TOTAL_LOG_LENGTH_LIMIT,);
 
     author_account
         .mt_on_transfer(
-            user.id(),
-            env.defuse.id(),
-            token_ids.iter().cloned().zip(amounts.clone()),
-            "",
+            env.defuse.contract_id(),
+            MtOnTransferArgs {
+                sender_id: user.account_id(),
+                previous_owner_ids: &vec![author_account.account_id().clone(); token_ids.len()],
+                token_ids: &token_ids,
+                amounts: &amounts,
+                msg: "",
+            },
         )
         .await
         .unwrap();
 
     let balance_before = env
-        .defuse
-        .mt_balance_of(user.id(), &defuse_token_ids[0])
+        .contract::<Mt>(env.defuse.contract_id())
+        .mt_balance_of(MtBalanceOfArgs {
+            account_id: user.account_id(),
+            token_id: &defuse_token_ids[0],
+        })
         .await
         .unwrap();
 
     let result = user
         .mt_batch_transfer_call(
-            env.defuse.id(),
-            receiver_stub.id(),
+            env.defuse.contract_id(),
+            receiver_stub.account_id(),
             defuse_token_ids.clone(),
             amounts.clone(),
             None,
             serde_json::to_string(&MTReceiverMode::RefundAll).unwrap(),
         )
-        .await
-        .unwrap();
+        .await;
 
     assert!(
-        result.is_failure(),
+        result.is_err(),
         "transfer should fail early due to refund log size limit"
     );
 
@@ -383,8 +397,11 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit()
     );
 
     let balance_after = env
-        .defuse
-        .mt_balance_of(user.id(), &defuse_token_ids[0])
+        .contract::<Mt>(env.defuse.contract_id())
+        .mt_balance_of(MtBalanceOfArgs {
+            account_id: user.account_id(),
+            token_id: &defuse_token_ids[0],
+        })
         .await
         .unwrap();
 

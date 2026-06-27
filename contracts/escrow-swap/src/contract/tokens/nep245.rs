@@ -1,6 +1,7 @@
-use defuse_near_utils::UnwrapOrPanic;
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
-use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near, require};
+use near_sdk::{
+    AccountId, FunctionError, Gas, NearToken, PromiseOrValue, env, json_types::U128, near, require,
+};
 
 use crate::{
     Error,
@@ -26,13 +27,13 @@ impl MultiTokenReceiver for Contract {
         let (token_id, amount) = single(token_ids)
             .zip(single(amounts))
             .ok_or(Error::WrongToken)
-            .unwrap_or_panic();
+            .unwrap_or_else(|err| err.panic());
 
         let token_id: TokenId = Nep245TokenId::new(env::predecessor_account_id(), token_id).into();
 
         match self
             .on_receive(sender_id, &token_id, amount.0, &msg)
-            .unwrap_or_panic()
+            .unwrap_or_else(|err| err.panic())
         {
             PromiseOrValue::Promise(p) => PromiseOrValue::Promise(p),
             PromiseOrValue::Value(refund) => PromiseOrValue::Value(vec![U128(refund)]),

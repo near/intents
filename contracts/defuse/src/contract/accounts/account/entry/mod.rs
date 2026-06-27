@@ -7,7 +7,7 @@ use std::{
     mem::size_of,
 };
 
-use defuse_borsh_utils::adapters::{As, BorshDeserializeAs, BorshSerializeAs};
+use defuse_borsh_utils::{As, BorshDeserializeAs, BorshSerializeAs};
 
 use defuse_near_utils::{Lock, PanicOnClone};
 use impl_tools::autoimpl;

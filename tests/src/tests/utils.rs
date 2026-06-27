@@ -1,7 +1,8 @@
+use std::fmt::Display;
+
 use defuse_fees::Pips;
 use defuse_randomness::{Rng, RngExt};
 use defuse_test_utils::random::rng;
-use near_sdk::borsh;
 use rstest::rstest;
 
 #[rstest]
@@ -32,4 +33,28 @@ fn pips_borsch_serialization_back_and_forth(mut rng: impl Rng) {
 fn pip_borsch_deserialization_selected_values(#[case] serialized: &[u8], #[case] pips: u32) {
     let deserialized: Pips = borsh::from_slice(serialized).unwrap();
     assert_eq!(deserialized, Pips::from_pips(pips).unwrap());
+}
+
+/// Assert that collection `a` contains collection `b`.
+/// Checks that all elements in `b` are present in `a`.
+///
+/// # Examples
+/// ```ignore
+/// assert_a_contains_b(a: all_logs, b: [expected_event1, expected_event2]);
+/// ```
+#[allow(unused)]
+#[track_caller]
+pub fn assert_a_contains_b(
+    a: impl IntoIterator<Item: Display>,
+    b: impl IntoIterator<Item: Display>,
+) {
+    let a: Vec<String> = a.into_iter().map(|v| v.to_string()).collect();
+    let b: Vec<String> = b.into_iter().map(|v| v.to_string()).collect();
+
+    for expected_event in &b {
+        assert!(
+            a.contains(expected_event),
+            "\n\nExpected event not found in 'a':\n{expected_event}\n\nActual event logs in 'a':\n{a:#?}\n",
+        );
+    }
 }

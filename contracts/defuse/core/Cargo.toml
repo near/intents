@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-core"
 edition.workspace = true
@@ -8,22 +10,22 @@ repository.workspace = true
 [dependencies]
 defuse-bitmap = { workspace = true, features = ["borsh"] }
 defuse-crypto = { workspace = true, features = ["borsh", "ed25519", "secp256k1", "p256", "near-contract", "serde"] }
-defuse-deadline = { workspace = true, features = ["borsh", "near-contract", "serde"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-erc191 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-map-utils = { workspace = true, features = ["near"] }
-defuse-near-utils = { workspace = true }
+defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-nep413 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-num-utils.workspace = true
 defuse-sep53 = { workspace = true, features = ["near-contract", "serde"] }
+defuse-time = { workspace = true, features = ["borsh", "serde"] }
 defuse-tip191 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245", "borsh", "serde"] }
 defuse-ton-connect = { workspace = true, features = ["near-contract", "serde"] }
 defuse-webauthn = { workspace = true, features = ["borsh", "near-contract", "ed25519", "p256"] }
 
-defuse-borsh-utils = { workspace = true, features = ["chrono"] }
+defuse-borsh-utils.workspace = true
 derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
 hex-literal.workspace = true
@@ -34,18 +36,18 @@ serde_with = { workspace = true, features = ["base58", "base64"] }
 thiserror.workspace = true
 
 arbitrary = { workspace = true, optional = true }
-near-api-types = { workspace = true, optional = true }
+near-kit = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 
 [features]
 abi = [
   "defuse-bitmap/abi",
   "defuse-crypto/abi",
-  "defuse-deadline/abi",
   "defuse-erc191/abi",
   "defuse-fees/abi",
   "defuse-nep413/abi",
   "defuse-sep53/abi",
+  "defuse-time/abi",
   "defuse-tip191/abi",
   "defuse-token-id/abi",
   "defuse-ton-connect/abi",
@@ -62,10 +64,7 @@ arbitrary = [
   "dep:arbitrary",
 ]
 imt = ["defuse-token-id/imt"]
-near-api-types = ["dep:near-api-types"]
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-chrono = { workspace = true, features = ["now"] }
+near-kit = ["dep:near-kit"]
 
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }
@@ -75,6 +74,3 @@ hex-literal.workspace = true
 itertools.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
-
-[lints]
-workspace = true

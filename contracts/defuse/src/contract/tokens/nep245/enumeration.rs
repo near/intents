@@ -1,6 +1,5 @@
 use crate::contract::{Contract, ContractExt};
 use defuse_core::token_id::TokenIdType;
-use defuse_near_utils::UnwrapOrPanicError;
 use defuse_nep245::{Token, enumeration::MultiTokenEnumeration};
 use near_sdk::{AccountId, json_types::U128, near};
 
@@ -8,7 +7,7 @@ use near_sdk::{AccountId, json_types::U128, near};
 impl MultiTokenEnumeration for Contract {
     fn mt_tokens(&self, from_index: Option<U128>, limit: Option<u32>) -> Vec<Token> {
         let from_index = from_index.map_or(0, |v| v.0);
-        let from_index: usize = from_index.try_into().unwrap_or_panic_display();
+        let from_index: usize = from_index.try_into().unwrap();
 
         let iter = self
             .state
@@ -24,7 +23,7 @@ impl MultiTokenEnumeration for Contract {
             });
 
         match limit {
-            Some(l) => iter.take(l.try_into().unwrap_or_panic_display()).collect(),
+            Some(l) => iter.take(l.try_into().unwrap()).collect(),
             None => iter.collect(),
         }
     }
@@ -36,7 +35,7 @@ impl MultiTokenEnumeration for Contract {
         limit: Option<u32>,
     ) -> Vec<Token> {
         let from_index = from_index.map_or(0, |v| v.0);
-        let from_index: usize = from_index.try_into().unwrap_or_panic_display();
+        let from_index: usize = from_index.try_into().unwrap();
 
         let Some(account) = self.accounts.get(&account_id) else {
             return Vec::new();
@@ -59,7 +58,7 @@ impl MultiTokenEnumeration for Contract {
             });
 
         match limit {
-            Some(l) => iter.take(l.try_into().unwrap_or_panic_display()).collect(),
+            Some(l) => iter.take(l.try_into().unwrap()).collect(),
             None => iter.collect(),
         }
     }
