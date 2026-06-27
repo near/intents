@@ -15,7 +15,7 @@ pub trait WNear {
 
 #[derive(Serialize)]
 pub struct WNearAmount {
-    amount: NearToken,
+    pub amount: NearToken,
 }
 
 pub trait WNearDeployerExt {
