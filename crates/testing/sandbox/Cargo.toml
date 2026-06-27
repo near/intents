@@ -14,7 +14,6 @@ defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-nep245.workspace = true
 near-contract-standards.workspace = true
 near-kit = { workspace = true, features = ["sandbox"] }
-# TODO: remove it when near kit will contain necessary types
 near-sdk-core.workspace = true
 rstest.workspace = true
 serde.workspace = true
