@@ -154,8 +154,6 @@ impl Env {
         all_accounts.push(self.defuse.contract_id());
         all_accounts.push(self.account_id());
 
-        let tokens: Vec<_> = tokens.into_iter().collect();
-
         let wnear_storage =
             self.ft_storage_deposit_for_accounts(self.wnear.contract_id(), all_accounts.clone());
         let token_setup = try_join_all(tokens.into_iter().map(|token| {
