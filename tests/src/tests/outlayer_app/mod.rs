@@ -5,7 +5,7 @@ use defuse_sandbox::{
         OutlayerAppDeployerExt, OutlayerAppExt,
         contract::{Event, State as OutlayerState},
     },
-    kit::{GlobalContractId, Near, NearToken, PublishMode},
+    kit::{Final, GlobalContractId, Near, NearToken, PublishMode},
     root,
 };
 use defuse_test_utils::wasms::OUTLAYER_APP_WASM;
@@ -22,6 +22,7 @@ pub struct OutlayerAppEnv {
 #[fixture]
 pub async fn outlayer_app_env(#[future(awt)] root: Near) -> OutlayerAppEnv {
     root.publish(OUTLAYER_APP_WASM.clone(), PublishMode::Immutable)
+        .wait_until(Final)
         .await
         .unwrap()
         .result()
