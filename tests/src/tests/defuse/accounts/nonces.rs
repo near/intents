@@ -11,7 +11,7 @@ use defuse_sandbox::{
     },
     kit::AccountId,
 };
-use futures::future::join_all;
+use futures::{FutureExt, future::join_all};
 use rstest::rstest;
 use std::time::Duration;
 use tokio::time::sleep;
@@ -37,9 +37,11 @@ async fn test_commit_nonces(
     let timeout_delta = Duration::from_hours(24);
     let u = &mut Unstructured::new(&random_bytes);
 
-    let (current_salt, user) =
-        futures::join!(env.defuse.current_salt().into_future(), env.create_user());
-    let current_salt = current_salt.unwrap();
+    let (current_salt, user) = futures::try_join!(
+        env.defuse.current_salt().into_future(),
+        env.create_user().map(Ok)
+    )
+    .unwrap();
 
     // legacy nonce
     {

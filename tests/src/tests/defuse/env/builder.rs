@@ -16,6 +16,7 @@ use defuse_sandbox::{
     kit::{AccountId, AccountIdRef, Action, Final, FunctionCallAction, Gas, Near, NearToken},
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, POA_FACTORY_WASM, WNEAR_WASM};
+use futures::FutureExt;
 use serde_json::json;
 
 use crate::tests::defuse::env::Env;
@@ -176,28 +177,26 @@ impl EnvBuilder {
     pub async fn build(mut self, root: Near) -> Env {
         self.grant_roles(root.account_id());
 
-        let (poa_factory, wnear) = futures::join!(
-            self.deploy_poa_factory(&root),
-            root.deploy_wrap_near("wnear", WNEAR_WASM.clone())
-        );
-        let (defuse, defuse_near) = self
-            .deploy_defuse(&self.defuse_name, &root, wnear.contract_id())
-            .await;
+        let (poa_factory, (wnear, defuse, defuse_near)) =
+            futures::join!(self.deploy_poa_factory(&root), async {
+                let wnear = root.deploy_wrap_near("wnear", WNEAR_WASM.clone()).await;
+                let ((defuse, defuse_near), _) = futures::try_join!(
+                    self.deploy_defuse(&self.defuse_name, &root, wnear.contract_id())
+                        .map(Ok),
+                    root.near_deposit(wnear.contract_id(), NearToken::from_near(100))
+                )
+                .unwrap();
+                (wnear, defuse, defuse_near)
+            });
 
-        let env = Env {
+        Env {
             defuse,
             defuse_near,
             wnear,
             poa_factory,
             root,
             disable_ft_storage_deposit: self.disable_ft_storage_deposit,
-        };
-
-        env.near_deposit(env.wnear.contract_id(), NearToken::from_near(100))
-            .await
-            .unwrap();
-
-        env
+        }
     }
 
     async fn deploy_poa_factory(&self, root: &Near) -> PoaFactoryClient {
