@@ -41,43 +41,57 @@ async fn storage_deposit_success(
         env.fund_account_with_near(other_user.account_id(), NearToken::from_near(1000))
     )
     .unwrap();
-    {
-        let (storage_balance_ft1_user1, storage_balance_ft1_user2) = futures::join!(
-            ft.storage_balance_of(user.account_id()).into_future(),
-            ft.storage_balance_of(other_user.account_id()).into_future()
-        );
-        let storage_balance_ft1_user1 = storage_balance_ft1_user1.unwrap();
-        let storage_balance_ft1_user2 = storage_balance_ft1_user2.unwrap();
 
-        assert!(storage_balance_ft1_user1.is_none());
-        assert!(storage_balance_ft1_user2.is_none());
-    }
+    futures::join!(
+        async {
+            assert!(
+                ft.storage_balance_of(user.account_id())
+                    .await
+                    .unwrap()
+                    .is_none()
+            );
+        },
+        async {
+            assert!(
+                ft.storage_balance_of(other_user.account_id())
+                    .await
+                    .unwrap()
+                    .is_none()
+            );
+        }
+    );
 
     // For intents contract to have a balance in wnear, we make a storage deposit for it
-
-    let (wnear_storage, ft_storage) = futures::join!(
+    futures::try_join!(
         env.wnear
             .storage_deposit(env.defuse.contract_id(), NearToken::from_near(1))
             .into_future(),
         ft.storage_deposit(user.account_id(), NearToken::from_near(1))
-            .into_future()
-    );
-    wnear_storage.unwrap();
-    ft_storage.unwrap();
+            .into_future(),
+    )
+    .unwrap();
 
     {
-        let (storage_balance_ft1_user1, storage_balance_ft1_user2) = futures::join!(
-            ft.storage_balance_of(user.account_id()).into_future(),
-            ft.storage_balance_of(other_user.account_id()).into_future()
+        futures::join!(
+            async {
+                assert_eq!(
+                    ft.storage_balance_of(user.account_id())
+                        .await
+                        .unwrap()
+                        .unwrap()
+                        .total,
+                    MIN_FT_STORAGE_DEPOSIT_VALUE
+                );
+            },
+            async {
+                assert!(
+                    ft.storage_balance_of(other_user.account_id())
+                        .await
+                        .unwrap()
+                        .is_none()
+                );
+            },
         );
-        let storage_balance_ft1_user1 = storage_balance_ft1_user1.unwrap();
-        let storage_balance_ft1_user2 = storage_balance_ft1_user2.unwrap();
-
-        assert_eq!(
-            storage_balance_ft1_user1.unwrap().total,
-            MIN_FT_STORAGE_DEPOSIT_VALUE
-        );
-        assert!(storage_balance_ft1_user2.is_none());
     }
 
     // The user should have enough wnear in his account (in his account in the wnear contract)
@@ -141,41 +155,57 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(
     )
     .unwrap();
     {
-        let (storage_balance_ft1_user1, storage_balance_ft1_user2) = futures::join!(
-            ft.storage_balance_of(user.account_id()).into_future(),
-            ft.storage_balance_of(other_user.account_id()).into_future()
+        futures::join!(
+            async {
+                assert!(
+                    ft.storage_balance_of(user.account_id())
+                        .await
+                        .unwrap()
+                        .is_none()
+                );
+            },
+            async {
+                assert!(
+                    ft.storage_balance_of(other_user.account_id())
+                        .await
+                        .unwrap()
+                        .is_none()
+                );
+            },
         );
-        let storage_balance_ft1_user1 = storage_balance_ft1_user1.unwrap();
-        let storage_balance_ft1_user2 = storage_balance_ft1_user2.unwrap();
-
-        assert!(storage_balance_ft1_user1.is_none());
-        assert!(storage_balance_ft1_user2.is_none());
     }
 
     // For intents contract to have a balance in wnear, we make a storage deposit for it
-    let (wnear_storage, ft_storage) = futures::join!(
+    futures::try_join!(
         env.wnear
             .storage_deposit(env.defuse.contract_id(), NearToken::from_near(1))
             .into_future(),
         ft.storage_deposit(user.account_id(), NearToken::from_near(1))
-            .into_future()
-    );
-    wnear_storage.unwrap();
-    ft_storage.unwrap();
+            .into_future(),
+    )
+    .unwrap();
 
     {
-        let (storage_balance_ft1_user1, storage_balance_ft1_user2) = futures::join!(
-            ft.storage_balance_of(user.account_id()).into_future(),
-            ft.storage_balance_of(other_user.account_id()).into_future()
+        futures::join!(
+            async {
+                assert_eq!(
+                    ft.storage_balance_of(user.account_id())
+                        .await
+                        .unwrap()
+                        .unwrap()
+                        .total,
+                    MIN_FT_STORAGE_DEPOSIT_VALUE
+                );
+            },
+            async {
+                assert!(
+                    ft.storage_balance_of(other_user.account_id())
+                        .await
+                        .unwrap()
+                        .is_none()
+                );
+            }
         );
-        let storage_balance_ft1_user1 = storage_balance_ft1_user1.unwrap();
-        let storage_balance_ft1_user2 = storage_balance_ft1_user2.unwrap();
-
-        assert_eq!(
-            storage_balance_ft1_user1.unwrap().total,
-            MIN_FT_STORAGE_DEPOSIT_VALUE
-        );
-        assert!(storage_balance_ft1_user2.is_none());
     }
 
     // The user should have enough wnear in his account (in his account in the wnear contract)
