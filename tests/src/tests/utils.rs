@@ -42,6 +42,7 @@ fn pip_borsch_deserialization_selected_values(#[case] serialized: &[u8], #[case]
 /// ```ignore
 /// assert_a_contains_b(a: all_logs, b: [expected_event1, expected_event2]);
 /// ```
+#[allow(unused)]
 #[track_caller]
 pub fn assert_a_contains_b(
     a: impl IntoIterator<Item: Display>,

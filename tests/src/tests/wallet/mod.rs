@@ -218,6 +218,7 @@ async fn test_extension(#[future] env: Env) {
 
 #[rstest]
 #[awt]
+#[cfg_attr(not(feature = "long"), ignore = "`long` feature is disabled")]
 #[tokio::test]
 async fn test_no_storage_staking(#[future] env: Env) {
     let mut wallet = env.generate_wallet();

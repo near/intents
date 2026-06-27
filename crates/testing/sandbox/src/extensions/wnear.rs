@@ -1,15 +1,21 @@
 use anyhow::Result;
 use near_kit::{AccountId, Action, Final, FunctionCallAction, FungibleToken, Gas, Near, NearToken};
+use serde::Serialize;
 
 use crate::{account::Account, outcome::SuccessfulExecutionOutcome};
 
 #[near_kit::contract]
 pub trait WNear {
     #[call]
-    fn near_deposit(&mut self, amount: NearToken);
+    fn near_deposit(&mut self);
 
     #[call]
-    fn near_withdraw(&mut self, amount: NearToken);
+    fn near_withdraw(&mut self, args: WNearAmount);
+}
+
+#[derive(Serialize)]
+pub struct WNearAmount {
+    amount: NearToken,
 }
 
 pub trait WNearDeployerExt {
@@ -64,7 +70,7 @@ impl WNearExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(contract_id.into())
             .add_action(
-                WNear::near_deposit(amount)
+                WNear::near_deposit()
                     .deposit(amount)
                     .gas(Gas::from_tgas(10)),
             )
