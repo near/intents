@@ -176,8 +176,10 @@ impl EnvBuilder {
     pub async fn build(mut self, root: Near) -> Env {
         self.grant_roles(root.account_id());
 
-        let poa_factory = self.deploy_poa_factory(&root).await;
-        let wnear = root.deploy_wrap_near("wnear", WNEAR_WASM.clone()).await;
+        let (poa_factory, wnear) = futures::join!(
+            self.deploy_poa_factory(&root),
+            root.deploy_wrap_near("wnear", WNEAR_WASM.clone())
+        );
         let (defuse, defuse_near) = self
             .deploy_defuse(&self.defuse_name, &root, wnear.contract_id())
             .await;

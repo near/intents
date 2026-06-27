@@ -36,13 +36,13 @@ async fn deposit_withdraw(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone())).to_string();
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.account_id(),
-                token_id: &ft_id.to_string(),
+                token_id: &ft_id,
             })
             .await
             .unwrap()
@@ -65,19 +65,18 @@ async fn deposit_withdraw(#[future(awt)] env: Env) {
         1000
     );
 
-    assert_eq!(
+    let (mt_balance, ft_balance) = futures::join!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.account_id(),
-                token_id: &ft_id.to_string(),
+                token_id: &ft_id,
             })
-            .await
-            .unwrap()
-            .0,
-        0
+            .into_future(),
+        ft.balance_of(user.account_id()).into_future()
     );
 
-    assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 1000);
+    assert_eq!(mt_balance.unwrap().0, 0);
+    assert_eq!(ft_balance.unwrap().raw(), 1000);
 }
 
 #[rstest]
@@ -85,7 +84,7 @@ async fn deposit_withdraw(#[future(awt)] env: Env) {
 async fn poa_deposit(#[future(awt)] env: Env) {
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone())).to_string();
 
     env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
         .await;
@@ -101,18 +100,18 @@ async fn poa_deposit(#[future(awt)] env: Env) {
     .await
     .unwrap();
 
-    assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 0);
-    assert_eq!(
+    let (ft_balance, mt_balance) = futures::join!(
+        ft.balance_of(user.account_id()).into_future(),
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.account_id(),
-                token_id: &ft_id.to_string(),
+                token_id: &ft_id,
             })
-            .await
-            .unwrap()
-            .0,
-        0
+            .into_future()
     );
+
+    assert_eq!(ft_balance.unwrap().raw(), 0);
+    assert_eq!(mt_balance.unwrap().0, 0);
 }
 
 #[rstest]
@@ -178,36 +177,28 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
         1000
     );
 
-    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
-
-    assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 0);
-    assert_eq!(
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone())).to_string();
+    let (user_ft_balance, user_mt_balance, other_user_mt_balance, other_user_ft_balance) = futures::join!(
+        ft.balance_of(user.account_id()).into_future(),
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.account_id(),
-                token_id: &ft_id.to_string(),
+                token_id: &ft_id,
             })
-            .await
-            .unwrap()
-            .0,
-        400
-    );
-
-    assert_eq!(
+            .into_future(),
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: other_user.account_id(),
-                token_id: &ft_id.to_string(),
+                token_id: &ft_id,
             })
-            .await
-            .unwrap()
-            .0,
-        0
+            .into_future(),
+        ft.balance_of(other_user.account_id()).into_future()
     );
-    assert_eq!(
-        ft.balance_of(other_user.account_id()).await.unwrap().raw(),
-        600
-    );
+
+    assert_eq!(user_ft_balance.unwrap().raw(), 0);
+    assert_eq!(user_mt_balance.unwrap().0, 400);
+    assert_eq!(other_user_mt_balance.unwrap().0, 0);
+    assert_eq!(other_user_ft_balance.unwrap().raw(), 600);
 }
 
 #[rstest]
@@ -268,19 +259,18 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
         0
     );
 
-    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
-    assert_eq!(
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone())).to_string();
+    let (mt_balance, ft_balance) = futures::join!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.account_id(),
-                token_id: &ft_id.to_string(),
+                token_id: &ft_id,
             })
-            .await
-            .unwrap()
-            .0,
-        0
+            .into_future(),
+        ft.balance_of(user.account_id()).into_future()
     );
-    assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 1000);
+    assert_eq!(mt_balance.unwrap().0, 0);
+    assert_eq!(ft_balance.unwrap().raw(), 1000);
 }
 
 #[rstest]
@@ -303,7 +293,7 @@ async fn ft_force_withdraw(
         .await
         .unwrap();
 
-    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone())).to_string();
 
     other_user
         .defuse_ft_force_withdraw(
@@ -318,21 +308,17 @@ async fn ft_force_withdraw(
         .await
         .unwrap_err();
 
-    assert_eq!(
+    let (user_mt_balance, other_user_ft_balance) = futures::join!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.account_id(),
-                token_id: &ft_id.to_string(),
+                token_id: &ft_id,
             })
-            .await
-            .unwrap()
-            .0,
-        1000
+            .into_future(),
+        ft.balance_of(other_user.account_id()).into_future()
     );
-    assert_eq!(
-        ft.balance_of(other_user.account_id()).await.unwrap().raw(),
-        0
-    );
+    assert_eq!(user_mt_balance.unwrap().0, 1000);
+    assert_eq!(other_user_ft_balance.unwrap().raw(), 0);
 
     env.acl_grant_role(
         env.defuse.contract_id(),
@@ -358,21 +344,17 @@ async fn ft_force_withdraw(
         1000
     );
 
-    assert_eq!(
+    let (user_mt_balance, other_user_ft_balance) = futures::join!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.account_id(),
-                token_id: &ft_id.to_string(),
+                token_id: &ft_id,
             })
-            .await
-            .unwrap()
-            .0,
-        0
+            .into_future(),
+        ft.balance_of(other_user.account_id()).into_future()
     );
-    assert_eq!(
-        ft.balance_of(other_user.account_id()).await.unwrap().raw(),
-        1000
-    );
+    assert_eq!(user_mt_balance.unwrap().0, 0);
+    assert_eq!(other_user_ft_balance.unwrap().raw(), 1000);
 }
 
 #[derive(Debug, Clone)]
@@ -514,20 +496,23 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
         .result()
         .unwrap();
 
-    assert_eq!(
-        ft.balance_of(user.account_id()).await.unwrap().raw(),
-        expectation.expected_sender_ft_balance
-    );
-
-    assert_eq!(
+    let ft_id = ft_id.to_string();
+    let (sender_ft_balance, receiver_mt_balance) = futures::join!(
+        ft.balance_of(user.account_id()).into_future(),
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: receiver.account_id(),
-                token_id: &ft_id.to_string(),
+                token_id: &ft_id,
             })
-            .await
-            .unwrap()
-            .0,
+            .into_future()
+    );
+
+    assert_eq!(
+        sender_ft_balance.unwrap().raw(),
+        expectation.expected_sender_ft_balance
+    );
+    assert_eq!(
+        receiver_mt_balance.unwrap().0,
         expectation.expected_receiver_mt_balance
     );
 }

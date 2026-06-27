@@ -34,11 +34,12 @@ async fn test_commit_nonces(
     env: Env,
 ) {
     let current_timestamp = Timestamp::now();
-    let current_salt = env.defuse.current_salt().await.unwrap();
     let timeout_delta = Duration::from_hours(24);
     let u = &mut Unstructured::new(&random_bytes);
 
-    let user = env.create_user().await;
+    let (current_salt, user) =
+        futures::join!(env.defuse.current_salt().into_future(), env.create_user());
+    let current_salt = current_salt.unwrap();
 
     // legacy nonce
     {
@@ -337,25 +338,23 @@ async fn test_cleanup_nonces(
         .await
         .unwrap();
 
-        assert!(
+        let (legacy_nonce_used, long_term_expirable_nonce_used) = futures::join!(
             env.defuse
                 .is_nonce_used(IsNonceUsedArgs {
                     account_id: user.account_id(),
                     nonce: &legacy_nonce,
                 })
-                .await
-                .unwrap(),
-        );
-
-        assert!(
+                .into_future(),
             env.defuse
                 .is_nonce_used(IsNonceUsedArgs {
                     account_id: user.account_id(),
                     nonce: &long_term_expirable_nonce,
                 })
-                .await
-                .unwrap(),
+                .into_future()
         );
+
+        assert!(legacy_nonce_used.unwrap());
+        assert!(long_term_expirable_nonce_used.unwrap());
     }
 
     // clean invalid salt
@@ -404,10 +403,10 @@ async fn cleanup_multiple_nonces(
 
     const CHUNK_SIZE: usize = 10;
     const WAITING_TIME: Duration = Duration::from_secs(3);
-    let user = env.create_user().await;
-
     let mut nonces = Vec::with_capacity(nonce_count);
-    let current_salt = env.defuse.current_salt().await.unwrap();
+    let (user, current_salt) =
+        futures::join!(env.create_user(), env.defuse.current_salt().into_future());
+    let current_salt = current_salt.unwrap();
 
     env.acl_grant_role(
         env.defuse.contract_id(),

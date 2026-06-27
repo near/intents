@@ -154,22 +154,23 @@ impl Env {
         all_accounts.push(self.defuse.contract_id());
         all_accounts.push(self.account_id());
 
-        // deposit WNEAR storage
-        self.ft_storage_deposit_for_accounts(self.wnear.contract_id(), all_accounts.clone())
-            .await
-            .expect("Failed to deposit Wnear storage");
+        let tokens: Vec<_> = tokens.into_iter().collect();
 
-        // deposit ALL tokens storage
-        for token in tokens {
-            self.ft_storage_deposit_for_accounts(token, all_accounts.clone())
-                .await
-                .expect("Failed to deposit FT storage");
+        let wnear_storage =
+            self.ft_storage_deposit_for_accounts(self.wnear.contract_id(), all_accounts.clone());
+        let token_setup = try_join_all(tokens.into_iter().map(|token| {
+            let all_accounts = all_accounts.clone();
+            async move {
+                self.ft_storage_deposit_for_accounts(token, all_accounts)
+                    .await?;
+                self.ft_deposit_to_root(token).await
+            }
+        }));
 
-            // Deposit FTs to root for transfers to users
-            self.ft_deposit_to_root(token)
-                .await
-                .expect("Failed to deposit FT storage to root");
-        }
+        let (wnear_storage, token_setup) = futures::join!(wnear_storage, token_setup);
+
+        wnear_storage.expect("Failed to deposit Wnear storage");
+        token_setup.expect("Failed to deposit FT storage");
     }
 
     async fn ft_storage_deposit_for_accounts(

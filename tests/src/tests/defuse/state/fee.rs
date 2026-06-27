@@ -26,10 +26,14 @@ async fn set_fee(
     #[future(awt)]
     env: Env,
 ) {
-    let prev_fee = env.defuse.fee().await.unwrap();
     let fee = Pips::from_pips(100).unwrap();
 
-    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
+    let (prev_fee, user1, user2) = futures::join!(
+        env.defuse.fee().into_future(),
+        env.create_user(),
+        env.create_user()
+    );
+    let prev_fee = prev_fee.unwrap();
 
     // only DAO or fee manager can set fee
     {
