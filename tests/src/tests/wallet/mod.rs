@@ -16,7 +16,7 @@ use defuse_sandbox::{
     root,
 };
 use defuse_test_utils::wasms::WALLET_WASM;
-use futures::{StreamExt, TryStreamExt, stream};
+use futures::{TryStreamExt, stream::FuturesUnordered};
 use impl_tools::autoimpl;
 use rstest::{fixture, rstest};
 use serde_json::json;
@@ -217,23 +217,21 @@ async fn test_no_storage_staking(#[future] env: Env) {
         .result()
         .unwrap();
 
-    stream::iter(
-        (0..wallet.nonces.timeout().as_secs() * 2)
-            .map(|_n| wallet.sign(Request::new()).unwrap())
-            .map(|(msg, proof)| {
-                let env = &env;
-                let wallet_id = wallet_id.clone();
-                async move {
-                    env.w_execute_signed(wallet_id, None, msg, proof, NearToken::ZERO)
-                        .await
-                        .map(|_| ())
-                }
-            }),
-    )
-    .buffer_unordered(100)
-    .try_collect::<()>()
-    .await
-    .unwrap();
+    (0..wallet.nonces.timeout().as_secs() * 2)
+        .map(|_n| wallet.sign(Request::new()).unwrap())
+        .map(|(msg, proof)| {
+            let env = &env;
+            let wallet_id = wallet_id.clone();
+            async move {
+                env.w_execute_signed(wallet_id, None, msg, proof, NearToken::ZERO)
+                    .await
+                    .map(|_| ())
+            }
+        })
+        .collect::<FuturesUnordered<_>>()
+        .try_collect::<()>()
+        .await
+        .unwrap();
 }
 
 #[autoimpl(Deref using self.root)]
