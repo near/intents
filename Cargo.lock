@@ -403,9 +403,6 @@ name = "bnum"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "119771309b95163ec7aaf79810da82f7cd0599c19722d48b9c03894dca833966"
-dependencies = [
- "borsh",
-]
 
 [[package]]
 name = "bollard"
