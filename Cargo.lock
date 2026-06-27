@@ -1578,6 +1578,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-near-promise"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "borsh",
+ "cfg_eval",
+ "defuse-near-promise",
+ "derive_more",
+ "near-account-id",
+ "near-gas",
+ "near-global-contracts",
+ "near-sdk",
+ "near-token",
+ "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
+]
+
+[[package]]
 name = "defuse-near-utils"
 version = "0.1.0"
 dependencies = [
@@ -3471,6 +3492,7 @@ version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "559c33c9c86e05da946358485fa6e7e881a09726f909fbd8bcf357f998d7d03d"
 dependencies = [
+ "arbitrary",
  "borsh",
  "schemars 0.8.22",
  "serde",
@@ -3816,6 +3838,7 @@ version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a8000d5859172ce4cd29d51ae1af18a80571939f2975ffcae2c00d241ef4507"
 dependencies = [
+ "arbitrary",
  "borsh",
  "schemars 0.8.22",
  "serde",
