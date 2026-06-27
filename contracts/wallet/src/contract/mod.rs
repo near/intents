@@ -6,7 +6,7 @@ pub use self::impl_::*;
 use std::collections::BTreeSet;
 
 use defuse_time::Timestamp;
-use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near};
+use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near, require};
 
 use crate::{
     Actor, Error, Request, RequestMessage, Result, Wallet, WalletEvent, WalletOp,
@@ -111,8 +111,13 @@ impl Contract {
             self.execute_op(op, actor.as_ref())?;
         }
 
-        if let Some(promise) = request.out.build() {
-            promise.detach();
+        for promise in request.out {
+            require!(
+                promise.receiver_id != env::current_account_id(),
+                "self-calls are prohibited",
+            );
+
+            promise.build().detach();
         }
 
         Ok(())

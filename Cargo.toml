@@ -30,6 +30,7 @@ members = [
   "crates/near/auth-call",
   "crates/near/controller",
   "crates/near/nep245",
+  "crates/near/promise",
   "crates/near/utils",
   "crates/near/wnear",
 
@@ -92,6 +93,7 @@ defuse-serde-utils.path = "crates/serde-utils"
 defuse-admin-utils.path = "crates/near/admin-utils"
 defuse-auth-call.path = "crates/near/auth-call"
 defuse-controller.path = "crates/near/controller"
+defuse-near-promise.path = "crates/near/promise"
 defuse-near-utils.path = "crates/near/utils"
 defuse-nep245.path = "crates/near/nep245"
 defuse-wnear.path = "crates/near/wnear"
@@ -121,11 +123,14 @@ defuse-tests.path = "tests"
 cargo-near-build = "0.11.3"
 near-account-id = "2.6.0"
 near-contract-standards = "5.28.3"
+near-gas = "0.3.6"
 near-kit = { version = "0.11.2", default-features = false }
 near-plugins = "0.5.3"
 near-sdk = "5.28.3"
 near-sdk-core = "4.1.3"
 near-sdk-env = "0.1.2"
+near-token = "0.3.4"
+near-global-contracts = "0.2.2"
 
 anyhow = "1"
 arbitrary = "1"

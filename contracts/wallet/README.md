@@ -8,7 +8,7 @@ A generic minimalistic wallet smart-contract that enables for true *sharded* and
 
 ## Key Features
 
-* Execute *arbitrary* [**promise chains**](#promisedag), e.g. `borrow.then(swap).then(repay)`
+* Execute *arbitrary* [**promises**](#promises) (i.e. cross-contract calls).
 * [**Extensions**](#extensions) can be implemented as *separate* third-party
   accounts/contracts on Near with their own arbitrary logic. Installed
   extensions have full control over the wallet-contract instance and can be
@@ -44,9 +44,10 @@ A wallet contract has two main entrypoints for executing requests:
   enabled extensions, no signature is required.
 
 Each `request` contains:
+
 * `ops`: *(optional)* list of wallet operations: enable/disable signature,
   add/remove extension
-* `out`: *(optional)* Promise DAG of cross-contract calls to execute.
+* `out`: *(optional)* promises (i.e. cross-contract calls) to execute.
 
 ### Signing Standards
 
@@ -139,9 +140,12 @@ Recommended timeout for production use is `1 hour`.
 
 A single public key can control multiple wallet contracts by varying the `wallet_id` field in the initialization state. Each subwallet has a distinct deterministic `AccountId`.
 
-### `PromiseDAG`
+### Promises
 
-Requests can include a DAG of promises, enabling arbitrary-complex cross-contract call chains.
+Requests can optionally include arbitrary number of promises (i.e. cross-contract calls), each one with one or more actions.
+
+All created promises are executed concurrently and independently of each other,
+without waiting on previous ones to complete
 
 Supported actions within promises are:
 
@@ -166,6 +170,7 @@ design philosophy, it's still possible to implement key rotation via extensions
 while keeping the original address.
 
 To rotate a key for the original wallet, the signer needs to:
+
 1. Create a new keypair
 1. Derive a new wallet address from the new public key
 1. Prepare a request for the new wallet that calls `w_execute_extension()` method
