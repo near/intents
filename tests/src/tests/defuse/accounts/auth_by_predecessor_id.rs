@@ -26,7 +26,7 @@ use std::borrow::Cow;
 async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
+    env.initial_ft_storage_deposit([user.account_id()], [ft.contract_id()])
         .await;
 
     let receiver_id: AccountId = "receiver_id.near".parse().unwrap();

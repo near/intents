@@ -13,7 +13,7 @@ use defuse_sandbox::{
         poa::{PoaFactoryClient, PoaFactoryDeployerExt, contract::Role as POAFactoryRole},
         wnear::{WNearDeployerExt, WNearExt},
     },
-    kit::{AccountId, AccountIdRef, Action, Final, FunctionCallAction, Gas, Near, NearToken},
+    kit::{AccountId, AccountIdRef, FunctionCallAction, Gas, Near, NearToken},
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, POA_FACTORY_WASM, WNEAR_WASM};
 use futures::FutureExt;
@@ -127,35 +127,32 @@ impl EnvBuilder {
         root: &Near,
         wnear: impl AsRef<AccountIdRef>,
     ) -> (DefuseClient, Near) {
-        let cfg = DefuseConfig {
-            wnear_id: wnear.as_ref().into(),
-            fees: FeesConfig {
-                fee: self.fee,
-                fee_collector: self
-                    .fee_collector
-                    .as_ref()
-                    .unwrap_or_else(|| root.account_id())
-                    .clone(),
-            },
-            roles: self.roles.clone(),
-        };
-
         let account = root
-            .create_subaccount(name, NearToken::from_near(100))
-            .await;
-
-        account
-            .deploy(self.defuse_wasm.clone())
-            .add_action(Action::FunctionCall(FunctionCallAction {
-                method_name: "new".to_string(),
-                args: serde_json::to_vec(&json!({"config": cfg})).unwrap(),
-                gas: Gas::from_tgas(30),
-                deposit: NearToken::from_near(0),
-            }))
-            .wait_until(Final)
+            .deploy_sub_contract(
+                name,
+                NearToken::from_near(100),
+                self.defuse_wasm.clone(),
+                Some(FunctionCallAction {
+                    method_name: "new".to_string(),
+                    args: serde_json::to_vec(&json!({
+                        "config": DefuseConfig {
+                            wnear_id: wnear.as_ref().into(),
+                            fees: FeesConfig {
+                                fee: self.fee,
+                                fee_collector: self
+                                    .fee_collector
+                                    .as_ref()
+                                    .unwrap_or_else(|| root.account_id())
+                                    .clone(),
+                            },
+                            roles: self.roles.clone(),
+                    }}))
+                    .unwrap(),
+                    gas: Gas::from_tgas(30),
+                    deposit: NearToken::from_near(0),
+                }),
+            )
             .await
-            .unwrap()
-            .result()
             .unwrap();
 
         let client = root.contract::<Defuse>(account.account_id());

@@ -340,23 +340,30 @@ async fn test_cleanup_nonces(
         .await
         .unwrap();
 
-        let (legacy_nonce_used, long_term_expirable_nonce_used) = futures::join!(
-            env.defuse
-                .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
-                    nonce: &legacy_nonce,
-                })
-                .into_future(),
-            env.defuse
-                .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
-                    nonce: &long_term_expirable_nonce,
-                })
-                .into_future()
+        futures::join!(
+            async {
+                assert!(
+                    env.defuse
+                        .is_nonce_used(IsNonceUsedArgs {
+                            account_id: user.account_id(),
+                            nonce: &legacy_nonce,
+                        })
+                        .await
+                        .unwrap()
+                );
+            },
+            async {
+                assert!(
+                    env.defuse
+                        .is_nonce_used(IsNonceUsedArgs {
+                            account_id: user.account_id(),
+                            nonce: &long_term_expirable_nonce,
+                        })
+                        .await
+                        .unwrap()
+                );
+            }
         );
-
-        assert!(legacy_nonce_used.unwrap());
-        assert!(long_term_expirable_nonce_used.unwrap());
     }
 
     // clean invalid salt
@@ -406,9 +413,11 @@ async fn cleanup_multiple_nonces(
     const CHUNK_SIZE: usize = 10;
     const WAITING_TIME: Duration = Duration::from_secs(3);
     let mut nonces = Vec::with_capacity(nonce_count);
-    let (user, current_salt) =
-        futures::join!(env.create_user(), env.defuse.current_salt().into_future());
-    let current_salt = current_salt.unwrap();
+    let (user, current_salt) = futures::try_join!(
+        env.create_user().map(Ok),
+        env.defuse.current_salt().into_future()
+    )
+    .unwrap();
 
     env.acl_grant_role(
         env.defuse.contract_id(),
