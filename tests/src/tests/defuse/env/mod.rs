@@ -1,9 +1,11 @@
 #![allow(dead_code)]
 
 mod builder;
+use std::collections::HashSet;
+
 pub use self::builder::*;
 
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse_randomness::{RngExt, make_true_rng};
 use defuse_sandbox::{
@@ -19,7 +21,7 @@ use defuse_sandbox::{
     kit::{AccountId, AccountIdRef, Final, FungibleToken, Gas, Near, NearToken},
     root,
 };
-use futures::future::try_join_all;
+use futures::future::{FutureExt, try_join_all};
 use impl_tools::autoimpl;
 use near_sdk_core::{json_types::U128, types::account_id::arbitrary::ArbitraryNamedAccountId};
 use rstest::fixture;
@@ -43,8 +45,6 @@ pub struct Env {
     pub wnear: FungibleToken,
     pub defuse: DefuseClient,
     pub poa_factory: PoaFactoryClient,
-
-    pub disable_ft_storage_deposit: bool,
 }
 
 impl Env {
@@ -140,56 +140,47 @@ impl Env {
     }
 
     // if no tokens provided - only wnear storage deposit will be done
-    pub async fn initial_ft_storage_deposit(
-        &self,
-        accounts: impl IntoIterator<Item = &AccountId>,
-        tokens: impl IntoIterator<Item = &AccountId>,
+    pub async fn initial_ft_storage_deposit<'a>(
+        &'a self,
+        accounts: impl IntoIterator<Item: Into<AccountId>>,
+        tokens: impl IntoIterator<Item = &'a AccountId>,
     ) {
-        if self.disable_ft_storage_deposit {
-            return;
-        }
+        let all_accounts: HashSet<_> = accounts
+            .into_iter()
+            .map(Into::into)
+            .chain([self.defuse.contract_id().clone()])
+            .collect();
 
-        let mut all_accounts: Vec<&AccountId> = accounts.into_iter().collect();
+        let tokens: HashSet<_> = tokens.into_iter().collect();
 
-        all_accounts.push(self.defuse.contract_id());
-        all_accounts.push(self.account_id());
-
-        // deposit WNEAR storage
-        self.ft_storage_deposit_for_accounts(self.wnear.contract_id(), all_accounts.clone())
-            .await
-            .expect("Failed to deposit Wnear storage");
-
-        // deposit ALL tokens storage
-        for token in tokens {
-            self.ft_storage_deposit_for_accounts(token, all_accounts.clone())
-                .await
-                .expect("Failed to deposit FT storage");
-
+        futures::try_join!(
             // Deposit FTs to root for transfers to users
-            self.ft_deposit_to_root(token)
-                .await
-                .expect("Failed to deposit FT storage to root");
-        }
-    }
-
-    async fn ft_storage_deposit_for_accounts(
-        &self,
-        token: &AccountIdRef,
-        accounts: impl IntoIterator<Item = &AccountId>,
-    ) -> Result<()> {
-        let ft = self.ft(AccountId::from(token))?;
-        try_join_all(accounts.into_iter().map(|acc| {
-            let ft = ft.clone();
-            let acc = acc.clone();
-            async move {
-                ft.storage_deposit(acc, TOKEN_STORAGE_DEPOSIT)
-                    .wait_until(Final)
-                    .await
-            }
-        }))
-        .await?;
-
-        Ok(())
+            try_join_all(
+                tokens
+                    .iter()
+                    .copied()
+                    .map(|token| self.ft_deposit_to_root(token)),
+            ),
+            try_join_all(
+                tokens
+                    .into_iter()
+                    .chain([self.wnear.contract_id()])
+                    .flat_map(|token| {
+                        let ft = self.ft(token).unwrap();
+                        all_accounts.iter().map(move |account_id| {
+                            ft.storage_deposit(account_id, TOKEN_STORAGE_DEPOSIT)
+                                .wait_until(Final)
+                                .into_future()
+                                .map(move |r| {
+                                    r.context(format!(
+                                        "{token}::storage_deposit({{\"account_id\": \"{account_id}\"}})"
+                                    ))
+                                })
+                        })
+                    }),
+            ),
+        )
+        .unwrap();
     }
 
     async fn ft_deposit_to_root(&self, token: &AccountIdRef) -> Result<()> {

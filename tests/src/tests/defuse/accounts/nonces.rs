@@ -11,7 +11,7 @@ use defuse_sandbox::{
     },
     kit::AccountId,
 };
-use futures::future::join_all;
+use futures::{FutureExt, future::join_all};
 use rstest::rstest;
 use std::time::Duration;
 use tokio::time::sleep;
@@ -34,11 +34,14 @@ async fn test_commit_nonces(
     env: Env,
 ) {
     let current_timestamp = Timestamp::now();
-    let current_salt = env.defuse.current_salt().await.unwrap();
     let timeout_delta = Duration::from_hours(24);
     let u = &mut Unstructured::new(&random_bytes);
 
-    let user = env.create_user().await;
+    let (current_salt, user) = futures::try_join!(
+        env.defuse.current_salt().into_future(),
+        env.create_user().map(Ok)
+    )
+    .unwrap();
 
     // legacy nonce
     {
@@ -337,24 +340,29 @@ async fn test_cleanup_nonces(
         .await
         .unwrap();
 
-        assert!(
-            env.defuse
-                .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
-                    nonce: &legacy_nonce,
-                })
-                .await
-                .unwrap(),
-        );
-
-        assert!(
-            env.defuse
-                .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
-                    nonce: &long_term_expirable_nonce,
-                })
-                .await
-                .unwrap(),
+        futures::join!(
+            async {
+                assert!(
+                    env.defuse
+                        .is_nonce_used(IsNonceUsedArgs {
+                            account_id: user.account_id(),
+                            nonce: &legacy_nonce,
+                        })
+                        .await
+                        .unwrap()
+                );
+            },
+            async {
+                assert!(
+                    env.defuse
+                        .is_nonce_used(IsNonceUsedArgs {
+                            account_id: user.account_id(),
+                            nonce: &long_term_expirable_nonce,
+                        })
+                        .await
+                        .unwrap()
+                );
+            }
         );
     }
 
@@ -404,10 +412,12 @@ async fn cleanup_multiple_nonces(
 
     const CHUNK_SIZE: usize = 10;
     const WAITING_TIME: Duration = Duration::from_secs(3);
-    let user = env.create_user().await;
-
     let mut nonces = Vec::with_capacity(nonce_count);
-    let current_salt = env.defuse.current_salt().await.unwrap();
+    let (user, current_salt) = futures::try_join!(
+        env.create_user().map(Ok),
+        env.defuse.current_salt().into_future()
+    )
+    .unwrap();
 
     env.acl_grant_role(
         env.defuse.contract_id(),

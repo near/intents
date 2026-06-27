@@ -53,19 +53,21 @@ async fn test_upgrade_with_persistence(
     env: Env,
     public_key: PublicKey,
 ) {
-    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
-    let ft = env.create_named_token("testtoken").await;
+    let (user1, user2, ft) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_named_token("testtoken")
+    );
 
     env.initial_ft_storage_deposit([user1.account_id(), user2.account_id()], [ft.contract_id()])
         .await;
 
     let deposit_amount = 10_000u128;
 
-    futures::future::try_join_all([
+    futures::try_join!(
         env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user1.account_id(), None),
-        env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user2.account_id(), None),
-    ])
-    .await
+        env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user2.account_id(), None)
+    )
     .unwrap();
 
     let token_id = TokenId::Nep141(Nep141TokenId::new(ft.contract_id().clone())).to_string();
@@ -79,46 +81,57 @@ async fn test_upgrade_with_persistence(
         )
     };
 
+    let user1_pubkey = get_pubkey(&user1);
+    let user2_pubkey = get_pubkey(&user2);
+
     // record state before upgrade
-    assert_eq!(
-        balance_of(
-            &env,
-            env.defuse.contract_id(),
-            user1.account_id(),
-            &token_id
-        )
-        .await,
-        deposit_amount
-    );
-    assert_eq!(
-        balance_of(
-            &env,
-            env.defuse.contract_id(),
-            user2.account_id(),
-            &token_id
-        )
-        .await,
-        deposit_amount
-    );
-
-    assert!(
-        env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user1.account_id(),
-                public_key: &get_pubkey(&user1),
-            })
-            .await
-            .unwrap()
-    );
-
-    assert!(
-        env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user2.account_id(),
-                public_key: &get_pubkey(&user2),
-            })
-            .await
-            .unwrap()
+    futures::join!(
+        async {
+            assert_eq!(
+                balance_of(
+                    &env,
+                    env.defuse.contract_id(),
+                    user1.account_id(),
+                    &token_id,
+                )
+                .await,
+                deposit_amount
+            );
+        },
+        async {
+            assert_eq!(
+                balance_of(
+                    &env,
+                    env.defuse.contract_id(),
+                    user2.account_id(),
+                    &token_id
+                )
+                .await,
+                deposit_amount
+            );
+        },
+        async {
+            assert!(
+                env.defuse
+                    .has_public_key(HasPublicKeyArgs {
+                        account_id: user1.account_id(),
+                        public_key: &user1_pubkey,
+                    })
+                    .await
+                    .unwrap()
+            );
+        },
+        async {
+            assert!(
+                env.defuse
+                    .has_public_key(HasPublicKeyArgs {
+                        account_id: user2.account_id(),
+                        public_key: &user2_pubkey,
+                    })
+                    .await
+                    .unwrap()
+            );
+        },
     );
 
     let fee_before = env.defuse.fee().await.unwrap();
@@ -131,47 +144,57 @@ async fn test_upgrade_with_persistence(
     env.upgrade_defuse(DEFUSE_WASM.clone()).await;
 
     // state persists after upgrade
-    assert_eq!(
-        balance_of(
-            &env,
-            env.defuse.contract_id(),
-            user1.account_id(),
-            &token_id
-        )
-        .await,
-        deposit_amount
+    futures::join!(
+        async {
+            assert_eq!(
+                balance_of(
+                    &env,
+                    env.defuse.contract_id(),
+                    user1.account_id(),
+                    &token_id
+                )
+                .await,
+                deposit_amount
+            );
+        },
+        async {
+            assert_eq!(
+                balance_of(
+                    &env,
+                    env.defuse.contract_id(),
+                    user2.account_id(),
+                    &token_id
+                )
+                .await,
+                deposit_amount
+            );
+        },
+        async {
+            assert!(
+                env.defuse
+                    .has_public_key(HasPublicKeyArgs {
+                        account_id: user1.account_id(),
+                        public_key: &user1_pubkey,
+                    })
+                    .await
+                    .unwrap()
+            );
+        },
+        async {
+            assert!(
+                env.defuse
+                    .has_public_key(HasPublicKeyArgs {
+                        account_id: user2.account_id(),
+                        public_key: &user2_pubkey,
+                    })
+                    .await
+                    .unwrap()
+            );
+        },
+        async {
+            assert_eq!(env.defuse.fee().await.unwrap(), fee_before);
+        }
     );
-    assert_eq!(
-        balance_of(
-            &env,
-            env.defuse.contract_id(),
-            user2.account_id(),
-            &token_id
-        )
-        .await,
-        deposit_amount
-    );
-
-    assert!(
-        env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user1.account_id(),
-                public_key: &get_pubkey(&user1),
-            })
-            .await
-            .unwrap()
-    );
-    assert!(
-        env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user2.account_id(),
-                public_key: &get_pubkey(&user2),
-            })
-            .await
-            .unwrap()
-    );
-
-    assert_eq!(env.defuse.fee().await.unwrap(), fee_before);
 
     // existing user can still receive deposits
     let extra = 5_000u128;
@@ -212,26 +235,31 @@ async fn test_upgrade_with_persistence(
         .await
         .unwrap();
 
-    assert_eq!(
-        balance_of(
-            &env,
-            env.defuse.contract_id(),
-            user1.account_id(),
-            &token_id
-        )
-        .await,
-        deposit_amount + extra - transfer_amount,
-    );
-
-    assert_eq!(
-        balance_of(
-            &env,
-            env.defuse.contract_id(),
-            user2.account_id(),
-            &token_id
-        )
-        .await,
-        deposit_amount + transfer_amount,
+    futures::join!(
+        async {
+            assert_eq!(
+                balance_of(
+                    &env,
+                    env.defuse.contract_id(),
+                    user1.account_id(),
+                    &token_id
+                )
+                .await,
+                deposit_amount + extra - transfer_amount
+            );
+        },
+        async {
+            assert_eq!(
+                balance_of(
+                    &env,
+                    env.defuse.contract_id(),
+                    user2.account_id(),
+                    &token_id
+                )
+                .await,
+                deposit_amount + transfer_amount
+            );
+        },
     );
 
     // FtWithdraw: user2 withdraws tokens from defuse to their FT account

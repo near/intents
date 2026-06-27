@@ -12,6 +12,7 @@ use defuse_sandbox::extensions::{
         core::{accounts::SaltRotationEvent, events::DefuseEvent},
     },
 };
+use futures::FutureExt;
 use near_sdk_core::events::AsNep297Event;
 use rstest::rstest;
 
@@ -22,9 +23,12 @@ async fn update_current_salt(
     #[future(awt)]
     env: Env,
 ) {
-    let prev_salt = env.defuse.current_salt().await.unwrap();
-
-    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
+    let (prev_salt, user1, user2) = futures::try_join!(
+        env.defuse.current_salt().into_future(),
+        env.create_user().map(Ok),
+        env.create_user().map(Ok),
+    )
+    .unwrap();
 
     // only DAO or salt manager can rotate salt
     {
@@ -58,16 +62,17 @@ async fn update_current_salt(
 
         assert!(res.logs().contains(&event));
 
-        let current_salt = env.defuse.current_salt().await.unwrap();
+        let (current_salt, prev_salt_is_valid) = futures::try_join!(
+            env.defuse.current_salt().into_future(),
+            env.defuse
+                .is_valid_salt(SaltArgs { salt: prev_salt })
+                .into_future()
+        )
+        .unwrap();
 
         assert_ne!(prev_salt, current_salt);
         assert_eq!(new_salt, current_salt);
-        assert!(
-            env.defuse
-                .is_valid_salt(SaltArgs { salt: prev_salt })
-                .await
-                .unwrap()
-        );
+        assert!(prev_salt_is_valid);
     }
 }
 
@@ -78,10 +83,13 @@ async fn invalidate_salts(
     #[future(awt)]
     env: Env,
 ) {
-    let mut current_salt = env.defuse.current_salt().await.unwrap();
+    let (mut current_salt, user1, user2) = futures::try_join!(
+        env.defuse.current_salt().into_future(),
+        env.create_user().map(Ok),
+        env.create_user().map(Ok),
+    )
+    .unwrap();
     let mut prev_salt = current_salt;
-
-    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
     // only DAO or salt manager can invalidate salt
     {

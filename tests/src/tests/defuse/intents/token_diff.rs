@@ -19,6 +19,7 @@ use rstest::rstest;
 use std::collections::BTreeMap;
 
 use crate::tests::defuse::env::{Env, env};
+use futures::future::try_join_all;
 
 #[rstest]
 #[tokio::test]
@@ -203,7 +204,7 @@ struct AccountFtDiff<'a> {
 }
 
 async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
-    futures::future::try_join_all(accounts.iter().flat_map(move |account| {
+    try_join_all(accounts.iter().flat_map(move |account| {
         account
             .init_balances
             .iter()
@@ -219,7 +220,7 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
     .await
     .unwrap();
 
-    let signed = futures::future::try_join_all(accounts.iter().flat_map(move |account| {
+    let signed = try_join_all(accounts.iter().flat_map(move |account| {
         account.diff.iter().cloned().map(move |diff| {
             account.account.sign_defuse_payload_default(
                 &env.defuse,
@@ -299,7 +300,7 @@ async fn invariant_violated(#[future(awt)] env: Env) {
     )
     .expect("Failed to deposit tokens");
 
-    let signed = futures::future::try_join_all([
+    let signed = try_join_all([
         user1.sign_defuse_payload_default(
             &env.defuse,
             [TokenDiff {
