@@ -72,8 +72,7 @@ impl<PubKey> State<PubKey> {
         }
     }
 
-    /// Set given `subwallet_id` instead of the
-    /// [default](`State::DEFAULT_WALLET_ID`) one.
+    /// Set given `subwallet_id` instead of the [default](`DEFAULT_WALLET_ID`) one.
     /// This can be used to derive multiple wallet-contract from a single
     /// public key.
     #[must_use]
@@ -83,8 +82,7 @@ impl<PubKey> State<PubKey> {
         self
     }
 
-    /// Set given `timeout` instead of default the
-    /// [default](`State::DEFAULT_TIMEOUT`) one.
+    /// Set given `timeout` instead of default the [default](`DEFAULT_TIMEOUT`) one.
     #[must_use]
     #[inline]
     pub fn timeout(mut self, timeout: Duration) -> Self {
