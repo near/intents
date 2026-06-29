@@ -27,3 +27,4 @@ ed25519 = [
   "dep:ed25519-dalek",
   "dep:sha2",
 ]
+json = ["defuse-wallet/json"]

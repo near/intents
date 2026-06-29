@@ -36,11 +36,8 @@ pub struct NearPromise {
     )]
     pub refund_to: Option<AccountId>,
 
-    /// Actions to execute within a single promise.
-    ///
-    /// TODO: what empty list will result in?
+    /// Actions to execute within this promise.
     pub actions: Vec<NearAction>,
-    // TODO: future compatibility with other fields? versioned?
 }
 
 impl NearPromise {

@@ -31,7 +31,7 @@ pub struct RelayRequest {
     pub msg: RequestMessage,
     pub proof: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub min_gas: Option<Gas>,
+    pub gas: Option<Gas>,
 }
 
 impl Relayer {
@@ -118,7 +118,7 @@ impl Relayer {
                     // attach optional given deposit, too
                     .saturating_add(deposit),
             )
-            .gas(self.tx_gas(&request.msg, request.min_gas, max_gas)?),
+            .gas(self.tx_gas(&request.msg, request.gas, max_gas)?),
         );
 
         tokio::time::timeout(
