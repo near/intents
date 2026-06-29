@@ -16,7 +16,7 @@ near-token.workspace = true
 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
-cfg_eval.workspace = true
+cfg_eval = { workspace = true, optional = true }
 near-sdk = { workspace = true, features = ["deterministic-account-ids"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
@@ -58,6 +58,7 @@ schemars-v0_8 = [
   "serde_with/schemars_0_8",
 ]
 serde = [
+  "dep:cfg_eval",
   "dep:serde",
   "dep:serde_with",
   "near-account-id/serde",
