@@ -32,8 +32,8 @@ pub enum Error {
     #[error("lockout: signature is disabled and extensions are empty")]
     Lockout,
 
-    #[error("self-calls are prohibited")]
-    SelfCall,
+    #[error("self-calls are not allowed")]
+    SelfCallsNotAllowed,
 
     #[error("signature is disabled")]
     SignatureDisabled,

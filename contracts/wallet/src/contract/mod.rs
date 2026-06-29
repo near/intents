@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 
 use defuse_near_promise::{NearPromise, actions::NearAction};
 use defuse_time::Timestamp;
-use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near, require};
+use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near};
 
 use crate::{
     Actor, Error, Request, RequestMessage, Result, Wallet, WalletEvent, WalletOp,
@@ -113,7 +113,7 @@ impl Contract {
         }
 
         for promise in request.out {
-            self.check_promise(&promise)?;
+            Self::check_promise(&promise)?;
 
             promise.build().detach();
         }
@@ -191,10 +191,10 @@ impl Contract {
         Ok(())
     }
 
-    fn check_promise(&self, promise: &NearPromise) -> Result<()> {
+    fn check_promise(promise: &NearPromise) -> Result<()> {
         // check for no self-calls
         if promise.receiver_id == env::current_account_id() {
-            return Err(Error::SelfCall);
+            return Err(Error::SelfCallsNotAllowed);
         }
 
         // check for no unsupported actions
