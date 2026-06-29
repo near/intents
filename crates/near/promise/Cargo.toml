@@ -69,6 +69,8 @@ serde = [
 near-contract = ["dep:near-sdk"]
 
 [dev-dependencies]
-defuse-near-promise = { path = ".", features = ["arbitrary", "abi", "json", "near-contract"] }
+defuse-near-promise = { path = ".", features = ["arbitrary", "abi", "borsh", "json", "near-contract"] }
+hex-literal.workspace = true
+rstest.workspace = true
 
 near-sdk = { workspace = true, features = ["unit-testing"] }

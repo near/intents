@@ -212,3 +212,42 @@ impl NearPromise {
             .fold(p, |p, action| action.append(p))
     }
 }
+
+#[cfg(all(test, feature = "borsh"))]
+mod tests {
+    use hex_literal::hex;
+    use near_global_contracts::StateInitV1;
+    use rstest::rstest;
+
+    use super::*;
+
+    const RECEIVER_ID: &AccountIdRef = AccountIdRef::new_or_panic("receiver.near");
+    const REFUND_TO: &AccountIdRef = AccountIdRef::new_or_panic("refund.near");
+    const GLOBAL_ID: &AccountIdRef = AccountIdRef::new_or_panic("global.near");
+
+    #[rstest]
+    #[case(
+        NearPromise::new(RECEIVER_ID)
+            .refund_to(REFUND_TO)
+            .deterministic_state_init(
+                StateInitV1::code(GLOBAL_ID.to_owned()),
+                NearToken::from_near(1),
+            )
+            .function_call(
+                FunctionCall::name("foo")
+                    .args([0x12, 0x34, 0x56, 0x78])
+                    .attach_deposit(NearToken::from_near(2))
+                    .gas(Gas::from_tgas(42))
+                    .unused_gas_weight(2)
+            )
+            .transfer(NearToken::from_near(3)),
+        hex!("0d00000072656365697665722e6e656172010b000000726566756e642e6e656172030000000b00010b000000676c6f62616c2e6e65617200000000000000a1edccce1bc2d30000000000000203000000666f6f040000001234567800000042db999d3784a701000000000000a014e332260000020000000000000003000000e3c8666c53467b020000000000"),
+    )]
+    fn borsh_has_not_changed(#[case] p: NearPromise, #[case] expected: impl Into<Vec<u8>>) {
+        let serialized = borsh::to_vec(&p).unwrap();
+        assert_eq!(serialized, expected.into());
+
+        let deserialized: NearPromise = borsh::from_slice(&serialized).unwrap();
+        assert_eq!(deserialized, p);
+    }
+}
