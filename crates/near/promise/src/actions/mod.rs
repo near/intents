@@ -39,23 +39,6 @@ pub enum NearAction {
 }
 
 impl NearAction {
-    /// Returns NEAR deposit for this action.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use defuse_near_promise::{
-    /// #     NearToken,
-    /// #     actions::{NearAction, Transfer, FunctionCall},
-    /// # };
-    /// let transfer = NearAction::Transfer(NearToken::from_near(1).into());
-    /// assert_eq!(transfer.deposit(), NearToken::from_near(1));
-    ///
-    /// let function_call: NearAction = FunctionCall::name("foo")
-    ///     .attach_deposit(NearToken::from_near(5))
-    ///     .into();
-    /// assert_eq!(function_call.deposit(), NearToken::from_near(5));
-    /// ```
     #[inline]
     pub(crate) const fn deposit(&self) -> NearToken {
         match self {
