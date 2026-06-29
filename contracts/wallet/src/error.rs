@@ -5,17 +5,11 @@ pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 
 #[derive(Debug, ThisError, FunctionError)]
 pub enum Error {
-    #[error("already executed")]
-    AlreadyExecuted,
-
     #[error("extension '{0}' is already enabled")]
     ExtensionEnabled(AccountId),
 
     #[error("extension '{0}' is not enabled")]
     ExtensionNotEnabled(AccountId),
-
-    #[error("expired or from the future")]
-    ExpiredOrFuture,
 
     #[error("invalid chain_id")]
     InvalidChainId,

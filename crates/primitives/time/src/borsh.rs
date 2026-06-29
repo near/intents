@@ -46,7 +46,7 @@ macro_rules! borsh_as {
             }
         }
 
-        #[cfg(feature = "abi")]
+        #[cfg(feature = "borsh-schema")]
         const _: () = {
             use borsh::{BorshSchema, schema::{Declaration, Definition}};
             use defuse_borsh_utils::BorshSchemaAs;
@@ -205,6 +205,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "borsh-schema")]
     #[test]
     fn schema_as_usage() {
         use borsh::BorshSchema;

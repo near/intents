@@ -1,14 +1,7 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    time::Duration,
-};
+use core::time::Duration;
+use std::collections::BTreeSet;
 
-use near_sdk::{
-    AccountId, AccountIdRef, GlobalContractId,
-    borsh::{self, BorshSerialize},
-    near,
-    state_init::{StateInit, StateInitV1},
-};
+use near_account_id::{AccountId, AccountIdRef};
 
 use crate::Nonces;
 
@@ -16,6 +9,7 @@ pub const STATE_KEY: &[u8] = b"";
 
 pub const DEFAULT_WALLET_ID: u32 = 0;
 
+// TODO: docs
 /// Recommended timeout for production use: `1 hour`.
 ///
 /// NOTE: The longer timeout, the more storage usage in highload environments.
@@ -37,8 +31,13 @@ pub const DEFAULT_WALLET_ID: u32 = 0;
 /// relayer/chain congestion.
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_hours(1); // 1h
 
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
+)]
 /// State of the wallet-contract.
-#[near(serializers = [borsh])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State<PubKey> {
     /// Whether authentication by signature is allowed.
@@ -61,6 +60,7 @@ pub struct State<PubKey> {
 
 impl<PubKey> State<PubKey> {
     /// Create a default state with given public key.
+    #[must_use]
     #[inline]
     pub const fn new(public_key: PubKey) -> Self {
         Self {
@@ -116,28 +116,18 @@ impl<PubKey> State<PubKey> {
         self.extensions.contains(account_id.as_ref())
     }
 
+    #[cfg(feature = "borsh")]
+    // TODO: docs
     /// Returns `data` for [`StateInit`] of Deterministic `AccountId` (NEP-616)
     #[inline]
-    pub fn as_storage(&self) -> BTreeMap<Vec<u8>, Vec<u8>>
+    pub fn as_storage(&self) -> ::std::collections::BTreeMap<Vec<u8>, Vec<u8>>
     where
-        PubKey: BorshSerialize,
+        PubKey: ::borsh::BorshSerialize,
     {
         [(
             STATE_KEY.to_vec(),
             borsh::to_vec(self).unwrap_or_else(|_| unreachable!()),
         )]
         .into()
-    }
-
-    /// Returns [`StateInit`] of Deterministic `AccountId` (NEP-616).
-    #[inline]
-    pub fn state_init(&self, code: GlobalContractId) -> StateInit
-    where
-        PubKey: BorshSerialize,
-    {
-        StateInit::V1(StateInitV1 {
-            code,
-            data: self.as_storage(),
-        })
     }
 }

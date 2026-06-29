@@ -9,7 +9,7 @@ pub type U248 = [u8; 31];
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[derive(Debug, Clone, Default)]
 #[repr(transparent)]

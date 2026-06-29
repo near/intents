@@ -30,8 +30,10 @@ std = ["dep:near-sdk", "time/std"]
 formatting = ["std", "time/formatting"]
 parsing = ["std", "time/parsing"]
 
-abi = ["defuse-borsh-utils?/schema", "schemars-v0_8"]
+arbitrary = ["dep:arbitrary", "dep:arbitrary_with"]
+abi = ["borsh-schema", "schemars-v0_8"]
 borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
+borsh-schema = ["borsh", "defuse-borsh-utils?/schema"]
 serde = ["dep:serde", "dep:serde_with", "formatting", "parsing"]
 schemars-v0_8 = [
   "dep:schemars",
@@ -40,7 +42,6 @@ schemars-v0_8 = [
   "serde_with/schemars_0_8",
 ]
 
-arbitrary = ["dep:arbitrary", "dep:arbitrary_with"]
 
 [dev-dependencies]
 defuse-time = { path = ".", features = ["std", "arbitrary", "abi", "borsh", "formatting", "parsing", "serde", "schemars-v0_8"] }

@@ -8,10 +8,11 @@ use defuse_map_utils::{IterableMap, Map, cleanup::DefaultMap};
 use num_traits::{One, PrimInt, Zero};
 
 /// Bitmap for primitive types
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]

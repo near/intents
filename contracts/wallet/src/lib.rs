@@ -4,10 +4,8 @@
 mod contract;
 mod error;
 mod events;
-mod nonces;
 mod request;
 pub mod signature;
-mod state;
 
 use std::collections::BTreeSet;
 
@@ -16,7 +14,7 @@ use near_sdk::{AccountId, ext_contract};
 
 use crate::signature::RequestMessage;
 
-pub use self::{error::*, events::*, nonces::*, request::*, state::*};
+pub use self::{error::*, events::*, request::*};
 
 /// Deterministic single-key Wallet Contract.
 #[ext_contract(ext_wallet)]

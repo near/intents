@@ -1919,8 +1919,25 @@ dependencies = [
  "defuse-webauthn",
  "near-sdk",
  "rand 0.10.1",
- "rand_core 0.10.1",
  "rstest",
+ "serde_with",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "defuse-wallet-core"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "borsh",
+ "defuse-bitmap",
+ "defuse-borsh-utils",
+ "defuse-near-promise",
+ "defuse-time",
+ "defuse-wallet-core",
+ "near-account-id",
+ "schemars 0.8.22",
+ "serde",
  "serde_with",
  "thiserror 2.0.18",
 ]
