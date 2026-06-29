@@ -1,0 +1,77 @@
+lints.workspace = true
+
+[package]
+name = "defuse-near-promise"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+derive_more = { workspace = true, features = ["from"] }
+near-account-id.workspace = true
+near-gas.workspace = true
+near-global-contracts.workspace = true
+near-token.workspace = true
+
+arbitrary = { workspace = true, features = ["derive"], optional = true }
+borsh = { workspace = true, features = ["derive"], optional = true }
+cfg_eval = { workspace = true, optional = true }
+near-sdk = { workspace = true, features = ["deterministic-account-ids"], optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_json = { workspace = true, optional = true }
+serde_with = { workspace = true, features = ["base64"], optional = true }
+
+[features]
+abi = ["borsh-schema", "schemars-v0_8"]
+arbitrary = [
+  "dep:arbitrary",
+  "near-account-id/arbitrary",
+  "near-gas/arbitrary",
+  "near-global-contracts/arbitrary",
+  "near-token/arbitrary",
+]
+borsh = [
+  "dep:borsh",
+  "near-account-id/borsh",
+  "near-gas/borsh",
+  "near-global-contracts/borsh",
+  "near-token/borsh",
+]
+borsh-schema = [
+  "borsh",
+  "borsh/unstable__schema",
+  "near-account-id/abi",
+  "near-gas/abi",
+  "near-global-contracts/abi",
+  "near-token/abi",
+]
+json = ["dep:serde_json", "serde"]
+schemars-v0_8 = [
+  "dep:schemars",
+  "near-account-id/schemars-v0_8",
+  "near-gas/schemars-v0_8",
+  "near-global-contracts/schemars-v0_8",
+  "near-token/schemars-v0_8",
+  "serde",
+  "serde_with/schemars_0_8",
+]
+serde = [
+  "dep:cfg_eval",
+  "dep:serde",
+  "dep:serde_with",
+  "near-account-id/serde",
+  "near-gas/serde",
+  "near-global-contracts/serde",
+  "near-token/serde",
+]
+
+near-contract = ["dep:near-sdk"]
+
+[dev-dependencies]
+defuse-near-promise = { path = ".", features = ["arbitrary", "abi", "borsh", "json", "near-contract"] }
+hex-literal.workspace = true
+rstest.workspace = true
+
+near-sdk = { workspace = true, features = ["unit-testing"] }

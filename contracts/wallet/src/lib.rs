@@ -1,7 +1,5 @@
 #![doc = include_str!(env!("CARGO_PKG_README"))]
 
-#[cfg(any(feature = "arbitrary", test))]
-mod arbitrary;
 #[cfg(feature = "contract")]
 mod contract;
 mod error;

@@ -31,7 +31,7 @@ pub struct RelayRequest {
     pub msg: RequestMessage,
     pub proof: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub min_gas: Option<Gas>,
+    pub gas: Option<Gas>,
 }
 
 impl Relayer {
@@ -101,7 +101,7 @@ impl Relayer {
             // balance only at the end of receipt execution.
             // We could have checked whether the acccount exists already, but this would
             // increase the latency due to additional RPC call is needed.
-            request.msg.request.out.total_deposit()
+            request.msg.request.total_deposit()
         } else {
             NearToken::ZERO
         };
@@ -118,7 +118,7 @@ impl Relayer {
                     // attach optional given deposit, too
                     .saturating_add(deposit),
             )
-            .gas(self.tx_gas(&request.msg, request.min_gas, max_gas)?),
+            .gas(self.tx_gas(&request.msg, request.gas, max_gas)?),
         );
 
         tokio::time::timeout(
@@ -142,7 +142,7 @@ impl Relayer {
     ) -> Result<Gas> {
         let max_gas = max_gas.into().unwrap_or(self.gas);
 
-        if request_gas.unwrap_or_else(|| msg.request.out.estimate_gas()) > max_gas {
+        if request_gas.unwrap_or_else(|| msg.request.estimate_gas()) > max_gas {
             return Err(Error::GasLimit);
         }
 

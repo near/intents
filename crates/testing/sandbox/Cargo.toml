@@ -28,7 +28,7 @@ defuse-outlayer-app = { workspace = true, optional = true }
 defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
 defuse-test-utils = { workspace = true, optional = true }
 defuse-wallet = { workspace = true, optional = true, features = ["arbitrary", "concurrent"] }
-defuse-wallet-sdk = { workspace = true, optional = true }
+defuse-wallet-sdk = { workspace = true, optional = true, features = ["json"] }
 
 [features]
 defuse = ["dep:defuse", "dep:defuse-nep413", "dep:defuse-test-utils"]

@@ -61,7 +61,7 @@ async fn main() {
                         state_init: Some(wallet.state_init()),
                         msg,
                         proof,
-                        min_gas: None,
+                        gas: None,
                     },
                     NearToken::ZERO,
                     None,

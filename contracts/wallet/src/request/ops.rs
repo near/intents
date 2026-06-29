@@ -4,6 +4,7 @@ use near_sdk::{AccountId, near, serde_with::base64::Base64};
 #[near(serializers = [borsh(use_discriminant = true), json])]
 #[serde(tag = "op", rename_all = "snake_case")]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 #[repr(u8)]
 pub enum WalletOp {
     SetSignatureMode {
