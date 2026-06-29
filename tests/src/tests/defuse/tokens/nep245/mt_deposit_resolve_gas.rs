@@ -327,9 +327,7 @@ async fn mt_deposit_resolve_gas(
         )
     }))
     .await
-    .expect(&format!(
-        "all token counts 1..={max_deposited_count} succeed",
-    ));
+    .unwrap();
 }
 
 #[rstest]
