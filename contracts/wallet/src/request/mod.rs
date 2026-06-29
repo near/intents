@@ -1,7 +1,10 @@
 mod ops;
-mod promise;
 
-pub use self::{ops::*, promise::*};
+pub use self::ops::*;
+
+pub use defuse_near_promise as promise;
+
+use defuse_near_promise::NearPromise;
 
 use near_sdk::{Gas, NearToken, near};
 
@@ -18,7 +21,7 @@ pub struct Request {
     /// NOTE: all created promises are executed concurrently and independently
     /// of each other, without waiting on previous ones to complete.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub out: Vec<PromiseSingle>,
+    pub out: Vec<NearPromise>,
 }
 
 impl Request {
@@ -44,7 +47,7 @@ impl Request {
 
     #[must_use]
     #[inline]
-    pub fn out(mut self, out: impl IntoIterator<Item = PromiseSingle>) -> Self {
+    pub fn out(mut self, out: impl IntoIterator<Item = NearPromise>) -> Self {
         self.out.extend(out);
         self
     }
@@ -53,7 +56,7 @@ impl Request {
     pub fn total_deposit(&self) -> NearToken {
         self.out
             .iter()
-            .map(PromiseSingle::total_deposit)
+            .map(NearPromise::total_deposit)
             .fold(NearToken::ZERO, NearToken::saturating_add)
     }
 
@@ -62,7 +65,7 @@ impl Request {
     pub fn estimate_gas(&self) -> Gas {
         self.out
             .iter()
-            .map(PromiseSingle::estimate_gas)
+            .map(NearPromise::estimate_gas)
             .fold(Gas::from_gas(0), Gas::saturating_add)
     }
 }
@@ -81,14 +84,16 @@ impl FromIterator<WalletOp> for Request {
     }
 }
 
-impl Extend<PromiseSingle> for Request {
-    fn extend<T: IntoIterator<Item = PromiseSingle>>(&mut self, iter: T) {
+// TODO: impl From<>?
+
+impl Extend<NearPromise> for Request {
+    fn extend<T: IntoIterator<Item = NearPromise>>(&mut self, iter: T) {
         self.out.extend(iter);
     }
 }
 
-impl FromIterator<PromiseSingle> for Request {
-    fn from_iter<T: IntoIterator<Item = PromiseSingle>>(iter: T) -> Self {
+impl FromIterator<NearPromise> for Request {
+    fn from_iter<T: IntoIterator<Item = NearPromise>>(iter: T) -> Self {
         let mut r = Self::new();
         r.extend(iter);
         r

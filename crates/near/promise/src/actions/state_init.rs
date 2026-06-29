@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 
-use near_global_contracts::StateInit;
 use near_token::NearToken;
 
 /// `DeterministicStateInit` action as per NEP-616
+#[must_use = "promises do nothing unless you `.build()` them"]
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -30,7 +30,6 @@ pub struct StateInitAction {
 }
 
 impl StateInitAction {
-    #[must_use]
     #[inline]
     pub fn new(state_init: impl Into<Vec<u8>>) -> Self {
         Self {
@@ -39,7 +38,12 @@ impl StateInitAction {
         }
     }
 
-    #[must_use]
+    #[cfg(feature = "borsh")]
+    #[inline]
+    pub fn legacy(state_init: &::near_global_contracts::StateInit) -> Self {
+        Self::new(::borsh::to_vec(state_init).unwrap_or_else(|_| unreachable!()))
+    }
+
     #[inline]
     pub const fn deposit(mut self, deposit: NearToken) -> Self {
         self.deposit = deposit;
@@ -70,7 +74,7 @@ impl From<Cow<'_, [u8]>> for StateInitAction {
 
 #[cfg(feature = "borsh")]
 const _: () = {
-    use near_global_contracts::StateInitV1;
+    use near_global_contracts::{StateInit, StateInitV1};
 
     impl From<&StateInit> for StateInitAction {
         #[inline]

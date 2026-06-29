@@ -5,6 +5,7 @@ pub use self::impl_::*;
 
 use std::collections::BTreeSet;
 
+use defuse_near_promise::{NearPromise, actions::NearAction};
 use defuse_time::Timestamp;
 use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near, require};
 
@@ -112,10 +113,7 @@ impl Contract {
         }
 
         for promise in request.out {
-            require!(
-                promise.receiver_id != env::current_account_id(),
-                "self-calls are prohibited",
-            );
+            self.check_promise(&promise)?;
 
             promise.build().detach();
         }
@@ -190,6 +188,30 @@ impl Contract {
         if !self.signature_enabled && self.extensions.is_empty() {
             return Err(Error::Lockout);
         }
+        Ok(())
+    }
+
+    fn check_promise(&self, promise: &NearPromise) -> Result<()> {
+        // check for no self-calls
+        if promise.receiver_id == env::current_account_id() {
+            return Err(Error::SelfCall);
+        }
+
+        // check for no unsupported actions
+        if !promise.actions.iter().all(|a| {
+            matches!(
+                a,
+                NearAction::FunctionCall(_) | NearAction::Transfer(_) | NearAction::StateInit(_)
+            )
+        }) {
+            // There is no support for other actions, since they operate on
+            // the account itself (e.g. `DeployContract`, `AddKey` and
+            // etc...) or on its subaccounts (e.g. `CreateAccount`).
+            // Wallet-contracts are not self-upgradable and do not allow
+            // creating subaccounts.
+            return Err(Error::UnsupportedPromiseAction);
+        }
+
         Ok(())
     }
 }

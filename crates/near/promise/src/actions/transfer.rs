@@ -1,5 +1,6 @@
 use near_token::NearToken;
 
+#[must_use = "promises do nothing unless you `.build()` them"]
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
@@ -12,11 +13,11 @@ use near_token::NearToken;
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct TransferAction {
+pub struct Transfer {
     pub amount: NearToken,
 }
 
-impl From<NearToken> for TransferAction {
+impl From<NearToken> for Transfer {
     #[inline]
     fn from(amount: NearToken) -> Self {
         Self { amount }

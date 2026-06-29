@@ -70,6 +70,5 @@ near-contract = ["borsh", "dep:near-sdk"]
 
 [dev-dependencies]
 defuse-near-promise = { path = ".", features = ["arbitrary", "abi", "json", "near-contract"] }
-rstest.workspace = true
 
 near-sdk = { workspace = true, features = ["unit-testing"] }

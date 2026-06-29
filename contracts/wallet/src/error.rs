@@ -14,11 +14,11 @@ pub enum Error {
     #[error("extension '{0}' is not enabled")]
     ExtensionNotEnabled(AccountId),
 
-    #[error("invalid chain_id")]
-    InvalidChainId,
-
     #[error("expired or from the future")]
     ExpiredOrFuture,
+
+    #[error("invalid chain_id")]
+    InvalidChainId,
 
     #[error("invalid signature")]
     InvalidSignature,
@@ -32,9 +32,15 @@ pub enum Error {
     #[error("lockout: signature is disabled and extensions are empty")]
     Lockout,
 
+    #[error("self-calls are prohibited")]
+    SelfCall,
+
     #[error("signature is disabled")]
     SignatureDisabled,
 
     #[error("this signature mode is already set")]
     ThisSignatureModeAlreadySet,
+
+    #[error("unsupported promise action")]
+    UnsupportedPromiseAction,
 }

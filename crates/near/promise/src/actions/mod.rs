@@ -9,10 +9,8 @@ pub use near_token::NearToken;
 
 use derive_more::From;
 
-/// NOTE: there is no support for other actions, since they operate on the
-/// account itself (e.g. `DeployContract`, `AddKey` and etc...) or on its subaccounts
-/// (e.g. `CreateAccount`). Wallet-contracts are not self-upgradable and do
-/// not allow creating subaccounts.
+/// A single action of [`NearPromise`](crate::NearPromise).
+#[must_use = "promises do nothing unless you `.build()` them"]
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
@@ -27,29 +25,50 @@ use derive_more::From;
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, From)]
+#[non_exhaustive]
 #[repr(u8)] // matches nearcore `Action` just in case
 pub enum NearAction {
-    FunctionCall(FunctionCallAction) = 2,
-    Transfer(TransferAction) = 3,
+    /// [`FunctionCall`]
+    FunctionCall(FunctionCall) = 2,
+
+    /// [`Transfer`]
+    Transfer(Transfer) = 3,
+
+    /// TODO
     StateInit(StateInitAction) = 11,
 }
 
 impl NearAction {
-    #[must_use]
+    /// Returns NEAR deposit for this action.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use defuse_near_promise::{
+    /// #     NearToken,
+    /// #     actions::{NearAction, Transfer, FunctionCall},
+    /// # };
+    /// let transfer = NearAction::Transfer(NearToken::from_near(1).into());
+    /// assert_eq!(transfer.deposit(), NearToken::from_near(1));
+    ///
+    /// let function_call: NearAction = FunctionCall::name("foo")
+    ///     .attach_deposit(NearToken::from_near(5))
+    ///     .into();
+    /// assert_eq!(function_call.deposit(), NearToken::from_near(5));
+    /// ```
     #[inline]
-    pub const fn deposit(&self) -> NearToken {
+    pub(crate) const fn deposit(&self) -> NearToken {
         match self {
-            Self::FunctionCall(FunctionCallAction { deposit, .. })
-            | Self::Transfer(TransferAction { amount: deposit })
+            Self::FunctionCall(FunctionCall { deposit, .. })
+            | Self::Transfer(Transfer { amount: deposit })
             | Self::StateInit(StateInitAction { deposit, .. }) => *deposit,
         }
     }
 
-    #[must_use]
     #[inline]
-    pub const fn estimate_gas(&self) -> Gas {
+    pub(crate) const fn estimate_gas(&self) -> Gas {
         match self {
-            Self::FunctionCall(FunctionCallAction { gas, .. }) => *gas,
+            Self::FunctionCall(FunctionCall { gas, .. }) => *gas,
             // estimated for Near Implicit AccountId of receiver
             // (most expensive one)
             Self::Transfer(_) => Gas::from_tgas(12),
@@ -67,6 +86,7 @@ const _: () = {
         pub(crate) fn append(self, p: Promise) -> Promise {
             match self {
                 Self::Transfer(a) => p.transfer(a.amount),
+                // TODO: might be a separate action?
                 Self::StateInit(a) => {
                     // TODO: use `promise_batch_action_state_init_raw` when
                     // Universal Implicit AccountIds lands
