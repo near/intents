@@ -38,7 +38,7 @@ pub const DEFAULT_TIMEOUT: Duration = Duration::from_hours(1); // 1h
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 /// State of the wallet-contract.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct State<PubKey> {
     /// Whether authentication by signature is allowed.
     pub signature_enabled: bool,
