@@ -1,12 +1,10 @@
 use core::convert::Infallible;
 
-use defuse_wallet::signature::{
-    RequestMessage, WALLET_DOMAIN,
-    ed25519::{Ed25519PublicKey, Ed25519Signature},
-};
+use defuse_crypto::{Ed25519PublicKey, Ed25519Signature};
+
+use defuse_wallet_core::RequestMessage;
 use ed25519_dalek::ed25519::signature::Signer as Ed25519Signer;
 pub use ed25519_dalek::{self, SigningKey};
-use sha2::{Digest, Sha256};
 
 use crate::{Proof, Signer};
 
@@ -19,9 +17,7 @@ impl Signer for SigningKey {
     }
 
     fn sign(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
-        let serialized = borsh::to_vec(msg).unwrap_or_else(|_| unreachable!());
-        let hash = Sha256::digest([WALLET_DOMAIN, &serialized].concat());
-        let signature = <Self as Ed25519Signer<_>>::sign(self, &hash).to_bytes();
+        let signature = <Self as Ed25519Signer<_>>::sign(self, &msg.hash()).to_bytes();
         Ok(Ed25519Signature(signature).to_string())
     }
 }

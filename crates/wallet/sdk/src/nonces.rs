@@ -1,4 +1,4 @@
-use rand_core::{Rng, SeedableRng};
+use rand::Rng;
 
 /// Endless [`Iterator`] for generating non-sequential nonces semi-sequentially,
 /// allowing for multiple concurrent clients while being optimized for storage.
@@ -30,14 +30,6 @@ where
         self.next = self.next.wrapping_add(1);
         n
     }
-
-    #[must_use]
-    pub fn fork(&mut self) -> Self
-    where
-        R: SeedableRng,
-    {
-        Self::new(self.rng.fork())
-    }
 }
 
 impl<R> Iterator for ConcurrentNonces<R>
@@ -53,10 +45,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, time::Duration};
+    use std::time::Duration;
 
-    use defuse_bitmap::BitMap;
-    use near_sdk::borsh;
+    use defuse_wallet_core::{State, Timestamp};
     use rand::rng;
 
     use super::*;
@@ -64,22 +55,28 @@ mod tests {
     #[test]
     fn zba() {
         const ZBA_TIMEOUT: Duration = Duration::from_mins(15); // 15m
-        const MAX_SIZE: usize = 236;
+        const MAX_SIZE: usize = 770 - 100 - 40; // TODO: -64?
+
+        const PUBLIC_KEY: [u8; 64] = [0u8; 64];
 
         let mut ns = ConcurrentNonces::new(rng());
 
         for _ in 0..1000 {
-            let mut nonces = BitMap::<BTreeMap<u32, u32>>::default();
+            let mut state = State::new(PUBLIC_KEY).timeout(ZBA_TIMEOUT);
+            let created_at = Timestamp::now() - Duration::from_mins(1);
 
             for n in ns
                 .by_ref()
                 // 1 tx/s
                 .take(ZBA_TIMEOUT.as_secs().try_into().unwrap())
             {
-                assert!(!nonces.set_bit(n), "rand collision");
+                state
+                    .nonces
+                    .commit(n, created_at, ZBA_TIMEOUT)
+                    .expect("rand collision");
             }
 
-            let serialized_len = borsh::to_vec(&nonces).unwrap().len();
+            let serialized_len = borsh::to_vec(&state).unwrap().len();
             assert!(
                 serialized_len <= MAX_SIZE,
                 "state would not fit into ZBA limits: {serialized_len} bytes",

@@ -1,4 +1,4 @@
-use defuse_wallet::signature::RequestMessage;
+use defuse_wallet_core::RequestMessage;
 use serde::Serialize;
 
 #[near_kit::contract]

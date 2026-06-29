@@ -12,8 +12,6 @@ use std::collections::BTreeSet;
 pub use defuse_time::Timestamp;
 use near_sdk::{AccountId, ext_contract};
 
-use crate::signature::RequestMessage;
-
 pub use self::{error::*, events::*, request::*};
 
 /// Deterministic single-key Wallet Contract.

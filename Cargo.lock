@@ -1910,12 +1910,9 @@ name = "defuse-wallet"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
- "defuse-bitmap",
- "defuse-borsh-utils",
  "defuse-crypto",
- "defuse-near-promise",
  "defuse-test-utils",
- "defuse-time",
+ "defuse-wallet-core",
  "defuse-webauthn",
  "near-sdk",
  "rand 0.10.1",
@@ -1949,13 +1946,12 @@ dependencies = [
 name = "defuse-wallet-relayer"
 version = "0.1.0"
 dependencies = [
- "defuse-wallet",
+ "defuse-wallet-core",
  "defuse-wallet-sdk",
  "ed25519-dalek",
  "futures",
  "hex",
  "near-kit",
- "near-sdk",
  "rand 0.10.1",
  "serde",
  "thiserror 2.0.18",
@@ -1969,12 +1965,13 @@ name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
  "borsh",
- "defuse-wallet",
+ "defuse-crypto",
+ "defuse-digest",
+ "defuse-wallet-core",
  "ed25519-dalek",
  "impl-tools",
- "near-sdk",
+ "near-global-contracts",
  "rand 0.10.1",
- "sha2 0.11.0",
 ]
 
 [[package]]

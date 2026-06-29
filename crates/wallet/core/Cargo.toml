@@ -70,7 +70,7 @@ serde = [
   "near-account-id/serde",
 ]
 
-# near-contract = ["defuse-near-promise/near-contract"]
+near-contract = ["defuse-near-promise/near-contract", "std"]
 
 [dev-dependencies]
 defuse-wallet-core = { path = ".", features = ["abi", "arbitrary", "borsh", "digest", "schemars-v0_8", "serde"] }

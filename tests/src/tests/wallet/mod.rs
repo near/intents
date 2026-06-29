@@ -51,7 +51,7 @@ async fn test_signed(#[future] env: Env) {
 
     env.w_execute_signed(
         wallet.account_id(),
-        Some(wallet.state_init()),
+        Some(wallet.deterministic_state_init()),
         msg.clone(),
         proof.clone(),
         NearToken::from_near(1),
@@ -61,7 +61,7 @@ async fn test_signed(#[future] env: Env) {
 
     env.w_execute_signed(
         wallet.account_id(),
-        Some(wallet.state_init()),
+        Some(wallet.deterministic_state_init()),
         msg,
         proof,
         NearToken::from_near(1),
@@ -85,7 +85,10 @@ async fn test_rotate(#[future] env: Env) {
                     account_id: new_wallet.account_id().clone(),
                 }])
                 .out([NearPromise::new(new_wallet.account_id())
-                    .deterministic_state_init(new_wallet.state_init(), NearToken::ZERO)
+                    .deterministic_state_init(
+                        new_wallet.deterministic_state_init(),
+                        NearToken::ZERO,
+                    )
                     .function_call(
                         FunctionCall::name("w_execute_signed")
                             .attach_deposit(NearToken::from_yoctonear(1))
@@ -120,7 +123,7 @@ async fn test_rotate(#[future] env: Env) {
 
     env.w_execute_signed(
         old_wallet.account_id(),
-        old_wallet.state_init(),
+        old_wallet.deterministic_state_init(),
         msg,
         proof,
         NearToken::from_yoctonear(1),
@@ -206,7 +209,7 @@ async fn test_no_storage_staking(#[future] env: Env) {
     let mut wallet = env.generate_wallet();
 
     let wallet_id = wallet.account_id().clone();
-    let wallet_state_init = wallet.state_init();
+    let wallet_state_init = wallet.deterministic_state_init();
 
     // do state_init in advance
     env.transaction(wallet_id.clone())
