@@ -1,3 +1,4 @@
+use defuse_wallet_core::NonceError;
 use near_sdk::{AccountId, FunctionError};
 use thiserror::Error as ThisError;
 
@@ -25,6 +26,9 @@ pub enum Error {
 
     #[error("lockout: signature is disabled and extensions are empty")]
     Lockout,
+
+    #[error("nonce: {0}")]
+    Nonce(#[from] NonceError),
 
     #[error("self-calls are not allowed")]
     SelfCallsNotAllowed,

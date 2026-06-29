@@ -8,7 +8,7 @@ use defuse_wallet_core::{RequestMessage, Timestamp};
 pub use near_kit;
 
 use near_kit::{
-    CryptoHash, ExecutedOptimistic, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken,
+    CryptoHash, ExecutedOptimistic, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken, StateInit,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error as ThisError;

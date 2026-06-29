@@ -8,14 +8,6 @@ pub mod no_sign;
 #[cfg(feature = "webauthn")]
 pub mod webauthn;
 
-use std::time::Duration;
-
-use defuse_borsh_utils::{As, DurationSeconds as BorshDurationSeconds};
-use defuse_time::{Timestamp, borsh::TimestampSeconds};
-use near_sdk::{AccountId, CryptoHash, env, near, serde_with::DurationSeconds};
-
-use crate::Request;
-
 pub use self::{borsh::*, domain::*, hash::*};
 
 /// Signing standard, which defines the public key and how `signature` on

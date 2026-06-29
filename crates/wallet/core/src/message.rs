@@ -119,14 +119,16 @@ pub struct RequestMessage {
 }
 
 impl RequestMessage {
-    /// Request hash
+    /// Returns canonical hash of the request
     #[cfg(all(feature = "digest", feature = "borsh"))]
     pub fn hash(&self) -> [u8; 32] {
         use defuse_digest::{Digest, sha3::Sha3_256};
         use digest_io::IoWrapper;
 
         let mut hasher = IoWrapper(Sha3_256::new());
+        // serialize directly to hasher
         ::borsh::to_writer(&mut hasher, self).expect("borsh: failed to serialize");
+
         hasher.0.finalize().into()
     }
 }

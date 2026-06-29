@@ -5,8 +5,7 @@ pub use self::impl_::*;
 
 use std::collections::BTreeSet;
 
-use defuse_near_promise::{NearPromise, actions::NearAction};
-use defuse_time::Timestamp;
+use defuse_wallet_core::{NearPromise, Timestamp, actions::NearAction};
 use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near};
 
 use crate::{
@@ -126,8 +125,7 @@ impl Contract {
             WalletOp::SetSignatureMode { enable } => self.set_signature_mode(enable, actor),
             WalletOp::AddExtension { account_id } => self.add_extension(account_id, actor),
             WalletOp::RemoveExtension { account_id } => self.remove_extension(account_id, actor),
-
-            WalletOp::Custom { .. } => env::panic_str("custom ops are not supported"),
+            _ => todo!(), // TODO: non_exhaustive
         }
     }
 

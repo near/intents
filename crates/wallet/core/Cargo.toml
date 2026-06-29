@@ -38,6 +38,7 @@ arbitrary = [
   "near-account-id/arbitrary",
 ]
 borsh = [
+  "defuse-bitmap/borsh",
   "defuse-near-promise/borsh",
   "defuse-time/borsh",
   "dep:borsh",

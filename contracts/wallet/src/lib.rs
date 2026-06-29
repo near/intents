@@ -4,16 +4,16 @@
 mod contract;
 mod error;
 mod events;
-mod request;
 pub mod signature;
+
+pub use self::{error::*, events::*};
 
 use std::collections::BTreeSet;
 
-pub use defuse_time::Timestamp;
-use near_sdk::{AccountId, ext_contract};
+pub use defuse_wallet_core::*;
+use near_sdk::ext_contract;
 
-pub use self::{error::*, events::*, request::*};
-
+// TODO: separate traits
 /// Deterministic single-key Wallet Contract.
 #[ext_contract(ext_wallet)]
 pub trait Wallet {

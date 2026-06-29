@@ -1,16 +1,14 @@
 use core::ops::{Deref, DerefMut};
 use std::fmt::Display;
 
+use defuse_wallet_core::RequestMessage;
 use near_sdk::{
     PanicOnDefault,
     borsh::{BorshDeserialize, BorshSerialize},
     near,
 };
 
-use crate::{
-    STATE_KEY,
-    signature::{RequestMessage, SigningStandard},
-};
+use crate::{STATE_KEY, signature::SigningStandard};
 
 pub trait ContractImpl {
     /// Signing standard implementation of the contract

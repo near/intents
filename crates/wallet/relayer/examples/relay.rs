@@ -2,13 +2,11 @@
 
 use std::{env, fs, iter, path::Path, sync::LazyLock};
 
-use defuse_wallet::Request;
 use defuse_wallet_relayer::{RelayRequest, Relayer};
 use defuse_wallet_sdk::WalletSigner;
 use ed25519_dalek::ed25519::signature::rand_core::OsRng;
 use futures::{StreamExt, TryFutureExt, TryStreamExt, stream};
 use near_kit::{Final, PublishMode, sandbox::SandboxConfig};
-use near_sdk::{GlobalContractId, NearToken, env::sha256_array};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 static WALLET_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
