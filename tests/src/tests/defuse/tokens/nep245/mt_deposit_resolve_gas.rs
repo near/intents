@@ -22,6 +22,7 @@ use defuse_test_utils::{
     random::{gen_random_string, rng},
     wasms::MT_RECEIVER_STUB_WASM,
 };
+use futures::future::try_join_all;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk_core::{events::AsNep297Event, json_types::U128};
 use rstest::rstest;
@@ -314,34 +315,21 @@ async fn mt_deposit_resolve_gas(
     let min_deposited_desired = 50;
     assert!(max_deposited_count >= min_deposited_desired);
 
-    run_deposit_resolve_gas_test(
-        gen_mode,
-        max_deposited_count,
-        env.clone(),
-        author_account.clone(),
-        receiver_stub.account_id().clone(),
-        rng.clone(),
-    )
+    // ensure the invariant holds for every count, not just the maximum
+    try_join_all((1..=max_deposited_count).map(|token_count| {
+        run_deposit_resolve_gas_test(
+            gen_mode,
+            token_count,
+            env.clone(),
+            author_account.clone(),
+            receiver_stub.account_id().clone(),
+            rng.clone(),
+        )
+    }))
     .await
-    .unwrap();
-
-    // When using full coverage mode, run the test for all token counts from 1 to max
-    // to ensure the invariant holds for every count, not just the maximum.
-    if cfg!(feature = "long") {
-        println!("Running exhaustive test for all token counts from 1 to {max_deposited_count}:");
-        for token_count in 1..=max_deposited_count {
-            run_deposit_resolve_gas_test(
-                gen_mode,
-                token_count,
-                env.clone(),
-                author_account.clone(),
-                receiver_stub.account_id().clone(),
-                rng.clone(),
-            )
-            .await
-            .unwrap();
-        }
-    }
+    .expect(&format!(
+        "all token counts 1..={max_deposited_count} succeed",
+    ));
 }
 
 #[rstest]
