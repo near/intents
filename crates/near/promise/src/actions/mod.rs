@@ -4,8 +4,8 @@ mod transfer;
 
 pub use self::{function_call::*, state_init::*, transfer::*};
 
-pub use near_gas::NearGas as Gas;
-pub use near_token::NearToken;
+use near_gas::NearGas as Gas;
+use near_token::NearToken;
 
 use derive_more::From;
 
@@ -34,8 +34,8 @@ pub enum NearAction {
     /// [`Transfer`]
     Transfer(Transfer) = 3,
 
-    /// TODO
-    StateInit(StateInitAction) = 11,
+    /// [`DeterministicStateInit`]
+    DeterministicStateInit(DeterministicStateInit) = 11,
 }
 
 impl NearAction {
@@ -44,7 +44,7 @@ impl NearAction {
         match self {
             Self::FunctionCall(FunctionCall { deposit, .. })
             | Self::Transfer(Transfer { amount: deposit })
-            | Self::StateInit(StateInitAction { deposit, .. }) => *deposit,
+            | Self::DeterministicStateInit(DeterministicStateInit { deposit, .. }) => *deposit,
         }
     }
 
@@ -56,7 +56,7 @@ impl NearAction {
             // (most expensive one)
             Self::Transfer(_) => Gas::from_tgas(12),
             // estimated for state_init that fits in ZBA limits
-            Self::StateInit(_) => Gas::from_tgas(15),
+            Self::DeterministicStateInit(_) => Gas::from_tgas(15),
         }
     }
 }
@@ -68,18 +68,6 @@ const _: () = {
     impl NearAction {
         pub(crate) fn append(self, p: Promise) -> Promise {
             match self {
-                Self::Transfer(a) => p.transfer(a.amount),
-                // TODO: might be a separate action?
-                Self::StateInit(a) => {
-                    // TODO: use `promise_batch_action_state_init_raw` when
-                    // Universal Implicit AccountIds lands
-                    use near_global_contracts::StateInit;
-
-                    let state_init: StateInit = borsh::from_slice(&a.state_init)
-                        .unwrap_or_else(|e| panic!("cannot borsh-deserialize StateInit: {e}"));
-
-                    p.state_init(state_init, a.deposit)
-                }
                 Self::FunctionCall(a) => p.function_call_weight(
                     a.function_name,
                     a.args,
@@ -87,6 +75,8 @@ const _: () = {
                     a.gas,
                     GasWeight(a.gas_weight),
                 ),
+                Self::Transfer(a) => p.transfer(a.amount),
+                Self::DeterministicStateInit(a) => p.state_init(a.state_init, a.deposit),
             }
         }
     }

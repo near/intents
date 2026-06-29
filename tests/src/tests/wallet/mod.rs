@@ -4,10 +4,7 @@ use defuse_sandbox::{
         Wallet, WalletExt,
         contract::{
             Request, State, WalletOp,
-            promise::{
-                NearPromise,
-                actions::{FunctionCall, StateInitAction},
-            },
+            promise::{NearPromise, actions::FunctionCall},
             signature::ed25519::Ed25519PublicKey,
         },
         sdk::{
@@ -88,7 +85,7 @@ async fn test_rotate(#[future] env: Env) {
                     account_id: new_wallet.account_id().clone(),
                 }])
                 .out([NearPromise::new(new_wallet.account_id())
-                    .add_action(StateInitAction::legacy(&new_wallet.state_init()))
+                    .deterministic_state_init(new_wallet.state_init(), NearToken::ZERO)
                     .function_call(
                         FunctionCall::name("w_execute_signed")
                             .attach_deposit(NearToken::from_yoctonear(1))

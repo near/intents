@@ -1,5 +1,4 @@
-use std::borrow::Cow;
-
+pub use near_global_contracts::StateInit;
 use near_token::NearToken;
 
 /// `DeterministicStateInit` action as per NEP-616
@@ -18,9 +17,8 @@ use near_token::NearToken;
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct StateInitAction {
-    #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::base64::Base64"))]
-    pub state_init: Vec<u8>,
+pub struct DeterministicStateInit {
+    pub state_init: StateInit,
 
     #[cfg_attr(
         feature = "serde",
@@ -29,19 +27,13 @@ pub struct StateInitAction {
     pub deposit: NearToken,
 }
 
-impl StateInitAction {
+impl DeterministicStateInit {
     #[inline]
-    pub fn new(state_init: impl Into<Vec<u8>>) -> Self {
+    pub fn new(state_init: impl Into<StateInit>) -> Self {
         Self {
             state_init: state_init.into(),
             deposit: NearToken::ZERO,
         }
-    }
-
-    #[cfg(feature = "borsh")]
-    #[inline]
-    pub fn legacy(state_init: &::near_global_contracts::StateInit) -> Self {
-        Self::new(::borsh::to_vec(state_init).unwrap_or_else(|_| unreachable!()))
     }
 
     #[inline]
@@ -50,50 +42,3 @@ impl StateInitAction {
         self
     }
 }
-
-impl From<Vec<u8>> for StateInitAction {
-    #[inline]
-    fn from(state_init: Vec<u8>) -> Self {
-        Self::new(state_init)
-    }
-}
-
-impl From<&[u8]> for StateInitAction {
-    #[inline]
-    fn from(state_init: &[u8]) -> Self {
-        Self::new(state_init)
-    }
-}
-
-impl From<Cow<'_, [u8]>> for StateInitAction {
-    #[inline]
-    fn from(state_init: Cow<[u8]>) -> Self {
-        Self::new(state_init)
-    }
-}
-
-#[cfg(feature = "borsh")]
-const _: () = {
-    use near_global_contracts::{StateInit, StateInitV1};
-
-    impl From<&StateInit> for StateInitAction {
-        #[inline]
-        fn from(value: &StateInit) -> Self {
-            Self::new(::borsh::to_vec(value).unwrap_or_else(|_| unreachable!()))
-        }
-    }
-
-    impl From<StateInit> for StateInitAction {
-        #[inline]
-        fn from(value: StateInit) -> Self {
-            Self::from(&value)
-        }
-    }
-
-    impl From<StateInitV1> for StateInitAction {
-        #[inline]
-        fn from(value: StateInitV1) -> Self {
-            StateInit::V1(value).into()
-        }
-    }
-};

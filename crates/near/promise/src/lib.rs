@@ -2,11 +2,11 @@ pub mod actions;
 
 pub use near_account_id::{self as account_id, AccountId, AccountIdRef};
 pub use near_gas::NearGas as Gas;
-// TODO
-pub use near_global_contracts::StateInit;
 pub use near_token::NearToken;
 
-use self::actions::{FunctionCall, NearAction, StateInitAction, Transfer};
+use near_global_contracts::StateInit;
+
+use self::actions::{DeterministicStateInit, FunctionCall, NearAction, Transfer};
 
 /// A single outgoing promise
 #[must_use = "promises do nothing unless you `.build()` them"]
@@ -65,7 +65,7 @@ impl NearPromise {
     }
 
     /// Set an account where all failed/unused deposits should be refunded
-    /// instead of the wallet-contract itself.
+    /// instead of the caller contract itself.
     #[inline]
     pub fn refund_to(mut self, account_id: impl Into<AccountId>) -> Self {
         self.refund_to = Some(account_id.into());
@@ -77,10 +77,13 @@ impl NearPromise {
         self.add_action(Transfer { amount })
     }
 
-    // TODO
     #[inline]
-    pub fn state_init(self, state_init: impl Into<Vec<u8>>, deposit: NearToken) -> Self {
-        self.add_action(StateInitAction::new(state_init).deposit(deposit))
+    pub fn deterministic_state_init(
+        self,
+        state_init: impl Into<StateInit>,
+        deposit: NearToken,
+    ) -> Self {
+        self.add_action(DeterministicStateInit::new(state_init).deposit(deposit))
     }
 
     /// Add `FunctionCall` action to this promise
@@ -113,7 +116,7 @@ impl NearPromise {
 
     /// Add given action to this promise.
     #[inline]
-    pub fn add_action(mut self, action: impl Into<NearAction>) -> Self {
+    fn add_action(mut self, action: impl Into<NearAction>) -> Self {
         self.actions.push(action.into());
         self
     }

@@ -201,7 +201,9 @@ impl Contract {
         if !promise.actions.iter().all(|a| {
             matches!(
                 a,
-                NearAction::FunctionCall(_) | NearAction::Transfer(_) | NearAction::StateInit(_)
+                NearAction::FunctionCall(_)
+                    | NearAction::Transfer(_)
+                    | NearAction::DeterministicStateInit(_)
             )
         }) {
             // There is no support for other actions, since they operate on
