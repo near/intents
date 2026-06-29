@@ -84,8 +84,6 @@ impl FromIterator<WalletOp> for Request {
     }
 }
 
-// TODO: impl From<>?
-
 impl Extend<NearPromise> for Request {
     fn extend<T: IntoIterator<Item = NearPromise>>(&mut self, iter: T) {
         self.out.extend(iter);
