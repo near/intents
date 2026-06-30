@@ -15,9 +15,9 @@ use defuse_time::arbitrary::RangeNanos;
 #[cfg(feature = "serde")]
 use serde_with::DurationSeconds;
 
+// TODO: NEP-461 prefix?
 pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
 
-// TODO: versioned?
 #[allow(
     clippy::unsafe_derive_deserialize,
     reason = "clippy seems to have a false-positive caused by `thread_local!` macro usage in `hash()` method below"

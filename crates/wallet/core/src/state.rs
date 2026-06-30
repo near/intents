@@ -10,7 +10,7 @@ use crate::{DEFAULT_TIMEOUT, Nonces};
 /// In contracts, use `#[near(contract_state(key = STATE_KEY))]`.
 pub const STATE_KEY: &[u8] = b"";
 
-pub const DEFAULT_WALLET_ID: u32 = 0;
+pub const DEFAULT_SUBWALLET_ID: u32 = 0;
 
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -26,7 +26,7 @@ pub struct State<PubKey> {
 
     /// Subwallet id: enables a single public key to have multiple different
     /// wallet-contracts.
-    pub wallet_id: u32,
+    pub subwallet_id: u32,
 
     /// Public key of the signer (depends on the signature scheme being
     /// being used by the implementation)
@@ -46,7 +46,7 @@ impl<PubKey> State<PubKey> {
     pub const fn new(public_key: PubKey) -> Self {
         Self {
             signature_enabled: true,
-            wallet_id: DEFAULT_WALLET_ID,
+            subwallet_id: DEFAULT_SUBWALLET_ID,
             public_key,
             nonces: Nonces::new(DEFAULT_TIMEOUT),
             extensions: BTreeSet::new(),
@@ -58,8 +58,8 @@ impl<PubKey> State<PubKey> {
     /// public key.
     #[must_use]
     #[inline]
-    pub const fn wallet_id(mut self, wallet_id: u32) -> Self {
-        self.wallet_id = wallet_id;
+    pub const fn subwallet_id(mut self, wallet_id: u32) -> Self {
+        self.subwallet_id = wallet_id;
         self
     }
 

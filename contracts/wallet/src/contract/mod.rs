@@ -27,7 +27,7 @@ impl Wallet for Contract {
     }
 
     fn w_subwallet_id(&self) -> u32 {
-        self.wallet_id
+        self.subwallet_id
     }
 
     fn w_is_signature_allowed(&self) -> bool {
