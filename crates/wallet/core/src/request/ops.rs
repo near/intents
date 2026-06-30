@@ -19,20 +19,16 @@ use near_account_id::AccountId;
 pub enum WalletOp {
     /// Enable or disable authentication by signature.
     ///
-    /// This operation is idempotent, i.e. no error will be raised if
-    /// signature mode is already in this state.
+    /// If signature mode is already in specified state, the contract MUST panic.
     SetSignatureMode { enable: bool } = 0,
 
     /// Add an extension with given `AccountId`.
     ///
-    /// This operation is idempotent, i.e. no error will be raised if
-    /// given extension is already enabled.
+    /// If this extension is already enabled, the contract MUST panic.
     AddExtension { account_id: AccountId } = 1,
 
     /// Remove an extension with given `AccountId`.
     ///
-    /// This operation is idempotent, i.e. no error will be raised if
-    /// given extension is not currently enabled.
+    /// If this extension is not currently enabled, the contract MUST panic.
     RemoveExtension { account_id: AccountId } = 2,
-    // TODO: Require* ops
 }
