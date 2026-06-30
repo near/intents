@@ -35,7 +35,7 @@ async fn test_w_init(
     user.w_execute_extension(
         user.account_id(),
         None,
-        &Request::new().ops([WalletOp::RemoveExtension {
+        &Request::new().internal([WalletOp::RemoveExtension {
             account_id: user.account_id().into(),
         }]),
         NearToken::from_yoctonear(1),
@@ -51,7 +51,7 @@ async fn test_w_init(
     user.w_execute_extension(
         user.account_id(),
         None,
-        &Request::new().ops([WalletOp::AddExtension {
+        &Request::new().internal([WalletOp::AddExtension {
             account_id: user2.account_id().into(),
         }]),
         NearToken::from_yoctonear(1),
@@ -66,8 +66,9 @@ async fn test_w_init(
         .w_execute_extension(
             user.account_id(),
             None,
-            &Request::new()
-                .out([NearPromise::new(receiver.account_id()).transfer(NearToken::from_near(5))]),
+            &Request::new().external([
+                NearPromise::new(receiver.account_id()).transfer(NearToken::from_near(5))
+            ]),
             NearToken::from_yoctonear(1),
         )
         .await

@@ -12,6 +12,7 @@ use near_sdk::{AccountId, AccountIdRef, FunctionError, Promise, env, near};
 
 use crate::{Actor, Error, Result, Wallet, WalletEvent, signature::SigningStandard};
 
+// TODO: copy docs for abi
 #[near]
 impl Wallet for Contract {
     #[payable]
@@ -27,7 +28,7 @@ impl Wallet for Contract {
     }
 
     fn w_subwallet_id(&self) -> u32 {
-        self.wallet_id
+        self.subwallet_id
     }
 
     fn w_is_signature_allowed(&self) -> bool {
@@ -106,12 +107,12 @@ impl Contract {
     }
 
     fn execute_request(&mut self, request: Request, actor: &Actor<'_>) -> Result<()> {
-        for op in request.ops {
+        for op in request.internal {
             self.execute_op(op, actor.as_ref())?;
         }
 
-        for p in request.out {
-            Self::build_promise(p)?.detach();
+        for promise in request.external {
+            Self::build_promise(promise)?.detach();
         }
 
         Ok(())

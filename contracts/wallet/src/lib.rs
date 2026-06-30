@@ -17,7 +17,7 @@ use near_sdk::ext_contract;
 /// Deterministic single-key Wallet Contract.
 #[ext_contract(ext_wallet)]
 pub trait Wallet {
-    /// Executes signed request.
+    /// Execute signed request message.
     ///
     /// SHOULD accept ANY attached deposit.
     ///
@@ -27,12 +27,7 @@ pub trait Wallet {
     ///   * `proof` is invalid
     ///   * signature is disabled
     ///   * nonce is already used
-    fn w_execute_signed(
-        &mut self,
-        // TODO: flatten?
-        msg: RequestMessage,
-        proof: String,
-    );
+    fn w_execute_signed(&mut self, msg: RequestMessage, proof: String);
 
     /// Execute request from an enabled extension.
     ///
@@ -40,11 +35,7 @@ pub trait Wallet {
     /// * MUST panic if zero deposit was attached
     /// * MUST panic if [`predecessor_account_id`](near_sdk::env::predecessor_account_id)
     ///   extension is not enabled
-    fn w_execute_extension(
-        &mut self,
-        // TODO: flatten?
-        request: Request,
-    );
+    fn w_execute_extension(&mut self, request: Request);
 
     /// Returns `subwallet_id`.
     fn w_subwallet_id(&self) -> u32;

@@ -1937,6 +1937,7 @@ name = "defuse-wallet-core"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "arbitrary_with",
  "borsh",
  "cfg_eval",
  "defuse-bitmap",

@@ -12,7 +12,7 @@ use crate::outcome::SuccessfulExecutionOutcome;
 pub trait WalletExt {
     async fn w_execute_signed(
         &self,
-        wallet_id: impl AsRef<AccountIdRef>,
+        contract_id: impl AsRef<AccountIdRef>,
         state_init: impl Into<Option<StateInit>>,
         msg: &RequestMessage,
         proof: impl AsRef<str>,

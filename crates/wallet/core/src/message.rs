@@ -10,12 +10,18 @@ use ::{
     defuse_borsh_utils::{As, DurationSeconds as BorshDurationSeconds},
     defuse_time::borsh::TimestampNanoSeconds,
 };
+#[cfg(feature = "arbitrary")]
+use defuse_time::arbitrary::RangeNanos;
 #[cfg(feature = "serde")]
 use serde_with::DurationSeconds;
 
+/// Domain prefix for signing [`RequestMessage`].
+///
+/// This prefix doesn't break NEP-461 assumptions, since first four bytes
+/// borsh-deserialize to `1380009294u32`, which is in `[1 << 30, 1 << 31)`
+/// range for on-chain messages.
 pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
 
-// TODO: versioned?
 #[allow(
     clippy::unsafe_derive_deserialize,
     reason = "clippy seems to have a false-positive caused by `thread_local!` macro usage in `hash()` method below"
@@ -62,6 +68,10 @@ pub struct RequestMessage {
     /// usage and, hopefully, fit into ZBA limits.
     pub nonce: u32,
 
+    #[cfg_attr(
+        feature = "arbitrary",
+        arbitrary(with = ::arbitrary_with::As::<RangeNanos::<0>>::arbitrary),
+    )]
     #[cfg_attr(
         feature = "borsh-schema",
         borsh(

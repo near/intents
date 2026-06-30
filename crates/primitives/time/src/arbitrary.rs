@@ -11,12 +11,12 @@ impl<'a> Arbitrary<'a> for Timestamp {
     }
 }
 
-pub struct SinceUnixEpoch;
+pub struct RangeNanos<const FROM: i128, const TO: i128 = { Timestamp::MAX.as_nanos() }>;
 
-impl<'a> ArbitraryAs<'a, Timestamp> for SinceUnixEpoch {
+impl<'a, const FROM: i128, const TO: i128> ArbitraryAs<'a, Timestamp> for RangeNanos<FROM, TO> {
     #[inline]
     fn arbitrary_as(u: &mut Unstructured<'a>) -> Result<Timestamp> {
-        let nanos = u.int_in_range(Timestamp::UNIX_EPOCH.as_nanos()..=Timestamp::MAX.as_nanos())?;
+        let nanos = u.int_in_range(FROM..=TO)?;
         Ok(Timestamp::from_nanos(nanos).ok_or(Overflow).unwrap())
     }
 }

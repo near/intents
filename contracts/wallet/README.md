@@ -138,7 +138,7 @@ Recommended timeout for production use is `1 hour`.
 
 ### Subwallets
 
-A single public key can control multiple wallet contracts by varying the `wallet_id` field in the initialization state. Each subwallet has a distinct deterministic `AccountId`.
+A single public key can control multiple wallet contracts by varying the `subwallet_id` field in the initialization state. Each subwallet has a distinct deterministic `AccountId`.
 
 ### Promises
 
