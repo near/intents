@@ -79,6 +79,28 @@ impl Nonces {
     }
 
     #[cfg(feature = "std")]
+    /// Commit the nonce which was created at given time for given timeout.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use core::time::Duration;
+    /// # use defuse_wallet_core::{DEFAULT_TIMEOUT, Nonces, Timestamp};
+    /// let mut nonces = Nonces::new(DEFAULT_TIMEOUT);
+    /// let created_at = Timestamp::now() - Duration::from_mins(1);
+    ///
+    /// nonces.commit(
+    ///     123,
+    ///     Timestamp::now() - Duration::from_mins(1),
+    ///     DEFAULT_TIMEOUT
+    /// ).unwrap(); // ok
+    ///
+    /// nonces.commit(
+    ///     123,
+    ///     Timestamp::now() - Duration::from_mins(1),
+    ///     DEFAULT_TIMEOUT
+    /// ).unwrap_err(); // already used
+    /// ```
     pub fn commit(
         &mut self,
         nonce: u32,

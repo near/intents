@@ -21,9 +21,9 @@ pub trait Wallet {
     ///
     /// SHOULD accept ANY attached deposit.
     ///
-    /// MUST fail in case where the `signed.request` was not executed
+    /// MUST fail in case where the `msg.request` was not executed
     /// due to various reasons, including:
-    ///   * `signed` data is invalid
+    ///   * `msg` data is invalid
     ///   * `proof` is invalid
     ///   * signature is disabled
     ///   * nonce is already used
@@ -31,7 +31,7 @@ pub trait Wallet {
 
     /// Execute request from an enabled extension.
     ///
-    /// * SHOULD accept ANY non-zero attached deposit
+    /// * SHOULD accept ANY **non-zero** attached deposit
     /// * MUST panic if zero deposit was attached
     /// * MUST panic if [`predecessor_account_id`](near_sdk::env::predecessor_account_id)
     ///   extension is not enabled
