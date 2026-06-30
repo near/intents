@@ -16,7 +16,6 @@ use near_account_id::AccountId;
 )]
 /// An operation to perform on wallet-contract's state.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[non_exhaustive]
 #[repr(u8)]
 pub enum WalletOp {
     /// Enable or disable authentication by signature.

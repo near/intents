@@ -155,7 +155,7 @@ impl Nonces {
 
 #[derive(Debug, thiserror::Error)]
 pub enum NonceError {
-    #[error("nonce has already been used")]
+    #[error("has already been used")]
     AlreadyUsed,
     #[error("expired or from the future")]
     ExpiredOrFuture,

@@ -5,13 +5,12 @@ pub use self::impl_::*;
 
 use std::collections::BTreeSet;
 
-use defuse_wallet_core::{NearPromise, Timestamp, actions::NearAction};
-use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near};
-
-use crate::{
-    Actor, Error, Request, RequestMessage, Result, Wallet, WalletEvent, WalletOp,
-    signature::SigningStandard,
+use defuse_wallet_core::{
+    NearPromise, Request, RequestMessage, Timestamp, WalletOp, actions::NearAction,
 };
+use near_sdk::{AccountId, AccountIdRef, FunctionError, Promise, env, near};
+
+use crate::{Actor, Error, Result, Wallet, WalletEvent, signature::SigningStandard};
 
 #[near]
 impl Wallet for Contract {
@@ -111,10 +110,8 @@ impl Contract {
             self.execute_op(op, actor.as_ref())?;
         }
 
-        for promise in request.out {
-            Self::check_promise(&promise)?;
-
-            promise.build().detach();
+        for p in request.out {
+            Self::build_promise(p)?.detach();
         }
 
         Ok(())
@@ -128,7 +125,6 @@ impl Contract {
                 Ok(())
             }
             WalletOp::RemoveExtension { account_id } => self.remove_extension(&account_id, actor),
-            _ => unimplemented!(), // TODO: remove non_exhaustive?
         }
     }
 
@@ -189,14 +185,14 @@ impl Contract {
         Ok(())
     }
 
-    fn check_promise(promise: &NearPromise) -> Result<()> {
+    fn build_promise(p: NearPromise) -> Result<Promise> {
         // check for no self-calls
-        if promise.receiver_id == env::current_account_id() {
+        if p.receiver_id == env::current_account_id() {
             return Err(Error::SelfCallsNotAllowed);
         }
 
         // check for no unsupported actions
-        if !promise.actions.iter().all(|a| {
+        if !p.actions.iter().all(|a| {
             matches!(
                 a,
                 NearAction::FunctionCall(_)
@@ -212,6 +208,6 @@ impl Contract {
             return Err(Error::UnsupportedPromiseAction);
         }
 
-        Ok(())
+        Ok(p.build())
     }
 }
