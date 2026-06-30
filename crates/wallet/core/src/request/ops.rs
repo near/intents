@@ -5,7 +5,6 @@ use near_account_id::AccountId;
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
-    // TODO: tag/content
     serde(tag = "op", content = "payload", rename_all = "snake_case")
 )]
 #[cfg_attr(
@@ -35,4 +34,5 @@ pub enum WalletOp {
     /// This operation is idempotent, i.e. no error will be raised if
     /// given extension is not currently enabled.
     RemoveExtension { account_id: AccountId } = 2,
+    // TODO: Require* ops
 }

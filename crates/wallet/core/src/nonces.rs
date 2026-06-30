@@ -10,6 +10,12 @@ use ::{
     defuse_time::borsh::TimestampNanoSeconds,
 };
 
+/// Recommended timeout for production use: `1 hour`.
+///
+/// This allows messages to survive relayer/chain congestions
+/// with reasonable storage usage under typical load.
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_hours(1);
+
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "borsh",
@@ -65,6 +71,12 @@ pub struct Nonces {
     old: BitMap<BTreeMap<u32, u32>>,
     /// Current nonces, i.e. within `[now - timeout, now]`
     current: BitMap<BTreeMap<u32, u32>>,
+}
+
+impl Default for Nonces {
+    fn default() -> Self {
+        Self::new(DEFAULT_TIMEOUT)
+    }
 }
 
 impl Nonces {
