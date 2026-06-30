@@ -16,9 +16,10 @@ use serde_with::DurationSeconds;
 pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
 
 // TODO: versioned?
-// clippy seems to have a false-positive caused by `thread_local!()`
-// usage in `hash()` method
-#[allow(clippy::unsafe_derive_deserialize)]
+#[allow(
+    clippy::unsafe_derive_deserialize,
+    reason = "clippy seems to have a false-positive caused by `thread_local!` macro usage in `hash()` method below"
+)]
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
