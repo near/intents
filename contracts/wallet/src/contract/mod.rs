@@ -122,7 +122,7 @@ impl Contract {
         match op {
             WalletOp::SetSignatureMode { enable } => self.set_signature_mode(enable, actor),
             WalletOp::AddExtension { account_id } => {
-                self.add_extension(account_id, actor);
+                self.add_extension(&account_id, actor);
                 Ok(())
             }
             WalletOp::RemoveExtension { account_id } => self.remove_extension(&account_id, actor),
@@ -145,8 +145,8 @@ impl Contract {
         Ok(())
     }
 
-    fn add_extension(&mut self, account_id: AccountId, actor: Actor<'_>) {
-        if !self.extensions.insert(account_id.clone()) {
+    fn add_extension(&mut self, account_id: &AccountIdRef, actor: Actor<'_>) {
+        if !self.extensions.insert(account_id.to_owned()) {
             return;
         }
 
