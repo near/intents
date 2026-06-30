@@ -45,7 +45,7 @@ pub struct RequestMessage {
 
     /// A non-sequential `timeout`-bounded nonce for this request.
     ///
-    /// NOTE:
+    /// # Optimal Order
     ///
     /// Since nonces are non-sequential, the contract needs to keep track of
     /// used ones, which causes the storage to grow. Each nonce is stored for
@@ -57,9 +57,9 @@ pub struct RequestMessage {
     /// position that needs to be set in the corresponding value.
     ///
     /// As a result, clients are recommended to use incrementing counter for
-    /// nonces or at least, generate them semi-sequentially to reduce storage
-    /// usage and, hopefully, fit into ZBA limits. See
-    /// [`ConcurrentNonces`](crate::ConcurrentNonces) implementation.
+    /// nonces or at least, generate them semi-sequentially (i.e. where the
+    /// nonce is randomized after each 32 sequential ones) to reduce storage
+    /// usage and, hopefully, fit into ZBA limits.
     pub nonce: u32,
 
     #[cfg_attr(
@@ -82,7 +82,8 @@ pub struct RequestMessage {
     )]
     /// Timestamp when this request was created (in RFC-3339 format).
     ///
-    /// NOTE:
+    /// # Optimal lag
+    ///
     /// The contract ensures that `now() - timeout <= created_at <= now()`,
     /// where `now()` is the current block timestamp. Due to the desentralized
     /// nature of consensus in blockchains, block timestamps usually lag a
