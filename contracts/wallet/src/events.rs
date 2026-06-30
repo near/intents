@@ -36,7 +36,7 @@ pub enum WalletEvent<'a> {
 
     #[event_version("1.0.0")]
     SignedRequest {
-        /// Request hash
+        /// Canonical request hash
         #[serde_as(as = "Base58")]
         hash: CryptoHash,
     },

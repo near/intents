@@ -4,20 +4,16 @@
 mod contract;
 mod error;
 mod events;
-mod nonces;
-mod request;
 pub mod signature;
-mod state;
+
+pub use self::{error::*, events::*};
 
 use std::collections::BTreeSet;
 
-pub use defuse_time::Timestamp;
-use near_sdk::{AccountId, ext_contract};
+pub use defuse_wallet_core::*;
+use near_sdk::ext_contract;
 
-use crate::signature::RequestMessage;
-
-pub use self::{error::*, events::*, nonces::*, request::*, state::*};
-
+// TODO: separate traits
 /// Deterministic single-key Wallet Contract.
 #[ext_contract(ext_wallet)]
 pub trait Wallet {
@@ -25,21 +21,30 @@ pub trait Wallet {
     ///
     /// SHOULD accept ANY attached deposit.
     ///
-    /// MUST fail in case where the `signed.request` was not executed
+    /// MUST fail in case where the `msg.request` was not executed
     /// due to various reasons, including:
-    ///   * `signed` data is invalid
+    ///   * `msg` data is invalid
     ///   * `proof` is invalid
     ///   * signature is disabled
     ///   * nonce is already used
-    fn w_execute_signed(&mut self, msg: RequestMessage, proof: String);
+    fn w_execute_signed(
+        &mut self,
+        // TODO: flatten?
+        msg: RequestMessage,
+        proof: String,
+    );
 
     /// Execute request from an enabled extension.
     ///
-    /// * SHOULD accept ANY non-zero attached deposit
+    /// * SHOULD accept ANY **non-zero** attached deposit
     /// * MUST panic if zero deposit was attached
     /// * MUST panic if [`predecessor_account_id`](near_sdk::env::predecessor_account_id)
     ///   extension is not enabled
-    fn w_execute_extension(&mut self, request: Request);
+    fn w_execute_extension(
+        &mut self,
+        // TODO: flatten?
+        request: Request,
+    );
 
     /// Returns `subwallet_id`.
     fn w_subwallet_id(&self) -> u32;

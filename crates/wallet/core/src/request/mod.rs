@@ -2,25 +2,38 @@ mod ops;
 
 pub use self::ops::*;
 
-pub use defuse_near_promise as promise;
+pub use defuse_near_promise::*;
 
-use defuse_near_promise::NearPromise;
-
-use near_sdk::{Gas, NearToken, near};
-
-#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh, json])]
+// TODO: versioned?
+// TODO: naming?
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+)]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
+)]
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Request {
     /// Operations to apply
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub ops: Vec<WalletOp>,
 
     /// Promises to execute (fan-out).
     ///
     /// NOTE: all created promises are executed concurrently and independently
     /// of each other, without waiting on previous ones to complete.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
     pub out: Vec<NearPromise>,
 }
 

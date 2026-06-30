@@ -3,7 +3,6 @@ use std::borrow::Cow;
 use near_gas::NearGas as Gas;
 use near_token::NearToken;
 
-/// Function call action of [`NearPromise`](crate::NearPromise).
 #[must_use = "promises do nothing unless you `.build()` them"]
 #[cfg_attr(
     feature = "serde",
@@ -18,6 +17,7 @@ use near_token::NearToken;
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+/// Function call action of [`NearPromise`](crate::NearPromise).
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FunctionCall {
     /// Name of the function to execute.

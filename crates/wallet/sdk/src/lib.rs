@@ -1,13 +1,16 @@
 #[cfg(feature = "ed25519")]
 pub mod ed25519;
+mod nonces;
+
+pub use self::nonces::*;
 
 use std::time::Duration;
 
-pub use defuse_wallet as wallet;
+use borsh::BorshSerialize;
+pub use defuse_wallet_core::*;
 
-use defuse_wallet::{ConcurrentNonces, Request, State, Timestamp, signature::RequestMessage};
 use impl_tools::autoimpl;
-use near_sdk::{AccountId, GlobalContractId, borsh::BorshSerialize, state_init::StateInit};
+use near_global_contracts::{GlobalContractId, StateInit, StateInitV1};
 use rand::{make_rng, rngs::SmallRng};
 
 pub const MAINNET: &str = "mainnet";
@@ -53,14 +56,18 @@ impl<S: Signer> WalletSignerBuilder<S> {
     }
 
     #[inline]
-    fn state_init(&self) -> StateInit {
-        self.state.state_init(self.code.clone())
+    fn deterministic_state_init(&self) -> StateInit {
+        StateInitV1 {
+            code: self.code.clone(),
+            data: self.state.as_storage(),
+        }
+        .into()
     }
 
     pub fn build(self) -> WalletSigner<S> {
         WalletSigner {
             chain_id: MAINNET.to_string(),
-            account_id: self.state_init().derive_account_id(),
+            account_id: self.deterministic_state_init().derive_account_id(),
             code: self.code,
             state: self.state,
             nonces: ConcurrentNonces::new(make_rng()),
@@ -107,8 +114,15 @@ where
         self.chain_id.as_str()
     }
 
-    pub fn state_init(&self) -> StateInit {
-        self.state.state_init(self.code.clone())
+    pub fn deterministic_state_init(&self) -> StateInit {
+        let s = StateInit::V1(StateInitV1 {
+            code: self.code.clone(),
+            data: self.state.as_storage(),
+        });
+
+        debug_assert_eq!(s.derive_account_id(), self.account_id);
+
+        s
     }
 
     pub const fn account_id(&self) -> &AccountId {

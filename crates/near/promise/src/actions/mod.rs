@@ -9,7 +9,6 @@ use near_token::NearToken;
 
 use derive_more::From;
 
-/// A single action of [`NearPromise`](crate::NearPromise).
 #[must_use = "promises do nothing unless you `.build()` them"]
 #[cfg_attr(
     feature = "serde",
@@ -24,6 +23,7 @@ use derive_more::From;
     borsh(use_discriminant = true)
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+/// A single action of [`NearPromise`](crate::NearPromise).
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, From)]
 #[non_exhaustive]
 #[repr(u8)] // matches nearcore `Action` just in case

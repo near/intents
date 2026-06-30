@@ -1,0 +1,14 @@
+lints.workspace = true
+
+[package]
+name = "defuse-wallet-client"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+defuse-wallet-core = { workspace = true, features = ["serde"] }
+
+near-kit.workspace = true
+serde.workspace = true

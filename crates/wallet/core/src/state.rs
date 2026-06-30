@@ -1,45 +1,25 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    time::Duration,
-};
+use core::time::Duration;
+use std::collections::BTreeSet;
 
-use near_sdk::{
-    AccountId, AccountIdRef, GlobalContractId,
-    borsh::{self, BorshSerialize},
-    near,
-    state_init::{StateInit, StateInitV1},
-};
+use near_account_id::{AccountId, AccountIdRef};
 
-use crate::Nonces;
+use crate::{DEFAULT_TIMEOUT, Nonces};
 
+/// Storage key for [`State`].
+///
+/// In contracts, use `#[near(contract_state(key = STATE_KEY))]`.
 pub const STATE_KEY: &[u8] = b"";
 
 pub const DEFAULT_WALLET_ID: u32 = 0;
 
-/// Recommended timeout for production use: `1 hour`.
-///
-/// NOTE: The longer timeout, the more storage usage in highload environments.
-/// **Theoretically**, in order to fit into ZBA limits while sending 1 tx/sec
-/// over the timespan of `2 * timeout`, timeout should be at most `15m`.
-///
-/// However, we should take into account that 30% of used gas is funnelled back
-/// to the contract's NEAR balance. Assuming that `w_execute_signed()` method
-/// uses at least 2TGas, at the time of writing this converts back to ~30
-/// microNear, which is enough to cover storage staking fees for 3 bytes.
-///
-/// If nonces are generated optimally (i.e. at most
-/// [semi-sequentially](crate::ConcurrentNonces)), then each
-/// nonce consumes ~2 bits on average. So, each nonce committed in
-/// `w_execute_signed()` brings us more NEAR than we would have to reserve for
-/// storage staking if we ever exceed ZBA limits.
-///
-/// As a result, `1h` is an acceptable timeout allowing messages to survive
-/// relayer/chain congestion.
-pub const DEFAULT_TIMEOUT: Duration = Duration::from_hours(1); // 1h
-
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
+)]
 /// State of the wallet-contract.
-#[near(serializers = [borsh])]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct State<PubKey> {
     /// Whether authentication by signature is allowed.
     pub signature_enabled: bool,
@@ -61,6 +41,7 @@ pub struct State<PubKey> {
 
 impl<PubKey> State<PubKey> {
     /// Create a default state with given public key.
+    #[must_use]
     #[inline]
     pub const fn new(public_key: PubKey) -> Self {
         Self {
@@ -83,6 +64,24 @@ impl<PubKey> State<PubKey> {
     }
 
     /// Set given `timeout` instead of default the [default](`DEFAULT_TIMEOUT`) one.
+    ///
+    /// # Storage usage
+    ///
+    /// The longer timeout, the more storage usage in highload environments.
+    /// **Theoretically**, in order to fit into ZBA limits while sending
+    /// 1 tx/sec over the timespan of `2 * timeout`, timeout should be at
+    /// most `15m`.
+    ///
+    /// However, we should take into account that 30% of used gas is
+    /// funnelled back to the contract's NEAR balance. Assuming that
+    /// `w_execute_signed()` method uses at least 2TGas, at the time of
+    /// writing this converts back to ~30 microNear, which is enough to
+    /// cover storage staking fees for 3 bytes.
+    ///
+    /// If nonces are generated optimally, then each nonce consumes ~2 bits
+    /// on average. So, each nonce committed in `w_execute_signed()` brings
+    /// us more NEAR than we would have to reserve for storage staking if we
+    /// ever exceed ZBA limits.
     #[must_use]
     #[inline]
     pub fn timeout(mut self, timeout: Duration) -> Self {
@@ -116,11 +115,12 @@ impl<PubKey> State<PubKey> {
         self.extensions.contains(account_id.as_ref())
     }
 
+    #[cfg(feature = "borsh")]
     /// Returns `data` for [`StateInit`] of Deterministic `AccountId` (NEP-616)
     #[inline]
-    pub fn as_storage(&self) -> BTreeMap<Vec<u8>, Vec<u8>>
+    pub fn as_storage(&self) -> ::std::collections::BTreeMap<Vec<u8>, Vec<u8>>
     where
-        PubKey: BorshSerialize,
+        PubKey: ::borsh::BorshSerialize,
     {
         [(
             STATE_KEY.to_vec(),
@@ -128,16 +128,13 @@ impl<PubKey> State<PubKey> {
         )]
         .into()
     }
+}
 
-    /// Returns [`StateInit`] of Deterministic `AccountId` (NEP-616).
-    #[inline]
-    pub fn state_init(&self, code: GlobalContractId) -> StateInit
-    where
-        PubKey: BorshSerialize,
-    {
-        StateInit::V1(StateInitV1 {
-            code,
-            data: self.as_storage(),
-        })
+impl<PubKey> Default for State<PubKey>
+where
+    PubKey: Default,
+{
+    fn default() -> Self {
+        Self::new(PubKey::default())
     }
 }

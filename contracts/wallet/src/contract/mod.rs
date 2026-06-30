@@ -5,15 +5,14 @@ pub use self::impl_::*;
 
 use std::collections::BTreeSet;
 
-use defuse_near_promise::{NearPromise, actions::NearAction};
-use defuse_time::Timestamp;
-use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near};
-
-use crate::{
-    Actor, Error, Request, RequestMessage, Result, Wallet, WalletEvent, WalletOp,
-    signature::SigningStandard,
+use defuse_wallet_core::{
+    NearPromise, Request, RequestMessage, Timestamp, WalletOp, actions::NearAction,
 };
+use near_sdk::{AccountId, AccountIdRef, FunctionError, Promise, env, near};
 
+use crate::{Actor, Error, Result, Wallet, WalletEvent, signature::SigningStandard};
+
+// TODO: init on existing (e.g. named) account ids?
 #[near]
 impl Wallet for Contract {
     #[payable]
@@ -112,10 +111,8 @@ impl Contract {
             self.execute_op(op, actor.as_ref())?;
         }
 
-        for promise in request.out {
-            Self::check_promise(&promise)?;
-
-            promise.build().detach();
+        for p in request.out {
+            Self::build_promise(p)?.detach();
         }
 
         Ok(())
@@ -124,57 +121,55 @@ impl Contract {
     fn execute_op(&mut self, op: WalletOp, actor: Actor<'_>) -> Result<()> {
         match op {
             WalletOp::SetSignatureMode { enable } => self.set_signature_mode(enable, actor),
-            WalletOp::AddExtension { account_id } => self.add_extension(account_id, actor),
-            WalletOp::RemoveExtension { account_id } => self.remove_extension(account_id, actor),
-
-            WalletOp::Custom { .. } => env::panic_str("custom ops are not supported"),
+            WalletOp::AddExtension { account_id } => {
+                self.add_extension(&account_id, actor);
+                Ok(())
+            }
+            WalletOp::RemoveExtension { account_id } => self.remove_extension(&account_id, actor),
         }
     }
 
     fn set_signature_mode(&mut self, enable: bool, actor: Actor<'_>) -> Result<()> {
-        // emit first to help for debugging
+        if self.signature_enabled == enable {
+            return Ok(());
+        }
+        self.signature_enabled = enable;
+        self.check_lockout()?;
+
         WalletEvent::SignatureModeSet {
             enabled: enable,
             by: actor,
         }
         .emit();
 
-        if self.signature_enabled == enable {
-            return Err(Error::ThisSignatureModeAlreadySet);
-        }
-        self.signature_enabled = enable;
-
-        self.check_lockout()
-    }
-
-    fn add_extension(&mut self, account_id: AccountId, actor: Actor<'_>) -> Result<()> {
-        // emit first to help for debugging
-        WalletEvent::ExtensionAdded {
-            account_id: (&account_id).into(),
-            by: actor,
-        }
-        .emit();
-
-        if !self.extensions.insert(account_id.clone()) {
-            return Err(Error::ExtensionEnabled(account_id));
-        }
-
         Ok(())
     }
 
-    fn remove_extension(&mut self, account_id: AccountId, actor: Actor<'_>) -> Result<()> {
-        // emit first to help for debugging
+    fn add_extension(&mut self, account_id: &AccountIdRef, actor: Actor<'_>) {
+        if !self.extensions.insert(account_id.to_owned()) {
+            return;
+        }
+
+        WalletEvent::ExtensionAdded {
+            account_id: account_id.into(),
+            by: actor,
+        }
+        .emit();
+    }
+
+    fn remove_extension(&mut self, account_id: &AccountIdRef, actor: Actor<'_>) -> Result<()> {
+        if !self.extensions.remove(account_id) {
+            return Ok(());
+        }
+        self.check_lockout()?;
+
         WalletEvent::ExtensionRemoved {
-            account_id: (&account_id).into(),
+            account_id: account_id.into(),
             by: actor,
         }
         .emit();
 
-        if !self.extensions.remove(&account_id) {
-            return Err(Error::ExtensionNotEnabled(account_id));
-        }
-
-        self.check_lockout()
+        Ok(())
     }
 
     fn check_extension_enabled(&self, account_id: &AccountIdRef) -> Result<()> {
@@ -191,14 +186,14 @@ impl Contract {
         Ok(())
     }
 
-    fn check_promise(promise: &NearPromise) -> Result<()> {
+    fn build_promise(p: NearPromise) -> Result<Promise> {
         // check for no self-calls
-        if promise.receiver_id == env::current_account_id() {
+        if p.receiver_id == env::current_account_id() {
             return Err(Error::SelfCallsNotAllowed);
         }
 
         // check for no unsupported actions
-        if !promise.actions.iter().all(|a| {
+        if !p.actions.iter().all(|a| {
             matches!(
                 a,
                 NearAction::FunctionCall(_)
@@ -214,6 +209,6 @@ impl Contract {
             return Err(Error::UnsupportedPromiseAction);
         }
 
-        Ok(())
+        Ok(p.build())
     }
 }

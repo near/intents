@@ -1,6 +1,6 @@
 pub mod actions;
 
-pub use near_account_id::{self as account_id, AccountId, AccountIdRef};
+pub use near_account_id::{AccountId, AccountIdRef};
 pub use near_gas::NearGas as Gas;
 pub use near_token::NearToken;
 
@@ -8,7 +8,6 @@ use near_global_contracts::StateInit;
 
 use self::actions::{DeterministicStateInit, FunctionCall, NearAction, Transfer};
 
-/// A single outgoing promise
 #[must_use = "promises do nothing unless you `.build()` them"]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -21,6 +20,7 @@ use self::actions::{DeterministicStateInit, FunctionCall, NearAction, Transfer};
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
+/// A single outgoing promise
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NearPromise {
     /// Receiver of the receipt to be created.
@@ -210,6 +210,13 @@ impl NearPromise {
         self.actions
             .into_iter()
             .fold(p, |p, action| action.append(p))
+    }
+}
+
+impl Extend<NearAction> for NearPromise {
+    #[inline]
+    fn extend<T: IntoIterator<Item = NearAction>>(&mut self, iter: T) {
+        self.actions.extend(iter);
     }
 }
 
