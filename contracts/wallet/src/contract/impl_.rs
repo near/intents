@@ -97,9 +97,6 @@ macro_rules! contract_impl {
 
                 #[near]
                 impl Contract {
-                    #[private]
-                    #[payable]
-                    #[init]
                     /// Initialize a wallet contract on the existing account
                     /// with authentication by signature disabled and
                     /// add the current account as an extension.
@@ -109,6 +106,9 @@ macro_rules! contract_impl {
                     /// in the same receipt right after `UseGlobalContract` action.
                     ///
                     /// MUST attach at least 1yN for security reasons.
+                    #[private]
+                    #[payable]
+                    #[init]
                     pub fn w_init() -> Self {
                         if env::attached_deposit().is_zero() {
                             // reject FunctionCall access keys

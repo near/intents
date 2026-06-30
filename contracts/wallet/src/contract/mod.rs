@@ -12,6 +12,7 @@ use near_sdk::{AccountId, AccountIdRef, FunctionError, Promise, env, near};
 
 use crate::{Actor, Error, Result, Wallet, WalletEvent, signature::SigningStandard};
 
+// TODO: copy docs for abi
 #[near]
 impl Wallet for Contract {
     #[payable]
