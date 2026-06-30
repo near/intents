@@ -32,6 +32,17 @@ async fn test_w_init(
         .result()
         .unwrap();
 
+    user.w_execute_extension(
+        user.account_id(),
+        None,
+        &Request::new().ops([WalletOp::RemoveExtension {
+            account_id: user.account_id().into(),
+        }]),
+        NearToken::from_yoctonear(1),
+    )
+    .await
+    .expect_err("cannot accidentally delete itself from extension");
+
     let user2 = env
         .create_subaccount("user2", NearToken::from_near(1))
         .await;
