@@ -15,7 +15,11 @@ use defuse_time::arbitrary::RangeNanos;
 #[cfg(feature = "serde")]
 use serde_with::DurationSeconds;
 
-// TODO: NEP-461 prefix?
+/// Domain prefix for signing [`RequestMessage`].
+///
+/// This prefix doesn't break NEP-461 assumptions, since first four bytes
+/// borsh-deserialize to `1380009294u32`, which is in `[1 << 30, 1 << 31)`
+/// range for on-chain messages.
 pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
 
 #[allow(
