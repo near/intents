@@ -3,6 +3,8 @@ mod schema;
 
 use defuse_crypto::Ed25519;
 use defuse_time::Timestamp;
+#[cfg(feature = "arbitrary")]
+use defuse_time::arbitrary::RangeNanos;
 use impl_tools::autoimpl;
 use tlb_ton::MsgAddress;
 
@@ -30,9 +32,7 @@ pub struct TonConnectPayload {
     /// UNIX timestamp (in seconds or RFC3339) at the time of singing
     #[cfg_attr(
         feature = "arbitrary",
-        arbitrary(with = ::arbitrary_with::As::<
-            ::defuse_time::arbitrary::SinceUnixEpoch
-        >::arbitrary)
+        arbitrary(with = ::arbitrary_with::As::<RangeNanos::<0>>::arbitrary)
     )]
     #[cfg_attr(
         feature = "serde",
@@ -237,10 +237,10 @@ mod tests {
         }
         {
             use arbitrary_with::ArbitraryAs;
-            use defuse_time::arbitrary::SinceUnixEpoch;
+            use defuse_time::arbitrary::RangeNanos;
 
             let mut t = signed.clone();
-            t.payload.timestamp = SinceUnixEpoch::arbitrary_as(&mut u).unwrap();
+            t.payload.timestamp = RangeNanos::<0>::arbitrary_as(&mut u).unwrap();
             dbg!(&t.payload.timestamp);
             verify_ok(&t, false);
         }

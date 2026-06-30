@@ -10,6 +10,8 @@ use ::{
     defuse_borsh_utils::{As, DurationSeconds as BorshDurationSeconds},
     defuse_time::borsh::TimestampNanoSeconds,
 };
+#[cfg(feature = "arbitrary")]
+use defuse_time::arbitrary::RangeNanos;
 #[cfg(feature = "serde")]
 use serde_with::DurationSeconds;
 
@@ -62,6 +64,10 @@ pub struct RequestMessage {
     /// usage and, hopefully, fit into ZBA limits.
     pub nonce: u32,
 
+    #[cfg_attr(
+        feature = "arbitrary",
+        arbitrary(with = ::arbitrary_with::As::<RangeNanos::<0>>::arbitrary),
+    )]
     #[cfg_attr(
         feature = "borsh-schema",
         borsh(

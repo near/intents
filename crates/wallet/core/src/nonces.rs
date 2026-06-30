@@ -9,6 +9,8 @@ use ::{
     defuse_borsh_utils::{As, DurationSeconds},
     defuse_time::borsh::TimestampNanoSeconds,
 };
+#[cfg(feature = "arbitrary")]
+use defuse_time::arbitrary::RangeNanos;
 
 /// Recommended timeout for production use: `1 hour`.
 ///
@@ -46,6 +48,10 @@ pub struct Nonces {
     /// Fixed timeout, i.e. maximum validity timespan for each nonce.
     timeout: Duration,
 
+    #[cfg_attr(
+        feature = "arbitrary",
+        arbitrary(with = ::arbitrary_with::As::<RangeNanos::<0>>::arbitrary)
+    )]
     #[cfg_attr(
         feature = "borsh-schema",
         borsh(
