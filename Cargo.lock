@@ -1732,7 +1732,7 @@ dependencies = [
  "defuse-outlayer-app",
  "defuse-poa-factory",
  "defuse-test-utils",
- "defuse-wallet",
+ "defuse-wallet-client",
  "defuse-wallet-sdk",
  "near-contract-standards",
  "near-kit",
@@ -1922,6 +1922,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-wallet-client"
+version = "0.1.0"
+dependencies = [
+ "defuse-wallet-core",
+ "near-kit",
+ "serde",
+]
+
+[[package]]
 name = "defuse-wallet-core"
 version = "0.1.0"
 dependencies = [
@@ -1946,6 +1955,8 @@ dependencies = [
 name = "defuse-wallet-relayer"
 version = "0.1.0"
 dependencies = [
+ "defuse-digest",
+ "defuse-wallet-client",
  "defuse-wallet-core",
  "defuse-wallet-sdk",
  "ed25519-dalek",
@@ -1966,7 +1977,6 @@ version = "0.1.0"
 dependencies = [
  "borsh",
  "defuse-crypto",
- "defuse-digest",
  "defuse-wallet-core",
  "ed25519-dalek",
  "impl-tools",

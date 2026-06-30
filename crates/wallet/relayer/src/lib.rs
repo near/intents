@@ -1,20 +1,18 @@
-mod contract;
+use std::{borrow::Cow, time::Duration};
 
-use std::time::Duration;
-
+use defuse_wallet_client::{WExecuteSignedArgs, Wallet};
 pub use defuse_wallet_core as wallet;
 
 use defuse_wallet_core::{RequestMessage, Timestamp};
 pub use near_kit;
 
 use near_kit::{
-    CryptoHash, ExecutedOptimistic, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken, StateInit,
+    CryptoHash, ExecutedOptimistic, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken,
+    StateInit,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error as ThisError;
 use tracing::{field, instrument};
-
-use crate::contract::{WExecuteSignedArgs, Wallet};
 
 #[derive(Debug)]
 pub struct Relayer {
@@ -106,8 +104,8 @@ impl Relayer {
 
         tx = tx.add_action(
             Wallet::w_execute_signed(WExecuteSignedArgs {
-                msg: &request.msg,
-                proof: &request.proof,
+                msg: Cow::Borrowed(&request.msg),
+                proof: Cow::Borrowed(&request.proof),
             })
             .deposit(
                 needs_deposit

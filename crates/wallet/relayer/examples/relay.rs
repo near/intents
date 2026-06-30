@@ -2,11 +2,12 @@
 
 use std::{env, fs, iter, path::Path, sync::LazyLock};
 
+use defuse_digest::{Digest, sha2::Sha256};
 use defuse_wallet_relayer::{RelayRequest, Relayer};
-use defuse_wallet_sdk::WalletSigner;
+use defuse_wallet_sdk::{NearToken, Request, WalletSigner};
 use ed25519_dalek::ed25519::signature::rand_core::OsRng;
 use futures::{StreamExt, TryFutureExt, TryStreamExt, stream};
-use near_kit::{Final, PublishMode, sandbox::SandboxConfig};
+use near_kit::{Final, GlobalContractId, PublishMode, sandbox::SandboxConfig};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 static WALLET_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
@@ -35,7 +36,7 @@ async fn main() {
             .wait_until(Final)
             .await
             .unwrap();
-        GlobalContractId::CodeHash(sha256_array(&*WALLET_WASM))
+        GlobalContractId::CodeHash(Sha256::digest(&*WALLET_WASM).into())
     };
 
     let relayer = Relayer::new(near.clone());

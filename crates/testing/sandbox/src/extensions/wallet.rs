@@ -1,58 +1,29 @@
+use std::borrow::Cow;
+
 use anyhow::Result;
-use defuse_core::Timestamp;
-use defuse_wallet::{Request, signature::RequestMessage};
-use near_kit::{AccountId, AccountIdRef, Final, Gas, Near, NearToken, StateInit};
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use defuse_wallet_sdk::{Request, RequestMessage};
+use near_kit::{AccountIdRef, Final, Gas, Near, NearToken, StateInit};
 
-use crate::outcome::SuccessfulExecutionOutcome;
-
-pub use defuse_wallet as contract;
+pub use defuse_wallet_client::*;
 pub use defuse_wallet_sdk as sdk;
 
-#[derive(Serialize, Deserialize)]
-pub struct ExecuteSignedArgs {
-    pub msg: RequestMessage,
-    pub proof: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct ExecuteExtensionArgs {
-    pub request: Request,
-}
-
-#[near_kit::contract]
-pub trait Wallet {
-    #[call]
-    fn w_execute_signed(&mut self, args: ExecuteSignedArgs) -> bool;
-
-    #[call]
-    fn w_execute_extension(&mut self, args: ExecuteExtensionArgs) -> bool;
-
-    fn w_subwallet_id(&self) -> u32;
-    fn w_is_signature_allowed(&self) -> bool;
-    fn w_public_key(&self) -> String;
-    fn w_is_extension_enabled(&self, account_id: AccountId) -> bool;
-    fn w_extensions(&self) -> BTreeSet<AccountId>;
-    fn w_timeout_secs(&self) -> u64;
-    fn w_last_cleaned_at(&self) -> Timestamp;
-}
+use crate::outcome::SuccessfulExecutionOutcome;
 
 pub trait WalletExt {
     async fn w_execute_signed(
         &self,
         wallet_id: impl AsRef<AccountIdRef>,
         state_init: impl Into<Option<StateInit>>,
-        msg: RequestMessage,
-        proof: String,
+        msg: &RequestMessage,
+        proof: impl AsRef<str>,
         deposit: NearToken,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn w_execute_extension(
         &self,
-        wallet_id: impl AsRef<AccountIdRef>,
+        contract_id: impl AsRef<AccountIdRef>,
         state_init: impl Into<Option<StateInit>>,
-        request: Request,
+        request: &Request,
         deposit: NearToken,
     ) -> Result<SuccessfulExecutionOutcome>;
 }
@@ -60,22 +31,25 @@ pub trait WalletExt {
 impl WalletExt for Near {
     async fn w_execute_signed(
         &self,
-        wallet_id: impl AsRef<AccountIdRef>,
+        contract_id: impl AsRef<AccountIdRef>,
         state_init: impl Into<Option<StateInit>>,
-        msg: RequestMessage,
-        proof: String,
+        msg: &RequestMessage,
+        proof: impl AsRef<str>,
         deposit: NearToken,
     ) -> Result<SuccessfulExecutionOutcome> {
-        let mut tx = self.transaction(wallet_id.as_ref());
+        let mut tx = self.transaction(contract_id.as_ref());
 
         if let Some(state_init) = state_init.into() {
             tx = tx.state_init(state_init, NearToken::ZERO);
         }
 
         tx.add_action(
-            Wallet::w_execute_signed(ExecuteSignedArgs { msg, proof })
-                .deposit(deposit)
-                .gas(Gas::from_tgas(300)),
+            Wallet::w_execute_signed(WExecuteSignedArgs {
+                msg: Cow::Borrowed(msg),
+                proof: proof.as_ref().into(),
+            })
+            .deposit(deposit)
+            .gas(Gas::from_tgas(300)),
         )
         .wait_until(Final)
         .await?
@@ -84,20 +58,22 @@ impl WalletExt for Near {
 
     async fn w_execute_extension(
         &self,
-        wallet_id: impl AsRef<AccountIdRef>,
+        contract_id: impl AsRef<AccountIdRef>,
         state_init: impl Into<Option<StateInit>>,
-        request: Request,
+        request: &Request,
         deposit: NearToken,
     ) -> Result<SuccessfulExecutionOutcome> {
-        let mut tx = self.transaction(wallet_id.as_ref());
+        let mut tx = self.transaction(contract_id.as_ref());
 
         if let Some(state_init) = state_init.into() {
             tx = tx.state_init(state_init, NearToken::ZERO);
         }
         tx.add_action(
-            Wallet::w_execute_extension(ExecuteExtensionArgs { request })
-                .deposit(deposit)
-                .gas(Gas::from_tgas(300)),
+            Wallet::w_execute_extension(WExecuteExtensionArgs {
+                request: Cow::Borrowed(request),
+            })
+            .deposit(deposit)
+            .gas(Gas::from_tgas(300)),
         )
         .wait_until(Final)
         .await?

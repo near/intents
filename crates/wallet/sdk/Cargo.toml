@@ -17,7 +17,6 @@ near-global-contracts = { workspace = true, features = ["borsh"] }
 rand.workspace = true
 
 defuse-crypto = { workspace = true, optional = true }
-defuse-digest = { workspace = true, optional = true }
 ed25519-dalek = { workspace = true, optional = true }
 
 [features]
@@ -27,7 +26,6 @@ ed25519 = [
   "defuse-crypto/ed25519",
   "defuse-wallet-core/borsh",
   "dep:defuse-crypto",
-  "dep:defuse-digest",
   "dep:ed25519-dalek",
 ]
 json = ["defuse-wallet-core/json"]
