@@ -33,8 +33,8 @@ impl<S: Signer> WalletSignerBuilder<S> {
 
     #[must_use]
     #[inline]
-    pub fn wallet_id(mut self, wallet_id: u32) -> Self {
-        self.state = self.state.subwallet_id(wallet_id);
+    pub fn subwallet_id(mut self, subwallet_id: u32) -> Self {
+        self.state = self.state.subwallet_id(subwallet_id);
         self
     }
 

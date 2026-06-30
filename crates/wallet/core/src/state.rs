@@ -53,13 +53,13 @@ impl<PubKey> State<PubKey> {
         }
     }
 
-    /// Set given `subwallet_id` instead of the [default](`DEFAULT_WALLET_ID`) one.
+    /// Set given `subwallet_id` instead of the [default](`DEFAULT_SUBWALLET_ID`) one.
     /// This can be used to derive multiple wallet-contract from a single
     /// public key.
     #[must_use]
     #[inline]
-    pub const fn subwallet_id(mut self, wallet_id: u32) -> Self {
-        self.subwallet_id = wallet_id;
+    pub const fn subwallet_id(mut self, subwallet_id: u32) -> Self {
+        self.subwallet_id = subwallet_id;
         self
     }
 
