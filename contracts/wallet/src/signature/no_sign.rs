@@ -34,7 +34,7 @@ impl<M> SigningStandard<M> for NoSign {
     schemars(crate = "::near_sdk::schemars", with = "String")
 )]
 #[near(serializers = [borsh])]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, SerializeDisplay, DeserializeFromStr)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, SerializeDisplay, DeserializeFromStr)]
 #[serde_with(crate = "::near_sdk::serde_with")]
 pub struct NoPublicKey;
 
