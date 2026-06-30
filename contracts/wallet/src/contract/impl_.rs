@@ -101,8 +101,8 @@ macro_rules! contract_impl {
                     #[payable]
                     #[init]
                     /// Initialize a wallet contract on the existing account
-                    /// with authentication by signature disabled and add the
-                    /// current account as an extension.
+                    /// with authentication by signature disabled and
+                    /// add the current account as an extension.
                     ///
                     /// This method is allowed to be called only by the current
                     /// account itself. It's recommended to call this method

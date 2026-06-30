@@ -1,3 +1,5 @@
+mod no_sign;
+
 use std::borrow::Cow;
 
 use defuse_sandbox::{
@@ -253,12 +255,15 @@ impl Env {
 
 #[fixture]
 #[awt]
-async fn env(#[future] root: Near) -> Env {
+async fn env(
+    #[default(WALLET_WASM.clone())] wasm: impl Into<Vec<u8>>,
+    #[future] root: Near,
+) -> Env {
     // wallet.0.test
     let wallet_global_id = root
         .deploy_upgradable_global_contract(
             root.account_id().sub_account("wallet").unwrap(),
-            WALLET_WASM.clone(),
+            wasm,
             NearToken::from_near(1000),
         )
         .await
