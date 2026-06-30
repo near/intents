@@ -106,10 +106,10 @@ contract_impl! {
     )] {
         use defuse_crypto::Ed25519;
 
-        use crate::signature::{Borsh, DomainPrefix, Sha256};
+        use crate::signature::{Borsh, DomainPrefix, Sha3_256};
 
         impl ContractImpl for Contract {
-            type SigningStandard = Borsh<DomainPrefix<Sha256<Ed25519>>>;
+            type SigningStandard = Borsh<DomainPrefix<Sha3_256<Ed25519>>>;
         }
     }
 
@@ -120,7 +120,7 @@ contract_impl! {
         ))
     )] {
         use crate::signature::{
-            Borsh, DomainPrefix, Sha256,
+            Borsh, DomainPrefix, Sha3_256,
             webauthn::{Ed25519, Webauthn},
         };
 
@@ -132,7 +132,7 @@ contract_impl! {
             /// 1. Authenticators are general-purpose signers and they usually implement
             ///   blind singing.
             /// 2. This reduces length of the `proof` submitted on-chain.
-            type SigningStandard = Borsh<DomainPrefix<Sha256<Webauthn<Ed25519>>>>;
+            type SigningStandard = Borsh<DomainPrefix<Sha3_256<Webauthn<Ed25519>>>>;
         }
     }
 
@@ -143,7 +143,7 @@ contract_impl! {
         ))
     )] {
         use crate::signature::{
-            Borsh, DomainPrefix, Sha256,
+            Borsh, DomainPrefix, Sha3_256,
             webauthn::{P256, Webauthn},
         };
 
@@ -155,7 +155,7 @@ contract_impl! {
             /// 1. Authenticators are general-purpose signers and they usually implement
             ///   blind singing.
             /// 2. This reduces length of the `proof` submitted on-chain.
-            type SigningStandard = Borsh<DomainPrefix<Sha256<Webauthn<P256>>>>;
+            type SigningStandard = Borsh<DomainPrefix<Sha3_256<Webauthn<P256>>>>;
         }
 
     }

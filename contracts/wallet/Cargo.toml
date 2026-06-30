@@ -20,6 +20,7 @@ serde_with = { workspace = true, features = ["base58"] }
 thiserror.workspace = true
 
 defuse-crypto = { workspace = true, default-features = false, features = ["parse", "borsh"], optional = true }
+defuse-digest = { workspace = true, features = ["sha2", "sha3"] }
 defuse-webauthn = { workspace = true, default-features = false, features = ["borsh"], optional = true }
 
 [features]

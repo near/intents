@@ -1805,6 +1805,7 @@ dependencies = [
  "itertools",
  "multi-token-receiver-stub",
  "near-contract-standards",
+ "near-sdk",
  "near-sdk-core",
  "rstest",
  "serde_json",
@@ -1911,6 +1912,7 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "defuse-crypto",
+ "defuse-digest",
  "defuse-test-utils",
  "defuse-wallet-core",
  "defuse-webauthn",

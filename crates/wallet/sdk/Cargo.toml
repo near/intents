@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-wallet-core = { workspace = true, features = ["borsh"] }
+defuse-wallet-core = { workspace = true, features = ["borsh", "digest"] }
 
 borsh.workspace = true
 impl-tools.workspace = true
@@ -22,10 +22,5 @@ ed25519-dalek = { workspace = true, optional = true }
 [features]
 default = ["ed25519"]
 
-ed25519 = [
-  "defuse-crypto/ed25519",
-  "defuse-wallet-core/borsh",
-  "dep:defuse-crypto",
-  "dep:ed25519-dalek",
-]
+ed25519 = ["defuse-crypto/ed25519", "dep:defuse-crypto", "dep:ed25519-dalek"]
 json = ["defuse-wallet-core/json"]

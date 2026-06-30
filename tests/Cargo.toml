@@ -24,6 +24,7 @@ impl-tools.workspace = true
 itertools.workspace = true
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 near-contract-standards.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
 near-sdk-core.workspace = true
 rstest.workspace = true
 serde_json.workspace = true

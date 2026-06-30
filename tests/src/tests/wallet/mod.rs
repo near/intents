@@ -172,7 +172,7 @@ async fn test_extension(#[future] env: Env) {
 
     let wallet_state_init = StateInit::V1(StateInitV1 {
         code: env.wallet_global_id.clone(),
-        data: State::new([0; 32])
+        data: State::new([0u8; 32])
             .extensions([extension.account_id()])
             .as_storage(),
     });
