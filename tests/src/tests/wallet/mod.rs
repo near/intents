@@ -32,7 +32,7 @@ async fn test_signed(#[future] env: Env) {
     let (msg, proof) = wallet
         .sign(
             Request::new()
-                .ops([
+                .internal([
                     WalletOp::AddExtension {
                         account_id: env.account_id().clone(),
                     },
@@ -40,7 +40,7 @@ async fn test_signed(#[future] env: Env) {
                         account_id: env.account_id().clone(),
                     },
                 ])
-                .out([
+                .external([
                     NearPromise::new(receiver.account_id()).transfer(NearToken::from_yoctonear(1)),
                     NearPromise::new(receiver.account_id()).transfer(NearToken::from_yoctonear(2)),
                     NearPromise::new(receiver.account_id()).transfer(NearToken::from_yoctonear(3)),
@@ -80,10 +80,10 @@ async fn test_rotate(#[future] env: Env) {
     let (msg, proof) = old_wallet
         .sign(
             Request::new()
-                .ops([WalletOp::AddExtension {
+                .internal([WalletOp::AddExtension {
                     account_id: new_wallet.account_id().clone(),
                 }])
-                .out([NearPromise::new(new_wallet.account_id())
+                .external([NearPromise::new(new_wallet.account_id())
                     .deterministic_state_init(
                         new_wallet.deterministic_state_init(),
                         NearToken::ZERO,
@@ -94,14 +94,14 @@ async fn test_rotate(#[future] env: Env) {
                             .args_json({
                                 let (msg, proof) = new_wallet
                                     .sign(
-                                        Request::new().out([NearPromise::new(
+                                        Request::new().external([NearPromise::new(
                                             old_wallet.account_id(),
                                         )
                                         .function_call(
                                             FunctionCall::name("w_execute_extension")
                                                 .attach_deposit(NearToken::from_yoctonear(1))
                                                 .args_json(WExecuteExtensionArgs {
-                                                    request: Cow::Owned(Request::new().ops([
+                                                    request: Cow::Owned(Request::new().internal([
                                                         WalletOp::SetSignatureMode {
                                                             enable: false,
                                                         },
@@ -148,7 +148,7 @@ async fn test_rotate(#[future] env: Env) {
 
     let (msg, proof) = new_wallet
         .sign(
-            Request::new().out([NearPromise::new(old_wallet.account_id()).function_call(
+            Request::new().external([NearPromise::new(old_wallet.account_id()).function_call(
                 FunctionCall::name("w_execute_extension")
                     .attach_deposit(NearToken::from_yoctonear(1))
                     .args_json(WExecuteExtensionArgs {
@@ -188,10 +188,10 @@ async fn test_extension(#[future] env: Env) {
             wallet_state_init.derive_account_id(),
             wallet_state_init.clone(),
             &Request::new()
-                .ops([WalletOp::RemoveExtension {
+                .internal([WalletOp::RemoveExtension {
                     account_id: extension.account_id().clone(),
                 }])
-                .out([NearPromise::new(receiver.account_id())
+                .external([NearPromise::new(receiver.account_id())
                     .refund_to(refund_to.account_id())
                     .transfer(NearToken::from_near(1))]),
             NearToken::from_near(1),

@@ -13,7 +13,7 @@ use near_account_id::AccountId;
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema)),
     borsh(use_discriminant = true)
 )]
-/// An operation to perform on wallet-contract's state.
+/// An internal operation to perform on wallet-contract's state.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
 pub enum WalletOp {
