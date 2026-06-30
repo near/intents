@@ -17,7 +17,7 @@ use near_sdk::ext_contract;
 /// Deterministic single-key Wallet Contract.
 #[ext_contract(ext_wallet)]
 pub trait Wallet {
-    /// Executes signed request.
+    /// Execute signed request message.
     ///
     /// SHOULD accept ANY attached deposit.
     ///
@@ -37,7 +37,6 @@ pub trait Wallet {
     ///   extension is not enabled
     fn w_execute_extension(&mut self, request: Request);
 
-    // TODO: do we need it? what about w_init() on named accounts?
     /// Returns `subwallet_id`.
     fn w_subwallet_id(&self) -> u32;
 
