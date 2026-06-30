@@ -15,6 +15,7 @@ use serde_with::DurationSeconds;
 
 pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
 
+// TODO: versioned?
 // clippy seems to have a false-positive caused by `thread_local!()`
 // usage in `hash()` method
 #[allow(clippy::unsafe_derive_deserialize)]

@@ -4,6 +4,8 @@ pub use self::ops::*;
 
 pub use defuse_near_promise::*;
 
+// TODO: versioned?
+// TODO: naming?
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
