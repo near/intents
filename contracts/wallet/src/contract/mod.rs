@@ -120,17 +120,14 @@ impl Contract {
     fn execute_op(&mut self, op: WalletOp, actor: Actor<'_>) -> Result<()> {
         match op {
             WalletOp::SetSignatureMode { enable } => self.set_signature_mode(enable, actor),
-            WalletOp::AddExtension { account_id } => {
-                self.add_extension(&account_id, actor);
-                Ok(())
-            }
+            WalletOp::AddExtension { account_id } => self.add_extension(account_id, actor),
             WalletOp::RemoveExtension { account_id } => self.remove_extension(&account_id, actor),
         }
     }
 
     fn set_signature_mode(&mut self, enable: bool, actor: Actor<'_>) -> Result<()> {
         if self.signature_enabled == enable {
-            return Ok(());
+            return Err(Error::ThisSignatureModeAlreadySet);
         }
         self.signature_enabled = enable;
         self.check_lockout()?;
@@ -144,9 +141,9 @@ impl Contract {
         Ok(())
     }
 
-    fn add_extension(&mut self, account_id: &AccountIdRef, actor: Actor<'_>) {
-        if !self.extensions.insert(account_id.to_owned()) {
-            return;
+    fn add_extension(&mut self, account_id: AccountId, actor: Actor<'_>) -> Result<()> {
+        if !self.extensions.insert(account_id.clone()) {
+            return Err(Error::ExtensionEnabled(account_id));
         }
 
         WalletEvent::ExtensionAdded {
@@ -154,11 +151,13 @@ impl Contract {
             by: actor,
         }
         .emit();
+
+        Ok(())
     }
 
     fn remove_extension(&mut self, account_id: &AccountIdRef, actor: Actor<'_>) -> Result<()> {
         if !self.extensions.remove(account_id) {
-            return Ok(());
+            return Err(Error::ExtensionNotEnabled(account_id.to_owned()));
         }
         self.check_lockout()?;
 
