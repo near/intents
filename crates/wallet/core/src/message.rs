@@ -13,6 +13,8 @@ use ::{
 #[cfg(feature = "serde")]
 use serde_with::DurationSeconds;
 
+pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
+
 // clippy seems to have false-positive caused by `thread_local!()`
 // usage in `hash()` method
 #[allow(clippy::unsafe_derive_deserialize)]
@@ -127,8 +129,6 @@ impl RequestMessage {
     pub fn hash(&self) -> [u8; 32] {
         use defuse_digest::{Digest, sha3::Sha3_256};
         use digest_io::IoWrapper;
-
-        use crate::WALLET_DOMAIN;
 
         thread_local! {
             // per-thread lazily-initialized hasher with pre-processed prefix
