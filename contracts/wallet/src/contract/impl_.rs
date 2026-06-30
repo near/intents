@@ -120,8 +120,8 @@ macro_rules! contract_impl {
                             .extensions([env::current_account_id()]);
 
                         // Disable signature verification completely,
-                        // so that removing self from extensions would
-                        // result into lockout error.
+                        // so that accidently removing self from extensions
+                        // would result into lockout error.
                         s.signature_enabled = false;
 
                         Self(s)
