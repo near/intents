@@ -1805,7 +1805,6 @@ dependencies = [
  "itertools",
  "multi-token-receiver-stub",
  "near-contract-standards",
- "near-sdk",
  "near-sdk-core",
  "rstest",
  "serde_json",

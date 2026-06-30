@@ -13,6 +13,9 @@ use ::{
 #[cfg(feature = "serde")]
 use serde_with::DurationSeconds;
 
+// clippy seems to have false-positive caused by `thread_local!()`
+// usage in `hash()` method
+#[allow(clippy::unsafe_derive_deserialize)]
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
