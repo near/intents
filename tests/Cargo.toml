@@ -30,6 +30,8 @@ serde_json.workspace = true
 strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
+defuse-wallet-relayer = { workspace = true, optional = true }
+
 [features]
 default = [
   "defuse",
@@ -60,6 +62,11 @@ escrow-swap = [
 imt = ["defuse", "defuse-sandbox/imt"]
 outlayer = ["defuse-sandbox/outlayer", "defuse-test-utils/outlayer"]
 poa = ["defuse-sandbox/poa", "defuse-test-utils/poa"]
-wallet = ["defuse-sandbox/wallet", "defuse-test-utils/wallet", "deployer"]
+wallet = [
+  "defuse-sandbox/wallet",
+  "defuse-test-utils/wallet",
+  "dep:defuse-wallet-relayer",
+  "deployer",
+]
 
 long = []

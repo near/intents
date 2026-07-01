@@ -16,7 +16,7 @@ impl-tools.workspace = true
 near-global-contracts = { workspace = true, features = ["borsh"] }
 rand.workspace = true
 
-defuse-crypto = { workspace = true, optional = true }
+defuse-crypto = { workspace = true, features = ["parse", "borsh"], optional = true }
 ed25519-dalek = { workspace = true, optional = true }
 
 [features]

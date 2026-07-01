@@ -1,3 +1,7 @@
+mod request;
+
+pub use self::request::*;
+
 use std::{borrow::Cow, time::Duration};
 
 use defuse_wallet_client::{WExecuteSignedArgs, Wallet};
@@ -6,31 +10,18 @@ pub use defuse_wallet_core as wallet;
 use defuse_wallet_core::{RequestMessage, Timestamp};
 pub use near_kit;
 
-use near_kit::{
-    CryptoHash, ExecutedOptimistic, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken,
-    StateInit,
-};
-use serde::{Deserialize, Serialize};
+use near_kit::{ExecutedOptimistic, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken};
 use thiserror::Error as ThisError;
+#[cfg(feature = "tracing")]
 use tracing::{field, instrument};
 
 #[derive(Debug)]
-pub struct Relayer {
+pub struct WalletRelayer {
     client: Near,
     gas: Gas,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RelayRequest {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub state_init: Option<StateInit>, // TODO
-    pub msg: RequestMessage,
-    pub proof: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub gas: Option<Gas>,
-}
-
-impl Relayer {
+impl WalletRelayer {
     #[allow(clippy::doc_markdown)]
     // TODO: remove once https://github.com/near/nearcore/pull/15461 is on mainnet
     /// Only assist with at most 1yN: it's enough for a single permissioned
@@ -62,14 +53,17 @@ impl Relayer {
     /// Relay signed request with optional attached deposit.
     /// If no additional deposit is needed then pass `NearToken::ZERO`.
     // TODO: return request hash?
-    #[instrument(skip_all, fields(
-        signer_id = %request.msg.signer_id,
-        request.hash = %CryptoHash::from_bytes(request.msg.hash()),
-        deposit = Some(deposit).filter(|d| !d.is_zero()).map(field::display),
-    ))]
+    #[cfg_attr(
+        feature = "tracing",
+        instrument(skip_all, fields(
+            signer_id = %request.msg.signer_id,
+            request.hash = %near_kit::CryptoHash::from_bytes(request.msg.hash()),
+            deposit = Some(deposit).filter(|d| !d.is_zero()).map(field::display),
+        ))
+    )]
     pub async fn w_execute_signed(
         &self,
-        request: RelayRequest,
+        request: WalletRelayRequest,
         deposit: NearToken,
         max_gas: impl Into<Option<Gas>>,
     ) -> Result<FinalExecutionOutcome> {

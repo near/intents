@@ -17,11 +17,22 @@ near-kit.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
-tracing.workspace = true
+
+tracing = { workspace = true, optional = true }
+
+[features]
+tracing = [
+  "defuse-wallet-core/borsh",
+  "defuse-wallet-core/digest",
+  "dep:tracing",
+]
 
 [dev-dependencies]
+defuse-wallet-relayer = { path = ".", features = ["tracing"] }
+
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-wallet-sdk.workspace = true
+
 ed25519-dalek = { workspace = true, features = ["rand_core"] }
 hex.workspace = true
 near-kit = { workspace = true, features = ["sandbox"] }
