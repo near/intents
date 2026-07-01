@@ -3,7 +3,7 @@
 use std::{env, fs, iter, path::Path, sync::LazyLock};
 
 use defuse_digest::{Digest, sha2::Sha256};
-use defuse_wallet_relayer::{RelayRequest, Relayer};
+use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
 use defuse_wallet_sdk::{NearToken, Request, WalletSigner};
 use ed25519_dalek::ed25519::signature::rand_core::OsRng;
 use futures::{StreamExt, TryFutureExt, TryStreamExt, stream};
@@ -39,7 +39,7 @@ async fn main() {
         GlobalContractId::CodeHash(Sha256::digest(&*WALLET_WASM).into())
     };
 
-    let relayer = Relayer::new(near.clone());
+    let relayer = WalletRelayer::new(near.clone());
 
     let mut wallet = WalletSigner::new(
         global_contract_id,
@@ -56,7 +56,7 @@ async fn main() {
             let (msg, proof) = wallet.sign(Request::new()).unwrap();
             relayer
                 .w_execute_signed(
-                    RelayRequest {
+                    WalletRelayRequest {
                         state_init: Some(wallet.deterministic_state_init()),
                         msg,
                         proof,
@@ -70,7 +70,7 @@ async fn main() {
         })
         .take(txs_count),
     )
-    .buffer_unordered(1000);
+    .buffer_unordered(500);
 
     let started_at = tokio::time::Instant::now();
     txs.try_collect::<()>().await.unwrap();

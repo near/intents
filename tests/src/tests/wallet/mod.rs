@@ -13,11 +13,12 @@ use defuse_sandbox::{
         },
     },
     global_contract::GlobalContract,
-    kit::{Gas, GlobalContractId, Near, NearToken, StateInit, StateInitV1},
+    kit::{Finality::Optimistic, Gas, GlobalContractId, Near, NearToken, StateInit, StateInitV1},
     root,
 };
 use defuse_test_utils::wasms::WALLET_WASM;
-use futures::{TryStreamExt, stream::FuturesUnordered};
+use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
+use futures::future::join_all;
 use impl_tools::autoimpl;
 use rstest::{fixture, rstest};
 
@@ -48,27 +49,34 @@ async fn test_signed(#[future] env: Env) {
         )
         .unwrap();
 
-    env.w_execute_signed(
-        wallet.account_id(),
-        Some(wallet.deterministic_state_init()),
-        &msg,
-        &proof,
-        NearToken::from_near(1),
-    )
-    .await
-    .unwrap();
+    let request =
+        WalletRelayRequest::new(msg.clone(), &proof).state_init(wallet.deterministic_state_init());
 
-    env.w_execute_signed(
-        wallet.account_id(),
-        Some(wallet.deterministic_state_init()),
-        &msg,
-        &proof,
-        NearToken::from_near(1),
-    )
-    .await
-    .expect_err("nonce should be already used");
+    assert!(
+        env.relayer
+            .w_execute_signed(request.clone(), NearToken::from_near(1), None)
+            .await
+            .unwrap()
+            .is_success(),
+    );
 
-    assert!(env.account(wallet.account_id()).await.unwrap().amount >= NearToken::from_near(1));
+    assert!(
+        env.relayer
+            .w_execute_signed(request.clone(), NearToken::from_near(1), None)
+            .await
+            .unwrap()
+            .is_failure(),
+        "nonce should be already used"
+    );
+
+    assert!(
+        env.account(wallet.account_id())
+            .finality(Optimistic)
+            .await
+            .unwrap()
+            .amount
+            >= NearToken::from_near(1)
+    );
 }
 
 #[rstest]
@@ -122,28 +130,38 @@ async fn test_rotate(#[future] env: Env) {
         )
         .unwrap();
 
-    env.w_execute_signed(
-        old_wallet.account_id(),
-        old_wallet.deterministic_state_init(),
-        &msg,
-        proof,
-        NearToken::from_yoctonear(1),
-    )
-    .await
-    .unwrap();
+    assert!(
+        env.relayer
+            .w_execute_signed(
+                WalletRelayRequest::new(msg, proof)
+                    .state_init(old_wallet.deterministic_state_init()),
+                NearToken::from_yoctonear(1),
+                None,
+            )
+            .await
+            .unwrap()
+            .is_success()
+    );
 
     assert!(
         !env.contract::<Wallet>(old_wallet.account_id())
             .w_is_signature_allowed()
+            .finality(Optimistic)
             .await
             .unwrap()
     );
 
     {
         let (msg, proof) = old_wallet.sign(Request::default()).unwrap();
-        env.w_execute_signed(old_wallet.account_id(), None, &msg, proof, NearToken::ZERO)
-            .await
-            .expect_err("signature should be disabled");
+
+        assert!(
+            env.relayer
+                .w_execute_signed(WalletRelayRequest::new(msg, proof), NearToken::ZERO, None)
+                .await
+                .unwrap()
+                .is_failure(),
+            "signature should be disabled",
+        );
     }
 
     let (msg, proof) = new_wallet
@@ -159,9 +177,13 @@ async fn test_rotate(#[future] env: Env) {
         )
         .unwrap();
 
-    env.w_execute_signed(new_wallet.account_id(), None, &msg, proof, NearToken::ZERO)
-        .await
-        .unwrap();
+    assert!(
+        env.relayer
+            .w_execute_signed(WalletRelayRequest::new(msg, proof), NearToken::ZERO, None)
+            .await
+            .unwrap()
+            .is_success()
+    );
 }
 
 #[rstest]
@@ -199,7 +221,14 @@ async fn test_extension(#[future] env: Env) {
         .await
         .unwrap();
 
-    assert!(env.account(receiver.account_id()).await.unwrap().amount >= NearToken::from_near(1));
+    assert!(
+        env.account(receiver.account_id())
+            .finality(Optimistic)
+            .await
+            .unwrap()
+            .amount
+            >= NearToken::from_near(1)
+    );
 }
 
 #[rstest]
@@ -220,26 +249,30 @@ async fn test_no_storage_staking(#[future] env: Env) {
         .result()
         .unwrap();
 
-    (0..wallet.nonces.timeout().as_secs() * 2)
-        .map(|_n| wallet.sign(Request::new()).unwrap())
-        .map(|(msg, proof)| {
-            let env = &env;
-            let wallet_id = wallet_id.clone();
-            async move {
-                env.w_execute_signed(wallet_id, None, &msg, proof, NearToken::ZERO)
-                    .await
-                    .map(|_| ())
-            }
-        })
-        .collect::<FuturesUnordered<_>>()
-        .try_collect::<()>()
-        .await
-        .unwrap();
+    join_all(
+        (0..wallet.nonces.timeout().as_secs() * 2)
+            .map(|_n| {
+                let (msg, proof) = wallet.sign(Request::new()).unwrap();
+                WalletRelayRequest::new(msg, proof)
+            })
+            .map(|req| async {
+                assert!(
+                    env.relayer
+                        .w_execute_signed(req, NearToken::ZERO, None)
+                        .await
+                        .unwrap()
+                        .is_success()
+                );
+            }),
+    )
+    .await;
 }
 
 #[autoimpl(Deref using self.root)]
 struct Env {
     pub wallet_global_id: GlobalContractId,
+
+    pub relayer: WalletRelayer,
 
     root: Near,
 }
@@ -271,6 +304,7 @@ async fn env(
 
     Env {
         wallet_global_id,
+        relayer: WalletRelayer::new(root.clone()),
         root,
     }
 }

@@ -1800,6 +1800,7 @@ dependencies = [
  "defuse-randomness",
  "defuse-sandbox",
  "defuse-test-utils",
+ "defuse-wallet-relayer",
  "derive_more",
  "futures",
  "impl-tools",
