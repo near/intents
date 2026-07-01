@@ -3,7 +3,7 @@ use rand::{Rng, SeedableRng};
 /// Endless [`Iterator`] for generating non-sequential nonces semi-sequentially,
 /// allowing for multiple concurrent clients while being optimized for storage.
 ///
-/// See [`crate::RequestMessage`].
+/// See [`crate::RequestMessage::nonce`].
 #[derive(Debug)]
 pub struct ConcurrentNonces<R> {
     next: u32,

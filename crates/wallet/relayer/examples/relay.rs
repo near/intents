@@ -41,7 +41,7 @@ async fn main() {
 
     let relayer = WalletRelayer::new(near.clone());
 
-    let mut wallet = WalletSigner::new(
+    let wallet = WalletSigner::new(
         global_contract_id,
         ed25519_dalek::SigningKey::generate(&mut OsRng),
     )
