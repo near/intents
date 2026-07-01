@@ -26,7 +26,7 @@ use rstest::{fixture, rstest};
 #[awt]
 #[tokio::test]
 async fn test_signed(#[future] env: Env) {
-    let mut wallet = env.generate_wallet();
+    let wallet = env.generate_wallet();
 
     let receiver = env.create_subaccount("receiver", NearToken::ZERO).await;
 
@@ -83,7 +83,7 @@ async fn test_signed(#[future] env: Env) {
 #[awt]
 #[tokio::test]
 async fn test_rotate(#[future] env: Env) {
-    let [mut old_wallet, mut new_wallet] = [env.generate_wallet(), env.generate_wallet()];
+    let [old_wallet, new_wallet] = [env.generate_wallet(), env.generate_wallet()];
 
     let (msg, proof) = old_wallet
         .sign(
@@ -236,7 +236,7 @@ async fn test_extension(#[future] env: Env) {
 #[cfg_attr(not(feature = "long"), ignore = "`long` feature is disabled")]
 #[tokio::test]
 async fn test_no_storage_staking(#[future] env: Env) {
-    let mut wallet = env.generate_wallet();
+    let wallet = env.generate_wallet();
 
     let wallet_id = wallet.account_id().clone();
     let wallet_state_init = wallet.deterministic_state_init();
@@ -249,22 +249,17 @@ async fn test_no_storage_staking(#[future] env: Env) {
         .result()
         .unwrap();
 
-    join_all(
-        (0..wallet.nonces.timeout().as_secs() * 2)
-            .map(|_n| {
-                let (msg, proof) = wallet.sign(Request::new()).unwrap();
-                WalletRelayRequest::new(msg, proof)
-            })
-            .map(|req| async {
-                assert!(
-                    env.relayer
-                        .w_execute_signed(req, NearToken::ZERO, None)
-                        .await
-                        .unwrap()
-                        .is_success()
-                );
-            }),
-    )
+    join_all((0..wallet.nonces.timeout().as_secs() * 2).map(|_n| async {
+        let (msg, proof) = wallet.sign(Request::new()).unwrap();
+        let req = WalletRelayRequest::new(msg, proof);
+        assert!(
+            env.relayer
+                .w_execute_signed(req, NearToken::ZERO, None)
+                .await
+                .unwrap()
+                .is_success()
+        );
+    }))
     .await;
 }
 
