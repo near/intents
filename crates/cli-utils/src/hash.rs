@@ -76,7 +76,6 @@ where
             if path.is_empty() {
                 return Err(anyhow!("expected a path after '@'"));
             }
-
             return Ok(Self::File(path.into()));
         }
 
