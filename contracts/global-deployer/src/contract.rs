@@ -1,10 +1,10 @@
+use defuse_borsh_utils::{AsWrap, Remainder};
+use defuse_digest::{Digest, sha2::Sha256};
 use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
     AccountId, AccountIdRef, Gas, NearToken, PanicOnDefault, Promise, assert_one_yocto, env, near,
     require,
 };
-
-use defuse_borsh_utils::{AsWrap, Remainder};
 
 use crate::{
     Event, GlobalDeployer, Reason, State,
@@ -44,8 +44,10 @@ impl GlobalDeployer for Contract {
     #[payable]
     fn gd_deploy(&mut self, #[serializer(borsh)] code: AsWrap<Vec<u8>, Remainder>) -> Promise {
         let code = code.into_inner();
-        let code_hash = env::sha256_array(&code);
+        let code_hash = Sha256::digest(&code).into();
+
         require!(self.is_approved(&code_hash), ERR_NEW_CODE_HASH_MISMATCH);
+
         let initial_balance = env::account_balance().saturating_sub(env::attached_deposit());
 
         // On receipt failure, refund goes to the receipt's predecessor — which for a
@@ -70,6 +72,7 @@ impl GlobalDeployer for Contract {
             ERR_UNAUTHORIZED
         );
         require!(!self.is_owner(&receiver_id), ERR_SELF_TRANSFER);
+
         self.transfer_ownership(receiver_id);
     }
 

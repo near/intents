@@ -14,7 +14,7 @@ workspace = true
 [features]
 abi = [
   "defuse-borsh-utils/schema",
-  "defuse-global-deployer-core/abi",
+  "defuse-deployer-core/abi",
   "defuse-serde-utils/abi",
   "near-sdk/abi",
 ]
@@ -22,14 +22,10 @@ contract = []
 
 [dependencies]
 defuse-borsh-utils.workspace = true
-defuse-global-deployer-core = { workspace = true, features = ["borsh", "serde"] }
+defuse-deployer-core = { workspace = true, features = ["borsh", "serde"] }
+defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-serde-utils = { workspace = true, features = ["hex"] }
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
-
-[dev-dependencies]
-clap = { workspace = true, features = ["wrap_help"] }
-hex.workspace = true
-near-sdk = { workspace = true, features = ["non-contract-usage"] }
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"

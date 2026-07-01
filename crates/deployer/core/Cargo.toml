@@ -1,0 +1,33 @@
+lints.workspace = true
+
+[package]
+name = "defuse-deployer-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+near-account-id.workspace = true
+
+arbitrary = { workspace = true, features = ["derive"], optional = true }
+borsh = { workspace = true, features = ["derive"], optional = true }
+cfg_eval = { workspace = true, optional = true }
+defuse-digest = { workspace = true, features = ["sha2"], optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_with = { workspace = true, features = ["hex"], optional = true }
+
+[features]
+abi = ["borsh-schema", "schemars-v0_8"]
+arbitrary = ["dep:arbitrary", "near-account-id/arbitrary"]
+borsh = ["dep:borsh", "near-account-id/borsh"]
+borsh-schema = ["borsh", "borsh/unstable__schema", "near-account-id/abi"]
+digest = ["dep:defuse-digest"]
+serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with", "near-account-id/serde"]
+schemars-v0_8 = [
+  "dep:schemars",
+  "near-account-id/schemars-v0_8",
+  "serde",
+  "serde_with?/schemars_0_8",
+]
