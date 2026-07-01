@@ -1435,6 +1435,7 @@ dependencies = [
  "borsh",
  "cfg_eval",
  "defuse-digest",
+ "hex-literal",
  "near-account-id",
  "schemars 0.8.22",
  "serde",

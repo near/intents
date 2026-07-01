@@ -20,7 +20,7 @@ struct Args {
 
     /// Pre-approve SHA-256 code hash: first `gd_deploy()` won't require `gd_approve()`.
     /// Hash can be encoded as base58 or hex with `0x` prefix
-    #[arg(long, value_parser = parse_hex_hash, value_name = "HASH")]
+    #[arg(long, value_parser = parse_hash, value_name = "HASH")]
     pre_approve: Option<[u8; 32]>,
 
     /// Output single-line JSON with base64-encoded keys/values
@@ -51,7 +51,7 @@ fn main() {
     .expect("JSON");
 }
 
-fn parse_hex_hash(s: &str) -> Result<[u8; 32], String> {
+fn parse_hash(s: &str) -> Result<[u8; 32], String> {
     if let Some(s) = s.strip_prefix("0x") {
         hex::decode(s).map_err(|err| format!("hex: {err}"))?
     } else {

@@ -31,3 +31,6 @@ schemars-v0_8 = [
   "serde",
   "serde_with?/schemars_0_8",
 ]
+
+[dev-dependencies]
+hex-literal.workspace = true

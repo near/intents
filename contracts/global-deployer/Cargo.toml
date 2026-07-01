@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-global-deployer"
 version = "0.2.0"
@@ -8,8 +10,12 @@ repository.workspace = true
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[lints]
-workspace = true
+[dependencies]
+defuse-borsh-utils.workspace = true
+defuse-deployer-core = { workspace = true, features = ["borsh", "serde"] }
+defuse-digest = { workspace = true, features = ["sha2"] }
+defuse-serde-utils = { workspace = true, features = ["hex"] }
+near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 
 [features]
 abi = [
@@ -19,13 +25,6 @@ abi = [
   "near-sdk/abi",
 ]
 contract = []
-
-[dependencies]
-defuse-borsh-utils.workspace = true
-defuse-deployer-core = { workspace = true, features = ["borsh", "serde"] }
-defuse-digest = { workspace = true, features = ["sha2"] }
-defuse-serde-utils = { workspace = true, features = ["hex"] }
-near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"
