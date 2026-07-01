@@ -26,7 +26,7 @@ struct Args {
     ///
     /// `HASH` can be encoded as base58 or hex with `0x` prefix.
     /// `@FILE` will calculate SHA-256 hash of the `FILE` contents.
-    /// `-` will calculate SHA-256 hash of the stdin contents.
+    /// `@-` will calculate SHA-256 hash of the stdin contents.
     #[arg(long, value_name = "HASH | @FILE | -")]
     pre_approve: Option<HashSource<Sha256>>,
 

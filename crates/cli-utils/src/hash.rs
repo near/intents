@@ -68,14 +68,15 @@ where
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s == "-" {
-            return Ok(Self::Stdin);
-        }
-
         if let Some(path) = s.strip_prefix('@') {
             if path.is_empty() {
                 return Err(anyhow!("expected a path after '@'"));
             }
+
+            if path == "-" {
+                return Ok(Self::Stdin);
+            }
+
             return Ok(Self::File(path.into()));
         }
 
@@ -99,7 +100,7 @@ impl<D: Digest> Display for HashSource<D> {
         match self {
             Self::Inline(hash) => write!(f, "0x{}", hex::encode(hash)),
             Self::File(path) => write!(f, "@{}", path.display()),
-            Self::Stdin => write!(f, "-"),
+            Self::Stdin => write!(f, "@-"),
         }
     }
 }
