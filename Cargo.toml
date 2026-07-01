@@ -13,8 +13,9 @@ members = [
 
   "crates/bitmap",
   "crates/borsh-utils",
-  "crates/crypto",
   "crates/ckd",
+  "crates/cli-utils",
+  "crates/crypto",
   "crates/digest",
   "crates/io-utils",
   "crates/kdf",
@@ -82,6 +83,7 @@ defuse-wallet.path = "contracts/wallet"
 defuse-bitmap.path = "crates/bitmap"
 defuse-borsh-utils.path = "crates/borsh-utils"
 defuse-ckd = { path = "crates/ckd", default-features = false }
+defuse-cli-utils = { path = "crates/cli-utils", default-features = false }
 defuse-crypto = { path = "crates/crypto", default-features = false }
 defuse-digest.path = "crates/digest"
 defuse-io-utils.path = "crates/io-utils"
