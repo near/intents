@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-serde-utils"
 edition.workspace = true
@@ -13,15 +15,17 @@ serde_with.workspace = true
 schemars = { workspace = true, optional = true, features = ["derive"] }
 tlb-ton = { workspace = true, optional = true }
 
-[dev-dependencies]
-serde_json.workspace = true
 
 [features]
-
-abi = ["dep:schemars", "serde_with/schemars_0_8"]
+abi = ["schemars-v0_8"]
 base64 = ["serde_with/base64"]
 hex = ["serde_with/hex"]
+schemars-v0_8 = [
+  "dep:schemars",
+  "serde_with/schemars_0_8",
+  "tlb-ton?/schemars_0_8",
+]
 tlb = ["dep:tlb-ton"]
 
-[lints]
-workspace = true
+[dev-dependencies]
+serde_json.workspace = true
