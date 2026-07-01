@@ -10,10 +10,9 @@ pub use defuse_wallet_core as wallet;
 use defuse_wallet_core::{RequestMessage, Timestamp};
 pub use near_kit;
 
-use near_kit::{
-    CryptoHash, ExecutedOptimistic, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken,
-};
+use near_kit::{ExecutedOptimistic, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken};
 use thiserror::Error as ThisError;
+#[cfg(feature = "tracing")]
 use tracing::{field, instrument};
 
 #[derive(Debug)]
@@ -54,11 +53,14 @@ impl WalletRelayer {
     /// Relay signed request with optional attached deposit.
     /// If no additional deposit is needed then pass `NearToken::ZERO`.
     // TODO: return request hash?
-    #[instrument(skip_all, fields(
-        signer_id = %request.msg.signer_id,
-        request.hash = %CryptoHash::from_bytes(request.msg.hash()),
-        deposit = Some(deposit).filter(|d| !d.is_zero()).map(field::display),
-    ))]
+    #[cfg_attr(
+        feature = "tracing",
+        instrument(skip_all, fields(
+            signer_id = %request.msg.signer_id,
+            request.hash = %near_kit::CryptoHash::from_bytes(request.msg.hash()),
+            deposit = Some(deposit).filter(|d| !d.is_zero()).map(field::display),
+        ))
+    )]
     pub async fn w_execute_signed(
         &self,
         request: WalletRelayRequest,

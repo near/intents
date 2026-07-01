@@ -1962,6 +1962,7 @@ dependencies = [
  "defuse-digest",
  "defuse-wallet-client",
  "defuse-wallet-core",
+ "defuse-wallet-relayer",
  "defuse-wallet-sdk",
  "ed25519-dalek",
  "futures",
