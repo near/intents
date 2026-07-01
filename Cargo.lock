@@ -114,7 +114,7 @@ checksum = "74a2d004901ecc62bd0e7aeec26f61a3497cd622c267ddb9d7fab8fc3cefa322"
 dependencies = [
  "arbitrary",
  "array-util",
- "impl-tools",
+ "impl-tools 0.11.4",
  "rustversion",
 ]
 
@@ -196,9 +196,9 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
 name = "aws-lc-rs"
-version = "1.17.0"
+version = "1.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ec2f1fc3ec205783a5da9a7e6c1509cc69dedf09a1949e412c1e18469326d00"
+checksum = "4342d8937fc7e5dd9b1c60292261c0670c882a2cd1719cfc11b1af41731e32ad"
 dependencies = [
  "aws-lc-sys",
  "zeroize",
@@ -206,14 +206,15 @@ dependencies = [
 
 [[package]]
 name = "aws-lc-sys"
-version = "0.41.0"
+version = "0.42.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a2f9779ce85b93ab6170dd940ad0169b5766ff848247aff13bb788b832fe3f4"
+checksum = "6d9ceb1da931507a12f4fccea479dccd00da1943e1b4ae72d8e502d707361444"
 dependencies = [
  "cc",
  "cmake",
  "dunce",
  "fs_extra",
+ "pkg-config",
 ]
 
 [[package]]
@@ -580,9 +581,9 @@ dependencies = [
 
 [[package]]
 name = "camino"
-version = "1.2.3"
+version = "1.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4ce8d3bd5823c7504d3f579f13e7b2f3da252fcb938c594d5680ee508bf846f"
+checksum = "5f2d30e4173c4026932d51d31d6b0613b1fd3014bf3f9f8943d4ba139c437ba0"
 dependencies = [
  "serde_core",
 ]
@@ -1285,7 +1286,7 @@ dependencies = [
  "defuse-tests",
  "defuse-wnear",
  "futures",
- "impl-tools",
+ "impl-tools 0.12.0",
  "itertools",
  "near-contract-standards",
  "near-plugins",
@@ -1330,7 +1331,7 @@ dependencies = [
  "array-util",
  "borsh",
  "defuse-io-utils",
- "impl-tools",
+ "impl-tools 0.12.0",
 ]
 
 [[package]]
@@ -1347,6 +1348,19 @@ dependencies = [
  "rand 0.10.1",
  "rand_core 0.10.1",
  "rstest",
+]
+
+[[package]]
+name = "defuse-cli-utils"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bs58 0.5.1",
+ "derive_more",
+ "digest 0.11.3",
+ "digest-io",
+ "hex",
+ "impl-tools 0.12.0",
 ]
 
 [[package]]
@@ -1383,7 +1397,7 @@ dependencies = [
  "derive_more",
  "hex",
  "hex-literal",
- "impl-tools",
+ "impl-tools 0.12.0",
  "itertools",
  "near-contract-standards",
  "near-kit",
@@ -1433,7 +1447,7 @@ dependencies = [
  "defuse-digest",
  "digest 0.11.3",
  "hex-literal",
- "impl-tools",
+ "impl-tools 0.12.0",
  "near-sdk",
  "near-sdk-env",
  "ripemd 0.2.0",
@@ -1452,7 +1466,7 @@ dependencies = [
  "defuse-digest",
  "defuse-erc191",
  "hex-literal",
- "impl-tools",
+ "impl-tools 0.12.0",
  "near-sdk",
  "rstest",
  "schemars 0.8.22",
@@ -1477,7 +1491,7 @@ dependencies = [
  "derive_more",
  "futures",
  "hex",
- "impl-tools",
+ "impl-tools 0.12.0",
  "itertools",
  "near-contract-standards",
  "near-sdk",
@@ -1502,11 +1516,10 @@ dependencies = [
 name = "defuse-global-deployer"
 version = "0.2.0"
 dependencies = [
- "clap",
  "defuse-borsh-utils",
+ "defuse-digest",
  "defuse-global-deployer-core",
  "defuse-serde-utils",
- "hex",
  "near-sdk",
 ]
 
@@ -1514,8 +1527,11 @@ dependencies = [
 name = "defuse-global-deployer-core"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
  "borsh",
  "cfg_eval",
+ "defuse-digest",
+ "hex-literal",
  "near-account-id",
  "schemars 0.8.22",
  "serde",
@@ -1540,7 +1556,7 @@ dependencies = [
  "ed25519-dalek",
  "hex",
  "hex-literal",
- "impl-tools",
+ "impl-tools 0.12.0",
  "k256",
  "near-sdk",
  "rstest",
@@ -1563,7 +1579,7 @@ dependencies = [
  "defuse-digest",
  "defuse-kdf",
  "hex-literal",
- "impl-tools",
+ "impl-tools 0.12.0",
  "near-account-id",
  "near-sdk",
  "rstest",
@@ -1573,7 +1589,7 @@ dependencies = [
 name = "defuse-map-utils"
 version = "0.1.0"
 dependencies = [
- "impl-tools",
+ "impl-tools 0.12.0",
  "near-sdk",
 ]
 
@@ -1605,7 +1621,7 @@ version = "0.1.0"
 dependencies = [
  "defuse-borsh-utils",
  "defuse-test-utils",
- "impl-tools",
+ "impl-tools 0.12.0",
  "near-sdk",
  "rstest",
 ]
@@ -1630,7 +1646,7 @@ dependencies = [
  "defuse-digest",
  "defuse-nep461",
  "digest-io",
- "impl-tools",
+ "impl-tools 0.12.0",
  "near-kit",
  "near-sdk",
  "schemars 0.8.22",
@@ -1754,7 +1770,7 @@ dependencies = [
  "defuse-sep53",
  "defuse-test-utils",
  "ed25519-dalek",
- "impl-tools",
+ "impl-tools 0.12.0",
  "near-sdk",
  "rstest",
  "schemars 0.8.22",
@@ -1803,7 +1819,7 @@ dependencies = [
  "defuse-wallet-relayer",
  "derive_more",
  "futures",
- "impl-tools",
+ "impl-tools 0.12.0",
  "itertools",
  "multi-token-receiver-stub",
  "near-contract-standards",
@@ -1843,7 +1859,7 @@ dependencies = [
  "defuse-test-utils",
  "defuse-tip191",
  "hex-literal",
- "impl-tools",
+ "impl-tools 0.12.0",
  "near-sdk",
  "rstest",
  "schemars 0.8.22",
@@ -1884,7 +1900,7 @@ dependencies = [
  "defuse-time",
  "defuse-ton-connect",
  "hex-literal",
- "impl-tools",
+ "impl-tools 0.12.0",
  "near-sdk",
  "rstest",
  "schemars 0.8.22",
@@ -1901,7 +1917,7 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-near-utils",
  "defuse-nep245",
- "impl-tools",
+ "impl-tools 0.12.0",
  "near-sdk",
  "rstest",
  "serde_with",
@@ -1984,7 +2000,7 @@ dependencies = [
  "defuse-crypto",
  "defuse-wallet-core",
  "ed25519-dalek",
- "impl-tools",
+ "impl-tools 0.12.0",
  "near-global-contracts",
  "rand 0.10.1",
 ]
@@ -2833,9 +2849,9 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
 name = "hybrid-array"
-version = "0.4.12"
+version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9155a582abd142abc056962c29e3ce5ff2ad5469f4246b537ed42c5deba857da"
+checksum = "818356c5132c1fede50f837ca96afbe78ff42413047f4abb886217845e1b6c8c"
 dependencies = [
  "typenum",
 ]
@@ -3085,8 +3101,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ae314a99afb5821e2fda288387546d4a04aace674551e854e6216b892ec3208"
 dependencies = [
  "autocfg",
- "impl-tools-lib",
+ "impl-tools-lib 0.11.4",
  "proc-macro-error2",
+ "syn 2.0.118",
+]
+
+[[package]]
+name = "impl-tools"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06c8567c75b167cdda5ecee024da9cc9581d41bd52460e2e0e768967972aeef1"
+dependencies = [
+ "autocfg",
+ "impl-tools-lib 0.12.0",
+ "proc-macro-error3",
  "syn 2.0.118",
 ]
 
@@ -3097,6 +3125,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab699036df31c1f7d3561bfa6e9cb9bc3bb0fd2e2cd9bf121c31cb961d049ddf"
 dependencies = [
  "proc-macro-error2",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.118",
+]
+
+[[package]]
+name = "impl-tools-lib"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c81eb99ba7c6145aeccb8857ddc0c611cd52440091dcfddd605b6a930c9afbf4"
+dependencies = [
+ "proc-macro-error3",
  "proc-macro2",
  "quote",
  "syn 2.0.118",
@@ -3302,9 +3342,9 @@ checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
 
 [[package]]
 name = "libredox"
-version = "0.1.17"
+version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f02ab6bace2054fb888a3c16f990117b579d14a3088e472d63c6011fa185c9d3"
+checksum = "c943259e342f1e06ff2da7a83eabdfe7f92ce10262688dbf1895ff0b3e6e4652"
 dependencies = [
  "libc",
 ]
@@ -3529,6 +3569,20 @@ dependencies = [
  "borsh",
  "schemars 0.8.22",
  "serde",
+]
+
+[[package]]
+name = "near-gds"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "defuse-cli-utils",
+ "defuse-global-deployer-core",
+ "near-account-id",
+ "serde_json",
+ "serde_with",
+ "sha2 0.11.0",
 ]
 
 [[package]]
@@ -4400,12 +4454,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "proc-macro-error-attr3"
+version = "3.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34e4dd828515431dd6c4a030d26f7eaed7dd4778226e9d2bb968d65ca4ec3d4d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+]
+
+[[package]]
 name = "proc-macro-error2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11ec05c52be0a07b08061f7dd003e7d7092e0472bc731b4af7bb1ef876109802"
 dependencies = [
  "proc-macro-error-attr2",
+ "proc-macro2",
+ "quote",
+]
+
+[[package]]
+name = "proc-macro-error3"
+version = "3.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ee475e440453418ff1335189eddf7101ba502cd818ab7ae04209bc83aa925aa"
+dependencies = [
+ "proc-macro-error-attr3",
  "proc-macro2",
  "quote",
 ]
@@ -5018,9 +5093,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-pki-types"
-version = "1.14.1"
+version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30a7197ae7eb376e574fe940d068c30fe0462554a3ddbe4eca7838e049c937a9"
+checksum = "764899a24af3980067ee14bc143654f297b22eaebfe3c7b6b211920a5a59b046"
 dependencies = [
  "web-time",
  "zeroize",
@@ -5883,9 +5958,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.51"
+version = "0.3.53"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85c17d80feb7334b40c484e45ed1a5273dfd8bfda537c3be2e74a06a6686f327"
+checksum = "18dfaaeddcb932337b5e7866ee7d0ce9b76d2fd092997146f187ec09b4558a50"
 dependencies = [
  "deranged",
  "num-conv",
@@ -5903,9 +5978,9 @@ checksum = "9e1c906769ad99c88eaa54e728060edef082f8e358ff32030cb7c7d315e81109"
 
 [[package]]
 name = "time-macros"
-version = "0.2.30"
+version = "0.2.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcef1a61bdb119096e153208ec5cbec23944ce8bca13be5c7f60c634f7403935"
+checksum = "c431b87111666e491a90baa837f914fb45cd5dc3c268591b0220ff5057f2085f"
 dependencies = [
  "num-conv",
  "time-core",
@@ -5949,7 +6024,7 @@ dependencies = [
  "crc",
  "digest 0.11.3",
  "hex",
- "impl-tools",
+ "impl-tools 0.11.4",
  "sha2 0.11.0",
  "tlbits",
 ]
@@ -5966,7 +6041,7 @@ dependencies = [
  "crc",
  "digest 0.11.3",
  "hex",
- "impl-tools",
+ "impl-tools 0.11.4",
  "lazy_static",
  "num-bigint 0.4.6",
  "num-traits",
@@ -5985,7 +6060,7 @@ dependencies = [
  "array-util",
  "bitvec",
  "either",
- "impl-tools",
+ "impl-tools 0.11.4",
  "num-bigint 0.4.6",
  "num-traits",
  "rustversion",

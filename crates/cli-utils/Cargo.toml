@@ -1,0 +1,29 @@
+lints.workspace = true
+
+[package]
+name = "defuse-cli-utils"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+anyhow = { workspace = true, optional = true }
+bs58 = { workspace = true, optional = true }
+derive_more = { workspace = true, optional = true }
+digest = { workspace = true, optional = true }
+digest-io = { workspace = true, optional = true }
+hex = { workspace = true, optional = true }
+impl-tools = { workspace = true, optional = true }
+
+[features]
+hash = [
+  "dep:anyhow",
+  "dep:bs58",
+  "dep:derive_more",
+  "dep:digest",
+  "dep:digest-io",
+  "dep:hex",
+  "dep:impl-tools",
+  "derive_more/from",
+]
