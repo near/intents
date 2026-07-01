@@ -53,7 +53,7 @@ impl GlobalDeployer for Contract {
         Self::ext_on(
             Promise::new(env::current_account_id())
                 // 0. In case a receipt fails, re-direct the refund to the same
-                // account which was specified for current receipt.
+                // account which was specified as `refund_to` for current receipt.
                 .refund_to(env::refund_to_account_id())
                 // 1. Transfer attached deposit to ourselves, so that it doesn't
                 // affect our balance while in-flight. We could have attached
