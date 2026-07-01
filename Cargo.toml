@@ -164,7 +164,7 @@ futures = "0.3"
 generic-array = "1"
 hex = "0.4"
 hex-literal = "1.0"
-impl-tools = "0.11"
+impl-tools = "0.12"
 itertools = "0.14"
 k256 = { version = "0.13.4", default-features = false }
 num-traits = "0.2.19"
