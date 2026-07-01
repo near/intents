@@ -67,7 +67,7 @@ impl<'a> State<'a> {
     /// # Examples
     ///
     /// ```rust
-    /// # use defuse_deployer_core::State;
+    /// # use defuse_global_deployer_core::State;
     /// # use hex_literal::hex;
     /// # use near_account_id::AccountIdRef;
     /// # const OWNER_ID: &AccountIdRef = AccountIdRef::new_or_panic("owner.near");

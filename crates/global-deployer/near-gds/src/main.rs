@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, io};
 
 use clap::Parser;
-use defuse_deployer_core::State;
+use defuse_global_deployer_core::State;
 use near_account_id::AccountId;
 use serde_with::{base64::Base64, ser::SerializeAsWrap};
 

@@ -25,8 +25,8 @@ members = [
   "crates/rand-compat",
   "crates/serde-utils",
 
-  "crates/deployer/core",
-  "crates/deployer/near-gds",
+  "crates/global-deployer/core",
+  "crates/global-deployer/near-gds",
 
   "crates/near/admin-utils",
   "crates/near/auth-call",
@@ -93,7 +93,7 @@ defuse-num-utils.path = "crates/num-utils"
 defuse-rand-compat.path = "crates/rand-compat"
 defuse-serde-utils.path = "crates/serde-utils"
 
-defuse-deployer-core = { path = "crates/deployer/core", default-features = false }
+defuse-global-deployer-core = { path = "crates/global-deployer/core", default-features = false }
 
 defuse-admin-utils.path = "crates/near/admin-utils"
 defuse-auth-call.path = "crates/near/auth-call"

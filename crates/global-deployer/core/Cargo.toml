@@ -1,7 +1,7 @@
 lints.workspace = true
 
 [package]
-name = "defuse-deployer-core"
+name = "defuse-global-deployer-core"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

@@ -1428,21 +1428,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-deployer-core"
-version = "0.1.0"
-dependencies = [
- "arbitrary",
- "borsh",
- "cfg_eval",
- "defuse-digest",
- "hex-literal",
- "near-account-id",
- "schemars 0.8.22",
- "serde",
- "serde_with",
-]
-
-[[package]]
 name = "defuse-digest"
 version = "0.1.0"
 dependencies = [
@@ -1519,10 +1504,25 @@ name = "defuse-global-deployer"
 version = "0.2.0"
 dependencies = [
  "defuse-borsh-utils",
- "defuse-deployer-core",
  "defuse-digest",
+ "defuse-global-deployer-core",
  "defuse-serde-utils",
  "near-sdk",
+]
+
+[[package]]
+name = "defuse-global-deployer-core"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "borsh",
+ "cfg_eval",
+ "defuse-digest",
+ "hex-literal",
+ "near-account-id",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
 ]
 
 [[package]]
@@ -3540,7 +3540,7 @@ version = "0.1.0"
 dependencies = [
  "bs58 0.5.1",
  "clap",
- "defuse-deployer-core",
+ "defuse-global-deployer-core",
  "hex",
  "near-account-id",
  "serde_json",

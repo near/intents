@@ -12,7 +12,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 defuse-borsh-utils.workspace = true
-defuse-deployer-core = { workspace = true, features = ["borsh"] }
+defuse-global-deployer-core = { workspace = true, features = ["borsh"] }
 defuse-serde-utils = { workspace = true, features = ["hex"] }
 near-sdk.workspace = true
 
@@ -21,7 +21,7 @@ defuse-digest = { workspace = true, features = ["sha2"], optional = true }
 [features]
 abi = [
   "defuse-borsh-utils/schema",
-  "defuse-deployer-core/abi",
+  "defuse-global-deployer-core/abi",
   "defuse-serde-utils/abi",
   "near-sdk/abi",
 ]
