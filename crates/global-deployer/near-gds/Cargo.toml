@@ -13,6 +13,6 @@ defuse-global-deployer-core = { workspace = true, features = ["serde", "borsh", 
 bs58.workspace = true
 clap = { workspace = true, features = ["wrap_help"] }
 hex.workspace = true
-near-account-id = { workspace = true, features = ["serde"] }
+near-account-id.workspace = true
 serde_json.workspace = true
 serde_with = { workspace = true, features = ["base64"] }
