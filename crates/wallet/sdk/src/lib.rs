@@ -27,9 +27,9 @@ pub struct WalletSignerBuilder<S: Signer> {
 
 impl<S: Signer> WalletSignerBuilder<S> {
     #[inline]
-    pub fn new(code: GlobalContractId, signer: S) -> Self {
+    fn new(code: impl Into<GlobalContractId>, signer: S) -> Self {
         Self {
-            code,
+            code: code.into(),
             state: State::new(signer.public_key()),
             signer,
         }
@@ -96,13 +96,13 @@ where
     S: Signer,
 {
     #[inline]
-    pub fn builder(code: GlobalContractId, signer: S) -> WalletSignerBuilder<S> {
+    pub fn builder(code: impl Into<GlobalContractId>, signer: S) -> WalletSignerBuilder<S> {
         WalletSignerBuilder::new(code, signer)
     }
 
     #[must_use]
     #[inline]
-    pub fn new(code: GlobalContractId, signer: S) -> Self {
+    pub fn new(code: impl Into<GlobalContractId>, signer: S) -> Self {
         Self::builder(code, signer).build()
     }
 

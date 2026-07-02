@@ -1,86 +1,76 @@
-#![allow(clippy::cast_precision_loss, clippy::as_conversions)]
-
-use std::{env, fs, path::Path, sync::LazyLock};
-
-use defuse_digest::{Digest, sha2::Sha256};
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
-use defuse_wallet_sdk::{NearToken, Request, WalletSigner};
+use defuse_wallet_sdk::{NearPromise, Request, WalletOp, WalletSigner, actions::FunctionCall};
 use ed25519_dalek::ed25519::signature::rand_core::OsRng;
-use futures::{StreamExt, stream};
-use near_kit::{Final, GlobalContractId, PublishMode, sandbox::SandboxConfig};
-use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
+use near_kit::{AccountIdRef, Gas, Near, NearToken};
+use serde_json::json;
 
-static WALLET_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
-    let wasm = Path::new(env::var("DEFUSE_USE_OUT_DIR").as_deref().unwrap_or("./res"))
-        .join("defuse-wallet.wasm");
-    fs::read(wasm).expect("failed to read WASM")
-});
+const WALLET_GLOBAL_CONTRACT_ID: &AccountIdRef =
+    AccountIdRef::new_or_panic("0sb0d7ef4f935c6ef78e08ad03569767aaec4223a3");
+const MPC_ACCOUNT_ID: &AccountIdRef = AccountIdRef::new_or_panic("v1.signer");
+
+const EXAMPLE_EXTENSION: &AccountIdRef = AccountIdRef::new_or_panic("extension.near");
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::fmt::layer()
-                .pretty()
-                .with_line_number(false)
-                .with_file(false),
-        )
-        .with(EnvFilter::from_default_env())
-        .init();
-
-    let sandbox = SandboxConfig::builder().fresh().await;
-    let near = sandbox.client();
-
-    let global_contract_id = {
-        near.publish(WALLET_WASM.clone(), PublishMode::Immutable)
-            .wait_until(Final)
-            .await
-            .unwrap();
-        GlobalContractId::CodeHash(Sha256::digest(&*WALLET_WASM).into())
-    };
-
-    let relayer = WalletRelayer::new(near.clone());
-
-    let wallet = WalletSigner::new(
-        global_contract_id,
-        ed25519_dalek::SigningKey::generate(&mut OsRng),
-    )
-    // TODO
-    // .chain_id(relayer.client().chain_id().as_str())
-    ;
-
-    let started_at = tokio::time::Instant::now();
-    let txs_count = 10_000;
-
-    stream::iter((0..txs_count).map(|_n| async {
-        let (msg, proof) = wallet.sign(Request::new()).unwrap();
-        let r = relayer
-            .w_execute_signed(
-                WalletRelayRequest {
-                    deterministic_state_init: Some(wallet.deterministic_state_init()),
-                    msg,
-                    proof,
-                    gas: None,
-                },
-                NearToken::ZERO,
-                None,
-            )
-            .await
-            .unwrap();
-
-        assert!(r.is_success());
-
-        tracing::info!(
-            tx.hash = %r.transaction_hash(),
-            tx.gas_used = %r.total_gas_used()
-        );
-    }))
-    .buffer_unordered(500)
-    .collect::<()>()
-    .await;
-
+    // 0.0) Generate keypair
+    let wallet_signer = ed25519_dalek::SigningKey::generate(&mut OsRng);
     println!(
-        "avg: {} TPS",
-        txs_count as f32 / started_at.elapsed().as_secs_f32()
+        "wallet_keypair: 'ed25519:{}'",
+        bs58::encode(wallet_signer.to_keypair_bytes()).into_string()
     );
+
+    // 0.1) Build wallet state
+    let wallet = WalletSigner::new(WALLET_GLOBAL_CONTRACT_ID.to_owned(), wallet_signer);
+
+    // 0.2) Derive wallet account_id
+    println!("wallet.account_id() = {}", wallet.account_id());
+
+    // 1) Prepare wallet request
+    let wallet_request = Request::new().internal([
+        // add extension as just a showcase
+        WalletOp::AddExtension { account_id: EXAMPLE_EXTENSION.to_owned() },
+        // remove it immediately after
+        WalletOp::RemoveExtension { account_id: EXAMPLE_EXTENSION.to_owned() },
+    ]).external([NearPromise::new(MPC_ACCOUNT_ID).function_call(
+        FunctionCall::name("sign")
+            .args_json(json!({
+                "request": {
+                    "payload_v2": {
+                        "Ecdsa": "0128fdba02691843069aba70c0523b9c43f4b0de4e34962462b0525490780a53"
+                    },
+                    "domain_id": 0,
+                    "path": ""
+                }
+            }))
+            .attach_deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(30)),
+    )]);
+    println!(
+        "wallet_request: {}",
+        serde_json::to_string_pretty(&wallet_request).unwrap()
+    );
+
+    // 2) Sign wallet request
+    let (msg, proof) = wallet.sign(wallet_request).unwrap();
+
+    // 3) Build
+    let relayer_request = WalletRelayRequest::new(msg, proof)
+        // 3.a) (optional) initialize the wallet on first tx
+        .deterministic_state_init(wallet.deterministic_state_init());
+    println!(
+        "relayer_request: {}",
+        serde_json::to_string_pretty(&relayer_request).unwrap()
+    );
+
+    let relayer = WalletRelayer::new(Near::from_env().unwrap());
+    println!("relayer_id: {}", relayer.client().account_id());
+
+    // 4) Send request to relayer
+    let tx = relayer
+        .w_execute_signed(relayer_request, NearToken::ZERO, None)
+        .await
+        .unwrap();
+
+    // 5) Get transaction hash and MPC signature (parsed by relayer)
+    println!("tx hash: {}", tx.transaction_hash());
 }

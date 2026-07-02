@@ -31,10 +31,12 @@ tracing = [
 defuse-wallet-relayer = { path = ".", features = ["tracing"] }
 
 defuse-digest = { workspace = true, features = ["sha2"] }
-defuse-wallet-sdk.workspace = true
+defuse-wallet-sdk = { workspace = true, features = ["json"] }
 
+bs58.workspace = true
 ed25519-dalek = { workspace = true, features = ["rand_core"] }
 hex.workspace = true
 near-kit = { workspace = true, features = ["sandbox"] }
 rand.workspace = true
+serde_json.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }

@@ -233,6 +233,6 @@ near contract state-init \
   use-global-account-id 0s384bfa53f1718c7f53eaaa1b43c55e2aea3ef309 \
   data-from-json "$(near gds \
     --owner-id intents.sputnik-dao.near --index 42 \
-    --approve 0x6c71114931fe91153b868f2cb29c5db70e59677d6d2e40404b3b9044d8052266 \
+    --pre-approve 0x6c71114931fe91153b868f2cb29c5db70e59677d6d2e40404b3b9044d8052266 \
     --quiet)"
 ```
