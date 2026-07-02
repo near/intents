@@ -6,7 +6,7 @@ use serde_json::json;
 
 const WALLET_GLOBAL_CONTRACT_ID: &AccountIdRef =
     AccountIdRef::new_or_panic("0sb0d7ef4f935c6ef78e08ad03569767aaec4223a3");
-const MPC_ACCOUNT_ID: &AccountIdRef = &AccountIdRef::new_or_panic("v1.signer");
+const MPC_ACCOUNT_ID: &AccountIdRef = AccountIdRef::new_or_panic("v1.signer");
 
 #[tokio::main]
 async fn main() {
