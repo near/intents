@@ -52,7 +52,7 @@ async fn main() {
     let started_at = tokio::time::Instant::now();
     let txs_count = 10_000;
 
-    stream::iter((0..=txs_count).map(|_n| async {
+    stream::iter((0..txs_count).map(|_n| async {
         let (msg, proof) = wallet.sign(Request::new()).unwrap();
         let r = relayer
             .w_execute_signed(
