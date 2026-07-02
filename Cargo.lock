@@ -1569,6 +1569,7 @@ dependencies = [
  "ed25519-dalek",
  "hex-literal",
  "k256",
+ "near-sdk",
  "rstest",
 ]
 
