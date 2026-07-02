@@ -57,7 +57,7 @@ async fn main() {
         let r = relayer
             .w_execute_signed(
                 WalletRelayRequest {
-                    state_init: Some(wallet.deterministic_state_init()),
+                    deterministic_state_init: Some(wallet.deterministic_state_init()),
                     msg,
                     proof,
                     gas: None,

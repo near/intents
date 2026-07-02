@@ -49,8 +49,8 @@ async fn test_signed(#[future] env: Env) {
         )
         .unwrap();
 
-    let request =
-        WalletRelayRequest::new(msg.clone(), &proof).state_init(wallet.deterministic_state_init());
+    let request = WalletRelayRequest::new(msg.clone(), &proof)
+        .deterministic_state_init(wallet.deterministic_state_init());
 
     assert!(
         env.relayer
@@ -134,7 +134,7 @@ async fn test_rotate(#[future] env: Env) {
         env.relayer
             .w_execute_signed(
                 WalletRelayRequest::new(msg, proof)
-                    .state_init(old_wallet.deterministic_state_init()),
+                    .deterministic_state_init(old_wallet.deterministic_state_init()),
                 NearToken::from_yoctonear(1),
                 None,
             )

@@ -74,7 +74,7 @@ impl WalletRelayer {
 
         let mut tx = self.client.transaction(request.msg.signer_id.clone());
 
-        let needs_deposit = if let Some(state_init) = request.state_init {
+        let needs_deposit = if let Some(state_init) = request.deterministic_state_init {
             if state_init.derive_account_id() != request.msg.signer_id {
                 return Err(Error::InvalidStateInit);
             }

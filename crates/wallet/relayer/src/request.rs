@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WalletRelayRequest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub state_init: Option<StateInit>, // TODO
+    pub deterministic_state_init: Option<StateInit>,
     pub msg: RequestMessage,
     pub proof: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -17,7 +17,7 @@ impl WalletRelayRequest {
     #[inline]
     pub fn new(msg: RequestMessage, proof: impl Into<String>) -> Self {
         Self {
-            state_init: None,
+            deterministic_state_init: None,
             msg,
             proof: proof.into(),
             gas: None,
@@ -26,8 +26,8 @@ impl WalletRelayRequest {
 
     #[must_use]
     #[inline]
-    pub fn state_init(mut self, state_init: impl Into<StateInit>) -> Self {
-        self.state_init = Some(state_init.into());
+    pub fn deterministic_state_init(mut self, state_init: impl Into<StateInit>) -> Self {
+        self.deterministic_state_init = Some(state_init.into());
         self
     }
 
