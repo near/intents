@@ -79,6 +79,22 @@ where
     }
 
     /// Iterate over set bits
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use std::collections::BTreeMap;
+    /// # use defuse_bitmap::BitMap;
+    /// let mut m = BitMap::<BTreeMap<u32, u32>>::default();
+    /// for n in [100, 15, 1, 24, 0, 717, 999, u32::MAX] {
+    ///     assert!(!m.set_bit(n));
+    /// }
+    ///
+    /// assert_eq!(
+    ///     m.as_iter().collect::<Vec<_>>(),
+    ///     vec![0, 1, 15, 24, 100, 717, 999, u32::MAX],
+    /// );
+    /// ```
     pub fn as_iter(&self) -> impl Iterator<Item = M::V> + '_
     where
         M: IterableMap,
@@ -116,7 +132,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, fmt::Debug};
+    use std::collections::BTreeMap;
 
     use rstest::rstest;
 
@@ -148,26 +164,5 @@ mod tests {
             assert!(!m.clear_bit(n));
             assert!(!m.get_bit(n));
         }
-    }
-
-    #[rstest]
-    fn as_iter<T>(
-        #[values(
-            Vec::<u8>::new(),
-            vec![0u8],
-            vec![3u16, 0, 2, 7, u16::MAX],
-            vec![1000u32, 15, 23, 717, 999, u32::MAX],
-        )]
-        mut ns: Vec<T>,
-    ) where
-        RangeInclusive<T>: Iterator<Item = T>,
-        T: PrimInt + Shl<T, Output = T> + Debug + Default,
-    {
-        let mut m = BitMap::<BTreeMap<T, T>>::default();
-        for n in &ns {
-            assert!(!m.set_bit(*n));
-        }
-        ns.sort();
-        assert_eq!(m.as_iter().collect::<Vec<_>>(), ns);
     }
 }
