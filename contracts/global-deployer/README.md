@@ -192,7 +192,7 @@ The `near-gds` command is an extension for [near-cli-rs](https://github.com/near
 ### Install
 
 ```sh
-cargo install --path . --example near-gds
+cargo install --path ./crates/global-deployer/near-gds
 ```
 
 ### Usage

@@ -1,0 +1,19 @@
+lints.workspace = true
+
+[package]
+name = "near-gds"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+defuse-cli-utils = { workspace = true, features = ["hash"] }
+defuse-global-deployer-core = { workspace = true, features = ["serde", "borsh", "digest"] }
+
+anyhow.workspace = true
+clap = { workspace = true, features = ["wrap_help"] }
+near-account-id.workspace = true
+serde_json.workspace = true
+serde_with = { workspace = true, features = ["base64"] }
+sha2.workspace = true

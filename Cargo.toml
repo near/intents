@@ -3,7 +3,6 @@ members = [
   "contracts/defuse",
   "contracts/defuse/core",
   "contracts/global-deployer",
-  "contracts/global-deployer/core",
   "contracts/outlayer-app",
   "contracts/outlayer-app/core",
   "contracts/escrow-swap",
@@ -14,8 +13,9 @@ members = [
 
   "crates/bitmap",
   "crates/borsh-utils",
-  "crates/crypto",
   "crates/ckd",
+  "crates/cli-utils",
+  "crates/crypto",
   "crates/digest",
   "crates/io-utils",
   "crates/kdf",
@@ -25,6 +25,9 @@ members = [
   "crates/num-utils",
   "crates/rand-compat",
   "crates/serde-utils",
+
+  "crates/global-deployer/core",
+  "crates/global-deployer/near-gds",
 
   "crates/near/admin-utils",
   "crates/near/auth-call",
@@ -71,7 +74,6 @@ defuse.path = "contracts/defuse"
 defuse-core.path = "contracts/defuse/core"
 defuse-escrow-swap.path = "contracts/escrow-swap"
 defuse-global-deployer.path = "contracts/global-deployer"
-defuse-global-deployer-core = { path = "contracts/global-deployer/core", default-features = false }
 defuse-outlayer-app.path = "contracts/outlayer-app"
 defuse-outlayer-app-core = { path = "contracts/outlayer-app/core", default-features = false }
 defuse-poa-factory.path = "contracts/poa/factory"
@@ -81,6 +83,7 @@ defuse-wallet.path = "contracts/wallet"
 defuse-bitmap.path = "crates/bitmap"
 defuse-borsh-utils.path = "crates/borsh-utils"
 defuse-ckd = { path = "crates/ckd", default-features = false }
+defuse-cli-utils = { path = "crates/cli-utils", default-features = false }
 defuse-crypto = { path = "crates/crypto", default-features = false }
 defuse-digest.path = "crates/digest"
 defuse-io-utils.path = "crates/io-utils"
@@ -91,6 +94,8 @@ defuse-map-utils.path = "crates/map-utils"
 defuse-num-utils.path = "crates/num-utils"
 defuse-rand-compat.path = "crates/rand-compat"
 defuse-serde-utils.path = "crates/serde-utils"
+
+defuse-global-deployer-core = { path = "crates/global-deployer/core", default-features = false }
 
 defuse-admin-utils.path = "crates/near/admin-utils"
 defuse-auth-call.path = "crates/near/auth-call"
@@ -159,7 +164,7 @@ futures = "0.3"
 generic-array = "1"
 hex = "0.4"
 hex-literal = "1.0"
-impl-tools = "0.11"
+impl-tools = "0.12"
 itertools = "0.14"
 k256 = { version = "0.13.4", default-features = false }
 num-traits = "0.2.19"
