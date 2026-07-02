@@ -1,5 +1,5 @@
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
-use defuse_wallet_sdk::{NearPromise, Request, WalletSigner, actions::FunctionCall};
+use defuse_wallet_sdk::{NearPromise, Request, WalletOp, WalletSigner, actions::FunctionCall};
 use ed25519_dalek::ed25519::signature::rand_core::OsRng;
 use near_kit::{AccountIdRef, Gas, Near, NearToken};
 use serde_json::json;
@@ -7,6 +7,8 @@ use serde_json::json;
 const WALLET_GLOBAL_CONTRACT_ID: &AccountIdRef =
     AccountIdRef::new_or_panic("0sb0d7ef4f935c6ef78e08ad03569767aaec4223a3");
 const MPC_ACCOUNT_ID: &AccountIdRef = AccountIdRef::new_or_panic("v1.signer");
+
+const EXAMPLE_EXTENSION: &AccountIdRef = AccountIdRef::new_or_panic("extension.near");
 
 #[tokio::main]
 async fn main() {
@@ -24,7 +26,12 @@ async fn main() {
     println!("wallet.account_id() = {}", wallet.account_id());
 
     // 1) Prepare wallet request
-    let wallet_request = Request::new().external([NearPromise::new(MPC_ACCOUNT_ID).function_call(
+    let wallet_request = Request::new().internal([
+        // add extension as just a showcase
+        WalletOp::AddExtension { account_id: EXAMPLE_EXTENSION.to_owned() },
+        // remove it immediately after
+        WalletOp::RemoveExtension { account_id: EXAMPLE_EXTENSION.to_owned() },
+    ]).external([NearPromise::new(MPC_ACCOUNT_ID).function_call(
         FunctionCall::name("sign")
             .args_json(json!({
                 "request": {
