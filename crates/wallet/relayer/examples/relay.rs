@@ -1,12 +1,12 @@
 #![allow(clippy::cast_precision_loss, clippy::as_conversions)]
 
-use std::{env, fs, iter, path::Path, sync::LazyLock};
+use std::{env, fs, path::Path, sync::LazyLock};
 
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
 use defuse_wallet_sdk::{NearToken, Request, WalletSigner};
 use ed25519_dalek::ed25519::signature::rand_core::OsRng;
-use futures::{StreamExt, TryFutureExt, TryStreamExt, stream};
+use futures::{StreamExt, stream};
 use near_kit::{Final, GlobalContractId, PublishMode, sandbox::SandboxConfig};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -49,31 +49,35 @@ async fn main() {
     // .chain_id(relayer.client().chain_id().as_str())
     ;
 
+    let started_at = tokio::time::Instant::now();
     let txs_count = 10_000;
 
-    let txs = stream::iter(
-        iter::repeat_with(|| {
-            let (msg, proof) = wallet.sign(Request::new()).unwrap();
-            relayer
-                .w_execute_signed(
-                    WalletRelayRequest {
-                        state_init: Some(wallet.deterministic_state_init()),
-                        msg,
-                        proof,
-                        gas: None,
-                    },
-                    NearToken::ZERO,
-                    None,
-                )
-                .inspect_ok(|r| tracing::info!(tx.hash = %r.transaction_hash(), tx.gas_used = %r.total_gas_used()))
-                .map_ok(|_| ())
-        })
-        .take(txs_count),
-    )
-    .buffer_unordered(500);
+    stream::iter((0..=txs_count).map(|_n| async {
+        let (msg, proof) = wallet.sign(Request::new()).unwrap();
+        let r = relayer
+            .w_execute_signed(
+                WalletRelayRequest {
+                    state_init: Some(wallet.deterministic_state_init()),
+                    msg,
+                    proof,
+                    gas: None,
+                },
+                NearToken::ZERO,
+                None,
+            )
+            .await
+            .unwrap();
 
-    let started_at = tokio::time::Instant::now();
-    txs.try_collect::<()>().await.unwrap();
+        assert!(r.is_success());
+
+        tracing::info!(
+            tx.hash = %r.transaction_hash(),
+            tx.gas_used = %r.total_gas_used()
+        );
+    }))
+    .buffer_unordered(500)
+    .collect::<()>()
+    .await;
 
     println!(
         "avg: {} TPS",

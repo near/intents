@@ -249,7 +249,7 @@ async fn test_no_storage_staking(#[future] env: Env) {
         .result()
         .unwrap();
 
-    join_all((0..wallet.nonces.timeout().as_secs() * 2).map(|_n| async {
+    join_all((0..wallet.timeout().as_secs() * 2).map(|_n| async {
         let (msg, proof) = wallet.sign(Request::new()).unwrap();
         let req = WalletRelayRequest::new(msg, proof);
         assert!(

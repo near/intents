@@ -12,7 +12,6 @@ workspace = true
 defuse-wallet-core = { workspace = true, features = ["borsh", "digest"] }
 
 borsh.workspace = true
-impl-tools.workspace = true
 near-global-contracts = { workspace = true, features = ["borsh"] }
 rand.workspace = true
 

@@ -12,7 +12,6 @@ use std::{
 use borsh::BorshSerialize;
 pub use defuse_wallet_core::*;
 
-use impl_tools::autoimpl;
 use near_global_contracts::{GlobalContractId, StateInit, StateInitV1};
 use rand::{make_rng, rngs::SmallRng};
 
@@ -79,7 +78,6 @@ impl<S: Signer> WalletSignerBuilder<S> {
     }
 }
 
-#[autoimpl(Deref using self.state)]
 #[derive(Debug, Clone)]
 pub struct WalletSigner<S: Signer> {
     chain_id: String,
@@ -132,6 +130,12 @@ where
         s
     }
 
+    /// Get timeout for nonces
+    #[inline]
+    pub const fn timeout(&self) -> Duration {
+        self.state.nonces.timeout()
+    }
+
     #[inline]
     pub const fn account_id(&self) -> &AccountId {
         &self.account_id
@@ -167,7 +171,7 @@ where
     /// Returns an optimal lag for `created_at`, so it doesn't fail on-chain.
     #[inline]
     fn optimal_lag(&self) -> Duration {
-        Duration::from_mins(1).min(self.state.nonces.timeout() / 5)
+        Duration::from_mins(1).min(self.timeout() / 5)
     }
 
     /// Reseed the nonces and invalidate the current block.
