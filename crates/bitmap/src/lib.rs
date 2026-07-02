@@ -32,6 +32,18 @@ where
     }
 
     /// Get the bit `n`
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use std::collections::BTreeMap;
+    /// # use defuse_bitmap::BitMap;
+    /// let mut m = BitMap::<BTreeMap<u32, u32>>::default();
+    ///
+    /// assert!(!m.get_bit(42));
+    /// assert!(!m.set_bit(42));
+    /// assert!(m.get_bit(42));
+    /// ```
     #[inline]
     pub fn get_bit(&self, n: M::K) -> bool {
         let (word, bit_mask) = Self::split_word_mask(n);
@@ -42,6 +54,17 @@ where
     }
 
     /// Set the bit `n` and return old value
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use std::collections::BTreeMap;
+    /// # use defuse_bitmap::BitMap;
+    /// let mut m = BitMap::<BTreeMap<u32, u32>>::default();
+    ///
+    /// assert!(!m.set_bit(42));
+    /// assert!(m.get_bit(42));
+    /// ```
     #[inline]
     pub fn set_bit(&mut self, n: M::K) -> bool {
         let (mut bitmap, mask) = self.get_mut_with_mask(n);
@@ -51,6 +74,17 @@ where
     }
 
     /// Clear the bit `n` and return old value
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use std::collections::BTreeMap;
+    /// # use defuse_bitmap::BitMap;
+    /// let mut m = BitMap::<BTreeMap<u32, u32>>::default();
+    ///
+    /// assert!(!m.clear_bit(42));
+    /// assert!(!m.get_bit(42));
+    /// ```
     #[inline]
     pub fn clear_bit(&mut self, n: M::K) -> bool {
         let (mut bitmap, mask) = self.get_mut_with_mask(n);
@@ -60,6 +94,18 @@ where
     }
 
     /// Toggle the bit `n` and return old value
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use std::collections::BTreeMap;
+    /// # use defuse_bitmap::BitMap;
+    /// let mut m = BitMap::<BTreeMap<u32, u32>>::default();
+    ///
+    /// assert!(!m.toggle_bit(42));
+    /// assert!(m.toggle_bit(42));
+    /// assert!(!m.get_bit(42));
+    /// ```
     #[inline]
     pub fn toggle_bit(&mut self, n: M::K) -> bool {
         let (mut bitmap, mask) = self.get_mut_with_mask(n);
@@ -69,6 +115,18 @@ where
     }
 
     /// Set bit `n` to given value and return old value
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use std::collections::BTreeMap;
+    /// # use defuse_bitmap::BitMap;
+    /// let mut m = BitMap::<BTreeMap<u32, u32>>::default();
+    ///
+    /// assert!(!m.set_bit_to(42, true));
+    /// assert!(m.set_bit_to(42, false));
+    /// assert!(!m.get_bit(42));
+    /// ```
     #[inline]
     pub fn set_bit_to(&mut self, n: M::K, v: bool) -> bool {
         if v {
