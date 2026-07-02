@@ -12,10 +12,12 @@ impl Signer for SigningKey {
     type PublicKey = Ed25519PublicKey;
     type Error = Infallible;
 
+    #[inline]
     fn public_key(&self) -> Self::PublicKey {
         Ed25519PublicKey(self.verifying_key().to_bytes())
     }
 
+    #[inline]
     fn sign(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
         let signature = <Self as Ed25519Signer<_>>::sign(self, &msg.hash()).to_bytes();
         Ok(Ed25519Signature(signature).to_string())

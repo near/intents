@@ -1,9 +1,19 @@
-use rand::{Rng, SeedableRng};
+use rand::Rng;
 
-/// Endless [`Iterator`] for generating non-sequential nonces semi-sequentially,
-/// allowing for multiple concurrent clients while being optimized for storage.
+/// Semi-sequential nonce generation algorithm optimized for storage usage
+/// in case of multiple concurrent **non-coordinated** clients sign messages
+/// for the same wallet contract instance. This algorithm withstands signers
+/// restarts and allows more signers to join silently while keeping collision
+/// probability relatively low.
 ///
-/// See [`crate::RequestMessage::nonce`].
+/// Unfortunately, [`.next()`](Self::next) needs a mutable reference and can't
+/// achieve the same using only atomics because of the partial CAS operation
+/// required when randomizing high 27 bits. See [`crate::RequestMessage::nonce`].
+///
+/// As a result, `ConcurrentNonces` doesn't implement [`Clone`](Clone). Clonable
+/// same-account signers are recommended to wrap it in `Arc<Mutex<_>>` instead of
+/// re-creating it every time, so that at least signers in the same process draw
+/// nonces from a single shared pool.
 #[derive(Debug)]
 pub struct ConcurrentNonces<R> {
     next: u32,
@@ -21,7 +31,9 @@ where
         Self { next: 0, rng }
     }
 
+    /// Get the next semi-sequential nonce ready to use.
     #[allow(clippy::should_implement_trait)]
+    #[inline]
     pub fn next(&mut self) -> u32 {
         if self.next & Self::BIT_POS_MASK == 0 {
             self.next = self.rng.next_u32() & !Self::BIT_POS_MASK;
@@ -29,15 +41,6 @@ where
         let n = self.next;
         self.next = self.next.wrapping_add(1);
         n
-    }
-
-    #[must_use]
-    #[inline]
-    pub fn fork(&mut self) -> Self
-    where
-        R: SeedableRng,
-    {
-        Self::new(self.rng.fork())
     }
 }
 
@@ -47,6 +50,7 @@ where
 {
     type Item = u32;
 
+    /// Always returns the next nonce ready to use.
     fn next(&mut self) -> Option<Self::Item> {
         Some(self.next())
     }
