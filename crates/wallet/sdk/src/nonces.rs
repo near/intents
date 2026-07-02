@@ -24,6 +24,7 @@ impl<R> ConcurrentNonces<R>
 where
     R: Rng,
 {
+    /// 000000000000000000000000.11111
     const BIT_POS_MASK: u32 = (1 << u32::BITS.ilog2()) - 1;
 
     #[inline]
@@ -35,7 +36,9 @@ where
     #[allow(clippy::should_implement_trait)]
     #[inline]
     pub fn next(&mut self) -> u32 {
+        // check if we're at block boundary
         if self.next & Self::BIT_POS_MASK == 0 {
+            // randomize high 27 bits
             self.next = self.rng.next_u32() & !Self::BIT_POS_MASK;
         }
         let n = self.next;
