@@ -16,7 +16,7 @@ near-sdk = { workspace = true, optional = true }
 
 [features]
 ed25519 = ["dep:ed25519-dalek", "dep:near-sdk"]
-secp256k1 = ["dep:k256"]
+secp256k1 = ["dep:k256", "dep:near-sdk", "near-sdk/unstable"]
 
 [dev-dependencies]
 ed25519-dalek = { workspace = true, features = ["std", "serde"] }

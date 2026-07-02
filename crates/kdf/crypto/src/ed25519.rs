@@ -24,7 +24,7 @@ impl Curve for Ed25519 {
                     msg,
                     public_key.as_bytes(),
                 )
-            },
+            }
             _ => {
                 use ed25519_dalek::Verifier;
 

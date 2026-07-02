@@ -20,3 +20,15 @@ pub trait Curve: 'static {
         signature: &Self::Signature,
     ) -> bool;
 }
+
+pub trait RecoverableCurve: Curve {
+    type RecoveryId;
+
+    fn recover(
+        msg: &Self::Message,
+        signature: &Self::Signature,
+        recovery_id: Self::RecoveryId,
+    ) -> Option<Self::PublicKey>;
+
+    // TODO: fn trial_recover()?
+}
