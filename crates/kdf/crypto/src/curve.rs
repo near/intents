@@ -1,3 +1,5 @@
+// TODO: curve naming
+
 /// An ellipitc curve.
 pub trait Curve: 'static {
     /// Public key of the curve
@@ -21,9 +23,15 @@ pub trait Curve: 'static {
     ) -> bool;
 }
 
+/// A recoverable [curve](Curve).
 pub trait RecoverableCurve: Curve {
+    /// An additional information required to [recover](Self::recover)
+    /// the public key.
     type RecoveryId;
 
+    /// Try to recover [public key](Curve::PublicKey) which signed given
+    /// message and produced given signature along with a
+    /// [recovery id](Self::RecoveryId)
     fn recover(
         msg: &Self::Message,
         signature: &Self::Signature,

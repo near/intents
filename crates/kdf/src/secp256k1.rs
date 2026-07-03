@@ -1,4 +1,4 @@
-use defuse_kdf_crypto::Secp256k1;
+use defuse_kdf_crypto::{RecoverableCurve, Secp256k1};
 use k256::{
     NonZeroScalar, ProjectivePoint, U256,
     ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey},
@@ -8,7 +8,9 @@ use k256::{
     },
 };
 
-use crate::{Additive, CurveArithmetic, DeriveSigner, ReduceScalar, Schema};
+use crate::{
+    Additive, CurveArithmetic, DeriveSigner, RecoverableDeriveSigner, ReduceScalar, Schema,
+};
 
 impl CurveArithmetic for Secp256k1 {
     type Scalar = NonZeroScalar;
@@ -40,7 +42,17 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
         Additive::new(*self.verifying_key())
     }
 
-    fn derive_sign(&self, tweak: NonZeroScalar, prehash: &[u8; 32]) -> (Signature, RecoveryId) {
+    fn derive_sign(&self, tweak: NonZeroScalar, prehash: &[u8; 32]) -> Signature {
+        self.derive_sign_recoverable(tweak, prehash).0
+    }
+}
+
+impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
+    fn derive_sign_recoverable(
+        &self,
+        tweak: NonZeroScalar,
+        prehash: &[u8; 32],
+    ) -> (Signature, RecoveryId) {
         let derived_scalar = NonZeroScalar::new(
             // sk' = sk + tweak
             **self.as_nonzero_scalar() + *tweak,
@@ -55,9 +67,17 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
             "derived public key mismatch",
         );
 
-        derived_sk
+        let (sig, recovery_id) = derived_sk
             .sign_prehash_recoverable(prehash)
-            .expect("invalid derived signing key")
+            .expect("invalid derived signing key");
+
+        debug_assert_eq!(
+            Secp256k1::recover(prehash, &sig, recovery_id).expect("failed to recover public key"),
+            self.derive_public_key(tweak),
+            "invalid recovered public key",
+        );
+
+        (sig, recovery_id)
     }
 }
 
@@ -82,7 +102,6 @@ impl Schema<[u8; 64]> for ReduceScalar<Secp256k1> {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
-    use k256::ecdsa::VerifyingKey;
     use rstest::rstest;
 
     use crate::{DeriveExt, signer::assert_signer_roundtrip};
@@ -105,18 +124,13 @@ mod tests {
         )]
         prehash: [u8; 32],
     ) {
-        let (derived_pk, (signature, recovery_id)) = assert_signer_roundtrip(
+        assert_signer_roundtrip(
             &SigningKey::from_bytes(&root_sk.into())
                 .expect("invalid root sk")
                 .derive(ReduceScalar::<Secp256k1>::new()),
             tweak,
             &prehash,
         );
-
-        let recovered_key = VerifyingKey::recover_from_prehash(&prehash, &signature, recovery_id)
-            .expect("failed to recover verifying key");
-
-        assert_eq!(recovered_key, derived_pk, "invalid recovered verifying key");
     }
 
     #[rstest]

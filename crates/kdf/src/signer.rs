@@ -1,6 +1,6 @@
 use std::{borrow::Cow, rc::Rc, sync::Arc};
 
-use defuse_kdf_crypto::Curve;
+use defuse_kdf_crypto::{Curve, RecoverableCurve};
 use impl_tools::autoimpl;
 
 use crate::{BoxSchema, Derive, DeriveExt, Schema};
@@ -44,6 +44,20 @@ pub trait DeriveSigner<C: Curve, P> {
     fn derive_public_key(&self, path: P) -> C::PublicKey {
         self.schema().derive_path(path)
     }
+}
+
+/// A [signer](DeriveSigner) that can recoverably sign messages by
+/// **internally** deriving signing keys.
+pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
+    /// Recoveryably [sign](DeriveSigner::derive_sign) given message with a
+    /// secret key **internally** derived for given `path` according to
+    /// [`schema`](DeriveSigner::schema) and return [signature](Curve::Signature)
+    /// along with [recovery id](RecoverableCurve::RecoveryId).
+    ///
+    /// **NOTE**: the returned signatures MIGHT be non-deterministic, i.e.
+    /// implementations MAY return different signatures for the same
+    /// `path` and `msg`.
+    fn derive_sign_recoverable(&self, path: P, msg: &C::Message) -> (C::Signature, C::RecoveryId);
 }
 
 impl<C, P, S, D> DeriveSigner<C, P> for Derive<S, D>
