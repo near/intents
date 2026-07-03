@@ -8,20 +8,22 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-ed25519-dalek = { workspace = true, features = ["std"], optional = true }
-k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"], optional = true }
+ed25519-dalek = { workspace = true, optional = true }
+k256 = { workspace = true, features = ["ecdsa"], optional = true }
+p256 = { workspace = true, features = ["ecdsa"], optional = true }
 
 [target.'cfg(near)'.dependencies]
 near-sdk = { workspace = true, optional = true }
 
 [features]
 ed25519 = ["dep:ed25519-dalek", "dep:near-sdk"]
+p256 = ["dep:near-sdk", "dep:p256"]
 secp256k1 = ["dep:k256", "dep:near-sdk", "near-sdk/unstable"]
 
 [dev-dependencies]
-ed25519-dalek = { workspace = true, features = ["std", "serde"] }
+defuse-kdf-crypto = { path = ".", features = ["ed25519", "p256", "secp256k1"] }
+
 hex-literal.workspace = true
-k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"] }
 rstest.workspace = true
 
 [target.'cfg(near)'.dev-dependencies]

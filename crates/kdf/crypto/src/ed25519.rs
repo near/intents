@@ -17,6 +17,13 @@ impl Curve for Ed25519 {
         msg: &Self::Message,
         signature: &Self::Signature,
     ) -> bool {
+        // TODO: are we sure?
+        if public_key.is_weak() {
+            // prevent using weak (i.e. low order) public keys, see
+            // https://github.com/dalek-cryptography/ed25519-dalek#weak-key-forgery-and-verify_strict
+            return false;
+        }
+
         cfg_select! {
             near => {
                 ::near_sdk::env::ed25519_verify(
@@ -27,6 +34,15 @@ impl Curve for Ed25519 {
             }
             _ => {
                 use ed25519_dalek::Verifier;
+
+                // TODO
+                // // Sanity-check that was performed by ed25519-dalek in from_bytes before version 2,
+                // // but was removed with version 2. It is not actually any good a check, but we need
+                // // it to avoid costs changing.
+                // if b[ed25519_dalek::SIGNATURE_LENGTH - 1] & 0b1110_0000 != 0 {
+                //     return Ok(false as u64);
+                // }
+                // ed25519_dalek::Signature::from_bytes(b)
 
                 // TODO: strict?
                 public_key.verify(msg, signature).is_ok()

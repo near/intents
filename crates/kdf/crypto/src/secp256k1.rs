@@ -29,7 +29,15 @@ impl Curve for Secp256k1 {
                 false
             }
             _ => {
-                use k256::ecdsa::signature::hazmat::PrehashVerifier;
+                use k256::{
+                    ecdsa::signature::hazmat::PrehashVerifier,
+                    elliptic_curve::scalar::IsHigh,
+                };
+
+                if signature.s().is_high().into() {
+                    // guard against signature malleability
+                    return false;
+                }
 
                 // TODO: other checks?
                 public_key.verify_prehash(prehash, signature).is_ok()
@@ -63,7 +71,13 @@ impl RecoverableCurve for Secp256k1 {
                 VerifyingKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(&pk.into())).ok()
             }
             _ => {
-                // TODO: malleability
+                use k256::elliptic_curve::scalar::IsHigh;
+
+                if signature.s().is_high().into() {
+                    // guard against signature malleability
+                    return None;
+                }
+
                 VerifyingKey::recover_from_prehash(prehash, signature, recovery_id).ok()
             }
         }
