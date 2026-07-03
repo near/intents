@@ -31,7 +31,7 @@ impl CurveArithmetic for Secp256k1 {
     }
 }
 
-impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
+impl DeriveSigner<[u8; 32], Secp256k1, NonZeroScalar> for SigningKey {
     type Schema<'a>
         = Additive<Secp256k1>
     where
@@ -42,16 +42,16 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
         Additive::new(*self.verifying_key())
     }
 
-    fn derive_sign(&self, tweak: NonZeroScalar, prehash: &[u8; 32]) -> Signature {
+    fn derive_sign(&self, tweak: NonZeroScalar, prehash: [u8; 32]) -> Signature {
         self.derive_sign_recoverable(tweak, prehash).0
     }
 }
 
-impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
+impl RecoverableDeriveSigner<[u8; 32], Secp256k1, NonZeroScalar> for SigningKey {
     fn derive_sign_recoverable(
         &self,
         tweak: NonZeroScalar,
-        prehash: &[u8; 32],
+        prehash: [u8; 32],
     ) -> (Signature, RecoveryId) {
         let derived_scalar = NonZeroScalar::new(
             // sk' = sk + tweak
@@ -68,7 +68,7 @@ impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
         );
 
         let (sig, recovery_id) = derived_sk
-            .sign_prehash_recoverable(prehash)
+            .sign_prehash_recoverable(&prehash)
             .expect("invalid derived signing key");
 
         debug_assert_eq!(
@@ -129,7 +129,7 @@ mod tests {
                 .expect("invalid root sk")
                 .derive(ReduceScalar::<Secp256k1>::new()),
             tweak,
-            &prehash,
+            prehash,
         );
     }
 
@@ -149,7 +149,7 @@ mod tests {
                 .expect("invalid root sk")
                 .derive(ReduceScalar::<Secp256k1>::new()),
             tweak,
-            &hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
+            hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
         );
         assert_eq!(
             // compress and skip tag byte

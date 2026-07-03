@@ -1,22 +1,22 @@
 use ed25519_dalek::{self, Signature, VerifyingKey};
 
-use crate::Curve;
+use crate::{Curve, VerifiableCurve};
 
 pub struct Ed25519;
 
 impl Curve for Ed25519 {
     type PublicKey = VerifyingKey;
 
-    type Message = [u8];
-
     type Signature = Signature;
+}
 
+impl<M> VerifiableCurve<M> for Ed25519
+where
+    M: AsRef<[u8]>,
+{
+    #[allow(clippy::items_after_statements)]
     #[inline]
-    fn verify(
-        public_key: &Self::PublicKey,
-        msg: &Self::Message,
-        signature: &Self::Signature,
-    ) -> bool {
+    fn verify(public_key: &Self::PublicKey, msg: M, signature: &Self::Signature) -> bool {
         // TODO: are we sure?
         if public_key.is_weak() {
             // prevent using weak (i.e. low order) public keys, see
@@ -45,7 +45,7 @@ impl Curve for Ed25519 {
                 // ed25519_dalek::Signature::from_bytes(b)
 
                 // TODO: strict?
-                public_key.verify(msg, signature).is_ok()
+                public_key.verify(msg.as_ref(), signature).is_ok()
             }
         }
     }

@@ -1,19 +1,20 @@
 use p256::ecdsa::{Signature, VerifyingKey};
 
-use crate::Curve;
+use crate::{Curve, VerifiableCurve};
 
 pub struct P256;
 
 impl Curve for P256 {
     type PublicKey = VerifyingKey;
 
-    type Message = [u8; 32];
-
     type Signature = Signature;
+}
 
+impl VerifiableCurve<[u8; 32]> for P256 {
+    #[inline]
     fn verify(
         public_key: &Self::PublicKey,
-        prehash: &Self::Message,
+        prehash: [u8; 32],
         signature: &Self::Signature,
     ) -> bool {
         cfg_select! {
@@ -31,7 +32,7 @@ impl Curve for P256 {
                     return false;
                 }
 
-                public_key.verify_prehash(prehash, signature).is_ok()
+                public_key.verify_prehash(&prehash, signature).is_ok()
             }
         }
     }

@@ -1388,6 +1388,7 @@ dependencies = [
  "defuse-nep413",
  "defuse-num-utils",
  "defuse-sep53",
+ "defuse-signature-scheme",
  "defuse-test-utils",
  "defuse-time",
  "defuse-tip191",
@@ -1465,6 +1466,8 @@ dependencies = [
  "defuse-crypto",
  "defuse-digest",
  "defuse-erc191",
+ "defuse-kdf-crypto",
+ "defuse-signature-scheme",
  "hex-literal",
  "impl-tools 0.12.0",
  "near-sdk",
@@ -1792,6 +1795,13 @@ dependencies = [
  "serde_json",
  "serde_with",
  "tlb-ton",
+]
+
+[[package]]
+name = "defuse-signature-scheme"
+version = "0.1.0"
+dependencies = [
+ "defuse-kdf-crypto",
 ]
 
 [[package]]

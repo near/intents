@@ -43,7 +43,10 @@ impl Schema<[u8; 64]> for ReduceScalar<Ed25519> {
     }
 }
 
-impl DeriveSigner<Ed25519, Scalar> for SigningKey {
+impl<M> DeriveSigner<M, Ed25519, Scalar> for SigningKey
+where
+    M: AsRef<[u8]>,
+{
     type Schema<'a>
         = Additive<Ed25519>
     where
@@ -54,12 +57,12 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
         Additive::new(self.verifying_key())
     }
 
-    fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Signature {
+    fn derive_sign(&self, tweak: Scalar, msg: M) -> Signature {
         let esk = ExpandedSecretKey::from(self.as_bytes());
 
         debug_assert_eq!(
-            esk.schema().public_key(),
-            self.schema().public_key(),
+            DeriveSigner::<M, Ed25519, Scalar>::schema(&esk).public_key(),
+            DeriveSigner::<M, Ed25519, Scalar>::schema(self).public_key(),
             "master public key mismatch",
         );
 
@@ -68,7 +71,10 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
     }
 }
 
-impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
+impl<M> DeriveSigner<M, Ed25519, Scalar> for ExpandedSecretKey
+where
+    M: AsRef<[u8]>,
+{
     type Schema<'a>
         = Additive<Ed25519>
     where
@@ -79,7 +85,7 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
         Additive::new(VerifyingKey::from(self))
     }
 
-    fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Signature {
+    fn derive_sign(&self, tweak: Scalar, msg: M) -> Signature {
         let derived_esk = Self {
             // sk' = sk + tweak
             scalar: self.scalar + tweak,
@@ -110,11 +116,11 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
 
         debug_assert_eq!(
             derived_verifying_key,
-            self.derive_public_key(tweak),
+            DeriveSigner::<M, Ed25519, Scalar>::derive_public_key(self, tweak),
             "derived public key mismatch",
         );
 
-        raw_sign::<Sha512>(&derived_esk, msg, &derived_verifying_key)
+        raw_sign::<Sha512>(&derived_esk, msg.as_ref(), &derived_verifying_key)
     }
 }
 

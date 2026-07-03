@@ -42,6 +42,7 @@ members = [
   "crates/primitives/time",
   "crates/primitives/token-id",
 
+  "crates/signatures/scheme",
   "crates/signatures/erc191",
   "crates/signatures/nep413",
   "crates/signatures/nep461",
@@ -110,6 +111,7 @@ defuse-fees.path = "crates/primitives/fees"
 defuse-time = { path = "crates/primitives/time", default-features = false }
 defuse-token-id = { path = "crates/primitives/token-id", default-features = false }
 
+defuse-signature-scheme.path = "crates/signatures/scheme"
 defuse-erc191.path = "crates/signatures/erc191"
 defuse-nep413.path = "crates/signatures/nep413"
 defuse-nep461.path = "crates/signatures/nep461"

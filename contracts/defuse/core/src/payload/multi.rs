@@ -1,5 +1,5 @@
 use defuse_crypto::{Payload, SignedPayload};
-use defuse_erc191::SignedErc191Payload;
+// use defuse_erc191::SignedErc191Payload;
 use defuse_nep413::SignedNep413Payload;
 use defuse_sep53::SignedSep53Payload;
 use defuse_tip191::SignedTip191Payload;
@@ -31,7 +31,7 @@ pub enum MultiPayload {
 
     /// ERC-191: The standard for message signing in Ethereum, commonly used with `personal_sign()`.
     /// For more details, refer to [EIP-191](https://eips.ethereum.org/EIPS/eip-191).
-    Erc191(SignedErc191Payload),
+    // Erc191(SignedErc191Payload),
 
     /// TIP-191: The standard for message signing in Tron.
     /// For more details, refer to [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md).
@@ -64,7 +64,7 @@ impl Payload for MultiPayload {
     fn hash(&self) -> CryptoHash {
         match self {
             Self::Nep413(payload) => payload.hash(),
-            Self::Erc191(payload) => payload.hash(),
+            // Self::Erc191(payload) => payload.hash(),
             Self::Tip191(payload) => payload.hash(),
             Self::RawEd25519(payload) => payload.hash(),
             Self::WebAuthn(payload) => payload.hash(),
@@ -81,7 +81,7 @@ impl SignedPayload for MultiPayload {
     fn verify(&self) -> Option<Self::PublicKey> {
         match self {
             Self::Nep413(payload) => payload.verify().map(PublicKey::Ed25519),
-            Self::Erc191(payload) => payload.verify().map(PublicKey::Secp256k1),
+            // Self::Erc191(payload) => payload.verify().map(PublicKey::Secp256k1),
             Self::Tip191(payload) => payload.verify().map(PublicKey::Secp256k1),
             Self::RawEd25519(payload) => payload.verify().map(PublicKey::Ed25519),
             Self::WebAuthn(payload) => payload.verify(),
@@ -101,7 +101,7 @@ where
     fn extract_defuse_payload(self) -> Result<DefusePayload<T>, Self::Error> {
         match self {
             Self::Nep413(payload) => payload.extract_defuse_payload(),
-            Self::Erc191(payload) => payload.extract_defuse_payload(),
+            // Self::Erc191(payload) => payload.extract_defuse_payload(),
             Self::Tip191(payload) => payload.extract_defuse_payload(),
             Self::RawEd25519(payload) => payload.extract_defuse_payload(),
             Self::WebAuthn(payload) => payload.extract_defuse_payload(),
