@@ -1035,17 +1035,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "004643f39a7bec553de5263d650db30e5b9caec1d5cbe065fd732b7ec9ae40d0"
 
 [[package]]
-name = "crate-git-revision"
-version = "0.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c521bf1f43d31ed2f73441775ed31935d77901cb3451e44b38a1c1612fcbaf98"
-dependencies = [
- "serde",
- "serde_derive",
- "serde_json",
-]
-
-[[package]]
 name = "crc"
 version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1258,12 +1247,6 @@ dependencies = [
  "once_cell",
  "parking_lot_core",
 ]
-
-[[package]]
-name = "data-encoding"
-version = "2.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4ae5f15dda3c708c0ade84bfee31ccab44a3da4f88015ed22f63732abe300c8"
 
 [[package]]
 name = "defuse"
@@ -1774,19 +1757,11 @@ dependencies = [
 name = "defuse-sep53"
 version = "0.1.0"
 dependencies = [
- "cfg_eval",
- "defuse-crypto",
  "defuse-digest",
- "defuse-sep53",
- "defuse-test-utils",
- "ed25519-dalek",
- "impl-tools 0.12.0",
- "near-sdk",
+ "defuse-kdf-crypto",
+ "defuse-signature-schema",
+ "hex-literal",
  "rstest",
- "schemars 0.8.22",
- "serde",
- "serde_with",
- "stellar-strkey",
 ]
 
 [[package]]
@@ -5634,16 +5609,6 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
-
-[[package]]
-name = "stellar-strkey"
-version = "0.0.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee1832fb50c651ad10f734aaf5d31ca5acdfb197a6ecda64d93fcdb8885af913"
-dependencies = [
- "crate-git-revision",
- "data-encoding",
-]
 
 [[package]]
 name = "strsim"

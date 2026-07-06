@@ -3,30 +3,15 @@ lints.workspace = true
 [package]
 name = "defuse-sep53"
 edition.workspace = true
-repository.workspace = true
 version.workspace = true
 rust-version.workspace = true
+repository.workspace = true
 
 [dependencies]
-defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
-impl-tools.workspace = true
-
-cfg_eval = { workspace = true, optional = true }
-schemars = { workspace = true, optional = true, features = ["derive"] }
-serde = { workspace = true, features = ["derive"], optional = true }
-serde_with = { workspace = true, optional = true }
-
-[features]
-abi = ["defuse-crypto/abi", "dep:schemars", "serde_with?/schemars_0_8"]
-near-contract = ["defuse-crypto/near-contract"]
-serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
+defuse-kdf-crypto = { workspace = true, features = ["ed25519"] }
+defuse-signature-schema.workspace = true
 
 [dev-dependencies]
-defuse-sep53 = { path = ".", features = ["near-contract"] }
-
-defuse-test-utils.workspace = true
-ed25519-dalek.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
+hex-literal.workspace = true
 rstest.workspace = true
-stellar-strkey.workspace = true

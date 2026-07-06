@@ -18,7 +18,7 @@ defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-nep413 = { workspace = true, features = ["serde"] }
 defuse-num-utils.workspace = true
-defuse-sep53 = { workspace = true, features = ["near-contract", "serde"] }
+defuse-sep53.workspace = true
 defuse-signature-schema.workspace = true
 defuse-time = { workspace = true, features = ["borsh", "serde"] }
 defuse-tip191.workspace = true
@@ -46,7 +46,6 @@ abi = [
   "defuse-crypto/abi",
   "defuse-fees/abi",
   "defuse-nep413/abi",
-  "defuse-sep53/abi",
   "defuse-time/abi",
   "defuse-token-id/abi",
   "defuse-ton-connect/abi",
