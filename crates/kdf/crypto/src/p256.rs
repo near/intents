@@ -1,6 +1,6 @@
-use p256::ecdsa::{Signature, VerifyingKey};
+use p256::ecdsa::{Signature, SigningKey, VerifyingKey, signature::hazmat::PrehashSigner};
 
-use crate::{Curve, VerifiableCurve};
+use crate::{Curve, Signer};
 
 pub struct P256;
 
@@ -8,18 +8,18 @@ impl Curve for P256 {
     type PublicKey = VerifyingKey;
 
     type Signature = Signature;
-}
 
-impl VerifiableCurve<[u8; 32]> for P256 {
+    // TODO: docs: prehash
     #[inline]
-    fn verify(
-        public_key: &Self::PublicKey,
-        prehash: [u8; 32],
-        signature: &Self::Signature,
-    ) -> bool {
+    fn verify(public_key: &Self::PublicKey, prehash: &[u8], signature: &Self::Signature) -> bool {
+        // accept only 32 byte prehash
+        let Ok(prehash) = <&[u8; 32]>::try_from(prehash) else {
+            return false;
+        };
+
         cfg_select! {
             // TODO: cfg(near)
-            _ => {
+            _ => {{
                 use p256::{
                     ecdsa::signature::hazmat::PrehashVerifier,
                     elliptic_curve::scalar::IsHigh,
@@ -32,8 +32,25 @@ impl VerifiableCurve<[u8; 32]> for P256 {
                     return false;
                 }
 
-                public_key.verify_prehash(&prehash, signature).is_ok()
-            }
+                public_key.verify_prehash(prehash, signature).is_ok()
+            }}
         }
     }
+}
+
+impl Signer<P256> for SigningKey {
+    type Error = Error;
+
+    fn public_key(&self) -> <P256 as Curve>::PublicKey {
+        self.verifying_key().clone()
+    }
+
+    fn sign(&self, msg: &[u8]) -> Result<<P256 as Curve>::Signature, Self::Error> {
+        self.sign_prehash(msg)
+            .map_err(|_| Error::InvalidPrehashLength)
+    }
+}
+
+pub enum Error {
+    InvalidPrehashLength,
 }

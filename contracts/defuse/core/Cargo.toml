@@ -11,7 +11,7 @@ repository.workspace = true
 defuse-bitmap = { workspace = true, features = ["borsh"] }
 defuse-crypto = { workspace = true, features = ["borsh", "ed25519", "secp256k1", "p256", "near-contract", "serde"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
-defuse-erc191 = { workspace = true, features = ["near-contract", "serde"] }
+defuse-erc191.workspace = true
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-map-utils = { workspace = true, features = ["near"] }
 defuse-near-utils.workspace = true
@@ -19,7 +19,7 @@ defuse-nep245.workspace = true
 defuse-nep413 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-num-utils.workspace = true
 defuse-sep53 = { workspace = true, features = ["near-contract", "serde"] }
-defuse-signature-scheme.workspace = true
+defuse-signature-schema.workspace = true
 defuse-time = { workspace = true, features = ["borsh", "serde"] }
 defuse-tip191 = { workspace = true, features = ["near-contract", "serde"] }
 defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245", "borsh", "serde"] }
@@ -44,7 +44,6 @@ serde_json = { workspace = true, optional = true }
 abi = [
   "defuse-bitmap/abi",
   "defuse-crypto/abi",
-  "defuse-erc191/abi",
   "defuse-fees/abi",
   "defuse-nep413/abi",
   "defuse-sep53/abi",

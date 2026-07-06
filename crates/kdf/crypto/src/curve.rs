@@ -5,24 +5,24 @@ pub trait Curve: 'static {
     /// Public key of the curve
     type PublicKey;
 
-    // /// Message for signing.
-    // ///
-    // /// This type can vary between different curve implementations:
-    // /// some curves can sign arbitrary byte slices, while others might expect
-    // /// prehashed messages of a specific size.
-    // type Message: ?Sized;
-
     /// Signature of the curve
     type Signature;
+
+    /// Verify the signature over the message for given public key
+    fn verify(public_key: &Self::PublicKey, msg: &[u8], signature: &Self::Signature) -> bool;
 }
 
-pub trait VerifiableCurve<M>: Curve {
-    /// Verify the signature over the message for given public key
-    fn verify(public_key: &Self::PublicKey, msg: M, signature: &Self::Signature) -> bool;
+// TODO: feature "signing"
+pub trait Signer<C: Curve> {
+    type Error;
+
+    fn public_key(&self) -> C::PublicKey;
+
+    fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error>;
 }
 
 /// A recoverable [curve](Curve).
-pub trait RecoverableCurve<M>: VerifiableCurve<M> {
+pub trait RecoverableCurve: Curve {
     /// An additional information required to [recover](Self::recover)
     /// the public key.
     type RecoveryId;
@@ -31,10 +31,14 @@ pub trait RecoverableCurve<M>: VerifiableCurve<M> {
     /// message and produced given signature along with a
     /// [recovery id](Self::RecoveryId)
     fn recover(
-        msg: M,
+        msg: &[u8],
         signature: &Self::Signature,
         recovery_id: Self::RecoveryId,
     ) -> Option<Self::PublicKey>;
 
     // TODO: fn trial_recover()?
+}
+
+pub trait RecoverableSigner<C: RecoverableCurve>: Signer<C> {
+    fn sign_recoverable(&self, msg: &[u8]) -> Result<(C::Signature, C::RecoveryId), Self::Error>;
 }

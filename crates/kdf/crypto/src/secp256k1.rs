@@ -1,6 +1,6 @@
 use k256::ecdsa::{RecoveryId, Signature, VerifyingKey};
 
-use crate::{Curve, RecoverableCurve, VerifiableCurve};
+use crate::{Curve, RecoverableCurve};
 
 pub struct Secp256k1;
 
@@ -9,11 +9,15 @@ pub struct Secp256k1;
 impl Curve for Secp256k1 {
     type PublicKey = VerifyingKey;
     type Signature = Signature;
-}
 
-impl VerifiableCurve<[u8; 32]> for Secp256k1 {
+    // TODO: docs: prehash
     #[inline]
-    fn verify(public_key: &VerifyingKey, prehash: [u8; 32], signature: &Self::Signature) -> bool {
+    fn verify(public_key: &VerifyingKey, prehash: &[u8], signature: &Self::Signature) -> bool {
+        // accept only 32 byte prehash
+        let Ok(prehash) = <&[u8; 32]>::try_from(prehash) else {
+            return false;
+        };
+
         cfg_select! {
             near => {
                 // `near_sdk::env::ecrecover` requires recovery_id, so
@@ -30,7 +34,7 @@ impl VerifiableCurve<[u8; 32]> for Secp256k1 {
                 // no recovery id was found
                 false
             }
-            _ => {
+            _ => {{
                 use k256::{
                     ecdsa::signature::hazmat::PrehashVerifier,
                     elliptic_curve::scalar::IsHigh,
@@ -42,18 +46,18 @@ impl VerifiableCurve<[u8; 32]> for Secp256k1 {
                 }
 
                 // TODO: other checks?
-                public_key.verify_prehash(&prehash, signature).is_ok()
-            }
+                public_key.verify_prehash(prehash, signature).is_ok()
+            }}
         }
     }
 }
 
-impl RecoverableCurve<[u8; 32]> for Secp256k1 {
+impl RecoverableCurve for Secp256k1 {
     type RecoveryId = RecoveryId;
 
     #[inline]
     fn recover(
-        prehash: [u8; 32],
+        prehash: &[u8],
         signature: &Self::Signature,
         recovery_id: Self::RecoveryId,
     ) -> Option<Self::PublicKey> {
@@ -117,7 +121,7 @@ mod tests {
         .unwrap();
         let signature = Signature::from_bytes(&signature.into()).unwrap();
 
-        assert!(Secp256k1::verify(&public_key, prehash, &signature));
+        assert!(Secp256k1::verify(&public_key, &prehash, &signature));
     }
 
     #[rstest]
@@ -142,7 +146,7 @@ mod tests {
         .unwrap();
         let signature = Signature::from_bytes(&signature.into()).unwrap();
 
-        assert!(!Secp256k1::verify(&public_key, prehash, &signature));
+        assert!(!Secp256k1::verify(&public_key, &prehash, &signature));
     }
 
     #[rstest]
@@ -170,7 +174,7 @@ mod tests {
         let recovery_id = RecoveryId::from_byte(v).unwrap_or_else(|| unreachable!());
 
         assert_eq!(
-            Secp256k1::recover(prehash, &signature, recovery_id),
+            Secp256k1::recover(&prehash, &signature, recovery_id),
             Some(public_key)
         );
     }

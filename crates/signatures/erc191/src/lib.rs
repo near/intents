@@ -1,69 +1,59 @@
 use defuse_digest::{Digest, sha3::Keccak256};
-use defuse_kdf_crypto::{Curve, RecoverableCurve, Secp256k1};
-use defuse_signature_scheme::{RecoverableSignatureScheme, SignatureScheme};
+use defuse_kdf_crypto::Secp256k1;
+use defuse_signature_schema::{Result, Schema, SignatureSchema};
 
+/// [ERC-191](https://eips.ethereum.org/EIPS/eip-191) Signed Data Standard:
+///
+/// ```text
+/// 0x19 <0x45 (E)> <thereum Signed Message:\n" + len(message)> <data to sign>
+/// ```
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Erc191;
 
-impl Erc191 {
-    pub fn prehash(msg: impl AsRef<[u8]>) -> [u8; 32] {
+impl<M> Schema<M> for Erc191
+where
+    M: AsRef<[u8]>,
+{
+    type Output = [u8; 32];
+
+    /// Derive prehash for signing
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use hex_literal::hex;
+    /// use defuse_erc191::Erc191;
+    /// use defuse_signature_schema::Schema;
+    ///
+    /// assert_eq!(
+    ///     Erc191.derive("Hello world!").unwrap(),
+    ///     hex!("aa05af77f274774b8bdc7b61d98bc40da523dc2821fdea555f4d6aa413199bcc"),
+    /// );
+    /// ```
+    fn derive(&self, msg: M) -> Result<Self::Output> {
+        thread_local! {
+            // per-thread lazily-initialized hasher with pre-processed prefix
+            static HASHER: Keccak256 = Keccak256::new_with_prefix(b"\x19Ethereum Signed Message:\n");
+        }
+
         let msg = msg.as_ref();
 
-        Keccak256::new_with_prefix(b"\x19Ethereum Signed Message:\n")
+        Ok(HASHER
+            .with(Clone::clone)
+            // + len(message)
             .chain_update(msg.len().to_string())
+            // <data to sign>
             .chain_update(msg)
             .finalize()
-            .into()
+            .into())
     }
 }
 
-impl<M> SignatureScheme<M> for Erc191
+impl<M> SignatureSchema<M> for Erc191
 where
     M: AsRef<[u8]>,
 {
     type Curve = Secp256k1;
-
-    type VerifiableMessage = [u8; 32];
-
-    type Signature = <Self::Curve as Curve>::Signature;
-
-    fn check_prepare(
-        &self,
-        msg: M,
-        signature: &Self::Signature,
-    ) -> Option<(Self::VerifiableMessage, <Self::Curve as Curve>::Signature)> {
-        Some((
-            Self::prehash(msg),
-            // TODO: avoid cloning
-            *signature,
-        ))
-    }
-}
-
-impl<M> RecoverableSignatureScheme<M> for Erc191
-where
-    M: AsRef<[u8]>,
-{
-    type RecoverableSignature = (
-        <Self::Curve as Curve>::Signature,
-        <Self::Curve as RecoverableCurve<Self::VerifiableMessage>>::RecoveryId,
-    );
-
-    fn check_prepare_recoverable(
-        &self,
-        msg: M,
-        (signature, recovery_id): &Self::RecoverableSignature,
-    ) -> Option<(
-        Self::VerifiableMessage,
-        <Self::Curve as Curve>::Signature,
-        <Self::Curve as RecoverableCurve<Self::VerifiableMessage>>::RecoveryId,
-    )> {
-        Some((
-            Self::prehash(msg),
-            // TODO: avoid cloning
-            *signature,
-            *recovery_id,
-        ))
-    }
 }
 
 #[cfg(test)]
@@ -97,10 +87,10 @@ mod tests {
         let signature = Signature::from_bytes(&signature.into()).unwrap();
         let recovery_id = RecoveryId::from_byte(v).unwrap();
 
-        assert!(Erc191.verify(&public_key, msg, &signature));
+        assert!(Erc191.verify(&public_key, msg, &signature).unwrap());
 
         assert_eq!(
-            Erc191.recover(msg, &(signature, recovery_id)),
+            Erc191.recover(msg, &signature, recovery_id).unwrap(),
             Some(public_key)
         );
     }

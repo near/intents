@@ -1,6 +1,8 @@
-use ed25519_dalek::{self, Signature, VerifyingKey};
+use core::convert::Infallible;
 
-use crate::{Curve, VerifiableCurve};
+use ed25519_dalek::{self, Signature, SigningKey, VerifyingKey};
+
+use crate::{Curve, Signer};
 
 pub struct Ed25519;
 
@@ -8,15 +10,10 @@ impl Curve for Ed25519 {
     type PublicKey = VerifyingKey;
 
     type Signature = Signature;
-}
 
-impl<M> VerifiableCurve<M> for Ed25519
-where
-    M: AsRef<[u8]>,
-{
     #[allow(clippy::items_after_statements)]
     #[inline]
-    fn verify(public_key: &Self::PublicKey, msg: M, signature: &Self::Signature) -> bool {
+    fn verify(public_key: &Self::PublicKey, msg: &[u8], signature: &Self::Signature) -> bool {
         // TODO: are we sure?
         if public_key.is_weak() {
             // prevent using weak (i.e. low order) public keys, see
@@ -45,9 +42,21 @@ where
                 // ed25519_dalek::Signature::from_bytes(b)
 
                 // TODO: strict?
-                public_key.verify(msg.as_ref(), signature).is_ok()
+                public_key.verify(msg, signature).is_ok()
             }
         }
+    }
+}
+
+impl Signer<Ed25519> for SigningKey {
+    type Error = Infallible;
+
+    fn public_key(&self) -> <Ed25519 as Curve>::PublicKey {
+        self.verifying_key()
+    }
+
+    fn sign(&self, msg: &[u8]) -> Result<<Ed25519 as Curve>::Signature, Self::Error> {
+        Ok(ed25519_dalek::Signer::sign(self, msg))
     }
 }
 

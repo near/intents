@@ -1388,7 +1388,7 @@ dependencies = [
  "defuse-nep413",
  "defuse-num-utils",
  "defuse-sep53",
- "defuse-signature-scheme",
+ "defuse-signature-schema",
  "defuse-test-utils",
  "defuse-time",
  "defuse-tip191",
@@ -1442,6 +1442,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-derivation-schema"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "borsh",
+ "defuse-derivation-schema",
+ "hex",
+ "impl-tools 0.12.0",
+]
+
+[[package]]
 name = "defuse-digest"
 version = "0.1.0"
 dependencies = [
@@ -1462,19 +1473,11 @@ dependencies = [
 name = "defuse-erc191"
 version = "0.1.0"
 dependencies = [
- "cfg_eval",
- "defuse-crypto",
  "defuse-digest",
- "defuse-erc191",
  "defuse-kdf-crypto",
- "defuse-signature-scheme",
+ "defuse-signature-schema",
  "hex-literal",
- "impl-tools 0.12.0",
- "near-sdk",
  "rstest",
- "schemars 0.8.22",
- "serde",
- "serde_with",
 ]
 
 [[package]]
@@ -1798,10 +1801,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-signature-scheme"
+name = "defuse-signature-schema"
 version = "0.1.0"
 dependencies = [
+ "defuse-derivation-schema",
  "defuse-kdf-crypto",
+ "impl-tools 0.12.0",
 ]
 
 [[package]]

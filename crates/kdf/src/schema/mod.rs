@@ -18,6 +18,9 @@ use impl_tools::autoimpl;
 /// [derivation](crate::DeriveSigner::derive_public_key) and its intermediary
 /// steps.
 pub trait Schema<P> {
+    // TODO: type Error;
+    // TODO: lifetime?
+
     /// [Derivation](Schema::derive_path) output.
     type Output;
 

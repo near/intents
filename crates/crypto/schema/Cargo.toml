@@ -1,0 +1,22 @@
+lints.workspace = true
+
+[package]
+name = "defuse-derivation-schema"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+impl-tools.workspace = true
+
+borsh = { workspace = true, optional = true }
+hex = { workspace = true, optional = true }
+
+[features]
+borsh = ["dep:borsh"]
+hex = ["dep:hex"]
+
+[dev-dependencies]
+defuse-derivation-schema = { path = ".", features = ["borsh", "hex"] }
