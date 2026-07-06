@@ -31,7 +31,5 @@ serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with"]
 schemars-v0_8 = ["dep:schemars", "serde", "serde_with?/schemars_0_8"]
 
 [dev-dependencies]
-serde_json.workspace = true
-
-[target.'cfg(near)'.dev-dependencies]
-near-sdk = { workspace = true, features = ["unit-testing"] }
+hex-literal.workspace = true
+rstest.workspace = true

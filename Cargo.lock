@@ -1657,11 +1657,11 @@ dependencies = [
  "defuse-nep461",
  "defuse-signature-schema",
  "digest-io",
+ "hex-literal",
  "near-kit",
- "near-sdk",
+ "rstest",
  "schemars 0.8.22",
  "serde",
- "serde_json",
  "serde_with",
 ]
 
