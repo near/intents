@@ -8,30 +8,27 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
+defuse-digest = { workspace = true, features = ["sha2"] }
+defuse-kdf-crypto = { workspace = true, features = ["ed25519"] }
 defuse-nep461.workspace = true
-digest-io.workspace = true
-impl-tools.workspace = true
+defuse-signature-schema.workspace = true
 
-borsh = { workspace = true, features = ["derive"], optional = true }
+anyhow.workspace = true
+borsh = { workspace = true, features = ["derive"] }
+digest-io.workspace = true
+
 cfg_eval = { workspace = true, optional = true }
-defuse-digest = { workspace = true, optional = true, features = ["sha2"] }
 near-kit = { workspace = true, optional = true }
-schemars = { workspace = true, optional = true, features = ["derive"] }
+schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, features = ["base64"], optional = true }
 
 [features]
-abi = [
-  "borsh?/unstable__schema",
-  "defuse-crypto/abi",
-  "dep:schemars",
-  "serde_with?/schemars_0_8",
-]
-borsh = ["defuse-crypto/borsh", "dep:borsh", "dep:defuse-digest"]
-near-contract = ["borsh", "defuse-crypto/near-contract"]
-serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with"]
+abi = ["borsh-schema", "schemars-v0_8"]
+borsh-schema = ["borsh/unstable__schema"]
 near-kit = ["dep:near-kit"]
+serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with"]
+schemars-v0_8 = ["dep:schemars", "serde", "serde_with?/schemars_0_8"]
 
 [dev-dependencies]
 serde_json.workspace = true
