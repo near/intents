@@ -1872,18 +1872,11 @@ dependencies = [
 name = "defuse-tip191"
 version = "0.1.0"
 dependencies = [
- "cfg_eval",
- "defuse-crypto",
  "defuse-digest",
- "defuse-test-utils",
- "defuse-tip191",
+ "defuse-kdf-crypto",
+ "defuse-signature-schema",
  "hex-literal",
- "impl-tools 0.12.0",
- "near-sdk",
  "rstest",
- "schemars 0.8.22",
- "serde",
- "serde_with",
 ]
 
 [[package]]
