@@ -41,7 +41,6 @@ webauthn = ["dep:defuse-webauthn"]
 contract = [
   "defuse-crypto?/near-contract",
   "defuse-wallet-core/near-contract",
-  "defuse-webauthn?/near-contract",
 ]
 
 # Webauthn (a.k.a passkey) variants:

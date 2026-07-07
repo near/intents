@@ -10,6 +10,30 @@ use defuse_signature_schema::{Result, Schema, SignatureSchema};
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Erc191;
 
+impl<M: AsRef<[u8]>> SignatureSchema<M> for Erc191 {
+    type Curve = Secp256k1;
+
+    type SignerData = ();
+
+    fn check_derive(&self, msg: M, _signer_data: &()) -> Result<[u8; 32]> {
+        thread_local! {
+            // per-thread lazily-initialized hasher with pre-processed prefix
+            static HASHER: Keccak256 = Keccak256::new_with_prefix(b"\x19Ethereum Signed Message:\n");
+        }
+
+        let msg = msg.as_ref();
+
+        Ok(HASHER
+            .with(Clone::clone)
+            // `len(message)` is the non-zero-padded ascii-decimal encoding of the number of bytes in message.
+            .chain_update(msg.len().to_string())
+            // <data to sign>
+            .chain_update(msg)
+            .finalize()
+            .into())
+    }
+}
+
 impl<M> Schema<M> for Erc191
 where
     M: AsRef<[u8]>,
@@ -40,7 +64,7 @@ where
 
         Ok(HASHER
             .with(Clone::clone)
-            // + len(message)
+            // `len(message)` is the non-zero-padded ascii-decimal encoding of the number of bytes in message.
             .chain_update(msg.len().to_string())
             // <data to sign>
             .chain_update(msg)
@@ -49,12 +73,12 @@ where
     }
 }
 
-impl<M> SignatureSchema<M> for Erc191
-where
-    M: AsRef<[u8]>,
-{
-    type Curve = Secp256k1;
-}
+// impl<M> SignatureSchema<M> for Erc191
+// where
+//     M: AsRef<[u8]>,
+// {
+//     type Curve = Secp256k1;
+// }
 
 #[cfg(test)]
 mod tests {
@@ -87,10 +111,10 @@ mod tests {
         let signature = Signature::from_bytes(&signature.into()).unwrap();
         let recovery_id = RecoveryId::from_byte(v).unwrap();
 
-        assert!(Erc191.verify(&public_key, msg, &signature).unwrap());
+        assert!(Erc191.verify(&public_key, msg, &(), &signature).unwrap());
 
         assert_eq!(
-            Erc191.recover(msg, &signature, recovery_id).unwrap(),
+            Erc191.recover(msg, &(), &signature, recovery_id).unwrap(),
             Some(public_key)
         );
     }

@@ -1,4 +1,8 @@
+use core::marker::PhantomData;
+
 use defuse_digest::{Digest, sha2::Sha256};
+use defuse_kdf_crypto::Curve;
+use defuse_signature_schema::{Schema, SignatureSchema};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_with::{
     base64::{Base64, UrlSafe},
@@ -15,6 +19,127 @@ pub use self::ed25519::*;
 mod p256;
 #[cfg(feature = "p256")]
 pub use self::p256::*;
+
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+pub struct WebauthnSignerData {
+    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
+    #[serde(alias = "authenticatorData")]
+    /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
+    pub authenticator_data: Vec<u8>,
+
+    /// Serialized [clientDataJSON](https://w3c.github.io/webauthn/#dom-authenticatorresponse-clientdatajson)
+    #[serde(alias = "clientDataJSON")]
+    pub client_data_json: String,
+}
+
+// TODO
+// #[autoimpl(Debug, Clone)]
+pub struct Webauthn<A> {
+    typ: ClientDataType,
+    require_user_verification: bool,
+    _algorithm: PhantomData<A>,
+}
+
+impl<A> Webauthn<A> {
+    #[must_use]
+    #[inline]
+    pub const fn new() -> Self {
+        Self {
+            typ: ClientDataType::Get, // TODO
+            require_user_verification: false,
+            _algorithm: PhantomData,
+        }
+    }
+
+    #[inline]
+    pub const fn require_user_verification(mut self) -> Self {
+        self.require_user_verification = true;
+        self
+    }
+
+    #[allow(clippy::identity_op)]
+    const AUTH_DATA_FLAGS_UP: u8 = 1 << 0;
+    const AUTH_DATA_FLAGS_UV: u8 = 1 << 2;
+    const AUTH_DATA_FLAGS_BE: u8 = 1 << 3;
+    const AUTH_DATA_FLAGS_BS: u8 = 1 << 4;
+
+    const fn verify_flags(&self, flags: u8) -> bool {
+        // 16. Verify that the UP bit of the flags in authData is set.
+        if flags & Self::AUTH_DATA_FLAGS_UP != Self::AUTH_DATA_FLAGS_UP {
+            return false;
+        }
+
+        // 17. If user verification was determined to be required, verify that
+        // the UV bit of the flags in authData is set. Otherwise, ignore the
+        // value of the UV flag.
+        if self.require_user_verification
+            && (flags & Self::AUTH_DATA_FLAGS_UV != Self::AUTH_DATA_FLAGS_UV)
+        {
+            return false;
+        }
+
+        // 18. If the BE bit of the flags in authData is not set, verify that
+        // the BS bit is not set.
+        if (flags & Self::AUTH_DATA_FLAGS_BE != Self::AUTH_DATA_FLAGS_BE)
+            && (flags & Self::AUTH_DATA_FLAGS_BS == Self::AUTH_DATA_FLAGS_BS)
+        {
+            return false;
+        }
+
+        true
+    }
+}
+
+impl<M, A> SignatureSchema<M> for Webauthn<A>
+where
+    M: AsRef<[u8]>,
+    A: Algorithm,
+{
+    type Curve = A::Curve;
+    type SignerData = WebauthnSignerData;
+
+    fn check_derive(
+        &self,
+        msg: M,
+        signer_data: &Self::SignerData,
+    ) -> defuse_signature_schema::Result<impl AsRef<[u8]>> {
+        // verify authData flags
+        if signer_data.authenticator_data.len() < 37
+            || !self.verify_flags(signer_data.authenticator_data[32])
+        {
+            return false;
+        }
+
+        // 10. Verify that the value of C.type is the string webauthn.get.
+        let Ok(c) = serde_json::from_str::<CollectedClientData>(&signer_data.client_data_json)
+        else {
+            return false;
+        };
+        if c.typ != ClientDataType::Get {
+            return false;
+        }
+
+        // 11. Verify that the value of C.challenge equals the base64url
+        // encoding of pkOptions.challenge
+        if c.challenge != msg.as_ref() {
+            return false;
+        }
+
+        // 20. Let hash be the result of computing a hash over the cData using
+        // SHA-256
+        let hash = Sha256::digest(signer_data.client_data_json.as_bytes());
+
+        // 21. Using credentialRecord.publicKey, verify that sig is a valid
+        // signature over the binary concatenation of authData and hash.
+        A::verify(
+            &[self.authenticator_data.as_slice(), hash.as_ref()].concat(),
+            public_key,
+            &self.signature,
+        )
+    }
+}
 
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -130,17 +255,17 @@ impl UserVerification {
 }
 
 /// See <https://www.iana.org/assignments/cose/cose.xhtml#algorithms>
-pub trait Algorithm {
-    type PublicKey;
-    type Signature;
+pub trait Algorithm: for<'a> Schema<&'a [u8], Output: AsRef<[u8]>> {
+    type Curve: Curve;
 
-    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool;
+    // fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool;
 }
 
 /// For more details, refer to [WebAuthn specification](https://w3c.github.io/webauthn/#dictdef-collectedclientdata).
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
 pub struct CollectedClientData {
     #[serde(rename = "type")]
     pub typ: ClientDataType,
@@ -153,7 +278,7 @@ pub struct CollectedClientData {
 
 #[serde_as]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 pub enum ClientDataType {
     /// Serializes to the string `"webauthn.create"`
     #[serde(rename = "webauthn.create")]

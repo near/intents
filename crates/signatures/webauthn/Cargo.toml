@@ -9,6 +9,9 @@ repository.workspace = true
 
 [dependencies]
 defuse-digest = { workspace = true, features = ["sha2"] }
+defuse-kdf-crypto.workspace = true
+defuse-signature-schema.workspace = true
+impl-tools.workspace = true
 
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
@@ -21,11 +24,7 @@ schemars = { workspace = true, optional = true }
 default = ["ed25519", "p256"]
 
 abi = ["defuse-crypto?/abi", "dep:schemars", "serde_with/schemars_0_8"]
-ed25519 = ["defuse-crypto/ed25519", "near-contract"]
-near-contract = ["defuse-crypto?/near-contract"]
+ed25519 = ["defuse-kdf-crypto/ed25519"]
 borsh = ["defuse-crypto?/borsh"]
-p256 = ["defuse-crypto/p256"]
-
-[dev-dependencies]
-defuse-webauthn = { path = ".", features = ["near-contract"] }
-near-sdk = { workspace = true, features = ["unit-testing"] }
+p256 = ["defuse-kdf-crypto/p256"]
+schemars-v0_8 = ["dep:schemars"]
