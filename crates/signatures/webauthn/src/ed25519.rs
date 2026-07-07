@@ -1,18 +1,23 @@
-pub use defuse_crypto::{Ed25519PublicKey, Ed25519Signature};
+use defuse_signature_schema::{Result, Schema};
+
+use crate::Algorithm;
 
 /// [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
 /// ed25519 curve
 #[derive(Debug, Clone)]
 pub struct Ed25519;
 
-#[cfg(feature = "near-contract")]
-impl crate::Algorithm for Ed25519 {
-    type PublicKey = Ed25519PublicKey;
-    type Signature = Ed25519Signature;
+impl<M> Schema<M> for Ed25519
+where
+    M: AsRef<[u8]>,
+{
+    type Output = M;
 
-    #[inline]
-    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
-        use defuse_crypto::VerifiableCurve;
-        defuse_crypto::Ed25519::verify(&signature.0, msg, &public_key.0).is_some()
+    fn derive(&self, input: M) -> Result<Self::Output> {
+        Ok(input)
     }
+}
+
+impl Algorithm for Ed25519 {
+    type Curve = defuse_kdf_crypto::Ed25519;
 }

@@ -28,3 +28,7 @@ ed25519 = ["defuse-kdf-crypto/ed25519"]
 borsh = ["defuse-crypto?/borsh"]
 p256 = ["defuse-kdf-crypto/p256"]
 schemars-v0_8 = ["dep:schemars"]
+
+[dev-dependencies]
+rstest.workspace = true
+hex-literal.workspace = true

@@ -1,9 +1,7 @@
-use core::marker::PhantomData;
-
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_kdf_crypto::Curve;
-use defuse_signature_schema::{Schema, SignatureSchema};
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use defuse_signature_schema::{Result, Schema, SignatureSchema};
+use serde::{Deserialize, Serialize};
 use serde_with::{
     base64::{Base64, UrlSafe},
     formats::Unpadded,
@@ -20,10 +18,11 @@ mod p256;
 #[cfg(feature = "p256")]
 pub use self::p256::*;
 
+// TODO: do not derive serde?
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
-pub struct WebauthnSignerData {
+pub struct WebauthnPayload {
     #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
     #[serde(alias = "authenticatorData")]
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
@@ -34,148 +33,11 @@ pub struct WebauthnSignerData {
     pub client_data_json: String,
 }
 
-// TODO
-// #[autoimpl(Debug, Clone)]
-pub struct Webauthn<A> {
-    typ: ClientDataType,
-    require_user_verification: bool,
-    _algorithm: PhantomData<A>,
-}
-
-impl<A> Webauthn<A> {
-    #[must_use]
-    #[inline]
-    pub const fn new() -> Self {
-        Self {
-            typ: ClientDataType::Get, // TODO
-            require_user_verification: false,
-            _algorithm: PhantomData,
-        }
-    }
-
-    #[inline]
-    pub const fn require_user_verification(mut self) -> Self {
-        self.require_user_verification = true;
-        self
-    }
-
-    #[allow(clippy::identity_op)]
-    const AUTH_DATA_FLAGS_UP: u8 = 1 << 0;
-    const AUTH_DATA_FLAGS_UV: u8 = 1 << 2;
-    const AUTH_DATA_FLAGS_BE: u8 = 1 << 3;
-    const AUTH_DATA_FLAGS_BS: u8 = 1 << 4;
-
-    const fn verify_flags(&self, flags: u8) -> bool {
-        // 16. Verify that the UP bit of the flags in authData is set.
-        if flags & Self::AUTH_DATA_FLAGS_UP != Self::AUTH_DATA_FLAGS_UP {
-            return false;
-        }
-
-        // 17. If user verification was determined to be required, verify that
-        // the UV bit of the flags in authData is set. Otherwise, ignore the
-        // value of the UV flag.
-        if self.require_user_verification
-            && (flags & Self::AUTH_DATA_FLAGS_UV != Self::AUTH_DATA_FLAGS_UV)
-        {
-            return false;
-        }
-
-        // 18. If the BE bit of the flags in authData is not set, verify that
-        // the BS bit is not set.
-        if (flags & Self::AUTH_DATA_FLAGS_BE != Self::AUTH_DATA_FLAGS_BE)
-            && (flags & Self::AUTH_DATA_FLAGS_BS == Self::AUTH_DATA_FLAGS_BS)
-        {
-            return false;
-        }
-
-        true
-    }
-}
-
-impl<M, A> SignatureSchema<M> for Webauthn<A>
-where
-    M: AsRef<[u8]>,
-    A: Algorithm,
-{
-    type Curve = A::Curve;
-    type SignerData = WebauthnSignerData;
-
-    fn check_derive(
-        &self,
-        msg: M,
-        signer_data: &Self::SignerData,
-    ) -> defuse_signature_schema::Result<impl AsRef<[u8]>> {
-        // verify authData flags
-        if signer_data.authenticator_data.len() < 37
-            || !self.verify_flags(signer_data.authenticator_data[32])
-        {
-            return false;
-        }
-
-        // 10. Verify that the value of C.type is the string webauthn.get.
-        let Ok(c) = serde_json::from_str::<CollectedClientData>(&signer_data.client_data_json)
-        else {
-            return false;
-        };
-        if c.typ != ClientDataType::Get {
-            return false;
-        }
-
-        // 11. Verify that the value of C.challenge equals the base64url
-        // encoding of pkOptions.challenge
-        if c.challenge != msg.as_ref() {
-            return false;
-        }
-
-        // 20. Let hash be the result of computing a hash over the cData using
-        // SHA-256
-        let hash = Sha256::digest(signer_data.client_data_json.as_bytes());
-
-        // 21. Using credentialRecord.publicKey, verify that sig is a valid
-        // signature over the binary concatenation of authData and hash.
-        A::verify(
-            &[self.authenticator_data.as_slice(), hash.as_ref()].concat(),
-            public_key,
-            &self.signature,
-        )
-    }
-}
-
-#[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
-#[serde(bound(
-    serialize = "<A as Algorithm>::Signature: Serialize",
-    deserialize = "<A as Algorithm>::Signature: DeserializeOwned",
-))]
-pub struct PayloadSignature<A: Algorithm + ?Sized> {
-    /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    pub authenticator_data: Vec<u8>,
-    /// Serialized [clientDataJSON](https://w3c.github.io/webauthn/#dom-authenticatorresponse-clientdatajson)
-    pub client_data_json: String,
-
-    // schemars@0.8 does not respect it's `schemars(bound = "...")`
-    // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
-    #[cfg_attr(feature = "abi", schemars(with = "String"))]
-    pub signature: A::Signature,
-}
-
-impl<A: Algorithm + ?Sized> PayloadSignature<A> {
-    /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
-    ///
-    /// Credits to:
-    /// * [ERC-4337 Smart Wallet](https://github.com/passkeys-4337/smart-wallet/blob/f3aa9fd44646fde0316fc810e21cc553a9ed73e0/contracts/src/WebAuthn.sol#L75-L172)
-    /// * [CAP-0051](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0051.md)
-    pub fn verify(
-        &self,
-        message: impl AsRef<[u8]>,
-        public_key: &A::PublicKey,
-        user_verification: UserVerification,
-    ) -> bool {
+impl WebauthnPayload {
+    pub fn check(&self, message: impl AsRef<[u8]>, user_verification: UserVerification) -> bool {
         // verify authData flags
         if self.authenticator_data.len() < 37
-            || !Self::verify_flags(self.authenticator_data[32], user_verification)
+            || !Self::check_flags(self.authenticator_data[32], user_verification)
         {
             return false;
         }
@@ -194,17 +56,7 @@ impl<A: Algorithm + ?Sized> PayloadSignature<A> {
             return false;
         }
 
-        // 20. Let hash be the result of computing a hash over the cData using
-        // SHA-256
-        let hash = Sha256::digest(self.client_data_json.as_bytes());
-
-        // 21. Using credentialRecord.publicKey, verify that sig is a valid
-        // signature over the binary concatenation of authData and hash.
-        A::verify(
-            &[self.authenticator_data.as_slice(), hash.as_ref()].concat(),
-            public_key,
-            &self.signature,
-        )
+        true
     }
 
     #[allow(clippy::identity_op)]
@@ -214,7 +66,7 @@ impl<A: Algorithm + ?Sized> PayloadSignature<A> {
     const AUTH_DATA_FLAGS_BS: u8 = 1 << 4;
 
     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
-    const fn verify_flags(flags: u8, user_verification: UserVerification) -> bool {
+    const fn check_flags(flags: u8, user_verification: UserVerification) -> bool {
         // 16. Verify that the UP bit of the flags in authData is set.
         if flags & Self::AUTH_DATA_FLAGS_UP != Self::AUTH_DATA_FLAGS_UP {
             return false;
@@ -241,6 +93,135 @@ impl<A: Algorithm + ?Sized> PayloadSignature<A> {
     }
 }
 
+// TODO
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Webauthn<A>(A);
+
+impl<A> Schema<WebauthnPayload> for Webauthn<A>
+where
+    A: Algorithm,
+{
+    type Output = <A as Schema<Vec<u8>>>::Output;
+
+    fn derive(&self, payload: WebauthnPayload) -> Result<Self::Output> {
+        // 20. Let hash be the result of computing a hash over the cData using
+        // SHA-256
+        let hash = Sha256::digest(payload.client_data_json.as_bytes());
+
+        // 21. Using credentialRecord.publicKey, verify that sig is a valid
+        // signature over the binary concatenation of authData and hash.
+        self.0
+            .derive([payload.authenticator_data.as_slice(), hash.as_ref()].concat())
+    }
+}
+
+impl<A> SignatureSchema<WebauthnPayload> for Webauthn<A>
+where
+    A: Algorithm,
+{
+    type Curve = A::Curve;
+}
+
+// #[serde_as]
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// #[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+// #[serde(bound(
+//     serialize = "<A as Algorithm>::Signature: Serialize",
+//     deserialize = "<A as Algorithm>::Signature: DeserializeOwned",
+// ))]
+// pub struct PayloadSignature<A: Algorithm + ?Sized> {
+//     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
+//     #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
+//     pub authenticator_data: Vec<u8>,
+//     /// Serialized [clientDataJSON](https://w3c.github.io/webauthn/#dom-authenticatorresponse-clientdatajson)
+//     pub client_data_json: String,
+
+//     // schemars@0.8 does not respect it's `schemars(bound = "...")`
+//     // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
+//     #[cfg_attr(feature = "abi", schemars(with = "String"))]
+//     pub signature: A::Signature,
+// }
+
+// impl<A: Algorithm + ?Sized> PayloadSignature<A> {
+//     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
+//     ///
+//     /// Credits to:
+//     /// * [ERC-4337 Smart Wallet](https://github.com/passkeys-4337/smart-wallet/blob/f3aa9fd44646fde0316fc810e21cc553a9ed73e0/contracts/src/WebAuthn.sol#L75-L172)
+//     /// * [CAP-0051](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0051.md)
+//     pub fn verify(
+//         &self,
+//         message: impl AsRef<[u8]>,
+//         public_key: &A::PublicKey,
+//         user_verification: UserVerification,
+//     ) -> bool {
+//         // verify authData flags
+//         if self.authenticator_data.len() < 37
+//             || !Self::verify_flags(self.authenticator_data[32], user_verification)
+//         {
+//             return false;
+//         }
+
+//         // 10. Verify that the value of C.type is the string webauthn.get.
+//         let Ok(c) = serde_json::from_str::<CollectedClientData>(&self.client_data_json) else {
+//             return false;
+//         };
+//         if c.typ != ClientDataType::Get {
+//             return false;
+//         }
+
+//         // 11. Verify that the value of C.challenge equals the base64url
+//         // encoding of pkOptions.challenge
+//         if c.challenge != message.as_ref() {
+//             return false;
+//         }
+
+//         // 20. Let hash be the result of computing a hash over the cData using
+//         // SHA-256
+//         let hash = Sha256::digest(self.client_data_json.as_bytes());
+
+//         // 21. Using credentialRecord.publicKey, verify that sig is a valid
+//         // signature over the binary concatenation of authData and hash.
+//         A::verify(
+//             &[self.authenticator_data.as_slice(), hash.as_ref()].concat(),
+//             public_key,
+//             &self.signature,
+//         )
+//     }
+
+//     #[allow(clippy::identity_op)]
+//     const AUTH_DATA_FLAGS_UP: u8 = 1 << 0;
+//     const AUTH_DATA_FLAGS_UV: u8 = 1 << 2;
+//     const AUTH_DATA_FLAGS_BE: u8 = 1 << 3;
+//     const AUTH_DATA_FLAGS_BS: u8 = 1 << 4;
+
+//     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
+//     const fn verify_flags(flags: u8, user_verification: UserVerification) -> bool {
+//         // 16. Verify that the UP bit of the flags in authData is set.
+//         if flags & Self::AUTH_DATA_FLAGS_UP != Self::AUTH_DATA_FLAGS_UP {
+//             return false;
+//         }
+
+//         // 17. If user verification was determined to be required, verify that
+//         // the UV bit of the flags in authData is set. Otherwise, ignore the
+//         // value of the UV flag.
+//         if user_verification.is_required()
+//             && (flags & Self::AUTH_DATA_FLAGS_UV != Self::AUTH_DATA_FLAGS_UV)
+//         {
+//             return false;
+//         }
+
+//         // 18. If the BE bit of the flags in authData is not set, verify that
+//         // the BS bit is not set.
+//         if (flags & Self::AUTH_DATA_FLAGS_BE != Self::AUTH_DATA_FLAGS_BE)
+//             && (flags & Self::AUTH_DATA_FLAGS_BS == Self::AUTH_DATA_FLAGS_BS)
+//         {
+//             return false;
+//         }
+
+//         true
+//     }
+// }
+
 #[derive(Debug, Clone, Copy)]
 pub enum UserVerification {
     Ignore,
@@ -255,7 +236,7 @@ impl UserVerification {
 }
 
 /// See <https://www.iana.org/assignments/cose/cose.xhtml#algorithms>
-pub trait Algorithm: for<'a> Schema<&'a [u8], Output: AsRef<[u8]>> {
+pub trait Algorithm: Schema<Vec<u8>, Output: AsRef<[u8]>> {
     type Curve: Curve;
 
     // fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool;

@@ -1,3 +1,4 @@
+pub use p256::*;
 use p256::ecdsa::{Signature, SigningKey, VerifyingKey, signature::hazmat::PrehashSigner};
 
 use crate::{Curve, Signer};
