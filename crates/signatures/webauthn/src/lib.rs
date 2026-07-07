@@ -1,6 +1,5 @@
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_kdf_crypto::Curve;
-use defuse_signature_schema::{Result, Schema, SignatureSchema};
 use serde::{Deserialize, Serialize};
 use serde_with::{
     base64::{Base64, UrlSafe},
@@ -18,7 +17,6 @@ mod p256;
 #[cfg(feature = "p256")]
 pub use self::p256::*;
 
-// TODO: do not derive serde?
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
@@ -34,7 +32,21 @@ pub struct WebauthnPayload {
 }
 
 impl WebauthnPayload {
-    pub fn check(&self, message: impl AsRef<[u8]>, user_verification: UserVerification) -> bool {
+    /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
+    ///
+    /// Credits to:
+    /// * [ERC-4337 Smart Wallet](https://github.com/passkeys-4337/smart-wallet/blob/f3aa9fd44646fde0316fc810e21cc553a9ed73e0/contracts/src/WebAuthn.sol#L75-L172)
+    /// * [CAP-0051](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0051.md)
+    pub fn verify<A>(
+        &self,
+        public_key: &<A::Curve as Curve>::PublicKey,
+        message: impl AsRef<[u8]>,
+        signature: &<A::Curve as Curve>::Signature,
+        user_verification: UserVerification,
+    ) -> bool
+    where
+        A: Algorithm,
+    {
         // verify authData flags
         if self.authenticator_data.len() < 37
             || !Self::check_flags(self.authenticator_data[32], user_verification)
@@ -56,7 +68,17 @@ impl WebauthnPayload {
             return false;
         }
 
-        true
+        // 20. Let hash be the result of computing a hash over the cData using
+        // SHA-256
+        let hash = Sha256::digest(self.client_data_json.as_bytes());
+
+        // 21. Using credentialRecord.publicKey, verify that sig is a valid
+        // signature over the binary concatenation of authData and hash.
+        A::verify(
+            public_key,
+            &[self.authenticator_data.as_slice(), hash.as_ref()].concat(),
+            signature,
+        )
     }
 
     #[allow(clippy::identity_op)]
@@ -93,34 +115,34 @@ impl WebauthnPayload {
     }
 }
 
-// TODO
-#[derive(Debug, Clone, Copy, Default)]
-pub struct Webauthn<A>(A);
+// // TODO
+// #[derive(Debug, Clone, Copy, Default)]
+// pub struct Webauthn<A>(A);
 
-impl<A> Schema<WebauthnPayload> for Webauthn<A>
-where
-    A: Algorithm,
-{
-    type Output = <A as Schema<Vec<u8>>>::Output;
+// impl<A> Schema<WebauthnPayload> for Webauthn<A>
+// where
+//     A: Algorithm,
+// {
+//     type Output = <A as Schema<Vec<u8>>>::Output;
 
-    fn derive(&self, payload: WebauthnPayload) -> Result<Self::Output> {
-        // 20. Let hash be the result of computing a hash over the cData using
-        // SHA-256
-        let hash = Sha256::digest(payload.client_data_json.as_bytes());
+//     fn derive(&self, payload: WebauthnPayload) -> Result<Self::Output> {
+//         // 20. Let hash be the result of computing a hash over the cData using
+//         // SHA-256
+//         let hash = Sha256::digest(payload.client_data_json.as_bytes());
 
-        // 21. Using credentialRecord.publicKey, verify that sig is a valid
-        // signature over the binary concatenation of authData and hash.
-        self.0
-            .derive([payload.authenticator_data.as_slice(), hash.as_ref()].concat())
-    }
-}
+//         // 21. Using credentialRecord.publicKey, verify that sig is a valid
+//         // signature over the binary concatenation of authData and hash.
+//         self.0
+//             .derive([payload.authenticator_data.as_slice(), hash.as_ref()].concat())
+//     }
+// }
 
-impl<A> SignatureSchema<WebauthnPayload> for Webauthn<A>
-where
-    A: Algorithm,
-{
-    type Curve = A::Curve;
-}
+// impl<A> SignatureSchema<WebauthnPayload> for Webauthn<A>
+// where
+//     A: Algorithm,
+// {
+//     type Curve = A::Curve;
+// }
 
 // #[serde_as]
 // #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -236,8 +258,14 @@ impl UserVerification {
 }
 
 /// See <https://www.iana.org/assignments/cose/cose.xhtml#algorithms>
-pub trait Algorithm: Schema<Vec<u8>, Output: AsRef<[u8]>> {
+pub trait Algorithm {
     type Curve: Curve;
+
+    fn verify(
+        public_key: &<Self::Curve as Curve>::PublicKey,
+        msg: &[u8],
+        signature: &<Self::Curve as Curve>::Signature,
+    ) -> bool;
 
     // fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool;
 }

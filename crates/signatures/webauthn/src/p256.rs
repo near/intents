@@ -52,7 +52,7 @@ mod tests {
         })).unwrap();
         let signature = Signature::from_bytes(&hex!("e460a39dcb12d91fd417cab1ed26043806ea391e3129bf85e1b547fd6682fe163f4154c99a8c1ffd9f7ca470dbe14a574e1d477dda451dc004dda7a08cf9ef3f").into()).unwrap();
 
-        assert!(payload.check(
+        assert!(payload.verify(
             hex!("e942e8f8b3488ddf0687599dc7351d1f3bf602e18358c72138e45d0e768b5c77"),
             UserVerification::Require
         ));

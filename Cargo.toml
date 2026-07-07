@@ -119,7 +119,7 @@ defuse-nep461.path = "crates/signatures/nep461"
 defuse-sep53.path = "crates/signatures/sep53"
 defuse-signature-schema.path = "crates/signatures/schema"
 defuse-tip191.path = "crates/signatures/tip191"
-defuse-ton-connect = { path = "crates/signatures/ton-connect", default-features = false, features = ["text"] }
+defuse-ton-connect = { path = "crates/signatures/ton-connect", default-features = false }
 defuse-webauthn = { path = "crates/signatures/webauthn", default-features = false }
 
 defuse-wallet-client.path = "crates/wallet/client"

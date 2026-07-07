@@ -61,33 +61,45 @@ impl RecoverableCurve for Secp256k1 {
         signature: &Self::Signature,
         recovery_id: Self::RecoveryId,
     ) -> Option<Self::PublicKey> {
-        cfg_select! {
-            near => {
-                use k256::EncodedPoint;
+        // accept only 32 byte prehash
+        let prehash = <&[u8; 32]>::try_from(prehash).ok()?;
 
-                let sig: [u8; 64] = signature.to_bytes().into();
-                let pk: [u8; 64] = ::near_sdk::env::ecrecover(
-                    &prehash,
-                    &sig,
-                    recovery_id.to_byte(),
-                    // Do not accept malleable signatures:
-                    // https://github.com/near/nearcore/blob/d73041cc1d1a70af4456fceefaceb1bf7f684fde/core/crypto/src/signature.rs#L448-L455
-                    true,
-                )?;
+        let public_key = {
+            cfg_select! {
+                near => {
+                    use k256::EncodedPoint;
 
-                VerifyingKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(&pk.into())).ok()
-            }
-            _ => {
-                use k256::elliptic_curve::scalar::IsHigh;
+                    let sig: [u8; 64] = signature.to_bytes().into();
+                    let pk: [u8; 64] = ::near_sdk::env::ecrecover(
+                        prehash,
+                        &sig,
+                        recovery_id.to_byte(),
+                        // Do not accept malleable signatures:
+                        // https://github.com/near/nearcore/blob/d73041cc1d1a70af4456fceefaceb1bf7f684fde/core/crypto/src/signature.rs#L448-L455
+                        true,
+                    )?;
 
-                if signature.s().is_high().into() {
-                    // guard against signature malleability
-                    return None;
+                    VerifyingKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(&pk.into())).ok()
                 }
+                _ => {
+                    use k256::elliptic_curve::scalar::IsHigh;
 
-                VerifyingKey::recover_from_prehash(&prehash, signature, recovery_id).ok()
+                    if signature.s().is_high().into() {
+                        // guard against signature malleability
+                        return None;
+                    }
+
+                    VerifyingKey::recover_from_prehash(prehash, signature, recovery_id).ok()
+                }
             }
-        }
+        }?;
+
+        debug_assert!(
+            Self::verify(&public_key, prehash, signature),
+            "invalid recovered public key",
+        );
+
+        Some(public_key)
     }
 }
 

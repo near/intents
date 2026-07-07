@@ -68,7 +68,7 @@ impl DefuseSignerExt for Near {
             .unwrap(),
         )
         .recipient(defuse_contract.as_ref())
-        .with_nonce(nonce);
+        .nonce(nonce);
 
         let signed = self.sign_message(payload.clone().into()).await.unwrap();
 

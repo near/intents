@@ -1,35 +1,35 @@
-//! TON Connect [signData](https://github.com/ton-blockchain/ton-connect/blob/main/requests-responses.md#sign-data)
-mod schema;
+//! TON Connect [signData](https://docs.tonconsole.com/academy/sign-data)
+#[cfg(feature = "cell")]
+mod cell;
 
-use defuse_crypto::Ed25519;
+use defuse_digest::{Digest, sha2::Sha256};
+use defuse_kdf_crypto::{Curve, Ed25519};
 use defuse_time::Timestamp;
 #[cfg(feature = "arbitrary")]
 use defuse_time::arbitrary::RangeNanos;
-use impl_tools::autoimpl;
-use tlb_ton::MsgAddress;
+#[cfg(feature = "cell")]
+pub use tlb_ton::Cell;
+pub use tlb_ton::MsgAddress;
 
-use defuse_crypto::Payload;
-
-pub use schema::TonConnectPayloadSchema;
-pub use tlb_ton;
-
+// TODO: docs
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-#[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TonConnectPayload {
     /// Wallet address in either [Raw](https://docs.ton.org/v3/documentation/smart-contracts/addresses/address-formats#raw-address) representation
     /// or [user-friendly](https://docs.ton.org/v3/documentation/smart-contracts/addresses/address-formats#user-friendly-address) format
     pub address: MsgAddress,
+
     /// dApp domain
     pub domain: String,
-    /// UNIX timestamp (in seconds or RFC3339) at the time of singing
+
+    /// UNIX timestamp (RFC3339 or in seconds) at the time of singing
     #[cfg_attr(
         feature = "arbitrary",
         arbitrary(with = ::arbitrary_with::As::<RangeNanos::<0>>::arbitrary)
@@ -43,232 +43,180 @@ pub struct TonConnectPayload {
         )>")
     )]
     pub timestamp: Timestamp,
+
+    // TODO: docs
     pub payload: TonConnectPayloadSchema,
 }
 
 impl TonConnectPayload {
-    pub fn try_hash(&self) -> Result<defuse_crypto::CryptoHash, tlb_ton::StringError> {
-        use crate::schema::{PayloadSchema, TonConnectPayloadContext};
-        use std::borrow::Cow;
-        use tlb_ton::Error;
-
-        let timestamp: u64 = self
-            .timestamp
-            .as_secs()
-            .try_into()
-            .map_err(|_| Error::custom("timestamp overflow"))?;
-
-        let context = TonConnectPayloadContext {
-            address: self.address,
-            domain: Cow::Borrowed(self.domain.as_str()),
-            timestamp,
+    pub fn verify(
+        &self,
+        public_key: &<Ed25519 as Curve>::PublicKey,
+        signature: &<Ed25519 as Curve>::Signature,
+    ) -> bool {
+        let Some(prehash) = self.prehash() else {
+            return false;
         };
 
-        self.payload.hash_with_context(context)
+        Ed25519::verify(public_key, &prehash, signature)
     }
 
-    #[track_caller]
-    pub fn hash(&self) -> defuse_crypto::CryptoHash {
-        self.try_hash().expect("ton-connect hash")
+    fn prehash(&self) -> Option<[u8; 32]> {
+        let timestamp: u64 = self.timestamp.as_secs().try_into().ok()?;
+
+        let (prefix, payload) = match &self.payload {
+            TonConnectPayloadSchema::Text { text } => (b"txt", text.as_bytes()),
+            TonConnectPayloadSchema::Binary { bytes } => (b"bin", bytes.as_slice()),
+            #[cfg(feature = "cell")]
+            TonConnectPayloadSchema::Cell { schema_crc, cell } => {
+                use tlb_ton::ser::CellSerializeExt;
+
+                use crate::cell::TonConnectCellMessage;
+
+                let cell = TonConnectCellMessage {
+                    schema_crc: *schema_crc,
+                    timestamp: timestamp,
+                    user_address: &self.address,
+                    app_domain: &self.domain,
+                    payload: &cell,
+                }
+                .to_cell(())
+                .ok()?;
+
+                return Some(cell.hash_digest::<Sha256>());
+            }
+        };
+
+        Some(
+            Sha256::new_with_prefix(b"\xFF\xFFton-connect/sign-data/")
+                .chain_update(self.address.workchain_id.to_be_bytes())
+                .chain_update(self.address.address)
+                .chain_update(u32::try_from(self.domain.len()).ok()?.to_be_bytes())
+                .chain_update(self.domain.as_bytes())
+                .chain_update(timestamp.to_be_bytes())
+                .chain_update(prefix)
+                .chain_update(u32::try_from(payload.len()).ok()?.to_be_bytes())
+                .chain_update(payload)
+                .finalize()
+                .into(),
+        )
     }
 }
 
-impl Payload for TonConnectPayload {
-    #[inline]
-    fn hash(&self) -> defuse_crypto::CryptoHash {
-        Self::hash(self)
-    }
-}
-
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+/// See <https://docs.tonconsole.com/academy/sign-data#choosing-the-right-format>
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
+    serde(tag = "type", rename_all = "snake_case")
 )]
-#[autoimpl(Deref using self.payload)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SignedTonConnectPayload {
-    #[cfg_attr(feature = "serde", serde(flatten))]
-    pub payload: TonConnectPayload,
+pub enum TonConnectPayloadSchema {
+    Text {
+        text: String,
+    },
 
-    #[cfg_attr(
-        feature = "serde",
-        serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
-    )]
-    pub public_key: <Ed25519 as defuse_crypto::Curve>::PublicKey,
-    #[cfg_attr(
-        feature = "serde",
-        serde_as(as = "defuse_crypto::serde::AsCurve<Ed25519>")
-    )]
-    pub signature: <Ed25519 as defuse_crypto::Curve>::Signature,
+    Binary {
+        #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::base64::Base64"))]
+        bytes: Vec<u8>,
+    },
+
+    #[cfg(feature = "cell")]
+    Cell {
+        schema_crc: u32,
+
+        #[cfg_attr(
+            feature = "serde",
+            serde_as(as = "defuse_serde_utils::tlb::AsBoC<serde_with::base64::Base64>")
+        )]
+        cell: Cell,
+    },
 }
 
-impl Payload for SignedTonConnectPayload {
-    #[inline]
-    fn hash(&self) -> defuse_crypto::CryptoHash {
-        self.payload.hash()
+impl TonConnectPayloadSchema {
+    pub fn text(txt: impl Into<String>) -> Self {
+        Self::Text { text: txt.into() }
     }
-}
 
-#[cfg(feature = "near-contract")]
-impl defuse_crypto::SignedPayload for SignedTonConnectPayload {
-    type PublicKey = <Ed25519 as defuse_crypto::Curve>::PublicKey;
+    pub fn binary(bytes: impl Into<Vec<u8>>) -> Self {
+        Self::Binary {
+            bytes: bytes.into(),
+        }
+    }
 
-    #[inline]
-    fn verify(&self) -> Option<Self::PublicKey> {
-        use defuse_crypto::VerifiableCurve;
-        Ed25519::verify(&self.signature, &self.hash(), &self.public_key)
+    #[cfg(feature = "cell")]
+    pub const fn cell(schema_crc: u32, cell: Cell) -> Self {
+        Self::Cell { schema_crc, cell }
     }
 }
 
 #[cfg(test)]
-#[allow(clippy::unreadable_literal)]
 mod tests {
     use super::*;
 
-    use arbitrary::{Arbitrary, Unstructured};
-    use defuse_crypto::SignedPayload;
-    use defuse_test_utils::random::random_bytes;
+    use defuse_kdf_crypto::ed25519_dalek::{
+        PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH, Signature, VerifyingKey,
+    };
     use hex_literal::hex;
     use rstest::rstest;
+    use tlb_ton::BagOfCells;
 
-    #[cfg(all(feature = "text", feature = "serde"))]
     #[rstest]
-    fn verify_text(random_bytes: Vec<u8>) {
-        verify(
-            &SignedTonConnectPayload {
-                payload: TonConnectPayload {
-                    address: "0:f4809e5ffac9dc42a6b1d94c5e74ad5fd86378de675c805f2274d0055cbc9378"
-                        .parse()
-                        .unwrap(),
-                    domain: "ton-connect.github.io".to_string(),
-                    timestamp: Timestamp::from_secs(1747759882).unwrap(),
-                    payload: TonConnectPayloadSchema::text("Hello, TON!".repeat(100)),
-                },
-                public_key: hex!(
-                    "22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"
-                ),
-                signature: hex!(
-                    "7bc628f6d634ab6ddaf10463742b13f0ede3cb828737d9ce1962cc808fbfe7035e77c1a3d0b682acf02d645cc1a244992b276552c0e1c57d30b03c2820d73d01"
-                ),
-            },
-            &random_bytes,
-        );
-    }
+    #[case::text(
+        TonConnectPayload {
+            address: "0:f4809e5ffac9dc42a6b1d94c5e74ad5fd86378de675c805f2274d0055cbc9378"
+                .parse()
+                .unwrap(),
+            domain: "ton-connect.github.io".to_string(),
+            timestamp: Timestamp::from_secs(1747759882).unwrap(),
+            payload: TonConnectPayloadSchema::text("Hello, TON!".repeat(100)),
+        },
+        hex!("22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"),
+        hex!("7bc628f6d634ab6ddaf10463742b13f0ede3cb828737d9ce1962cc808fbfe7035e77c1a3d0b682acf02d645cc1a244992b276552c0e1c57d30b03c2820d73d01"),
+    )]
+    #[case::binary(
+        TonConnectPayload {
+            address: "0:f4809e5ffac9dc42a6b1d94c5e74ad5fd86378de675c805f2274d0055cbc9378"
+                .parse()
+                .unwrap(),
+            domain: "ton-connect.github.io".to_string(),
+            timestamp: Timestamp::from_secs(1747760435).unwrap(),
+            payload: TonConnectPayloadSchema::binary(hex!("48656c6c6f2c20544f4e21")),
+        },
+        hex!("22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"),
+        hex!("9cf4c1c16b47afce46940eb9cd410894f31544b74206c2254bb1651f9b32cf5b0e482b78a2e8251e54d3517fae4b06c6f23546667d63ff62dccce70451698d01"),
+    )]
+    #[cfg_attr(feature = "cell", case::cell(
+        TonConnectPayload {
+            address: "0:f4809e5ffac9dc42a6b1d94c5e74ad5fd86378de675c805f2274d0055cbc9378"
+                .parse()
+                .unwrap(),
+            domain: "ton-connect.github.io".to_string(),
+            timestamp: Timestamp::from_secs(1747772412).unwrap(),
+            payload: TonConnectPayloadSchema::cell(
+                0x2eccd0c1,
+                BagOfCells::parse_base64("te6cckEBAQEAEQAAHgAAAABIZWxsbywgVE9OIb7WCx4=")
+                    .unwrap()
+                    .into_single_root()
+                    .unwrap()
+                    .as_ref()
+                    .clone(),
+            ),
+        },
+        hex!("22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"),
+        hex!("6ad083855374c201c2acb14aa4e7eef44603c8d356624c8fd3b6be3babd84bd8bc7390f0ed4484ab58a535b3088681e0006839eb07136470985b3a33bfa17c05"),
+    ))]
+    fn verify_ok(
+        #[case] payload: TonConnectPayload,
+        #[case] public_key: [u8; PUBLIC_KEY_LENGTH],
+        #[case] signature: [u8; SIGNATURE_LENGTH],
+    ) {
+        let public_key = VerifyingKey::from_bytes(&public_key).unwrap();
+        let signature = Signature::from_bytes(&signature);
 
-    #[cfg(all(feature = "binary", feature = "serde"))]
-    #[rstest]
-    fn verify_binary(random_bytes: Vec<u8>) {
-        verify(
-            &SignedTonConnectPayload {
-                payload: TonConnectPayload {
-                    address: "0:f4809e5ffac9dc42a6b1d94c5e74ad5fd86378de675c805f2274d0055cbc9378"
-                        .parse()
-                        .unwrap(),
-                    domain: "ton-connect.github.io".to_string(),
-                    timestamp: Timestamp::from_secs(1747760435).unwrap(),
-                    payload: TonConnectPayloadSchema::binary(hex!("48656c6c6f2c20544f4e21")),
-                },
-                public_key: hex!(
-                    "22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"
-                ),
-                signature: hex!(
-                    "9cf4c1c16b47afce46940eb9cd410894f31544b74206c2254bb1651f9b32cf5b0e482b78a2e8251e54d3517fae4b06c6f23546667d63ff62dccce70451698d01"
-                ),
-            },
-            &random_bytes,
-        );
-    }
-
-    #[cfg(all(feature = "cell", feature = "serde"))]
-    #[rstest]
-    fn verify_cell(random_bytes: Vec<u8>) {
-        use tlb_ton::BagOfCells;
-
-        verify(
-            &SignedTonConnectPayload {
-                payload: TonConnectPayload {
-                    address: "0:f4809e5ffac9dc42a6b1d94c5e74ad5fd86378de675c805f2274d0055cbc9378"
-                        .parse()
-                        .unwrap(),
-                    domain: "ton-connect.github.io".to_string(),
-                    timestamp: Timestamp::from_secs(1747772412).unwrap(),
-                    payload: TonConnectPayloadSchema::cell(
-                        0x2eccd0c1,
-                        BagOfCells::parse_base64("te6cckEBAQEAEQAAHgAAAABIZWxsbywgVE9OIb7WCx4=")
-                            .unwrap()
-                            .into_single_root()
-                            .unwrap()
-                            .as_ref()
-                            .clone(),
-                    ),
-                },
-                public_key: hex!(
-                    "22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"
-                ),
-                signature: hex!(
-                    "6ad083855374c201c2acb14aa4e7eef44603c8d356624c8fd3b6be3babd84bd8bc7390f0ed4484ab58a535b3088681e0006839eb07136470985b3a33bfa17c05"
-                ),
-            },
-            &random_bytes,
-        );
-    }
-
-    #[cfg(feature = "serde")]
-    fn verify(signed: &SignedTonConnectPayload, random_bytes: &[u8]) {
-        verify_ok(signed, true);
-
-        // tampering
-        let mut u = Unstructured::new(random_bytes);
-        {
-            let mut t = signed.clone();
-            t.payload.address = Arbitrary::arbitrary(&mut u).unwrap();
-            dbg!(&t.payload.address);
-            verify_ok(&t, false);
-        }
-        {
-            let mut t = signed.clone();
-            t.payload.domain = Arbitrary::arbitrary(&mut u).unwrap();
-            dbg!(&t.payload.domain);
-            verify_ok(&t, false);
-        }
-        {
-            use arbitrary_with::ArbitraryAs;
-            use defuse_time::arbitrary::RangeNanos;
-
-            let mut t = signed.clone();
-            t.payload.timestamp = RangeNanos::<0>::arbitrary_as(&mut u).unwrap();
-            dbg!(&t.payload.timestamp);
-            verify_ok(&t, false);
-        }
-        {
-            let mut t = signed.clone();
-            t.payload.payload = Arbitrary::arbitrary(&mut u).unwrap();
-            dbg!(&t.payload.payload);
-            verify_ok(&t, false);
-        }
-    }
-
-    #[cfg(all(feature = "arbitrary", feature = "serde"))]
-    #[rstest]
-    fn arbitrary(random_bytes: Vec<u8>) {
-        verify_ok(
-            &Unstructured::new(&random_bytes).arbitrary().unwrap(),
-            false,
-        );
-    }
-
-    #[cfg(feature = "serde")]
-    #[track_caller]
-    fn verify_ok(signed: &SignedTonConnectPayload, ok: bool) {
-        let serialized = serde_json::to_string_pretty(signed).unwrap();
-        println!("{}", &serialized);
-        let deserialized: SignedTonConnectPayload = serde_json::from_str(&serialized).unwrap();
-
-        assert_eq!(&deserialized, signed);
-        assert_eq!(deserialized.verify(), ok.then_some(deserialized.public_key));
+        assert!(payload.verify(&public_key, &signature), "invalid signature");
     }
 }

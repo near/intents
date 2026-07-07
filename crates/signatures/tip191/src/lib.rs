@@ -1,57 +1,34 @@
+//! [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
+//! Signed Data Standard
+
 use defuse_digest::{Digest, sha3::Keccak256};
-use defuse_kdf_crypto::Secp256k1;
-use defuse_signature_schema::{Result, Schema, SignatureSchema};
+use defuse_kdf_crypto::{Curve, RecoverableCurve, Secp256k1};
 
-/// [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md) Signed Data Standard
-#[derive(Debug, Clone, Copy, Default)]
-pub struct Tip191;
-
-impl<M> Schema<M> for Tip191
-where
-    M: AsRef<[u8]>,
-{
-    type Output = [u8; 32];
-
-    /// Derive prehash for signing
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use hex_literal::hex;
-    /// use defuse_tip191::Tip191;
-    /// use defuse_signature_schema::Schema;
-    ///
-    /// assert_eq!(
-    ///     Tip191.derive("Hello, TRON!").unwrap(),
-    ///     hex!("1632c0ebba467e157675403ba3ba280b836e1801b5678d878dfc90bfc403d6e1"),
-    /// );
-    /// ```
-    fn derive(&self, msg: M) -> Result<Self::Output> {
-        thread_local! {
-            // Prefix itself is not specified in the standard. But from: https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/
-            //
-            // per-thread lazily-initialized hasher with pre-processed prefix.
-            static HASHER: Keccak256 = Keccak256::new_with_prefix(b"\x19TRON Signed Message:\n");
-        }
-
-        let msg = msg.as_ref();
-
-        Ok(HASHER
-            .with(Clone::clone)
-            // + len(message)
-            .chain_update(msg.len().to_string())
-            // <data to sign>
-            .chain_update(msg)
-            .finalize()
-            .into())
-    }
+/// Try to recover public key which signed given message according to
+/// [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
+/// and produced given signature and recovery id.
+#[must_use = "check recovered public key"]
+#[inline]
+pub fn recover(
+    msg: impl AsRef<[u8]>,
+    signature: &<Secp256k1 as Curve>::Signature,
+    recovery_id: <Secp256k1 as RecoverableCurve>::RecoveryId,
+) -> Option<<Secp256k1 as Curve>::PublicKey> {
+    Secp256k1::recover(&prehash(msg.as_ref()), signature, recovery_id)
 }
 
-impl<M> SignatureSchema<M> for Tip191
-where
-    M: AsRef<[u8]>,
-{
-    type Curve = Secp256k1;
+/// Derive prehash for signing
+#[inline]
+fn prehash(msg: &[u8]) -> [u8; 32] {
+    // Prefix itself is not specified in the standard. But from:
+    // https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/
+    Keccak256::new_with_prefix(b"\x19TRON Signed Message:\n")
+        // `len(message)` is the non-zero-padded ascii-decimal encoding of the number of bytes in message.
+        .chain_update(msg.len().to_string())
+        // <data to sign>
+        .chain_update(msg)
+        .finalize()
+        .into()
 }
 
 #[cfg(test)]
@@ -71,13 +48,14 @@ mod tests {
         "Hello, TRON!",
         hex!("eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c01"),
     )]
-    fn verify_ok(
+    fn recover_ok(
         #[case] public_key: [u8; 64],
         #[case] msg: impl AsRef<[u8]>,
         #[case] signature: [u8; 65],
     ) {
         let msg = msg.as_ref();
         let [signature @ .., v] = signature;
+
         let public_key = VerifyingKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
             &public_key.into(),
         ))
@@ -85,11 +63,6 @@ mod tests {
         let signature = Signature::from_bytes(&signature.into()).unwrap();
         let recovery_id = RecoveryId::from_byte(v).unwrap();
 
-        assert!(Tip191.verify(&public_key, msg, &signature).unwrap());
-
-        assert_eq!(
-            Tip191.recover(msg, &signature, recovery_id).unwrap(),
-            Some(public_key)
-        );
+        assert_eq!(recover(msg, &signature, recovery_id), Some(public_key));
     }
 }

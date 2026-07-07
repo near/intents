@@ -1,5 +1,5 @@
-pub use p256::*;
 use p256::ecdsa::{Signature, SigningKey, VerifyingKey, signature::hazmat::PrehashSigner};
+pub use p256::*;
 
 use crate::{Curve, Signer};
 
@@ -55,3 +55,5 @@ impl Signer<P256> for SigningKey {
 pub enum Error {
     InvalidPrehashLength,
 }
+
+// TODO: tests

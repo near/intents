@@ -1,50 +1,32 @@
+//! [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md) Signed Data Standard
+
 use defuse_digest::{Digest, sha2::Sha256};
-use defuse_kdf_crypto::Ed25519;
-use defuse_signature_schema::{Result, Schema, SignatureSchema};
+use defuse_kdf_crypto::{Curve, Ed25519};
 
-/// [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
-#[derive(Debug, Clone, Copy, Default)]
-pub struct Sep53;
-
-impl<M> Schema<M> for Sep53
-where
-    M: AsRef<[u8]>,
-{
-    type Output = [u8; 32];
-
-    /// Derive hash for signing
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use hex_literal::hex;
-    /// use defuse_sep53::Sep53;
-    /// use defuse_signature_schema::Schema;
-    ///
-    /// assert_eq!(
-    ///     Sep53.derive("Hello, World!").unwrap(),
-    ///     hex!("aa05af77f274774b8bdc7b61d98bc40da523dc2821fdea555f4d6aa413199bcc"),
-    /// );
-    /// ```
-    fn derive(&self, msg: M) -> Result<Self::Output> {
-        thread_local! {
-            // per-thread lazily-initialized hasher with pre-processed prefix
-            static HASHER: Sha256 = Sha256::new_with_prefix(b"Stellar Signed Message:\n");
-        }
-
-        Ok(HASHER
-            .with(Clone::clone)
-            .chain_update(msg)
-            .finalize()
-            .into())
-    }
+/// Verify signature over a given message for given public key according to
+/// [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md).
+#[must_use = "check if verification passed"]
+#[inline]
+pub fn verify(
+    public_key: &<Ed25519 as Curve>::PublicKey,
+    msg: impl AsRef<[u8]>,
+    signature: &<Ed25519 as Curve>::Signature,
+) -> bool {
+    Ed25519::verify(public_key, &prehash(msg.as_ref()), signature)
 }
 
-impl<M> SignatureSchema<M> for Sep53
-where
-    M: AsRef<[u8]>,
-{
-    type Curve = Ed25519;
+/// Derive prehash for signing according to following schema:
+///
+/// ```text
+/// <"Stellar Signed Message:\n"> <data to sign>
+/// ```
+#[inline]
+fn prehash(msg: &[u8]) -> [u8; 32] {
+    Sha256::new_with_prefix(b"Stellar Signed Message:\n")
+        // <data to sign>
+        .chain_update(msg)
+        .finalize()
+        .into()
 }
 
 // TODO
