@@ -87,19 +87,23 @@ impl TonConnectPayload {
             }
         };
 
-        Some(
-            Sha256::new_with_prefix(b"\xFF\xFFton-connect/sign-data/")
-                .chain_update(self.address.workchain_id.to_be_bytes())
-                .chain_update(self.address.address)
-                .chain_update(u32::try_from(self.domain.len()).ok()?.to_be_bytes())
-                .chain_update(self.domain.as_bytes())
-                .chain_update(timestamp.to_be_bytes())
-                .chain_update(prefix)
-                .chain_update(u32::try_from(payload.len()).ok()?.to_be_bytes())
-                .chain_update(payload)
-                .finalize()
-                .into(),
-        )
+        let domain_len: u32 = self.domain.len().try_into().ok()?;
+        let payload_len: u32 = payload.len().try_into().ok()?;
+
+        // 0xffff ++ "ton-connect/sign-data/" ++ Address ++ AppDomain ++ Timestamp ++ Payload
+        let prehash = Sha256::new_with_prefix(b"\xFF\xFFton-connect/sign-data/")
+            .chain_update(self.address.workchain_id.to_be_bytes())
+            .chain_update(self.address.address)
+            .chain_update(domain_len.to_be_bytes())
+            .chain_update(self.domain.as_bytes())
+            .chain_update(timestamp.to_be_bytes())
+            .chain_update(prefix)
+            .chain_update(payload_len.to_be_bytes())
+            .chain_update(payload)
+            .finalize()
+            .into();
+
+        Some(prehash)
     }
 }
 
