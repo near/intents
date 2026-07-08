@@ -10,7 +10,6 @@ repository.workspace = true
 [dependencies]
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-kdf-crypto = { workspace = true, features = ["ed25519"] }
-defuse-signature-schema.workspace = true
 
 [dev-dependencies]
 hex-literal.workspace = true

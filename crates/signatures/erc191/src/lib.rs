@@ -3,33 +3,38 @@
 use defuse_digest::{Digest, sha3::Keccak256};
 use defuse_kdf_crypto::{Curve, RecoverableCurve, Secp256k1};
 
-/// Try to recover public key which signed given message according to
-/// [ERC-191](https://eips.ethereum.org/EIPS/eip-191) and produced given
-/// signature and recovery id.
-#[must_use = "check recovered public key"]
-#[inline]
-pub fn recover(
-    msg: impl AsRef<[u8]>,
-    signature: &<Secp256k1 as Curve>::Signature,
-    recovery_id: <Secp256k1 as RecoverableCurve>::RecoveryId,
-) -> Option<<Secp256k1 as Curve>::PublicKey> {
-    Secp256k1::recover(&prehash(msg.as_ref()), signature, recovery_id)
-}
+/// [ERC-191](https://eips.ethereum.org/EIPS/eip-191) Signed Data Standard
+pub struct Erc191;
 
-/// Derive prehash for signing according to following schema:
-///
-/// ```text
-/// 0x19 <0x45 (E)> <thereum Signed Message:\n" + len(message)> <data to sign>
-/// ```
-#[inline]
-fn prehash(msg: &[u8]) -> [u8; 32] {
-    Keccak256::new_with_prefix(b"\x19Ethereum Signed Message:\n")
-        // `len(message)` is the non-zero-padded ascii-decimal encoding of the number of bytes in message.
-        .chain_update(msg.len().to_string())
-        // <data to sign>
-        .chain_update(msg)
-        .finalize()
-        .into()
+impl Erc191 {
+    /// Try to recover public key which signed given message according to
+    /// [ERC-191](https://eips.ethereum.org/EIPS/eip-191) and produced given
+    /// signature and recovery id.
+    #[must_use = "check recovered public key"]
+    #[inline]
+    pub fn recover(
+        msg: impl AsRef<[u8]>,
+        signature: &<Secp256k1 as Curve>::Signature,
+        recovery_id: <Secp256k1 as RecoverableCurve>::RecoveryId,
+    ) -> Option<<Secp256k1 as Curve>::PublicKey> {
+        Secp256k1::recover(&Self::prehash(msg.as_ref()), signature, recovery_id)
+    }
+
+    /// Derive prehash for signing according to following schema:
+    ///
+    /// ```text
+    /// 0x19 <0x45 (E)> <thereum Signed Message:\n" + len(message)> <data to sign>
+    /// ```
+    #[inline]
+    fn prehash(msg: &[u8]) -> [u8; 32] {
+        Keccak256::new_with_prefix(b"\x19Ethereum Signed Message:\n")
+            // `len(message)` is the non-zero-padded ascii-decimal encoding of the number of bytes in message.
+            .chain_update(msg.len().to_string())
+            // <data to sign>
+            .chain_update(msg)
+            .finalize()
+            .into()
+    }
 }
 
 #[cfg(test)]
@@ -64,6 +69,10 @@ mod tests {
         let signature = Signature::from_bytes(&signature.into()).unwrap();
         let recovery_id = RecoveryId::from_byte(v).unwrap();
 
-        assert_eq!(recover(msg, &signature, recovery_id), Some(public_key));
+        assert_eq!(
+            Erc191::recover(msg, &signature, recovery_id),
+            Some(public_key),
+            "invalid recovered public key",
+        );
     }
 }

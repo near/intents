@@ -9,6 +9,8 @@ use defuse_kdf_crypto::{Curve, Ed25519};
 use defuse_nep461::{OffchainMessage, SignedMessageNep};
 use digest_io::IoWrapper;
 
+// TODO: nep413 struct
+
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,

@@ -49,6 +49,7 @@ pub struct TonConnectPayload {
 }
 
 impl TonConnectPayload {
+    #[must_use = "check if verification passed"]
     #[inline]
     pub fn verify(
         &self,

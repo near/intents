@@ -4,31 +4,37 @@
 use defuse_digest::{Digest, sha3::Keccak256};
 use defuse_kdf_crypto::{Curve, RecoverableCurve, Secp256k1};
 
-/// Try to recover public key which signed given message according to
 /// [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
-/// and produced given signature and recovery id.
-#[must_use = "check recovered public key"]
-#[inline]
-pub fn recover(
-    msg: impl AsRef<[u8]>,
-    signature: &<Secp256k1 as Curve>::Signature,
-    recovery_id: <Secp256k1 as RecoverableCurve>::RecoveryId,
-) -> Option<<Secp256k1 as Curve>::PublicKey> {
-    Secp256k1::recover(&prehash(msg.as_ref()), signature, recovery_id)
-}
+/// Signed Data Standard
+pub struct Tip191;
 
-/// Derive prehash for signing
-#[inline]
-fn prehash(msg: &[u8]) -> [u8; 32] {
-    // Prefix itself is not specified in the standard. But from:
-    // https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/
-    Keccak256::new_with_prefix(b"\x19TRON Signed Message:\n")
-        // `len(message)` is the non-zero-padded ascii-decimal encoding of the number of bytes in message.
-        .chain_update(msg.len().to_string())
-        // <data to sign>
-        .chain_update(msg)
-        .finalize()
-        .into()
+impl Tip191 {
+    /// Try to recover public key which signed given message according to
+    /// [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
+    /// and produced given signature and recovery id.
+    #[must_use = "check recovered public key"]
+    #[inline]
+    pub fn recover(
+        msg: impl AsRef<[u8]>,
+        signature: &<Secp256k1 as Curve>::Signature,
+        recovery_id: <Secp256k1 as RecoverableCurve>::RecoveryId,
+    ) -> Option<<Secp256k1 as Curve>::PublicKey> {
+        Secp256k1::recover(&Self::prehash(msg.as_ref()), signature, recovery_id)
+    }
+
+    /// Derive prehash for signing
+    #[inline]
+    fn prehash(msg: &[u8]) -> [u8; 32] {
+        // Prefix itself is not specified in the standard. But from:
+        // https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/
+        Keccak256::new_with_prefix(b"\x19TRON Signed Message:\n")
+            // `len(message)` is the non-zero-padded ascii-decimal encoding of the number of bytes in message.
+            .chain_update(msg.len().to_string())
+            // <data to sign>
+            .chain_update(msg)
+            .finalize()
+            .into()
+    }
 }
 
 #[cfg(test)]
@@ -63,6 +69,10 @@ mod tests {
         let signature = Signature::from_bytes(&signature.into()).unwrap();
         let recovery_id = RecoveryId::from_byte(v).unwrap();
 
-        assert_eq!(recover(msg, &signature, recovery_id), Some(public_key));
+        assert_eq!(
+            Tip191::recover(msg, &signature, recovery_id),
+            Some(public_key),
+            "invalid recovered public key",
+        );
     }
 }

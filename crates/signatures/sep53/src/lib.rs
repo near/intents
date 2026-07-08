@@ -74,6 +74,9 @@ mod tests {
         let public_key = VerifyingKey::from_bytes(&public_key).unwrap();
         let signature = Signature::from_bytes(&signature);
 
-        assert!(Sep53::verify(&public_key, msg, &signature));
+        assert!(
+            Sep53::verify(&public_key, msg, &signature),
+            "invalid signature",
+        );
     }
 }

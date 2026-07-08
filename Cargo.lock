@@ -1775,7 +1775,6 @@ version = "0.1.0"
 dependencies = [
  "defuse-digest",
  "defuse-kdf-crypto",
- "defuse-signature-schema",
  "hex-literal",
  "rstest",
  "stellar-strkey",
