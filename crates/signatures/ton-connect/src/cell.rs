@@ -1,7 +1,8 @@
+use defuse_digest::sha2::Sha256;
 use tlb_ton::{
     Cell, MsgAddress, Ref, SnakeData,
     bits::{NoArgs, ser::BitWriterExt},
-    ser::{CellBuilder, CellBuilderError, CellSerialize},
+    ser::{CellBuilder, CellBuilderError, CellSerialize, CellSerializeExt},
 };
 
 /// ```tlb
@@ -15,6 +16,17 @@ pub struct TonConnectCellMessage<'a, T = Cell> {
     pub user_address: &'a MsgAddress,
     pub app_domain: &'a str,
     pub payload: T,
+}
+
+impl<T> TonConnectCellMessage<'_, T>
+where
+    Self: CellSerialize<Args: NoArgs>,
+{
+    #[inline]
+    pub fn hash(&self) -> Option<[u8; 32]> {
+        let cell = self.to_cell(NoArgs::EMPTY).ok()?;
+        Some(cell.hash_digest::<Sha256>())
+    }
 }
 
 /// ```tlb

@@ -11,7 +11,6 @@ use defuse_time::arbitrary::RangeNanos;
 pub use tlb_ton::Cell;
 pub use tlb_ton::MsgAddress;
 
-// TODO: docs
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -20,6 +19,7 @@ pub use tlb_ton::MsgAddress;
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+/// [TON Connect](https://docs.tonconsole.com/academy/sign-data) signable payload.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TonConnectPayload {
     /// Wallet address in either [Raw](https://docs.ton.org/v3/documentation/smart-contracts/addresses/address-formats#raw-address) representation
@@ -44,11 +44,12 @@ pub struct TonConnectPayload {
     )]
     pub timestamp: Timestamp,
 
-    // TODO: docs
+    /// Typed payload schema
     pub payload: TonConnectPayloadSchema,
 }
 
 impl TonConnectPayload {
+    #[inline]
     pub fn verify(
         &self,
         public_key: &<Ed25519 as Curve>::PublicKey,
@@ -69,21 +70,14 @@ impl TonConnectPayload {
             TonConnectPayloadSchema::Binary { bytes } => (b"bin", bytes.as_slice()),
             #[cfg(feature = "cell")]
             TonConnectPayloadSchema::Cell { schema_crc, cell } => {
-                use tlb_ton::ser::CellSerializeExt;
-
-                use crate::cell::TonConnectCellMessage;
-
-                let cell = TonConnectCellMessage {
+                return self::cell::TonConnectCellMessage {
                     schema_crc: *schema_crc,
                     timestamp: timestamp,
                     user_address: &self.address,
                     app_domain: &self.domain,
                     payload: &cell,
                 }
-                .to_cell(())
-                .ok()?;
-
-                return Some(cell.hash_digest::<Sha256>());
+                .hash();
             }
         };
 
@@ -107,7 +101,6 @@ impl TonConnectPayload {
     }
 }
 
-/// See <https://docs.tonconsole.com/academy/sign-data#choosing-the-right-format>
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -117,21 +110,35 @@ impl TonConnectPayload {
     serde(tag = "type", rename_all = "snake_case")
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+/// [`TonConnectPayload`](TonConnectPayload) schema.
+///
+/// See <https://docs.tonconsole.com/academy/sign-data#choosing-the-right-format>
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TonConnectPayloadSchema {
-    Text {
-        text: String,
-    },
+    /// Text payload. Use this when the data is human-readable.
+    ///
+    /// See <https://docs.tonconsole.com/academy/sign-data#1-text>
+    Text { text: String },
 
+    /// Binary payload. Use this when signing a hash, arbitrary bytes,
+    /// or a file.
+    ///
+    /// See <https://docs.tonconsole.com/academy/sign-data#2-binary>
     Binary {
         #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::base64::Base64"))]
         bytes: Vec<u8>,
     },
 
+    /// Cell payload. Use this if the signed data should be verifiable and
+    /// restorable inside a smart contract.
+    ///
+    /// See <https://docs.tonconsole.com/academy/sign-data#3-cell>
     #[cfg(feature = "cell")]
     Cell {
+        /// Schema CRC: `crc32(schema)`
         schema_crc: u32,
 
+        /// Data serialized to [`Cell`] according to schema
         #[cfg_attr(
             feature = "serde",
             serde_as(as = "defuse_serde_utils::tlb::AsBoC<serde_with::base64::Base64>")
