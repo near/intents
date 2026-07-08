@@ -5,8 +5,7 @@ use ed25519_dalek::{PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH, Signature, SigningKey, 
 
 use crate::{Curve, Signer};
 
-// TODO: operate on our types?
-
+/// Ed25519 Digital Signature Algorithm
 pub struct Ed25519;
 
 impl Curve for Ed25519 {
@@ -14,10 +13,10 @@ impl Curve for Ed25519 {
 
     type Signature = Signature;
 
-    #[allow(clippy::items_after_statements)]
+    /// Verify ed25519 signature over given message (of arbitrary length)
+    /// for given public key. Hashing the
     #[inline]
     fn verify(public_key: &Self::PublicKey, msg: &[u8], signature: &Self::Signature) -> bool {
-        // TODO: are we sure?
         if public_key.is_weak() {
             // prevent using weak (i.e. low order) public keys, see
             // https://github.com/dalek-cryptography/ed25519-dalek#weak-key-forgery-and-verify_strict
@@ -32,21 +31,11 @@ impl Curve for Ed25519 {
                     public_key.as_bytes(),
                 )
             }
-            _ => {
+            _ => {{
                 use ed25519_dalek::Verifier;
 
-                // TODO
-                // // Sanity-check that was performed by ed25519-dalek in from_bytes before version 2,
-                // // but was removed with version 2. It is not actually any good a check, but we need
-                // // it to avoid costs changing.
-                // if b[ed25519_dalek::SIGNATURE_LENGTH - 1] & 0b1110_0000 != 0 {
-                //     return Ok(false as u64);
-                // }
-                // ed25519_dalek::Signature::from_bytes(b)
-
-                // TODO: strict?
                 public_key.verify(msg, signature).is_ok()
-            }
+            }}
         }
     }
 }
@@ -64,7 +53,7 @@ impl Curve for Ed25519 {
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-// TODO: docs
+/// Ed25519 public key
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Ed25519PublicKey(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
@@ -116,7 +105,7 @@ impl TryFrom<&Ed25519PublicKey> for VerifyingKey {
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-// TODO: docs
+/// Ed25519 signature
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Ed25519Signature(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
@@ -234,10 +223,14 @@ mod tests {
         #[case] msg: impl AsRef<[u8]>,
         #[case] signature: [u8; SIGNATURE_LENGTH],
     ) {
-        let public_key = VerifyingKey::from_bytes(&public_key).unwrap();
-        let signature = Signature::from_bytes(&signature);
-
-        assert!(Ed25519::verify(&public_key, msg.as_ref(), &signature));
+        assert!(
+            Ed25519::verify(
+                &Ed25519PublicKey(public_key).try_into().unwrap(),
+                msg.as_ref(),
+                &Ed25519Signature(signature).into(),
+            ),
+            "signature is invalid",
+        );
     }
 
     #[rstest]
@@ -261,9 +254,13 @@ mod tests {
         #[case] msg: impl AsRef<[u8]>,
         #[case] signature: [u8; SIGNATURE_LENGTH],
     ) {
-        let public_key = VerifyingKey::from_bytes(&public_key).unwrap();
-        let signature = Signature::from_bytes(&signature);
-
-        assert!(!Ed25519::verify(&public_key, msg.as_ref(), &signature));
+        assert!(
+            !Ed25519::verify(
+                &Ed25519PublicKey(public_key).try_into().unwrap(),
+                msg.as_ref(),
+                &Ed25519Signature(signature).into(),
+            ),
+            "invalid signature passed verification",
+        );
     }
 }

@@ -12,3 +12,5 @@ impl Algorithm for Ed25519 {
         msg
     }
 }
+
+// TODO: tests

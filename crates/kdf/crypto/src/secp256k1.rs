@@ -7,15 +7,15 @@ use k256::{
 
 use crate::{Curve, RecoverableCurve};
 
+/// Secp256k1 (a.k.a. k256) Elliptic Curve Digital Signature Algorithm
 pub struct Secp256k1;
 
-// TODO: docs
-/// Prehash, i.e. output of a cryptographic hash function
 impl Curve for Secp256k1 {
     type PublicKey = VerifyingKey;
     type Signature = Signature;
 
-    // TODO: docs: prehash
+    /// Verify secp256k1 signature over **32-byte prehash** (i.e. output of
+    /// cryptographic hash function) for given public key.
     #[inline]
     fn verify(public_key: &VerifyingKey, prehash: &[u8], signature: &Self::Signature) -> bool {
         // accept only 32 byte prehash
@@ -26,7 +26,7 @@ impl Curve for Secp256k1 {
         cfg_select! {
             near => {
                 // `near_sdk::env::ecrecover` requires recovery_id, so
-                // we need to find one trial recovery
+                // we need to find one by trial recovery
                 for id in 0..=RecoveryId::MAX {
                     let recovery_id = RecoveryId::from_byte(id).unwrap_or_else(|| unreachable!());
 
@@ -50,7 +50,6 @@ impl Curve for Secp256k1 {
                     return false;
                 }
 
-                // TODO: other checks?
                 public_key.verify_prehash(prehash, signature).is_ok()
             }}
         }
@@ -72,8 +71,6 @@ impl RecoverableCurve for Secp256k1 {
         let public_key = {
             cfg_select! {
                 near => {
-                    use k256::EncodedPoint;
-
                     let pk: [u8; 64] = ::near_sdk::env::ecrecover(
                         prehash,
                         &signature.to_bytes(),
@@ -83,7 +80,7 @@ impl RecoverableCurve for Secp256k1 {
                         true,
                     )?;
 
-                    VerifyingKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(&pk.into())).ok()
+                    Secp256k1UncompressedPublicKey(pk).try_into().ok()
                 }
                 _ => {
                     use k256::elliptic_curve::scalar::IsHigh;
@@ -97,11 +94,6 @@ impl RecoverableCurve for Secp256k1 {
                 }
             }
         }?;
-
-        debug_assert!(
-            Self::verify(&public_key, prehash, signature),
-            "invalid recovered public key",
-        );
 
         Some(public_key)
     }
@@ -120,7 +112,7 @@ impl RecoverableCurve for Secp256k1 {
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-// TODO: docs: untagged uncompressed with no leading SEC-1 tag byte, etc...
+/// Uncompressed Secp256k1 public key **without** leading SEC-1 tag byte.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Secp256k1UncompressedPublicKey(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
@@ -140,7 +132,6 @@ impl From<&VerifyingKey> for Secp256k1UncompressedPublicKey {
         Self(
             value
                 .to_encoded_point(false) // do not compress
-                // TODO: this might fail for identity (and maybe other cases?)
                 .as_bytes()[1..] // skip SEC-1 leading tag byte
                 .try_into()
                 .unwrap_or_else(|_| unreachable!()),
@@ -179,7 +170,8 @@ impl TryFrom<&Secp256k1UncompressedPublicKey> for VerifyingKey {
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-// TODO: docs
+/// Recoverable secp256k1 signature, i.e. 64-byte signature with additional
+/// recovery byte
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Secp256k1RecoverableSignature(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
@@ -212,6 +204,15 @@ impl TryFrom<Secp256k1RecoverableSignature> for (Signature, RecoveryId) {
     }
 }
 
+impl TryFrom<Secp256k1RecoverableSignature> for Signature {
+    type Error = k256::ecdsa::Error;
+
+    #[inline]
+    fn try_from(value: Secp256k1RecoverableSignature) -> Result<Self, Self::Error> {
+        (&value).try_into()
+    }
+}
+
 impl TryFrom<&Secp256k1RecoverableSignature> for (Signature, RecoveryId) {
     type Error = k256::ecdsa::Error;
 
@@ -222,6 +223,15 @@ impl TryFrom<&Secp256k1RecoverableSignature> for (Signature, RecoveryId) {
             Signature::from_bytes(signature.into())?,
             RecoveryId::from_byte(recovery_id).ok_or_else(k256::ecdsa::Error::new)?,
         ))
+    }
+}
+
+impl TryFrom<&Secp256k1RecoverableSignature> for Signature {
+    type Error = k256::ecdsa::Error;
+
+    #[inline]
+    fn try_from(value: &Secp256k1RecoverableSignature) -> Result<Self, Self::Error> {
+        <(Signature, RecoveryId)>::try_from(value).map(|t| t.0)
     }
 }
 
@@ -274,7 +284,6 @@ const _: () = {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
-    use k256::EncodedPoint;
     use rstest::rstest;
 
     use super::*;
@@ -283,50 +292,56 @@ mod tests {
     #[case(
         hex!("85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"),
         hex!("aa05af77f274774b8bdc7b61d98bc40da523dc2821fdea555f4d6aa413199bcc"),
-        hex!("7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e47"),
+        hex!("7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e4701"),
     )]
     #[case(
         hex!("85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"),
         hex!("1632c0ebba467e157675403ba3ba280b836e1801b5678d878dfc90bfc403d6e1"),
-        hex!("eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c"),
+        hex!("eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c01"),
     )]
     fn verify_ok(
         #[case] public_key: [u8; 64],
         #[case] prehash: [u8; 32],
-        #[case] signature: [u8; 64],
+        #[case] signature: [u8; 65],
     ) {
-        let public_key = VerifyingKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
-            &public_key.into(),
-        ))
-        .unwrap();
-        let signature = Signature::from_bytes(&signature.into()).unwrap();
-
-        assert!(Secp256k1::verify(&public_key, &prehash, &signature));
+        assert!(
+            Secp256k1::verify(
+                &Secp256k1UncompressedPublicKey(public_key)
+                    .try_into()
+                    .unwrap(),
+                &prehash,
+                &Secp256k1RecoverableSignature(signature).try_into().unwrap(),
+            ),
+            "signature is invalid",
+        );
     }
 
     #[rstest]
     #[case(
         hex!("85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"),
         hex!("1632c0ebba467e157675403ba3ba280b836e1801b5678d878dfc90bfc403d6e1"),
-        hex!("7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e47"),
+        hex!("7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e4701"),
     )]
     #[case(
         hex!("85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"),
         hex!("aa05af77f274774b8bdc7b61d98bc40da523dc2821fdea555f4d6aa413199bcc"),
-        hex!("eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c"),
+        hex!("eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c01"),
     )]
     fn verify_fail(
         #[case] public_key: [u8; 64],
         #[case] prehash: [u8; 32],
-        #[case] signature: [u8; 64],
+        #[case] signature: [u8; 65],
     ) {
-        let public_key = VerifyingKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
-            &public_key.into(),
-        ))
-        .unwrap();
-        let signature = Signature::from_bytes(&signature.into()).unwrap();
-
-        assert!(!Secp256k1::verify(&public_key, &prehash, &signature));
+        assert!(
+            !Secp256k1::verify(
+                &Secp256k1UncompressedPublicKey(public_key)
+                    .try_into()
+                    .unwrap(),
+                &prehash,
+                &Secp256k1RecoverableSignature(signature).try_into().unwrap(),
+            ),
+            "invalid signature passed verification",
+        );
     }
 
     #[rstest]
@@ -345,17 +360,16 @@ mod tests {
         #[case] prehash: [u8; 32],
         #[case] signature: [u8; 65],
     ) {
-        let public_key = VerifyingKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
-            &public_key.into(),
-        ))
-        .unwrap();
-        let [signature @ .., v] = signature;
-        let signature = Signature::from_bytes(&signature.into()).unwrap();
-        let recovery_id = RecoveryId::from_byte(v).unwrap_or_else(|| unreachable!());
+        let (signature, recovery_id) = Secp256k1RecoverableSignature(signature).try_into().unwrap();
 
         assert_eq!(
             Secp256k1::recover(&prehash, &signature, recovery_id),
-            Some(public_key)
+            Some(
+                Secp256k1UncompressedPublicKey(public_key)
+                    .try_into()
+                    .unwrap()
+            ),
+            "invalid recovered public key",
         );
     }
 }

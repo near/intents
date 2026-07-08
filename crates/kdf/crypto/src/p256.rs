@@ -1,8 +1,12 @@
-use p256::ecdsa::{Signature, SigningKey, VerifyingKey, signature::hazmat::PrehashSigner};
 pub use p256::*;
+use p256::{
+    ecdsa::{Signature, SigningKey, VerifyingKey, signature::hazmat::PrehashSigner},
+    elliptic_curve::scalar::IsHigh,
+};
 
 use crate::{Curve, Signer};
 
+/// P256 (a.k.a. secp256r1) Elliptic Curve Digital Signature Algorithm
 pub struct P256;
 
 impl Curve for P256 {
@@ -10,7 +14,8 @@ impl Curve for P256 {
 
     type Signature = Signature;
 
-    // TODO: docs: prehash
+    /// Verify P256 signature over **32-byte prehash** (i.e. output of
+    /// cryptographic hash function) for given public key.
     #[inline]
     fn verify(public_key: &Self::PublicKey, prehash: &[u8], signature: &Self::Signature) -> bool {
         // accept only 32 byte prehash
@@ -18,20 +23,15 @@ impl Curve for P256 {
             return false;
         };
 
+        if signature.s().is_high().into() {
+            // guard against signature malleability
+            return false;
+        }
+
         cfg_select! {
             // TODO: cfg(near)
             _ => {{
-                use p256::{
-                    ecdsa::signature::hazmat::PrehashVerifier,
-                    elliptic_curve::scalar::IsHigh,
-                };
-
-                // TODO: or not?
-                // P-256 is the passkey/WebAuthn curve, and WebAuthn does not require low-S — Apple Secure Enclave and various authenticators routinely emit high-S signatures. This is exactly why Ethereum's P256VERIFY precompile (RIP-7212) deliberately does not enforce low-S. So strict low-S rejection here will break signers that emit high-S.
-                if signature.s().is_high().into() {
-                    // guard against signature malleability
-                    return false;
-                }
+                use p256::ecdsa::signature::hazmat::PrehashVerifier;
 
                 public_key.verify_prehash(prehash, signature).is_ok()
             }}
@@ -52,7 +52,7 @@ impl Curve for P256 {
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-// TODO: docs: untagged uncompressed with no leading SEC-1 tag byte, etc...
+/// Uncompressed P256 public key **without** leading SEC-1 tag byte.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct P256UncompressedPublicKey(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
@@ -72,18 +72,19 @@ impl P256UncompressedPublicKey {
     /// # use hex_literal::hex;
     /// assert_eq!(
     ///     P256UncompressedPublicKey(hex!("beed8cb2c3622dd5f1ee641f12d88e35f3fb8c6ae081d689008bdaa6af38d4408e9c469c5ca7b59927606ef9ea34ee2335e85dbeaa265ca038b5e2896f34ded0"))
-    ///         .compress().0,
+    ///         .compress()
+    ///         .0,
     ///     hex!("02beed8cb2c3622dd5f1ee641f12d88e35f3fb8c6ae081d689008bdaa6af38d440"),
     /// );
     /// ```
     #[inline]
     pub fn compress(&self) -> P256CompressedPublicKey {
-        EncodedPoint::from_untagged_bytes(&self.0.into())
+        EncodedPoint::from_untagged_bytes((&self.0).into())
             .compress()
             .as_bytes()
             .try_into()
             .map_or_else(
-                |_| unreachable!(), // already compressed
+                |_| unreachable!(), // compressed key is exactly 33 bytes
                 P256CompressedPublicKey,
             )
     }
@@ -140,7 +141,7 @@ impl TryFrom<&P256UncompressedPublicKey> for VerifyingKey {
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-// TODO: docs: compressed with leading SEC-1 tag byte, etc...
+/// Compressed P256 public key, i.e. `x` coordinate **with** leading SEC-1 tag byte.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct P256CompressedPublicKey(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
@@ -186,6 +187,7 @@ impl TryFrom<&P256CompressedPublicKey> for VerifyingKey {
 }
 
 impl From<P256UncompressedPublicKey> for P256CompressedPublicKey {
+    /// Compress a public key
     #[inline]
     fn from(value: P256UncompressedPublicKey) -> Self {
         (&value).into()
@@ -193,6 +195,7 @@ impl From<P256UncompressedPublicKey> for P256CompressedPublicKey {
 }
 
 impl From<&P256UncompressedPublicKey> for P256CompressedPublicKey {
+    /// Compress a public key
     #[inline]
     fn from(value: &P256UncompressedPublicKey) -> Self {
         value.compress()
@@ -212,7 +215,7 @@ impl From<&P256UncompressedPublicKey> for P256CompressedPublicKey {
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-// TODO: docs
+/// P256 signature
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct P256Signature(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
@@ -330,4 +333,63 @@ pub enum Error {
     InvalidPrehashLength,
 }
 
-// TODO: tests
+// TODO: fix test values
+// #[cfg(test)]
+// mod tests {
+//     use hex_literal::hex;
+//     use rstest::rstest;
+
+//     use super::*;
+
+//     #[rstest]
+//     #[case(
+//         hex!("85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"),
+//         hex!("aa05af77f274774b8bdc7b61d98bc40da523dc2821fdea555f4d6aa413199bcc"),
+//         hex!("7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e47"),
+//     )]
+//     #[case(
+//         hex!("85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"),
+//         hex!("1632c0ebba467e157675403ba3ba280b836e1801b5678d878dfc90bfc403d6e1"),
+//         hex!("eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c"),
+//     )]
+//     fn verify_ok(
+//         #[case] public_key: [u8; 64],
+//         #[case] prehash: [u8; 32],
+//         #[case] signature: [u8; 64],
+//     ) {
+//         assert!(
+//             P256::verify(
+//                 &P256UncompressedPublicKey(public_key).try_into().unwrap(),
+//                 &prehash,
+//                 &P256Signature(signature).try_into().unwrap(),
+//             ),
+//             "signature is invalid",
+//         );
+//     }
+
+//     #[rstest]
+//     #[case(
+//         hex!("85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"),
+//         hex!("1632c0ebba467e157675403ba3ba280b836e1801b5678d878dfc90bfc403d6e1"),
+//         hex!("7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e47"),
+//     )]
+//     #[case(
+//         hex!("85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"),
+//         hex!("aa05af77f274774b8bdc7b61d98bc40da523dc2821fdea555f4d6aa413199bcc"),
+//         hex!("eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c"),
+//     )]
+//     fn verify_fail(
+//         #[case] public_key: [u8; 64],
+//         #[case] prehash: [u8; 32],
+//         #[case] signature: [u8; 64],
+//     ) {
+//         assert!(
+//             !P256::verify(
+//                 &P256UncompressedPublicKey(public_key).try_into().unwrap(),
+//                 &prehash,
+//                 &P256Signature(signature).try_into().unwrap(),
+//             ),
+//             "invalid signature passed verification",
+//         );
+//     }
+// }
