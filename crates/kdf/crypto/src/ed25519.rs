@@ -1,8 +1,11 @@
 use core::convert::Infallible;
 
-use ed25519_dalek::{self, Signature, SigningKey, VerifyingKey};
+pub use ed25519_dalek;
+use ed25519_dalek::{Signature, SigningKey, VerifyingKey};
 
 use crate::{Curve, Signer};
+
+// TODO: operate on our types?
 
 pub struct Ed25519;
 

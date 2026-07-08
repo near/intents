@@ -2,23 +2,11 @@
 
 mod curve;
 #[cfg(feature = "ed25519")]
-mod ed25519;
+pub mod ed25519;
 // TODO: pub mods?
 #[cfg(feature = "p256")]
-mod p256;
+pub mod p256;
 #[cfg(feature = "secp256k1")]
-mod secp256k1;
+pub mod secp256k1;
 
 pub use self::curve::*;
-#[cfg(feature = "ed25519")]
-pub use self::ed25519::*;
-#[cfg(feature = "p256")]
-pub use self::p256::*;
-#[cfg(feature = "secp256k1")]
-pub use self::secp256k1::*;
-
-// re-exports
-#[cfg(feature = "ed25519")]
-pub use ed25519_dalek;
-#[cfg(feature = "secp256k1")]
-pub use k256;

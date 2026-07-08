@@ -2,7 +2,7 @@
 //! Signed Data Standard
 
 use defuse_digest::{Digest, sha3::Keccak256};
-use defuse_kdf_crypto::{Curve, RecoverableCurve, Secp256k1};
+use defuse_kdf_crypto::{Curve, RecoverableCurve, secp256k1::Secp256k1};
 
 /// [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
 /// Signed Data Standard
@@ -39,7 +39,7 @@ impl Tip191 {
 
 #[cfg(test)]
 mod tests {
-    use defuse_kdf_crypto::k256::{
+    use defuse_kdf_crypto::secp256k1::k256::{
         EncodedPoint,
         ecdsa::{RecoveryId, Signature, VerifyingKey},
     };

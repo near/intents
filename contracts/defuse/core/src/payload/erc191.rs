@@ -15,7 +15,7 @@ where
 
     #[inline]
     fn extract_defuse_payload(self) -> Result<DefusePayload<T>, Self::Error> {
-        serde_json::from_str(&self.payload.0)
+        serde_json::from_str(&self.payload)
     }
 }
 
@@ -46,6 +46,6 @@ impl SignedPayload for SignedErc191Payload {
         let signature = Signature::from_bytes(&signature.into()).ok()?;
         let recovery_id = RecoveryId::from_byte(v)?;
 
-        Erc191.recover(&self.payload, self.signature, recovery_id)
+        Erc191::recover(&self.payload, self.signature, recovery_id)
     }
 }

@@ -1,7 +1,7 @@
 //! [ERC-191](https://eips.ethereum.org/EIPS/eip-191) Signed Data Standard
 
 use defuse_digest::{Digest, sha3::Keccak256};
-use defuse_kdf_crypto::{Curve, RecoverableCurve, Secp256k1};
+use defuse_kdf_crypto::{Curve, RecoverableCurve, secp256k1::Secp256k1};
 
 /// [ERC-191](https://eips.ethereum.org/EIPS/eip-191) Signed Data Standard
 pub struct Erc191;
@@ -17,7 +17,7 @@ impl Erc191 {
         signature: &<Secp256k1 as Curve>::Signature,
         recovery_id: <Secp256k1 as RecoverableCurve>::RecoveryId,
     ) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        Secp256k1::recover(&Self::prehash(msg.as_ref()), signature, recovery_id)
+        Secp256k1::recover(&Self::prehash(msg), signature, recovery_id)
     }
 
     /// Derive prehash for signing according to following schema:
@@ -26,7 +26,9 @@ impl Erc191 {
     /// 0x19 <0x45 (E)> <thereum Signed Message:\n" + len(message)> <data to sign>
     /// ```
     #[inline]
-    fn prehash(msg: &[u8]) -> [u8; 32] {
+    pub fn prehash(msg: impl AsRef<[u8]>) -> [u8; 32] {
+        let msg = msg.as_ref();
+
         Keccak256::new_with_prefix(b"\x19Ethereum Signed Message:\n")
             // `len(message)` is the non-zero-padded ascii-decimal encoding of the number of bytes in message.
             .chain_update(msg.len().to_string())
@@ -39,7 +41,7 @@ impl Erc191 {
 
 #[cfg(test)]
 mod tests {
-    use defuse_kdf_crypto::k256::{
+    use defuse_kdf_crypto::secp256k1::k256::{
         EncodedPoint,
         ecdsa::{RecoveryId, Signature, VerifyingKey},
     };

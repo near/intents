@@ -1,5 +1,6 @@
+pub use curve25519_dalek;
 use curve25519_dalek::{EdwardsPoint, Scalar};
-use defuse_kdf_crypto::Ed25519;
+use defuse_kdf_crypto::ed25519::Ed25519;
 use ed25519_dalek::{
     Digest, Sha512, Signature, SigningKey, VerifyingKey,
     hazmat::{ExpandedSecretKey, raw_sign},
@@ -114,7 +115,7 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
             "derived public key mismatch",
         );
 
-        raw_sign::<Sha512>(&derived_esk, msg.as_ref(), &derived_verifying_key)
+        raw_sign::<Sha512>(&derived_esk, msg, &derived_verifying_key)
     }
 }
 

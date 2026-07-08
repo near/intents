@@ -5,7 +5,7 @@ use core::fmt::Display;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_digest::{Digest, sha2::Sha256};
-use defuse_kdf_crypto::{Curve, Ed25519};
+use defuse_kdf_crypto::{Curve, ed25519::Ed25519};
 use defuse_nep461::{OffchainMessage, SignedMessageNep};
 use digest_io::IoWrapper;
 
@@ -132,7 +132,7 @@ const _: () = {
 
 #[cfg(test)]
 mod tests {
-    use defuse_kdf_crypto::ed25519_dalek::{
+    use defuse_kdf_crypto::ed25519::ed25519_dalek::{
         PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH, Signature, VerifyingKey,
     };
     use hex_literal::hex;
@@ -159,6 +159,6 @@ mod tests {
         let public_key = VerifyingKey::from_bytes(&public_key).unwrap();
         let signature = Signature::from_bytes(&signature);
 
-        assert!(Nep413::verify(&public_key, &payload, &signature))
+        assert!(Nep413::verify(&public_key, &payload, &signature));
     }
 }

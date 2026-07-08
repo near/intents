@@ -3,7 +3,7 @@
 mod cell;
 
 use defuse_digest::{Digest, sha2::Sha256};
-use defuse_kdf_crypto::{Curve, Ed25519};
+use defuse_kdf_crypto::{Curve, ed25519::Ed25519};
 use defuse_time::Timestamp;
 #[cfg(feature = "arbitrary")]
 use defuse_time::arbitrary::RangeNanos;
@@ -73,7 +73,7 @@ impl TonConnectPayload {
             TonConnectPayloadSchema::Cell { schema_crc, cell } => {
                 return self::cell::TonConnectCellMessage {
                     schema_crc: *schema_crc,
-                    timestamp: timestamp,
+                    timestamp,
                     user_address: &self.address,
                     app_domain: &self.domain,
                     payload: &cell,
@@ -169,7 +169,7 @@ impl TonConnectPayloadSchema {
 mod tests {
     use super::*;
 
-    use defuse_kdf_crypto::ed25519_dalek::{
+    use defuse_kdf_crypto::ed25519::ed25519_dalek::{
         PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH, Signature, VerifyingKey,
     };
     use hex_literal::hex;

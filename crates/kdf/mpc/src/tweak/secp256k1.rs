@@ -1,4 +1,4 @@
-use defuse_kdf::{Secp256k1, k256::NonZeroScalar};
+use defuse_kdf::crypto::secp256k1::{Secp256k1, k256::NonZeroScalar};
 
 use super::{NearMpcCurve, sealed::Sealed};
 
@@ -17,7 +17,7 @@ impl Sealed for Secp256k1 {}
 mod tests {
     use defuse_kdf::{
         Additive, DeriveExt, Schema,
-        k256::{EncodedPoint, ecdsa::VerifyingKey},
+        crypto::secp256k1::k256::{EncodedPoint, ecdsa::VerifyingKey},
     };
     use hex_literal::hex;
     use near_account_id::AccountIdRef;

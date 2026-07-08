@@ -1,4 +1,4 @@
-use defuse_kdf_crypto::{RecoverableCurve, Secp256k1};
+use defuse_kdf_crypto::{RecoverableCurve, secp256k1::Secp256k1};
 use k256::{
     NonZeroScalar, ProjectivePoint, U256,
     ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey},
@@ -68,7 +68,7 @@ impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
         );
 
         let (sig, recovery_id) = derived_sk
-            .sign_prehash_recoverable(&prehash)
+            .sign_prehash_recoverable(prehash)
             .expect("invalid derived signing key");
 
         debug_assert_eq!(

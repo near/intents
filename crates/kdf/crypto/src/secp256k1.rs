@@ -1,3 +1,5 @@
+pub use k256;
+
 use k256::ecdsa::{RecoveryId, Signature, VerifyingKey};
 
 use crate::{Curve, RecoverableCurve};

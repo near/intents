@@ -1,4 +1,4 @@
-use defuse_kdf::{Ed25519, curve25519_dalek::Scalar};
+use defuse_kdf::{crypto::ed25519::Ed25519, ed25519::curve25519_dalek::Scalar};
 
 use super::{NearMpcCurve, sealed::Sealed};
 
@@ -15,7 +15,7 @@ impl Sealed for Ed25519 {}
 mod tests {
     use defuse_kdf::{
         Additive, DeriveExt, Schema,
-        ed25519_dalek::{self, VerifyingKey},
+        crypto::ed25519::ed25519_dalek::{self, VerifyingKey},
     };
     use hex_literal::hex;
     use near_account_id::AccountIdRef;

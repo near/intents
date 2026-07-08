@@ -31,7 +31,7 @@ pub enum MultiPayload {
 
     /// ERC-191: The standard for message signing in Ethereum, commonly used with `personal_sign()`.
     /// For more details, refer to [EIP-191](https://eips.ethereum.org/EIPS/eip-191).
-    // Erc191(SignedErc191Payload),
+    Erc191(SignedErc191Payload),
 
     /// TIP-191: The standard for message signing in Tron.
     /// For more details, refer to [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md).
@@ -81,7 +81,7 @@ impl SignedPayload for MultiPayload {
     fn verify(&self) -> Option<Self::PublicKey> {
         match self {
             Self::Nep413(payload) => payload.verify().map(PublicKey::Ed25519),
-            // Self::Erc191(payload) => payload.verify().map(PublicKey::Secp256k1),
+            Self::Erc191(payload) => payload.verify().map(PublicKey::Secp256k1),
             Self::Tip191(payload) => payload.verify().map(PublicKey::Secp256k1),
             Self::RawEd25519(payload) => payload.verify().map(PublicKey::Ed25519),
             Self::WebAuthn(payload) => payload.verify(),

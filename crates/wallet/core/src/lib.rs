@@ -1,6 +1,7 @@
 mod message;
 mod nonces;
 mod request;
+pub mod signatures;
 mod state;
 
 pub use self::{message::*, nonces::*, request::*, state::*};

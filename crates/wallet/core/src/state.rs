@@ -28,7 +28,7 @@ pub struct State<PubKey> {
     /// wallet-contracts.
     pub subwallet_id: u32,
 
-    /// Public key of the signer (depends on the signature scheme being
+    /// Public key of the signer (depends on the signature schema being
     /// being used by the implementation)
     pub public_key: PubKey,
 

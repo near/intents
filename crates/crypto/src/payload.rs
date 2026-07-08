@@ -10,22 +10,4 @@
 /// 32-byte cryptographic hash output.
 pub type CryptoHash = [u8; 32];
 
-/// Data that can be deterministically hashed for signing or verification.
-///
-/// Implementations of this trait typically represent a message formatted
-/// according to an external signing standard. The [`hash`] method returns
-/// the digest that should be signed or used for verification.
-pub trait Payload {
-    fn hash(&self) -> CryptoHash;
-}
 
-/// Extension of [`Payload`] for types that include a signature.
-///
-/// Implementers verify the signature and, when successful, return the
-/// signer's public key. This trait is mainly intended for internal use and
-/// does not constitute a stable public API.
-pub trait SignedPayload: Payload {
-    type PublicKey;
-
-    fn verify(&self) -> Option<Self::PublicKey>;
-}
