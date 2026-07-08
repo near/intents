@@ -11,9 +11,7 @@ repository.workspace = true
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-kdf-crypto = { workspace = true, features = ["ed25519"] }
 defuse-nep461.workspace = true
-defuse-signature-schema.workspace = true
 
-anyhow.workspace = true
 borsh = { workspace = true, features = ["derive"] }
 digest-io.workspace = true
 

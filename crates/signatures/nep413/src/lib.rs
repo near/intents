@@ -9,7 +9,50 @@ use defuse_kdf_crypto::{Curve, Ed25519};
 use defuse_nep461::{OffchainMessage, SignedMessageNep};
 use digest_io::IoWrapper;
 
-// TODO: nep413 struct
+/// [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)
+/// Offchain Signing Standard
+pub struct Nep413;
+
+impl Nep413 {
+    /// Verify signature over given payload for given public key according to
+    /// [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md).
+    #[must_use = "check if verification passed"]
+    #[inline]
+    pub fn verify(
+        public_key: &<Ed25519 as Curve>::PublicKey,
+        payload: &Nep413Payload,
+        signature: &<Ed25519 as Curve>::Signature,
+    ) -> bool {
+        Ed25519::verify(public_key, &Self::prehash(payload), signature)
+    }
+
+    /// Derive prehash for signing.
+    #[inline]
+    fn prehash(payload: &Nep413Payload) -> [u8; 32] {
+        let mut hasher = IoWrapper(Sha256::new());
+
+        // serialize directly to hasher
+        borsh::to_writer(&mut hasher, &(Self::OFFCHAIN_PREFIX_TAG, payload))
+            .unwrap_or_else(|_| unreachable!());
+
+        hasher.0.finalize().into()
+    }
+}
+
+impl SignedMessageNep for Nep413 {
+    /// NEP number used to derive offchain prefix tag according to
+    /// [NEP-461](https://github.com/near/NEPs/pull/461).
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use defuse_nep413::Nep413;
+    /// use defuse_nep461::OffchainMessage;
+    ///
+    /// assert_eq!(Nep413::OFFCHAIN_PREFIX_TAG, 2147484061);
+    /// ```
+    const NEP_NUMBER: u32 = 413;
+}
 
 #[cfg_attr(
     feature = "serde",
@@ -19,10 +62,9 @@ use digest_io::IoWrapper;
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
     serde(rename_all = "camelCase")
 )]
-#[derive(BorshSerialize, BorshDeserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 #[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 /// [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md) payload
-#[derive(Debug, Clone)]
 pub struct Nep413Payload {
     pub message: String,
 
@@ -70,34 +112,6 @@ impl Nep413Payload {
         self.callback_url = Some(callback_url.into());
         self
     }
-
-    /// Verify signature over this payload for given public key according to
-    /// [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md).
-    #[must_use = "check if verification passed"]
-    #[inline]
-    pub fn verify(
-        &self,
-        public_key: &<Ed25519 as Curve>::PublicKey,
-        signature: &<Ed25519 as Curve>::Signature,
-    ) -> bool {
-        Ed25519::verify(public_key, &self.prehash(), signature)
-    }
-
-    /// Derive prehash for signing.
-    #[inline]
-    fn prehash(&self) -> [u8; 32] {
-        let mut hasher = IoWrapper(Sha256::new());
-
-        // serialize directly to hasher
-        borsh::to_writer(&mut hasher, &(Self::OFFCHAIN_PREFIX_TAG, self))
-            .unwrap_or_else(|_| unreachable!());
-
-        hasher.0.finalize().into()
-    }
-}
-
-impl SignedMessageNep for Nep413Payload {
-    const NEP_NUMBER: u32 = 413;
 }
 
 #[cfg(feature = "near-kit")]
@@ -116,4 +130,35 @@ const _: () = {
     }
 };
 
-// TODO: tests
+#[cfg(test)]
+mod tests {
+    use defuse_kdf_crypto::ed25519_dalek::{
+        PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH, Signature, VerifyingKey,
+    };
+    use hex_literal::hex;
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case(
+        hex!("e2e9cb7ac57cb46d4da1ce1d1cc2c33bdfe17407c517916b522724a8ea2c6c50"),
+        Nep413Payload {
+            message: "Hello, world!".to_string(),
+            nonce: [0u8; 32],
+            recipient: "intents.near".to_string(),
+            callback_url: None,
+        },
+        hex!("e2ff6254871a3fec1853c167b42f0f14248c4cf7fef5452dc24d8dbdc5c4bf183ab707322b4d782d5f5a05571bae476c5f7ee41c473f3002e600865e46b75d0f"),
+    )]
+    fn verify_ok(
+        #[case] public_key: [u8; PUBLIC_KEY_LENGTH],
+        #[case] payload: Nep413Payload,
+        #[case] signature: [u8; SIGNATURE_LENGTH],
+    ) {
+        let public_key = VerifyingKey::from_bytes(&public_key).unwrap();
+        let signature = Signature::from_bytes(&signature);
+
+        assert!(Nep413::verify(&public_key, &payload, &signature))
+    }
+}

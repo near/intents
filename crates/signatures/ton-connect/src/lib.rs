@@ -178,6 +178,7 @@ mod tests {
 
     #[rstest]
     #[case::text(
+        hex!("22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"),
         TonConnectPayload {
             address: "0:f4809e5ffac9dc42a6b1d94c5e74ad5fd86378de675c805f2274d0055cbc9378"
                 .parse()
@@ -186,10 +187,10 @@ mod tests {
             timestamp: Timestamp::from_secs(1747759882).unwrap(),
             payload: TonConnectPayloadSchema::text("Hello, TON!".repeat(100)),
         },
-        hex!("22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"),
         hex!("7bc628f6d634ab6ddaf10463742b13f0ede3cb828737d9ce1962cc808fbfe7035e77c1a3d0b682acf02d645cc1a244992b276552c0e1c57d30b03c2820d73d01"),
     )]
     #[case::binary(
+        hex!("22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"),
         TonConnectPayload {
             address: "0:f4809e5ffac9dc42a6b1d94c5e74ad5fd86378de675c805f2274d0055cbc9378"
                 .parse()
@@ -198,10 +199,10 @@ mod tests {
             timestamp: Timestamp::from_secs(1747760435).unwrap(),
             payload: TonConnectPayloadSchema::binary(hex!("48656c6c6f2c20544f4e21")),
         },
-        hex!("22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"),
         hex!("9cf4c1c16b47afce46940eb9cd410894f31544b74206c2254bb1651f9b32cf5b0e482b78a2e8251e54d3517fae4b06c6f23546667d63ff62dccce70451698d01"),
     )]
     #[cfg_attr(feature = "cell", case::cell(
+        hex!("22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"),
         TonConnectPayload {
             address: "0:f4809e5ffac9dc42a6b1d94c5e74ad5fd86378de675c805f2274d0055cbc9378"
                 .parse()
@@ -218,12 +219,11 @@ mod tests {
                     .clone(),
             ),
         },
-        hex!("22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"),
         hex!("6ad083855374c201c2acb14aa4e7eef44603c8d356624c8fd3b6be3babd84bd8bc7390f0ed4484ab58a535b3088681e0006839eb07136470985b3a33bfa17c05"),
     ))]
     fn verify_ok(
-        #[case] payload: TonConnectPayload,
         #[case] public_key: [u8; PUBLIC_KEY_LENGTH],
+        #[case] payload: TonConnectPayload,
         #[case] signature: [u8; SIGNATURE_LENGTH],
     ) {
         let public_key = VerifyingKey::from_bytes(&public_key).unwrap();

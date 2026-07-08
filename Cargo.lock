@@ -1648,13 +1648,11 @@ dependencies = [
 name = "defuse-nep413"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "borsh",
  "cfg_eval",
  "defuse-digest",
  "defuse-kdf-crypto",
  "defuse-nep461",
- "defuse-signature-schema",
  "digest-io",
  "hex-literal",
  "near-kit",
