@@ -1,6 +1,9 @@
 pub use k256;
 
-use k256::ecdsa::{RecoveryId, Signature, VerifyingKey};
+use k256::{
+    EncodedPoint,
+    ecdsa::{RecoveryId, Signature, VerifyingKey},
+};
 
 use crate::{Curve, RecoverableCurve};
 
@@ -71,10 +74,9 @@ impl RecoverableCurve for Secp256k1 {
                 near => {
                     use k256::EncodedPoint;
 
-                    let sig: [u8; 64] = signature.to_bytes().into();
                     let pk: [u8; 64] = ::near_sdk::env::ecrecover(
                         prehash,
-                        &sig,
+                        &signature.to_bytes(),
                         recovery_id.to_byte(),
                         // Do not accept malleable signatures:
                         // https://github.com/near/nearcore/blob/d73041cc1d1a70af4456fceefaceb1bf7f684fde/core/crypto/src/signature.rs#L448-L455
@@ -104,6 +106,170 @@ impl RecoverableCurve for Secp256k1 {
         Some(public_key)
     }
 }
+
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+)]
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
+)]
+// TODO: docs: untagged uncompressed with no leading SEC-1 tag byte, etc...
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Secp256k1UncompressedPublicKey(
+    // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 64],
+);
+
+impl From<VerifyingKey> for Secp256k1UncompressedPublicKey {
+    #[inline]
+    fn from(value: VerifyingKey) -> Self {
+        (&value).into()
+    }
+}
+
+impl From<&VerifyingKey> for Secp256k1UncompressedPublicKey {
+    #[inline]
+    fn from(value: &VerifyingKey) -> Self {
+        Self(
+            value
+                .to_encoded_point(false) // do not compress
+                // TODO: this might fail for identity (and maybe other cases?)
+                .as_bytes()[1..] // skip SEC-1 leading tag byte
+                .try_into()
+                .unwrap_or_else(|_| unreachable!()),
+        )
+    }
+}
+
+impl TryFrom<Secp256k1UncompressedPublicKey> for VerifyingKey {
+    type Error = k256::ecdsa::Error;
+
+    #[inline]
+    fn try_from(value: Secp256k1UncompressedPublicKey) -> Result<Self, Self::Error> {
+        (&value).try_into()
+    }
+}
+
+impl TryFrom<&Secp256k1UncompressedPublicKey> for VerifyingKey {
+    type Error = k256::ecdsa::Error;
+
+    #[inline]
+    fn try_from(value: &Secp256k1UncompressedPublicKey) -> Result<Self, Self::Error> {
+        Self::from_encoded_point(&EncodedPoint::from_untagged_bytes((&value.0).into()))
+    }
+}
+
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+)]
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
+)]
+// TODO: docs
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Secp256k1RecoverableSignature(
+    // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 65],
+);
+
+impl From<(Signature, RecoveryId)> for Secp256k1RecoverableSignature {
+    #[inline]
+    fn from((signature, recovery_id): (Signature, RecoveryId)) -> Self {
+        (&signature, recovery_id).into()
+    }
+}
+
+impl From<(&Signature, RecoveryId)> for Secp256k1RecoverableSignature {
+    #[inline]
+    fn from((signature, recovery_id): (&Signature, RecoveryId)) -> Self {
+        let mut buf = [0u8; 65];
+        buf[..64].copy_from_slice(&signature.to_bytes());
+        buf[64] = recovery_id.to_byte();
+        Self(buf)
+    }
+}
+
+impl TryFrom<Secp256k1RecoverableSignature> for (Signature, RecoveryId) {
+    type Error = k256::ecdsa::Error;
+
+    #[inline]
+    fn try_from(value: Secp256k1RecoverableSignature) -> Result<Self, Self::Error> {
+        (&value).try_into()
+    }
+}
+
+impl TryFrom<&Secp256k1RecoverableSignature> for (Signature, RecoveryId) {
+    type Error = k256::ecdsa::Error;
+
+    #[inline]
+    fn try_from(value: &Secp256k1RecoverableSignature) -> Result<Self, Self::Error> {
+        let [ref signature @ .., recovery_id] = value.0;
+        Ok((
+            Signature::from_bytes(signature.into())?,
+            RecoveryId::from_byte(recovery_id).ok_or_else(k256::ecdsa::Error::new)?,
+        ))
+    }
+}
+
+#[cfg(feature = "fmt")]
+const _: () = {
+    use core::{
+        fmt::{self, Display},
+        str::FromStr,
+    };
+
+    use crate::fmt::{ParseCurveError, TypedCurve};
+
+    impl TypedCurve for Secp256k1 {
+        const CURVE_TYPE: &str = "secp256k1";
+    }
+
+    impl Display for Secp256k1UncompressedPublicKey {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str(&Secp256k1::to_base58(&self.0))
+        }
+    }
+
+    impl FromStr for Secp256k1UncompressedPublicKey {
+        type Err = ParseCurveError;
+
+        #[inline]
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Secp256k1::parse_base58(s).map(Self)
+        }
+    }
+
+    impl Display for Secp256k1RecoverableSignature {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str(&Secp256k1::to_base58(&self.0))
+        }
+    }
+
+    impl FromStr for Secp256k1RecoverableSignature {
+        type Err = ParseCurveError;
+
+        #[inline]
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Secp256k1::parse_base58(s).map(Self)
+        }
+    }
+};
 
 #[cfg(test)]
 mod tests {

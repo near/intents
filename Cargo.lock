@@ -1571,6 +1571,10 @@ dependencies = [
 name = "defuse-kdf-crypto"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
+ "borsh",
+ "bs58 0.5.1",
+ "cfg_eval",
  "defuse-kdf-crypto",
  "ed25519-dalek",
  "hex-literal",
@@ -1578,6 +1582,10 @@ dependencies = [
  "near-sdk",
  "p256",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
+ "thiserror 2.0.18",
 ]
 
 [[package]]

@@ -1,7 +1,7 @@
 use core::convert::Infallible;
 
 pub use ed25519_dalek;
-use ed25519_dalek::{Signature, SigningKey, VerifyingKey};
+use ed25519_dalek::{PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH, Signature, SigningKey, VerifyingKey};
 
 use crate::{Curve, Signer};
 
@@ -51,6 +51,153 @@ impl Curve for Ed25519 {
     }
 }
 
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+)]
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
+)]
+// TODO: docs
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Ed25519PublicKey(
+    // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; PUBLIC_KEY_LENGTH],
+);
+
+impl From<VerifyingKey> for Ed25519PublicKey {
+    #[inline]
+    fn from(value: VerifyingKey) -> Self {
+        (&value).into()
+    }
+}
+
+impl From<&VerifyingKey> for Ed25519PublicKey {
+    #[inline]
+    fn from(value: &VerifyingKey) -> Self {
+        Self(value.to_bytes())
+    }
+}
+
+impl TryFrom<Ed25519PublicKey> for VerifyingKey {
+    type Error = ed25519_dalek::ed25519::Error;
+
+    #[inline]
+    fn try_from(value: Ed25519PublicKey) -> Result<Self, Self::Error> {
+        (&value).try_into()
+    }
+}
+
+impl TryFrom<&Ed25519PublicKey> for VerifyingKey {
+    type Error = ed25519_dalek::ed25519::Error;
+
+    #[inline]
+    fn try_from(value: &Ed25519PublicKey) -> Result<Self, Self::Error> {
+        Self::from_bytes(&value.0)
+    }
+}
+
+#[cfg_attr(
+    feature = "serde",
+    ::cfg_eval::cfg_eval,
+    ::serde_with::serde_as,
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+)]
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
+)]
+// TODO: docs
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Ed25519Signature(
+    // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
+    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; SIGNATURE_LENGTH],
+);
+
+impl From<Signature> for Ed25519Signature {
+    #[inline]
+    fn from(value: Signature) -> Self {
+        (&value).into()
+    }
+}
+
+impl From<&Signature> for Ed25519Signature {
+    #[inline]
+    fn from(value: &Signature) -> Self {
+        Self(value.to_bytes())
+    }
+}
+
+impl From<Ed25519Signature> for Signature {
+    #[inline]
+    fn from(value: Ed25519Signature) -> Self {
+        (&value).into()
+    }
+}
+
+impl From<&Ed25519Signature> for Signature {
+    #[inline]
+    fn from(value: &Ed25519Signature) -> Self {
+        Self::from_bytes(&value.0)
+    }
+}
+
+#[cfg(feature = "fmt")]
+const _: () = {
+    use core::{
+        fmt::{self, Display},
+        str::FromStr,
+    };
+
+    use crate::fmt::{ParseCurveError, TypedCurve};
+
+    impl TypedCurve for Ed25519 {
+        const CURVE_TYPE: &str = "ed25519";
+    }
+
+    impl Display for Ed25519PublicKey {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str(&Ed25519::to_base58(&self.0))
+        }
+    }
+
+    impl FromStr for Ed25519PublicKey {
+        type Err = ParseCurveError;
+
+        #[inline]
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ed25519::parse_base58(s).map(Self)
+        }
+    }
+
+    impl Display for Ed25519Signature {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str(&Ed25519::to_base58(&self.0))
+        }
+    }
+
+    impl FromStr for Ed25519Signature {
+        type Err = ParseCurveError;
+
+        #[inline]
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ed25519::parse_base58(s).map(Self)
+        }
+    }
+};
+
+// TODO: remove from here? or feature "signing"?
 impl Signer<Ed25519> for SigningKey {
     type Error = Infallible;
 
