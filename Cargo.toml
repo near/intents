@@ -185,7 +185,7 @@ serde_json = "1"
 serde_with = "3.21"
 sha2 = "0.11"
 sha3 = "0.11"
-stellar-strkey = "0.0.13"
+stellar-strkey = "0.0.18"
 strum = "0.28"
 thiserror = "2"
 time = { version = "0.3.51", default-features = false }

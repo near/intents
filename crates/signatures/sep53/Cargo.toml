@@ -15,3 +15,4 @@ defuse-signature-schema.workspace = true
 [dev-dependencies]
 hex-literal.workspace = true
 rstest.workspace = true
+stellar-strkey.workspace = true
