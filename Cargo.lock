@@ -2006,12 +2006,10 @@ dependencies = [
 name = "defuse-webauthn"
 version = "0.1.0"
 dependencies = [
- "defuse-crypto",
+ "cfg_eval",
  "defuse-digest",
  "defuse-kdf-crypto",
- "defuse-signature-schema",
  "hex-literal",
- "impl-tools 0.12.0",
  "rstest",
  "schemars 0.8.22",
  "serde",

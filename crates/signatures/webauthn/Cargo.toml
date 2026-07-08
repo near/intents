@@ -10,25 +10,22 @@ repository.workspace = true
 [dependencies]
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-kdf-crypto.workspace = true
-defuse-signature-schema.workspace = true
-impl-tools.workspace = true
 
+cfg_eval.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 serde_with = { workspace = true, features = ["base64"] }
 
-defuse-crypto = { workspace = true, default-features = false, features = ["serde"], optional = true }
-schemars = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 default = ["ed25519", "p256"]
 
-abi = ["defuse-crypto?/abi", "dep:schemars", "serde_with/schemars_0_8"]
+abi = ["schemars-v0_8"]
 ed25519 = ["defuse-kdf-crypto/ed25519"]
-borsh = ["defuse-crypto?/borsh"]
 p256 = ["defuse-kdf-crypto/p256"]
-schemars-v0_8 = ["dep:schemars"]
+schemars-v0_8 = ["dep:schemars", "serde_with/schemars_0_8"]
 
 [dev-dependencies]
-rstest.workspace = true
 hex-literal.workspace = true
+rstest.workspace = true

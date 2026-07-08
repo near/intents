@@ -24,7 +24,7 @@ defuse-time = { workspace = true, features = ["borsh", "serde"] }
 defuse-tip191.workspace = true
 defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245", "borsh", "serde"] }
 defuse-ton-connect = { workspace = true, features = ["serde"] }
-defuse-webauthn = { workspace = true, features = ["borsh", "ed25519", "p256"] }
+defuse-webauthn = { workspace = true, features = ["ed25519", "p256"] }
 
 defuse-borsh-utils.workspace = true
 derive_more = { workspace = true, features = ["from"] }

@@ -43,7 +43,7 @@ impl Signer<P256> for SigningKey {
     type Error = Error;
 
     fn public_key(&self) -> <P256 as Curve>::PublicKey {
-        self.verifying_key().clone()
+        *self.verifying_key()
     }
 
     fn sign(&self, msg: &[u8]) -> Result<<P256 as Curve>::Signature, Self::Error> {
