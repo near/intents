@@ -1,5 +1,6 @@
-pub use p256::*;
+pub use p256;
 use p256::{
+    EncodedPoint,
     ecdsa::{Signature, SigningKey, VerifyingKey, signature::hazmat::PrehashSigner},
     elliptic_curve::scalar::IsHigh,
 };
