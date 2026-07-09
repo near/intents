@@ -8,6 +8,7 @@ use near_sdk::{AccountId, PanicOnDefault, near};
 
 use crate::WalletEd25519;
 
+#[cfg_attr(not(near), allow(dead_code))]
 #[near(
     contract_state(key = STATE_KEY),
     contract_metadata(

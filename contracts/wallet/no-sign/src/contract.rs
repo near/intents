@@ -8,6 +8,7 @@ use near_sdk::{AccountId, FunctionError, PanicOnDefault, env, near};
 
 use crate::{NoPublicKey, NoSign};
 
+#[cfg_attr(not(near), allow(dead_code))]
 #[near(
     contract_state(key = STATE_KEY),
     contract_metadata(
@@ -30,6 +31,7 @@ impl Contract {
     /// in the same receipt right after `UseGlobalContract` action.
     ///
     /// MUST attach at least 1yN for security reasons.
+    #[cfg_attr(not(near), allow(dead_code))]
     #[allow(clippy::use_self)]
     #[private]
     #[payable]

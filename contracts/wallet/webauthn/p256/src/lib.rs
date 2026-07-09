@@ -11,6 +11,7 @@ use defuse_wallet_webauthn::{
 };
 use near_sdk::{AccountId, PanicOnDefault, near};
 
+#[cfg_attr(not(near), allow(dead_code))]
 #[near(
     contract_state(key = STATE_KEY),
     contract_metadata(
