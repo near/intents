@@ -54,7 +54,22 @@ impl Curve for P256 {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 /// Uncompressed P256 public key **without** leading SEC-1 tag byte.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    derive_more::AsRef,
+    derive_more::From,
+    derive_more::Into,
+)]
+#[as_ref([u8], [u8; 64])]
+#[into(owned, ref)]
+#[repr(transparent)]
 pub struct P256UncompressedPublicKey(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 64],
@@ -143,7 +158,22 @@ impl TryFrom<&P256UncompressedPublicKey> for VerifyingKey {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 /// Compressed P256 public key, i.e. `x` coordinate **with** leading SEC-1 tag byte.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    derive_more::AsRef,
+    derive_more::From,
+    derive_more::Into,
+)]
+#[as_ref([u8], [u8; 33])]
+#[into(owned, ref)]
+#[repr(transparent)]
 pub struct P256CompressedPublicKey(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 33],
@@ -217,7 +247,22 @@ impl From<&P256UncompressedPublicKey> for P256CompressedPublicKey {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 /// P256 signature
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    derive_more::AsRef,
+    derive_more::From,
+    derive_more::Into,
+)]
+#[as_ref([u8], [u8; 64])]
+#[into(owned, ref)]
+#[repr(transparent)]
 pub struct P256Signature(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 64],

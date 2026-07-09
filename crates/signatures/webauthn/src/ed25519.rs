@@ -34,17 +34,17 @@ mod tests {
         hex!("7cd68c54af557c3d5d7bb6810d90a3efd0eb09e11d13feae3df589d0a54e5629c56dd4e4f6ce48766fccd305135edcbfa1928b0e3131930825c464a68c7d6d0b"),
     )]
     fn verify_ok(
-        #[case] public_key: [u8; 32],
+        #[case] public_key: impl Into<Ed25519PublicKey>,
         #[case] challenge: impl AsRef<[u8]>,
         #[case] payload: WebauthnPayload,
-        #[case] signature: [u8; 64],
+        #[case] signature: impl Into<Ed25519Signature>,
     ) {
         assert!(
             Webauthn::<Ed25519, RequireUserVerification>::verify(
-                &Ed25519PublicKey(public_key).try_into().unwrap(),
+                &public_key.into().try_into().unwrap(),
                 challenge,
                 &payload,
-                &Ed25519Signature(signature).into(),
+                &signature.into().into(),
             ),
             "signature is invalid",
         );

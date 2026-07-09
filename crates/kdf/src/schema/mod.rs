@@ -19,7 +19,6 @@ use impl_tools::autoimpl;
 /// steps.
 pub trait Schema<P> {
     // TODO: type Error;
-    // TODO: lifetime?
 
     /// [Derivation](Schema::derive_path) output.
     type Output;
@@ -130,16 +129,16 @@ where
 /// [`Schema`] adaptor that always uses the same path by cloning it.
 ///
 /// ```rust
-/// use defuse_kdf::{Path, Schema};
+/// use defuse_kdf::{Value, Schema};
 ///  
-/// let schema = Path::new("abc");
+/// let schema = Value::new("abc");
 ///
 /// assert_eq!(schema.derive_path(()), "abc");
 /// ```
 #[derive(Debug, Clone, Copy)]
-pub struct Path<P>(P);
+pub struct Value<P>(P);
 
-impl<P> Path<P> {
+impl<P> Value<P> {
     #[inline]
     pub const fn new(path: P) -> Self {
         Self(path)
@@ -151,7 +150,7 @@ impl<P> Path<P> {
     }
 }
 
-impl<P> Schema<()> for Path<P>
+impl<P> Schema<()> for Value<P>
 where
     P: Clone,
 {
@@ -162,7 +161,7 @@ where
     }
 }
 
-impl<P> AsRef<P> for Path<P> {
+impl<P> AsRef<P> for Value<P> {
     fn as_ref(&self) -> &P {
         &self.0
     }

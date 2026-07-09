@@ -20,7 +20,6 @@ members = [
   "crates/ckd",
   "crates/cli-utils",
   "crates/crypto",
-  # "crates/crypto/schema",
   "crates/digest",
   "crates/io-utils",
   "crates/kdf",
@@ -94,7 +93,6 @@ defuse-borsh-utils.path = "crates/borsh-utils"
 defuse-ckd = { path = "crates/ckd", default-features = false }
 defuse-cli-utils = { path = "crates/cli-utils", default-features = false }
 defuse-crypto = { path = "crates/crypto", default-features = false }
-# defuse-derivation-schema = { path = "crates/crypto/schema", default-features = false }
 defuse-digest.path = "crates/digest"
 defuse-io-utils.path = "crates/io-utils"
 defuse-kdf = { path = "crates/kdf", default-features = false }

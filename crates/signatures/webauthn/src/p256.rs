@@ -36,17 +36,17 @@ mod tests {
         hex!("002527c17a17d709ab62ffab033e0a26d901f5bee6686a0d605032828e490a7c47a9f4161e6a17688ae42a66adb67c9c22c86153afb08103b1e9eccd5314c271"),
     )]
     fn verify_ok(
-        #[case] public_key: [u8; 33],
+        #[case] public_key: impl Into<P256CompressedPublicKey>,
         #[case] challenge: impl AsRef<[u8]>,
         #[case] payload: WebauthnPayload,
-        #[case] signature: [u8; 64],
+        #[case] signature: impl Into<P256Signature>,
     ) {
         assert!(
             Webauthn::<P256, RequireUserVerification>::verify(
-                &P256CompressedPublicKey(public_key).try_into().unwrap(),
+                &public_key.into().try_into().unwrap(),
                 challenge,
                 &payload,
-                &P256Signature(signature).try_into().unwrap(),
+                &signature.into().try_into().unwrap(),
             ),
             "signature is invalid",
         );

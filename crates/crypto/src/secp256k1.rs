@@ -113,7 +113,22 @@ impl RecoverableCurve for Secp256k1 {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 /// Uncompressed Secp256k1 public key **without** leading SEC-1 tag byte.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    derive_more::AsRef,
+    derive_more::From,
+    derive_more::Into,
+)]
+#[as_ref([u8], [u8; 64])]
+#[into(owned, ref)]
+#[repr(transparent)]
 pub struct Secp256k1UncompressedPublicKey(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 64],
@@ -172,7 +187,22 @@ impl TryFrom<&Secp256k1UncompressedPublicKey> for VerifyingKey {
 )]
 /// Recoverable secp256k1 signature, i.e. 64-byte signature with additional
 /// recovery byte
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    derive_more::AsRef,
+    derive_more::From,
+    derive_more::Into,
+)]
+#[as_ref([u8], [u8; 65])]
+#[into(owned, ref)]
+#[repr(transparent)]
 pub struct Secp256k1RecoverableSignature(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 65],
@@ -300,17 +330,15 @@ mod tests {
         hex!("eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c01"),
     )]
     fn verify_ok(
-        #[case] public_key: [u8; 64],
+        #[case] public_key: impl Into<Secp256k1UncompressedPublicKey>,
         #[case] prehash: [u8; 32],
-        #[case] signature: [u8; 65],
+        #[case] signature: impl Into<Secp256k1RecoverableSignature>,
     ) {
         assert!(
             Secp256k1::verify(
-                &Secp256k1UncompressedPublicKey(public_key)
-                    .try_into()
-                    .unwrap(),
+                &public_key.into().try_into().unwrap(),
                 &prehash,
-                &Secp256k1RecoverableSignature(signature).try_into().unwrap(),
+                &signature.into().try_into().unwrap(),
             ),
             "signature is invalid",
         );
@@ -328,17 +356,15 @@ mod tests {
         hex!("eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c01"),
     )]
     fn verify_fail(
-        #[case] public_key: [u8; 64],
+        #[case] public_key: impl Into<Secp256k1UncompressedPublicKey>,
         #[case] prehash: [u8; 32],
-        #[case] signature: [u8; 65],
+        #[case] signature: impl Into<Secp256k1RecoverableSignature>,
     ) {
         assert!(
             !Secp256k1::verify(
-                &Secp256k1UncompressedPublicKey(public_key)
-                    .try_into()
-                    .unwrap(),
+                &public_key.into().try_into().unwrap(),
                 &prehash,
-                &Secp256k1RecoverableSignature(signature).try_into().unwrap(),
+                &signature.into().try_into().unwrap(),
             ),
             "invalid signature passed verification",
         );
@@ -356,19 +382,15 @@ mod tests {
         hex!("eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c01"),
     )]
     fn recover_ok(
-        #[case] public_key: [u8; 64],
+        #[case] public_key: impl Into<Secp256k1UncompressedPublicKey>,
         #[case] prehash: [u8; 32],
-        #[case] signature: [u8; 65],
+        #[case] signature: impl Into<Secp256k1RecoverableSignature>,
     ) {
-        let (signature, recovery_id) = Secp256k1RecoverableSignature(signature).try_into().unwrap();
+        let (signature, recovery_id) = signature.into().try_into().unwrap();
 
         assert_eq!(
             Secp256k1::recover(&prehash, &signature, recovery_id),
-            Some(
-                Secp256k1UncompressedPublicKey(public_key)
-                    .try_into()
-                    .unwrap()
-            ),
+            Some(public_key.into().try_into().unwrap()),
             "invalid recovered public key",
         );
     }

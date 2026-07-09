@@ -25,6 +25,7 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
     DeserializeFromStr,
     BorshSerialize,
     BorshDeserialize,
+    derive_more::From,
 )]
 #[borsh(use_discriminant = true)]
 #[repr(u8)]
@@ -65,13 +66,13 @@ impl FromStr for Signature {
         match curve {
             Ed25519::CURVE_TYPE => checked_base58_decode_array(data)
                 .map(Ed25519Signature)
-                .map(Self::Ed25519),
+                .map(Into::into),
             Secp256k1::CURVE_TYPE => checked_base58_decode_array(data)
                 .map(Secp256k1RecoverableSignature)
-                .map(Self::Secp256k1),
+                .map(Into::into),
             P256::CURVE_TYPE => checked_base58_decode_array(data)
                 .map(P256Signature)
-                .map(Self::P256),
+                .map(Into::into),
             _ => Err(ParseCurveError::WrongCurveType),
         }
     }

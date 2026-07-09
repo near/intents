@@ -10,6 +10,7 @@ use defuse_crypto::{
     p256::{P256, P256UncompressedPublicKey},
     secp256k1::{Secp256k1, Secp256k1UncompressedPublicKey},
 };
+use defuse_digest::{Digest, sha3::Keccak256};
 use near_sdk::{AccountId, AccountIdRef};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
@@ -27,6 +28,7 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
     DeserializeFromStr,
     BorshSerialize,
     BorshDeserialize,
+    derive_more::From,
 )]
 #[borsh(use_discriminant = true)]
 #[repr(u8)]
@@ -40,18 +42,15 @@ impl PublicKey {
     #[inline]
     pub fn to_implicit_account_id(&self) -> AccountId {
         match self {
-            Self::Ed25519(Ed25519PublicKey(pk)) => {
+            Self::Ed25519(pk) => {
                 // https://docs.near.org/concepts/protocol/account-id#implicit-address
                 hex::encode(pk)
             }
-            Self::Secp256k1(Secp256k1UncompressedPublicKey(pk)) => {
+            Self::Secp256k1(pk) => {
                 // https://ethereum.org/en/developers/docs/accounts/#account-creation
-                format!(
-                    "0x{}",
-                    hex::encode(&::near_sdk::env::keccak256_array(pk)[12..32])
-                )
+                format!("0x{}", hex::encode(&Keccak256::digest(pk)[12..32]))
             }
-            Self::P256(P256UncompressedPublicKey(pk)) => {
+            Self::P256(pk) => {
                 // In order to keep compatibility with all existing standards
                 // within Near ecosystem (e.g. NEP-245), we need our implicit
                 // account_ids to be fully backwards-compatible with Near's
@@ -68,8 +67,9 @@ impl PublicKey {
                 format!(
                     "0x{}",
                     hex::encode(
-                        &::near_sdk::env::keccak256_array([b"p256".as_slice(), pk].concat())
-                            [12..32]
+                        &Keccak256::new_with_prefix(b"p256")
+                            .chain_update(pk)
+                            .finalize()[12..32]
                     )
                 )
             }
@@ -83,7 +83,7 @@ impl PublicKey {
         let mut pk = [0; 32];
         // Only NearImplicitAccount can be reversed
         hex::decode_to_slice(account_id.as_str(), &mut pk).ok()?;
-        Some(Self::Ed25519(Ed25519PublicKey(pk)))
+        Some(Ed25519PublicKey(pk).into())
     }
 }
 
@@ -118,13 +118,13 @@ impl FromStr for PublicKey {
         match curve {
             Ed25519::CURVE_TYPE => checked_base58_decode_array(data)
                 .map(Ed25519PublicKey)
-                .map(Self::Ed25519),
+                .map(Into::into),
             Secp256k1::CURVE_TYPE => checked_base58_decode_array(data)
                 .map(Secp256k1UncompressedPublicKey)
-                .map(Self::Secp256k1),
+                .map(Into::into),
             P256::CURVE_TYPE => checked_base58_decode_array(data)
                 .map(P256UncompressedPublicKey)
-                .map(Self::P256),
+                .map(Into::into),
             _ => Err(ParseCurveError::WrongCurveType),
         }
     }
@@ -199,10 +199,11 @@ const _: () = {
     use near_kit::types::PublicKey as NearPublicKey;
 
     impl From<NearPublicKey> for PublicKey {
+        #[inline]
         fn from(pk: NearPublicKey) -> Self {
             match pk {
-                NearPublicKey::Ed25519(pk) => Self::Ed25519(Ed25519PublicKey(pk)),
-                NearPublicKey::Secp256k1(pk) => Self::Secp256k1(Secp256k1UncompressedPublicKey(pk)),
+                NearPublicKey::Ed25519(pk) => Self::Ed25519(pk.into()),
+                NearPublicKey::Secp256k1(pk) => Self::Secp256k1(pk.into()),
             }
         }
     }

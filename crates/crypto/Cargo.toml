@@ -8,6 +8,7 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+derive_more = { workspace = true, features = ["as_ref", "from", "into"] }
 ed25519-dalek = { workspace = true, optional = true }
 k256 = { workspace = true, features = ["ecdsa"], optional = true }
 p256 = { workspace = true, features = ["ecdsa"], optional = true }

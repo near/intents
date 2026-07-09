@@ -1,7 +1,7 @@
 use core::convert::Infallible;
 
 pub use ed25519_dalek;
-use ed25519_dalek::{PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH, Signature, SigningKey, VerifyingKey};
+use ed25519_dalek::{Signature, SigningKey, VerifyingKey};
 
 use crate::{Curve, Signer};
 
@@ -54,10 +54,25 @@ impl Curve for Ed25519 {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 /// Ed25519 public key
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    derive_more::AsRef,
+    derive_more::From,
+    derive_more::Into,
+)]
+#[as_ref([u8], [u8; 32])]
+#[into(owned, ref)]
+#[repr(transparent)]
 pub struct Ed25519PublicKey(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
-    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; PUBLIC_KEY_LENGTH],
+    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 32],
 );
 
 impl From<VerifyingKey> for Ed25519PublicKey {
@@ -106,10 +121,25 @@ impl TryFrom<&Ed25519PublicKey> for VerifyingKey {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 /// Ed25519 signature
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    derive_more::AsRef,
+    derive_more::From,
+    derive_more::Into,
+)]
+#[as_ref([u8], [u8; 64])]
+#[into(owned, ref)]
+#[repr(transparent)]
 pub struct Ed25519Signature(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
-    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; SIGNATURE_LENGTH],
+    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 64],
 );
 
 impl From<Signature> for Ed25519Signature {
@@ -201,7 +231,6 @@ impl Signer<Ed25519> for SigningKey {
 
 #[cfg(test)]
 mod tests {
-    use ed25519_dalek::{PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH};
     use hex_literal::hex;
     use rstest::rstest;
 
@@ -219,15 +248,15 @@ mod tests {
         hex!("024068f38742fa99be08b9779745562ba10ce336de5865497fc5442353e355d90c1eb986d04fb70d1031b0a7f7cfe80946e0cd3979316b522fbdb8ed35028f0f"),
     )]
     fn verify_ok(
-        #[case] public_key: [u8; PUBLIC_KEY_LENGTH],
+        #[case] public_key: impl Into<Ed25519PublicKey>,
         #[case] msg: impl AsRef<[u8]>,
-        #[case] signature: [u8; SIGNATURE_LENGTH],
+        #[case] signature: impl Into<Ed25519Signature>,
     ) {
         assert!(
             Ed25519::verify(
-                &Ed25519PublicKey(public_key).try_into().unwrap(),
+                &public_key.into().try_into().unwrap(),
                 msg.as_ref(),
-                &Ed25519Signature(signature).into(),
+                &signature.into().into(),
             ),
             "signature is invalid",
         );
@@ -250,15 +279,15 @@ mod tests {
         hex!("024068f38742fa99be08b9779745562ba10ce336de5865497fc5442353e355d90c1eb986d04fb70d1031b0a7f7cfe80946e0cd3979316b522fbdb8ed35028f0f"),
     )]
     fn verify_fail(
-        #[case] public_key: [u8; PUBLIC_KEY_LENGTH],
+        #[case] public_key: impl Into<Ed25519PublicKey>,
         #[case] msg: impl AsRef<[u8]>,
-        #[case] signature: [u8; SIGNATURE_LENGTH],
+        #[case] signature: impl Into<Ed25519Signature>,
     ) {
         assert!(
             !Ed25519::verify(
-                &Ed25519PublicKey(public_key).try_into().unwrap(),
+                &public_key.into().try_into().unwrap(),
                 msg.as_ref(),
-                &Ed25519Signature(signature).into(),
+                &signature.into().into(),
             ),
             "invalid signature passed verification",
         );
