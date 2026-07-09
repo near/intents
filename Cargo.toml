@@ -45,7 +45,6 @@ members = [
   "crates/primitives/time",
   "crates/primitives/token-id",
 
-  # "crates/signatures/schema",
   "crates/signatures/erc191",
   "crates/signatures/nep413",
   "crates/signatures/nep461",
@@ -121,7 +120,6 @@ defuse-erc191.path = "crates/signatures/erc191"
 defuse-nep413.path = "crates/signatures/nep413"
 defuse-nep461.path = "crates/signatures/nep461"
 defuse-sep53.path = "crates/signatures/sep53"
-# defuse-signature-schema.path = "crates/signatures/schema"
 defuse-tip191.path = "crates/signatures/tip191"
 defuse-ton-connect = { path = "crates/signatures/ton-connect", default-features = false }
 defuse-webauthn = { path = "crates/signatures/webauthn", default-features = false }
