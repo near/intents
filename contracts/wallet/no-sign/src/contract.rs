@@ -30,6 +30,7 @@ impl Contract {
     /// in the same receipt right after `UseGlobalContract` action.
     ///
     /// MUST attach at least 1yN for security reasons.
+    #[allow(clippy::use_self)]
     #[private]
     #[payable]
     #[init]

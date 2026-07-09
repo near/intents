@@ -1424,7 +1424,6 @@ dependencies = [
  "p256",
  "rstest",
  "schemars 0.8.22",
- "serde",
  "serde_with",
  "thiserror 2.0.18",
 ]
@@ -1890,23 +1889,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-wallet"
-version = "0.1.0"
-dependencies = [
- "arbitrary",
- "defuse-crypto",
- "defuse-digest",
- "defuse-test-utils",
- "defuse-wallet-core",
- "defuse-webauthn",
- "near-sdk",
- "rand 0.10.1",
- "rstest",
- "serde_with",
- "thiserror 2.0.18",
-]
-
-[[package]]
 name = "defuse-wallet-client"
 version = "0.1.0"
 dependencies = [
@@ -2043,7 +2025,6 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "borsh",
- "cfg_eval",
  "defuse-crypto",
  "defuse-digest",
  "defuse-webauthn",
@@ -3856,7 +3837,6 @@ version = "5.28.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b26a1bbdbc52ac621fe5a7f71636f6d2df3367bae1a28c7f81dfa935fb63e8a8"
 dependencies = [
- "arbitrary",
  "base64 0.22.1",
  "borsh",
  "bs58 0.5.1",
@@ -3891,7 +3871,6 @@ version = "4.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e41a10fd85c23e4ae63adf6d9b224e852410176f804328b1b0a36d8497e97c80"
 dependencies = [
- "arbitrary",
  "base64 0.22.1",
  "borsh",
  "bs58 0.5.1",

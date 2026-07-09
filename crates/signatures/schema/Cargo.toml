@@ -8,7 +8,7 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-derivation-schema.workspace = true
 defuse-crypto.workspace = true
+defuse-derivation-schema.workspace = true
 
 impl-tools.workspace = true

@@ -1,6 +1,7 @@
 lints.workspace = true
 
 [package]
+# TODO: rename to defuse-wallet
 name = "defuse-wallet-core"
 edition.workspace = true
 version.workspace = true

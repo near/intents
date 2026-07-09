@@ -12,7 +12,7 @@ readme = "../README.md"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-defuse-wallet-webauthn = { workspace = true, features = ["p256", "near-contract"] }
+defuse-wallet-webauthn = { workspace = true, features = ["borsh", "near-contract", "p256"] }
 
 near-sdk.workspace = true
 

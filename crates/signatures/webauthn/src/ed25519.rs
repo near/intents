@@ -44,7 +44,7 @@ mod tests {
                 &Ed25519PublicKey(public_key).try_into().unwrap(),
                 challenge,
                 &payload,
-                &Ed25519Signature(signature).try_into().unwrap(),
+                &Ed25519Signature(signature).into(),
             ),
             "signature is invalid",
         );

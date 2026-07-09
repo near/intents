@@ -20,11 +20,7 @@ hex = { workspace = true, optional = true }
 k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"], optional = true }
 
 [features]
-ed25519 = [
-  "defuse-crypto/ed25519",
-  "dep:curve25519-dalek",
-  "dep:ed25519-dalek",
-]
+ed25519 = ["defuse-crypto/ed25519", "dep:curve25519-dalek", "dep:ed25519-dalek"]
 secp256k1 = ["defuse-crypto/secp256k1", "dep:k256"]
 
 borsh = ["dep:borsh"]

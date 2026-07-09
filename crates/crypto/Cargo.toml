@@ -17,7 +17,6 @@ borsh = { workspace = true, features = ["derive"], optional = true }
 bs58 = { workspace = true, optional = true }
 cfg_eval = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
-serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
 thiserror = { workspace = true, optional = true }
 
@@ -34,7 +33,7 @@ arbitrary = ["dep:arbitrary"]
 borsh = ["dep:borsh"]
 borsh-schema = ["borsh", "borsh/unstable__schema"]
 fmt = ["dep:bs58", "dep:thiserror"]
-serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with", "fmt"]
+serde = ["dep:cfg_eval", "dep:serde_with", "fmt"]
 schemars-v0_8 = ["dep:schemars", "serde", "serde_with?/schemars_0_8"]
 
 [dev-dependencies]

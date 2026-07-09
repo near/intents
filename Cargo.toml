@@ -9,7 +9,6 @@ members = [
   "contracts/poa/factory",
   "contracts/poa/token",
   "contracts/treasury-logger",
-  "contracts/wallet",
   "contracts/wallet/ed25519",
   "contracts/wallet/no-sign",
   "contracts/wallet/webauthn",
@@ -25,7 +24,6 @@ members = [
   "crates/digest",
   "crates/io-utils",
   "crates/kdf",
-  # "crates/kdf/crypto",
   "crates/kdf/mpc",
   "crates/map-utils",
   "crates/num-utils",
@@ -62,9 +60,6 @@ members = [
   "crates/wallet/relayer",
   "crates/wallet/sdk",
 
-  # "crates/wallet/signatures/ed25519",
-  # "crates/wallet/signatures/webauthn",
-
   "crates/testing/utils",
   "crates/testing/randomness",
   "crates/testing/sandbox",
@@ -88,7 +83,6 @@ defuse-outlayer-app.path = "contracts/outlayer-app"
 defuse-outlayer-app-core = { path = "contracts/outlayer-app/core", default-features = false }
 defuse-poa-factory.path = "contracts/poa/factory"
 defuse-poa-token.path = "contracts/poa/token"
-defuse-wallet.path = "contracts/wallet"
 defuse-wallet-ed25519.path = "contracts/wallet/ed25519"
 defuse-wallet-no-sign.path = "contracts/wallet/no-sign"
 defuse-wallet-webauthn.path = "contracts/wallet/webauthn"
@@ -104,7 +98,6 @@ defuse-crypto = { path = "crates/crypto", default-features = false }
 defuse-digest.path = "crates/digest"
 defuse-io-utils.path = "crates/io-utils"
 defuse-kdf = { path = "crates/kdf", default-features = false }
-# defuse-kdf-crypto = { path = "crates/kdf/crypto", default-features = false }
 defuse-kdf-mpc = { path = "crates/kdf/mpc", default-features = false }
 defuse-map-utils.path = "crates/map-utils"
 defuse-num-utils.path = "crates/num-utils"
@@ -139,9 +132,6 @@ defuse-wallet-client.path = "crates/wallet/client"
 defuse-wallet-core.path = "crates/wallet/core"
 defuse-wallet-relayer.path = "crates/wallet/relayer"
 defuse-wallet-sdk.path = "crates/wallet/sdk"
-
-# defuse-wallet-ed25519.path = "crates/wallet/signatures/ed25519"
-# defuse-wallet-webauthn.path = "crates/wallet/signatures/webauthn"
 
 defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"

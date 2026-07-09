@@ -8,8 +8,8 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-crypto = { workspace = true, features = ["ed25519"] }
+defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-nep461.workspace = true
 
 borsh = { workspace = true, features = ["derive"] }
