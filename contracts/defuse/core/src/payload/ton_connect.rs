@@ -1,5 +1,5 @@
 use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
-use defuse_ton_connect::{TonConnectPayload, TonConnectPayloadSchema};
+pub use defuse_ton_connect::{TonConnectPayload, TonConnectPayloadSchema};
 use near_sdk::CryptoHash;
 use serde::{
     Deserialize, Serialize,

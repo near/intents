@@ -5,7 +5,10 @@ use defuse::core::{
     nep413::Nep413Payload,
     payload::{multi::MultiPayload, nep413::Nep413DefuseMessage},
 };
-use defuse_nep413::SignedNep413Payload;
+use defuse_core::{
+    crypto::ed25519::{Ed25519PublicKey, Ed25519Signature},
+    payload::nep413::SignedNep413Payload,
+};
 use near_kit::{AccountIdRef, Near};
 use serde::Serialize;
 use serde_json;
@@ -74,8 +77,8 @@ impl DefuseSignerExt for Near {
 
         MultiPayload::Nep413(SignedNep413Payload {
             payload,
-            public_key: *signed.public_key.as_ed25519_bytes().unwrap(),
-            signature: signed.signature.as_bytes().try_into().unwrap(),
+            public_key: Ed25519PublicKey(*signed.public_key.as_ed25519_bytes().unwrap()),
+            signature: Ed25519Signature(signed.signature.as_bytes().try_into().unwrap()),
         })
     }
 }

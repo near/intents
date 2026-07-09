@@ -1,7 +1,7 @@
 use derive_more::derive::From;
 use near_sdk::{CryptoHash, near, serde::Deserialize};
 use serde::Serialize;
-use serde_with::base58::Base58;
+use serde_with::{base58::Base58, serde_as};
 use std::borrow::Cow;
 
 use crate::{

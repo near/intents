@@ -1,7 +1,6 @@
 use defuse::core::{
     accounts::{AccountEvent, NonceEvent, PublicKeyEvent},
     amounts::Amounts,
-    crypto::Payload,
     events::DefuseEvent,
     intents::{
         DefuseIntents, Intent, MaybeIntentEvent,
@@ -12,6 +11,7 @@ use defuse::core::{
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
     tokens::TransferEvent,
 };
+use defuse_core::payload::Payload;
 use near_kit::AccountId;
 use near_sdk_core::{events::AsNep297Event, types::CryptoHash};
 use std::borrow::Cow;

@@ -30,13 +30,52 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 thiserror.workspace = true
 
-arbitrary = { workspace = true, optional = true }
+arbitrary = { workspace = true, features = ["derive"], optional = true }
 bitflags = { workspace = true, optional = true }
 defuse-bitmap = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
 defuse-map-utils = { workspace = true, features = ["near"], optional = true }
 defuse-wnear = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
+
+[features]
+abi = [
+  "borsh/unstable__schema",
+  "defuse-core/abi",
+  "defuse-near-utils/abi",
+  "defuse-serde-utils/abi",
+  "dep:schemars",
+  "near-sdk/abi",
+]
+arbitrary = ["defuse-core/arbitrary", "dep:arbitrary"]
+contract = [
+  "dep:bitflags",
+  "dep:defuse-bitmap",
+  "dep:defuse-borsh-utils",
+  "dep:defuse-map-utils",
+  "dep:defuse-wnear",
+]
+imt = ["defuse-core/imt"]
+far = ["imt"]
+
+near-kit = ["defuse-core/near-kit"]
+
+[dev-dependencies]
+defuse = { path = ".", features = ["abi"] }
+
+defuse-core = { workspace = true, features = ["arbitrary"] }
+defuse-randomness.workspace = true
+defuse-tests.workspace = true
+
+anyhow.workspace = true
+tokio = { workspace = true, features = ["macros"] }
+
+arbitrary.workspace = true
+futures.workspace = true
+itertools.workspace = true
+near-sdk = { workspace = true, features = ["non-contract-usage"] }
+proptest.workspace = true
+rstest.workspace = true
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"
@@ -65,40 +104,3 @@ container_build_command = [
   "--features=contract,far",
   "--abi-features=abi,contract,far",
 ]
-
-[features]
-abi = [
-  "borsh/unstable__schema",
-  "defuse-core/abi",
-  "defuse-near-utils/abi",
-  "defuse-serde-utils/abi",
-  "dep:schemars",
-  "near-sdk/abi",
-]
-arbitrary = ["defuse-core/arbitrary", "dep:arbitrary"]
-contract = [
-  "dep:bitflags",
-  "dep:defuse-bitmap",
-  "dep:defuse-borsh-utils",
-  "dep:defuse-map-utils",
-  "dep:defuse-wnear",
-]
-imt = ["defuse-core/imt"]
-far = ["imt"]
-
-[dev-dependencies]
-defuse = { path = ".", features = ["abi"] }
-
-defuse-core = { workspace = true, features = ["arbitrary"] }
-defuse-randomness.workspace = true
-defuse-tests.workspace = true
-
-anyhow.workspace = true
-tokio = { workspace = true, features = ["macros"] }
-
-arbitrary.workspace = true
-futures.workspace = true
-itertools.workspace = true
-near-sdk = { workspace = true, features = ["non-contract-usage"] }
-proptest.workspace = true
-rstest.workspace = true

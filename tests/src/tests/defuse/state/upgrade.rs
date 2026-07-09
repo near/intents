@@ -1,5 +1,5 @@
-use defuse_core::PublicKey;
 use defuse_core::intents::account::RemovePublicKey;
+use defuse_core::{PublicKey, crypto::ed25519::Ed25519PublicKey};
 use defuse_sandbox::{
     extensions::{
         acl::AccessControllableExt,
@@ -74,11 +74,11 @@ async fn test_upgrade_with_persistence(
 
     let get_pubkey = |near: &Near| {
         let near_pubkey = near.public_key().expect("must have signer");
-        DefusePublicKey::Ed25519(
+        DefusePublicKey::Ed25519(Ed25519PublicKey(
             *near_pubkey
                 .as_ed25519_bytes()
                 .expect("ed25519 key required"),
-        )
+        ))
     };
 
     let user1_pubkey = get_pubkey(&user1);

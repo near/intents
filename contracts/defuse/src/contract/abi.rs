@@ -1,3 +1,5 @@
+#![allow(clippy::used_underscore_binding)]
+
 use defuse_core::{
     intents::{DefuseIntents, Intent},
     payload::{DefusePayload, nep413::Nep413DefuseMessage},

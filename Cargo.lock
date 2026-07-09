@@ -1751,7 +1751,6 @@ dependencies = [
  "defuse-escrow-swap",
  "defuse-global-deployer",
  "defuse-nep245",
- "defuse-nep413",
  "defuse-outlayer-app",
  "defuse-poa-factory",
  "defuse-test-utils",

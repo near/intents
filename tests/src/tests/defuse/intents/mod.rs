@@ -1,6 +1,6 @@
 #![allow(clippy::cloned_ref_to_slice_refs)]
 
-use defuse_core::intents::MaybeIntentEvent;
+use defuse_core::{intents::MaybeIntentEvent, payload::Payload};
 use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::{
     extensions::{
@@ -10,7 +10,6 @@ use defuse_sandbox::{
                 Nonce, Timestamp,
                 accounts::{AccountEvent, NonceEvent},
                 amounts::Amounts,
-                crypto::Payload,
                 events::DefuseEvent,
                 intents::{DefuseIntents, tokens::Transfer},
                 token_id::{TokenId, nep141::Nep141TokenId},

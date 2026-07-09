@@ -1,6 +1,9 @@
 use arbitrary::Unstructured;
 use defuse_core::PublicKey;
-use defuse_crypto::p256::P256UncompressedPublicKey;
+use defuse_crypto::{
+    ed25519::Ed25519PublicKey, p256::P256UncompressedPublicKey,
+    secp256k1::Secp256k1UncompressedPublicKey,
+};
 use rstest::fixture;
 
 use super::random::{Rng, RngExt, rng};
@@ -15,12 +18,12 @@ pub fn public_key(mut rng: impl Rng) -> PublicKey {
 
 #[fixture]
 pub fn ed25519_pk(mut rng: impl Rng) -> PublicKey {
-    PublicKey::Ed25519(rng.random())
+    PublicKey::Ed25519(Ed25519PublicKey(rng.random()))
 }
 
 #[fixture]
 pub fn secp256k1_pk(mut rng: impl Rng) -> PublicKey {
-    PublicKey::Secp256k1(rng.random())
+    PublicKey::Secp256k1(Secp256k1UncompressedPublicKey(rng.random()))
 }
 
 #[fixture]

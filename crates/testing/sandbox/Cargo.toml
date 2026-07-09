@@ -20,10 +20,9 @@ serde.workspace = true
 serde_json.workspace = true
 serde_with.workspace = true
 
-defuse = { workspace = true, optional = true, features = ["contract"] }
+defuse = { workspace = true, optional = true, features = ["contract", "near-kit"] }
 defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }
 defuse-global-deployer = { workspace = true, optional = true }
-defuse-nep413 = { workspace = true, optional = true, features = ["near-kit", "serde"] }
 defuse-outlayer-app = { workspace = true, optional = true }
 defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
 defuse-test-utils = { workspace = true, optional = true }
@@ -36,7 +35,7 @@ near-sdk = { workspace = true, features = ["unit-testing"] }
 ignored = ["near-sdk"] # needed only for unit-tesing
 
 [features]
-defuse = ["dep:defuse", "dep:defuse-nep413", "dep:defuse-test-utils"]
+defuse = ["dep:defuse", "dep:defuse-test-utils"]
 deployer = ["dep:defuse-global-deployer"]
 escrow = ["dep:defuse-escrow-swap"]
 imt = ["defuse", "defuse-test-utils?/imt", "defuse/imt"]

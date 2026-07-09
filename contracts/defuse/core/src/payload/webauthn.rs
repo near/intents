@@ -1,5 +1,6 @@
 use defuse_digest::{Digest, sha2::Sha256};
-use defuse_webauthn::{IgnoreUserVerification, WebauthnPayload, ed25519::Ed25519, p256::P256};
+pub use defuse_webauthn::WebauthnPayload;
+use defuse_webauthn::{IgnoreUserVerification, ed25519::Ed25519, p256::P256};
 use near_sdk::CryptoHash;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 

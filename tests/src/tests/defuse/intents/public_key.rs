@@ -1,9 +1,9 @@
+use defuse_core::payload::Payload;
 use defuse_sandbox::extensions::defuse::{
     DefuseExt, DefuseSignerExt, ExtractNonceExt, ToEventLog,
     core::{
         PublicKey,
         accounts::{AccountEvent, PublicKeyEvent},
-        crypto::Payload,
         events::DefuseEvent,
         intents::{
             MaybeIntentEvent,

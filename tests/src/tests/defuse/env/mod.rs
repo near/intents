@@ -7,6 +7,7 @@ pub use self::builder::*;
 
 use anyhow::{Context, Result, anyhow};
 use arbitrary::Unstructured;
+use defuse_core::crypto::ed25519::Ed25519PublicKey;
 use defuse_randomness::{RngExt, make_true_rng};
 use defuse_sandbox::{
     account::Account,
@@ -103,11 +104,11 @@ impl Env {
         let account = self.create_subaccount(name, INITIAL_USER_BALANCE).await;
 
         let near_pubkey = account.public_key().expect("account must have signer");
-        let defuse_pubkey = DefusePublicKey::Ed25519(
+        let defuse_pubkey = DefusePublicKey::Ed25519(Ed25519PublicKey(
             *near_pubkey
                 .as_ed25519_bytes()
                 .expect("ed25519 key required"),
-        );
+        ));
 
         if !self
             .defuse

@@ -1,3 +1,4 @@
+use defuse_core::crypto::ed25519::Ed25519PublicKey;
 use near_kit::{Action, Final, FunctionCallAction, InMemorySigner, KeyPair, Near, NearToken};
 
 pub trait Account {
@@ -51,11 +52,11 @@ impl Account for Near {
 
     async fn create_implicit(&self, balance: impl Into<Option<NearToken>>) -> Self {
         let kp = KeyPair::random();
-        let account_id = defuse_core::PublicKey::Ed25519(
+        let account_id = defuse_core::PublicKey::Ed25519(Ed25519PublicKey(
             *kp.public_key
                 .as_ed25519_bytes()
                 .expect("should return valid ed25519 pubkey"),
-        )
+        ))
         .to_implicit_account_id();
 
         if let Some(balance) = balance.into() {

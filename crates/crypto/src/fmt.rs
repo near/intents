@@ -26,7 +26,7 @@ pub trait TypedCurve: Curve {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum ParseCurveError {
     #[error("wrong curve type")]
     WrongCurveType,
