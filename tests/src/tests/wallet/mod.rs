@@ -16,7 +16,7 @@ use defuse_sandbox::{
     kit::{Finality::Optimistic, Gas, GlobalContractId, Near, NearToken, StateInit, StateInitV1},
     root,
 };
-use defuse_test_utils::wasms::WALLET_WASM;
+use defuse_test_utils::wasms::WALLET_ED25519_WASM;
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
 use futures::future::join_all;
 use impl_tools::autoimpl;
@@ -284,7 +284,7 @@ impl Env {
 #[fixture]
 #[awt]
 async fn env(
-    #[default(WALLET_WASM.clone())] wasm: impl Into<Vec<u8>>,
+    #[default(WALLET_ED25519_WASM.clone())] wasm: impl Into<Vec<u8>>,
     #[future] root: Near,
 ) -> Env {
     // wallet.0.test
