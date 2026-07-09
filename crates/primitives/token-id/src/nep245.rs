@@ -1,5 +1,3 @@
-use crate::Nep245TokenId as TokenId;
-
 use std::{fmt, str::FromStr};
 
 use near_account_id::AccountId;
@@ -16,11 +14,11 @@ use crate::{TokenIdType, error::TokenIdError};
 pub struct Nep245TokenId {
     pub contract_id: AccountId,
 
-    pub mt_token_id: TokenId,
+    pub mt_token_id: String,
 }
 
 impl Nep245TokenId {
-    pub fn new(contract_id: impl Into<AccountId>, mt_token_id: impl Into<TokenId>) -> Self {
+    pub fn new(contract_id: impl Into<AccountId>, mt_token_id: impl Into<String>) -> Self {
         Self {
             contract_id: contract_id.into(),
             mt_token_id: mt_token_id.into(),

@@ -116,6 +116,7 @@ impl Sendable for TokenId {
             Self::Nep141(token) => token.send(receiver_id, amount, memo, msg, min_gas, unused_gas),
             #[cfg(feature = "nep245")]
             Self::Nep245(token) => token.send(receiver_id, amount, memo, msg, min_gas, unused_gas),
+            _ => panic!("unsupported token type"),
         }
     }
 }
@@ -142,6 +143,7 @@ impl Sent {
             TokenIdType::Nep141 => serde_json::to_vec(&U128(refund)),
             #[cfg(feature = "nep245")]
             TokenIdType::Nep245 => serde_json::to_vec(&[U128(refund)]),
+            _ => panic!("unsupported token type"),
         }
     }
 
@@ -178,6 +180,7 @@ impl Sent {
                         Err(_) => self.amount,
                     }
                 }
+                _ => panic!("unsupported token type"),
             }
             .min(self.amount)
         } else if promise_result_checked_void(result_idx).is_ok() {

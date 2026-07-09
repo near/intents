@@ -19,13 +19,6 @@ schemars = { workspace = true, optional = true, features = ["derive"] }
 serde_with = { workspace = true, optional = true }
 
 [features]
-default = ["nep141", "nep171", "nep245"]
-
-nep141 = []
-nep171 = []
-nep245 = []
-imt = []
-
 abi = ["borsh?/unstable__schema", "dep:schemars", "near-account-id/abi"]
 arbitrary = ["dep:arbitrary", "near-account-id/arbitrary"]
 borsh = ["dep:borsh", "near-account-id/borsh"]

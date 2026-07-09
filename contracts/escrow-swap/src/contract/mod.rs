@@ -1,3 +1,5 @@
+#![cfg_attr(not(near), allow(dead_code))]
+
 #[cfg(feature = "auth_call")]
 mod auth_call;
 mod cleanup;

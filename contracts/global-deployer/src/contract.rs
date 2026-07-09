@@ -1,3 +1,5 @@
+#![cfg_attr(not(near), allow(dead_code))]
+
 use defuse_borsh_utils::{AsWrap, Remainder};
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_serde_utils::hex::AsHex;

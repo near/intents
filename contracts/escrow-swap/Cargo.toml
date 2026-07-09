@@ -38,8 +38,8 @@ schemars = { workspace = true, features = ["derive"], optional = true }
 default = ["auth_call", "nep141", "nep245"]
 
 auth_call = ["dep:defuse-auth-call"]
-nep141 = ["defuse-token-id/nep141"]
-nep245 = ["defuse-token-id/nep245"]
+nep141 = []
+nep245 = []
 
 abi = [
   "borsh/unstable__schema",
@@ -55,6 +55,7 @@ abi = [
 contract = ["dep:defuse-near-utils"]
 
 [dev-dependencies]
+defuse-escrow-swap = { path = ".", features = ["abi"] }
 defuse-sandbox.workspace = true
 
 futures.workspace = true

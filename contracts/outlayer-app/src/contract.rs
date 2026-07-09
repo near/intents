@@ -1,3 +1,5 @@
+#![cfg_attr(not(near), allow(dead_code))]
+
 use defuse_serde_utils::hex::AsHex;
 use near_sdk::{AccountId, AccountIdRef, NearToken, PanicOnDefault, env, near, require};
 

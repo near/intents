@@ -33,11 +33,11 @@ clean: clean-out-dir
 
 .PHONY: test
 test:
-	cargo test --all
+	cargo test --all --all-features
 
 .PHONY: check
 check: check-contracts
-	cargo clippy --workspace --all-targets --no-deps
+	cargo clippy --workspace --all-targets --all-features
 
 .PHONY: check-contracts
 
