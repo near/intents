@@ -16,7 +16,7 @@ use near_sdk::{AccountId, PanicOnDefault, near};
     contract_state(key = STATE_KEY),
     contract_metadata(
         standard(standard = "wallet", version = "1.0.0"),
-        standard(standard = "wallet-webauthn-ed25519", version = "1.0.0"),
+        standard(standard = "wallet-webauthn-p256", version = "1.0.0"),
     ),
 )]
 #[derive(Debug, PanicOnDefault)]
