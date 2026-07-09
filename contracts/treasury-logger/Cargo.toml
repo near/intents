@@ -21,7 +21,14 @@ near-sdk.workspace = true
 serde_with.workspace = true
 
 [features]
-abi = ["borsh/unstable__schema", "near-sdk/abi", "serde_with/schemars_0_8"]
+abi = [
+  "borsh/unstable__schema",
+  "defuse-borsh-utils/schema",
+  "defuse-near-utils/abi",
+  "defuse-nep245/abi",
+  "near-sdk/abi",
+  "serde_with/schemars_0_8",
+]
 
 [dev-dependencies]
 defuse-treasury-logger = { path = ".", features = ["abi"] }

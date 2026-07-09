@@ -67,7 +67,7 @@ pub struct SignedNep413Payload {
 
 impl Payload for SignedNep413Payload {
     fn hash(&self) -> near_sdk::CryptoHash {
-        todo!()
+        Nep413::prehash(&self.payload)
     }
 }
 

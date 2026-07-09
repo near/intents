@@ -18,7 +18,7 @@ thiserror.workspace = true
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-abi = ["borsh/unstable__schema", "dep:schemars"]
+abi = ["borsh/unstable__schema", "dep:schemars", "near-sdk/abi"]
 
 [dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }

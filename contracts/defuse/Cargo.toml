@@ -43,6 +43,7 @@ abi = [
   "borsh/unstable__schema",
   "defuse-core/abi",
   "defuse-near-utils/abi",
+  "defuse-nep245/abi",
   "defuse-serde-utils/abi",
   "dep:schemars",
   "near-sdk/abi",

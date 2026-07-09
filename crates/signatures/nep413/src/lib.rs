@@ -28,7 +28,7 @@ impl Nep413 {
 
     /// Derive prehash for signing.
     #[inline]
-    fn prehash(payload: &Nep413Payload) -> [u8; 32] {
+    pub fn prehash(payload: &Nep413Payload) -> [u8; 32] {
         let mut hasher = IoWrapper(Sha256::new());
 
         // serialize directly to hasher
