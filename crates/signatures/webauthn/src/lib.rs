@@ -58,16 +58,14 @@ where
     }
 
     /// Check the payload and whether is corresponds to given `challenge`.
-    fn check(challenge: impl AsRef<[u8]>, payload: &WebauthnPayload) -> bool {
+    fn check(challenge: impl AsRef<[u8]>, p: &WebauthnPayload) -> bool {
         // check authData flags before `clientDataJSON` to save gas
-        if payload.authenticator_data.len() < 37
-            || !Self::check_flags(payload.authenticator_data[32])
-        {
+        if p.authenticator_data.len() < 37 || !Self::check_flags(p.authenticator_data[32]) {
             return false;
         }
 
         // 10. Verify that the value of C.type is the string webauthn.get.
-        let Ok(c) = serde_json::from_str::<CollectedClientData>(&payload.client_data_json) else {
+        let Ok(c) = serde_json::from_str::<CollectedClientData>(&p.client_data_json) else {
             return false;
         };
         if c.typ != ClientDataType::Get {
