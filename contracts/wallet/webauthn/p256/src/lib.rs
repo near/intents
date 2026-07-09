@@ -1,56 +1,27 @@
 use std::collections::BTreeSet;
 
-use defuse_wallet_core::{
-    Request, RequestMessage, STATE_KEY, State, Timestamp,
-    contract::{ContractImpl, Error, Wallet},
+use defuse_wallet_webauthn::{
+    WalletWebauthn,
+    core::{
+        Request, RequestMessage, STATE_KEY, Timestamp,
+        contract::{ContractImpl, Wallet},
+    },
+    p256::P256,
+    webauthn::IgnoreUserVerification,
 };
-use near_sdk::{AccountId, FunctionError, PanicOnDefault, env, near};
-
-use crate::{NoPublicKey, NoSign};
+use near_sdk::{AccountId, PanicOnDefault, near};
 
 #[near(
     contract_state(key = STATE_KEY),
     contract_metadata(
         standard(standard = "wallet", version = "1.0.0"),
-        standard(standard = "wallet-no-sign", version = "1.0.0"),
+        standard(standard = "wallet-webauthn-ed25519", version = "1.0.0"),
     ),
 )]
 #[derive(Debug, PanicOnDefault)]
 #[repr(transparent)]
-struct Contract(ContractImpl<NoSign>);
-
-#[near]
-impl Contract {
-    /// Initialize a wallet contract on the existing account
-    /// with authentication by signature disabled and
-    /// add the current account as an extension.
-    ///
-    /// This method is allowed to be called only by the current
-    /// account itself. It's recommended to call this method
-    /// in the same receipt right after `UseGlobalContract` action.
-    ///
-    /// MUST attach at least 1yN for security reasons.
-    #[private]
-    #[payable]
-    #[init]
-    pub fn w_init() -> Self {
-        if env::attached_deposit().is_zero() {
-            // reject FunctionCall access keys
-            Error::InsufficientDeposit.panic();
-        }
-
-        let mut s = State::new(NoPublicKey)
-            // Add self as the only extension
-            .extensions([env::current_account_id()]);
-
-        // Disable signature verification completely,
-        // so that accidently removing self from extensions
-        // would result into lockout error.
-        s.signature_enabled = false;
-
-        Self(s.into())
-    }
-}
+// TODO: ignore user verification?
+struct Contract(ContractImpl<WalletWebauthn<P256, IgnoreUserVerification>>);
 
 #[near]
 impl Wallet for Contract {

@@ -9,7 +9,7 @@ repository.workspace = true
 
 [dependencies]
 defuse-digest = { workspace = true, features = ["sha2"] }
-defuse-kdf-crypto.workspace = true
+defuse-kdf-crypto = { workspace = true, features = ["serde"] }
 
 cfg_eval.workspace = true
 serde = { workspace = true, features = ["derive"] }
@@ -17,16 +17,24 @@ serde_json.workspace = true
 serde_with = { workspace = true, features = ["base64"] }
 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
+borsh = { workspace = true, features = ["derive"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-abi = ["schemars-v0_8"]
-arbitrary = ["dep:arbitrary"]
 ed25519 = ["defuse-kdf-crypto/ed25519"]
 p256 = ["defuse-kdf-crypto/p256"]
-schemars-v0_8 = ["dep:schemars", "serde_with/schemars_0_8"]
+
+abi = ["borsh-schema", "schemars-v0_8"]
+arbitrary = ["defuse-kdf-crypto/arbitrary", "dep:arbitrary"]
+borsh = ["defuse-kdf-crypto/borsh", "dep:borsh"]
+borsh-schema = ["borsh", "defuse-kdf-crypto/borsh-schema"]
+schemars-v0_8 = [
+  "defuse-kdf-crypto/schemars-v0_8",
+  "dep:schemars",
+  "serde_with/schemars_0_8",
+]
 
 [dev-dependencies]
-defuse-webauthn = { path = ".", features = ["arbitrary", "ed25519", "p256", "schemars-v0_8"] }
+defuse-webauthn = { path = ".", features = ["arbitrary", "ed25519", "p256", "schemars-v0_8", "borsh", "borsh-schema"] }
 hex-literal.workspace = true
 rstest.workspace = true

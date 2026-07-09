@@ -2046,6 +2046,8 @@ dependencies = [
 name = "defuse-wallet-webauthn"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
+ "borsh",
  "defuse-kdf-crypto",
  "defuse-wallet-core",
  "defuse-wallet-webauthn",
@@ -2053,8 +2055,27 @@ dependencies = [
  "hex-literal",
  "near-sdk",
  "rstest",
+ "schemars 0.8.22",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "defuse-wallet-webauthn-ed25519"
+version = "0.1.0"
+dependencies = [
+ "defuse-wallet-webauthn",
+ "defuse-wallet-webauthn-ed25519",
+ "near-sdk",
+]
+
+[[package]]
+name = "defuse-wallet-webauthn-p256"
+version = "0.1.0"
+dependencies = [
+ "defuse-wallet-webauthn",
+ "defuse-wallet-webauthn-p256",
+ "near-sdk",
 ]
 
 [[package]]
@@ -2062,6 +2083,7 @@ name = "defuse-webauthn"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "borsh",
  "cfg_eval",
  "defuse-digest",
  "defuse-kdf-crypto",

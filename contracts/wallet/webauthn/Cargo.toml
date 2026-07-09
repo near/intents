@@ -13,59 +13,58 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 defuse-kdf-crypto = { workspace = true, features = ["serde"] }
-defuse-wallet-core.workspace = true
+defuse-wallet-core = { workspace = true, features = ["serde"] }
 defuse-webauthn.workspace = true
 
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 
-near-sdk = { workspace = true, optional = true }
+arbitrary = { workspace = true, features = ["derive"], optional = true }
+borsh = { workspace = true, features = ["derive"], optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-abi = ["defuse-kdf-crypto/abi", "defuse-wallet-core/abi", "near-sdk?/abi"]
 ed25519 = ["defuse-kdf-crypto/ed25519"]
 p256 = ["defuse-kdf-crypto/p256"]
 
-contract = [
+abi = [
+  "borsh-schema",
+  "defuse-kdf-crypto/abi",
+  "defuse-wallet-core/abi",
+  "schemars-v0_8",
+]
+arbitrary = [
+  "defuse-kdf-crypto/arbitrary",
+  "defuse-wallet-core/arbitrary",
+  "defuse-webauthn/arbitrary",
+  "dep:arbitrary",
+]
+borsh = [
   "defuse-kdf-crypto/borsh",
-  "defuse-wallet-core/near-contract",
-  "dep:near-sdk",
+  "defuse-wallet-core/borsh",
+  "defuse-webauthn/borsh",
+  "dep:borsh",
+]
+borsh-schema = [
+  "borsh",
+  "borsh?/unstable__schema",
+  "defuse-kdf-crypto/borsh-schema",
+  "defuse-wallet-core/borsh-schema",
+  "defuse-webauthn/borsh-schema",
+]
+schemars-v0_8 = [
+  "defuse-kdf-crypto/schemars-v0_8",
+  "defuse-wallet-core/schemars-v0_8",
+  "defuse-webauthn/schemars-v0_8",
+  "dep:schemars",
 ]
 
+near-contract = ["defuse-wallet-core/near-contract"]
+
 [dev-dependencies]
-defuse-wallet-webauthn = { path = ".", features = ["abi", "contract", "ed25519", "p256"] }
+defuse-wallet-webauthn = { path = ".", features = ["abi", "near-contract", "ed25519", "p256"] }
 
 hex-literal.workspace = true
 rstest.workspace = true
 
 near-sdk = { workspace = true, features = ["unit-testing"] }
-
-[package.metadata.near.reproducible_build.variant.ed25519]
-image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"
-image_digest = "sha256:ccb22bb4e677ed022d8b9d1aa1b32f0af52dd0471ef1c32e48dedbf68ee6ee17"
-passed_env = []
-container_build_command = [
-  "cargo",
-  "near",
-  "build",
-  "non-reproducible-wasm",
-  "--locked",
-  "--no-default-features",
-  "--features=contract,ed25519",
-  "--abi-features=abi,contract,ed25519",
-]
-
-[package.metadata.near.reproducible_build.variant.p256]
-image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"
-image_digest = "sha256:ccb22bb4e677ed022d8b9d1aa1b32f0af52dd0471ef1c32e48dedbf68ee6ee17"
-passed_env = []
-container_build_command = [
-  "cargo",
-  "near",
-  "build",
-  "non-reproducible-wasm",
-  "--locked",
-  "--no-default-features",
-  "--features=contract,p256",
-  "--abi-features=abi,contract,p256",
-]

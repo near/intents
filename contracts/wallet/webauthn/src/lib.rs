@@ -7,13 +7,12 @@ pub mod ed25519;
 #[cfg(feature = "p256")]
 pub mod p256;
 
+use ::core::marker::PhantomData;
+
 use defuse_kdf_crypto::Curve;
 pub use defuse_wallet_core as core;
 use defuse_wallet_core::{RequestMessage, signatures::WalletSignatureSchema};
-
-use ::core::marker::PhantomData;
-
-// use borsh::{BorshDeserialize, BorshSerialize};
+pub use defuse_webauthn as webauthn;
 use defuse_webauthn::{Algorithm, UserVerification, Webauthn, WebauthnPayload};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
@@ -55,6 +54,11 @@ pub trait WalletWebauthnAlgorithm: Algorithm {
     type Signature;
 }
 
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
+)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WalletWebauthnProof<S> {
     #[serde(flatten)]

@@ -13,6 +13,8 @@ members = [
   "contracts/wallet/ed25519",
   "contracts/wallet/no-sign",
   "contracts/wallet/webauthn",
+  "contracts/wallet/webauthn/ed25519",
+  "contracts/wallet/webauthn/p256",
 
   "crates/bitmap",
   "crates/borsh-utils",
@@ -90,6 +92,8 @@ defuse-wallet.path = "contracts/wallet"
 defuse-wallet-ed25519.path = "contracts/wallet/ed25519"
 defuse-wallet-no-sign.path = "contracts/wallet/no-sign"
 defuse-wallet-webauthn.path = "contracts/wallet/webauthn"
+defuse-wallet-webauthn-ed25519.path = "contracts/wallet/webauthn/ed25519"
+defuse-wallet-webauthn-p256.path = "contracts/wallet/webauthn/p256"
 
 defuse-bitmap.path = "crates/bitmap"
 defuse-borsh-utils.path = "crates/borsh-utils"
