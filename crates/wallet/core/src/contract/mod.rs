@@ -87,9 +87,7 @@ pub struct ContractImpl<S: WalletSignatureSchema>(
         )
     )]
     State<S::PublicKey>,
-)
-where
-    S::PublicKey: Display;
+);
 
 impl<S> Wallet for ContractImpl<S>
 where
@@ -141,7 +139,7 @@ where
 
 impl<S> ContractImpl<S>
 where
-    S: WalletSignatureSchema<PublicKey: Display>,
+    S: WalletSignatureSchema,
 {
     fn execute_signed(&mut self, msg: RequestMessage, proof: &str) -> Result<()> {
         if !self.0.is_signature_allowed() {
@@ -255,6 +253,7 @@ where
         Ok(())
     }
 
+    #[inline]
     fn check_extension_enabled(&self, account_id: &AccountIdRef) -> Result<()> {
         if !self.0.has_extension(account_id) {
             return Err(Error::ExtensionNotEnabled(account_id.to_owned()));
@@ -262,6 +261,7 @@ where
         Ok(())
     }
 
+    #[inline]
     fn check_lockout(&self) -> Result<()> {
         if !self.0.signature_enabled && self.0.extensions.is_empty() {
             return Err(Error::Lockout);
@@ -293,5 +293,12 @@ where
         }
 
         Ok(p.build())
+    }
+}
+
+impl<S: WalletSignatureSchema> From<State<S::PublicKey>> for ContractImpl<S> {
+    #[inline]
+    fn from(state: State<S::PublicKey>) -> Self {
+        Self(state)
     }
 }

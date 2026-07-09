@@ -42,6 +42,10 @@ where
             return false;
         };
 
+        // We hash the payload for webauthn, since:
+        // 1. Authenticators are general-purpose signers and they usually
+        //    implement blind singing.
+        // 2. This reduces length of the `proof` submitted on-chain.
         Webauthn::<A, UV>::verify(&public_key, msg.hash(), &proof.payload, &signature)
     }
 }
