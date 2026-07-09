@@ -19,7 +19,7 @@ near-sdk.workspace = true
 serde_with = { workspace = true, features = ["base58"] }
 thiserror.workspace = true
 
-defuse-crypto = { workspace = true, default-features = false, features = ["parse", "borsh"], optional = true }
+defuse-crypto = { workspace = true, default-features = false, features = ["fmt", "borsh"], optional = true }
 defuse-digest = { workspace = true, features = ["sha2", "sha3"] }
 defuse-webauthn = { workspace = true, default-features = false, optional = true }
 
@@ -38,14 +38,14 @@ webauthn = ["dep:defuse-webauthn"]
 # This can be useful to deploy "1-of-M multisig"/"fan-out" wallet, where
 # extensions are pre-defined at the initialization stage (i.e. state_init).
 # So only extensions can execute requests via `w_execute_extension()`.
-contract = ["defuse-crypto?/near-contract", "defuse-wallet-core/near-contract"]
+contract = ["defuse-wallet-core/near-contract"]
 
 # Webauthn (a.k.a passkey) variants:
 webauthn-ed25519 = ["defuse-webauthn/ed25519", "webauthn"]
 webauthn-p256 = ["defuse-webauthn/p256", "webauthn"]
 
 # Raw ed25519 signature:
-ed25519 = ["defuse-crypto/ed25519", "defuse-crypto/near-contract"]
+ed25519 = ["defuse-crypto/ed25519", "defuse-crypto"]
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"

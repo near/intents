@@ -1,4 +1,4 @@
-pub use defuse_kdf_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
+pub use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 pub use defuse_webauthn::ed25519::Ed25519;
 
 use crate::WalletWebauthnAlgorithm;

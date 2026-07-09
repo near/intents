@@ -4,7 +4,7 @@ mod contract;
 
 use ::core::str::FromStr;
 
-use defuse_kdf_crypto::{
+use defuse_crypto::{
     Curve,
     ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
 };

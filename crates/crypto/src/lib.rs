@@ -1,29 +1,13 @@
-//! Internal cryptographic primitives used across the Intents ecosystem.
-//!
-//! This crate defines lightweight traits such as [`Payload`] and
-//! [`SignedPayload`] that allow Intents to treat messages from different
-//! signing standards uniformly. Implementations of these traits live in
-//! companion crates like `tip191`, `erc191`, or `bip322` and are primarily
-//! intended for internal use.
+// TODO: merge with `defuse-crypto`
 
 mod curve;
-mod payload;
+#[cfg(feature = "ed25519")]
+pub mod ed25519;
+#[cfg(feature = "fmt")]
+pub mod fmt;
+#[cfg(feature = "p256")]
+pub mod p256;
+#[cfg(feature = "secp256k1")]
+pub mod secp256k1;
 
-pub use self::{curve::*, payload::*};
-
-#[cfg(all(
-    feature = "parse",
-    any(feature = "ed25519", feature = "secp256k1", feature = "p256")
-))]
-mod parse;
-#[cfg(all(
-    feature = "parse",
-    any(feature = "ed25519", feature = "secp256k1", feature = "p256")
-))]
-pub use self::parse::*;
-
-#[cfg(all(
-    any(feature = "ed25519", feature = "secp256k1", feature = "p256"),
-    feature = "serde"
-))]
-pub mod serde;
+pub use self::curve::*;

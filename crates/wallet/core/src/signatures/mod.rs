@@ -1,7 +1,3 @@
-use core::fmt::Display;
-
-use borsh::{BorshDeserialize, BorshSerialize};
-
 use crate::RequestMessage;
 
 pub trait WalletSignatureSchema {

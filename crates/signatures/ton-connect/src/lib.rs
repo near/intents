@@ -2,8 +2,8 @@
 #[cfg(feature = "cell")]
 mod cell;
 
+use defuse_crypto::{Curve, ed25519::Ed25519};
 use defuse_digest::{Digest, sha2::Sha256};
-use defuse_kdf_crypto::{Curve, ed25519::Ed25519};
 use defuse_time::Timestamp;
 #[cfg(feature = "arbitrary")]
 use defuse_time::arbitrary::RangeNanos;
@@ -49,6 +49,7 @@ pub struct TonConnectPayload {
 }
 
 impl TonConnectPayload {
+    // TODO: separate TonConnect algorithm struct?
     #[must_use = "check if verification passed"]
     #[inline]
     pub fn verify(
@@ -56,14 +57,14 @@ impl TonConnectPayload {
         public_key: &<Ed25519 as Curve>::PublicKey,
         signature: &<Ed25519 as Curve>::Signature,
     ) -> bool {
-        let Some(prehash) = self.prehash() else {
+        let Some(prehash) = self.try_prehash() else {
             return false;
         };
 
         Ed25519::verify(public_key, &prehash, signature)
     }
 
-    fn prehash(&self) -> Option<[u8; 32]> {
+    pub fn try_prehash(&self) -> Option<[u8; 32]> {
         let timestamp: u64 = self.timestamp.as_secs().try_into().ok()?;
 
         let (prefix, payload) = match &self.payload {
@@ -169,7 +170,7 @@ impl TonConnectPayloadSchema {
 mod tests {
     use super::*;
 
-    use defuse_kdf_crypto::ed25519::ed25519_dalek::{
+    use defuse_crypto::ed25519::ed25519_dalek::{
         PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH, Signature, VerifyingKey,
     };
     use hex_literal::hex;

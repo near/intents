@@ -1,7 +1,7 @@
 //! [ERC-191](https://eips.ethereum.org/EIPS/eip-191) Signed Data Standard
 
+use defuse_crypto::{Curve, RecoverableCurve, secp256k1::Secp256k1};
 use defuse_digest::{Digest, sha3::Keccak256};
-use defuse_kdf_crypto::{Curve, RecoverableCurve, secp256k1::Secp256k1};
 
 /// [ERC-191](https://eips.ethereum.org/EIPS/eip-191) Signed Data Standard
 pub struct Erc191;
@@ -41,7 +41,7 @@ impl Erc191 {
 
 #[cfg(test)]
 mod tests {
-    use defuse_kdf_crypto::secp256k1::k256::{
+    use defuse_crypto::secp256k1::k256::{
         EncodedPoint,
         ecdsa::{RecoveryId, Signature, VerifyingKey},
     };

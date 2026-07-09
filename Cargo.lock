@@ -358,7 +358,7 @@ version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3078c7629b62d3f0439517fa394996acacc5cbc91c5a20d8c658e77abd503a71"
 dependencies = [
- "generic-array 0.14.9",
+ "generic-array",
 ]
 
 [[package]]
@@ -1115,7 +1115,7 @@ version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0dc92fb57ca44df6db8059111ab3af99a63d5d0f8375d9972e319a379c6bab76"
 dependencies = [
- "generic-array 0.14.9",
+ "generic-array",
  "rand_core 0.6.4",
  "subtle",
  "zeroize",
@@ -1127,7 +1127,7 @@ version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1bfb12502f3fc46cca1bb51ac28df9d618d813cdc3d2f25b9fe775a34af26bb3"
 dependencies = [
- "generic-array 0.14.9",
+ "generic-array",
  "typenum",
 ]
 
@@ -1388,7 +1388,6 @@ dependencies = [
  "defuse-nep413",
  "defuse-num-utils",
  "defuse-sep53",
- "defuse-signature-schema",
  "defuse-test-utils",
  "defuse-time",
  "defuse-tip191",
@@ -1416,15 +1415,17 @@ dependencies = [
  "arbitrary",
  "borsh",
  "bs58 0.5.1",
+ "cfg_eval",
+ "defuse-crypto",
  "ed25519-dalek",
- "generic-array 1.4.3",
+ "hex-literal",
+ "k256",
  "near-sdk",
  "p256",
  "rstest",
  "schemars 0.8.22",
  "serde",
  "serde_with",
- "strum 0.28.0",
  "thiserror 2.0.18",
 ]
 
@@ -1439,17 +1440,6 @@ dependencies = [
  "schemars 0.8.22",
  "serde_with",
  "thiserror 2.0.18",
-]
-
-[[package]]
-name = "defuse-derivation-schema"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "borsh",
- "defuse-derivation-schema",
- "hex",
- "impl-tools 0.12.0",
 ]
 
 [[package]]
@@ -1473,8 +1463,8 @@ dependencies = [
 name = "defuse-erc191"
 version = "0.1.0"
 dependencies = [
+ "defuse-crypto",
  "defuse-digest",
- "defuse-kdf-crypto",
  "hex-literal",
  "rstest",
 ]
@@ -1553,9 +1543,9 @@ version = "0.1.0"
 dependencies = [
  "borsh",
  "curve25519-dalek",
+ "defuse-crypto",
  "defuse-digest",
  "defuse-kdf",
- "defuse-kdf-crypto",
  "digest 0.11.3",
  "digest-io",
  "ed25519-dalek",
@@ -1565,27 +1555,6 @@ dependencies = [
  "k256",
  "near-sdk",
  "rstest",
-]
-
-[[package]]
-name = "defuse-kdf-crypto"
-version = "0.1.0"
-dependencies = [
- "arbitrary",
- "borsh",
- "bs58 0.5.1",
- "cfg_eval",
- "defuse-kdf-crypto",
- "ed25519-dalek",
- "hex-literal",
- "k256",
- "near-sdk",
- "p256",
- "rstest",
- "schemars 0.8.22",
- "serde",
- "serde_with",
- "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -1659,8 +1628,8 @@ dependencies = [
  "arbitrary",
  "borsh",
  "cfg_eval",
+ "defuse-crypto",
  "defuse-digest",
- "defuse-kdf-crypto",
  "defuse-nep413",
  "defuse-nep461",
  "digest-io",
@@ -1781,8 +1750,8 @@ dependencies = [
 name = "defuse-sep53"
 version = "0.1.0"
 dependencies = [
+ "defuse-crypto",
  "defuse-digest",
- "defuse-kdf-crypto",
  "hex-literal",
  "rstest",
  "stellar-strkey",
@@ -1798,15 +1767,6 @@ dependencies = [
  "serde_json",
  "serde_with",
  "tlb-ton",
-]
-
-[[package]]
-name = "defuse-signature-schema"
-version = "0.1.0"
-dependencies = [
- "defuse-derivation-schema",
- "defuse-kdf-crypto",
- "impl-tools 0.12.0",
 ]
 
 [[package]]
@@ -1871,8 +1831,8 @@ dependencies = [
 name = "defuse-tip191"
 version = "0.1.0"
 dependencies = [
+ "defuse-crypto",
  "defuse-digest",
- "defuse-kdf-crypto",
  "hex-literal",
  "rstest",
 ]
@@ -1903,8 +1863,8 @@ dependencies = [
  "arbitrary",
  "arbitrary_with",
  "cfg_eval",
+ "defuse-crypto",
  "defuse-digest",
- "defuse-kdf-crypto",
  "defuse-serde-utils",
  "defuse-time",
  "defuse-ton-connect",
@@ -1983,7 +1943,7 @@ dependencies = [
 name = "defuse-wallet-ed25519"
 version = "0.1.0"
 dependencies = [
- "defuse-kdf-crypto",
+ "defuse-crypto",
  "defuse-wallet-core",
  "defuse-wallet-ed25519",
  "hex-literal",
@@ -2048,7 +2008,7 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "borsh",
- "defuse-kdf-crypto",
+ "defuse-crypto",
  "defuse-wallet-core",
  "defuse-wallet-webauthn",
  "defuse-webauthn",
@@ -2084,8 +2044,8 @@ dependencies = [
  "arbitrary",
  "borsh",
  "cfg_eval",
+ "defuse-crypto",
  "defuse-digest",
- "defuse-kdf-crypto",
  "defuse-webauthn",
  "hex-literal",
  "rstest",
@@ -2344,7 +2304,7 @@ dependencies = [
  "crypto-bigint",
  "digest 0.10.7",
  "ff",
- "generic-array 0.14.9",
+ "generic-array",
  "group",
  "pkcs8",
  "rand_core 0.6.4",
@@ -2662,17 +2622,6 @@ dependencies = [
  "typenum",
  "version_check",
  "zeroize",
-]
-
-[[package]]
-name = "generic-array"
-version = "1.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2e55f16dcf0e9c00efbe2e655ffe45fc98e7066b52bc92f8a79e64060a79351"
-dependencies = [
- "generic-array 0.14.9",
- "rustversion",
- "typenum",
 ]
 
 [[package]]
@@ -5339,7 +5288,7 @@ checksum = "d3e97a565f76233a6003f9f5c54be1d9c5bdfa3eccfb189469f11ec4901c47dc"
 dependencies = [
  "base16ct",
  "der",
- "generic-array 0.14.9",
+ "generic-array",
  "pkcs8",
  "subtle",
  "zeroize",

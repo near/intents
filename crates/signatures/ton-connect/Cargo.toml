@@ -8,8 +8,8 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
-defuse-kdf-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
 defuse-time.workspace = true
 tlb-ton.workspace = true
 
@@ -24,6 +24,7 @@ serde_with = { workspace = true, features = ["base64"], optional = true }
 [features]
 abi = ["schemars-v0_8"]
 arbitrary = [
+  "defuse-crypto/arbitrary",
   "defuse-time/arbitrary",
   "dep:arbitrary",
   "dep:arbitrary_with",
@@ -31,6 +32,7 @@ arbitrary = [
 ]
 cell = ["defuse-serde-utils?/tlb"]
 serde = [
+  "defuse-crypto/serde",
   "defuse-time/serde",
   "dep:cfg_eval",
   "dep:defuse-serde-utils",
@@ -39,6 +41,7 @@ serde = [
   "tlb-ton/serde",
 ]
 schemars-v0_8 = [
+  "defuse-crypto/schemars-v0_8",
   "defuse-serde-utils?/schemars-v0_8",
   "defuse-time/schemars-v0_8",
   "dep:schemars",

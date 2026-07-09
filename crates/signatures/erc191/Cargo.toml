@@ -8,8 +8,8 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+defuse-crypto = { workspace = true, features = ["secp256k1"] }
 defuse-digest = { workspace = true, features = ["sha3"] }
-defuse-kdf-crypto = { workspace = true, features = ["secp256k1"] }
 
 [dev-dependencies]
 hex-literal.workspace = true

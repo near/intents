@@ -5,7 +5,7 @@ use crate::Algorithm;
 pub struct Ed25519;
 
 impl Algorithm for Ed25519 {
-    type Curve = defuse_kdf_crypto::ed25519::Ed25519;
+    type Curve = defuse_crypto::ed25519::Ed25519;
 
     fn derive(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]> {
         // ed25519 does the hashing inside
@@ -15,7 +15,7 @@ impl Algorithm for Ed25519 {
 
 #[cfg(test)]
 mod tests {
-    use defuse_kdf_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
+    use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
     use hex_literal::hex;
     use rstest::rstest;
 

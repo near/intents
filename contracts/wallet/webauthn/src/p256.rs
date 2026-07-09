@@ -1,4 +1,4 @@
-pub use defuse_kdf_crypto::p256::{P256CompressedPublicKey, P256Signature};
+pub use defuse_crypto::p256::{P256CompressedPublicKey, P256Signature};
 pub use defuse_webauthn::p256::P256;
 
 use crate::WalletWebauthnAlgorithm;

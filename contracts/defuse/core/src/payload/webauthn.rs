@@ -1,11 +1,11 @@
-use defuse_crypto::{
-    Ed25519PublicKey, Ed25519Signature, P256Signature, Payload, SignedPayload, compress_public_key,
-};
 use defuse_digest::{Digest, sha2::Sha256};
-use defuse_webauthn::{Algorithm, Ed25519, P256, PayloadSignature, UserVerification};
+use defuse_webauthn::{IgnoreUserVerification, WebauthnPayload, ed25519::Ed25519, p256::P256};
 use near_sdk::{CryptoHash, near, serde::de::DeserializeOwned, serde_json};
 
-use crate::{PublicKey, Signature};
+use crate::{
+    PublicKey, Signature,
+    payload::{Payload, SignedPayload},
+};
 
 use super::{DefusePayload, ExtractDefusePayload};
 
@@ -13,12 +13,13 @@ use super::{DefusePayload, ExtractDefusePayload};
 #[derive(Debug, Clone)]
 pub struct SignedWebAuthnPayload {
     pub payload: String,
-    pub public_key: PublicKey,
-    // schemars@0.8 does not respect it's `schemars(bound = "...")`
-    // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
-    #[cfg_attr(feature = "abi", schemars(skip))]
+
+    // TODO: rename?
     #[serde(flatten)]
-    pub signature: PayloadSignature<Ed25519OrP256>,
+    pub signed: WebauthnPayload,
+
+    pub public_key: PublicKey,
+    pub signature: Signature,
 }
 
 impl Payload for SignedWebAuthnPayload {
@@ -28,43 +29,31 @@ impl Payload for SignedWebAuthnPayload {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Ed25519OrP256;
-
-impl Algorithm for Ed25519OrP256 {
-    type PublicKey = PublicKey;
-
-    type Signature = Signature;
-
-    #[inline]
-    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
-        match (public_key, signature) {
-            (PublicKey::Ed25519(public_key), Signature::Ed25519(signature)) => Ed25519::verify(
-                msg,
-                &Ed25519PublicKey(*public_key),
-                &Ed25519Signature(*signature),
-            ),
-
-            (PublicKey::P256(public_key), Signature::P256(signature)) => P256::verify(
-                msg,
-                &compress_public_key(*public_key),
-                &P256Signature(*signature),
-            ),
-
-            _ => false,
-        }
-    }
-}
-
 impl SignedPayload for SignedWebAuthnPayload {
     type PublicKey = PublicKey;
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        self.signature
-            .verify(self.hash(), &self.public_key, UserVerification::Ignore)
-            .then_some(&self.public_key)
-            .copied()
+        // TODO: why ignore?
+        type Webauthn<A> = defuse_webauthn::Webauthn<A, IgnoreUserVerification>;
+
+        match (self.public_key, self.signature) {
+            (PublicKey::Ed25519(pk), Signature::Ed25519(sig)) => Webauthn::<Ed25519>::verify(
+                &pk.try_into().ok()?,
+                self.hash(),
+                &self.signed,
+                &sig.into(),
+            ),
+            (PublicKey::P256(pk), Signature::P256(sig)) => Webauthn::<P256>::verify(
+                &pk.try_into().ok()?,
+                self.hash(),
+                &self.signed,
+                &sig.try_into().ok()?,
+            ),
+            _ => false,
+        }
+        .then_some(&self.public_key)
+        .copied()
     }
 }
 

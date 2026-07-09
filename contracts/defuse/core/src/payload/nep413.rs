@@ -1,4 +1,5 @@
-use defuse_nep413::{Nep413Payload, SignedNep413Payload};
+use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
+use defuse_nep413::{Nep413, Nep413Payload};
 use impl_tools::autoimpl;
 use near_sdk::{
     AccountId, near,
@@ -6,7 +7,10 @@ use near_sdk::{
     serde_json,
 };
 
-use crate::Timestamp;
+use crate::{
+    Timestamp,
+    payload::{Payload, SignedPayload},
+};
 
 use super::{DefusePayload, ExtractDefusePayload};
 
@@ -45,6 +49,36 @@ where
             nonce: self.nonce,
             message,
         })
+    }
+}
+
+#[near(serializers = [json])]
+#[autoimpl(Deref using self.payload)]
+#[derive(Debug, Clone)]
+pub struct SignedNep413Payload {
+    pub payload: Nep413Payload,
+
+    pub public_key: Ed25519PublicKey,
+    pub signature: Ed25519Signature,
+}
+
+impl Payload for SignedNep413Payload {
+    fn hash(&self) -> near_sdk::CryptoHash {
+        todo!()
+    }
+}
+
+impl SignedPayload for SignedNep413Payload {
+    type PublicKey = Ed25519PublicKey;
+
+    fn verify(&self) -> Option<Self::PublicKey> {
+        Nep413::verify(
+            &self.public_key.try_into().ok()?,
+            &self.payload,
+            &self.signature.into(),
+        )
+        .then_some(&self.public_key)
+        .copied()
     }
 }
 

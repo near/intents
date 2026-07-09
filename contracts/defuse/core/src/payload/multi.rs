@@ -1,13 +1,14 @@
-use defuse_crypto::{Payload, SignedPayload};
-// use defuse_erc191::SignedErc191Payload;
-use defuse_nep413::SignedNep413Payload;
-use defuse_sep53::SignedSep53Payload;
-use defuse_tip191::SignedTip191Payload;
-use defuse_ton_connect::SignedTonConnectPayload;
 use derive_more::derive::From;
 use near_sdk::{CryptoHash, near, serde::de::DeserializeOwned, serde_json};
 
-use crate::public_key::PublicKey;
+use crate::{
+    payload::{
+        Payload, SignedPayload, erc191::SignedErc191Payload, nep413::SignedNep413Payload,
+        sep53::SignedSep53Payload, tip191::SignedTip191Payload,
+        ton_connect::SignedTonConnectPayload,
+    },
+    public_key::PublicKey,
+};
 
 use super::{
     DefusePayload, ExtractDefusePayload, raw::SignedRawEd25519Payload,
@@ -64,7 +65,7 @@ impl Payload for MultiPayload {
     fn hash(&self) -> CryptoHash {
         match self {
             Self::Nep413(payload) => payload.hash(),
-            // Self::Erc191(payload) => payload.hash(),
+            Self::Erc191(payload) => payload.hash(),
             Self::Tip191(payload) => payload.hash(),
             Self::RawEd25519(payload) => payload.hash(),
             Self::WebAuthn(payload) => payload.hash(),
@@ -101,7 +102,7 @@ where
     fn extract_defuse_payload(self) -> Result<DefusePayload<T>, Self::Error> {
         match self {
             Self::Nep413(payload) => payload.extract_defuse_payload(),
-            // Self::Erc191(payload) => payload.extract_defuse_payload(),
+            Self::Erc191(payload) => payload.extract_defuse_payload(),
             Self::Tip191(payload) => payload.extract_defuse_payload(),
             Self::RawEd25519(payload) => payload.extract_defuse_payload(),
             Self::WebAuthn(payload) => payload.extract_defuse_payload(),

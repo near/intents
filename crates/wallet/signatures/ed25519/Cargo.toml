@@ -8,7 +8,7 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-kdf-crypto = { workspace = true, features = ["ed25519"] }
+defuse-crypto = { workspace = true, features = ["ed25519"] }
 defuse-wallet-core.workspace = true
 
 [dev-dependencies]

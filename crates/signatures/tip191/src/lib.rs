@@ -1,8 +1,8 @@
 //! [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
 //! Signed Data Standard
 
+use defuse_crypto::{Curve, RecoverableCurve, secp256k1::Secp256k1};
 use defuse_digest::{Digest, sha3::Keccak256};
-use defuse_kdf_crypto::{Curve, RecoverableCurve, secp256k1::Secp256k1};
 
 /// [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
 /// Signed Data Standard
@@ -24,7 +24,9 @@ impl Tip191 {
 
     /// Derive prehash for signing
     #[inline]
-    fn prehash(msg: &[u8]) -> [u8; 32] {
+    pub fn prehash(msg: impl AsRef<[u8]>) -> [u8; 32] {
+        let msg = msg.as_ref();
+
         // Prefix itself is not specified in the standard. But from:
         // https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/
         Keccak256::new_with_prefix(b"\x19TRON Signed Message:\n")
@@ -39,7 +41,7 @@ impl Tip191 {
 
 #[cfg(test)]
 mod tests {
-    use defuse_kdf_crypto::secp256k1::k256::{
+    use defuse_crypto::secp256k1::k256::{
         EncodedPoint,
         ecdsa::{RecoveryId, Signature, VerifyingKey},
     };

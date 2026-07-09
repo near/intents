@@ -3,8 +3,13 @@ use core::{
     str::FromStr,
 };
 
-use defuse_crypto::{Curve, CurveType, Ed25519, P256, ParseCurveError, Secp256k1, TypedCurve};
-use near_sdk::{bs58, near};
+use defuse_crypto::{
+    ed25519::{Ed25519, Ed25519Signature},
+    fmt::{ParseCurveError, TypedCurve, checked_base58_decode_array},
+    p256::{P256, P256Signature},
+    secp256k1::{Secp256k1, Secp256k1RecoverableSignature},
+};
+use near_sdk::near;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 #[near(serializers = [borsh(use_discriminant = true)])]
@@ -13,30 +18,9 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 )]
 #[repr(u8)]
 pub enum Signature {
-    Ed25519(<Ed25519 as Curve>::Signature) = 0,
-    Secp256k1(<Secp256k1 as Curve>::Signature) = 1,
-    P256(<P256 as Curve>::Signature) = 2,
-}
-
-impl Signature {
-    #[inline]
-    pub const fn curve_type(&self) -> CurveType {
-        match self {
-            Self::Ed25519(_) => CurveType::Ed25519,
-            Self::Secp256k1(_) => CurveType::Secp256k1,
-            Self::P256(_) => CurveType::P256,
-        }
-    }
-
-    #[inline]
-    const fn data(&self) -> &[u8] {
-        #[allow(clippy::match_same_arms)]
-        match self {
-            Self::Ed25519(data) => data,
-            Self::Secp256k1(data) => data,
-            Self::P256(data) => data,
-        }
-    }
+    Ed25519(Ed25519Signature) = 0,
+    Secp256k1(Secp256k1RecoverableSignature) = 1,
+    P256(P256Signature) = 2,
 }
 
 impl Debug for Signature {
@@ -44,9 +28,12 @@ impl Debug for Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{}:{}",
-            self.curve_type(),
-            bs58::encode(self.data()).into_string()
+            "{}",
+            match self {
+                Self::Ed25519(sig) => sig.to_string(),
+                Self::Secp256k1(sig) => sig.to_string(),
+                Self::P256(sig) => sig.to_string(),
+            }
         )
     }
 }
@@ -62,19 +49,19 @@ impl FromStr for Signature {
     type Err = ParseCurveError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (curve, data) = if let Some((curve, data)) = s.split_once(':') {
-            (
-                curve.parse().map_err(|_| ParseCurveError::WrongCurveType)?,
-                data,
-            )
-        } else {
-            (CurveType::Ed25519, s)
-        };
+        let (curve, data) = s.split_once(':').unwrap_or((Ed25519::CURVE_TYPE, s));
 
         match curve {
-            CurveType::Ed25519 => Ed25519::parse_base58(data).map(Self::Ed25519),
-            CurveType::Secp256k1 => Secp256k1::parse_base58(data).map(Self::Secp256k1),
-            CurveType::P256 => P256::parse_base58(data).map(Self::P256),
+            Ed25519::CURVE_TYPE => checked_base58_decode_array(data)
+                .map(Ed25519Signature)
+                .map(Self::Ed25519),
+            Secp256k1::CURVE_TYPE => checked_base58_decode_array(data)
+                .map(Secp256k1RecoverableSignature)
+                .map(Self::Secp256k1),
+            P256::CURVE_TYPE => checked_base58_decode_array(data)
+                .map(P256Signature)
+                .map(Self::P256),
+            _ => Err(ParseCurveError::WrongCurveType),
         }
     }
 }

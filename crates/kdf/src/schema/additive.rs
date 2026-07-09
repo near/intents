@@ -1,6 +1,6 @@
 use core::ops::Add;
 
-use defuse_kdf_crypto::Curve;
+use defuse_crypto::Curve;
 use impl_tools::autoimpl;
 
 use crate::Schema;

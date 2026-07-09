@@ -21,11 +21,11 @@ members = [
   "crates/ckd",
   "crates/cli-utils",
   "crates/crypto",
-  "crates/crypto/schema",
+  # "crates/crypto/schema",
   "crates/digest",
   "crates/io-utils",
   "crates/kdf",
-  "crates/kdf/crypto",
+  # "crates/kdf/crypto",
   "crates/kdf/mpc",
   "crates/map-utils",
   "crates/num-utils",
@@ -48,7 +48,7 @@ members = [
   "crates/primitives/time",
   "crates/primitives/token-id",
 
-  "crates/signatures/schema",
+  # "crates/signatures/schema",
   "crates/signatures/erc191",
   "crates/signatures/nep413",
   "crates/signatures/nep461",
@@ -100,11 +100,11 @@ defuse-borsh-utils.path = "crates/borsh-utils"
 defuse-ckd = { path = "crates/ckd", default-features = false }
 defuse-cli-utils = { path = "crates/cli-utils", default-features = false }
 defuse-crypto = { path = "crates/crypto", default-features = false }
-defuse-derivation-schema = { path = "crates/crypto/schema", default-features = false }
+# defuse-derivation-schema = { path = "crates/crypto/schema", default-features = false }
 defuse-digest.path = "crates/digest"
 defuse-io-utils.path = "crates/io-utils"
 defuse-kdf = { path = "crates/kdf", default-features = false }
-defuse-kdf-crypto = { path = "crates/kdf/crypto", default-features = false }
+# defuse-kdf-crypto = { path = "crates/kdf/crypto", default-features = false }
 defuse-kdf-mpc = { path = "crates/kdf/mpc", default-features = false }
 defuse-map-utils.path = "crates/map-utils"
 defuse-num-utils.path = "crates/num-utils"
@@ -130,7 +130,7 @@ defuse-erc191.path = "crates/signatures/erc191"
 defuse-nep413.path = "crates/signatures/nep413"
 defuse-nep461.path = "crates/signatures/nep461"
 defuse-sep53.path = "crates/signatures/sep53"
-defuse-signature-schema.path = "crates/signatures/schema"
+# defuse-signature-schema.path = "crates/signatures/schema"
 defuse-tip191.path = "crates/signatures/tip191"
 defuse-ton-connect = { path = "crates/signatures/ton-connect", default-features = false }
 defuse-webauthn = { path = "crates/signatures/webauthn", default-features = false }

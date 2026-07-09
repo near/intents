@@ -9,7 +9,7 @@ repository.workspace = true
 
 [dependencies]
 defuse-digest = { workspace = true, features = ["sha3"] }
-defuse-kdf-crypto = { workspace = true, features = ["secp256k1"] }
+defuse-crypto = { workspace = true, features = ["secp256k1"] }
 
 [dev-dependencies]
 hex-literal.workspace = true

@@ -9,4 +9,4 @@ pub mod secp256k1;
 pub use self::{schema::*, signer::*};
 
 // re-exorts
-pub use defuse_kdf_crypto as crypto;
+pub use defuse_crypto as crypto;

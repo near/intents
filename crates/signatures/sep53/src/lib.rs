@@ -1,7 +1,7 @@
 //! [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md) Signed Data Standard
 
+use defuse_crypto::{Curve, ed25519::Ed25519};
 use defuse_digest::{Digest, sha2::Sha256};
-use defuse_kdf_crypto::{Curve, ed25519::Ed25519};
 
 /// [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md) Signed Data Standard
 pub struct Sep53;
@@ -25,7 +25,7 @@ impl Sep53 {
     /// <"Stellar Signed Message:\n"> <data to sign>
     /// ```
     #[inline]
-    fn prehash(msg: &[u8]) -> [u8; 32] {
+    pub fn prehash(msg: impl AsRef<[u8]>) -> [u8; 32] {
         Sha256::new_with_prefix(b"Stellar Signed Message:\n")
             // <data to sign>
             .chain_update(msg)
@@ -36,7 +36,7 @@ impl Sep53 {
 
 #[cfg(test)]
 mod tests {
-    use defuse_kdf_crypto::ed25519::ed25519_dalek::{SIGNATURE_LENGTH, Signature, VerifyingKey};
+    use defuse_crypto::ed25519::ed25519_dalek::{SIGNATURE_LENGTH, Signature, VerifyingKey};
     use hex_literal::hex;
     use rstest::rstest;
     use stellar_strkey::Strkey;

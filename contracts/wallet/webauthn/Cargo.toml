@@ -12,7 +12,7 @@ readme = "../README.md"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-defuse-kdf-crypto = { workspace = true, features = ["serde"] }
+defuse-crypto = { workspace = true, features = ["serde"] }
 defuse-wallet-core = { workspace = true, features = ["serde"] }
 defuse-webauthn.workspace = true
 
@@ -24,23 +24,23 @@ borsh = { workspace = true, features = ["derive"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-ed25519 = ["defuse-kdf-crypto/ed25519"]
-p256 = ["defuse-kdf-crypto/p256"]
+ed25519 = ["defuse-crypto/ed25519"]
+p256 = ["defuse-crypto/p256"]
 
 abi = [
   "borsh-schema",
-  "defuse-kdf-crypto/abi",
+  "defuse-crypto/abi",
   "defuse-wallet-core/abi",
   "schemars-v0_8",
 ]
 arbitrary = [
-  "defuse-kdf-crypto/arbitrary",
+  "defuse-crypto/arbitrary",
   "defuse-wallet-core/arbitrary",
   "defuse-webauthn/arbitrary",
   "dep:arbitrary",
 ]
 borsh = [
-  "defuse-kdf-crypto/borsh",
+  "defuse-crypto/borsh",
   "defuse-wallet-core/borsh",
   "defuse-webauthn/borsh",
   "dep:borsh",
@@ -48,12 +48,12 @@ borsh = [
 borsh-schema = [
   "borsh",
   "borsh?/unstable__schema",
-  "defuse-kdf-crypto/borsh-schema",
+  "defuse-crypto/borsh-schema",
   "defuse-wallet-core/borsh-schema",
   "defuse-webauthn/borsh-schema",
 ]
 schemars-v0_8 = [
-  "defuse-kdf-crypto/schemars-v0_8",
+  "defuse-crypto/schemars-v0_8",
   "defuse-wallet-core/schemars-v0_8",
   "defuse-webauthn/schemars-v0_8",
   "dep:schemars",

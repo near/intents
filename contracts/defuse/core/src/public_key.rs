@@ -4,10 +4,12 @@ use core::{
 };
 
 use defuse_crypto::{
-    Curve, CurveType, Ed25519, P256, P256UncompressedPublicKey, ParseCurveError, Secp256k1,
-    TypedCurve,
+    ed25519::{Ed25519, Ed25519PublicKey},
+    fmt::{ParseCurveError, TypedCurve, checked_base58_decode_array},
+    p256::{P256, P256UncompressedPublicKey},
+    secp256k1::{Secp256k1, Secp256k1UncompressedPublicKey},
 };
-use near_sdk::{AccountId, AccountIdRef, bs58, near};
+use near_sdk::{AccountId, AccountIdRef, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
@@ -18,39 +20,20 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 #[serde_with(crate = "::near_sdk::serde_with")]
 #[repr(u8)]
 pub enum PublicKey {
-    Ed25519(<Ed25519 as Curve>::PublicKey) = 0,
-    Secp256k1(<Secp256k1 as Curve>::PublicKey) = 1,
+    Ed25519(Ed25519PublicKey) = 0,
+    Secp256k1(Secp256k1UncompressedPublicKey) = 1,
     P256(P256UncompressedPublicKey) = 2,
 }
 
 impl PublicKey {
     #[inline]
-    pub const fn curve_type(&self) -> CurveType {
-        match self {
-            Self::Ed25519(_) => CurveType::Ed25519,
-            Self::Secp256k1(_) => CurveType::Secp256k1,
-            Self::P256(_) => CurveType::P256,
-        }
-    }
-
-    #[inline]
-    const fn data(&self) -> &[u8] {
-        #[allow(clippy::match_same_arms)]
-        match self {
-            Self::Ed25519(data) => data,
-            Self::Secp256k1(data) => data,
-            Self::P256(data) => &data.0,
-        }
-    }
-
-    #[inline]
     pub fn to_implicit_account_id(&self) -> AccountId {
         match self {
-            Self::Ed25519(pk) => {
+            Self::Ed25519(Ed25519PublicKey(pk)) => {
                 // https://docs.near.org/concepts/protocol/account-id#implicit-address
                 hex::encode(pk)
             }
-            Self::Secp256k1(pk) => {
+            Self::Secp256k1(Secp256k1UncompressedPublicKey(pk)) => {
                 // https://ethereum.org/en/developers/docs/accounts/#account-creation
                 format!(
                     "0x{}",
@@ -89,7 +72,7 @@ impl PublicKey {
         let mut pk = [0; 32];
         // Only NearImplicitAccount can be reversed
         hex::decode_to_slice(account_id.as_str(), &mut pk).ok()?;
-        Some(Self::Ed25519(pk))
+        Some(Self::Ed25519(Ed25519PublicKey(pk)))
     }
 }
 
@@ -98,9 +81,12 @@ impl Debug for PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{}:{}",
-            self.curve_type(),
-            bs58::encode(self.data()).into_string()
+            "{}",
+            match self {
+                Self::Ed25519(pk) => pk.to_string(),
+                Self::Secp256k1(pk) => pk.to_string(),
+                Self::P256(pk) => pk.to_string(),
+            }
         )
     }
 }
@@ -116,21 +102,19 @@ impl FromStr for PublicKey {
     type Err = ParseCurveError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (curve, data) = if let Some((curve, data)) = s.split_once(':') {
-            (
-                curve.parse().map_err(|_| ParseCurveError::WrongCurveType)?,
-                data,
-            )
-        } else {
-            (CurveType::Ed25519, s)
-        };
+        let (curve, data) = s.split_once(':').unwrap_or((Ed25519::CURVE_TYPE, s));
 
         match curve {
-            CurveType::Ed25519 => Ed25519::parse_base58(data).map(Self::Ed25519),
-            CurveType::Secp256k1 => Secp256k1::parse_base58(data).map(Self::Secp256k1),
-            CurveType::P256 => P256::parse_base58(data)
+            Ed25519::CURVE_TYPE => checked_base58_decode_array(data)
+                .map(Ed25519PublicKey)
+                .map(Self::Ed25519),
+            Secp256k1::CURVE_TYPE => checked_base58_decode_array(data)
+                .map(Secp256k1UncompressedPublicKey)
+                .map(Self::Secp256k1),
+            P256::CURVE_TYPE => checked_base58_decode_array(data)
                 .map(P256UncompressedPublicKey)
                 .map(Self::P256),
+            _ => Err(ParseCurveError::WrongCurveType),
         }
     }
 }
@@ -209,8 +193,8 @@ const _: () = {
     impl From<NearPublicKey> for PublicKey {
         fn from(pk: NearPublicKey) -> Self {
             match pk {
-                NearPublicKey::Ed25519(pk) => Self::Ed25519(pk),
-                NearPublicKey::Secp256k1(pk) => Self::Secp256k1(pk),
+                NearPublicKey::Ed25519(pk) => Self::Ed25519(Ed25519PublicKey(pk)),
+                NearPublicKey::Secp256k1(pk) => Self::Secp256k1(Secp256k1UncompressedPublicKey(pk)),
             }
         }
     }

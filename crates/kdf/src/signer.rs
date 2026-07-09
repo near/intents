@@ -1,6 +1,6 @@
 use std::{borrow::Cow, rc::Rc, sync::Arc};
 
-use defuse_kdf_crypto::{Curve, RecoverableCurve};
+use defuse_crypto::{Curve, RecoverableCurve};
 use impl_tools::autoimpl;
 
 use crate::{BoxSchema, Derive, DeriveExt, Schema};

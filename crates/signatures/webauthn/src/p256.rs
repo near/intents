@@ -7,7 +7,7 @@ use crate::Algorithm;
 pub struct P256;
 
 impl Algorithm for P256 {
-    type Curve = defuse_kdf_crypto::p256::P256;
+    type Curve = defuse_crypto::p256::P256;
 
     fn derive(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]> {
         // prehash via SHA-256
@@ -17,7 +17,7 @@ impl Algorithm for P256 {
 
 #[cfg(test)]
 mod tests {
-    use defuse_kdf_crypto::p256::{P256CompressedPublicKey, P256Signature};
+    use defuse_crypto::p256::{P256CompressedPublicKey, P256Signature};
     use hex_literal::hex;
     use rstest::rstest;
 

@@ -9,7 +9,7 @@ repository.workspace = true
 
 [dependencies]
 defuse-digest = { workspace = true, features = ["sha2"] }
-defuse-kdf-crypto = { workspace = true, features = ["ed25519"] }
+defuse-crypto = { workspace = true, features = ["ed25519"] }
 defuse-nep461.workspace = true
 
 borsh = { workspace = true, features = ["derive"] }

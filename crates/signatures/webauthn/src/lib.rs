@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 
+use defuse_crypto::Curve;
 use defuse_digest::{Digest, sha2::Sha256};
-use defuse_kdf_crypto::Curve;
 use serde::{Deserialize, Serialize};
 use serde_with::{
     base64::{Base64, UrlSafe},

@@ -10,7 +10,7 @@ pub mod webauthn;
 use core::convert::Infallible;
 
 use impl_tools::autoimpl;
-use near_sdk::{AccountId, near};
+use near_sdk::{AccountId, CryptoHash, near};
 use serde_with::base64::Base64;
 
 use crate::{Nonce, Timestamp};
@@ -53,7 +53,7 @@ impl<T> ExtractDefusePayload<T> for DefusePayload<T> {
 /// according to an external signing standard. The [`hash`] method returns
 /// the digest that should be signed or used for verification.
 pub trait Payload {
-    fn hash(&self) -> [u8; 32];
+    fn hash(&self) -> CryptoHash;
 }
 
 /// Extension of [`Payload`] for types that include a signature.

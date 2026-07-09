@@ -231,7 +231,7 @@ impl TryFrom<&Secp256k1RecoverableSignature> for Signature {
 
     #[inline]
     fn try_from(value: &Secp256k1RecoverableSignature) -> Result<Self, Self::Error> {
-        <(Signature, RecoveryId)>::try_from(value).map(|t| t.0)
+        <(Self, RecoveryId)>::try_from(value).map(|t| t.0)
     }
 }
 
@@ -251,7 +251,7 @@ const _: () = {
     impl Display for Secp256k1UncompressedPublicKey {
         #[inline]
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            f.write_str(&Secp256k1::to_base58(&self.0))
+            f.write_str(&Secp256k1::to_base58(self.0))
         }
     }
 
@@ -267,7 +267,7 @@ const _: () = {
     impl Display for Secp256k1RecoverableSignature {
         #[inline]
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            f.write_str(&Secp256k1::to_base58(&self.0))
+            f.write_str(&Secp256k1::to_base58(self.0))
         }
     }
 

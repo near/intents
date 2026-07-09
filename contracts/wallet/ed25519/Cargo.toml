@@ -12,16 +12,16 @@ readme = "../README.md"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-defuse-kdf-crypto = { workspace = true, features = ["ed25519", "fmt"] }
+defuse-crypto = { workspace = true, features = ["ed25519", "fmt"] }
 defuse-wallet-core.workspace = true
 
 near-sdk = { workspace = true, optional = true }
 
 [features]
-abi = ["defuse-kdf-crypto/abi", "defuse-wallet-core/abi", "near-sdk?/abi"]
+abi = ["defuse-crypto/abi", "defuse-wallet-core/abi", "near-sdk?/abi"]
 
 contract = [
-  "defuse-kdf-crypto/borsh",
+  "defuse-crypto/borsh",
   "defuse-wallet-core/near-contract",
   "dep:near-sdk",
 ]

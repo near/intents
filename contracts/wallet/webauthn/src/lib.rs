@@ -5,7 +5,7 @@ pub mod p256;
 
 use ::core::marker::PhantomData;
 
-use defuse_kdf_crypto::Curve;
+use defuse_crypto::Curve;
 pub use defuse_wallet_core as core;
 use defuse_wallet_core::{RequestMessage, signatures::WalletSignatureSchema};
 pub use defuse_webauthn as webauthn;

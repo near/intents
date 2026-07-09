@@ -8,8 +8,8 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+defuse-crypto = { workspace = true, features = ["serde"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
-defuse-kdf-crypto = { workspace = true, features = ["serde"] }
 
 cfg_eval.workspace = true
 serde = { workspace = true, features = ["derive"] }
@@ -21,15 +21,15 @@ borsh = { workspace = true, features = ["derive"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-ed25519 = ["defuse-kdf-crypto/ed25519"]
-p256 = ["defuse-kdf-crypto/p256"]
+ed25519 = ["defuse-crypto/ed25519"]
+p256 = ["defuse-crypto/p256"]
 
 abi = ["borsh-schema", "schemars-v0_8"]
-arbitrary = ["defuse-kdf-crypto/arbitrary", "dep:arbitrary"]
-borsh = ["defuse-kdf-crypto/borsh", "dep:borsh"]
-borsh-schema = ["borsh", "defuse-kdf-crypto/borsh-schema"]
+arbitrary = ["defuse-crypto/arbitrary", "dep:arbitrary"]
+borsh = ["defuse-crypto/borsh", "dep:borsh"]
+borsh-schema = ["borsh", "defuse-crypto/borsh-schema"]
 schemars-v0_8 = [
-  "defuse-kdf-crypto/schemars-v0_8",
+  "defuse-crypto/schemars-v0_8",
   "dep:schemars",
   "serde_with/schemars_0_8",
 ]

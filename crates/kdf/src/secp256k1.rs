@@ -1,4 +1,4 @@
-use defuse_kdf_crypto::{RecoverableCurve, secp256k1::Secp256k1};
+use defuse_crypto::{RecoverableCurve, secp256k1::Secp256k1};
 use k256::{
     NonZeroScalar, ProjectivePoint, U256,
     ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey},

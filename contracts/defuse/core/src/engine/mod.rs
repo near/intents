@@ -3,12 +3,10 @@ mod state;
 
 pub use self::{inspector::*, state::*};
 
-use defuse_crypto::{Payload, SignedPayload};
-
 use crate::{
     DefuseError, ExpirableNonce, Nonce, Result, SaltedNonce, Timestamp, VersionedNonce,
     intents::{DefuseIntents, ExecutableIntent},
-    payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
+    payload::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload, multi::MultiPayload},
 };
 
 use self::deltas::{Deltas, Transfers};
