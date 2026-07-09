@@ -1,0 +1,17 @@
+lints.workspace = true
+
+[package]
+name = "defuse-wallet-webauthn"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+defuse-kdf-crypto.workspace = true
+defuse-wallet-core.workspace = true
+defuse-webauthn.workspace = true
+
+borsh.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true

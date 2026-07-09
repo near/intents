@@ -11,12 +11,12 @@ repository.workspace = true
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-kdf-crypto.workspace = true
 
-arbitrary = { workspace = true, features = ["derive"], optional = true }
 cfg_eval.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 serde_with = { workspace = true, features = ["base64"] }
 
+arbitrary = { workspace = true, features = ["derive"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]

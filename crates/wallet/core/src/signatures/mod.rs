@@ -1,11 +1,14 @@
-// mod ed25519; // TODO
+use core::fmt::Display;
+
+use borsh::{BorshDeserialize, BorshSerialize};
 
 use crate::RequestMessage;
 
 pub trait WalletSignatureSchema {
+    // TODO: trait bounds?
     type PublicKey;
 
-    fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str);
+    fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool;
 }
 
 type Proof = String;

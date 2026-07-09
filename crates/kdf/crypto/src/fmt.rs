@@ -15,7 +15,7 @@ pub trait TypedCurve: Curve {
     fn parse_base58<const N: usize>(s: impl AsRef<str>) -> Result<[u8; N], ParseCurveError> {
         let s = s.as_ref();
         let data = if let Some((curve, data)) = s.split_once(':') {
-            if !curve.eq_ignore_ascii_case(Self::CURVE_TYPE.into()) {
+            if !curve.eq_ignore_ascii_case(Self::CURVE_TYPE) {
                 return Err(ParseCurveError::WrongCurveType);
             }
             data

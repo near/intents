@@ -113,7 +113,7 @@ impl RecoverableCurve for Secp256k1 {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 /// Uncompressed Secp256k1 public key **without** leading SEC-1 tag byte.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Secp256k1UncompressedPublicKey(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 64],
@@ -172,7 +172,7 @@ impl TryFrom<&Secp256k1UncompressedPublicKey> for VerifyingKey {
 )]
 /// Recoverable secp256k1 signature, i.e. 64-byte signature with additional
 /// recovery byte
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Secp256k1RecoverableSignature(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 65],

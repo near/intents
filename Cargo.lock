@@ -1970,10 +1970,40 @@ dependencies = [
  "defuse-time",
  "defuse-wallet-core",
  "digest-io",
+ "impl-tools 0.12.0",
  "near-account-id",
+ "near-sdk",
  "schemars 0.8.22",
  "serde",
  "serde_with",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "defuse-wallet-ed25519"
+version = "0.1.0"
+dependencies = [
+ "defuse-kdf-crypto",
+ "defuse-wallet-core",
+ "defuse-wallet-ed25519",
+ "hex-literal",
+ "near-sdk",
+ "rstest",
+]
+
+[[package]]
+name = "defuse-wallet-no-sign"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "borsh",
+ "defuse-wallet-core",
+ "defuse-wallet-no-sign",
+ "hex-literal",
+ "near-sdk",
+ "rstest",
+ "schemars 0.8.22",
+ "serde",
  "thiserror 2.0.18",
 ]
 
@@ -2010,6 +2040,21 @@ dependencies = [
  "ed25519-dalek",
  "near-global-contracts",
  "rand 0.10.1",
+]
+
+[[package]]
+name = "defuse-wallet-webauthn"
+version = "0.1.0"
+dependencies = [
+ "defuse-kdf-crypto",
+ "defuse-wallet-core",
+ "defuse-wallet-webauthn",
+ "defuse-webauthn",
+ "hex-literal",
+ "near-sdk",
+ "rstest",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

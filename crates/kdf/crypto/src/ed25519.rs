@@ -54,7 +54,7 @@ impl Curve for Ed25519 {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 /// Ed25519 public key
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Ed25519PublicKey(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; PUBLIC_KEY_LENGTH],
@@ -106,7 +106,7 @@ impl TryFrom<&Ed25519PublicKey> for VerifyingKey {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 /// Ed25519 signature
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Ed25519Signature(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; SIGNATURE_LENGTH],
@@ -156,7 +156,7 @@ const _: () = {
     impl Display for Ed25519PublicKey {
         #[inline]
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            f.write_str(&Ed25519::to_base58(&self.0))
+            f.write_str(&Ed25519::to_base58(self.0))
         }
     }
 
@@ -172,7 +172,7 @@ const _: () = {
     impl Display for Ed25519Signature {
         #[inline]
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            f.write_str(&Ed25519::to_base58(&self.0))
+            f.write_str(&Ed25519::to_base58(self.0))
         }
     }
 
