@@ -15,4 +15,40 @@ impl Algorithm for P256 {
     }
 }
 
-// TODO: tests
+#[cfg(test)]
+mod tests {
+    use defuse_kdf_crypto::p256::{P256CompressedPublicKey, P256Signature};
+    use hex_literal::hex;
+    use rstest::rstest;
+
+    use crate::{RequireUserVerification, Webauthn, WebauthnPayload};
+
+    use super::*;
+
+    #[rstest]
+    #[case(
+        hex!("03b87da10683d04e6ec4e2f1775556a63cbb01be843058eb737fe02f9e22663093"),
+        hex!("06f269191431372337a0c606a15822e349bd0d5ec317704f97bef1a4ed6f5e1d"),
+        WebauthnPayload {
+            authenticator_data: hex!("49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d00000000").to_vec(),
+            client_data_json: r#"{"type":"webauthn.get","challenge":"BvJpGRQxNyM3oMYGoVgi40m9DV7DF3BPl77xpO1vXh0","origin":"http://localhost:5173","crossOrigin":false}"#.to_string(),
+        },
+        hex!("002527c17a17d709ab62ffab033e0a26d901f5bee6686a0d605032828e490a7c47a9f4161e6a17688ae42a66adb67c9c22c86153afb08103b1e9eccd5314c271"),
+    )]
+    fn verify_ok(
+        #[case] public_key: [u8; 33],
+        #[case] challenge: impl AsRef<[u8]>,
+        #[case] payload: WebauthnPayload,
+        #[case] signature: [u8; 64],
+    ) {
+        assert!(
+            Webauthn::<P256, RequireUserVerification>::verify(
+                &P256CompressedPublicKey(public_key).try_into().unwrap(),
+                challenge,
+                &payload,
+                &P256Signature(signature).try_into().unwrap(),
+            ),
+            "signature is invalid",
+        );
+    }
+}
