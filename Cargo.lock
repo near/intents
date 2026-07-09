@@ -2053,7 +2053,6 @@ dependencies = [
  "defuse-wallet-webauthn",
  "defuse-webauthn",
  "hex-literal",
- "near-sdk",
  "rstest",
  "schemars 0.8.22",
  "serde",

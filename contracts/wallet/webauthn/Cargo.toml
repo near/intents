@@ -66,5 +66,3 @@ defuse-wallet-webauthn = { path = ".", features = ["abi", "near-contract", "ed25
 
 hex-literal.workspace = true
 rstest.workspace = true
-
-near-sdk = { workspace = true, features = ["unit-testing"] }
