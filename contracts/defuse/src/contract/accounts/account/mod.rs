@@ -4,6 +4,7 @@ mod nonces;
 pub use self::{entry::*, nonces::MaybeLegacyAccountNonces};
 
 use bitflags::bitflags;
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_bitmap::U256;
 use defuse_core::{NoncePrefix, PublicKey, Result};
 
@@ -12,8 +13,6 @@ use impl_tools::autoimpl;
 use near_sdk::{
     AccountIdRef, BorshStorageKey, IntoStorageKey,
     account_id::AccountType,
-    borsh::BorshSerialize,
-    near,
     store::{IterableSet, LookupMap},
 };
 
@@ -21,10 +20,10 @@ use super::AccountState;
 
 // NOTE: in order to migrate to a new version (even when adding new fields),
 // see docs for `VersionedAccountEntry`
-#[derive(Debug)]
-#[near(serializers = [borsh])]
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
 pub struct Account {
     nonces: MaybeLegacyAccountNonces,
 
@@ -173,8 +172,8 @@ mod prefix {
 
 use prefix::AccountPrefix;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 #[repr(transparent)]
 struct AccountFlags(u8);
 

@@ -6,6 +6,7 @@ pub use self::{account::*, state::*};
 
 use std::{borrow::Cow, collections::HashSet};
 
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_core::{
     DefuseError, Nonce, PublicKey, Result,
     accounts::{AccountEvent, PublicKeyEvent},
@@ -18,8 +19,8 @@ use defuse_near_utils::{Lock, NestPrefix};
 use defuse_serde_utils::base64::AsBase64;
 
 use near_sdk::{
-    AccountId, AccountIdRef, BorshStorageKey, FunctionError, IntoStorageKey, assert_one_yocto,
-    borsh::BorshSerialize, env, near, store::IterableMap,
+    AccountId, AccountIdRef, BorshStorageKey, FunctionError, IntoStorageKey, assert_one_yocto, env,
+    near, store::IterableMap,
 };
 
 use crate::{
@@ -164,8 +165,8 @@ impl Contract {
     }
 }
 
-#[derive(Debug)]
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
 pub struct Accounts {
     accounts: IterableMap<AccountId, AccountEntry>,
     prefix: Vec<u8>,

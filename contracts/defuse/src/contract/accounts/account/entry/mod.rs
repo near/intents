@@ -7,25 +7,22 @@ use std::{
     mem::size_of,
 };
 
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_borsh_utils::{As, BorshDeserializeAs, BorshSerializeAs};
 
 use defuse_near_utils::{Lock, PanicOnClone};
 use impl_tools::autoimpl;
-use near_sdk::{
-    borsh::{BorshDeserialize, BorshSerialize},
-    near,
-};
 
 use crate::contract::accounts::account::entry::{v0::AccountV0, v1::AccountV1};
 
 use super::Account;
 
-#[derive(Debug)]
 #[autoimpl(Deref using self.0)]
 #[autoimpl(DerefMut using self.0)]
 #[autoimpl(AsRef using self.0)]
 #[autoimpl(AsMut using self.0)]
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
 #[repr(transparent)]
 pub struct AccountEntry(
     #[borsh(
@@ -43,8 +40,8 @@ impl From<Lock<Account>> for AccountEntry {
 }
 
 /// Versioned [Account] state for de/serialization.
-#[derive(Debug)]
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
 enum VersionedAccountEntry<'a> {
     V0(Cow<'a, PanicOnClone<AccountV0>>),
     V1(Cow<'a, PanicOnClone<Lock<AccountV1>>>),

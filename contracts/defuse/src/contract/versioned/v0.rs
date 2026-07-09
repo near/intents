@@ -1,5 +1,6 @@
+use borsh::{BorshDeserialize, BorshSerialize};
 use impl_tools::autoimpl;
-use near_sdk::{near, store::LookupSet};
+use near_sdk::store::LookupSet;
 
 use crate::contract::{
     ContractStorage, MigrateStorageWithPrefix, Prefix,
@@ -7,10 +8,10 @@ use crate::contract::{
     state::{ContractState, ContractStateV0},
 };
 
-#[derive(Debug)]
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
 pub struct ContractStorageV0 {
     accounts: Accounts,
 

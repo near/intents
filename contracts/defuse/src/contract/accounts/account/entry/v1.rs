@@ -1,10 +1,8 @@
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_bitmap::{U248, U256};
 use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
-use near_sdk::{
-    near,
-    store::{IterableSet, LookupMap},
-};
+use near_sdk::store::{IterableSet, LookupMap};
 
 use defuse_core::{Nonces, PublicKey};
 
@@ -14,8 +12,8 @@ use crate::contract::accounts::{
 };
 
 /// Legacy: V1 of [`Account`]
-#[derive(Debug)]
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
 pub struct AccountV1 {

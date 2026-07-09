@@ -1,5 +1,6 @@
-use near_sdk::{AccountIdRef, Gas, near};
-use serde_with::DisplayFromStr;
+use near_sdk::{AccountIdRef, Gas};
+use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, serde_as};
 use std::{borrow::Cow, collections::BTreeMap};
 
 use crate::{amounts::Amounts, intents::tokens::Transfer};
@@ -12,8 +13,9 @@ pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
 #[cfg(feature = "imt")]
 pub mod imt {
     use defuse_token_id::{TokenId, imt::ImtTokenId};
-    use near_sdk::{AccountIdRef, near};
-    use serde_with::DisplayFromStr;
+    use near_sdk::AccountIdRef;
+    use serde::{Deserialize, Serialize};
+    use serde_with::{DisplayFromStr, serde_as};
     use std::{borrow::Cow, collections::BTreeMap};
 
     use crate::{
@@ -45,8 +47,9 @@ pub mod imt {
         }
     }
 
-    #[near(serializers = [json])]
-    #[derive(Debug, Clone)]
+    #[serde_as]
+    #[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct ImtMintEvent<'a> {
         pub receiver_id: Cow<'a, AccountIdRef>,
 
@@ -69,8 +72,9 @@ pub mod imt {
     }
 }
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransferEvent<'a> {
     pub receiver_id: Cow<'a, AccountIdRef>,
 

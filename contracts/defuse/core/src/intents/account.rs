@@ -1,6 +1,8 @@
 use std::borrow::Cow;
 
-use near_sdk::{AccountIdRef, CryptoHash, near};
+use borsh::{BorshDeserialize, BorshSerialize};
+use near_sdk::{AccountIdRef, CryptoHash};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     Result,
@@ -13,8 +15,8 @@ use crate::{
 
 use super::ExecutableIntent;
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 /// Given an account id, the user can add public keys. The added public keys can sign
 /// intents on behalf of these accounts, even to add new ones.
 /// Warning: Implicit account ids, by default, have their corresponding public keys added.
@@ -55,8 +57,8 @@ impl ExecutableIntent for AddPublicKey {
     }
 }
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 /// Remove the public key associated with a given account. See `AddPublicKey`.
 pub struct RemovePublicKey {
     pub public_key: PublicKey,
@@ -92,8 +94,8 @@ impl ExecutableIntent for RemovePublicKey {
     }
 }
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct SetAuthByPredecessorId {
     pub enabled: bool,
 }

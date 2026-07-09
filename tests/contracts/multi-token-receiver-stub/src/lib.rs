@@ -4,8 +4,8 @@ use defuse_borsh_utils::{As, Remainder};
 use defuse_nep245::{TokenId, receiver::MultiTokenReceiver};
 use near_sdk::{
     AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, env, json_types::U128, near,
-    serde_json,
 };
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "auth-call")]
 mod on_auth;
@@ -52,9 +52,9 @@ pub struct Contract {
     data: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Default)]
-#[near(serializers = [json])]
 #[allow(clippy::large_enum_variant)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub enum MTReceiverMode {
     #[default]
     AcceptAll,

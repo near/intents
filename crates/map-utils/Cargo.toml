@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-map-utils"
 edition.workspace = true
@@ -14,6 +16,3 @@ near-sdk = { workspace = true, optional = true }
 
 [features]
 near = ["dep:near-sdk"]
-
-[lints]
-workspace = true

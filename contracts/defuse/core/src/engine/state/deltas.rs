@@ -14,8 +14,9 @@ use crate::{
 };
 use defuse_map_utils::cleanup::DefaultMap;
 use defuse_nep245::{MtEvent, MtTransferEvent};
-use near_sdk::{AccountId, AccountIdRef, json_types::U128, near};
-use serde_with::DisplayFromStr;
+use near_sdk::{AccountId, AccountIdRef, json_types::U128};
+use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, serde_as};
 use std::{
     borrow::Cow,
     cmp::Reverse,
@@ -452,9 +453,10 @@ impl Transfers {
     }
 }
 
-#[near(serializers = [json])]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "error", rename_all = "snake_case")]
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InvariantViolated {
     UnmatchedDeltas {
         #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]

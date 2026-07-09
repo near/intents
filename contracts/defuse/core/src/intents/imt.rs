@@ -1,5 +1,7 @@
-use near_sdk::{AccountId, AccountIdRef, CryptoHash, near};
-use serde_with::DisplayFromStr;
+use borsh::{BorshDeserialize, BorshSerialize};
+use near_sdk::{AccountId, AccountIdRef, CryptoHash};
+use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, serde_as};
 use std::{borrow::Cow, collections::BTreeMap};
 
 use crate::{
@@ -12,8 +14,9 @@ use crate::{
     tokens::imt::{ImtMintEvent, ImtTokens},
 };
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 /// Mint a set of tokens from the signer to a specified account id, within the intents contract.
 pub struct ImtMint {
     /// Receiver of the minted tokens
@@ -70,8 +73,9 @@ impl ExecutableIntent for ImtMint {
     }
 }
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 /// Burn a set of imt tokens, within the intents contract.
 pub struct ImtBurn {
     // The minter authority of the imt tokens

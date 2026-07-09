@@ -10,12 +10,13 @@ use core::{
 };
 
 use defuse_core::{intents::tokens::NotifyOnTransfer, payload::multi::MultiPayload};
-use near_sdk::{AccountId, account_id::ParseAccountError, near, serde_json};
+use near_sdk::{AccountId, account_id::ParseAccountError};
+use serde::{Deserialize, Serialize};
 use thiserror::Error as ThisError;
 
 #[must_use]
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DepositMessage {
     pub receiver_id: AccountId,
 
@@ -66,17 +67,17 @@ impl FromStr for DepositMessage {
 }
 
 #[must_use]
-#[near(serializers = [json])]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-#[derive(Debug, Clone)]
 pub enum DepositAction {
     Execute(ExecuteIntents),
     Notify(NotifyOnTransfer),
 }
 
 #[must_use]
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecuteIntents {
     pub execute_intents: Vec<MultiPayload>,
 

@@ -1,5 +1,7 @@
 use derive_more::derive::From;
-use near_sdk::{CryptoHash, near, serde::de::DeserializeOwned, serde_json};
+use near_sdk::{CryptoHash, serde::de::DeserializeOwned, serde_json};
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
 use crate::{
     payload::{
@@ -15,9 +17,10 @@ use super::{
     webauthn::SignedWebAuthnPayload,
 };
 
-#[near(serializers = [json])]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, From)]
 #[serde(tag = "standard", rename_all = "snake_case")]
-#[derive(Debug, Clone, From)]
 /// Assuming wallets want to interact with Intents protocol, besides preparing the data in a certain
 /// form, they have to have the capability to sign raw messages (off-chain signatures) using an algorithm we understand.
 /// This enum solves that problem.

@@ -1,14 +1,11 @@
 use std::borrow::Cow;
 
+use borsh::{BorshDeserialize, BorshSerialize, io};
 use defuse_borsh_utils::{BorshDeserializeAs, BorshSerializeAs};
 use defuse_near_utils::PanicOnClone;
-use near_sdk::{
-    borsh::{BorshDeserialize, BorshSerialize, io},
-    near,
-};
 
-#[near(serializers = [borsh])]
-#[derive(Default)]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Default, BorshSerialize, BorshDeserialize)]
 pub struct State {
     pub nonce: u128,
 }
@@ -45,7 +42,8 @@ impl<'a> From<&'a State> for VersionedState<'a> {
     }
 }
 
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(BorshSerialize, BorshDeserialize)]
 pub enum VersionedState<'a> {
     V1(Cow<'a, PanicOnClone<State>>),
 }

@@ -4,7 +4,6 @@ use near_sdk::{
     IntoStorageKey,
     borsh::{BorshDeserialize, BorshSerialize},
     env::{self, sha256_array},
-    near,
     store::{IterableMap, key::Identity},
 };
 use serde_with::{DeserializeFromStr, SerializeDisplay};
@@ -16,8 +15,19 @@ use std::{
 use crate::{DefuseError, Result};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[derive(PartialEq, PartialOrd, Ord, Eq, Copy, Clone, SerializeDisplay, DeserializeFromStr)]
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(
+    PartialEq,
+    PartialOrd,
+    Ord,
+    Eq,
+    Copy,
+    Clone,
+    SerializeDisplay,
+    DeserializeFromStr,
+    BorshSerialize,
+    BorshDeserialize,
+)]
 pub struct Salt([u8; 4]);
 
 impl Salt {
@@ -89,8 +99,8 @@ const _: () = {
 
 /// Contains current valid salt and set of previous
 /// salts that can be valid or invalid.
-#[near(serializers = [borsh])]
-#[derive(Debug)]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
 pub struct SaltRegistry {
     previous: IterableMap<Salt, bool, Identity>,
     current: Salt,

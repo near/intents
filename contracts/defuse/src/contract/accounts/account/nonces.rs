@@ -1,18 +1,16 @@
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_bitmap::{U248, U256};
 
 use defuse_map_utils::Map;
-use near_sdk::{
-    near,
-    store::{LookupMap, key::Sha256},
-};
+use near_sdk::store::{LookupMap, key::Sha256};
 
 use defuse_core::{DefuseError, Nonce, NoncePrefix, Nonces, Result};
 
 pub type MaybeLegacyAccountNonces =
     MaybeLegacyNonces<LookupMap<U248, U256, Sha256>, LookupMap<U248, U256>>;
 
-#[derive(Debug, Default, Clone)]
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, Default, Clone, BorshSerialize, BorshDeserialize)]
 pub struct MaybeLegacyNonces<T, L>
 where
     T: Map<K = U248, V = U256>,

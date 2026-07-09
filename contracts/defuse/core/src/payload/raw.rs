@@ -3,14 +3,15 @@ use defuse_crypto::{
     ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
 };
 use defuse_digest::{Digest, sha2::Sha256};
-use near_sdk::{near, serde::de::DeserializeOwned, serde_json};
+use near_sdk::{serde::de::DeserializeOwned, serde_json};
+use serde::{Deserialize, Serialize};
 
 use crate::payload::{Payload, SignedPayload};
 
 use super::ExtractDefusePayload;
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignedRawEd25519Payload {
     pub payload: String,
 

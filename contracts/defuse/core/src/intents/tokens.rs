@@ -1,11 +1,12 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
+use borsh::{BorshDeserialize, BorshSerialize};
 use near_contract_standards::non_fungible_token;
 use near_sdk::{
-    AccountId, AccountIdRef, CryptoHash, Gas, NearToken, json_types::U128, near,
-    state_init::StateInit,
+    AccountId, AccountIdRef, CryptoHash, Gas, NearToken, json_types::U128, state_init::StateInit,
 };
-use serde_with::DisplayFromStr;
+use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     DefuseError, Result,
@@ -20,8 +21,8 @@ use crate::{
 use super::ExecutableIntent;
 
 #[must_use]
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct NotifyOnTransfer {
     /// Optionally initialize the receiver's contract (Deterministic `AccountId`)
     /// via [`state_init`](https://github.com/near/NEPs/blob/master/neps/nep-0616.md#stateinit-action)
@@ -60,8 +61,9 @@ impl NotifyOnTransfer {
     }
 }
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 /// Transfer a set of tokens from the signer to a specified account id, within the intents contract.
 pub struct Transfer {
     pub receiver_id: AccountId,
@@ -130,8 +132,8 @@ impl ExecutableIntent for Transfer {
     }
 }
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 /// Withdraw given FT tokens from the intents contract to a given external account id (external being outside of intents).
 pub struct FtWithdraw {
     pub token: AccountId,
@@ -225,8 +227,8 @@ impl ExecutableIntent for FtWithdraw {
     }
 }
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 /// Withdraw given NFT tokens from the intents contract to a given external account id (external being outside of intents).
 pub struct NftWithdraw {
     pub token: AccountId,
@@ -320,8 +322,8 @@ impl ExecutableIntent for NftWithdraw {
     }
 }
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 /// Withdraw given MT tokens (i.e. [NEP-245](https://github.com/near/NEPs/blob/master/neps/nep-0245.md)) from the intents contract
 /// to a given to an external account id (external being outside of intents).
 ///
@@ -421,8 +423,8 @@ impl ExecutableIntent for MtWithdraw {
     }
 }
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 /// Withdraw native tokens (NEAR) from the intents contract to a given external account id (external being outside of intents).
 /// This will subtract from the account's wNEAR balance, and will be sent to the account specified as native NEAR.
 /// NOTE: the `wNEAR` will not be refunded in case of fail (e.g. `receiver_id`
@@ -469,8 +471,8 @@ impl ExecutableIntent for NativeWithdraw {
 /// `StorageDeposit` intent. This is due to the fact that intents that fire `Promise`s
 /// are not guaranteed to be executed sequentially, in the order of the provided intents in
 /// `DefuseIntents`.
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct StorageDeposit {
     pub contract_id: AccountId,
     #[serde(

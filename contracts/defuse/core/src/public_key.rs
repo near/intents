@@ -3,21 +3,32 @@ use core::{
     str::FromStr,
 };
 
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_crypto::{
     ed25519::{Ed25519, Ed25519PublicKey},
     fmt::{ParseCurveError, TypedCurve, checked_base58_decode_array},
     p256::{P256, P256UncompressedPublicKey},
     secp256k1::{Secp256k1, Secp256k1UncompressedPublicKey},
 };
-use near_sdk::{AccountId, AccountIdRef, near};
+use near_sdk::{AccountId, AccountIdRef};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh(use_discriminant = true)])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
 #[derive(
-    Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, SerializeDisplay, DeserializeFromStr,
+    Clone,
+    Copy,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    SerializeDisplay,
+    DeserializeFromStr,
+    BorshSerialize,
+    BorshDeserialize,
 )]
-#[serde_with(crate = "::near_sdk::serde_with")]
+#[borsh(use_discriminant = true)]
 #[repr(u8)]
 pub enum PublicKey {
     Ed25519(Ed25519PublicKey) = 0,
@@ -121,13 +132,10 @@ impl FromStr for PublicKey {
 
 #[cfg(feature = "abi")]
 const _: () = {
-    use near_sdk::{
-        schemars::{
-            JsonSchema,
-            r#gen::SchemaGenerator,
-            schema::{InstanceType, Metadata, Schema, SchemaObject},
-        },
-        serde_json,
+    use schemars::{
+        JsonSchema,
+        r#gen::SchemaGenerator,
+        schema::{InstanceType, Metadata, Schema, SchemaObject},
     };
 
     impl JsonSchema for PublicKey {

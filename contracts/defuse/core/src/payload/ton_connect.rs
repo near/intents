@@ -1,17 +1,17 @@
 use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use defuse_ton_connect::{TonConnectPayload, TonConnectPayloadSchema};
-use near_sdk::{
-    CryptoHash, near,
-    serde::de::{DeserializeOwned, Error},
-    serde_json,
+use near_sdk::CryptoHash;
+use serde::{
+    Deserialize, Serialize,
+    de::{DeserializeOwned, Error},
 };
 
 use crate::payload::{Payload, SignedPayload};
 
 use super::{DefusePayload, ExtractDefusePayload};
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignedTonConnectPayload {
     #[serde(flatten)]
     pub payload: TonConnectPayload,

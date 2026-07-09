@@ -1,4 +1,6 @@
-use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, near, state_init::StateInit};
+use borsh::{BorshDeserialize, BorshSerialize};
+use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, state_init::StateInit};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     Result,
@@ -8,8 +10,8 @@ use crate::{
 
 /// Call [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth) with `signer_id`
 /// of intent.
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct AuthCall {
     /// Callee for [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
     pub contract_id: AccountId,

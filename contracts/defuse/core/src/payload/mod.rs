@@ -10,16 +10,18 @@ pub mod webauthn;
 use core::convert::Infallible;
 
 use impl_tools::autoimpl;
-use near_sdk::{AccountId, CryptoHash, near};
-use serde_with::base64::Base64;
+use near_sdk::{AccountId, CryptoHash};
+use serde::{Deserialize, Serialize};
+use serde_with::{base64::Base64, serde_as};
 
 use crate::{Nonce, Timestamp};
 
 // TODO: add version
-#[near(serializers = [json])]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[autoimpl(Deref using self.message)]
 #[autoimpl(DerefMut using self.message)]
-#[derive(Debug, Clone)]
 pub struct DefusePayload<T> {
     pub signer_id: AccountId,
     pub verifying_contract: AccountId,

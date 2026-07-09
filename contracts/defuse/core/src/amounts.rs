@@ -1,21 +1,22 @@
 use core::fmt::Debug;
 use std::{borrow::Cow, collections::BTreeMap};
 
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_map_utils::{IterableMap, cleanup::DefaultMap};
 use defuse_num_utils::{CheckedAdd, CheckedSub};
 use impl_tools::autoimpl;
-use near_sdk::{
-    near,
-    serde::{Deserializer, Serializer},
-};
+use near_sdk::serde::{Deserializer, Serializer};
+use serde::{Deserialize, Serialize};
 use serde_with::{DeserializeAs, SerializeAs};
 
 use crate::token_id::TokenId;
 
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh, json])]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(
+    Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
+)]
 #[autoimpl(Deref using self.0)]
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Amounts<T = BTreeMap<TokenId, u128>>(T);
 
 impl<T> Amounts<T> {

@@ -2,10 +2,12 @@ use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use defuse_nep413::{Nep413, Nep413Payload};
 use impl_tools::autoimpl;
 use near_sdk::{
-    AccountId, near,
+    AccountId,
     serde::de::{self, DeserializeOwned},
     serde_json,
 };
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
 use crate::{
     Timestamp,
@@ -14,10 +16,11 @@ use crate::{
 
 use super::{DefusePayload, ExtractDefusePayload};
 
-#[near(serializers = [json])]
 #[autoimpl(Deref using self.message)]
 #[autoimpl(DerefMut using self.message)]
-#[derive(Debug, Clone)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Nep413DefuseMessage<T> {
     pub signer_id: AccountId,
 
@@ -52,9 +55,10 @@ where
     }
 }
 
-#[near(serializers = [json])]
 #[autoimpl(Deref using self.payload)]
-#[derive(Debug, Clone)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignedNep413Payload {
     pub payload: Nep413Payload,
 

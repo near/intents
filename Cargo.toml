@@ -160,7 +160,7 @@ base64 = "0.22.1"
 bitflags = "2.13"
 blstrs = "0.7.1"
 bnum = "0.13"
-borsh = "1.6.1"
+borsh = "1.7.0"
 bs58 = "0.5.1"
 bytes = "1.11.1"
 cfg_eval = "0.1.2"
@@ -204,6 +204,9 @@ url = "2"
 zeroize = "1.9"
 
 [workspace.lints.rust]
+# `cargo near build` sets `RUSTFLAGS='--cfg=near'`, which lets
+# us select the backend for some operations, while allowing to
+# reuse this code in off-chain components, too.
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(near)"] }
 
 [workspace.lints.clippy]

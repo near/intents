@@ -7,8 +7,9 @@ pub mod tokens;
 pub mod imt;
 
 use derive_more::derive::From;
-use near_sdk::{AccountIdRef, CryptoHash, near};
-use serde_with::base58::Base58;
+use near_sdk::{AccountIdRef, CryptoHash};
+use serde::{Deserialize, Serialize};
+use serde_with::{base58::Base58, serde_as};
 
 #[cfg(feature = "imt")]
 use crate::intents::imt::{ImtBurn, ImtMint};
@@ -25,7 +26,8 @@ use self::{
     tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
 };
 
-#[near(serializers = [json])]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone)]
 pub struct DefuseIntents {
     /// Sequence of intents to execute in given order. Empty list is also
@@ -36,9 +38,9 @@ pub struct DefuseIntents {
     pub intents: Vec<Intent>,
 }
 
-#[near(serializers = [json])]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize, From)]
 #[serde(tag = "intent", rename_all = "snake_case")]
-#[derive(Debug, Clone, From)]
 pub enum Intent {
     /// See [`AddPublicKey`]
     AddPublicKey(AddPublicKey),
@@ -148,7 +150,9 @@ impl ExecutableIntent for Intent {
 /// Event that can be emitted either from a
 /// function call or after intent execution
 #[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone)]
 pub struct MaybeIntentEvent<T> {
     #[serde_as(as = "Option<Base58>")]
@@ -182,7 +186,3 @@ impl<T> From<T> for MaybeIntentEvent<T> {
         Self::new_fn_call(event)
     }
 }
-
-// fix JsonSchema macro bug
-#[cfg(feature = "abi")]
-use near_sdk::serde;

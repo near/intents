@@ -5,8 +5,9 @@ mod nep245;
 
 use defuse_near_utils::{promise_result_checked_json, promise_result_checked_void};
 use defuse_time::Timestamp;
-use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, json_types::U128, near, serde_json};
-use serde_with::DisplayFromStr;
+use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, json_types::U128, serde_json};
+use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     Error, Params, Result, State,
@@ -119,8 +120,9 @@ impl Sendable for TokenId {
     }
 }
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[must_use]
 pub struct Sent {
     pub token_type: TokenIdType,

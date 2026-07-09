@@ -1,14 +1,15 @@
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_core::{SaltRegistry, fees::FeesConfig};
 use defuse_near_utils::NestPrefix;
-use near_sdk::{AccountId, IntoStorageKey, near};
+use near_sdk::{AccountId, IntoStorageKey};
 
 use crate::contract::{
     MigrateStorageWithPrefix,
     state::{ContractState, Prefix, TokenBalances},
 };
 
-#[near(serializers = [borsh])]
-#[derive(Debug)]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
 pub struct ContractStateV0 {
     pub total_supplies: TokenBalances,
 

@@ -9,18 +9,23 @@ use crate::{
     intents::MaybeIntentEvent,
     token_id::{TokenId, TokenIdType},
 };
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_num_utils::CheckedMulDiv;
 use impl_tools::autoimpl;
-use near_sdk::{AccountId, AccountIdRef, CryptoHash, near};
-use serde_with::DisplayFromStr;
+use near_sdk::{AccountId, AccountIdRef, CryptoHash};
+use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, serde_as};
 use std::{borrow::Cow, collections::BTreeMap};
 
 pub type TokenDeltas = Amounts<BTreeMap<TokenId, i128>>;
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
 #[autoimpl(Deref using self.diff)]
 #[autoimpl(DerefMut using self.diff)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(
+    Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
+)]
 /// The user declares the will to have a set of changes done to set of tokens. For example,
 /// a simple trade of 100 of token A for 200 of token B, can be represented by `TokenDiff`
 /// of {"A": -100, "B": 200} (this format is just for demonstration purposes).
@@ -103,8 +108,9 @@ impl ExecutableIntent for TokenDiff {
     }
 }
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// An event emitted when a `TokenDiff` intent is executed.
 pub struct TokenDiffEvent<'a> {
     #[serde(flatten)]

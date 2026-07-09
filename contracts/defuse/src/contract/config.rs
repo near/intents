@@ -1,12 +1,13 @@
 use std::collections::{HashMap, HashSet};
 
 use defuse_core::fees::FeesConfig;
-use near_sdk::{AccountId, near};
+use near_sdk::AccountId;
+use serde::{Deserialize, Serialize};
 
 use super::Role;
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefuseConfig {
     pub wnear_id: AccountId,
     pub fees: FeesConfig,
@@ -14,8 +15,8 @@ pub struct DefuseConfig {
     pub roles: RolesConfig,
 }
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RolesConfig {
     #[serde(default)]
     pub super_admins: HashSet<AccountId>,

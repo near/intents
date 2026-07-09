@@ -7,10 +7,9 @@ use std::borrow::Cow;
 pub use defuse_borsh_utils::{AsWrap, Remainder};
 pub use defuse_global_deployer_core::State;
 pub use defuse_serde_utils::hex::AsHex;
-use near_sdk::{
-    AccountId, AccountIdRef, Promise, ext_contract, near,
-    serde_with::{hex::Hex, serde_as},
-};
+use near_sdk::{AccountId, AccountIdRef, Promise, ext_contract, near};
+use serde::{Deserialize, Serialize};
+use serde_with::{hex::Hex, serde_as};
 
 /// Manages global contract code and ownership for deterministic (NEP-616) accounts.
 #[ext_contract(ext_global_deployer)]
@@ -48,7 +47,7 @@ pub trait GlobalDeployer {
     fn gd_approved_hash(&self) -> AsHex<[u8; 32]>;
 }
 
-#[serde_as(crate = "near_sdk::serde_with")]
+#[serde_as]
 #[near(event_json(standard = "global-deployer"))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event<'a> {
@@ -72,9 +71,10 @@ pub enum Event<'a> {
     },
 }
 
-#[near(serializers = [json])]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Reason<'a> {
     Deploy(#[serde_as(as = "Hex")] [u8; 32]),
     By(Cow<'a, AccountIdRef>),

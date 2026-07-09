@@ -1,12 +1,14 @@
 use std::{borrow::Cow, collections::BTreeSet};
 
-use near_sdk::{AccountIdRef, near};
-use serde_with::base64::Base64;
+use near_sdk::AccountIdRef;
+use serde::{Deserialize, Serialize};
+use serde_with::{base64::Base64, serde_as};
 
 use crate::{Nonce, Salt, public_key::PublicKey};
 
 #[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone)]
 pub struct AccountEvent<'a, T> {
     pub account_id: Cow<'a, AccountIdRef>,
@@ -35,13 +37,16 @@ impl<'a, T> AccountEvent<'a, T> {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone)]
 pub struct PublicKeyEvent<'a> {
     pub public_key: Cow<'a, PublicKey>,
 }
 
-#[near(serializers = [json])]
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone)]
 pub struct NonceEvent {
     #[serde_as(as = "Base64")]
@@ -56,7 +61,9 @@ impl NonceEvent {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
+#[serde_as]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone)]
 pub struct SaltRotationEvent {
     pub current: Salt,

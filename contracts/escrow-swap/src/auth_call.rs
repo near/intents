@@ -1,17 +1,17 @@
-use near_sdk::near;
+use serde::{Deserialize, Serialize};
 
 use crate::Params;
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message {
     pub params: Params,
     pub action: Action,
 }
 
-#[near(serializers = [json])]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "action", content = "data", rename_all = "snake_case")]
-#[derive(Debug, Clone)]
 pub enum Action {
     Close,
 }

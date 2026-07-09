@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-wnear"
 edition.workspace = true
@@ -8,6 +10,3 @@ repository.workspace = true
 [dependencies]
 near-contract-standards.workspace = true
 near-sdk.workspace = true
-
-[lints]
-workspace = true

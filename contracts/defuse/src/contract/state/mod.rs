@@ -2,16 +2,15 @@ mod v0;
 
 pub use v0::ContractStateV0;
 
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_core::{SaltRegistry, amounts::Amounts, fees::FeesConfig, token_id::TokenId};
 use defuse_near_utils::NestPrefix;
-use near_sdk::{
-    AccountId, BorshStorageKey, IntoStorageKey, borsh::BorshSerialize, near, store::IterableMap,
-};
+use near_sdk::{AccountId, BorshStorageKey, IntoStorageKey, store::IterableMap};
 
 pub type TokenBalances = Amounts<IterableMap<TokenId, u128>>;
 
-#[near(serializers = [borsh])]
-#[derive(Debug)]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
 pub struct ContractState {
     pub total_supplies: TokenBalances,
 

@@ -1,6 +1,7 @@
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_webauthn::{IgnoreUserVerification, WebauthnPayload, ed25519::Ed25519, p256::P256};
-use near_sdk::{CryptoHash, near, serde::de::DeserializeOwned, serde_json};
+use near_sdk::CryptoHash;
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::{
     PublicKey, Signature,
@@ -9,8 +10,8 @@ use crate::{
 
 use super::{DefusePayload, ExtractDefusePayload};
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignedWebAuthnPayload {
     pub payload: String,
 

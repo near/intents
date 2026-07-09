@@ -2,7 +2,8 @@ use std::{borrow::Cow, collections::BTreeMap};
 
 use derive_more::From;
 use near_sdk::{AccountIdRef, near};
-use serde_with::DisplayFromStr;
+use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{Params, decimal::UD128, token_id::TokenId};
 
@@ -31,8 +32,9 @@ pub enum Event<'a> {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FundedEvent<'a> {
     pub params: Cow<'a, Params>,
 
@@ -43,8 +45,9 @@ pub struct FundedEvent<'a> {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FillEvent<'a> {
     pub maker: Cow<'a, AccountIdRef>,
     pub taker: Cow<'a, AccountIdRef>,
@@ -78,8 +81,9 @@ pub struct FillEvent<'a> {
     pub integrator_dst_fees: BTreeMap<Cow<'a, AccountIdRef>, u128>,
 }
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProtocolFeesCollected<'a> {
     #[serde_as(as = "DisplayFromStr")]
     pub fee: u128,
@@ -96,8 +100,9 @@ impl ProtocolFeesCollected<'_> {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MakerSent {
     #[serde_as(as = "DisplayFromStr")]
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
@@ -115,9 +120,9 @@ impl MakerSent {
     }
 }
 
-#[near(serializers = [json])]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CloseReason {
     DeadlineExpired,
     ByMaker,
@@ -131,7 +136,3 @@ pub trait EscrowIntentEmit<'a>: Into<Event<'a>> {
     }
 }
 impl<'a, T> EscrowIntentEmit<'a> for T where T: Into<Event<'a>> {}
-
-// fix JsonSchema macro bug
-#[cfg(feature = "abi")]
-use near_sdk::serde;

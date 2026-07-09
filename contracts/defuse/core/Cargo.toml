@@ -27,6 +27,7 @@ defuse-token-id = { workspace = true, features = ["nep141", "nep171", "nep245", 
 defuse-ton-connect = { workspace = true, features = ["serde"] }
 defuse-webauthn = { workspace = true, features = ["ed25519", "p256"] }
 
+borsh = { workspace = true, features = ["derive"] }
 defuse-borsh-utils.workspace = true
 derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
@@ -34,15 +35,18 @@ hex-literal.workspace = true
 impl-tools.workspace = true
 near-contract-standards.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
 serde_with = { workspace = true, features = ["base58", "base64"] }
 thiserror.workspace = true
 
 arbitrary = { workspace = true, optional = true }
 near-kit = { workspace = true, optional = true }
-serde_json = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 abi = [
+  "borsh/unstable__schema",
   "defuse-bitmap/abi",
   "defuse-crypto/abi",
   "defuse-fees/abi",
@@ -51,7 +55,7 @@ abi = [
   "defuse-token-id/abi",
   "defuse-ton-connect/abi",
   "defuse-webauthn/abi",
-  "dep:serde_json",
+  "dep:schemars",
   "near-sdk/abi",
   "serde_with/schemars_0_8",
 ]

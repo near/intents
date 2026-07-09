@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use near_sdk::{AccountIdRef, CryptoHash, near, serde::Deserialize};
+use serde::Serialize;
 use serde_with::{base58::Base58, serde_as};
 
 #[serde_as(crate = "::near_sdk::serde_with")]
@@ -43,9 +44,10 @@ pub enum WalletEvent<'a> {
 }
 
 /// Actor of the request
-#[near(serializers = [json])]
+#[serde_as]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Actor<'a> {
     /// Executed by signed request with given hash via `w_execute_signed()`.
     SignedRequest(#[serde_as(as = "Base58")] CryptoHash),

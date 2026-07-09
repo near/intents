@@ -18,6 +18,7 @@ use near_sdk::{
     serde_json::{self, json},
     store::IterableSet,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::PoaFactory;
 
@@ -29,8 +30,20 @@ const POA_TOKEN_FT_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 /// Copied from `near_contract_standards::fungible_token::core_impl::GAS_FOR_FT_TRANSFER_CALL`
 const POA_TOKEN_FT_TRANSFER_CALL_MIN_GAS: Gas = Gas::from_tgas(30);
 
-#[derive(AccessControlRole, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[near(serializers = [json])]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    AccessControlRole,
+)]
 pub enum Role {
     DAO,
     TokenDeployer,

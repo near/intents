@@ -6,18 +6,18 @@ use defuse_core::{
     intents::MaybeIntentEvent,
 };
 
-use near_sdk::near;
+use serde::{Deserialize, Serialize};
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SimulationReport {
     pub intents_executed: Vec<MaybeIntentEvent<AccountEvent<'static, NonceEvent>>>,
     pub logs: Vec<String>,
     pub min_deadline: Timestamp,
 }
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SimulationOutput {
     #[serde(flatten)]
     pub report: SimulationReport,
@@ -40,8 +40,8 @@ impl SimulationOutput {
     }
 }
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StateOutput {
     pub fee: Pips,
 

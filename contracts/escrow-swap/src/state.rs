@@ -1,16 +1,18 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_borsh_utils::As as BorshAs;
 use defuse_fees::Pips;
 use defuse_time::{Timestamp, borsh::TimestampNanoSeconds as BorshTimestampNanoSeconds};
 use defuse_token_id::TokenId;
-use near_sdk::{AccountId, CryptoHash, Gas, borsh, env, near};
-use serde_with::{DisplayFromStr, hex::Hex};
+use near_sdk::{AccountId, CryptoHash, Gas, borsh, env};
+use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 
 use crate::{Error, Result, decimal::UD128};
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct ContractStorage(
     /// If `None`, the escrow was closed and is being deteled now
     pub(crate) Option<Storage>,
@@ -34,8 +36,9 @@ impl ContractStorage {
     }
 }
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 
 pub struct Storage {
     #[serde_as(as = "Hex")]
@@ -86,8 +89,9 @@ impl Storage {
     }
 }
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct Params {
     pub maker: AccountId,
 
@@ -202,8 +206,8 @@ impl Params {
     }
 }
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct ProtocolFees {
     #[serde(default, skip_serializing_if = "Pips::is_zero")]
     pub fee: Pips,
@@ -215,8 +219,10 @@ pub struct ProtocolFees {
     pub collector: AccountId,
 }
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(
+    Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
+)]
 pub struct OverrideSend {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub receiver_id: Option<AccountId>,
@@ -261,8 +267,9 @@ impl OverrideSend {
     }
 }
 
-#[near(serializers = [json, borsh])]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct State {
     /// Funded or lost (after close) src remaining
     #[serde_as(as = "DisplayFromStr")]
@@ -300,7 +307,3 @@ pub struct State {
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub in_flight: u32,
 }
-
-// fix JsonSchema macro bug
-#[cfg(feature = "abi")]
-use near_sdk::serde;

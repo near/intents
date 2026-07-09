@@ -3,19 +3,30 @@ use core::{
     str::FromStr,
 };
 
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_crypto::{
     ed25519::{Ed25519, Ed25519Signature},
     fmt::{ParseCurveError, TypedCurve, checked_base58_decode_array},
     p256::{P256, P256Signature},
     secp256k1::{Secp256k1, Secp256k1RecoverableSignature},
 };
-use near_sdk::near;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
-#[near(serializers = [borsh(use_discriminant = true)])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
 #[derive(
-    Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, SerializeDisplay, DeserializeFromStr,
+    Clone,
+    Copy,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    SerializeDisplay,
+    DeserializeFromStr,
+    BorshSerialize,
+    BorshDeserialize,
 )]
+#[borsh(use_discriminant = true)]
 #[repr(u8)]
 pub enum Signature {
     Ed25519(Ed25519Signature) = 0,
@@ -68,7 +79,7 @@ impl FromStr for Signature {
 
 #[cfg(feature = "abi")]
 const _: () = {
-    use near_sdk::schemars::{
+    use schemars::{
         JsonSchema,
         r#gen::SchemaGenerator,
         schema::{InstanceType, Metadata, Schema, SchemaObject},

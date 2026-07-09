@@ -1,6 +1,6 @@
 use core::convert::Infallible;
 
-use defuse_crypto::{Ed25519PublicKey, Ed25519Signature};
+use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 
 use defuse_wallet_core::RequestMessage;
 use ed25519_dalek::ed25519::signature::Signer as Ed25519Signer;

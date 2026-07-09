@@ -5,19 +5,16 @@ use std::{
     io::{self, Read},
 };
 
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_borsh_utils::{BorshDeserializeAs, BorshSerializeAs};
 use defuse_near_utils::PanicOnClone;
-use near_sdk::{
-    borsh::{BorshDeserialize, BorshSerialize},
-    near,
-};
 
 use super::ContractStorage;
 use v0::ContractStorageV0;
 
 /// Versioned [Contract] state for de/serialization.
-#[derive(Debug)]
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
 enum VersionedContractStorage<'a> {
     V0(Cow<'a, PanicOnClone<ContractStorageV0>>),
     // When upgrading to a new version, given current version `N`:

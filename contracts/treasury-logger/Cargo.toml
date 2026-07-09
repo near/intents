@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-treasury-logger"
 version = "0.1.0"
@@ -8,8 +10,24 @@ repository.workspace = true
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[lints]
-workspace = true
+[dependencies]
+defuse-borsh-utils.workspace = true
+defuse-near-utils.workspace = true
+defuse-nep245.workspace = true
+
+borsh = { workspace = true, features = ["derive"] }
+impl-tools.workspace = true
+near-sdk.workspace = true
+serde_with.workspace = true
+
+[features]
+abi = ["borsh/unstable__schema", "near-sdk/abi", "serde_with/schemars_0_8"]
+
+[dev-dependencies]
+defuse-treasury-logger = { path = ".", features = ["abi"] }
+
+near-sdk = { workspace = true, features = ["unit-testing"] }
+rstest.workspace = true
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"
@@ -21,17 +39,5 @@ container_build_command = [
   "build",
   "non-reproducible-wasm",
   "--locked",
+  "--abi-features=abi",
 ]
-
-[dependencies]
-defuse-borsh-utils.workspace = true
-defuse-near-utils.workspace = true
-defuse-nep245.workspace = true
-
-impl-tools.workspace = true
-near-sdk.workspace = true
-serde_with.workspace = true
-
-[dev-dependencies]
-near-sdk = { workspace = true, features = ["unit-testing"] }
-rstest.workspace = true

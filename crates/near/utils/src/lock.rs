@@ -1,16 +1,16 @@
 use std::io;
 
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_borsh_utils::{AsWrap, BorshDeserializeAs, BorshSerializeAs};
-use near_sdk::{
-    borsh::{BorshDeserialize, BorshSerialize},
-    near,
-};
+use serde::{Deserialize, Serialize};
 
 /// A persistent lock, which stores its state (whether it's locked or unlocked)
 /// on-chain, so that the inner value can be accessed depending on
 /// the current state of the lock.
-#[derive(Debug, Default, PartialEq, Eq)]
-#[near(serializers = [borsh, json])]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[derive(
+    Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
+)]
 pub struct Lock<T> {
     #[serde(
         default,

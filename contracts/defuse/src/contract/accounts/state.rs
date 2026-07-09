@@ -1,9 +1,10 @@
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_core::{amounts::Amounts, token_id::TokenId};
 use defuse_near_utils::NestPrefix;
-use near_sdk::{BorshStorageKey, IntoStorageKey, near, store::IterableMap};
+use near_sdk::{BorshStorageKey, IntoStorageKey, store::IterableMap};
 
-#[derive(Debug)]
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
 pub struct AccountState {
     pub token_balances: Amounts<IterableMap<TokenId, u128>>,
 }
@@ -23,8 +24,8 @@ impl AccountState {
     }
 }
 
-#[derive(BorshStorageKey)]
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(BorshSerialize, BorshDeserialize, BorshStorageKey)]
 enum AccountStatePrefix {
     TokenBalances,
 }

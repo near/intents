@@ -15,14 +15,13 @@ mod versioned;
 
 use core::iter;
 
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_borsh_utils::As;
 use defuse_core::Result;
 use impl_tools::autoimpl;
 use near_plugins::{AccessControlRole, AccessControllable, Pausable, access_control};
-use near_sdk::{
-    BorshStorageKey, IntoStorageKey, PanicOnDefault, borsh::BorshDeserialize, near, require,
-    store::LookupSet,
-};
+use near_sdk::{BorshStorageKey, IntoStorageKey, PanicOnDefault, near, require, store::LookupSet};
+use serde::{Deserialize, Serialize};
 use versioned::MaybeVersionedContractStorage;
 
 use crate::{Defuse, contract::events::PostponedMtBurnEvents};
@@ -33,8 +32,20 @@ use self::{
     state::ContractState,
 };
 
-#[near(serializers = [json])]
-#[derive(AccessControlRole, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    AccessControlRole,
+)]
 pub enum Role {
     DAO,
 
@@ -83,10 +94,10 @@ pub struct Contract {
     runtime: Runtime,
 }
 
-#[derive(Debug)]
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
 pub struct ContractStorage {
     accounts: Accounts,
 
@@ -143,8 +154,8 @@ impl Contract {
 #[near]
 impl Defuse for Contract {}
 
-#[derive(BorshStorageKey)]
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(BorshSerialize, BorshDeserialize, BorshStorageKey)]
 enum Prefix {
     Accounts,
     State,

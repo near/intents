@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse"
 version = "0.4.2"
@@ -9,9 +11,6 @@ readme = "../README.md"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[lints]
-workspace = true
-
 [dependencies]
 defuse-admin-utils.workspace = true
 defuse-auth-call.workspace = true
@@ -21,11 +20,14 @@ defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-serde-utils = { workspace = true, features = ["base64"] }
 
+borsh = { workspace = true, features = ["derive"] }
 impl-tools.workspace = true
 itertools.workspace = true
 near-contract-standards.workspace = true
 near-plugins.workspace = true
 near-sdk.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
 thiserror.workspace = true
 
 arbitrary = { workspace = true, optional = true }
@@ -34,6 +36,7 @@ defuse-bitmap = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
 defuse-map-utils = { workspace = true, features = ["near"], optional = true }
 defuse-wnear = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"
@@ -64,7 +67,14 @@ container_build_command = [
 ]
 
 [features]
-abi = ["defuse-core/abi", "defuse-serde-utils/abi", "near-sdk/abi"]
+abi = [
+  "borsh/unstable__schema",
+  "defuse-core/abi",
+  "defuse-near-utils/abi",
+  "defuse-serde-utils/abi",
+  "dep:schemars",
+  "near-sdk/abi",
+]
 arbitrary = ["defuse-core/arbitrary", "dep:arbitrary"]
 contract = [
   "dep:bitflags",
@@ -77,6 +87,8 @@ imt = ["defuse-core/imt"]
 far = ["imt"]
 
 [dev-dependencies]
+defuse = { path = ".", features = ["abi"] }
+
 defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-randomness.workspace = true
 defuse-tests.workspace = true

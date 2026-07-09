@@ -2,7 +2,8 @@ use super::TokenId;
 use crate::checked::{CheckedMtEvent, ErrorLogTooLong};
 use defuse_near_utils::TOTAL_LOG_LENGTH_LIMIT;
 use derive_more::derive::From;
-use near_sdk::{AccountIdRef, AsNep297Event, json_types::U128, near, serde::Deserialize};
+use near_sdk::{AccountIdRef, AsNep297Event, json_types::U128, near};
+use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
 #[must_use = "make sure to `.emit()` this event"]
@@ -36,8 +37,8 @@ impl MtEvent<'_> {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MtMintEvent<'a> {
     pub owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
@@ -47,8 +48,8 @@ pub struct MtMintEvent<'a> {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MtBurnEvent<'a> {
     pub owner_id: Cow<'a, AccountIdRef>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -60,8 +61,8 @@ pub struct MtBurnEvent<'a> {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MtTransferEvent<'a> {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub authorized_id: Option<Cow<'a, AccountIdRef>>,

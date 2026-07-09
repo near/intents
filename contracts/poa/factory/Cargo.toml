@@ -1,3 +1,5 @@
+lints.workspace = true
+
 [package]
 name = "defuse-poa-factory"
 version = "0.1.0"
@@ -7,9 +9,6 @@ repository.workspace = true
 
 [lib]
 crate-type = ["cdylib", "rlib"]
-
-[lints]
-workspace = true
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"
@@ -22,6 +21,7 @@ container_build_command = [
   "non-reproducible-wasm",
   "--locked",
   "--features=contract",
+  "--abi-features=abi,contract",
 ]
 
 [dependencies]
@@ -32,6 +32,9 @@ defuse-poa-token.workspace = true
 near-contract-standards.workspace = true
 near-plugins.workspace = true
 near-sdk.workspace = true
+serde = { workspace = true, features = ["derive"] }
+
+schemars = { workspace = true, features = ["derive"], optional = true }
 
 [dev-dependencies]
 defuse-sandbox.workspace = true
@@ -40,6 +43,8 @@ rstest.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
 [features]
+abi = ["dep:schemars"]
+
 contract = []
 
 [build-dependencies]

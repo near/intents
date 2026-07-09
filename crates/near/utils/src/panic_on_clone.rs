@@ -1,16 +1,17 @@
+use borsh::{BorshDeserialize, BorshSerialize};
 use impl_tools::autoimpl;
-use near_sdk::{env, near};
+use near_sdk::env;
 
 /// This struct is used as a tool to make it possible to derive borsh
 /// serialization in such a way where serialization can take over a reference
 /// and include it as if it's owned by the struct/enum being serialized.
 /// The reference can be taken in the function [`PanicOnClone::from_ref()`].
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[autoimpl(Deref using self.0)]
 #[autoimpl(DerefMut using self.0)]
 #[autoimpl(AsRef using self.0)]
 #[autoimpl(AsMut using self.0)]
-#[near(serializers = [borsh])]
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, BorshSerialize, BorshDeserialize)]
 #[repr(transparent)] // needed for `transmute()` below
 pub struct PanicOnClone<T: ?Sized>(T);
 

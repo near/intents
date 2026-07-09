@@ -1,11 +1,12 @@
 use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use defuse_sep53::Sep53;
-use near_sdk::{CryptoHash, near, serde::de::DeserializeOwned, serde_json};
+use near_sdk::{CryptoHash, serde::de::DeserializeOwned, serde_json};
+use serde::{Deserialize, Serialize};
 
 use crate::payload::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignedSep53Payload {
     pub payload: String,
 
