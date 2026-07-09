@@ -66,7 +66,7 @@ impl P256UncompressedPublicKey {
     /// # Examples
     ///
     /// ```rust
-    /// # use defuse_kdf_crypto::p256::{
+    /// # use defuse_crypto::p256::{
     /// #     P256CompressedPublicKey,
     /// #     P256UncompressedPublicKey,
     /// # };

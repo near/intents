@@ -2,7 +2,7 @@ use std::{marker::PhantomData, rc::Rc, sync::Arc};
 
 pub use defuse_derivation_schema::*;
 
-use defuse_kdf_crypto::{Curve, RecoverableCurve};
+use defuse_crypto::{Curve, RecoverableCurve};
 use impl_tools::autoimpl;
 
 // pub trait SignatureSchema1<M> {
