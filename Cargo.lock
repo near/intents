@@ -1656,10 +1656,12 @@ dependencies = [
 name = "defuse-nep413"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
  "borsh",
  "cfg_eval",
  "defuse-digest",
  "defuse-kdf-crypto",
+ "defuse-nep413",
  "defuse-nep461",
  "digest-io",
  "hex-literal",
@@ -2014,9 +2016,11 @@ dependencies = [
 name = "defuse-webauthn"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
  "cfg_eval",
  "defuse-digest",
  "defuse-kdf-crypto",
+ "defuse-webauthn",
  "hex-literal",
  "rstest",
  "schemars 0.8.22",

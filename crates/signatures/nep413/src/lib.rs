@@ -62,6 +62,7 @@ impl SignedMessageNep for Nep413 {
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
     serde(rename_all = "camelCase")
 )]
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 #[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 /// [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md) payload

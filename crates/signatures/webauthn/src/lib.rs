@@ -117,6 +117,7 @@ where
 
 /// Signable payload for [`Webauthn`] signing standard
 #[serde_as]
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WebauthnPayload {
