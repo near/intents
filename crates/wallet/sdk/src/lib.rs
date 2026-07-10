@@ -11,7 +11,7 @@ use std::{
 };
 
 use borsh::BorshSerialize;
-pub use defuse_wallet_core::*;
+pub use defuse_wallet::*;
 
 use near_global_contracts::{GlobalContractId, StateInit, StateInitV1};
 use rand::{make_rng, rngs::SmallRng};

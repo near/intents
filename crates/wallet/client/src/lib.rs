@@ -1,6 +1,6 @@
 use std::{borrow::Cow, collections::BTreeSet};
 
-use defuse_wallet_core::{Request, RequestMessage, Timestamp};
+use defuse_wallet::{Request, RequestMessage, Timestamp};
 use near_kit::{AccountId, AccountIdRef};
 use serde::Serialize;
 

@@ -4,9 +4,9 @@ pub use self::request::*;
 
 use std::{borrow::Cow, convert::Infallible, time::Duration};
 
+pub use defuse_wallet as wallet;
+use defuse_wallet::{RequestMessage, Timestamp};
 use defuse_wallet_client::{WExecuteSignedArgs, Wallet};
-pub use defuse_wallet_core as wallet;
-use defuse_wallet_core::{RequestMessage, Timestamp};
 pub use near_kit;
 use near_kit::{ExecutedOptimistic, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken};
 use thiserror::Error as ThisError;

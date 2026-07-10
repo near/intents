@@ -1,15 +1,11 @@
 use std::collections::BTreeSet;
 
-use defuse_wallet_webauthn::{
-    WalletWebauthn,
-    core::{
-        Request, RequestMessage, STATE_KEY, Timestamp,
-        contract::{ContractImpl, Wallet},
-    },
-    ed25519::Ed25519,
-    webauthn::IgnoreUserVerification,
+use defuse_wallet::{
+    AccountId, Request, RequestMessage, STATE_KEY, Timestamp,
+    contract::{ContractImpl, Wallet},
 };
-use near_sdk::{AccountId, PanicOnDefault, near};
+use defuse_wallet_webauthn::{WalletWebauthn, ed25519::Ed25519, webauthn::IgnoreUserVerification};
+use near_sdk::{PanicOnDefault, near};
 
 #[cfg_attr(not(near), allow(dead_code))]
 #[near(

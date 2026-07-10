@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 defuse-crypto = { workspace = true, features = ["serde"] }
-defuse-wallet-core = { workspace = true, features = ["serde"] }
+defuse-wallet.workspace = true
 defuse-webauthn.workspace = true
 
 serde = { workspace = true, features = ["derive"] }
@@ -30,39 +30,29 @@ p256 = ["defuse-crypto/p256", "defuse-webauthn/p256"]
 abi = [
   "borsh-schema",
   "defuse-crypto/abi",
-  "defuse-wallet-core/abi",
+  "defuse-webauthn/abi",
   "schemars-v0_8",
 ]
 arbitrary = [
   "defuse-crypto/arbitrary",
-  "defuse-wallet-core/arbitrary",
   "defuse-webauthn/arbitrary",
   "dep:arbitrary",
 ]
-borsh = [
-  "defuse-crypto/borsh",
-  "defuse-wallet-core/borsh",
-  "defuse-webauthn/borsh",
-  "dep:borsh",
-]
+borsh = ["defuse-crypto/borsh", "defuse-webauthn/borsh", "dep:borsh"]
 borsh-schema = [
   "borsh",
   "borsh?/unstable__schema",
   "defuse-crypto/borsh-schema",
-  "defuse-wallet-core/borsh-schema",
   "defuse-webauthn/borsh-schema",
 ]
 schemars-v0_8 = [
   "defuse-crypto/schemars-v0_8",
-  "defuse-wallet-core/schemars-v0_8",
   "defuse-webauthn/schemars-v0_8",
   "dep:schemars",
 ]
 
-near-contract = ["defuse-wallet-core/near-contract"]
-
 [dev-dependencies]
-defuse-wallet-webauthn = { path = ".", features = ["abi", "near-contract", "ed25519", "p256"] }
+defuse-wallet-webauthn = { path = ".", features = ["abi", "ed25519", "p256"] }
 
 hex-literal.workspace = true
 rstest.workspace = true

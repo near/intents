@@ -2,14 +2,13 @@
 #[cfg(all(feature = "contract", any(feature = "abi", near, test)))]
 mod contract;
 
-use ::core::str::FromStr;
+use core::str::FromStr;
 
 use defuse_crypto::{
     Curve,
     ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
 };
-pub use defuse_wallet_core as core;
-use defuse_wallet_core::{RequestMessage, SignatureSchema};
+use defuse_wallet::{RequestMessage, SignatureSchema};
 
 // TODO: docs
 pub struct WalletEd25519;
@@ -32,7 +31,7 @@ impl SignatureSchema for WalletEd25519 {
 
 #[cfg(feature = "signer")]
 const _: () = {
-    use ::core::convert::Infallible;
+    use core::convert::Infallible;
 
     use async_trait::async_trait;
     use defuse_crypto::ed25519::ed25519_dalek::{self, SigningKey};
@@ -59,7 +58,7 @@ const _: () = {
 // mod tests {
 //     use std::time::Duration;
 
-//     use defuse_wallet_core::Request;
+//     use defuse_wallet::Request;
 //     use hex_literal::hex;
 //     use rstest::rstest;
 

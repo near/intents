@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use defuse_wallet_core::{
+use defuse_wallet::{
     Request, RequestMessage, STATE_KEY, State, Timestamp,
     contract::{ContractImpl, Error, Wallet},
 };

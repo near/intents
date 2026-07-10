@@ -8,7 +8,7 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-wallet-core = { workspace = true, features = ["borsh", "digest"] }
+defuse-wallet = { workspace = true, features = ["borsh", "digest"] }
 
 async-trait.workspace = true
 borsh.workspace = true
@@ -17,4 +17,4 @@ near-global-contracts = { workspace = true, features = ["borsh"] }
 rand.workspace = true
 
 [features]
-json = ["defuse-wallet-core/json"]
+json = ["defuse-wallet/json"]

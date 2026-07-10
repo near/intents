@@ -1,8 +1,7 @@
 lints.workspace = true
 
 [package]
-# TODO: rename to defuse-wallet
-name = "defuse-wallet-core"
+name = "defuse-wallet"
 edition.workspace = true
 version.workspace = true
 rust-version.workspace = true
@@ -90,6 +89,6 @@ near-contract = [
 ]
 
 [dev-dependencies]
-defuse-wallet-core = { path = ".", features = ["abi", "arbitrary", "borsh", "digest", "schemars-v0_8", "serde", "near-contract"] }
+defuse-wallet = { path = ".", features = ["abi", "arbitrary", "borsh", "digest", "schemars-v0_8", "serde", "near-contract"] }
 
 near-sdk = { workspace = true, features = ["unit-testing"] }

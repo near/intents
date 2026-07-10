@@ -103,7 +103,7 @@ impl Nonces {
     ///
     /// ```rust
     /// # use core::time::Duration;
-    /// # use defuse_wallet_core::{DEFAULT_TIMEOUT, Nonces, Timestamp};
+    /// # use defuse_wallet::{DEFAULT_TIMEOUT, Nonces, Timestamp};
     /// let mut nonces = Nonces::new(DEFAULT_TIMEOUT);
     /// let created_at = Timestamp::now() - Duration::from_mins(1);
     ///

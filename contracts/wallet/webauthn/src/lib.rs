@@ -3,11 +3,10 @@ pub mod ed25519;
 #[cfg(feature = "p256")]
 pub mod p256;
 
-use ::core::marker::PhantomData;
+use core::marker::PhantomData;
 
 use defuse_crypto::Curve;
-pub use defuse_wallet_core as core;
-use defuse_wallet_core::{RequestMessage, SignatureSchema};
+use defuse_wallet::{RequestMessage, SignatureSchema};
 pub use defuse_webauthn as webauthn;
 use defuse_webauthn::{Algorithm, UserVerification, Webauthn, WebauthnPayload};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
@@ -70,7 +69,7 @@ pub struct WalletWebauthnProof<S> {
 // mod tests {
 //     use std::time::Duration;
 
-//     use defuse_wallet_core::Request;
+//     use defuse_wallet::Request;
 //     use hex_literal::hex;
 //     use rstest::rstest;
 

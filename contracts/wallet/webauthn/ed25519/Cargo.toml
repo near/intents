@@ -12,12 +12,13 @@ readme = "../README.md"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-defuse-wallet-webauthn = { workspace = true, features = ["borsh", "ed25519", "near-contract"] }
+defuse-wallet = { workspace = true, features = ["near-contract"] }
+defuse-wallet-webauthn = { workspace = true, features = ["borsh", "ed25519"] }
 
 near-sdk.workspace = true
 
 [features]
-abi = ["defuse-wallet-webauthn/abi", "near-sdk/abi"]
+abi = ["defuse-wallet-webauthn/abi", "defuse-wallet/abi", "near-sdk/abi"]
 
 [dev-dependencies]
 defuse-wallet-webauthn-ed25519 = { path = ".", features = ["abi"] }

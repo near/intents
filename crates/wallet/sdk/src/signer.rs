@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use defuse_wallet_core::{RequestMessage, SignatureSchema};
+use defuse_wallet::{RequestMessage, SignatureSchema};
 use impl_tools::autoimpl;
 
 pub type Proof = String;

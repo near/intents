@@ -2,13 +2,12 @@
 #[cfg(all(feature = "contract", any(feature = "abi", near, test)))]
 mod contract;
 
-use ::core::{
+use core::{
     fmt::{self, Display},
     str::FromStr,
 };
 
-pub use defuse_wallet_core as core;
-use defuse_wallet_core::{RequestMessage, SignatureSchema};
+use defuse_wallet::{RequestMessage, SignatureSchema};
 
 /// [`SigningStandard`] which always rejects the signature.
 ///

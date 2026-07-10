@@ -63,7 +63,7 @@ where
 mod tests {
     use std::time::Duration;
 
-    use defuse_wallet_core::{State, Timestamp};
+    use defuse_wallet::{State, Timestamp};
     use rand::rng;
 
     use super::*;

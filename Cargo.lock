@@ -1918,16 +1918,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-wallet-client"
-version = "0.1.0"
-dependencies = [
- "defuse-wallet-core",
- "near-kit",
- "serde",
-]
-
-[[package]]
-name = "defuse-wallet-core"
+name = "defuse-wallet"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
@@ -1939,7 +1930,7 @@ dependencies = [
  "defuse-digest",
  "defuse-near-promise",
  "defuse-time",
- "defuse-wallet-core",
+ "defuse-wallet",
  "digest-io",
  "impl-tools 0.12.0",
  "near-account-id",
@@ -1951,12 +1942,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-wallet-client"
+version = "0.1.0"
+dependencies = [
+ "defuse-wallet",
+ "near-kit",
+ "serde",
+]
+
+[[package]]
 name = "defuse-wallet-ed25519"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "defuse-crypto",
- "defuse-wallet-core",
+ "defuse-wallet",
  "defuse-wallet-ed25519",
  "defuse-wallet-sdk",
  "hex-literal",
@@ -1970,7 +1970,7 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "borsh",
- "defuse-wallet-core",
+ "defuse-wallet",
  "defuse-wallet-no-sign",
  "hex-literal",
  "near-sdk",
@@ -1986,8 +1986,8 @@ version = "0.1.0"
 dependencies = [
  "bs58 0.5.1",
  "defuse-digest",
+ "defuse-wallet",
  "defuse-wallet-client",
- "defuse-wallet-core",
  "defuse-wallet-ed25519",
  "defuse-wallet-relayer",
  "defuse-wallet-sdk",
@@ -2010,7 +2010,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "borsh",
- "defuse-wallet-core",
+ "defuse-wallet",
  "impl-tools 0.12.0",
  "near-global-contracts",
  "rand 0.10.2",
@@ -2023,7 +2023,7 @@ dependencies = [
  "arbitrary",
  "borsh",
  "defuse-crypto",
- "defuse-wallet-core",
+ "defuse-wallet",
  "defuse-wallet-webauthn",
  "defuse-webauthn",
  "hex-literal",
@@ -2037,6 +2037,7 @@ dependencies = [
 name = "defuse-wallet-webauthn-ed25519"
 version = "0.1.0"
 dependencies = [
+ "defuse-wallet",
  "defuse-wallet-webauthn",
  "defuse-wallet-webauthn-ed25519",
  "near-sdk",
@@ -2046,6 +2047,7 @@ dependencies = [
 name = "defuse-wallet-webauthn-p256"
 version = "0.1.0"
 dependencies = [
+ "defuse-wallet",
  "defuse-wallet-webauthn",
  "defuse-wallet-webauthn-p256",
  "near-sdk",

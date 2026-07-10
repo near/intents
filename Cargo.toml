@@ -9,6 +9,7 @@ members = [
   "contracts/poa/factory",
   "contracts/poa/token",
   "contracts/treasury-logger",
+  "contracts/wallet",
   "contracts/wallet/ed25519",
   "contracts/wallet/no-sign",
   "contracts/wallet/webauthn",
@@ -54,7 +55,6 @@ members = [
   "crates/signatures/ton-connect",
 
   "crates/wallet/client",
-  "crates/wallet/core",
   "crates/wallet/relayer",
   "crates/wallet/sdk",
 
@@ -81,6 +81,7 @@ defuse-outlayer-app.path = "contracts/outlayer-app"
 defuse-outlayer-app-core = { path = "contracts/outlayer-app/core", default-features = false }
 defuse-poa-factory.path = "contracts/poa/factory"
 defuse-poa-token.path = "contracts/poa/token"
+defuse-wallet.path = "contracts/wallet"
 defuse-wallet-ed25519.path = "contracts/wallet/ed25519"
 defuse-wallet-no-sign.path = "contracts/wallet/no-sign"
 defuse-wallet-webauthn.path = "contracts/wallet/webauthn"
@@ -125,7 +126,6 @@ defuse-ton-connect = { path = "crates/signatures/ton-connect", default-features 
 defuse-webauthn = { path = "crates/signatures/webauthn", default-features = false }
 
 defuse-wallet-client.path = "crates/wallet/client"
-defuse-wallet-core.path = "crates/wallet/core"
 defuse-wallet-relayer.path = "crates/wallet/relayer"
 defuse-wallet-sdk.path = "crates/wallet/sdk"
 
