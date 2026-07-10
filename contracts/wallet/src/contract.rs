@@ -5,61 +5,7 @@
 //! (e.g. extensions) to construct cross-contract calls (i.e. promises)
 //! to wallet contracts.
 //!
-//! # Signature Schemas
-//!
-//! By design, each wallet contract variant implements its own
-//! [signature schema](SignatureSchema) and [deployed](#global-contract-deployment)
-//! separately.
-//!
-//!
-//! Reference implementation of a wallet contract.
-//! Delegate method execution to it when implementing your own variant.
-//!
-//! # Examples
-//!
-//! ```rust
-//! use borsh::{BorshSerialize, BorshDeserialize};
-//! use defuse_wallet::{
-//!     RequestMessage, SignatureSchema, STATE_KEY,
-//!     contract::{Wallet, WalletImpl},
-//! };
-//! use near_sdk::{near, PanicOnDefault};
-//!
-//! pub struct MySchema;
-//!
-//! #[derive(BorshSerialize, BorshDeserialize)]
-//! pub struct MyPublicKey;
-//!
-//! impl SignatureSchema for MySchema {
-//!     type PublicKey = MyPublicKey;
-//!
-//!     fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
-//!         todo!()
-//!     }
-//! }
-//!
-//! #[near(
-//!     contract_state(key = STATE_KEY),
-//!     contract_metadata(
-//!         standard(standard = "wallet", version = "1.0.0"),
-//!         standard(standard = "wallet-<VARIANT>", version = "1.0.0"),
-//!     ),
-//! )]
-//! #[derive(PanicOnDefault)]
-//! #[repr(transparent)]
-//! struct MyContract(WalletImpl<MySchema>);
-//!
-//! /*
-//! #[near]
-//! impl Wallet for MyContract {
-//!     // ...
-//! }
-//! */
-//! ```
-//!
-//! # Global contract deployment
-
-mod utils;
+//! See [`wallet!`] macro to define and implement wallet contract variants.
 
 use std::{collections::BTreeSet, fmt::Display};
 
@@ -80,19 +26,14 @@ pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 
 /// Wallet contract interface.
 ///
-/// Refer to [crate documentation](crate) for more.
-///
-/// # Variants
-///
-/// By design, each wallet contract variant implements its own
-/// [signature schema](SignatureSchema) and [deployed](#global-contract-deployment)
-/// separately.
-///
-/// Implementations are recommended to use [reference implementation](WalletImpl)
-/// and deletgate their execution to it.
+/// See:
+/// * [`wallet!`] macro to define and implement wallet contract variants
+/// * [`ext_wallet`] to construct typed cross-contract calls (i.e. promises)
+///   to wallet contracts from third-party contracts (e.g. extensions)
+/// * [crate documentation](crate) for an overview of Wallet Contracts
 #[ext_contract(ext_wallet)]
 pub trait Wallet {
-    /// Execute signed request message.
+    /// Execute a signed request message.
     ///
     /// SHOULD accept ANY attached deposit.
     ///
@@ -138,16 +79,17 @@ pub trait Wallet {
     fn w_last_cleaned_at(&self) -> Timestamp;
 }
 
-// TODO: #[doc(hidden)]?
-// TODO: move to impl_.rs?
 /// Reference implementation of [`Wallet`] standard, generic over the underlying
-/// [signature schema](SignatureSchema).
+/// [signature schema](SignatureSchema) being used.
+///
+/// See [`wallet!`] macro to define and implement your own wallet contract
+/// variant.
 #[derive(BorshSerialize, BorshDeserialize)]
 #[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[autoimpl(Debug where S::PublicKey: trait)]
 #[repr(transparent)]
 pub struct WalletImpl<S: SignatureSchema>(
-    // TODO: simplify
+    // TODO: simplify when https://github.com/near/borsh-rs/pull/373 is released
     #[cfg_attr(
         not(feature = "borsh-schema"),
         borsh(bound(
@@ -382,14 +324,70 @@ impl<S: SignatureSchema> From<State<S::PublicKey>> for WalletImpl<S> {
     }
 }
 
-// TODO: macro to implement Wallet
+mod utils {
+    // TODO: remove in favor of `env::chain_id()` when NEP-638 lands
+    pub fn chain_id() -> String {
+        "mainnet".to_string()
+    }
+}
 
+/// Define a contract variant and implement [`Wallet`] for it by delegating to
+/// [reference implementation](WalletImpl).
+///
+/// # Example
+///
+/// ```rust
+/// # use core::fmt::{self, Display};
+/// use defuse_wallet::{RequestMessage, SignatureSchema, wallet};
+/// use near_sdk::near;
+///
+/// // Define the contract struct and impl
+/// wallet! {
+///     #[wallet(
+///         // will be used to verify the signature
+///         schema = MySchema,
+///         // will be propagated to `#[near(contract_metadata(...))]`
+///         metadata(
+///             standard(standard = "wallet-<SCHEMA>", version = "0.1.0"),
+///         ),
+///     )]
+///     // `_` will be replaced by `WalletImpl<MySchema>`
+///     struct MyContract(_);
+/// }
+///
+/// /// Signature schema used by the wallet contract variant.
+/// pub struct MySchema;
+/// impl SignatureSchema for MySchema {
+///     /// Public key stored in the contract's state.
+///     type PublicKey = MyPublicKey;
+///
+///    /// Verify given proof over the request message in respect to the public
+///    /// key and return whether verification passed.
+///    ///
+///    /// Used by the `w_execute_signed(msg, proof)` contract method.
+///     fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
+///         todo!("verify signature over `msg` in respect to the public key")
+///     }
+/// }
+///
+/// // Public key is stored in the contract's state.
+/// #[near(serializers = [borsh])]
+/// pub struct MyPublicKey([u8; 64]);
+///
+/// // `Display` is needed for `w_public_key()` contract method.
+/// impl Display for MyPublicKey {
+///     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+///         write!(f, "<CURVE>:{}", bs58::encode(&self.0).into_string())
+///     }
+/// }
+/// ```
+// TODO: embed abi docs
 #[macro_export]
 macro_rules! wallet {
     (
         #[wallet(
             schema = $schema:ty,
-            metadata($($metadata:meta),+ $(,)?)
+            metadata($($metadata:meta),+ $(,)?) $(,)?
         )]
         $(#[$attrs:meta])*
         $vis:vis struct $contract:ident(_);
@@ -412,7 +410,7 @@ macro_rules! wallet {
             fn w_execute_signed(
                 &mut self,
                 msg: $crate::RequestMessage,
-                proof: ::std::string::String
+                proof: ::std::string::String,
             ) {
                 self.0.w_execute_signed(msg, proof);
             }

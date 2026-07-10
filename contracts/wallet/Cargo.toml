@@ -91,4 +91,7 @@ near-contract = [
 [dev-dependencies]
 defuse-wallet = { path = ".", features = ["abi", "arbitrary", "borsh", "digest", "schemars-v0_8", "serde", "near-contract"] }
 
+bs58.workspace = true
+hex-literal.workspace = true
+
 near-sdk = { workspace = true, features = ["unit-testing"] }

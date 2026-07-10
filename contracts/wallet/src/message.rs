@@ -22,10 +22,6 @@ use serde_with::DurationSeconds;
 /// range for on-chain messages.
 pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
 
-#[allow(
-    clippy::unsafe_derive_deserialize,
-    reason = "clippy seems to have a false-positive caused by `thread_local!` macro usage in `hash()` method below"
-)]
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -137,17 +133,32 @@ pub struct RequestMessage {
 
 impl RequestMessage {
     /// Returns canonical hash of the request message
+    ///
+    /// ```rust
+    /// # use core::time::Duration;
+    /// # use defuse_wallet::{Request, RequestMessage, Timestamp};
+    /// # use hex_literal::hex;
+    ///
+    /// let request = RequestMessage {
+    ///     chain_id: "mainnet".to_string(),
+    ///     signer_id: "0s0000000000000000000000000000000000000000".parse().unwrap(),
+    ///     nonce: 0,
+    ///     created_at: Timestamp::UNIX_EPOCH,
+    ///     timeout: Duration::from_secs(3600),
+    ///     request: Request::new(),
+    /// };
+    ///
+    /// assert_eq!(
+    ///     request.hash(),
+    ///     hex!("e42ac706e27f0157624ee49fc4693c9cc9666c5e51358b7d57f79ee16005ded7"),
+    /// );
+    /// ```
     #[cfg(all(feature = "digest", feature = "borsh"))]
     pub fn hash(&self) -> [u8; 32] {
         use defuse_digest::{Digest, sha3::Sha3_256};
         use digest_io::IoWrapper;
 
-        thread_local! {
-            // per-thread lazily-initialized hasher with pre-processed prefix
-            static HASHER: Sha3_256 = Sha3_256::new_with_prefix(WALLET_DOMAIN);
-        }
-
-        let mut hasher = IoWrapper(HASHER.with(Clone::clone));
+        let mut hasher = IoWrapper(Sha3_256::new_with_prefix(WALLET_DOMAIN));
         // serialize directly to hasher
         ::borsh::to_writer(&mut hasher, self).expect("borsh: failed to serialize");
 

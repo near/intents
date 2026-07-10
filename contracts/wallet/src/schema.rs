@@ -1,6 +1,9 @@
 use crate::RequestMessage;
 
 /// Signature schema used by wallet contract variant.
+///
+/// By design, each wallet contract variant implements its own schema and
+/// gets deployed separately.
 pub trait SignatureSchema {
     /// Public key stored in the contract's state.
     type PublicKey;

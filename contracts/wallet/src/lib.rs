@@ -13,5 +13,6 @@ pub use defuse_time::Timestamp;
 pub use near_account_id::{AccountId, AccountIdRef};
 
 // re-export for `wallet!` macro
+#[cfg(feature = "near-contract")]
 #[doc(hidden)]
 pub use near_sdk;

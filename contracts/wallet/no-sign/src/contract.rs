@@ -10,6 +10,7 @@ wallet! {
             standard(standard = "wallet-no-sign", version = "1.0.0")
         )
     )]
+    /// Wallet Contract variant which always rejects the signature.
     struct Contract(_);
 }
 
