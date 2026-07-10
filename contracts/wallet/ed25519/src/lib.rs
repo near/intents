@@ -56,7 +56,7 @@ const _: () = {
 
     wallet! {
         #[near(contract_metadata(
-            standard(standard = "wallet-no-sign", version = "1.0.0")
+            standard(standard = "wallet-ed25519", version = "1.0.0")
         ))]
         struct Contract<WalletEd25519>;
     }
