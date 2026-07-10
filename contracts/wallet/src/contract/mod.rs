@@ -387,9 +387,12 @@ impl<S: SignatureSchema> From<State<S::PublicKey>> for WalletImpl<S> {
 #[macro_export]
 macro_rules! wallet {
     (
-        #[near(contract_metadata($($metadata:meta),+ $(,)?))]
+        #[wallet(
+            schema = $schema:ty,
+            metadata($($metadata:meta),+ $(,)?)
+        )]
         $(#[$attrs:meta])*
-        $vis:vis struct $contract:ident<$ss:ty>;
+        $vis:vis struct $contract:ident(_);
     ) => {
         #[$crate::near_sdk::near(
             contract_state(key = $crate::STATE_KEY),
@@ -401,7 +404,7 @@ macro_rules! wallet {
         $(#[$attrs])*
         #[derive($crate::near_sdk::PanicOnDefault)]
         #[repr(transparent)]
-        $vis struct $contract($crate::contract::WalletImpl<$ss>);
+        $vis struct $contract($crate::contract::WalletImpl<$schema>);
 
         #[$crate::near_sdk::near]
         impl $crate::contract::Wallet for $contract {

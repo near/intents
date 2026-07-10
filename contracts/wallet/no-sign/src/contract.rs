@@ -4,11 +4,13 @@ use near_sdk::{FunctionError, env, near};
 use crate::{NoPublicKey, NoSign};
 
 wallet! {
-    #[near(contract_metadata(
-        standard(standard = "wallet-no-sign", version = "1.0.0")
-    ))]
-    #[derive(Debug)]
-    struct Contract<NoSign>;
+    #[wallet(
+        schema = NoSign,
+        metadata(
+            standard(standard = "wallet-no-sign", version = "1.0.0")
+        )
+    )]
+    struct Contract(_);
 }
 
 #[near]

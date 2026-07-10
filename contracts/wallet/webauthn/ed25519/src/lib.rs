@@ -3,11 +3,13 @@ use defuse_wallet_webauthn::{WalletWebauthn, ed25519::Ed25519, webauthn::IgnoreU
 
 // TODO
 // #[cfg_attr(not(near), allow(dead_code))]
-
 wallet! {
-    #[near(contract_metadata(
-        standard(standard = "wallet-webauthn-ed25519", version = "1.0.0"),
-    ))]
+    #[wallet(
+        schema = WalletWebauthn<Ed25519, IgnoreUserVerification>,
+        metadata(
+            standard(standard = "wallet-webauthn-ed25519", version = "1.0.0")
+        )
+    )]
     // TODO: ignore user verification?
-    struct Contract<WalletWebauthn<Ed25519, IgnoreUserVerification>>;
+    struct Contract(_);
 }

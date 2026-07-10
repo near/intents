@@ -55,10 +55,13 @@ const _: () = {
     use defuse_wallet::wallet;
 
     wallet! {
-        #[near(contract_metadata(
-            standard(standard = "wallet-ed25519", version = "1.0.0")
-        ))]
-        struct Contract<WalletEd25519>;
+        #[wallet(
+            schema = WalletEd25519,
+            metadata(
+                standard(standard = "wallet-ed25519", version = "1.0.0")
+            )
+        )]
+        struct Contract(_);
     }
 };
 
