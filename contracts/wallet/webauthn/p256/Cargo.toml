@@ -38,3 +38,7 @@ container_build_command = [
   "--no-default-features",
   "--abi-features=abi",
 ]
+
+[package.metadata.cargo-machete]
+# needed for `wallet!` macro, since `#[near(...)]` doesn't support re-exports
+ignored = ["near-sdk"]

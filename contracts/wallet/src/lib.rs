@@ -11,3 +11,7 @@ pub use self::{error::*, message::*, nonces::*, request::*, schema::*, state::*}
 
 pub use defuse_time::Timestamp;
 pub use near_account_id::{AccountId, AccountIdRef};
+
+// re-export for `wallet!` macro
+#[doc(hidden)]
+pub use near_sdk;

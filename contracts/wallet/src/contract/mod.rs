@@ -1,3 +1,64 @@
+//! This module contains [`Wallet`] contract interface definition and its
+//! [reference implementation](WalletImpl).
+//!
+//! [`ext_wallet`] module provies a typed API for third-party contracts
+//! (e.g. extensions) to construct cross-contract calls (i.e. promises)
+//! to wallet contracts.
+//!
+//! # Signature Schemas
+//!
+//! By design, each wallet contract variant implements its own
+//! [signature schema](SignatureSchema) and [deployed](#global-contract-deployment)
+//! separately.
+//!
+//!
+//! Reference implementation of a wallet contract.
+//! Delegate method execution to it when implementing your own variant.
+//!
+//! # Examples
+//!
+//! ```rust
+//! use borsh::{BorshSerialize, BorshDeserialize};
+//! use defuse_wallet::{
+//!     RequestMessage, SignatureSchema, STATE_KEY,
+//!     contract::{Wallet, WalletImpl},
+//! };
+//! use near_sdk::{near, PanicOnDefault};
+//!
+//! pub struct MySchema;
+//!
+//! #[derive(BorshSerialize, BorshDeserialize)]
+//! pub struct MyPublicKey;
+//!
+//! impl SignatureSchema for MySchema {
+//!     type PublicKey = MyPublicKey;
+//!
+//!     fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
+//!         todo!()
+//!     }
+//! }
+//!
+//! #[near(
+//!     contract_state(key = STATE_KEY),
+//!     contract_metadata(
+//!         standard(standard = "wallet", version = "1.0.0"),
+//!         standard(standard = "wallet-<VARIANT>", version = "1.0.0"),
+//!     ),
+//! )]
+//! #[derive(PanicOnDefault)]
+//! #[repr(transparent)]
+//! struct MyContract(WalletImpl<MySchema>);
+//!
+//! /*
+//! #[near]
+//! impl Wallet for MyContract {
+//!     // ...
+//! }
+//! */
+//! ```
+//!
+//! # Global contract deployment
+
 mod utils;
 
 use std::{collections::BTreeSet, fmt::Display};
@@ -17,6 +78,18 @@ use crate::{
 
 pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 
+/// Wallet contract interface.
+///
+/// Refer to [crate documentation](crate) for more.
+///
+/// # Variants
+///
+/// By design, each wallet contract variant implements its own
+/// [signature schema](SignatureSchema) and [deployed](#global-contract-deployment)
+/// separately.
+///
+/// Implementations are recommended to use [reference implementation](WalletImpl)
+/// and deletgate their execution to it.
 #[ext_contract(ext_wallet)]
 pub trait Wallet {
     /// Execute signed request message.
@@ -65,12 +138,15 @@ pub trait Wallet {
     fn w_last_cleaned_at(&self) -> Timestamp;
 }
 
+// TODO: #[doc(hidden)]?
 // TODO: move to impl_.rs?
+/// Reference implementation of [`Wallet`] standard, generic over the underlying
+/// [signature schema](SignatureSchema).
 #[derive(BorshSerialize, BorshDeserialize)]
 #[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[autoimpl(Debug where S::PublicKey: trait)]
 #[repr(transparent)]
-pub struct ContractImpl<S: SignatureSchema>(
+pub struct WalletImpl<S: SignatureSchema>(
     // TODO: simplify
     #[cfg_attr(
         not(feature = "borsh-schema"),
@@ -92,7 +168,7 @@ pub struct ContractImpl<S: SignatureSchema>(
     State<S::PublicKey>,
 );
 
-impl<S> Wallet for ContractImpl<S>
+impl<S> Wallet for WalletImpl<S>
 where
     S: SignatureSchema<PublicKey: Display>,
 {
@@ -140,7 +216,7 @@ where
     }
 }
 
-impl<S> ContractImpl<S>
+impl<S> WalletImpl<S>
 where
     S: SignatureSchema,
 {
@@ -299,9 +375,77 @@ where
     }
 }
 
-impl<S: SignatureSchema> From<State<S::PublicKey>> for ContractImpl<S> {
+impl<S: SignatureSchema> From<State<S::PublicKey>> for WalletImpl<S> {
     #[inline]
     fn from(state: State<S::PublicKey>) -> Self {
         Self(state)
     }
+}
+
+// TODO: macro to implement Wallet
+
+#[macro_export]
+macro_rules! wallet {
+    (
+        #[near(contract_metadata($($metadata:meta),+ $(,)?))]
+        $(#[$attrs:meta])*
+        $vis:vis struct $contract:ident<$ss:ty>;
+    ) => {
+        #[$crate::near_sdk::near(
+            contract_state(key = $crate::STATE_KEY),
+            contract_metadata(
+                standard(standard = "wallet", version = "1.0.0"),
+                $($metadata),+
+            )
+        )]
+        $(#[$attrs])*
+        #[derive($crate::near_sdk::PanicOnDefault)]
+        #[repr(transparent)]
+        $vis struct $contract($crate::contract::WalletImpl<$ss>);
+
+        #[$crate::near_sdk::near]
+        impl $crate::contract::Wallet for $contract {
+            #[payable]
+            fn w_execute_signed(
+                &mut self,
+                msg: $crate::RequestMessage,
+                proof: ::std::string::String
+            ) {
+                self.0.w_execute_signed(msg, proof);
+            }
+
+            #[payable]
+            fn w_execute_extension(&mut self, request: $crate::Request) {
+                self.0.w_execute_extension(request);
+            }
+
+            fn w_subwallet_id(&self) -> u32 {
+                self.0.w_subwallet_id()
+            }
+
+            fn w_is_signature_allowed(&self) -> bool {
+                self.0.w_is_signature_allowed()
+            }
+
+            fn w_public_key(&self) -> ::std::string::String {
+                self.0.w_public_key()
+            }
+
+            fn w_is_extension_enabled(&self, account_id: $crate::AccountId) -> bool {
+                self.0.w_is_extension_enabled(account_id)
+            }
+
+            fn w_extensions(&self) -> ::std::collections::BTreeSet<$crate::AccountId> {
+                self.0.w_extensions()
+            }
+
+            fn w_timeout_secs(&self) -> u32 {
+                self.0.w_timeout_secs()
+            }
+
+            fn w_last_cleaned_at(&self) -> $crate::Timestamp {
+                self.0.w_last_cleaned_at()
+            }
+        }
+    };
 }

@@ -1,7 +1,3 @@
-// TODO
-#[cfg(all(feature = "contract", any(feature = "abi", near, test)))]
-mod contract;
-
 use core::str::FromStr;
 
 use defuse_crypto::{
@@ -50,6 +46,19 @@ const _: () = {
             let signature: Ed25519Signature = ed25519_dalek::Signer::sign(self, &msg.hash()).into();
             Ok(signature.to_string())
         }
+    }
+};
+
+// TODO: cfg?
+#[cfg(all(feature = "contract", any(feature = "abi", near, test)))]
+const _: () = {
+    use defuse_wallet::wallet;
+
+    wallet! {
+        #[near(contract_metadata(
+            standard(standard = "wallet-no-sign", version = "1.0.0")
+        ))]
+        struct Contract<WalletEd25519>;
     }
 };
 
