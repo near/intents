@@ -2,14 +2,12 @@ mod request;
 
 pub use self::request::*;
 
-use std::{borrow::Cow, time::Duration};
+use std::{borrow::Cow, convert::Infallible, time::Duration};
 
 use defuse_wallet_client::{WExecuteSignedArgs, Wallet};
 pub use defuse_wallet_core as wallet;
-
 use defuse_wallet_core::{RequestMessage, Timestamp};
 pub use near_kit;
-
 use near_kit::{ExecutedOptimistic, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken};
 use thiserror::Error as ThisError;
 #[cfg(feature = "tracing")]
@@ -190,5 +188,12 @@ impl From<InvalidTxError> for Error {
     #[inline]
     fn from(err: InvalidTxError) -> Self {
         Self::Transaction(near_kit::Error::InvalidTx(err.into()))
+    }
+}
+
+impl From<Infallible> for Error {
+    #[inline]
+    fn from(value: Infallible) -> Self {
+        match value {}
     }
 }

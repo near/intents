@@ -1,8 +1,4 @@
-mod error;
-mod events;
 mod utils;
-
-pub use self::{error::*, events::*};
 
 use std::{collections::BTreeSet, fmt::Display};
 
@@ -10,9 +6,16 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_near_promise::{NearPromise, actions::NearAction};
 use defuse_time::Timestamp;
 use impl_tools::autoimpl;
-use near_sdk::{AccountId, AccountIdRef, FunctionError, Promise, env, ext_contract};
+use near_account_id::{AccountId, AccountIdRef};
+use near_sdk::{FunctionError, Promise, env, ext_contract};
 
-use crate::{Request, RequestMessage, State, WalletOp, signatures::WalletSignatureSchema};
+pub use crate::ContractError as Error;
+use crate::{
+    Request, RequestMessage, SignatureSchema, State, WalletOp,
+    events::{Actor, WalletEvent},
+};
+
+pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 
 #[ext_contract(ext_wallet)]
 pub trait Wallet {
@@ -67,7 +70,7 @@ pub trait Wallet {
 #[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[autoimpl(Debug where S::PublicKey: trait)]
 #[repr(transparent)]
-pub struct ContractImpl<S: WalletSignatureSchema>(
+pub struct ContractImpl<S: SignatureSchema>(
     // TODO: simplify
     #[cfg_attr(
         not(feature = "borsh-schema"),
@@ -91,7 +94,7 @@ pub struct ContractImpl<S: WalletSignatureSchema>(
 
 impl<S> Wallet for ContractImpl<S>
 where
-    S: WalletSignatureSchema<PublicKey: Display>,
+    S: SignatureSchema<PublicKey: Display>,
 {
     fn w_execute_signed(&mut self, msg: RequestMessage, proof: String) {
         self.execute_signed(msg, &proof)
@@ -139,7 +142,7 @@ where
 
 impl<S> ContractImpl<S>
 where
-    S: WalletSignatureSchema,
+    S: SignatureSchema,
 {
     fn execute_signed(&mut self, msg: RequestMessage, proof: &str) -> Result<()> {
         if !self.0.is_signature_allowed() {
@@ -296,7 +299,7 @@ where
     }
 }
 
-impl<S: WalletSignatureSchema> From<State<S::PublicKey>> for ContractImpl<S> {
+impl<S: SignatureSchema> From<State<S::PublicKey>> for ContractImpl<S> {
     #[inline]
     fn from(state: State<S::PublicKey>) -> Self {
         Self(state)

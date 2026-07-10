@@ -1,12 +1,11 @@
-use near_sdk::{AccountId, FunctionError};
+use near_account_id::AccountId;
 use thiserror::Error as ThisError;
 
 use crate::NonceError;
 
-pub type Result<T, E = Error> = ::core::result::Result<T, E>;
-
-#[derive(Debug, ThisError, FunctionError)]
-pub enum Error {
+#[cfg_attr(feature = "near-contract", derive(::near_sdk::FunctionError))]
+#[derive(Debug, ThisError)]
+pub enum ContractError {
     #[error("extension '{0}' is already enabled")]
     ExtensionEnabled(AccountId),
 

@@ -9,12 +9,12 @@ use defuse_crypto::{
     ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
 };
 pub use defuse_wallet_core as core;
-use defuse_wallet_core::{RequestMessage, signatures::WalletSignatureSchema};
+use defuse_wallet_core::{RequestMessage, SignatureSchema};
 
 // TODO: docs
 pub struct WalletEd25519;
 
-impl WalletSignatureSchema for WalletEd25519 {
+impl SignatureSchema for WalletEd25519 {
     type PublicKey = Ed25519PublicKey;
 
     fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
@@ -29,6 +29,30 @@ impl WalletSignatureSchema for WalletEd25519 {
         Ed25519::verify(&public_key, &msg.hash(), &signature.into())
     }
 }
+
+#[cfg(feature = "signer")]
+const _: () = {
+    use ::core::convert::Infallible;
+
+    use async_trait::async_trait;
+    use defuse_crypto::ed25519::ed25519_dalek::{self, SigningKey};
+    use defuse_wallet_sdk::{Proof, Signer};
+
+    #[cfg_attr(not(target_family = "wasm"), async_trait)]
+    #[cfg_attr(target_family = "wasm", async_trait(?Send))]
+    impl Signer<WalletEd25519> for SigningKey {
+        type Error = Infallible;
+
+        fn public_key(&self) -> Ed25519PublicKey {
+            self.verifying_key().into()
+        }
+
+        async fn sign(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
+            let signature: Ed25519Signature = ed25519_dalek::Signer::sign(self, &msg.hash()).into();
+            Ok(signature.to_string())
+        }
+    }
+};
 
 // TODO
 // #[cfg(test)]

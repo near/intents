@@ -8,7 +8,7 @@ use ::core::{
 };
 
 pub use defuse_wallet_core as core;
-use defuse_wallet_core::{RequestMessage, signatures::WalletSignatureSchema};
+use defuse_wallet_core::{RequestMessage, SignatureSchema};
 
 /// [`SigningStandard`] which always rejects the signature.
 ///
@@ -17,7 +17,7 @@ use defuse_wallet_core::{RequestMessage, signatures::WalletSignatureSchema};
 /// So only extensions can execute requests via `w_execute_extension()`.
 pub struct NoSign;
 
-impl WalletSignatureSchema for NoSign {
+impl SignatureSchema for NoSign {
     type PublicKey = NoPublicKey;
 
     #[inline]

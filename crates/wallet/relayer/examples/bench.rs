@@ -3,16 +3,17 @@
 use std::{env, fs, path::Path, sync::LazyLock};
 
 use defuse_digest::{Digest, sha2::Sha256};
+use defuse_wallet_ed25519::WalletEd25519;
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
-use defuse_wallet_sdk::{NearToken, Request, WalletSigner};
+use defuse_wallet_sdk::{MAINNET, NearToken, Request, WalletSigner};
 use ed25519_dalek::ed25519::signature::rand_core::OsRng;
-use futures::{StreamExt, stream};
+use futures::{StreamExt, TryStreamExt, stream};
 use near_kit::{Final, GlobalContractId, PublishMode, sandbox::SandboxConfig};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 static WALLET_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
     let wasm = Path::new(env::var("DEFUSE_USE_OUT_DIR").as_deref().unwrap_or("./res"))
-        .join("defuse-wallet.wasm");
+        .join("defuse-wallet-ed25519.wasm");
     fs::read(wasm).expect("failed to read WASM")
 });
 
@@ -43,23 +44,22 @@ async fn main() {
 
     let relayer = WalletRelayer::new(near.clone());
 
-    let wallet = WalletSigner::new(
+    let wallet = WalletSigner::<WalletEd25519, _>::new(
         global_contract_id,
         ed25519_dalek::SigningKey::generate(&mut OsRng),
-    )
-    // TODO
-    // .chain_id(relayer.client().chain_id().as_str())
-    ;
+    );
 
     let started_at = tokio::time::Instant::now();
     let txs_count = 10_000;
 
-    stream::iter((0..txs_count).map(|_n| async {
-        let (msg, proof) = wallet.sign(Request::new()).unwrap();
-        let r = relayer
-            .w_execute_signed(
+    stream::iter(0..txs_count)
+        // TODO: relayer.client().chain_id().as_str()
+        .then(|_n| wallet.sign(Request::new(), MAINNET))
+        .err_into()
+        .map_ok(|(msg, proof)| {
+            relayer.w_execute_signed(
                 WalletRelayRequest {
-                    deterministic_state_init: Some(wallet.deterministic_state_init()),
+                    deterministic_state_init: Some(wallet.deterministic_state_init().clone()),
                     msg,
                     proof,
                     gas: None,
@@ -67,19 +67,19 @@ async fn main() {
                 NearToken::ZERO,
                 None,
             )
-            .await
-            .unwrap();
+        })
+        .try_buffer_unordered(500)
+        .map_ok(|r| {
+            assert!(r.is_success());
 
-        assert!(r.is_success());
-
-        tracing::info!(
-            tx.hash = %r.transaction_hash(),
-            tx.gas_used = %r.total_gas_used()
-        );
-    }))
-    .buffer_unordered(500)
-    .collect::<()>()
-    .await;
+            tracing::info!(
+                tx.hash = %r.transaction_hash(),
+                tx.gas_used = %r.total_gas_used()
+            );
+        })
+        .try_collect::<()>()
+        .await
+        .unwrap();
 
     println!(
         "avg: {} TPS",

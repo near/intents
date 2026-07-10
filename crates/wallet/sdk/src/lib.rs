@@ -1,10 +1,11 @@
-#[cfg(feature = "ed25519")]
-pub mod ed25519;
 mod nonces;
+mod signer;
 
-pub use self::nonces::*;
+pub use self::{nonces::*, signer::*};
 
 use std::{
+    collections::BTreeSet,
+    marker::PhantomData,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -19,121 +20,103 @@ pub const MAINNET: &str = "mainnet";
 
 #[must_use = "`.build()` the signer"]
 #[derive(Debug)]
-pub struct WalletSignerBuilder<S: Signer> {
-    code: GlobalContractId,
-    state: State<S::PublicKey>,
-    signer: S,
+pub struct WalletBuilder {
+    subwallet_id: u32,
+    timeout: Duration,
+    extensions: BTreeSet<AccountId>,
 }
 
-impl<S: Signer> WalletSignerBuilder<S> {
+impl Default for WalletBuilder {
     #[inline]
-    fn new(code: impl Into<GlobalContractId>, signer: S) -> Self {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl WalletBuilder {
+    #[inline]
+    pub const fn new() -> Self {
         Self {
+            subwallet_id: DEFAULT_SUBWALLET_ID,
+            timeout: DEFAULT_TIMEOUT,
+            extensions: BTreeSet::new(),
+        }
+    }
+
+    #[inline]
+    pub const fn subwallet_id(mut self, subwallet_id: u32) -> Self {
+        self.subwallet_id = subwallet_id;
+        self
+    }
+
+    #[inline]
+    pub const fn timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = timeout;
+        self
+    }
+
+    #[inline]
+    pub fn extensions(mut self, account_ids: impl IntoIterator<Item = AccountId>) -> Self {
+        self.extensions.extend(account_ids);
+        self
+    }
+
+    pub fn build<SS, S>(self, code: impl Into<GlobalContractId>, signer: S) -> WalletSigner<SS, S>
+    where
+        SS: SignatureSchema<PublicKey: BorshSerialize>,
+        S: Signer<SS>,
+    {
+        let state_init = StateInit::V1(StateInitV1 {
             code: code.into(),
-            state: State::new(signer.public_key()),
-            signer,
-        }
-    }
-
-    #[inline]
-    pub fn subwallet_id(mut self, subwallet_id: u32) -> Self {
-        self.state = self.state.subwallet_id(subwallet_id);
-        self
-    }
-
-    #[inline]
-    pub fn timeout(mut self, timeout: Duration) -> Self {
-        self.state = self.state.timeout(timeout);
-        self
-    }
-
-    #[inline]
-    pub fn extensions(
-        mut self,
-        account_ids: impl IntoIterator<Item = impl Into<AccountId>>,
-    ) -> Self {
-        self.state = self.state.extensions(account_ids);
-        self
-    }
-
-    #[inline]
-    fn deterministic_state_init(&self) -> StateInit {
-        StateInitV1 {
-            code: self.code.clone(),
-            data: self.state.as_storage(),
-        }
-        .into()
-    }
-
-    #[inline]
-    pub fn build(self) -> WalletSigner<S> {
-        WalletSigner {
-            chain_id: MAINNET.to_string(),
-            account_id: self.deterministic_state_init().derive_account_id(),
-            code: self.code,
-            state: self.state,
-            nonces: Arc::new(Mutex::new(ConcurrentNonces::new(make_rng()))),
-            signer: self.signer,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct WalletSigner<S: Signer> {
-    chain_id: String,
-
-    code: GlobalContractId,
-    state: State<S::PublicKey>,
-
-    account_id: AccountId,
-
-    nonces: Arc<Mutex<ConcurrentNonces<SmallRng>>>,
-    signer: S,
-}
-
-impl<S> WalletSigner<S>
-where
-    S: Signer,
-{
-    #[inline]
-    pub fn builder(code: impl Into<GlobalContractId>, signer: S) -> WalletSignerBuilder<S> {
-        WalletSignerBuilder::new(code, signer)
-    }
-
-    #[must_use]
-    #[inline]
-    pub fn new(code: impl Into<GlobalContractId>, signer: S) -> Self {
-        Self::builder(code, signer).build()
-    }
-
-    #[must_use]
-    #[inline]
-    pub fn with_chain_id(mut self, chain_id: impl Into<String>) -> Self {
-        self.chain_id = chain_id.into();
-        self
-    }
-
-    #[inline]
-    pub const fn chain_id(&self) -> &str {
-        self.chain_id.as_str()
-    }
-
-    #[inline]
-    pub fn deterministic_state_init(&self) -> StateInit {
-        let s = StateInit::V1(StateInitV1 {
-            code: self.code.clone(),
-            data: self.state.as_storage(),
+            data: State::new(signer.public_key())
+                .subwallet_id(self.subwallet_id)
+                .timeout(self.timeout)
+                .extensions(self.extensions)
+                .as_storage(),
         });
 
-        debug_assert_eq!(s.derive_account_id(), self.account_id);
+        WalletSigner {
+            account_id: state_init.derive_account_id(),
+            state_init,
+            subwallet_id: self.subwallet_id,
+            timeout: self.timeout,
+            nonces: Arc::new(Mutex::new(ConcurrentNonces::new(make_rng()))),
+            signer,
+            _schema: PhantomData,
+        }
+    }
+}
 
-        s
+// TODO: avoid requiring SS to implement derived traits
+#[derive(Debug, Clone)]
+pub struct WalletSigner<SS: SignatureSchema, S: Signer<SS>> {
+    account_id: AccountId,
+    state_init: StateInit,
+
+    subwallet_id: u32,
+    timeout: Duration,
+    nonces: Arc<Mutex<ConcurrentNonces<SmallRng>>>,
+
+    signer: S,
+    _schema: PhantomData<SS>,
+}
+
+impl<SS, S> WalletSigner<SS, S>
+where
+    SS: SignatureSchema,
+    S: Signer<SS>,
+{
+    #[inline]
+    pub const fn builder() -> WalletBuilder {
+        WalletBuilder::new()
     }
 
-    /// Get timeout for nonces
     #[inline]
-    pub const fn timeout(&self) -> Duration {
-        self.state.nonces.timeout()
+    pub fn new(code: impl Into<GlobalContractId>, signer: S) -> Self
+    where
+        SS::PublicKey: BorshSerialize,
+    {
+        Self::builder().build(code, signer)
     }
 
     #[inline]
@@ -142,28 +125,58 @@ where
     }
 
     #[inline]
+    pub const fn deterministic_state_init(&self) -> &StateInit {
+        &self.state_init
+    }
+
+    #[inline]
+    pub const fn subwallet_id(&self) -> u32 {
+        self.subwallet_id
+    }
+
+    #[inline]
+    pub const fn timeout(&self) -> Duration {
+        self.timeout
+    }
+
+    #[inline]
     pub const fn signer(&self) -> &S {
         &self.signer
     }
 
     #[inline]
-    pub fn sign(&self, request: Request) -> Result<(RequestMessage, Proof), S::Error> {
-        let msg = self.wrap_request_msg(request);
-        let signature = self.signer.sign(&msg)?;
-        Ok((msg, signature))
+    pub fn public_key(&self) -> SS::PublicKey {
+        self.signer().public_key()
+    }
+
+    #[allow(clippy::future_not_send)]
+    pub async fn sign(
+        &self,
+        request: Request,
+        chain_id: impl Into<String>,
+    ) -> Result<(RequestMessage, Proof), S::Error> {
+        let msg = self.wrap_request_msg(request, chain_id);
+        let proof = self.signer.sign(&msg).await?;
+
+        debug_assert!(
+            SS::verify(&self.signer.public_key(), &msg, &proof),
+            "signer produced invalid signature",
+        );
+
+        Ok((msg, proof))
     }
 
     /// Wraps [`Request`] in [`RequestMessage`] for signing
     #[inline]
-    fn wrap_request_msg(&self, request: Request) -> RequestMessage {
+    fn wrap_request_msg(&self, request: Request, chain_id: impl Into<String>) -> RequestMessage {
         RequestMessage {
-            chain_id: self.chain_id.clone(),
+            chain_id: chain_id.into(),
             signer_id: self.account_id().clone(),
             nonce: self.nonces.lock().unwrap().next(),
             // set `created_at` slightly before the actual time of signing,
             // so it doesn't fail on-chain if arrives too fast.
             created_at: Timestamp::now() - self.optimal_lag(),
-            timeout: self.state.nonces.timeout(),
+            timeout: self.timeout(),
             request,
         }
     }
@@ -180,15 +193,4 @@ where
     pub fn reseed_nonces(&self) {
         *self.nonces.lock().unwrap() = ConcurrentNonces::new(make_rng());
     }
-}
-
-/// Generic signature
-pub type Proof = String;
-
-pub trait Signer {
-    type PublicKey: BorshSerialize;
-    type Error;
-
-    fn public_key(&self) -> Self::PublicKey;
-    fn sign(&self, msg: &RequestMessage) -> Result<Proof, Self::Error>;
 }

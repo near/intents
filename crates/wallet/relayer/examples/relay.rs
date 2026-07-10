@@ -1,5 +1,8 @@
+use defuse_wallet_ed25519::WalletEd25519;
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
-use defuse_wallet_sdk::{NearPromise, Request, WalletOp, WalletSigner, actions::FunctionCall};
+use defuse_wallet_sdk::{
+    MAINNET, NearPromise, Request, WalletOp, WalletSigner, actions::FunctionCall,
+};
 use ed25519_dalek::ed25519::signature::rand_core::OsRng;
 use near_kit::{AccountIdRef, Gas, Near, NearToken};
 use serde_json::json;
@@ -20,7 +23,8 @@ async fn main() {
     );
 
     // 0.1) Build wallet state
-    let wallet = WalletSigner::new(WALLET_GLOBAL_CONTRACT_ID.to_owned(), wallet_signer);
+    let wallet =
+        WalletSigner::<WalletEd25519, _>::new(WALLET_GLOBAL_CONTRACT_ID.to_owned(), wallet_signer);
 
     // 0.2) Derive wallet account_id
     println!("wallet.account_id() = {}", wallet.account_id());
@@ -51,12 +55,12 @@ async fn main() {
     );
 
     // 2) Sign wallet request
-    let (msg, proof) = wallet.sign(wallet_request).unwrap();
+    let (msg, proof) = wallet.sign(wallet_request, MAINNET).await.unwrap();
 
     // 3) Build
     let relayer_request = WalletRelayRequest::new(msg, proof)
         // 3.a) (optional) initialize the wallet on first tx
-        .deterministic_state_init(wallet.deterministic_state_init());
+        .deterministic_state_init(wallet.deterministic_state_init().clone());
     println!(
         "relayer_request: {}",
         serde_json::to_string_pretty(&relayer_request).unwrap()

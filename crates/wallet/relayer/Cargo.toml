@@ -30,6 +30,7 @@ tracing = [
 defuse-wallet-relayer = { path = ".", features = ["tracing"] }
 
 defuse-digest = { workspace = true, features = ["sha2"] }
+defuse-wallet-ed25519 = { workspace = true, features = ["signer"] }
 defuse-wallet-sdk = { workspace = true, features = ["json"] }
 
 bs58.workspace = true

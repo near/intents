@@ -1815,9 +1815,11 @@ dependencies = [
  "defuse-digest",
  "defuse-fees",
  "defuse-near-utils",
+ "defuse-rand-compat",
  "defuse-randomness",
  "defuse-sandbox",
  "defuse-test-utils",
+ "defuse-wallet-ed25519",
  "defuse-wallet-relayer",
  "derive_more",
  "futures",
@@ -1952,9 +1954,11 @@ dependencies = [
 name = "defuse-wallet-ed25519"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "defuse-crypto",
  "defuse-wallet-core",
  "defuse-wallet-ed25519",
+ "defuse-wallet-sdk",
  "hex-literal",
  "near-sdk",
  "rstest",
@@ -1984,6 +1988,7 @@ dependencies = [
  "defuse-digest",
  "defuse-wallet-client",
  "defuse-wallet-core",
+ "defuse-wallet-ed25519",
  "defuse-wallet-relayer",
  "defuse-wallet-sdk",
  "ed25519-dalek",
@@ -2003,10 +2008,10 @@ dependencies = [
 name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "borsh",
- "defuse-crypto",
  "defuse-wallet-core",
- "ed25519-dalek",
+ "impl-tools 0.12.0",
  "near-global-contracts",
  "rand 0.10.2",
 ]
