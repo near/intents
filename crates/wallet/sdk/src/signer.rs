@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use defuse_wallet::{RequestMessage, SignatureSchema};
 use impl_tools::autoimpl;
 
+/// A proof for [`w_execute_signed(msg, proof)`](defuse_wallet::contract::Wallet::w_execute_signed)
 pub type Proof = String;
 
 /// A signer that can sign [`RequestMessage`] according to specific
@@ -20,6 +21,6 @@ pub trait WalletSigner<S: SignatureSchema> {
 
     /// Sign [`RequestMessage`] according to [`SignatureSchema`]
     /// and return a proof serialized to string ready to be submitted to
-    /// [`w_execute_signed(msg, proof)`](defuse_wallet::contract::Wallet::w_exwcute_signed) contract method
+    /// [`w_execute_signed(msg, proof)`](defuse_wallet::contract::Wallet::w_execute_signed) contract method
     async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error>;
 }

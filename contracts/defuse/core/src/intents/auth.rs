@@ -8,25 +8,24 @@ use crate::{
     intents::ExecutableIntent,
 };
 
-/// Call [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth) with `signer_id`
+/// Call `contract_id::on_auth(signer_id, msg)` with `signer_id`
 /// of intent.
 #[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct AuthCall {
-    /// Callee for [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
+    /// Callee for `on_auth()`
     pub contract_id: AccountId,
 
     /// Optionally initialize the receiver's contract (Deterministic `AccountId`)
     /// via [`state_init`](https://github.com/near/NEPs/blob/master/neps/nep-0616.md#stateinit-action)
-    /// right before calling [`.on_auth()`](::defuse_auth_call::AuthCallee::on_auth)
-    /// (in the same receipt).
+    /// right before calling `on_auth()` (in the same receipt).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub state_init: Option<StateInit>,
 
-    /// `msg` to pass in [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
+    /// `msg` to pass in `on_auth()`
     pub msg: String,
 
-    /// Optionally, attach deposit to [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
+    /// Optionally, attach deposit to `on_auth()`
     /// call. The amount will be subtracted from user's NEP-141 `wNEAR`
     /// balance.
     ///
@@ -45,7 +44,7 @@ pub struct AuthCall {
 }
 
 impl AuthCall {
-    const MIN_GAS_DEFAULT: Gas = Gas::from_tgas(10);
+    pub const MIN_GAS_DEFAULT: Gas = Gas::from_tgas(10);
 
     #[inline]
     pub fn min_gas(&self) -> Gas {

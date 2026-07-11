@@ -22,6 +22,9 @@ use serde_with::DurationSeconds;
 /// range for on-chain messages.
 pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
 
+/// Signable message containing [`Request`] to execute via
+/// [`w_execute_signed()`](crate::contract::Wallet::w_execute_signed) contract
+/// method.
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,

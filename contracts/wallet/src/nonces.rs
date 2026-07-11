@@ -171,6 +171,7 @@ impl Nonces {
     }
 }
 
+/// An error that can occur when [committing](Nonces::commit) a nonce
 #[derive(Debug, thiserror::Error)]
 pub enum NonceError {
     #[error("has already been used")]

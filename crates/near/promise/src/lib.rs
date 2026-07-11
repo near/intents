@@ -186,8 +186,7 @@ impl NearPromise {
             .fold(Gas::from_gas(0), Gas::saturating_add)
     }
 
-    #[cfg(feature = "near-contract")]
-    /// Build [`Promise`] for execution
+    /// Build [`near_sdk::Promise`] for execution
     ///
     /// # Examples
     ///
@@ -200,6 +199,7 @@ impl NearPromise {
     /// // build and detach
     /// p.build().detach();
     /// ```
+    #[cfg(feature = "near-contract")]
     pub fn build(self) -> ::near_sdk::Promise {
         let mut p = ::near_sdk::Promise::new(self.receiver_id);
 

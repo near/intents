@@ -5,7 +5,8 @@
 //! (e.g. extensions) to construct cross-contract calls (i.e. promises)
 //! to wallet contracts.
 //!
-//! See [`wallet!`] macro to define and implement wallet contract variants.
+//! See [`wallet!`](macro@crate::wallet) macro to define and implement wallet
+//! contract variants.
 
 use std::{collections::BTreeSet, fmt::Display};
 
@@ -27,7 +28,8 @@ pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 /// Wallet contract interface.
 ///
 /// See:
-/// * [`wallet!`] macro to define and implement wallet contract variants
+/// * [`wallet!`](macro@crate::wallet) macro to define and implement wallet
+///   contract variants
 /// * [`ext_wallet`] to construct typed cross-contract calls (i.e. promises)
 ///   to wallet contracts from third-party contracts (e.g. extensions)
 /// * [crate documentation](crate) for an overview of Wallet Contracts
@@ -87,8 +89,8 @@ pub trait Wallet {
 /// Reference implementation of [`Wallet`] standard, generic over the underlying
 /// [signature schema](SignatureSchema) being used.
 ///
-/// See [`wallet!`] macro to define and implement your own wallet contract
-/// variant.
+/// See [`wallet!`](macro@crate::wallet) macro to define and implement your
+/// own wallet contract variant.
 #[derive(BorshSerialize, BorshDeserialize)]
 #[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[autoimpl(Debug where S::PublicKey: trait)]

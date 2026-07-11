@@ -1,7 +1,10 @@
+//! Events emitted by the [`Wallet`](crate::contract::Wallet) contract
+
 use std::borrow::Cow;
 
 use near_account_id::AccountIdRef;
 
+/// Event emitted by the [`Wallet`](crate::contract::Wallet) contract
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -45,9 +48,10 @@ pub enum WalletEvent<'a> {
         by: Actor<'a>,
     },
 
+    /// Signed request has been executed.
     #[cfg_attr(feature = "near-contract", event_version("1.0.0"))]
     SignedRequest {
-        /// Canonical request hash
+        /// Canonical [hash](crate::RequestMessage::hash)
         #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::base58::Base58"))]
         hash: [u8; 32],
     },

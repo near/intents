@@ -1,5 +1,6 @@
 use near_account_id::AccountId;
 
+/// An internal operation to perform on wallet-contract's [state](crate::State).
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
@@ -13,7 +14,6 @@ use near_account_id::AccountId;
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema)),
     borsh(use_discriminant = true)
 )]
-/// An internal operation to perform on wallet-contract's state.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
 pub enum WalletOp {

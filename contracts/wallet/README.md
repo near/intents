@@ -45,9 +45,9 @@ A wallet contract has two main entrypoints for executing requests:
 
 Each `request` contains:
 
-* `ops`: *(optional)* list of wallet operations: enable/disable signature,
+* `internal`: *(optional)* list of wallet operations: enable/disable signature,
   add/remove extension
-* `out`: *(optional)* promises (i.e. cross-contract calls) to execute.
+* `external`: *(optional)* promises (i.e. cross-contract calls) to execute.
 
 ### Signing Standards
 

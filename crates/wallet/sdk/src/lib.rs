@@ -21,6 +21,7 @@ use rand::{make_rng, rngs::SmallRng};
 #[cfg(feature = "tracing")]
 use tracing::{Level, instrument, record_all};
 
+/// `mainnet` chain id
 pub const MAINNET: &str = "mainnet";
 
 /// Builder for [`Wallet`]

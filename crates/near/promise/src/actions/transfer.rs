@@ -12,7 +12,7 @@ use near_token::NearToken;
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-/// Transfer action of [`NearPromise`](crate::NearPromise).
+/// Transfer [action](crate::actions::NearAction).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Transfer {
     /// Amount of NEAR tokens to transfer

@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 #[cfg(feature = "near-contract")]
 pub mod contract;
 mod error;
@@ -13,6 +15,6 @@ pub use defuse_time::Timestamp;
 pub use near_account_id::{AccountId, AccountIdRef};
 
 // re-export for `wallet!` macro
-#[cfg(feature = "near-contract")]
 #[doc(hidden)]
+#[cfg(feature = "near-contract")]
 pub use near_sdk;

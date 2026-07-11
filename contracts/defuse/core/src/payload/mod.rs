@@ -52,8 +52,8 @@ impl<T> ExtractDefusePayload<T> for DefusePayload<T> {
 /// Data that can be deterministically hashed for signing or verification.
 ///
 /// Implementations of this trait typically represent a message formatted
-/// according to an external signing standard. The [`hash`] method returns
-/// the digest that should be signed or used for verification.
+/// according to an external signing standard. The [`.hash()`](Self::hash)
+/// method returns the digest that should be signed or used for verification.
 pub trait Payload {
     fn hash(&self) -> CryptoHash;
 }

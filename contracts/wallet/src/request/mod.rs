@@ -4,6 +4,12 @@ pub use self::ops::*;
 
 pub use defuse_near_promise::*;
 
+/// A request containing internal [operations](WalletOp) to apply and external
+/// [promises](NearPromise) to create.
+///
+/// Used directly by [extensions](crate::contract::Wallet::w_execute_extension)
+/// and wrapped in [`RequestMessage`](crate::RequestMessage) for
+/// [signed requests](crate::contract::Wallet::w_execute_signed).
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
@@ -17,17 +23,18 @@ pub use defuse_near_promise::*;
 )]
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Request {
-    /// Internal operations to apply
+    /// (optional) Ordered list of internal operations to apply.
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Vec::is_empty")
     )]
     pub internal: Vec<WalletOp>,
 
-    /// External promises to execute (fan-out).
+    /// (optional) External promises to execute (fan-out).
     ///
-    /// NOTE: all created promises are executed concurrently and independently
-    /// of each other, without waiting on previous ones to complete.
+    /// NOTE: all created promises are executed concurrently in arbitrary order
+    /// and independently of each other, without waiting on previous ones to
+    /// complete.
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Vec::is_empty")

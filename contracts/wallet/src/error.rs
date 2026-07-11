@@ -3,6 +3,7 @@ use thiserror::Error as ThisError;
 
 use crate::NonceError;
 
+/// An error that can occur in [`Wallet`](crate::contract::Wallet) contract.
 #[cfg_attr(feature = "near-contract", derive(::near_sdk::FunctionError))]
 #[derive(Debug, ThisError)]
 pub enum ContractError {

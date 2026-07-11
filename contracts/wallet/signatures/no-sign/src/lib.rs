@@ -8,7 +8,7 @@ use core::{
 
 use defuse_wallet::{RequestMessage, SignatureSchema};
 
-/// [`SigningStandard`] which always rejects the signature.
+/// [`SignatureSchema`] which always rejects the signature.
 ///
 /// This can be useful to deploy "1-of-M multisig"/"fan-out" wallet, where
 /// extensions are defined at the initialization stage (i.e. `state_init`).

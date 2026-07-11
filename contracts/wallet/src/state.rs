@@ -10,6 +10,7 @@ use crate::{DEFAULT_TIMEOUT, Nonces};
 /// In contracts, use `#[near(contract_state(key = STATE_KEY))]`.
 pub const STATE_KEY: &[u8] = b"";
 
+/// Default [`subwallet_id`](field@State::subwallet_id).
 pub const DEFAULT_SUBWALLET_ID: u32 = 0;
 
 /// State of the [`Wallet`](crate::contract::Wallet) contract.
@@ -119,8 +120,11 @@ impl<PubKey> State<PubKey> {
         self.extensions.contains(account_id.as_ref())
     }
 
+    /// Returns `data` for [`StateInit`](crate::actions::StateInit) of
+    /// Deterministic `AccountId`.
+    ///
+    /// See [NEP-616](https://github.com/near/NEPs/blob/master/neps/nep-0616.md) for more info
     #[cfg(feature = "borsh")]
-    /// Returns `data` for [`StateInit`] of Deterministic `AccountId` (NEP-616)
     #[inline]
     pub fn as_storage(&self) -> ::std::collections::BTreeMap<Vec<u8>, Vec<u8>>
     where

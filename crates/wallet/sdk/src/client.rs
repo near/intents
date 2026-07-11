@@ -1,3 +1,5 @@
+//! Bindings to [`Wallet`](defuse_wallet::contract::Wallet) contract
+
 use std::{borrow::Cow, collections::BTreeSet};
 
 use defuse_wallet::{Request, RequestMessage, Timestamp};

@@ -1,6 +1,8 @@
 pub use near_global_contracts::StateInit;
 use near_token::NearToken;
 
+/// `DeterministicStateInit` [action](crate::actions::NearAction)
+/// as per [NEP-616](https://github.com/near/NEPs/blob/master/neps/nep-0616.md)
 #[must_use = "promises do nothing unless you `.build()` them"]
 #[cfg_attr(
     feature = "serde",
@@ -15,7 +17,6 @@ use near_token::NearToken;
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-/// `DeterministicStateInit` action as per NEP-616
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DeterministicStateInit {
     pub state_init: StateInit,
