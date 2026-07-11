@@ -90,37 +90,6 @@ serde_as! {
     }
 }
 
-#[cfg(feature = "schemars-v0_8")]
-const _: () = {
-    use schemars::{JsonSchema, SchemaGenerator, schema::Schema};
-
-    impl JsonSchema for Timestamp {
-        #[inline]
-        fn is_referenceable() -> bool {
-            true
-        }
-
-        #[inline]
-        fn schema_name() -> String {
-            stringify!(Timestamp).to_string()
-        }
-
-        fn json_schema(generator: &mut SchemaGenerator) -> Schema {
-            let mut schema = String::json_schema(generator).into_object();
-            schema.metadata().examples = [
-                Self::UNIX_EPOCH,
-                #[allow(clippy::inconsistent_digit_grouping)]
-                Self::from_nanos(1782395622_123456789).unwrap(),
-            ]
-            .iter()
-            .map(serde_json::to_value)
-            .map(Result::unwrap)
-            .collect();
-            schema.into()
-        }
-    }
-};
-
 #[cfg(test)]
 #[allow(clippy::inconsistent_digit_grouping)]
 mod tests {

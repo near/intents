@@ -1,23 +1,17 @@
-/// An ellipitc curve.
+/// Digital Signature Algorithm.
 pub trait Curve: 'static {
-    /// Public key of the curve
+    /// Public key
     type PublicKey;
 
-    /// Signature of the curve
+    /// Signature
     type Signature;
 
     /// Verify the signature over the message for given public key
-    // TODO: docs maybe prehash
+    ///
+    /// NOTE: implementations MAY require `msg` to be prehash (i.e. output
+    /// of cryptographic hash function) of a fixed length and reject
+    /// the signature otherwise. Check corresponding docs before using.
     fn verify(public_key: &Self::PublicKey, msg: &[u8], signature: &Self::Signature) -> bool;
-}
-
-// TODO: feature "signing"
-pub trait Signer<C: Curve> {
-    type Error;
-
-    fn public_key(&self) -> C::PublicKey;
-
-    fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error>;
 }
 
 /// A recoverable [curve](Curve).
@@ -29,13 +23,13 @@ pub trait RecoverableCurve: Curve {
     /// Try to recover [public key](Curve::PublicKey) which signed given
     /// message and produced given signature along with a
     /// [recovery id](Self::RecoveryId)
+    ///
+    /// NOTE: implementations MAY require `msg` to be prehash (i.e. output
+    /// of cryptographic hash function) of a fixed length and reject
+    /// the signature otherwise. Check corresponding docs before using.
     fn recover(
         msg: &[u8],
         signature: &Self::Signature,
         recovery_id: Self::RecoveryId,
     ) -> Option<Self::PublicKey>;
-}
-
-pub trait RecoverableSigner<C: RecoverableCurve>: Signer<C> {
-    fn sign_recoverable(&self, msg: &[u8]) -> Result<(C::Signature, C::RecoveryId), Self::Error>;
 }

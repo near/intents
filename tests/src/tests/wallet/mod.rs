@@ -1,6 +1,6 @@
 mod no_sign;
 
-use defuse_core::crypto::ed25519::ed25519_dalek;
+use defuse_core::crypto::ed25519::{Ed25519PublicKey, ed25519_dalek};
 use defuse_rand_compat::rand_core_0_6::OsRng;
 use defuse_sandbox::{
     account::Account,
@@ -199,7 +199,7 @@ async fn test_extension(#[future] env: Env) {
 
     let wallet_state_init = StateInit::V1(StateInitV1 {
         code: env.wallet_global_id.clone(),
-        data: State::<[u8; 32]>::default()
+        data: State::<Ed25519PublicKey>::new(Ed25519PublicKey([0u8; 32]))
             .extensions([extension.account_id()])
             .as_storage(),
     });

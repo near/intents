@@ -1,11 +1,11 @@
 pub use p256;
 use p256::{
     EncodedPoint,
-    ecdsa::{Signature, SigningKey, VerifyingKey, signature::hazmat::PrehashSigner},
+    ecdsa::{Signature, VerifyingKey},
     elliptic_curve::scalar::IsHigh,
 };
 
-use crate::{Curve, Signer};
+use crate::Curve;
 
 /// P256 (a.k.a. secp256r1) Elliptic Curve Digital Signature Algorithm
 pub struct P256;
@@ -45,7 +45,11 @@ impl Curve for P256 {
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
-    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+    cfg_attr(
+        feature = "schemars-v0_8",
+        derive(::schemars::JsonSchema),
+        schemars(example = "Self::example"),
+    )
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -74,6 +78,15 @@ pub struct P256UncompressedPublicKey(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 64],
 );
+
+impl P256UncompressedPublicKey {
+    #[cfg(feature = "schemars-v0_8")]
+    const fn example() -> Self {
+        Self(hex_literal::hex!(
+            "b87da10683d04e6ec4e2f1775556a63cbb01be843058eb737fe02f9e22663093cf61b416dfb33ba2e32e9c6f3a09d84fa90d0ab9709f4a298d52e0799c8217f5"
+        ))
+    }
+}
 
 impl P256UncompressedPublicKey {
     /// Compress public key
@@ -149,7 +162,11 @@ impl TryFrom<&P256UncompressedPublicKey> for VerifyingKey {
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
-    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+    cfg_attr(
+        feature = "schemars-v0_8",
+        derive(::schemars::JsonSchema),
+        schemars(example = "Self::example"),
+    )
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -178,6 +195,15 @@ pub struct P256CompressedPublicKey(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 33],
 );
+
+impl P256CompressedPublicKey {
+    #[cfg(feature = "schemars-v0_8")]
+    const fn example() -> Self {
+        Self(hex_literal::hex!(
+            "03b87da10683d04e6ec4e2f1775556a63cbb01be843058eb737fe02f9e22663093"
+        ))
+    }
+}
 
 impl From<VerifyingKey> for P256CompressedPublicKey {
     #[inline]
@@ -238,7 +264,11 @@ impl From<&P256UncompressedPublicKey> for P256CompressedPublicKey {
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
-    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+    cfg_attr(
+        feature = "schemars-v0_8",
+        derive(::schemars::JsonSchema),
+        schemars(example = "Self::example"),
+    )
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -267,6 +297,15 @@ pub struct P256Signature(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 64],
 );
+
+impl P256Signature {
+    #[cfg(feature = "schemars-v0_8")]
+    const fn example() -> Self {
+        Self(hex_literal::hex!(
+            "002527c17a17d709ab62ffab033e0a26d901f5bee6686a0d605032828e490a7c47a9f4161e6a17688ae42a66adb67c9c22c86153afb08103b1e9eccd5314c271"
+        ))
+    }
+}
 
 impl From<Signature> for P256Signature {
     #[inline]
@@ -361,24 +400,6 @@ const _: () = {
         }
     }
 };
-
-impl Signer<P256> for SigningKey {
-    type Error = Error;
-
-    fn public_key(&self) -> <P256 as Curve>::PublicKey {
-        *self.verifying_key()
-    }
-
-    fn sign(&self, msg: &[u8]) -> Result<<P256 as Curve>::Signature, Self::Error> {
-        self.sign_prehash(msg)
-            .map_err(|_| Error::InvalidPrehashLength)
-    }
-}
-
-// TODO
-pub enum Error {
-    InvalidPrehashLength,
-}
 
 #[cfg(test)]
 mod tests {

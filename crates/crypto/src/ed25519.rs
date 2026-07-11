@@ -1,9 +1,7 @@
-use core::convert::Infallible;
-
 pub use ed25519_dalek;
-use ed25519_dalek::{Signature, SigningKey, VerifyingKey};
+use ed25519_dalek::{Signature, VerifyingKey};
 
-use crate::{Curve, Signer};
+use crate::Curve;
 
 /// Ed25519 Digital Signature Algorithm
 pub struct Ed25519;
@@ -45,7 +43,11 @@ impl Curve for Ed25519 {
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
-    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+    cfg_attr(
+        feature = "schemars-v0_8",
+        derive(::schemars::JsonSchema),
+        schemars(example = "Self::example")
+    )
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -74,6 +76,15 @@ pub struct Ed25519PublicKey(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 32],
 );
+
+impl Ed25519PublicKey {
+    #[cfg(feature = "schemars-v0_8")]
+    const fn example() -> Self {
+        Self(hex_literal::hex!(
+            "8565df94b8caab08f28cdd2ee014b800915741d4694fa840e50cca02ae5c6466"
+        ))
+    }
+}
 
 impl From<VerifyingKey> for Ed25519PublicKey {
     #[inline]
@@ -107,12 +118,17 @@ impl TryFrom<&Ed25519PublicKey> for VerifyingKey {
     }
 }
 
+/// Ed25519 signature
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
-    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+    cfg_attr(
+        feature = "schemars-v0_8",
+        derive(::schemars::JsonSchema),
+        schemars(example = "Self::example"),
+    )
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -120,7 +136,6 @@ impl TryFrom<&Ed25519PublicKey> for VerifyingKey {
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-/// Ed25519 signature
 #[derive(
     Debug,
     Clone,
@@ -141,6 +156,15 @@ pub struct Ed25519Signature(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 64],
 );
+
+impl Ed25519Signature {
+    #[cfg(feature = "schemars-v0_8")]
+    const fn example() -> Self {
+        Self(hex_literal::hex!(
+            "e4822e15e5988bf08c80b72f2d1292b7229029f342d42bb9dfe4e230c66c10a6c4a86a47ddc58b1446baedf2f1312294d59638c812082a0124e513d4eb16c40e"
+        ))
+    }
+}
 
 impl From<Signature> for Ed25519Signature {
     #[inline]
@@ -215,19 +239,6 @@ const _: () = {
         }
     }
 };
-
-// TODO: remove from here? or feature "signing"?
-impl Signer<Ed25519> for SigningKey {
-    type Error = Infallible;
-
-    fn public_key(&self) -> <Ed25519 as Curve>::PublicKey {
-        self.verifying_key()
-    }
-
-    fn sign(&self, msg: &[u8]) -> Result<<Ed25519 as Curve>::Signature, Self::Error> {
-        Ok(ed25519_dalek::Signer::sign(self, msg))
-    }
-}
 
 #[cfg(test)]
 mod tests {

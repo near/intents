@@ -18,15 +18,16 @@ use defuse_time::arbitrary::RangeNanos;
 /// with reasonable storage usage under typical load.
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_hours(1);
 
+/// Dual-timeout window nonces.
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-/// Dual-timeout window nonces
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Nonces {
+    /// Fixed timeout, i.e. maximum validity timespan for each nonce.
     #[cfg_attr(
         feature = "borsh-schema",
         borsh(
@@ -45,9 +46,9 @@ pub struct Nonces {
             deserialize_with = "As::<DurationSeconds<u32>>::deserialize",
         )
     )]
-    /// Fixed timeout, i.e. maximum validity timespan for each nonce.
     timeout: Duration,
 
+    /// The last timestamp when nonces were rotated
     #[cfg_attr(
         feature = "arbitrary",
         arbitrary(with = ::arbitrary_with::As::<RangeNanos::<0>>::arbitrary)
@@ -70,7 +71,6 @@ pub struct Nonces {
             deserialize_with = "As::<TimestampNanoSeconds<u64>>::deserialize",
         )
     )]
-    /// The last timestamp when nonces were rotated
     last_cleaned_at: Timestamp,
 
     /// Previous nonces, i.e. within `[now - 2*timeout, now - timeout)`
@@ -96,7 +96,6 @@ impl Nonces {
         }
     }
 
-    #[cfg(feature = "std")]
     /// Commit the nonce which was created at given time for given timeout.
     ///
     /// # Examples
@@ -119,6 +118,7 @@ impl Nonces {
     ///     DEFAULT_TIMEOUT
     /// ).unwrap_err(); // already used
     /// ```
+    #[cfg(feature = "std")]
     pub fn commit(
         &mut self,
         nonce: u32,
@@ -140,8 +140,8 @@ impl Nonces {
         Ok(())
     }
 
-    #[cfg(feature = "std")]
     /// Rotate and cleanup if it's time
+    #[cfg(feature = "std")]
     pub fn check_cleanup(&mut self) {
         let now = Timestamp::now();
         let last_valid_nonce_at = now - self.timeout;

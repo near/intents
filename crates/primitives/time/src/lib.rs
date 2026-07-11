@@ -13,12 +13,20 @@ use core::{
     time::Duration,
 };
 
+/// A Unix timestamp
 #[cfg_attr(
     feature = "serde",
-    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
+    derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
+    cfg_attr(
+        feature = "schemars-v0_8",
+        derive(::schemars::JsonSchema),
+        schemars(example = "Self::default", example = "Self::example")
+    )
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Timestamp(::time::Timestamp);
+pub struct Timestamp(
+    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] ::time::Timestamp,
+);
 
 impl Timestamp {
     pub const MIN: Self = Self(::time::Timestamp::MIN);
@@ -129,6 +137,12 @@ impl Timestamp {
     #[inline]
     pub const fn as_secs(&self) -> i64 {
         self.0.as_seconds()
+    }
+
+    #[cfg(feature = "schemars-v0_8")]
+    const fn example() -> Self {
+        #[allow(clippy::inconsistent_digit_grouping)]
+        Self::from_nanos(1782395622_123456789).unwrap()
     }
 }
 

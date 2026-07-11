@@ -53,6 +53,8 @@ impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
         tweak: NonZeroScalar,
         prehash: &[u8],
     ) -> (Signature, RecoveryId) {
+        // TODO: return error if prehash is not 32 bytes long
+
         let derived_scalar = NonZeroScalar::new(
             // sk' = sk + tweak
             **self.as_nonzero_scalar() + *tweak,

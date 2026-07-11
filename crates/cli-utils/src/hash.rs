@@ -2,7 +2,7 @@ use std::{
     fmt::{self, Display},
     fs::File,
     io,
-    path::PathBuf,
+    path::{Path, PathBuf},
     str::FromStr,
 };
 
@@ -15,15 +15,16 @@ use impl_tools::autoimpl;
 /// `[u8; N]`
 pub type OutputArray<D> = <OutputSize<D> as ArraySize>::ArrayType<u8>;
 
+/// Hash source
 #[autoimpl(Debug, Clone, PartialEq, Eq where OutputArray<D>: trait)]
 #[derive(From)]
-/// Hash source
 pub enum HashSource<D: Digest> {
     /// Inline hash
     #[from(Output<D>)]
     Inline(OutputArray<D>),
 
     /// Hash contents of a file
+    #[from(PathBuf, &Path)]
     File(PathBuf),
 
     /// Hash contents of stdin
@@ -61,8 +62,9 @@ impl<D: Digest> Default for HashSource<D> {
     }
 }
 
-impl<D: Digest> FromStr for HashSource<D>
+impl<D> FromStr for HashSource<D>
 where
+    D: Digest,
     OutputArray<D>: TryFrom<Vec<u8>>,
 {
     type Err = anyhow::Error;
@@ -86,9 +88,12 @@ where
             bs58::decode(s).into_vec().context("base58")?
         };
 
-        let hash: OutputArray<D> = bytes
-            .try_into()
-            .map_err(|_| anyhow!("HASH must be 32 bytes encoded via hex or base58"))?;
+        let hash: OutputArray<D> = bytes.try_into().map_err(|_| {
+            anyhow!(
+                "HASH must be exactly {} bytes encoded via base58 or hex (with `0x` prefix)",
+                <D as Digest>::output_size()
+            )
+        })?;
 
         Ok(Self::Inline(hash))
     }

@@ -104,7 +104,11 @@ impl RecoverableCurve for Secp256k1 {
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
-    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+    cfg_attr(
+        feature = "schemars-v0_8",
+        derive(::schemars::JsonSchema),
+        schemars(example = "Self::example"),
+    )
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -133,6 +137,15 @@ pub struct Secp256k1UncompressedPublicKey(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 64],
 );
+
+impl Secp256k1UncompressedPublicKey {
+    #[cfg(feature = "schemars-v0_8")]
+    const fn example() -> Self {
+        Self(hex_literal::hex!(
+            "85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"
+        ))
+    }
+}
 
 impl From<VerifyingKey> for Secp256k1UncompressedPublicKey {
     #[inline]
@@ -177,7 +190,11 @@ impl TryFrom<&Secp256k1UncompressedPublicKey> for VerifyingKey {
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
-    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+    cfg_attr(
+        feature = "schemars-v0_8",
+        derive(::schemars::JsonSchema),
+        schemars(example = "Self::example"),
+    )
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -207,6 +224,15 @@ pub struct Secp256k1RecoverableSignature(
     // schemars@0.8 ignores `with` at struct level for newtypes; must be on the field
     #[cfg_attr(feature = "schemars-v0_8", schemars(with = "String"))] pub [u8; 65],
 );
+
+impl Secp256k1RecoverableSignature {
+    #[cfg(feature = "schemars-v0_8")]
+    const fn example() -> Self {
+        Self(hex_literal::hex!(
+            "7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e4701"
+        ))
+    }
+}
 
 impl From<(Signature, RecoveryId)> for Secp256k1RecoverableSignature {
     #[inline]

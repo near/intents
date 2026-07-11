@@ -12,13 +12,13 @@ pub const STATE_KEY: &[u8] = b"";
 
 pub const DEFAULT_SUBWALLET_ID: u32 = 0;
 
+/// State of the [`Wallet`](crate::contract::Wallet) contract.
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-/// State of the wallet-contract.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct State<PubKey> {
     /// Whether authentication by signature is allowed.
@@ -131,14 +131,5 @@ impl<PubKey> State<PubKey> {
             borsh::to_vec(self).unwrap_or_else(|_| unreachable!()),
         )]
         .into()
-    }
-}
-
-impl<PubKey> Default for State<PubKey>
-where
-    PubKey: Default,
-{
-    fn default() -> Self {
-        Self::new(PubKey::default())
     }
 }

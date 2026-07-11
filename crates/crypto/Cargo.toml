@@ -17,6 +17,7 @@ arbitrary = { workspace = true, features = ["derive"], optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
 bs58 = { workspace = true, optional = true }
 cfg_eval = { workspace = true, optional = true }
+hex-literal = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
 thiserror = { workspace = true, optional = true }
@@ -35,7 +36,12 @@ borsh = ["dep:borsh"]
 borsh-schema = ["borsh", "borsh/unstable__schema"]
 fmt = ["dep:bs58", "dep:thiserror"]
 serde = ["dep:cfg_eval", "dep:serde_with", "fmt"]
-schemars-v0_8 = ["dep:schemars", "serde", "serde_with?/schemars_0_8"]
+schemars-v0_8 = [
+  "dep:hex-literal",
+  "dep:schemars",
+  "serde",
+  "serde_with?/schemars_0_8",
+]
 
 [dev-dependencies]
 defuse-crypto = { path = ".", features = ["ed25519", "p256", "secp256k1", "abi"] }
