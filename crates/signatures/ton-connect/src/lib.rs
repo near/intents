@@ -11,6 +11,25 @@ use defuse_time::arbitrary::RangeNanos;
 pub use tlb_ton::Cell;
 pub use tlb_ton::MsgAddress;
 
+/// [TON Connect](https://docs.tonconsole.com/academy/sign-data) signature schema.
+pub struct TonConnect;
+
+impl TonConnect {
+    #[must_use = "check if verification passed"]
+    #[inline]
+    pub fn verify(
+        public_key: &<Ed25519 as Curve>::PublicKey,
+        payload: &TonConnectPayload,
+        signature: &<Ed25519 as Curve>::Signature,
+    ) -> bool {
+        let Some(prehash) = payload.try_prehash() else {
+            return false;
+        };
+
+        Ed25519::verify(public_key, &prehash, signature)
+    }
+}
+
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -49,21 +68,6 @@ pub struct TonConnectPayload {
 }
 
 impl TonConnectPayload {
-    // TODO: separate TonConnect algorithm struct?
-    #[must_use = "check if verification passed"]
-    #[inline]
-    pub fn verify(
-        &self,
-        public_key: &<Ed25519 as Curve>::PublicKey,
-        signature: &<Ed25519 as Curve>::Signature,
-    ) -> bool {
-        let Some(prehash) = self.try_prehash() else {
-            return false;
-        };
-
-        Ed25519::verify(public_key, &prehash, signature)
-    }
-
     pub fn try_prehash(&self) -> Option<[u8; 32]> {
         let timestamp: u64 = self.timestamp.as_secs().try_into().ok()?;
 
@@ -230,6 +234,9 @@ mod tests {
         let public_key = VerifyingKey::from_bytes(&public_key).unwrap();
         let signature = Signature::from_bytes(&signature);
 
-        assert!(payload.verify(&public_key, &signature), "invalid signature");
+        assert!(
+            TonConnect::verify(&public_key, &payload, &signature),
+            "invalid signature"
+        );
     }
 }

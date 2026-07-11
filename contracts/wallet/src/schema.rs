@@ -12,5 +12,6 @@ pub trait SignatureSchema {
     /// key and return whether verification passed.
     ///
     /// Used by the `w_execute_signed(msg, proof)` contract method.
+    #[must_use = "check if verification passed"]
     fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool;
 }

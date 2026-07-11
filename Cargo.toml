@@ -175,7 +175,7 @@ itertools = "0.14"
 k256 = { version = "0.13.4", default-features = false }
 num-traits = "0.2.19"
 p256 = { version = "0.13.2", default-features = false }
-pairing = "0.23"                                              # TODO: features
+pairing = "0.23"
 proptest = "1.5"
 rand = "0.10.2"
 rand_core = "0.10.1"

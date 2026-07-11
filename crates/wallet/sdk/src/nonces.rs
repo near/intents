@@ -71,7 +71,7 @@ mod tests {
     #[test]
     fn zba() {
         const ZBA_TIMEOUT: Duration = Duration::from_mins(15); // 15m
-        const MAX_SIZE: usize = 770 - 100 - 40; // TODO: -64?
+        const MAX_SIZE: usize = 770 - 100 - 40 - 64;
 
         const PUBLIC_KEY: [u8; 64] = [0u8; 64];
 

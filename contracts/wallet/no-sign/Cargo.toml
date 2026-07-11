@@ -23,7 +23,6 @@ serde = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 abi = ["borsh-schema", "defuse-wallet/abi", "near-sdk?/abi", "schemars-v0_8"]
-# TODO: proxy-activate defuse-wallet features?
 arbitrary = ["defuse-wallet/arbitrary", "dep:arbitrary"]
 borsh = ["defuse-wallet/borsh", "dep:borsh"]
 borsh-schema = [

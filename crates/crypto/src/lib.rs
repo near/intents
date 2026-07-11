@@ -1,5 +1,3 @@
-// TODO: merge with `defuse-crypto`
-
 mod curve;
 #[cfg(feature = "ed25519")]
 pub mod ed25519;

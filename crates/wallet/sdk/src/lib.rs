@@ -13,11 +13,13 @@ use std::{
 use borsh::BorshSerialize;
 pub use defuse_wallet::*;
 
+use impl_tools::autoimpl;
 use near_global_contracts::{GlobalContractId, StateInit, StateInitV1};
 use rand::{make_rng, rngs::SmallRng};
 
 pub const MAINNET: &str = "mainnet";
 
+/// Builder for [`WalletSigner`]
 #[must_use = "`.build()` the signer"]
 #[derive(Debug)]
 pub struct WalletBuilder {
@@ -87,8 +89,7 @@ impl WalletBuilder {
     }
 }
 
-// TODO: avoid requiring SS to implement derived traits
-#[derive(Debug, Clone)]
+#[autoimpl(Debug, Clone where S: trait)]
 pub struct WalletSigner<SS: SignatureSchema, S: Signer<SS>> {
     account_id: AccountId,
     state_init: StateInit,

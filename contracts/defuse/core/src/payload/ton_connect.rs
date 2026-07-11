@@ -1,4 +1,5 @@
 use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
+use defuse_ton_connect::TonConnect;
 pub use defuse_ton_connect::{TonConnectPayload, TonConnectPayloadSchema};
 use near_sdk::CryptoHash;
 use serde::{
@@ -32,10 +33,13 @@ impl SignedPayload for SignedTonConnectPayload {
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        self.payload
-            .verify(&self.public_key.try_into().ok()?, &self.signature.into())
-            .then_some(&self.public_key)
-            .copied()
+        TonConnect::verify(
+            &self.public_key.try_into().ok()?,
+            &self.payload,
+            &self.signature.into(),
+        )
+        .then_some(&self.public_key)
+        .copied()
     }
 }
 

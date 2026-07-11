@@ -6,7 +6,6 @@ use impl_tools::autoimpl;
 
 pub type Proof = String;
 
-// TODO
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
 #[autoimpl(for<T: ?Sized + trait> &T, &mut T, Box<T>, Arc<T>)]

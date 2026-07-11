@@ -1,5 +1,3 @@
-// TODO: curve naming
-
 /// An ellipitc curve.
 pub trait Curve: 'static {
     /// Public key of the curve
@@ -35,8 +33,6 @@ pub trait RecoverableCurve: Curve {
         signature: &Self::Signature,
         recovery_id: Self::RecoveryId,
     ) -> Option<Self::PublicKey>;
-
-    // TODO: fn trial_recover()?
 }
 
 pub trait RecoverableSigner<C: RecoverableCurve>: Signer<C> {
