@@ -81,10 +81,8 @@ near-contract = [
   "defuse-near-promise/near-contract",
   "dep:impl-tools",
   "dep:near-sdk",
-  # TODO: this is not needed by third-party contracts
   "digest",
   "serde",
-  # TODO: enable other features?
   "std",
 ]
 

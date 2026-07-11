@@ -61,7 +61,10 @@ impl FromStr for Signature {
     type Err = ParseCurveError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (curve, data) = s.split_once(':').unwrap_or((Ed25519::CURVE_TYPE, s));
+        let (curve, data) = s
+            .split_once(':')
+            // ed25519 by default
+            .unwrap_or((Ed25519::CURVE_TYPE, s));
 
         match curve {
             Ed25519::CURVE_TYPE => checked_base58_decode_array(data)

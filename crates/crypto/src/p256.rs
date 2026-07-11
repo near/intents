@@ -375,67 +375,72 @@ impl Signer<P256> for SigningKey {
     }
 }
 
+// TODO
 pub enum Error {
     InvalidPrehashLength,
 }
 
-// TODO: fix test values
-// #[cfg(test)]
-// mod tests {
-//     use hex_literal::hex;
-//     use rstest::rstest;
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+    use rstest::rstest;
 
-//     use super::*;
+    use super::*;
 
-//     #[rstest]
-//     #[case(
-//         hex!("85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"),
-//         hex!("aa05af77f274774b8bdc7b61d98bc40da523dc2821fdea555f4d6aa413199bcc"),
-//         hex!("7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e47"),
-//     )]
-//     #[case(
-//         hex!("85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"),
-//         hex!("1632c0ebba467e157675403ba3ba280b836e1801b5678d878dfc90bfc403d6e1"),
-//         hex!("eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c"),
-//     )]
-//     fn verify_ok(
-//         #[case] public_key: [u8; 64],
-//         #[case] prehash: [u8; 32],
-//         #[case] signature: [u8; 64],
-//     ) {
-//         assert!(
-//             P256::verify(
-//                 &P256UncompressedPublicKey(public_key).try_into().unwrap(),
-//                 &prehash,
-//                 &P256Signature(signature).try_into().unwrap(),
-//             ),
-//             "signature is invalid",
-//         );
-//     }
+    #[rstest]
+    #[case(
+        hex!("03b87da10683d04e6ec4e2f1775556a63cbb01be843058eb737fe02f9e22663093"),
+        hex!("0fc6357f688865a5a5ce1ac484f8ade578325ccda012091a533924404890e794"),
+        hex!("002527c17a17d709ab62ffab033e0a26d901f5bee6686a0d605032828e490a7c47a9f4161e6a17688ae42a66adb67c9c22c86153afb08103b1e9eccd5314c271"),
+    )]
+    #[case(
+        hex!("03f616f10f0841ff81b0caa52859ee168d03b657c6adef468761289fe75b8e291c"),
+        hex!("b64fd2202ddf8ef361dcbdf224fe6c2a06bd1fc67f40a89cb49a92d2071ffecc"),
+        hex!("6bb2de380eefd199ee44364902f4b89679b8df04024e24047dc0ec1c61c11b2d527495fed4a6903ebe086e831bd000bf683c2a36f0454eaccaecf109678fd33e"),
+    )]
+    fn verify_ok(
+        #[case] public_key: impl Into<P256CompressedPublicKey>,
+        #[case] prehash: [u8; 32],
+        #[case] signature: impl Into<P256Signature>,
+    ) {
+        assert!(
+            P256::verify(
+                &public_key.into().try_into().unwrap(),
+                &prehash,
+                &signature.into().try_into().unwrap(),
+            ),
+            "signature is invalid",
+        );
+    }
 
-//     #[rstest]
-//     #[case(
-//         hex!("85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"),
-//         hex!("1632c0ebba467e157675403ba3ba280b836e1801b5678d878dfc90bfc403d6e1"),
-//         hex!("7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e47"),
-//     )]
-//     #[case(
-//         hex!("85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"),
-//         hex!("aa05af77f274774b8bdc7b61d98bc40da523dc2821fdea555f4d6aa413199bcc"),
-//         hex!("eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c"),
-//     )]
-//     fn verify_fail(
-//         #[case] public_key: [u8; 64],
-//         #[case] prehash: [u8; 32],
-//         #[case] signature: [u8; 64],
-//     ) {
-//         assert!(
-//             !P256::verify(
-//                 &P256UncompressedPublicKey(public_key).try_into().unwrap(),
-//                 &prehash,
-//                 &P256Signature(signature).try_into().unwrap(),
-//             ),
-//             "invalid signature passed verification",
-//         );
-//     }
-// }
+    #[rstest]
+    #[case(
+        hex!("03b87da10683d04e6ec4e2f1775556a63cbb01be843058eb737fe02f9e22663093"),
+        hex!("0fc6357f688865a5a5ce1ac484f8ade578325ccda012091a533924404890e794"),
+        hex!("6bb2de380eefd199ee44364902f4b89679b8df04024e24047dc0ec1c61c11b2d527495fed4a6903ebe086e831bd000bf683c2a36f0454eaccaecf109678fd33e"),
+    )]
+    #[case(
+        hex!("03f616f10f0841ff81b0caa52859ee168d03b657c6adef468761289fe75b8e291c"),
+        hex!("b64fd2202ddf8ef361dcbdf224fe6c2a06bd1fc67f40a89cb49a92d2071ffecc"),
+        hex!("002527c17a17d709ab62ffab033e0a26d901f5bee6686a0d605032828e490a7c47a9f4161e6a17688ae42a66adb67c9c22c86153afb08103b1e9eccd5314c271"),
+    )]
+    #[case(
+        hex!("03b87da10683d04e6ec4e2f1775556a63cbb01be843058eb737fe02f9e22663093"),
+        hex!("b64fd2202ddf8ef361dcbdf224fe6c2a06bd1fc67f40a89cb49a92d2071ffecc"),
+        hex!("6bb2de380eefd199ee44364902f4b89679b8df04024e24047dc0ec1c61c11b2d527495fed4a6903ebe086e831bd000bf683c2a36f0454eaccaecf109678fd33e"),
+    )]
+    fn verify_fail(
+        #[case] public_key: impl Into<P256CompressedPublicKey>,
+        #[case] prehash: [u8; 32],
+        #[case] signature: impl Into<P256Signature>,
+    ) {
+        assert!(
+            !P256::verify(
+                &public_key.into().try_into().unwrap(),
+                &prehash,
+                &signature.into().try_into().unwrap(),
+            ),
+            "invalid signature passed verification",
+        );
+    }
+}
