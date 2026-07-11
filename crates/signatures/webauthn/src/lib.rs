@@ -15,7 +15,8 @@ pub mod ed25519;
 #[cfg(feature = "p256")]
 pub mod p256;
 
-/// [Webauthn](https://w3c.github.io/webauthn/) signing standard
+/// [Webauthn](https://w3c.github.io/webauthn/) signing standard generic over
+/// underlying [`Algorithm`]
 pub struct Webauthn<A: Algorithm, UV: UserVerification> {
     _algorithm: PhantomData<A>,
     _user_verification: PhantomData<UV>,
@@ -26,7 +27,7 @@ where
     A: Algorithm,
     UV: UserVerification,
 {
-    /// Check that given `payload` corresponds to `msg` and verify the
+    /// Check that given assertion corresponds to `msg` and verify the
     /// signature over it for given public key.
     ///
     /// See <https://w3c.github.io/webauthn/#sctn-verifying-assertion>.
@@ -37,27 +38,27 @@ where
     pub fn verify(
         public_key: &<A::Curve as Curve>::PublicKey,
         challenge: impl AsRef<[u8]>,
-        payload: &WebauthnAssertion,
+        assertion: &WebauthnAssertion,
         signature: &<A::Curve as Curve>::Signature,
     ) -> bool {
-        if !Self::check(challenge, payload) {
+        if !Self::check(challenge, assertion) {
             return false;
         }
 
         // 20. Let hash be the result of computing a hash over the cData using
         // SHA-256
-        let hash = Sha256::digest(payload.client_data_json.as_bytes());
+        let hash = Sha256::digest(assertion.client_data_json.as_bytes());
 
         // 21. Using credentialRecord.publicKey, verify that sig is a valid
         // signature over the binary concatenation of authData and hash.
         A::verify(
             public_key,
-            [payload.authenticator_data.as_slice(), hash.as_ref()].concat(),
+            [assertion.authenticator_data.as_slice(), hash.as_ref()].concat(),
             signature,
         )
     }
 
-    /// Check the payload and whether is corresponds to given `challenge`.
+    /// Check the assertion and whether is corresponds to given `challenge`.
     fn check(challenge: impl AsRef<[u8]>, p: &WebauthnAssertion) -> bool {
         // check authData flags before `clientDataJSON` to save gas
         if p.authenticator_data.len() < 37 || !Self::check_flags(p.authenticator_data[32]) {
@@ -115,7 +116,7 @@ where
     }
 }
 
-/// Signable payload for [`Webauthn`] signing standard
+/// Actual payload signed according to [`Webauthn`] standard
 #[serde_as]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
@@ -198,6 +199,7 @@ impl UserVerification for RequireUserVerification {
 pub trait Algorithm {
     type Curve: Curve;
 
+    // TODO: docs
     fn derive(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]>;
 
     fn verify(

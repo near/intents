@@ -6,7 +6,8 @@ use defuse_crypto::{
 };
 use defuse_wallet::{RequestMessage, SignatureSchema};
 
-// TODO: docs
+/// Simple [`Ed25519`] wallet [signature schema](SignatureSchema)
+/// over [canonical request hash](RequestMessage::hash).
 pub struct WalletEd25519;
 
 impl SignatureSchema for WalletEd25519 {
@@ -51,8 +52,7 @@ const _: () = {
     }
 };
 
-// TODO: cfg?
-#[cfg(all(feature = "contract", any(feature = "abi", near, test)))]
+#[cfg(feature = "contract")]
 const _: () = {
     use defuse_wallet::wallet;
 

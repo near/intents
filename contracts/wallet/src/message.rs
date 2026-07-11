@@ -132,14 +132,19 @@ pub struct RequestMessage {
 }
 
 impl RequestMessage {
-    /// Returns canonical hash of the request message
+    /// Returns canonical hash of the request message:
+    ///
+    /// ```text
+    /// SHA3-256(b"NEAR_WALLET_CONTRACT/V1" || borsh(msg))
+    /// ```
+    ///
+    /// # Examples
     ///
     /// ```rust
     /// # use core::time::Duration;
     /// # use defuse_wallet::{Request, RequestMessage, Timestamp};
     /// # use hex_literal::hex;
-    ///
-    /// let request = RequestMessage {
+    /// let msg = RequestMessage {
     ///     chain_id: "mainnet".to_string(),
     ///     signer_id: "0s0000000000000000000000000000000000000000".parse().unwrap(),
     ///     nonce: 0,
@@ -149,7 +154,7 @@ impl RequestMessage {
     /// };
     ///
     /// assert_eq!(
-    ///     request.hash(),
+    ///     msg.hash(),
     ///     hex!("e42ac706e27f0157624ee49fc4693c9cc9666c5e51358b7d57f79ee16005ded7"),
     /// );
     /// ```

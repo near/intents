@@ -1,5 +1,4 @@
-// TODO
-#[cfg(all(feature = "contract", any(feature = "abi", near, test)))]
+#[cfg(feature = "contract")]
 mod contract;
 
 use core::{
