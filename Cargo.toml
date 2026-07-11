@@ -10,11 +10,11 @@ members = [
   "contracts/poa/token",
   "contracts/treasury-logger",
   "contracts/wallet",
-  "contracts/wallet/ed25519",
-  "contracts/wallet/no-sign",
-  "contracts/wallet/webauthn",
-  "contracts/wallet/webauthn/ed25519",
-  "contracts/wallet/webauthn/p256",
+  "contracts/wallet/signatures/ed25519",
+  "contracts/wallet/signatures/no-sign",
+  "contracts/wallet/signatures/webauthn",
+  "contracts/wallet/signatures/webauthn/ed25519",
+  "contracts/wallet/signatures/webauthn/p256",
 
   "crates/bitmap",
   "crates/borsh-utils",
@@ -81,11 +81,11 @@ defuse-outlayer-app-core = { path = "contracts/outlayer-app/core", default-featu
 defuse-poa-factory.path = "contracts/poa/factory"
 defuse-poa-token.path = "contracts/poa/token"
 defuse-wallet.path = "contracts/wallet"
-defuse-wallet-ed25519.path = "contracts/wallet/ed25519"
-defuse-wallet-no-sign.path = "contracts/wallet/no-sign"
-defuse-wallet-webauthn.path = "contracts/wallet/webauthn"
-defuse-wallet-webauthn-ed25519.path = "contracts/wallet/webauthn/ed25519"
-defuse-wallet-webauthn-p256.path = "contracts/wallet/webauthn/p256"
+defuse-wallet-ed25519.path = "contracts/wallet/signatures/ed25519"
+defuse-wallet-no-sign.path = "contracts/wallet/signatures/no-sign"
+defuse-wallet-webauthn.path = "contracts/wallet/signatures/webauthn"
+defuse-wallet-webauthn-ed25519.path = "contracts/wallet/signatures/webauthn/ed25519"
+defuse-wallet-webauthn-p256.path = "contracts/wallet/signatures/webauthn/p256"
 
 defuse-bitmap.path = "crates/bitmap"
 defuse-borsh-utils.path = "crates/borsh-utils"

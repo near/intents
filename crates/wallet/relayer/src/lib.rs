@@ -53,8 +53,8 @@ impl WalletRelayer {
     #[cfg_attr(
         feature = "tracing",
         instrument(skip_all, fields(
-            signer_id = %request.msg.signer_id,
-            request.hash = %near_kit::CryptoHash::from_bytes(request.msg.hash()),
+            msg.signer_id = %request.msg.signer_id,
+            msg.hash = %near_kit::CryptoHash::from_bytes(request.msg.hash()),
             deposit = Some(deposit).filter(|d| !d.is_zero()).map(field::display),
         ))
     )]

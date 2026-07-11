@@ -2000,6 +2000,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "borsh",
+ "bs58 0.5.1",
  "defuse-wallet",
  "defuse-wallet-sdk",
  "derive_more",
@@ -2008,6 +2009,7 @@ dependencies = [
  "near-kit",
  "rand 0.10.2",
  "serde",
+ "tracing",
 ]
 
 [[package]]

@@ -40,6 +40,7 @@ impl SignatureSchema for NoSign {
 pub struct NoPublicKey;
 
 impl Display for NoPublicKey {
+    #[inline]
     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         Ok(())
     }
@@ -48,6 +49,7 @@ impl Display for NoPublicKey {
 impl FromStr for NoPublicKey {
     type Err = NotEmptyError;
 
+    #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         s.is_empty().then_some(Self).ok_or(NotEmptyError)
     }

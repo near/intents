@@ -6,9 +6,7 @@ use defuse_sandbox::{
     account::Account,
     extensions::wallet::{
         WalletExt,
-        sdk::{
-            MAINNET, NearPromise, Request, State, WalletOp, WalletSigner, actions::FunctionCall,
-        },
+        sdk::{MAINNET, NearPromise, Request, State, Wallet, WalletOp, actions::FunctionCall},
     },
     global_contract::GlobalContract,
     kit::{Finality::Optimistic, Gas, GlobalContractId, Near, NearToken, StateInit, StateInitV1},
@@ -278,8 +276,8 @@ struct Env {
 }
 
 impl Env {
-    pub fn generate_wallet(&self) -> WalletSigner<WalletEd25519, ed25519_dalek::SigningKey> {
-        WalletSigner::new(
+    pub fn generate_wallet(&self) -> Wallet<WalletEd25519, ed25519_dalek::SigningKey> {
+        Wallet::new(
             self.wallet_global_id.clone(),
             ed25519_dalek::SigningKey::generate(&mut OsRng),
         )

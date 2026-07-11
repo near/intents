@@ -1,5 +1,8 @@
 use rand::Rng;
 
+#[cfg(feature = "tracing")]
+use tracing::{Level, instrument, trace};
+
 /// Semi-sequential nonce generation algorithm optimized for storage usage
 /// in case of multiple concurrent **non-coordinated** clients sign messages
 /// for the same wallet contract instance. This algorithm withstands signers
@@ -34,10 +37,19 @@ where
 
     /// Get the next semi-sequential nonce ready to use.
     #[allow(clippy::should_implement_trait)]
+    #[cfg_attr(feature = "tracing", instrument(
+        level = Level::TRACE, skip_all, ret(Display),
+    ))]
     #[inline]
     pub fn next(&mut self) -> u32 {
         // check if we're at block boundary
         if self.next & Self::BIT_POS_MASK == 0 {
+            #[cfg(feature = "tracing")]
+            trace!(
+                current = %self.next,
+                "we're at block boundary, randomizing high 27 bits..."
+            );
+
             // randomize high 27 bits
             self.next = self.rng.next_u32() & !Self::BIT_POS_MASK;
         }

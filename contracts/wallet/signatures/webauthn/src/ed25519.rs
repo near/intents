@@ -5,6 +5,5 @@ use crate::WalletWebauthnAlgorithm;
 
 impl WalletWebauthnAlgorithm for Ed25519 {
     type PublicKey = Ed25519PublicKey;
-
     type Signature = Ed25519Signature;
 }

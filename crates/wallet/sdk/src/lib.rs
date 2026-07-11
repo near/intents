@@ -5,6 +5,8 @@ mod signer;
 
 pub use self::{nonces::*, signer::*};
 
+pub use defuse_wallet::*;
+
 use std::{
     collections::BTreeSet,
     marker::PhantomData,
@@ -13,11 +15,11 @@ use std::{
 };
 
 use borsh::BorshSerialize;
-pub use defuse_wallet::*;
-
 use impl_tools::autoimpl;
 use near_global_contracts::{GlobalContractId, StateInit, StateInitV1};
 use rand::{make_rng, rngs::SmallRng};
+#[cfg(feature = "tracing")]
+use tracing::{Level, instrument, record_all};
 
 pub const MAINNET: &str = "mainnet";
 
@@ -65,10 +67,10 @@ impl WalletBuilder {
         self
     }
 
-    pub fn build<SS, S>(self, code: impl Into<GlobalContractId>, signer: S) -> WalletSigner<SS, S>
+    pub fn build<SS, S>(self, code: impl Into<GlobalContractId>, signer: S) -> Wallet<SS, S>
     where
         SS: SignatureSchema<PublicKey: BorshSerialize>,
-        S: Signer<SS>,
+        S: WalletSigner<SS>,
     {
         let state_init = StateInit::V1(StateInitV1 {
             code: code.into(),
@@ -79,7 +81,7 @@ impl WalletBuilder {
                 .as_storage(),
         });
 
-        WalletSigner {
+        Wallet {
             account_id: state_init.derive_account_id(),
             state_init,
             subwallet_id: self.subwallet_id,
@@ -93,7 +95,7 @@ impl WalletBuilder {
 
 // TODO: docs
 #[autoimpl(Debug, Clone where S: trait)]
-pub struct WalletSigner<SS: SignatureSchema, S: Signer<SS>> {
+pub struct Wallet<SS: SignatureSchema, S: WalletSigner<SS>> {
     account_id: AccountId,
     state_init: StateInit,
 
@@ -105,10 +107,10 @@ pub struct WalletSigner<SS: SignatureSchema, S: Signer<SS>> {
     _schema: PhantomData<SS>,
 }
 
-impl<SS, S> WalletSigner<SS, S>
+impl<SS, S> Wallet<SS, S>
 where
     SS: SignatureSchema,
-    S: Signer<SS>,
+    S: WalletSigner<SS>,
 {
     #[inline]
     pub const fn builder() -> WalletBuilder {
@@ -154,13 +156,33 @@ where
     }
 
     #[allow(clippy::future_not_send)]
+    #[cfg_attr(feature = "tracing", instrument(level = Level::DEBUG, skip_all, fields(
+        msg.chain_id,
+        msg.signer_id,
+        msg.nonce,
+        msg.created_at,
+        msg.timeout_secs,
+        msg.hash
+    )))]
     pub async fn sign(
         &self,
         request: Request,
         chain_id: impl Into<String>,
     ) -> Result<(RequestMessage, Proof), S::Error> {
         let msg = self.wrap_request_msg(request, chain_id);
-        let proof = self.signer.sign(&msg).await?;
+
+        #[cfg(feature = "tracing")]
+        record_all!(
+            tracing::Span::current(),
+            msg.chain_id,
+            %msg.signer_id,
+            msg.nonce,
+            %msg.created_at,
+            msg.timeout_secs = msg.timeout.as_secs(),
+            msg.hash = bs58::encode(msg.hash()).into_string(),
+        );
+
+        let proof = self.signer.sign_request_msg(&msg).await?;
 
         debug_assert!(
             SS::verify(&self.signer.public_key(), &msg, &proof),
@@ -171,6 +193,7 @@ where
     }
 
     /// Wraps [`Request`] in [`RequestMessage`] for signing
+    #[must_use = "`.sign()` the wrapped request"]
     #[inline]
     fn wrap_request_msg(&self, request: Request, chain_id: impl Into<String>) -> RequestMessage {
         RequestMessage {

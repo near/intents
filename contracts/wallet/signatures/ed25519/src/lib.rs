@@ -31,18 +31,19 @@ const _: () = {
 
     use async_trait::async_trait;
     use defuse_crypto::ed25519::ed25519_dalek::{self, SigningKey};
-    use defuse_wallet_sdk::{Proof, Signer};
+    use defuse_wallet_sdk::{Proof, WalletSigner};
 
     #[cfg_attr(not(target_family = "wasm"), async_trait)]
     #[cfg_attr(target_family = "wasm", async_trait(?Send))]
-    impl Signer<WalletEd25519> for SigningKey {
+    impl WalletSigner<WalletEd25519> for SigningKey {
         type Error = Infallible;
 
+        #[inline]
         fn public_key(&self) -> Ed25519PublicKey {
             self.verifying_key().into()
         }
 
-        async fn sign(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
+        async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
             let signature: Ed25519Signature = ed25519_dalek::Signer::sign(self, &msg.hash()).into();
             Ok(signature.to_string())
         }

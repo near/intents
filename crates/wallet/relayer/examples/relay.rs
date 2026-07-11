@@ -1,8 +1,6 @@
 use defuse_wallet_ed25519::WalletEd25519;
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
-use defuse_wallet_sdk::{
-    MAINNET, NearPromise, Request, WalletOp, WalletSigner, actions::FunctionCall,
-};
+use defuse_wallet_sdk::{MAINNET, NearPromise, Request, Wallet, WalletOp, actions::FunctionCall};
 use ed25519_dalek::ed25519::signature::rand_core::OsRng;
 use near_kit::{AccountIdRef, Gas, Near, NearToken};
 use serde_json::json;
@@ -24,7 +22,7 @@ async fn main() {
 
     // 0.1) Build wallet state
     let wallet =
-        WalletSigner::<WalletEd25519, _>::new(WALLET_GLOBAL_CONTRACT_ID.to_owned(), wallet_signer);
+        Wallet::<WalletEd25519, _>::new(WALLET_GLOBAL_CONTRACT_ID.to_owned(), wallet_signer);
 
     // 0.2) Derive wallet account_id
     println!("wallet.account_id() = {}", wallet.account_id());
