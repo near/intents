@@ -8,7 +8,7 @@ use core::marker::PhantomData;
 use defuse_crypto::Curve;
 use defuse_wallet::{RequestMessage, SignatureSchema};
 pub use defuse_webauthn as webauthn;
-use defuse_webauthn::{Algorithm, UserVerification, Webauthn, WebauthnPayload};
+use defuse_webauthn::{Algorithm, UserVerification, Webauthn, WebauthnAssertion};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 // TODO: docs
@@ -59,7 +59,7 @@ pub trait WalletWebauthnAlgorithm: Algorithm {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WalletWebauthnProof<S> {
     #[serde(flatten)]
-    pub payload: WebauthnPayload,
+    pub payload: WebauthnAssertion,
 
     pub signature: S,
 }

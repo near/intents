@@ -37,7 +37,7 @@ where
     pub fn verify(
         public_key: &<A::Curve as Curve>::PublicKey,
         challenge: impl AsRef<[u8]>,
-        payload: &WebauthnPayload,
+        payload: &WebauthnAssertion,
         signature: &<A::Curve as Curve>::Signature,
     ) -> bool {
         if !Self::check(challenge, payload) {
@@ -58,7 +58,7 @@ where
     }
 
     /// Check the payload and whether is corresponds to given `challenge`.
-    fn check(challenge: impl AsRef<[u8]>, p: &WebauthnPayload) -> bool {
+    fn check(challenge: impl AsRef<[u8]>, p: &WebauthnAssertion) -> bool {
         // check authData flags before `clientDataJSON` to save gas
         if p.authenticator_data.len() < 37 || !Self::check_flags(p.authenticator_data[32]) {
             return false;
@@ -125,8 +125,9 @@ where
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct WebauthnPayload {
+pub struct WebauthnAssertion {
     #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
+    // TODO: is it ok to have aliased?
     #[serde(alias = "authenticatorData", alias = "authData")]
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
     pub authenticator_data: Vec<u8>,
@@ -165,7 +166,16 @@ pub enum ClientDataType {
     Get,
 }
 
-/// [User verification](https://w3c.github.io/webauthn/#user-verification) mode
+/// [User verification](https://w3c.github.io/webauthn/#user-verification) mode.
+///
+/// # Compatibility
+///
+/// `UV` (User Verified) flag is only set by FIDO2-capable devices with
+/// PIN / biometric setup.
+///
+/// FIDO U2F (CTAP 1) authenticators (such as old Ledger and Yubikey
+/// devices) only set `UP` (User Present) flag and doesn't support `UV`
+/// (User Verified).
 pub trait UserVerification {
     const REQUIRED: bool;
 }

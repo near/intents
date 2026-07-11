@@ -1,5 +1,5 @@
 use defuse_digest::{Digest, sha2::Sha256};
-pub use defuse_webauthn::WebauthnPayload;
+pub use defuse_webauthn::WebauthnAssertion;
 use defuse_webauthn::{IgnoreUserVerification, ed25519::Ed25519, p256::P256};
 use near_sdk::CryptoHash;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
@@ -16,9 +16,8 @@ use super::{DefusePayload, ExtractDefusePayload};
 pub struct SignedWebAuthnPayload {
     pub payload: String,
 
-    // TODO: rename?
     #[serde(flatten)]
-    pub signed: WebauthnPayload,
+    pub assertion: WebauthnAssertion,
 
     pub public_key: PublicKey,
     pub signature: Signature,
@@ -36,20 +35,28 @@ impl SignedPayload for SignedWebAuthnPayload {
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        // TODO: why ignore?
-        type Webauthn<A> = defuse_webauthn::Webauthn<A, IgnoreUserVerification>;
+        type Webauthn<A> = defuse_webauthn::Webauthn<
+            A,
+            // `UV` (User Verified) flag is only set by FIDO2-capable devices with
+            // PIN / biometric setup.
+            //
+            // FIDO U2F (CTAP 1) authenticators (such as old Ledger and Yubikey
+            // devices) only set `UP` (User Present) flag and doesn't support `UV`
+            // (User Verified).
+            IgnoreUserVerification,
+        >;
 
         match (self.public_key, self.signature) {
             (PublicKey::Ed25519(pk), Signature::Ed25519(sig)) => Webauthn::<Ed25519>::verify(
                 &pk.try_into().ok()?,
                 self.hash(),
-                &self.signed,
+                &self.assertion,
                 &sig.into(),
             ),
             (PublicKey::P256(pk), Signature::P256(sig)) => Webauthn::<P256>::verify(
                 &pk.try_into().ok()?,
                 self.hash(),
-                &self.signed,
+                &self.assertion,
                 &sig.try_into().ok()?,
             ),
             _ => false,

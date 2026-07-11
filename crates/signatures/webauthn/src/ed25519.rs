@@ -19,7 +19,7 @@ mod tests {
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::{RequireUserVerification, Webauthn, WebauthnPayload};
+    use crate::{RequireUserVerification, Webauthn, WebauthnAssertion};
 
     use super::*;
 
@@ -27,7 +27,7 @@ mod tests {
     #[case(
         hex!("e2e9cb7ac57cb46d4da1ce1d1cc2c33bdfe17407c517916b522724a8ea2c6c50"),
         hex!("06f269191431372337a0c606a15822e349bd0d5ec317704f97bef1a4ed6f5e1d"),
-        WebauthnPayload {
+        WebauthnAssertion {
             authenticator_data: hex!("49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d00000000").to_vec(),
             client_data_json: r#"{"type":"webauthn.get","challenge":"BvJpGRQxNyM3oMYGoVgi40m9DV7DF3BPl77xpO1vXh0","origin":"http://localhost:5173","crossOrigin":false}"#.to_string(),
         },
@@ -36,7 +36,7 @@ mod tests {
     fn verify_ok(
         #[case] public_key: impl Into<Ed25519PublicKey>,
         #[case] challenge: impl AsRef<[u8]>,
-        #[case] payload: WebauthnPayload,
+        #[case] payload: WebauthnAssertion,
         #[case] signature: impl Into<Ed25519Signature>,
     ) {
         assert!(
