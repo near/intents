@@ -7,6 +7,7 @@ pub trait Curve: 'static {
     type Signature;
 
     /// Verify the signature over the message for given public key
+    // TODO: docs maybe prehash
     fn verify(public_key: &Self::PublicKey, msg: &[u8], signature: &Self::Signature) -> bool;
 }
 

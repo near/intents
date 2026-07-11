@@ -49,7 +49,6 @@ impl WalletRelayer {
 
     /// Relay signed request with optional attached deposit.
     /// If no additional deposit is needed then pass `NearToken::ZERO`.
-    // TODO: return request hash?
     #[cfg_attr(
         feature = "tracing",
         instrument(skip_all, fields(

@@ -7,7 +7,7 @@ pub struct Ed25519;
 impl Algorithm for Ed25519 {
     type Curve = defuse_crypto::ed25519::Ed25519;
 
-    fn derive(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]> {
+    fn preprocess(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]> {
         // ed25519 does the hashing inside
         msg
     }

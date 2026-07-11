@@ -48,3 +48,5 @@ pub fn checked_base58_decode_array<const N: usize>(
         .then_some(output)
         .ok_or(ParseCurveError::InvalidLength)
 }
+
+// TODO: serde_as JsonSchema <CURVE>:<BASE-58>

@@ -54,8 +54,8 @@ impl<PubKey> State<PubKey> {
     }
 
     /// Set given `subwallet_id` instead of the [default](`DEFAULT_SUBWALLET_ID`) one.
-    /// This can be used to derive multiple wallet-contract from a single
-    /// public key.
+    /// This can be used to derive multiple wallet-contract instances
+    /// from a single public key.
     #[must_use]
     #[inline]
     pub const fn subwallet_id(mut self, subwallet_id: u32) -> Self {
@@ -63,11 +63,15 @@ impl<PubKey> State<PubKey> {
         self
     }
 
-    /// Set given `timeout` instead of default the [default](`DEFAULT_TIMEOUT`) one.
+    /// Set given `timeout` (i.e. maximum validity for each nonce) instead
+    /// of the [default](`DEFAULT_TIMEOUT`) one.
     ///
     /// # Storage usage
     ///
     /// The longer timeout, the more storage usage in highload environments.
+    /// Setting a long timeout might result in locking large amounts of NEAR
+    /// tokens for storage staking for `2 * timeout` time window.
+    ///
     /// **Theoretically**, in order to fit into ZBA limits while sending
     /// 1 tx/sec over the timespan of `2 * timeout`, timeout should be at
     /// most `15m`.

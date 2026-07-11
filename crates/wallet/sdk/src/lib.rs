@@ -23,7 +23,7 @@ use tracing::{Level, instrument, record_all};
 
 pub const MAINNET: &str = "mainnet";
 
-/// Builder for [`WalletSigner`]
+/// Builder for [`Wallet`]
 #[must_use = "`.build()` the signer"]
 #[derive(Debug)]
 pub struct WalletBuilder {
@@ -40,6 +40,7 @@ impl Default for WalletBuilder {
 }
 
 impl WalletBuilder {
+    /// Create a builder with default parameters.
     #[inline]
     pub const fn new() -> Self {
         Self {
@@ -49,24 +50,39 @@ impl WalletBuilder {
         }
     }
 
+    /// Set a custom `subwallet_id` instead of [default](DEFAULT_SUBWALLET_ID) one.
+    /// This can be used to derive multiple wallet-contract instances
+    /// from a single public key.
     #[inline]
     pub const fn subwallet_id(mut self, subwallet_id: u32) -> Self {
         self.subwallet_id = subwallet_id;
         self
     }
 
+    /// Set a custom `timeout` (i.e. maximum validity for each nonce) instead
+    /// of the [default](`DEFAULT_TIMEOUT`) one.
+    ///
+    /// NOTE: the longer the timeout, the more storage usage in highload environments.
+    /// Setting a long timeout might result in locking large amounts of NEAR tokens for
+    /// storage staking for `2 * timeout` time window.
     #[inline]
     pub const fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
         self
     }
 
+    /// Pre-enable extensions with given account ids.
     #[inline]
     pub fn extensions(mut self, account_ids: impl IntoIterator<Item = AccountId>) -> Self {
         self.extensions.extend(account_ids);
         self
     }
 
+    /// Derive and build a [`Wallet`] handle for a wallet instance by signer's public key
+    /// and an id of (globally deployed) wallet contract code.
+    ///
+    /// NOTE: this itself does **not** create an account on NEAR. See
+    /// [`.deterministic_state_init()`](Wallet::deterministic_state_init).
     pub fn build<SS, S>(self, code: impl Into<GlobalContractId>, signer: S) -> Wallet<SS, S>
     where
         SS: SignatureSchema<PublicKey: BorshSerialize>,
@@ -93,7 +109,8 @@ impl WalletBuilder {
     }
 }
 
-// TODO: docs
+/// Signer handle to a wallet contract instance implementing a specific
+/// [`SignatureSchema`].
 #[autoimpl(Debug, Clone where S: trait)]
 pub struct Wallet<SS: SignatureSchema, S: WalletSigner<SS>> {
     account_id: AccountId,
@@ -112,49 +129,67 @@ where
     SS: SignatureSchema,
     S: WalletSigner<SS>,
 {
-    #[inline]
-    pub const fn builder() -> WalletBuilder {
-        WalletBuilder::new()
-    }
-
+    /// Shorthand for [`WalletBuilder::new()`].[`build()`](WalletBuilder::build).
     #[inline]
     pub fn new(code: impl Into<GlobalContractId>, signer: S) -> Self
     where
         SS::PublicKey: BorshSerialize,
     {
-        Self::builder().build(code, signer)
+        WalletBuilder::new().build(code, signer)
     }
 
+    /// Get derived account id for this wallet contract instance.
+    ///
+    /// NOTE: the account on NEAR might **not** exist yet and needs to be
+    /// initialized first. See [`.deterministic_state_init()`](Self::deterministic_state_init)
     #[inline]
     pub const fn account_id(&self) -> &AccountId {
         &self.account_id
     }
 
+    /// Get initialization state for this wallet contract instance.
+    ///
+    /// A first transaction to the wallet's account needs to include
+    /// [`.deterministic_state_init()`](Wallet::deterministic_state_init) action in order
+    /// to initialize the contract before calling methods on it. Relayers should have a
+    /// support for passing (optional) state init along signed requests.
     #[inline]
     pub const fn deterministic_state_init(&self) -> &StateInit {
         &self.state_init
     }
 
+    /// Get `subwallet_id` of this wallet contract instance.
     #[inline]
     pub const fn subwallet_id(&self) -> u32 {
         self.subwallet_id
     }
 
+    /// Get `timeout` (i.e. fixed maximum validity for each nonce) of this wallet contract
+    /// instance.
     #[inline]
     pub const fn timeout(&self) -> Duration {
         self.timeout
     }
 
+    /// Get a reference to the underlying [signer](WalletSigner)
     #[inline]
     pub const fn signer(&self) -> &S {
         &self.signer
     }
 
+    /// Get [signer](Self::signer)'s public key
     #[inline]
     pub fn public_key(&self) -> SS::PublicKey {
         self.signer().public_key()
     }
 
+    /// Wrap given request in a [`RequestMessage`] for given chain id and sign it.
+    ///
+    /// # Chain Id
+    ///
+    /// A single signer can control wallet contract instances with same account id on
+    /// different chains. So, each signed message needs to include id of a chain where
+    /// it's intended to be executed on.
     #[allow(clippy::future_not_send)]
     #[cfg_attr(feature = "tracing", instrument(level = Level::DEBUG, skip_all, fields(
         msg.chain_id,
@@ -214,7 +249,7 @@ where
         Duration::from_mins(1).min(self.timeout() / 5)
     }
 
-    /// Reseed the nonces and invalidate the current block.
+    /// Reseed the [nonces](ConcurrentNonces) and invalidate the current block.
     /// Use it in case of a collision.
     #[inline]
     pub fn reseed_nonces(&self) {

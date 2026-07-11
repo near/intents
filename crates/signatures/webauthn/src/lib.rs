@@ -128,8 +128,7 @@ where
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WebauthnAssertion {
     #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    // TODO: is it ok to have aliased?
-    #[serde(alias = "authenticatorData", alias = "authData")]
+    #[serde(alias = "authenticatorData")]
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
     pub authenticator_data: Vec<u8>,
 
@@ -199,15 +198,28 @@ impl UserVerification for RequireUserVerification {
 pub trait Algorithm {
     type Curve: Curve;
 
-    // TODO: docs
-    fn derive(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]>;
+    /// Optionally, prehash the message (or perform any other manipulations)
+    /// before passing it to [`Self::Curve::verify()`](Curve::verify) in the
+    /// last signature verification step:
+    ///
+    /// > 21. Using credentialRecord.publicKey, verify that sig is a valid
+    /// > signature over the binary concatenation of authData and hash.
+    fn preprocess(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]>;
 
+    /// Last algorithm-specific signature verification step:
+    ///
+    /// > 21. Using credentialRecord.publicKey, verify that sig is a valid
+    /// > signature over the binary concatenation of authData and hash.
+    #[inline]
     fn verify(
         public_key: &<Self::Curve as Curve>::PublicKey,
         msg: impl AsRef<[u8]>,
         signature: &<Self::Curve as Curve>::Signature,
     ) -> bool {
-        let msg = Self::derive(msg);
+        // optionally prehash the message (or perform any other manipulations)
+        let msg = Self::preprocess(msg);
+
+        // verify using `Self::Curve`
         Self::Curve::verify(public_key, msg.as_ref(), signature)
     }
 }
