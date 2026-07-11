@@ -165,3 +165,22 @@ impl RequestMessage {
         hasher.0.finalize().into()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    // https://nearblocks.io/txns/6vytw7NgAiPkJ3KYAyt18es4mDnwZ8knjpB7LHVJejAL
+    #[case(
+        r#"{"nonce":2845491008,"request":{"external":[{"actions":[{"action":"function_call","payload":{"args":"eyJyZXF1ZXN0Ijp7InBheWxvYWRfdjIiOnsiRWNkc2EiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIn0sImRvbWFpbl9pZCI6MCwicGF0aCI6IiJ9fQ==","deposit":"1","function_name":"sign"}}],"receiver_id":"v1.signer"}]},"chain_id":"mainnet","signer_id":"0se5eba21e8f191e1880e453794bc551dfa50a3419","created_at":"2026-07-07T11:13:29Z","timeout_secs":3600}"#,
+        hex!("06f269191431372337a0c606a15822e349bd0d5ec317704f97bef1a4ed6f5e1d"),
+    )]
+    fn json_hash(#[case] json: &str, #[case] hash: [u8; 32]) {
+        let msg: RequestMessage = serde_json::from_str(json).unwrap();
+        assert_eq!(msg.hash(), hash);
+    }
+}

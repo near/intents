@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 defuse-crypto = { workspace = true, features = ["serde"] }
-defuse-wallet = { workspace = true, features = ["borsh", "digest"] }
+defuse-wallet = { workspace = true, features = ["borsh", "digest", "serde"] }
 defuse-webauthn.workspace = true
 
 serde = { workspace = true, features = ["derive"] }

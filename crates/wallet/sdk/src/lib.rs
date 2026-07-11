@@ -179,7 +179,7 @@ where
             msg.nonce,
             %msg.created_at,
             msg.timeout_secs = msg.timeout.as_secs(),
-            msg.hash = bs58::encode(msg.hash()).into_string(),
+            msg.hash = %bs58::encode(msg.hash()).into_string(),
         );
 
         let proof = self.signer.sign_request_msg(&msg).await?;

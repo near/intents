@@ -1936,8 +1936,10 @@ dependencies = [
  "impl-tools 0.12.0",
  "near-account-id",
  "near-sdk",
+ "rstest",
  "schemars 0.8.22",
  "serde",
+ "serde_json",
  "serde_with",
  "thiserror 2.0.18",
 ]

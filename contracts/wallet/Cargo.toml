@@ -93,5 +93,7 @@ defuse-wallet = { path = ".", features = ["abi", "arbitrary", "borsh", "digest",
 
 bs58.workspace = true
 hex-literal.workspace = true
+rstest.workspace = true
+serde_json.workspace = true
 
 near-sdk = { workspace = true, features = ["unit-testing"] }

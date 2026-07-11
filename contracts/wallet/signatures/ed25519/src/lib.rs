@@ -30,7 +30,7 @@ const _: () = {
     use core::convert::Infallible;
 
     use async_trait::async_trait;
-    use defuse_crypto::ed25519::ed25519_dalek::{self, SigningKey};
+    use defuse_crypto::ed25519::ed25519_dalek::{Signer, SigningKey};
     use defuse_wallet_sdk::{Proof, WalletSigner};
 
     #[cfg_attr(not(target_family = "wasm"), async_trait)]
@@ -44,8 +44,9 @@ const _: () = {
         }
 
         async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
-            let signature: Ed25519Signature = ed25519_dalek::Signer::sign(self, &msg.hash()).into();
-            Ok(signature.to_string())
+            let sig = self.sign(&msg.hash());
+
+            Ok(Ed25519Signature::from(sig).to_string())
         }
     }
 };
@@ -66,34 +67,57 @@ const _: () = {
     }
 };
 
-// TODO
-// #[cfg(test)]
-// mod tests {
-//     use std::time::Duration;
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
 
-//     use defuse_wallet::Request;
-//     use hex_literal::hex;
-//     use rstest::rstest;
+    use defuse_wallet::{
+        AccountId, Gas, NearPromise, NearToken, Request, WalletOp, actions::FunctionCall,
+    };
+    use hex_literal::hex;
+    use rstest::rstest;
 
-//     use super::*;
+    use super::*;
 
-//     #[rstest]
-//     #[case(
-//         hex!("e2e9cb7ac57cb46d4da1ce1d1cc2c33bdfe17407c517916b522724a8ea2c6c50"),
-//         RequestMessage {
-//             chain_id: "mainnet".to_string(),
-//             signer_id: "0scdb6cfeed476fc878af9d3246768cbe803714c87".parse().unwrap(),
-//             nonce: todo!(),
-//             created_at: "2026-07-02T14:17:35.756586Z".parse().unwrap(),
-//             timeout: Duration::from_secs(3600),
-//             request: Request::new(),
-//         },
-//         hex!("7cd68c54af557c3d5d7bb6810d90a3efd0eb09e11d13feae3df589d0a54e5629c56dd4e4f6ce48766fccd305135edcbfa1928b0e3131930825c464a68c7d6d0b")
-//     )]
-//     fn verify_ok(#[case] public_key: [u8; 32], #[case] msg: RequestMessage, #[case] proof: &str) {
-//         assert!(
-//             WalletEd25519::verify(Ed25519PublicKey(public_key), &msg, proof),
-//             "signature is invalid"
-//         );
-//     }
-// }
+    #[rstest]
+    // https://nearblocks.io/txns/fpeDPPwee7iYsfLundSCMWmVJektdM9gZYC3sTmYMTU
+    #[case(
+        hex!("8565df94b8caab08f28cdd2ee014b800915741d4694fa840e50cca02ae5c6466"),
+        RequestMessage {
+            chain_id: "mainnet".to_string(),
+            signer_id: "0scdb6cfeed476fc878af9d3246768cbe803714c87".parse().unwrap(),
+            nonce: 2169412064,
+            created_at: "2026-07-02T14:17:35.756586Z".parse().unwrap(),
+            timeout: Duration::from_hours(1),
+            request: Request::new()
+                .internal([
+                    WalletOp::AddExtension {
+                        account_id: "extension.near".parse().unwrap(),
+                    },
+                    WalletOp::RemoveExtension {
+                        account_id: "extension.near".parse().unwrap()
+                    },
+                ])
+                .external([
+                    NearPromise::new("v1.signer".parse::<AccountId>().unwrap())
+                        .function_call(
+                            FunctionCall::name("sign")
+                                .args(hex!("7b2272657175657374223a7b22646f6d61696e5f6964223a302c2270617468223a22222c227061796c6f61645f7632223a7b224563647361223a2230313238666462613032363931383433303639616261373063303532336239633433663462306465346533343936323436326230353235343930373830613533227d7d7d"))
+                                .attach_deposit(NearToken::from_yoctonear(1))
+                                .gas(Gas::from_tgas(30))
+                        )
+                ]),
+        },
+        hex!("e4822e15e5988bf08c80b72f2d1292b7229029f342d42bb9dfe4e230c66c10a6c4a86a47ddc58b1446baedf2f1312294d59638c812082a0124e513d4eb16c40e")
+    )]
+    fn verify_ok(
+        #[case] public_key: impl Into<Ed25519PublicKey>,
+        #[case] msg: RequestMessage,
+        #[case] proof: impl Into<Ed25519Signature>,
+    ) {
+        assert!(
+            WalletEd25519::verify(&public_key.into(), &msg, &proof.into().to_string()),
+            "signature is invalid"
+        );
+    }
+}
