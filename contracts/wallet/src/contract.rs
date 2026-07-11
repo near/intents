@@ -35,44 +35,49 @@ pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 pub trait Wallet {
     /// Execute a signed request message.
     ///
-    /// SHOULD accept ANY attached deposit.
+    /// SHOULD be `#[payable]` and accept ANY attached deposit.
     ///
-    /// MUST fail in case where the `msg.request` was not executed
-    /// due to various reasons, including:
-    ///   * `msg` data is invalid
-    ///   * `proof` is invalid
-    ///   * signature is disabled
-    ///   * nonce is already used
+    /// MUST panic in following cases:
+    /// * [`msg.chain_id`](RequestMessage::chain_id) is from another network
+    /// * [`msg.signer_id`](RequestMessage::signer_id) doesn't match
+    ///   [`env::current_account_id()`](near_sdk::env::current_account_id)
+    /// * [`msg.nonce`](RequestMessage::nonce) is already used, expired or
+    ///   from the future
+    /// * `proof` is [invalid](SignatureSchema::verify) or signature is
+    ///   [currently disabled](WalletOp::SetSignatureMode)
     fn w_execute_signed(&mut self, msg: RequestMessage, proof: String);
 
-    /// Execute request from an enabled extension.
+    /// Execute a request from an [enabled extension](WalletOp::AddExtension).
     ///
-    /// * SHOULD accept ANY **non-zero** attached deposit
-    /// * MUST panic if zero deposit was attached
-    /// * MUST panic if [`predecessor_account_id`](near_sdk::env::predecessor_account_id)
+    /// SHOULD be `#[payable]` and accept ANY **non-zero** attached deposit.
+    ///
+    /// MUST panic in following cases:
+    /// * zero deposit was attached
+    /// * [`env::predecessor_account_id()`](near_sdk::env::predecessor_account_id)
     ///   extension is not enabled
     fn w_execute_extension(&mut self, request: Request);
 
-    /// Returns `subwallet_id`.
+    /// Returns [`subwallet_id`](field@State::subwallet_id).
     fn w_subwallet_id(&self) -> u32;
 
     /// Returns whether authentication by signature is currently allowed.
     fn w_is_signature_allowed(&self) -> bool;
 
-    /// Returns a string representation of the public key or authentication
-    /// identity associated with this wallet's singing standard.
+    /// Returns a string representation of the wallet's public key
+    /// (or other authentication identity).
     fn w_public_key(&self) -> String;
 
-    /// Returns whether extension with given `account_id` is enabled.
-    /// If true, this `account_id` SHOULD be allowed to call
-    /// `w_execute_extension()`.
+    /// Returns whether an extension with given `account_id` is currently
+    /// enabled. If true, this `account_id` SHOULD be allowed to call
+    /// [`w_execute_extension()`](Self::w_execute_extension).
     fn w_is_extension_enabled(&self, account_id: AccountId) -> bool;
 
-    /// Returns a set of enabled extensions. Each returned account
-    /// SHOULD be allowed to call `w_execute_extension()`.
+    /// Returns a set of currently enabled extensions. Each returned account
+    /// id SHOULD be allowed to call [`w_execute_extension()`](Self::w_execute_extension).
     fn w_extensions(&self) -> BTreeSet<AccountId>;
 
-    /// Returns a timeout, i.e. validity timespan for each nonce.
+    /// Returns a timeout (in seconds), i.e. maximum validity timespan for
+    /// each nonce.
     fn w_timeout_secs(&self) -> u32;
 
     /// Returns a timestamp when nonces were last cleaned up.
@@ -114,36 +119,44 @@ impl<S> Wallet for WalletImpl<S>
 where
     S: SignatureSchema<PublicKey: Display>,
 {
+    #[inline]
     fn w_execute_signed(&mut self, msg: RequestMessage, proof: String) {
         self.execute_signed(msg, &proof)
             .unwrap_or_else(|err| err.panic());
     }
 
+    #[inline]
     fn w_execute_extension(&mut self, request: Request) {
         self.execute_extension(request)
             .unwrap_or_else(|err| err.panic());
     }
 
+    #[inline]
     fn w_subwallet_id(&self) -> u32 {
         self.0.subwallet_id
     }
 
+    #[inline]
     fn w_is_signature_allowed(&self) -> bool {
         self.0.is_signature_allowed()
     }
 
+    #[inline]
     fn w_public_key(&self) -> String {
         self.0.public_key.to_string()
     }
 
+    #[inline]
     fn w_is_extension_enabled(&self, account_id: AccountId) -> bool {
         self.0.has_extension(account_id)
     }
 
+    #[inline]
     fn w_extensions(&self) -> BTreeSet<AccountId> {
         self.0.extensions.clone()
     }
 
+    #[inline]
     fn w_timeout_secs(&self) -> u32 {
         self.0
             .nonces
@@ -153,6 +166,7 @@ where
             .unwrap_or_else(|_| unreachable!())
     }
 
+    #[inline]
     fn w_last_cleaned_at(&self) -> Timestamp {
         self.0.nonces.last_cleaned_at()
     }
@@ -381,7 +395,6 @@ mod utils {
 ///     }
 /// }
 /// ```
-// TODO: embed abi docs
 #[macro_export]
 macro_rules! wallet {
     (
@@ -406,6 +419,9 @@ macro_rules! wallet {
 
         #[$crate::near_sdk::near]
         impl $crate::contract::Wallet for $contract {
+            /// Execute a signed request message.
+            ///
+            /// SHOULD be `#[payable]` and accept ANY attached deposit.
             #[payable]
             fn w_execute_signed(
                 &mut self,
@@ -415,35 +431,50 @@ macro_rules! wallet {
                 self.0.w_execute_signed(msg, proof);
             }
 
+            /// Execute a request from an enabled extension.
+            ///
+            /// Requires at least 1yN attached.
             #[payable]
             fn w_execute_extension(&mut self, request: $crate::Request) {
                 self.0.w_execute_extension(request);
             }
 
+            /// Returns `subwallet_id.
             fn w_subwallet_id(&self) -> u32 {
                 self.0.w_subwallet_id()
             }
 
+            /// Returns whether authentication by signature is currently allowed.
             fn w_is_signature_allowed(&self) -> bool {
                 self.0.w_is_signature_allowed()
             }
 
+            /// Returns a string representation of the wallet's public key
+            /// (or other authentication identity).
             fn w_public_key(&self) -> ::std::string::String {
                 self.0.w_public_key()
             }
 
+            /// Returns whether an extension with given `account_id` is
+            /// currently enabled. If true, this `account_id` SHOULD be
+            /// allowed to call `w_execute_extension()`.
             fn w_is_extension_enabled(&self, account_id: $crate::AccountId) -> bool {
                 self.0.w_is_extension_enabled(account_id)
             }
 
+            /// Returns a set of currently enabled extensions. Each returned
+            /// account id SHOULD be allowed to call `w_execute_extension()`.
             fn w_extensions(&self) -> ::std::collections::BTreeSet<$crate::AccountId> {
                 self.0.w_extensions()
             }
 
+            /// Returns a timeout (in seconds), i.e. maximum validity
+            /// timespan for each nonce.
             fn w_timeout_secs(&self) -> u32 {
                 self.0.w_timeout_secs()
             }
 
+            /// Returns a timestamp when nonces were last cleaned up.
             fn w_last_cleaned_at(&self) -> $crate::Timestamp {
                 self.0.w_last_cleaned_at()
             }
