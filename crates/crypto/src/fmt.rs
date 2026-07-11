@@ -20,6 +20,7 @@ pub trait TypedCurve: Curve {
             }
             data
         } else {
+            // TODO: maybe avoid ambiguity?
             s
         };
         checked_base58_decode_array(data)

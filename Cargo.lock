@@ -1758,7 +1758,6 @@ dependencies = [
  "defuse-outlayer-app",
  "defuse-poa-factory",
  "defuse-test-utils",
- "defuse-wallet-client",
  "defuse-wallet-sdk",
  "near-contract-standards",
  "near-kit",
@@ -1944,15 +1943,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-wallet-client"
-version = "0.1.0"
-dependencies = [
- "defuse-wallet",
- "near-kit",
- "serde",
-]
-
-[[package]]
 name = "defuse-wallet-ed25519"
 version = "0.1.0"
 dependencies = [
@@ -1988,8 +1978,6 @@ version = "0.1.0"
 dependencies = [
  "bs58 0.5.1",
  "defuse-digest",
- "defuse-wallet",
- "defuse-wallet-client",
  "defuse-wallet-ed25519",
  "defuse-wallet-relayer",
  "defuse-wallet-sdk",
@@ -2013,9 +2001,13 @@ dependencies = [
  "async-trait",
  "borsh",
  "defuse-wallet",
+ "defuse-wallet-sdk",
+ "derive_more",
  "impl-tools 0.12.0",
  "near-global-contracts",
+ "near-kit",
  "rand 0.10.2",
+ "serde",
 ]
 
 [[package]]

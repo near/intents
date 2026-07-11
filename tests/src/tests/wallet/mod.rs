@@ -1,13 +1,11 @@
 mod no_sign;
 
-use std::borrow::Cow;
-
 use defuse_core::crypto::ed25519::ed25519_dalek;
 use defuse_rand_compat::rand_core_0_6::OsRng;
 use defuse_sandbox::{
     account::Account,
     extensions::wallet::{
-        WExecuteExtensionArgs, WExecuteSignedArgs, Wallet, WalletExt,
+        WalletExt,
         sdk::{
             MAINNET, NearPromise, Request, State, WalletOp, WalletSigner, actions::FunctionCall,
         },
@@ -18,7 +16,10 @@ use defuse_sandbox::{
 };
 use defuse_test_utils::wasms::WALLET_ED25519_WASM;
 use defuse_wallet_ed25519::WalletEd25519;
-use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
+use defuse_wallet_relayer::{
+    WalletRelayRequest, WalletRelayer,
+    wallet::client::{WExecuteExtensionArgs, WExecuteSignedArgs, WalletContract},
+};
 use futures::future::join_all;
 use impl_tools::autoimpl;
 use rstest::{fixture, rstest};
@@ -111,13 +112,13 @@ async fn test_rotate(#[future] env: Env) {
                                         .function_call(
                                             FunctionCall::name("w_execute_extension")
                                                 .attach_deposit(NearToken::from_yoctonear(1))
-                                                .args_json(WExecuteExtensionArgs {
-                                                    request: Cow::Owned(Request::new().internal([
+                                                .args_json(WExecuteExtensionArgs::from(
+                                                    Request::new().internal([
                                                         WalletOp::SetSignatureMode {
                                                             enable: false,
                                                         },
-                                                    ])),
-                                                })
+                                                    ]),
+                                                ))
                                                 .gas(Gas::from_tgas(10)),
                                         )]),
                                         MAINNET,
@@ -125,10 +126,7 @@ async fn test_rotate(#[future] env: Env) {
                                     .await
                                     .unwrap();
 
-                                WExecuteSignedArgs {
-                                    msg: Cow::Owned(msg),
-                                    proof: proof.into(),
-                                }
+                                WExecuteSignedArgs::from((msg, proof))
                             })
                             .gas(Gas::from_tgas(20)),
                     )]),
@@ -151,7 +149,7 @@ async fn test_rotate(#[future] env: Env) {
     );
 
     assert!(
-        !env.contract::<Wallet>(old_wallet.account_id())
+        !env.contract::<WalletContract>(old_wallet.account_id())
             .w_is_signature_allowed()
             .finality(Optimistic)
             .await
@@ -176,9 +174,7 @@ async fn test_rotate(#[future] env: Env) {
             Request::new().external([NearPromise::new(old_wallet.account_id()).function_call(
                 FunctionCall::name("w_execute_extension")
                     .attach_deposit(NearToken::from_yoctonear(1))
-                    .args_json(WExecuteExtensionArgs {
-                        request: Cow::Owned(Request::new()),
-                    })
+                    .args_json(WExecuteExtensionArgs::from(Request::new()))
                     .gas(Gas::from_tgas(10)),
             )]),
             MAINNET,

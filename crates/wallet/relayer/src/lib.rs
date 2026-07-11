@@ -2,11 +2,10 @@ mod request;
 
 pub use self::request::*;
 
-use std::{borrow::Cow, convert::Infallible, time::Duration};
+use std::{convert::Infallible, time::Duration};
 
-pub use defuse_wallet as wallet;
-use defuse_wallet::{RequestMessage, Timestamp};
-use defuse_wallet_client::{WExecuteSignedArgs, Wallet};
+pub use defuse_wallet_sdk as wallet;
+use defuse_wallet_sdk::{RequestMessage, Timestamp, client::WalletContract};
 pub use near_kit;
 use near_kit::{ExecutedOptimistic, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken};
 use thiserror::Error as ThisError;
@@ -95,18 +94,15 @@ impl WalletRelayer {
         };
 
         tx = tx.add_action(
-            Wallet::w_execute_signed(WExecuteSignedArgs {
-                msg: Cow::Borrowed(&request.msg),
-                proof: Cow::Borrowed(&request.proof),
-            })
-            .deposit(
-                needs_deposit
-                    // assist with deposit, but capped so the relayer will not get drained
-                    .min(Self::MAX_ASSIST_DEPOSIT)
-                    // attach optional given deposit, too
-                    .saturating_add(deposit),
-            )
-            .gas(self.tx_gas(&request.msg, request.gas, max_gas)?),
+            WalletContract::w_execute_signed((&request.msg, &request.proof).into())
+                .deposit(
+                    needs_deposit
+                        // assist with deposit, but capped so the relayer will not get drained
+                        .min(Self::MAX_ASSIST_DEPOSIT)
+                        // attach optional given deposit, too
+                        .saturating_add(deposit),
+                )
+                .gas(self.tx_gas(&request.msg, request.gas, max_gas)?),
         );
 
         tokio::time::timeout(

@@ -1,11 +1,12 @@
 use std::{borrow::Cow, collections::BTreeSet};
 
 use defuse_wallet::{Request, RequestMessage, Timestamp};
+use derive_more::From;
 use near_kit::{AccountId, AccountIdRef};
 use serde::Serialize;
 
 #[near_kit::contract]
-pub trait Wallet {
+pub trait WalletContract {
     #[call]
     fn w_execute_signed(&mut self, args: WExecuteSignedArgs<'_>);
 
@@ -31,6 +32,32 @@ pub trait Wallet {
 pub struct WExecuteSignedArgs<'a> {
     pub msg: Cow<'a, RequestMessage>,
     pub proof: Cow<'a, str>,
+}
+
+impl<'a, P> From<(RequestMessage, P)> for WExecuteSignedArgs<'a>
+where
+    P: Into<Cow<'a, str>>,
+{
+    #[inline]
+    fn from((msg, proof): (RequestMessage, P)) -> Self {
+        Self {
+            msg: Cow::Owned(msg),
+            proof: proof.into(),
+        }
+    }
+}
+
+impl<'a, P> From<(&'a RequestMessage, P)> for WExecuteSignedArgs<'a>
+where
+    P: Into<Cow<'a, str>>,
+{
+    #[inline]
+    fn from((msg, proof): (&'a RequestMessage, P)) -> Self {
+        Self {
+            msg: Cow::Borrowed(msg),
+            proof: proof.into(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -63,32 +90,8 @@ impl From<Request> for WExecuteExtensionArgs<'_> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, From)]
+#[from(forward)]
 pub struct WIsExtensionEnabledArgs<'a> {
     pub account_id: Cow<'a, AccountIdRef>,
-}
-
-impl<'a> From<&'a AccountIdRef> for WIsExtensionEnabledArgs<'a> {
-    #[inline]
-    fn from(account_id: &'a AccountIdRef) -> Self {
-        Self {
-            account_id: Cow::Borrowed(account_id),
-        }
-    }
-}
-
-impl<'a> From<Cow<'a, AccountIdRef>> for WIsExtensionEnabledArgs<'a> {
-    #[inline]
-    fn from(account_id: Cow<'a, AccountIdRef>) -> Self {
-        Self { account_id }
-    }
-}
-
-impl From<AccountId> for WIsExtensionEnabledArgs<'_> {
-    #[inline]
-    fn from(account_id: AccountId) -> Self {
-        Self {
-            account_id: Cow::Owned(account_id),
-        }
-    }
 }

@@ -1,3 +1,5 @@
+#[cfg(feature = "near-kit")]
+pub mod client;
 mod nonces;
 mod signer;
 
@@ -89,6 +91,7 @@ impl WalletBuilder {
     }
 }
 
+// TODO: docs
 #[autoimpl(Debug, Clone where S: trait)]
 pub struct WalletSigner<SS: SignatureSchema, S: Signer<SS>> {
     account_id: AccountId,

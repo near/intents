@@ -16,5 +16,14 @@ impl-tools.workspace = true
 near-global-contracts = { workspace = true, features = ["borsh"] }
 rand.workspace = true
 
+derive_more = { workspace = true, features = ["from"], optional = true }
+near-kit = { workspace = true, default-features = false, optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+
 [features]
 json = ["defuse-wallet/json"]
+near-kit = ["dep:derive_more", "dep:near-kit", "derive_more/from", "serde"]
+serde = ["defuse-wallet/serde", "dep:serde", "near-global-contracts/serde"]
+
+[dev-dependencies]
+defuse-wallet-sdk = { path = ".", features = ["json", "near-kit", "serde"] }

@@ -1,4 +1,4 @@
-use defuse_wallet::RequestMessage;
+use defuse_wallet_sdk::RequestMessage;
 use near_kit::{Gas, StateInit};
 use serde::{Deserialize, Serialize};
 
