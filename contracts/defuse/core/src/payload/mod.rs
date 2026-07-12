@@ -18,10 +18,10 @@ use crate::{Nonce, Timestamp};
 
 // TODO: add version
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize)]
 #[autoimpl(Deref using self.message)]
 #[autoimpl(DerefMut using self.message)]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefusePayload<T> {
     pub signer_id: AccountId,
     pub verifying_contract: AccountId,
