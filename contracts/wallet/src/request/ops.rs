@@ -14,7 +14,7 @@ use near_account_id::AccountId;
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema)),
     borsh(use_discriminant = true)
 )]
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum WalletOp {
     /// Enable or disable authentication by signature.

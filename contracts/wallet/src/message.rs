@@ -38,7 +38,7 @@ pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RequestMessage {
     /// Chain id (e.g. `mainnet`).
     /// MUST be equal to `chain_id` of the network.

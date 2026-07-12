@@ -21,7 +21,7 @@ use self::actions::{DeterministicStateInit, FunctionCall, NearAction, Transfer};
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 /// A single outgoing promise
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NearPromise {
     /// Receiver of the receipt to be created.
     ///

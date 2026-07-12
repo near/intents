@@ -21,7 +21,7 @@ pub use defuse_near_promise::*;
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct Request {
     /// (optional) Ordered list of internal operations to apply.
     #[cfg_attr(

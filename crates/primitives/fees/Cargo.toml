@@ -14,7 +14,6 @@ serde = ["dep:serde"]
 
 [dependencies]
 defuse-num-utils.workspace = true
-
 thiserror.workspace = true
 
 borsh = { workspace = true, features = ["derive"], optional = true }

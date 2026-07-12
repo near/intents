@@ -7,15 +7,8 @@ version.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
-[features]
-borsh = ["dep:borsh"]
-serde = ["dep:serde_with"]
-abi = ["borsh?/unstable__schema", "dep:schemars"]
-arbitrary = ["dep:arbitrary"]
-
 [dependencies]
 defuse-num-utils.workspace = true
-
 thiserror.workspace = true
 
 arbitrary = { workspace = true, optional = true }
@@ -23,6 +16,11 @@ borsh = { workspace = true, features = ["derive"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
 
+[features]
+abi = ["borsh?/unstable__schema", "dep:schemars"]
+arbitrary = ["dep:arbitrary"]
+borsh = ["dep:borsh"]
+serde = ["dep:serde_with"]
 
 [dev-dependencies]
 rstest.workspace = true

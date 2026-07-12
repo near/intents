@@ -17,7 +17,7 @@ use near_token::NearToken;
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DeterministicStateInit {
     pub state_init: StateInit,
 

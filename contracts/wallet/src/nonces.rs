@@ -25,7 +25,7 @@ pub const DEFAULT_TIMEOUT: Duration = Duration::from_hours(1);
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Nonces {
     /// Fixed timeout, i.e. maximum validity timespan for each nonce.
     #[cfg_attr(

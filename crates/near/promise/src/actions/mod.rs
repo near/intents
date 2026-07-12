@@ -26,7 +26,7 @@ use derive_more::From;
     borsh(use_discriminant = true)
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, From)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, From)]
 #[non_exhaustive]
 #[repr(u8)] // matches nearcore `Action` just in case
 pub enum NearAction {
