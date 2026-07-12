@@ -52,6 +52,7 @@ borsh = [
 ]
 borsh-schema = [
   "borsh",
+  "borsh/unstable__schema",
   "defuse-bitmap/borsh-schema",
   "defuse-borsh-utils?/schema",
   "defuse-near-promise/borsh-schema",

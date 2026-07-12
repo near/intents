@@ -33,7 +33,7 @@ parsing = ["std", "time/parsing"]
 arbitrary = ["dep:arbitrary", "dep:arbitrary_with"]
 abi = ["borsh-schema", "schemars-v0_8"]
 borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
-borsh-schema = ["borsh", "defuse-borsh-utils?/schema"]
+borsh-schema = ["borsh", "borsh/unstable__schema", "defuse-borsh-utils?/schema"]
 serde = ["dep:serde", "dep:serde_with", "formatting", "parsing"]
 schemars-v0_8 = [
   "dep:schemars",

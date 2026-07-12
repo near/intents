@@ -30,6 +30,7 @@ impl TonConnect {
     }
 }
 
+/// [TON Connect](https://docs.tonconsole.com/academy/sign-data) signable payload.
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -38,7 +39,6 @@ impl TonConnect {
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-/// [TON Connect](https://docs.tonconsole.com/academy/sign-data) signable payload.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TonConnectPayload {
     /// Wallet address in either [Raw](https://docs.ton.org/v3/documentation/smart-contracts/addresses/address-formats#raw-address) representation
@@ -107,6 +107,9 @@ impl TonConnectPayload {
     }
 }
 
+/// [`TonConnectPayload`](TonConnectPayload) schema.
+///
+/// See <https://docs.tonconsole.com/academy/sign-data#choosing-the-right-format>
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -116,9 +119,6 @@ impl TonConnectPayload {
     serde(tag = "type", rename_all = "snake_case")
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-/// [`TonConnectPayload`](TonConnectPayload) schema.
-///
-/// See <https://docs.tonconsole.com/academy/sign-data#choosing-the-right-format>
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TonConnectPayloadSchema {
     /// Text payload. Use this when the data is human-readable.

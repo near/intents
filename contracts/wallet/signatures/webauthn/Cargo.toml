@@ -41,7 +41,7 @@ arbitrary = [
 borsh = ["defuse-crypto/borsh", "defuse-webauthn/borsh", "dep:borsh"]
 borsh-schema = [
   "borsh",
-  "borsh?/unstable__schema",
+  "borsh/unstable__schema",
   "defuse-crypto/borsh-schema",
   "defuse-webauthn/borsh-schema",
 ]

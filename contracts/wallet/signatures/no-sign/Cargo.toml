@@ -25,11 +25,7 @@ serde = { workspace = true, features = ["derive"], optional = true }
 abi = ["borsh-schema", "defuse-wallet/abi", "near-sdk?/abi", "schemars-v0_8"]
 arbitrary = ["defuse-wallet/arbitrary", "dep:arbitrary"]
 borsh = ["defuse-wallet/borsh", "dep:borsh"]
-borsh-schema = [
-  "borsh",
-  "borsh?/unstable__schema",
-  "defuse-wallet/borsh-schema",
-]
+borsh-schema = ["borsh", "borsh/unstable__schema", "defuse-wallet/borsh-schema"]
 serde = ["defuse-wallet/serde", "dep:serde"]
 schemars-v0_8 = ["defuse-wallet/schemars-v0_8", "dep:schemars", "serde"]
 

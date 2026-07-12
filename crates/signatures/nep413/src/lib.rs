@@ -54,6 +54,7 @@ impl SignedMessageNep for Nep413 {
     const NEP_NUMBER: u32 = 413;
 }
 
+/// [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md) payload
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -63,9 +64,8 @@ impl SignedMessageNep for Nep413 {
     serde(rename_all = "camelCase")
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 #[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
-/// [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md) payload
+#[derive(Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 pub struct Nep413Payload {
     pub message: String,
 

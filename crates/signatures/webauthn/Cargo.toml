@@ -26,7 +26,7 @@ p256 = ["defuse-crypto/p256"]
 abi = ["borsh-schema", "schemars-v0_8"]
 arbitrary = ["defuse-crypto/arbitrary", "dep:arbitrary"]
 borsh = ["defuse-crypto/borsh", "dep:borsh"]
-borsh-schema = ["borsh", "defuse-crypto/borsh-schema"]
+borsh-schema = ["borsh", "borsh/unstable__schema", "defuse-crypto/borsh-schema"]
 schemars-v0_8 = [
   "defuse-crypto/schemars-v0_8",
   "dep:schemars",
