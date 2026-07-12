@@ -16,7 +16,7 @@ use thiserror::Error as ThisError;
 
 #[must_use]
 #[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DepositMessage {
     pub receiver_id: AccountId,
 

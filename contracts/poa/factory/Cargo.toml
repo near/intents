@@ -43,7 +43,7 @@ rstest.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
 [features]
-abi = ["dep:schemars"]
+abi = ["defuse-near-utils/abi", "dep:schemars"]
 
 contract = []
 

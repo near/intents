@@ -150,9 +150,8 @@ impl ExecutableIntent for Intent {
 /// function call or after intent execution
 #[must_use = "make sure to `.emit()` this event"]
 #[serde_as]
-#[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaybeIntentEvent<T> {
     #[serde_as(as = "Option<Base58>")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
