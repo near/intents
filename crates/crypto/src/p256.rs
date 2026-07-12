@@ -43,8 +43,6 @@ impl Curve for P256 {
 /// Uncompressed P256 public key **without** leading SEC-1 tag byte.
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
     cfg_attr(
         feature = "schemars-v0_8",
@@ -160,8 +158,6 @@ impl TryFrom<&P256UncompressedPublicKey> for VerifyingKey {
 /// Compressed P256 public key, i.e. `x` coordinate **with** leading SEC-1 tag byte.
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
     cfg_attr(
         feature = "schemars-v0_8",
@@ -262,8 +258,6 @@ impl From<&P256UncompressedPublicKey> for P256CompressedPublicKey {
 /// P256 signature
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
     cfg_attr(
         feature = "schemars-v0_8",

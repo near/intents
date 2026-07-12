@@ -13,7 +13,6 @@ derive_more = { workspace = true, features = ["as_ref", "from", "into"] }
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
 bs58 = { workspace = true, optional = true }
-cfg_eval = { workspace = true, optional = true }
 ed25519-dalek = { workspace = true, optional = true }
 hex-literal = { workspace = true, optional = true }
 k256 = { workspace = true, features = ["ecdsa"], optional = true }
@@ -35,7 +34,7 @@ arbitrary = ["dep:arbitrary"]
 borsh = ["dep:borsh"]
 borsh-schema = ["borsh", "borsh/unstable__schema"]
 fmt = ["dep:bs58", "dep:thiserror"]
-serde = ["dep:cfg_eval", "dep:serde_with", "fmt"]
+serde = ["dep:serde_with", "fmt"]
 schemars-v0_8 = [
   "dep:hex-literal",
   "dep:schemars",

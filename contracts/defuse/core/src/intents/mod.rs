@@ -26,9 +26,8 @@ use self::{
     tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
 };
 
-#[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefuseIntents {
     /// Sequence of intents to execute in given order. Empty list is also
     /// a valid sequence, i.e. it doesn't do anything, but still invalidates

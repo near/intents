@@ -21,7 +21,7 @@ pub type NoncePrefix = U248;
 /// See [permit2 nonce schema](https://docs.uniswap.org/contracts/permit2/reference/signature-transfer#nonce-schema)
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
-#[derive(BorshSerialize, BorshDeserialize, Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, BorshSerialize, BorshDeserialize)]
 pub struct Nonces<T: Map<K = U248, V = U256>>(BitMap256<T>);
 
 impl<T> Nonces<T>

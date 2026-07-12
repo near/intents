@@ -17,12 +17,12 @@ use crate::{DefuseError, Result};
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
 #[derive(
+    Clone,
+    Copy,
     PartialEq,
+    Eq,
     PartialOrd,
     Ord,
-    Eq,
-    Copy,
-    Clone,
     SerializeDisplay,
     DeserializeFromStr,
     BorshSerialize,

@@ -102,8 +102,6 @@ impl RecoverableCurve for Secp256k1 {
 /// Uncompressed Secp256k1 public key **without** leading SEC-1 tag byte.
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
     cfg_attr(
         feature = "schemars-v0_8",
@@ -189,8 +187,6 @@ impl TryFrom<&Secp256k1UncompressedPublicKey> for VerifyingKey {
 /// additional recovery byte
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
     cfg_attr(
         feature = "schemars-v0_8",

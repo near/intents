@@ -41,8 +41,6 @@ impl Curve for Ed25519 {
 /// Ed25519 public key
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
     cfg_attr(
         feature = "schemars-v0_8",
@@ -121,8 +119,6 @@ impl TryFrom<&Ed25519PublicKey> for VerifyingKey {
 /// Ed25519 signature
 #[cfg_attr(
     feature = "serde",
-    ::cfg_eval::cfg_eval,
-    ::serde_with::serde_as,
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
     cfg_attr(
         feature = "schemars-v0_8",

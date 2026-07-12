@@ -1423,7 +1423,6 @@ dependencies = [
  "arbitrary",
  "borsh",
  "bs58 0.5.1",
- "cfg_eval",
  "defuse-crypto",
  "derive_more",
  "ed25519-dalek",
