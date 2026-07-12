@@ -35,9 +35,13 @@ pub trait DeriveSigner<C: Curve, P> {
     /// Sign given message with a secret key **internally** derived
     /// for given `path` according to [`schema`](DeriveSigner::schema).
     ///
-    /// **NOTE**: the returned signatures MIGHT be non-deterministic, i.e.
-    /// implementations MAY return different signatures for the same
-    /// `path` and `msg`.
+    /// **NOTE**:
+    /// * Implementations MAY require `msg` to be prehash (i.e. output
+    ///   of cryptographic hash function) of a fixed length and fail
+    ///   otherwise. Check corresponding docs before using.
+    /// * The returned signatures MIGHT be non-deterministic, i.e.
+    ///   implementations MAY return different signatures for the same
+    ///   `path` and `msg`.
     fn derive_sign(&self, path: P, msg: &[u8]) -> C::Signature;
 
     /// Helper method to [derive](Schema::derive_path) public key for given
@@ -56,9 +60,13 @@ pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
     /// [`schema`](DeriveSigner::schema) and return [signature](Curve::Signature)
     /// along with [recovery id](RecoverableCurve::RecoveryId).
     ///
-    /// **NOTE**: the returned signatures MIGHT be non-deterministic, i.e.
-    /// implementations MAY return different signatures for the same
-    /// `path` and `msg`.
+    /// **NOTE**:
+    /// * Implementations MAY require `msg` to be prehash (i.e. output
+    ///   of cryptographic hash function) of a fixed length and fail
+    ///   otherwise. Check corresponding docs before using.
+    /// * The returned signatures MIGHT be non-deterministic, i.e.
+    ///   implementations MAY return different signatures for the same
+    ///   `path` and `msg`.
     fn derive_sign_recoverable(&self, path: P, msg: &[u8]) -> (C::Signature, C::RecoveryId);
 }
 

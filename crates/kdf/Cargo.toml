@@ -23,7 +23,7 @@ k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"], optional =
 ed25519 = ["defuse-crypto/ed25519", "dep:curve25519-dalek", "dep:ed25519-dalek"]
 secp256k1 = ["defuse-crypto/secp256k1", "dep:k256"]
 
-borsh = ["dep:borsh"]
+borsh = ["defuse-crypto/borsh", "dep:borsh"]
 digest = ["dep:digest", "dep:digest-io"]
 hex = ["dep:hex"]
 testing = []

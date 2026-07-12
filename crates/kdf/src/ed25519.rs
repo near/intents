@@ -59,8 +59,8 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
         let esk = ExpandedSecretKey::from(self.as_bytes());
 
         debug_assert_eq!(
-            DeriveSigner::<Ed25519, Scalar>::schema(&esk).public_key(),
-            DeriveSigner::<Ed25519, Scalar>::schema(self).public_key(),
+            esk.schema().public_key(),
+            self.schema().public_key(),
             "master public key mismatch",
         );
 
@@ -111,7 +111,7 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
 
         debug_assert_eq!(
             derived_verifying_key,
-            DeriveSigner::<Ed25519, Scalar>::derive_public_key(self, tweak),
+            self.derive_public_key(tweak),
             "derived public key mismatch",
         );
 
