@@ -40,6 +40,7 @@ impl Curve for P256 {
     }
 }
 
+/// Uncompressed P256 public key **without** leading SEC-1 tag byte.
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -57,7 +58,6 @@ impl Curve for P256 {
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-/// Uncompressed P256 public key **without** leading SEC-1 tag byte.
 #[derive(
     Debug,
     Clone,
@@ -157,6 +157,7 @@ impl TryFrom<&P256UncompressedPublicKey> for VerifyingKey {
     }
 }
 
+/// Compressed P256 public key, i.e. `x` coordinate **with** leading SEC-1 tag byte.
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -174,7 +175,6 @@ impl TryFrom<&P256UncompressedPublicKey> for VerifyingKey {
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-/// Compressed P256 public key, i.e. `x` coordinate **with** leading SEC-1 tag byte.
 #[derive(
     Debug,
     Clone,
@@ -259,6 +259,7 @@ impl From<&P256UncompressedPublicKey> for P256CompressedPublicKey {
     }
 }
 
+/// P256 signature
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -276,7 +277,6 @@ impl From<&P256UncompressedPublicKey> for P256CompressedPublicKey {
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-/// P256 signature
 #[derive(
     Debug,
     Clone,

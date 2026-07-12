@@ -99,6 +99,7 @@ impl RecoverableCurve for Secp256k1 {
     }
 }
 
+/// Uncompressed Secp256k1 public key **without** leading SEC-1 tag byte.
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -116,7 +117,6 @@ impl RecoverableCurve for Secp256k1 {
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-/// Uncompressed Secp256k1 public key **without** leading SEC-1 tag byte.
 #[derive(
     Debug,
     Clone,
@@ -185,6 +185,8 @@ impl TryFrom<&Secp256k1UncompressedPublicKey> for VerifyingKey {
     }
 }
 
+/// Recoverable 65-byte secp256k1 signature, i.e. 64-byte signature with
+/// additional recovery byte
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -202,8 +204,6 @@ impl TryFrom<&Secp256k1UncompressedPublicKey> for VerifyingKey {
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-/// Recoverable secp256k1 signature, i.e. 64-byte signature with additional
-/// recovery byte
 #[derive(
     Debug,
     Clone,

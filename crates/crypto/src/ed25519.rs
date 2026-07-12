@@ -38,6 +38,7 @@ impl Curve for Ed25519 {
     }
 }
 
+/// Ed25519 public key
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -55,7 +56,6 @@ impl Curve for Ed25519 {
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-/// Ed25519 public key
 #[derive(
     Debug,
     Clone,
