@@ -18,6 +18,7 @@ hex-literal = { workspace = true, optional = true }
 k256 = { workspace = true, features = ["ecdsa"], optional = true }
 p256 = { workspace = true, features = ["ecdsa"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
+schnorrkel = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true }
 thiserror = { workspace = true, optional = true }
 
@@ -28,6 +29,7 @@ near-sdk = { workspace = true, optional = true }
 ed25519 = ["dep:ed25519-dalek", "dep:near-sdk"]
 p256 = ["dep:near-sdk", "dep:p256"]
 secp256k1 = ["dep:k256", "dep:near-sdk", "near-sdk/unstable"]
+sr25519 = ["dep:schnorrkel"]
 
 abi = ["borsh-schema", "schemars-v0_8"]
 arbitrary = ["dep:arbitrary"]
@@ -43,7 +45,7 @@ schemars-v0_8 = [
 ]
 
 [dev-dependencies]
-defuse-crypto = { path = ".", features = ["ed25519", "p256", "secp256k1", "abi"] }
+defuse-crypto = { path = ".", features = ["ed25519", "p256", "secp256k1", "sr25519", "abi"] }
 
 hex-literal.workspace = true
 rstest.workspace = true

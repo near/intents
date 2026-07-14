@@ -70,6 +70,7 @@ CONTRACT_CRATES := \
     defuse-poa-token \
     defuse-wallet-ed25519 \
     defuse-wallet-no-sign \
+    defuse-wallet-sr25519 \
     defuse-wallet-webauthn-ed25519 \
     defuse-wallet-webauthn-p256 \
     defuse-treasury-logger \

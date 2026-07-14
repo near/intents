@@ -7,5 +7,7 @@ pub mod fmt;
 pub mod p256;
 #[cfg(feature = "secp256k1")]
 pub mod secp256k1;
+#[cfg(feature = "sr25519")]
+pub mod sr25519;
 
 pub use self::curve::*;
