@@ -100,7 +100,7 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
             // lead to leaking the root private key.
             hash_prefix: {
                 // TODO: remove outlayer prefix?
-                const DOMAIN_SEPARATOR: &[u8] = b"outlayer/ed25519/derive-hash_prefix/v1";
+                const DOMAIN_SEPARATOR: &[u8] = b"ed25519/derive-hash_prefix/v1";
 
                 thread_local! {
                     // per-thread lazily-initialized hasher with pre-processed domain separator
