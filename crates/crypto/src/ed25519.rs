@@ -42,12 +42,10 @@ impl Curve for Ed25519 {
 const _: () = {
     use core::convert::Infallible;
 
-    use async_trait::async_trait;
     use ed25519_dalek::SigningKey;
 
     use crate::Signer;
 
-    #[async_trait]
     impl Signer<Ed25519> for SigningKey {
         type Error = Infallible;
 

@@ -101,12 +101,10 @@ impl RecoverableCurve for Secp256k1 {
 
 #[cfg(feature = "signing")]
 const _: () = {
-    use async_trait::async_trait;
     use k256::ecdsa::{Error, SigningKey};
 
     use crate::{RecoverableSigner, Signer};
 
-    #[async_trait]
     impl Signer<Secp256k1> for SigningKey {
         type Error = Error;
 
@@ -129,7 +127,6 @@ const _: () = {
         }
     }
 
-    #[async_trait]
     impl RecoverableSigner<Secp256k1> for SigningKey {
         /// Sign **32-byte prehash** (i.e. output of cryptographic hash
         /// function) and return a signature along with recovery id.

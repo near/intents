@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use defuse_crypto::{
     Signer,
     ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
@@ -10,7 +9,6 @@ use crate::WalletEd25519;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::From, derive_more::AsRef)]
 pub struct WalletEd25519Signer<S>(pub S);
 
-#[async_trait]
 impl<S> WalletSigner<WalletEd25519> for WalletEd25519Signer<S>
 where
     S: Signer<Ed25519>,

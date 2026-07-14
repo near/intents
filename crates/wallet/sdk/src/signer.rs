@@ -1,6 +1,5 @@
 use std::{fmt::Debug, sync::Arc};
 
-use async_trait::async_trait;
 use defuse_wallet::{RequestMessage, SignatureSchema};
 use impl_tools::autoimpl;
 
@@ -9,9 +8,9 @@ pub type Proof = String;
 
 /// A signer that can sign [`RequestMessage`] according to specific
 /// [`SignatureSchema`].
-#[async_trait]
+#[trait_variant::make(Send)]
 #[autoimpl(for<T: ?Sized + trait> &T, &mut T, Box<T>, Arc<T>)]
-pub trait WalletSigner<S: SignatureSchema>: Send + Sync {
+pub trait WalletSigner<S: SignatureSchema>: Sync {
     /// Signature error
     type Error: Debug;
 

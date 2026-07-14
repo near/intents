@@ -191,7 +191,6 @@ where
     /// A single signer can control wallet contract instances with same account id on
     /// different chains. So, each signed message needs to include id of a chain where
     /// it's intended to be executed on.
-    // #[allow(clippy::future_not_send)]
     #[allow(clippy::future_not_send)]
     #[cfg_attr(feature = "tracing", instrument(level = Level::DEBUG, skip_all, fields(
         msg.chain_id,

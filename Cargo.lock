@@ -1469,7 +1469,6 @@ name = "defuse-crypto"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
- "async-trait",
  "borsh",
  "bs58 0.5.1",
  "defuse-crypto",
@@ -1486,6 +1485,7 @@ dependencies = [
  "serde_with",
  "thiserror 2.0.18",
  "tokio",
+ "trait-variant",
 ]
 
 [[package]]
@@ -1608,7 +1608,6 @@ version = "0.1.0"
 name = "defuse-kdf"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "borsh",
  "curve25519-dalek 5.0.0",
  "defuse-crypto",
@@ -1624,6 +1623,7 @@ dependencies = [
  "near-sdk",
  "rstest",
  "tokio",
+ "trait-variant",
 ]
 
 [[package]]
@@ -2000,7 +2000,6 @@ dependencies = [
 name = "defuse-wallet-ed25519"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "defuse-crypto",
  "defuse-wallet",
  "defuse-wallet-ed25519",
@@ -2053,7 +2052,6 @@ dependencies = [
 name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "borsh",
  "bs58 0.5.1",
  "defuse-wallet",
@@ -2065,6 +2063,7 @@ dependencies = [
  "rand 0.10.2",
  "serde",
  "tracing",
+ "trait-variant",
 ]
 
 [[package]]
@@ -6749,6 +6748,17 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "trait-variant"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70977707304198400eb4835a78f6a9f928bf41bba420deb8fdb175cd965d77a7"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.118",
 ]
 
 [[package]]

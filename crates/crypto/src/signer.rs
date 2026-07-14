@@ -1,15 +1,14 @@
 use core::fmt::Debug;
 use std::sync::Arc;
 
-use async_trait::async_trait;
 use impl_tools::autoimpl;
 
 use crate::{Curve, RecoverableCurve};
 
 /// A signer capable of producing signatures for a specific [`Curve`].
-#[async_trait]
+#[trait_variant::make(Send)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
-pub trait Signer<C: Curve>: Send + Sync {
+pub trait Signer<C: Curve>: Sync {
     /// An error that can occur during [signing](Self::sign).
     type Error: Debug;
 
@@ -26,7 +25,7 @@ pub trait Signer<C: Curve>: Send + Sync {
 
 /// A [`Signer`] that can produce [recoverable](RecoverableCurve::recover)
 /// signatures.
-#[async_trait]
+#[trait_variant::make(Send)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
 pub trait RecoverableSigner<C: RecoverableCurve>: Signer<C> {
     /// Sign a given message and return a signature along with recovery id.

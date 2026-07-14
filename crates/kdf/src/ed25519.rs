@@ -1,6 +1,5 @@
 use core::convert::Infallible;
 
-use async_trait::async_trait;
 pub use curve25519_dalek;
 use curve25519_dalek::{EdwardsPoint, Scalar};
 use defuse_crypto::ed25519::Ed25519;
@@ -50,7 +49,6 @@ impl Schema<[u8; 64]> for ReduceScalar<Ed25519> {
     }
 }
 
-#[async_trait]
 impl DeriveSigner<Ed25519, Scalar> for SigningKey {
     type Error = Infallible;
 
@@ -78,7 +76,6 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
     }
 }
 
-#[async_trait]
 impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
     type Error = Infallible;
 

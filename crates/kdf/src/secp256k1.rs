@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use defuse_crypto::{RecoverableCurve, secp256k1::Secp256k1};
 use k256::{
     FieldBytes, NonZeroScalar, ProjectivePoint, WideBytes,
@@ -32,7 +31,6 @@ impl CurveArithmetic for Secp256k1 {
     }
 }
 
-#[async_trait]
 impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     // TODO: maybe different error?
     type Error = ecdsa::Error;
@@ -58,7 +56,6 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     }
 }
 
-#[async_trait]
 impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     // TODO: docs prehash
     async fn derive_sign_recoverable(

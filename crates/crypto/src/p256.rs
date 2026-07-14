@@ -42,12 +42,10 @@ impl Curve for P256 {
 
 #[cfg(feature = "signing")]
 const _: () = {
-    use async_trait::async_trait;
     use p256::ecdsa::{Error, SigningKey};
 
     use crate::Signer;
 
-    #[async_trait]
     impl Signer<P256> for SigningKey {
         // TODO: maybe our custom error?
         type Error = Error;
