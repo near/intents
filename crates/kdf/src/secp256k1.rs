@@ -45,18 +45,25 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
         Additive::new(*self.verifying_key())
     }
 
-    fn derive_sign(&self, tweak: NonZeroScalar, prehash: &[u8]) -> Result<Signature, Self::Error> {
-        self.derive_sign_recoverable(tweak, prehash).map(|s| s.0)
+    async fn derive_sign(
+        &self,
+        tweak: NonZeroScalar,
+        prehash: &[u8],
+    ) -> Result<Signature, Self::Error> {
+        self.derive_sign_recoverable(tweak, prehash)
+            .await
+            .map(|s| s.0)
     }
 }
 
 impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     // TODO: docs prehash
-    fn derive_sign_recoverable(
+    async fn derive_sign_recoverable(
         &self,
         tweak: NonZeroScalar,
         prehash: &[u8],
     ) -> Result<(Signature, RecoveryId), Self::Error> {
+        // TODO: are we sure?
         // check prehash length
         let prehash: &[u8; 32] = prehash.try_into().map_err(|_| ecdsa::Error::new())?;
 
@@ -118,7 +125,8 @@ mod tests {
     use super::*;
 
     #[rstest]
-    fn roundtrip(
+    #[tokio::test]
+    async fn roundtrip(
         #[values(
             hex!("bd635d1f79748034dcb9654b5915b1ca94dfd66f6b78c2067f78110a0106af10"),
         )]
@@ -139,7 +147,8 @@ mod tests {
                 .derive(ReduceScalar::<Secp256k1>::new()),
             tweak,
             &prehash,
-        );
+        )
+        .await;
     }
 
     #[rstest]
@@ -148,7 +157,8 @@ mod tests {
         hex!("108a8530b779de5245e65e92c3590bc8e87034afa8774e8c7365be3732f4b19e"),
         hex!("ff0a1347d1aa363e71c1c33c06e10050d3278b0f308b190bdf22bcfce9821344f596012c92bc2adba6f3fa4f98874d70bb2eb1a1bc0441674c14f77ae4c8d214"),
     )]
-    fn derived_pk_has_not_changed(
+    #[tokio::test]
+    async fn derived_pk_has_not_changed(
         #[case] root_sk: [u8; 32],
         #[case] tweak: [u8; 32],
         #[case] expected_derived_pk: impl Into<Secp256k1UncompressedPublicKey>,
@@ -159,7 +169,8 @@ mod tests {
                 .derive(ReduceScalar::<Secp256k1>::new()),
             tweak,
             &hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
-        );
+        )
+        .await;
         assert_eq!(
             // compress and skip tag byte
             Secp256k1UncompressedPublicKey::from(derived_pk),

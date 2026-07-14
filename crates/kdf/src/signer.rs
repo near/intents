@@ -1,13 +1,12 @@
-use std::{error::Error, fmt::Debug, rc::Rc, sync::Arc};
+use std::{error::Error, fmt::Debug};
 
 use defuse_crypto::{Curve, RecoverableCurve, Signer};
-use impl_tools::autoimpl;
 
 use crate::{BoxSchema, Derive, DeriveExt, Schema};
 
 // TODO
 // #[autoimpl(for<T: trait + ?Sized + ToOwned> Cow<'_, T>)]
-#[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
+// #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
 /// A signer that can sign messages by **internally** deriving signing keys
 /// according to its public key derivation [schema](DeriveSigner::schema).
 pub trait DeriveSigner<C: Curve, P> {
@@ -43,7 +42,7 @@ pub trait DeriveSigner<C: Curve, P> {
     /// * The returned signatures MIGHT be non-deterministic, i.e.
     ///   implementations MAY return different signatures for the same
     ///   `path` and `msg`.
-    fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>;
+    async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>;
 
     /// Helper method to [derive](Schema::derive_path) public key for given
     /// `path` via [`.schema()`](DeriveSigner::Schema)
@@ -68,7 +67,7 @@ pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
     /// * The returned signatures MIGHT be non-deterministic, i.e.
     ///   implementations MAY return different signatures for the same
     ///   `path` and `msg`.
-    fn derive_sign_recoverable(
+    async fn derive_sign_recoverable(
         &self,
         path: P,
         msg: &[u8],
@@ -94,8 +93,8 @@ where
     }
 
     #[inline]
-    fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error> {
-        self.0.derive_sign(self.1.derive_path(path), msg)
+    async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error> {
+        self.0.derive_sign(self.1.derive_path(path), msg).await
     }
 }
 
@@ -113,63 +112,64 @@ where
     }
 
     async fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
-        DeriveSigner::<C, _>::derive_sign(self, (), msg)
+        DeriveSigner::<C, _>::derive_sign(self, (), msg).await
     }
 }
 
 // TODO: Cached<S> where Schema<()> for caching public key
 
-/// Object-safe version of [`DeriveSigner`] trait.
-pub trait DynDeriveSigner<C: Curve, P> {
-    fn schema_dyn<'a>(&'a self) -> BoxSchema<'a, P, C::PublicKey>
-    where
-        P: 'a;
+// TODO: move dyn to outlayer?
+// /// Object-safe version of [`DeriveSigner`] trait.
+// pub trait DynDeriveSigner<C: Curve, P> {
+//     fn schema_dyn<'a>(&'a self) -> BoxSchema<'a, P, C::PublicKey>
+//     where
+//         P: 'a;
 
-    // TODO: add more bounds? + Send + Sync?
-    fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Box<dyn Error>>;
-}
+//     // TODO: add more bounds? + Send + Sync?
+//     async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Box<dyn Error>>;
+// }
 
-impl<C, P, S> DynDeriveSigner<C, P> for S
-where
-    C: Curve,
-    S: DeriveSigner<C, P, Error: Error + 'static>,
-{
-    #[inline]
-    fn schema_dyn<'a>(&'a self) -> BoxSchema<'a, P, C::PublicKey>
-    where
-        P: 'a,
-    {
-        Box::new(self.schema())
-    }
+// impl<C, P, S> DynDeriveSigner<C, P> for S
+// where
+//     C: Curve,
+//     S: DeriveSigner<C, P, Error: Error + 'static>,
+// {
+//     #[inline]
+//     fn schema_dyn<'a>(&'a self) -> BoxSchema<'a, P, C::PublicKey>
+//     where
+//         P: 'a,
+//     {
+//         Box::new(self.schema())
+//     }
 
-    #[inline]
-    fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Box<dyn Error>> {
-        DeriveSigner::<C, P>::derive_sign(self, path, msg).map_err(Into::into)
-    }
-}
+//     #[inline]
+//     fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Box<dyn Error>> {
+//         DeriveSigner::<C, P>::derive_sign(self, path, msg).map_err(Into::into)
+//     }
+// }
 
-impl<C: Curve, P> DeriveSigner<C, P> for dyn DynDeriveSigner<C, P> {
-    type Error = Box<dyn Error>;
+// impl<C: Curve, P> DeriveSigner<C, P> for dyn DynDeriveSigner<C, P> {
+//     type Error = Box<dyn Error>;
 
-    type Schema<'a>
-        = BoxSchema<'a, P, C::PublicKey>
-    where
-        Self: 'a;
+//     type Schema<'a>
+//         = BoxSchema<'a, P, C::PublicKey>
+//     where
+//         Self: 'a;
 
-    #[inline]
-    fn schema(&self) -> Self::Schema<'_> {
-        self.schema_dyn()
-    }
+//     #[inline]
+//     fn schema(&self) -> Self::Schema<'_> {
+//         self.schema_dyn()
+//     }
 
-    #[inline]
-    fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error> {
-        DynDeriveSigner::<C, P>::derive_sign(self, path, msg)
-    }
-}
+//     #[inline]
+//     async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error> {
+//         DynDeriveSigner::<C, P>::derive_sign(self, path, msg)
+//     }
+// }
 
 #[cfg(any(test, feature = "testing"))]
 #[track_caller]
-pub fn assert_signer_roundtrip<C, S, P>(
+pub async fn assert_signer_roundtrip<C, S, P>(
     signer: &S,
     path: P,
     msg: &[u8],
@@ -180,7 +180,7 @@ where
     P: Clone,
 {
     let derived_pk = signer.derive_public_key(path.clone());
-    let signature = signer.derive_sign(path, msg).expect("failed to sign");
+    let signature = signer.derive_sign(path, msg).await.expect("failed to sign");
 
     assert!(C::verify(&derived_pk, msg, &signature), "invalid signature");
 

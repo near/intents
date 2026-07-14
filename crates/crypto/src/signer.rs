@@ -3,6 +3,8 @@ use core::fmt::Debug;
 use crate::{Curve, RecoverableCurve};
 
 /// A signer capable of producing signatures for a specific [`Curve`].
+// TODO
+// #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
 pub trait Signer<C: Curve> {
     /// An error that can occur during [signing](Self::sign).
     // TODO: trait bounds? StdError?

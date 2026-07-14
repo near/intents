@@ -62,7 +62,7 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
         Additive::new(self.verifying_key())
     }
 
-    fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
+    async fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
         let esk = ExpandedSecretKey::from(self.as_bytes());
 
         debug_assert_eq!(
@@ -72,7 +72,7 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
         );
 
         // delegate signing to expanded secret key
-        esk.derive_sign(tweak, msg)
+        esk.derive_sign(tweak, msg).await
     }
 }
 
@@ -89,7 +89,7 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
         Additive::new(VerifyingKey::from(self))
     }
 
-    fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
+    async fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
         let derived_esk = Self {
             // sk' = sk + tweak
             scalar: self.scalar + tweak,
@@ -99,7 +99,7 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
             // reuse the same nonce for different challenges, as it might
             // lead to leaking the root private key.
             hash_prefix: {
-                // TODO: remove outlayer prefix
+                // TODO: remove outlayer prefix?
                 const DOMAIN_SEPARATOR: &[u8] = b"outlayer/ed25519/derive-hash_prefix/v1";
 
                 thread_local! {
@@ -145,7 +145,8 @@ mod tests {
     use super::*;
 
     #[rstest]
-    fn roundtrip(
+    #[tokio::test]
+    async fn roundtrip(
         #[values(
             hex!("c9997b51c4eeb50681a52ae87d30daa6cfafc56fddade04ddeb3e1a670f04987"),
         )]
@@ -160,7 +161,8 @@ mod tests {
             &SigningKey::from_bytes(&root_sk).derive(ReduceScalar::<Ed25519>::new()),
             tweak,
             msg,
-        );
+        )
+        .await;
     }
 
     #[rstest]
@@ -169,7 +171,8 @@ mod tests {
         hex!("108a8530b779de5245e65e92c3590bc8e87034afa8774e8c7365be3732f4b19e"),
         hex!("abb9efe579ee145410090ec74eb15165e9d8ff708cbef75ac99106d5535362ed"),
     )]
-    fn derived_pk_has_not_changed(
+    #[tokio::test]
+    async fn derived_pk_has_not_changed(
         #[case] root_sk: SecretKey,
         #[case] tweak: [u8; 32],
         #[case] expected_derived_pk: impl Into<Ed25519PublicKey>,
@@ -178,7 +181,8 @@ mod tests {
             &SigningKey::from_bytes(&root_sk).derive(ReduceScalar::<Ed25519>::new()),
             tweak,
             b"message",
-        );
+        )
+        .await;
         assert_eq!(
             Ed25519PublicKey::from(derived_pk),
             expected_derived_pk.into(),
