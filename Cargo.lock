@@ -495,7 +495,7 @@ version = "3.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6dee98b0db6a962de883bf5d20362dee4d7ca0d12fe39a7c6c73c844e1cd7c1f"
 dependencies = [
- "darling 0.20.11",
+ "darling 0.23.0",
  "ident_case",
  "prettyplease",
  "proc-macro2",
@@ -1947,7 +1947,6 @@ dependencies = [
 name = "defuse-wallet-ed25519"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "defuse-crypto",
  "defuse-wallet",
  "defuse-wallet-ed25519",
@@ -1999,7 +1998,6 @@ dependencies = [
 name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "borsh",
  "bs58 0.5.1",
  "defuse-wallet",
@@ -2011,6 +2009,7 @@ dependencies = [
  "rand 0.10.2",
  "serde",
  "tracing",
+ "trait-variant",
 ]
 
 [[package]]
@@ -5907,7 +5906,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix 1.1.4",
  "windows-sys 0.61.2",
@@ -6480,6 +6479,17 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "trait-variant"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70977707304198400eb4835a78f6a9f928bf41bba420deb8fdb175cd965d77a7"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.118",
 ]
 
 [[package]]
