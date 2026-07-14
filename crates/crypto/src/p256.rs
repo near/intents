@@ -47,7 +47,6 @@ const _: () = {
     use crate::Signer;
 
     impl Signer<P256> for SigningKey {
-        // TODO: maybe our custom error?
         type Error = Error;
 
         #[inline]
@@ -64,7 +63,7 @@ const _: () = {
 
             let signature = self.sign_prehash_recoverable(prehash).0;
             // Signature is **not** automatically normalized to be low-S
-            // form, since `<k256::Secp256k1 as EcdsaCurve>::NORMALIZE_S`
+            // form, since `<p256::Secp256k1 as EcdsaCurve>::NORMALIZE_S`
             // is not set.
             // So, we need to notmalize ourselves:
             Ok(signature.normalize_s())

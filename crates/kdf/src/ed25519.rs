@@ -99,7 +99,6 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
             // reuse the same nonce for different challenges, as it might
             // lead to leaking the root private key.
             hash_prefix: {
-                // TODO: remove outlayer prefix?
                 const DOMAIN_SEPARATOR: &[u8] = b"ed25519/derive-hash_prefix/v1";
 
                 thread_local! {
