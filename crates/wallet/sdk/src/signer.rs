@@ -1,4 +1,7 @@
-use std::{fmt::Debug, sync::Arc};
+use std::{
+    fmt::{Debug, Display},
+    sync::Arc,
+};
 
 use defuse_wallet::{RequestMessage, SignatureSchema};
 use impl_tools::autoimpl;
@@ -12,7 +15,7 @@ pub type Proof = String;
 #[autoimpl(for<T: ?Sized + trait> &T, &mut T, Box<T>, Arc<T>)]
 pub trait WalletSigner<S: SignatureSchema>: Sync {
     /// Signature error
-    type Error: Debug;
+    type Error: Debug + Display;
 
     /// Returns public key of the signer.
     fn public_key(&self) -> S::PublicKey;

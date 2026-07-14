@@ -1,4 +1,7 @@
-use std::{fmt::Debug, sync::Arc};
+use std::{
+    fmt::{Debug, Display},
+    sync::Arc,
+};
 
 use defuse_crypto::{Curve, RecoverableCurve, RecoverableSigner, Signer};
 use impl_tools::autoimpl;
@@ -10,7 +13,7 @@ use crate::{Derive, DeriveExt, Schema};
 #[trait_variant::make(Send)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
 pub trait DeriveSigner<C: Curve, P>: Sync {
-    type Error: Debug;
+    type Error: Debug + Display;
 
     /// [`Schema`] for public key derivation.
     /// See [`.schema()`](DeriveSigner::schema) for details.

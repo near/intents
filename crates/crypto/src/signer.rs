@@ -1,5 +1,7 @@
-use core::fmt::Debug;
-use std::sync::Arc;
+use std::{
+    fmt::{Debug, Display},
+    sync::Arc,
+};
 
 use impl_tools::autoimpl;
 
@@ -10,7 +12,7 @@ use crate::{Curve, RecoverableCurve};
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
 pub trait Signer<C: Curve>: Sync {
     /// An error that can occur during [signing](Self::sign).
-    type Error: Debug;
+    type Error: Debug + Display;
 
     /// Public key of the signer
     fn public_key(&self) -> C::PublicKey;
