@@ -11,11 +11,12 @@ repository.workspace = true
 derive_more = { workspace = true, features = ["as_ref", "from", "into"] }
 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
+async-trait = { workspace = true, optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
 bs58 = { workspace = true, optional = true }
 ed25519-dalek = { workspace = true, optional = true }
 hex-literal = { workspace = true, optional = true }
-impl-tools = { workspace = true, optional = true }                       # TODO: remove?
+impl-tools = { workspace = true, optional = true }                       # 
 k256 = { workspace = true, features = ["ecdsa"], optional = true }
 p256 = { workspace = true, features = ["ecdsa"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
@@ -42,7 +43,7 @@ schemars-v0_8 = [
   "serde_with?/schemars_0_8",
 ]
 serde = ["dep:serde_with", "fmt"]
-signing = ["dep:impl-tools"]
+signing = ["dep:async-trait", "dep:impl-tools"]
 
 [dev-dependencies]
 defuse-crypto = { path = ".", features = ["ed25519", "p256", "secp256k1", "abi", "signing"] }

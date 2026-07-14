@@ -1,14 +1,16 @@
-use std::{error::Error, fmt::Debug};
+use std::{fmt::Debug, sync::Arc};
 
-use defuse_crypto::{Curve, RecoverableCurve, Signer};
+use async_trait::async_trait;
+use defuse_crypto::{Curve, RecoverableCurve, RecoverableSigner, Signer};
+use impl_tools::autoimpl;
 
-use crate::{BoxSchema, Derive, DeriveExt, Schema};
+use crate::{Derive, DeriveExt, Schema};
 
 // TODO
-// #[autoimpl(for<T: trait + ?Sized + ToOwned> Cow<'_, T>)]
-// #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
 /// A signer that can sign messages by **internally** deriving signing keys
 /// according to its public key derivation [schema](DeriveSigner::schema).
+#[async_trait] // TODO: ?Send
+#[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
 pub trait DeriveSigner<C: Curve, P> {
     type Error: Debug;
 
@@ -42,7 +44,9 @@ pub trait DeriveSigner<C: Curve, P> {
     /// * The returned signatures MIGHT be non-deterministic, i.e.
     ///   implementations MAY return different signatures for the same
     ///   `path` and `msg`.
-    async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>;
+    async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
+    where
+        P: Send + 'async_trait;
 
     /// Helper method to [derive](Schema::derive_path) public key for given
     /// `path` via [`.schema()`](DeriveSigner::Schema)
@@ -54,6 +58,9 @@ pub trait DeriveSigner<C: Curve, P> {
 
 /// A [signer](DeriveSigner) that can recoverably sign messages by
 /// **internally** deriving signing keys.
+// #[cfg_attr(not(target_family = "wasm"), async_trait)]
+// #[cfg_attr(target_family = "wasm", async_trait(?Send))]
+#[async_trait]
 pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
     /// Recoveryably [sign](DeriveSigner::derive_sign) given message with a
     /// secret key **internally** derived for given `path` according to
@@ -71,14 +78,19 @@ pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
         &self,
         path: P,
         msg: &[u8],
-    ) -> Result<(C::Signature, C::RecoveryId), Self::Error>;
+    ) -> Result<(C::Signature, C::RecoveryId), Self::Error>
+    where
+        P: Send + 'async_trait;
 }
 
+// #[cfg_attr(not(target_family = "wasm"), async_trait)]
+// #[cfg_attr(target_family = "wasm", async_trait(?Send))]
+#[async_trait]
 impl<C, P, S, D> DeriveSigner<C, P> for Derive<S, D>
 where
     C: Curve,
-    D: Schema<P>,
-    S: DeriveSigner<C, D::Output>,
+    S: DeriveSigner<C, D::Output> + Sync,
+    D: Schema<P, Output: Send> + Sync,
 {
     type Error = S::Error;
 
@@ -92,17 +104,41 @@ where
         self.0.schema().derive(&self.1)
     }
 
-    #[inline]
-    async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error> {
+    async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
+    where
+        P: Send + 'async_trait,
+    {
         self.0.derive_sign(self.1.derive_path(path), msg).await
     }
 }
 
+#[async_trait]
+impl<C, P, S, D> RecoverableDeriveSigner<C, P> for Derive<S, D>
+where
+    C: RecoverableCurve,
+    S: RecoverableDeriveSigner<C, D::Output> + Sync,
+    D: Schema<P, Output: Send> + Sync,
+{
+    async fn derive_sign_recoverable(
+        &self,
+        path: P,
+        msg: &[u8],
+    ) -> Result<(C::Signature, C::RecoveryId), Self::Error>
+    where
+        P: Send + 'async_trait,
+    {
+        self.0
+            .derive_sign_recoverable(self.1.derive_path(path), msg)
+            .await
+    }
+}
+
+#[async_trait]
 impl<C, S, D> Signer<C> for Derive<S, D>
 where
     C: Curve,
-    D: Schema<()>,
-    S: DeriveSigner<C, D::Output>,
+    S: DeriveSigner<C, D::Output> + Sync,
+    D: Schema<(), Output: Send> + Sync,
 {
     type Error = S::Error;
 
@@ -113,6 +149,21 @@ where
 
     async fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
         DeriveSigner::<C, _>::derive_sign(self, (), msg).await
+    }
+}
+
+#[async_trait]
+impl<C, S, D> RecoverableSigner<C> for Derive<S, D>
+where
+    C: RecoverableCurve,
+    S: RecoverableDeriveSigner<C, D::Output> + Sync,
+    D: Schema<(), Output: Send> + Sync,
+{
+    async fn sign_recoverable(
+        &self,
+        msg: &[u8],
+    ) -> Result<(C::Signature, C::RecoveryId), Self::Error> {
+        RecoverableDeriveSigner::<C, _>::derive_sign_recoverable(self, (), msg).await
     }
 }
 
@@ -168,7 +219,6 @@ where
 // }
 
 #[cfg(any(test, feature = "testing"))]
-#[track_caller]
 pub async fn assert_signer_roundtrip<C, S, P>(
     signer: &S,
     path: P,
@@ -177,7 +227,7 @@ pub async fn assert_signer_roundtrip<C, S, P>(
 where
     C: Curve,
     S: DeriveSigner<C, P>,
-    P: Clone,
+    P: Clone + Send,
 {
     let derived_pk = signer.derive_public_key(path.clone());
     let signature = signer.derive_sign(path, msg).await.expect("failed to sign");

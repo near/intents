@@ -1469,6 +1469,7 @@ name = "defuse-crypto"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "async-trait",
  "borsh",
  "bs58 0.5.1",
  "defuse-crypto",
@@ -1607,6 +1608,7 @@ version = "0.1.0"
 name = "defuse-kdf"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "borsh",
  "curve25519-dalek 5.0.0",
  "defuse-crypto",
@@ -1999,6 +2001,7 @@ dependencies = [
 name = "defuse-wallet-ed25519"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "defuse-crypto",
  "defuse-wallet",
  "defuse-wallet-ed25519",

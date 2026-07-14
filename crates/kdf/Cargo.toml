@@ -8,6 +8,7 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+async-trait.workspace = true
 defuse-crypto = { workspace = true, features = ["signing"] }
 impl-tools.workspace = true
 
