@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
 use async_trait::async_trait;
 use defuse_wallet::{RequestMessage, SignatureSchema};
@@ -9,14 +9,11 @@ pub type Proof = String;
 
 /// A signer that can sign [`RequestMessage`] according to specific
 /// [`SignatureSchema`].
-// #[cfg_attr(not(target_family = "wasm"), async_trait)]
-// #[cfg_attr(target_family = "wasm", async_trait(?Send))]
-
 #[async_trait]
 #[autoimpl(for<T: ?Sized + trait> &T, &mut T, Box<T>, Arc<T>)]
 pub trait WalletSigner<S: SignatureSchema>: Send + Sync {
     /// Signature error
-    type Error;
+    type Error: Debug;
 
     /// Returns public key of the signer.
     fn public_key(&self) -> S::PublicKey;

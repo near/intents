@@ -6,7 +6,6 @@ use impl_tools::autoimpl;
 
 use crate::{Derive, DeriveExt, Schema};
 
-// TODO
 /// A signer that can sign messages by **internally** deriving signing keys
 /// according to its public key derivation [schema](DeriveSigner::schema).
 #[async_trait] // TODO: ?Send
@@ -166,8 +165,6 @@ where
         RecoverableDeriveSigner::<C, _>::derive_sign_recoverable(self, (), msg).await
     }
 }
-
-// TODO: Cached<S> where Schema<()> for caching public key
 
 // TODO: move dyn to outlayer?
 // /// Object-safe version of [`DeriveSigner`] trait.

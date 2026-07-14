@@ -11,7 +11,6 @@ use crate::{Curve, RecoverableCurve};
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
 pub trait Signer<C: Curve>: Send + Sync {
     /// An error that can occur during [signing](Self::sign).
-    // TODO: trait bounds? StdError?
     type Error: Debug;
 
     /// Public key of the signer
