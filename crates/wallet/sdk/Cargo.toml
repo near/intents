@@ -10,7 +10,6 @@ repository.workspace = true
 [dependencies]
 defuse-wallet = { workspace = true, features = ["borsh", "digest"] }
 
-async-trait.workspace = true
 borsh.workspace = true
 impl-tools.workspace = true
 near-global-contracts = { workspace = true, features = ["borsh"] }
@@ -22,8 +21,11 @@ near-kit = { workspace = true, default-features = false, optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 tracing = { workspace = true, optional = true }
 
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+trait-variant.workspace = true
+
 [features]
-json = ["defuse-wallet/json"]
+json = ["defuse-wallet/json", "serde"]
 near-kit = ["dep:derive_more", "dep:near-kit", "derive_more/from", "serde"]
 serde = ["defuse-wallet/serde", "dep:serde", "near-global-contracts/serde"]
 tracing = ["dep:bs58", "dep:tracing"]

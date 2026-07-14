@@ -30,12 +30,9 @@ impl SignatureSchema for WalletEd25519 {
 const _: () = {
     use core::convert::Infallible;
 
-    use async_trait::async_trait;
     use defuse_crypto::ed25519::ed25519_dalek::{Signer, SigningKey};
     use defuse_wallet_sdk::{Proof, WalletSigner};
 
-    #[cfg_attr(not(target_family = "wasm"), async_trait)]
-    #[cfg_attr(target_family = "wasm", async_trait(?Send))]
     impl WalletSigner<WalletEd25519> for SigningKey {
         type Error = Infallible;
 
