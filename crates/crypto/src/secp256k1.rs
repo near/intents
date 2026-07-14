@@ -1,7 +1,7 @@
 pub use k256;
 
 use k256::{
-    EncodedPoint,
+    Sec1Point,
     ecdsa::{RecoveryId, Signature, VerifyingKey},
 };
 
@@ -113,6 +113,7 @@ const _: () = {
             *self.verifying_key()
         }
 
+        // TODO: docs: prehash
         async fn sign(
             &self,
             prehash: &[u8],
@@ -124,6 +125,7 @@ const _: () = {
     }
 
     impl RecoverableSigner<Secp256k1> for SigningKey {
+        // TODO: docs: prehash
         async fn sign_recoverable(
             &self,
             prehash: &[u8],
@@ -136,7 +138,7 @@ const _: () = {
         > {
             let prehash: &[u8; 32] = prehash.try_into().map_err(|_| Error::new())?;
 
-            self.sign_prehash_recoverable(prehash)
+            Ok(self.sign_prehash_recoverable(prehash))
         }
     }
 };
@@ -199,7 +201,7 @@ impl From<&VerifyingKey> for Secp256k1UncompressedPublicKey {
     fn from(value: &VerifyingKey) -> Self {
         Self(
             value
-                .to_encoded_point(false) // do not compress
+                .to_sec1_point(false) // do not compress
                 .as_bytes()[1..] // skip SEC-1 leading tag byte
                 .try_into()
                 .unwrap_or_else(|_| unreachable!()),
@@ -221,7 +223,7 @@ impl TryFrom<&Secp256k1UncompressedPublicKey> for VerifyingKey {
 
     #[inline]
     fn try_from(value: &Secp256k1UncompressedPublicKey) -> Result<Self, Self::Error> {
-        Self::from_encoded_point(&EncodedPoint::from_untagged_bytes((&value.0).into()))
+        Self::from_sec1_point(&Sec1Point::from_untagged_bytes((&value.0).into()))
     }
 }
 

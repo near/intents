@@ -1,6 +1,6 @@
 pub use p256;
 use p256::{
-    EncodedPoint,
+    Sec1Point,
     ecdsa::{Signature, VerifyingKey},
     elliptic_curve::scalar::IsHigh,
 };
@@ -42,7 +42,7 @@ impl Curve for P256 {
 
 #[cfg(feature = "signing")]
 const _: () = {
-    use p256::ecdsa::{Error, SigningKey, signature::hazmat::PrehashSigner};
+    use p256::ecdsa::{Error, SigningKey};
 
     use crate::Signer;
 
@@ -54,8 +54,11 @@ const _: () = {
             *self.verifying_key()
         }
 
+        // TODO: docs: prehash
         async fn sign(&self, prehash: &[u8]) -> Result<<P256 as Curve>::Signature, Self::Error> {
-            self.sign_prehash(prehash)
+            let prehash: &[u8; 32] = prehash.try_into().map_err(|_| Error::new())?;
+
+            Ok(self.sign_prehash_recoverable(prehash).0)
         }
     }
 };
@@ -126,7 +129,7 @@ impl P256UncompressedPublicKey {
     /// ```
     #[inline]
     pub fn compress(&self) -> P256CompressedPublicKey {
-        EncodedPoint::from_untagged_bytes((&self.0).into())
+        Sec1Point::from_untagged_bytes((&self.0).into())
             .compress()
             .as_bytes()
             .try_into()
@@ -149,7 +152,7 @@ impl From<&VerifyingKey> for P256UncompressedPublicKey {
     fn from(value: &VerifyingKey) -> Self {
         Self(
             value
-                .to_encoded_point(false) // do not compress
+                .to_sec1_point(false) // do not compress
                 .as_bytes()[1..] // skip SEC-1 leading tag byte
                 .try_into()
                 .unwrap_or_else(|_| unreachable!()),
@@ -171,7 +174,7 @@ impl TryFrom<&P256UncompressedPublicKey> for VerifyingKey {
 
     #[inline]
     fn try_from(value: &P256UncompressedPublicKey) -> Result<Self, Self::Error> {
-        Self::from_encoded_point(&EncodedPoint::from_untagged_bytes((&value.0).into()))
+        Self::from_sec1_point(&Sec1Point::from_untagged_bytes((&value.0).into()))
     }
 }
 
@@ -233,7 +236,7 @@ impl From<&VerifyingKey> for P256CompressedPublicKey {
     fn from(value: &VerifyingKey) -> Self {
         Self(
             value
-                .to_encoded_point(true) // compress
+                .to_sec1_point(true) // compress
                 .as_bytes()
                 .try_into()
                 .unwrap_or_else(|_| unreachable!()),

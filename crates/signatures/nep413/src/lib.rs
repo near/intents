@@ -133,9 +133,7 @@ const _: () = {
 
 #[cfg(test)]
 mod tests {
-    use defuse_crypto::ed25519::ed25519_dalek::{
-        PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH, Signature, VerifyingKey,
-    };
+    use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
     use hex_literal::hex;
     use rstest::rstest;
 
@@ -153,13 +151,14 @@ mod tests {
         hex!("e2ff6254871a3fec1853c167b42f0f14248c4cf7fef5452dc24d8dbdc5c4bf183ab707322b4d782d5f5a05571bae476c5f7ee41c473f3002e600865e46b75d0f"),
     )]
     fn verify_ok(
-        #[case] public_key: [u8; PUBLIC_KEY_LENGTH],
+        #[case] public_key: impl Into<Ed25519PublicKey>,
         #[case] payload: Nep413Payload,
-        #[case] signature: [u8; SIGNATURE_LENGTH],
+        #[case] signature: impl Into<Ed25519Signature>,
     ) {
-        let public_key = VerifyingKey::from_bytes(&public_key).unwrap();
-        let signature = Signature::from_bytes(&signature);
-
-        assert!(Nep413::verify(&public_key, &payload, &signature));
+        assert!(Nep413::verify(
+            &public_key.into().try_into().unwrap(),
+            &payload,
+            &signature.into().into()
+        ));
     }
 }
