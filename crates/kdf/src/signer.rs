@@ -11,7 +11,7 @@ use crate::{Derive, DeriveExt, Schema};
 /// according to its public key derivation [schema](DeriveSigner::schema).
 #[async_trait] // TODO: ?Send
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
-pub trait DeriveSigner<C: Curve, P> {
+pub trait DeriveSigner<C: Curve, P>: Send + Sync {
     type Error: Debug;
 
     /// [`Schema`] for public key derivation.
@@ -89,8 +89,8 @@ pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
 impl<C, P, S, D> DeriveSigner<C, P> for Derive<S, D>
 where
     C: Curve,
-    S: DeriveSigner<C, D::Output> + Sync,
-    D: Schema<P, Output: Send> + Sync,
+    S: DeriveSigner<C, D::Output>,
+    D: Schema<P, Output: Send> + Send + Sync,
 {
     type Error = S::Error;
 
@@ -116,8 +116,8 @@ where
 impl<C, P, S, D> RecoverableDeriveSigner<C, P> for Derive<S, D>
 where
     C: RecoverableCurve,
-    S: RecoverableDeriveSigner<C, D::Output> + Sync,
-    D: Schema<P, Output: Send> + Sync,
+    S: RecoverableDeriveSigner<C, D::Output>,
+    D: Schema<P, Output: Send> + Send + Sync,
 {
     async fn derive_sign_recoverable(
         &self,
@@ -137,8 +137,8 @@ where
 impl<C, S, D> Signer<C> for Derive<S, D>
 where
     C: Curve,
-    S: DeriveSigner<C, D::Output> + Sync,
-    D: Schema<(), Output: Send> + Sync,
+    S: DeriveSigner<C, D::Output>,
+    D: Schema<(), Output: Send> + Send + Sync,
 {
     type Error = S::Error;
 
@@ -156,8 +156,8 @@ where
 impl<C, S, D> RecoverableSigner<C> for Derive<S, D>
 where
     C: RecoverableCurve,
-    S: RecoverableDeriveSigner<C, D::Output> + Sync,
-    D: Schema<(), Output: Send> + Sync,
+    S: RecoverableDeriveSigner<C, D::Output>,
+    D: Schema<(), Output: Send> + Send + Sync,
 {
     async fn sign_recoverable(
         &self,

@@ -10,12 +10,12 @@ repository.workspace = true
 [dependencies]
 defuse-wallet = { workspace = true, features = ["borsh", "digest"] }
 
+async-trait.workspace = true
 borsh.workspace = true
 impl-tools.workspace = true
 near-global-contracts = { workspace = true, features = ["borsh"] }
 rand.workspace = true
 
-trait-variant.workspace = true
 bs58 = { workspace = true, optional = true }
 derive_more = { workspace = true, features = ["from"], optional = true }
 near-kit = { workspace = true, default-features = false, optional = true }

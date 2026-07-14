@@ -9,7 +9,7 @@ use crate::{Curve, RecoverableCurve};
 /// A signer capable of producing signatures for a specific [`Curve`].
 #[async_trait]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
-pub trait Signer<C: Curve> {
+pub trait Signer<C: Curve>: Send + Sync {
     /// An error that can occur during [signing](Self::sign).
     // TODO: trait bounds? StdError?
     type Error: Debug;
@@ -43,7 +43,7 @@ pub trait RecoverableSigner<C: RecoverableCurve>: Signer<C> {
 
 /// Test helpers
 #[cfg(test)]
-#[allow(dead_code)]
+#[allow(dead_code, clippy::redundant_pub_crate)]
 pub(crate) mod tests {
     use std::fmt::Debug;
 

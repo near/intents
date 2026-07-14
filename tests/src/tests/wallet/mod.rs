@@ -1,7 +1,7 @@
 mod no_sign;
 
 use defuse_core::crypto::ed25519::{Ed25519PublicKey, ed25519_dalek};
-use defuse_rand_compat::rand_core_0_6::OsRng;
+use defuse_digest::common::Generate;
 use defuse_sandbox::{
     account::Account,
     extensions::wallet::{
@@ -13,7 +13,7 @@ use defuse_sandbox::{
     root,
 };
 use defuse_test_utils::wasms::WALLET_ED25519_WASM;
-use defuse_wallet_ed25519::WalletEd25519;
+use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer};
 use defuse_wallet_relayer::{
     WalletRelayRequest, WalletRelayer,
     wallet::client::{WExecuteExtensionArgs, WExecuteSignedArgs, WalletContract},
@@ -276,10 +276,12 @@ struct Env {
 }
 
 impl Env {
-    pub fn generate_wallet(&self) -> Wallet<WalletEd25519, ed25519_dalek::SigningKey> {
+    pub fn generate_wallet(
+        &self,
+    ) -> Wallet<WalletEd25519, WalletEd25519Signer<ed25519_dalek::SigningKey>> {
         Wallet::new(
             self.wallet_global_id.clone(),
-            ed25519_dalek::SigningKey::generate(&mut OsRng),
+            WalletEd25519Signer(<ed25519_dalek::SigningKey as Generate>::generate()),
         )
     }
 }

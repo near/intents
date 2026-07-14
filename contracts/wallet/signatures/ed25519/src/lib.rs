@@ -1,3 +1,8 @@
+#[cfg(feature = "signer")]
+mod signer;
+#[cfg(feature = "signer")]
+pub use self::signer::*;
+
 use core::str::FromStr;
 
 use defuse_crypto::{
@@ -25,29 +30,6 @@ impl SignatureSchema for WalletEd25519 {
         Ed25519::verify(&public_key, &msg.hash(), &signature.into())
     }
 }
-
-#[cfg(feature = "signer")]
-const _: () = {
-    use core::convert::Infallible;
-
-    use defuse_crypto::ed25519::ed25519_dalek::{Signer, SigningKey};
-    use defuse_wallet_sdk::{Proof, WalletSigner};
-
-    impl WalletSigner<WalletEd25519> for SigningKey {
-        type Error = Infallible;
-
-        #[inline]
-        fn public_key(&self) -> Ed25519PublicKey {
-            self.verifying_key().into()
-        }
-
-        async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
-            let sig = self.sign(&msg.hash());
-
-            Ok(Ed25519Signature::from(sig).to_string())
-        }
-    }
-};
 
 #[cfg(feature = "contract")]
 const _: () = {

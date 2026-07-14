@@ -1,4 +1,8 @@
+use std::sync::Arc;
+
+use async_trait::async_trait;
 use defuse_wallet::{RequestMessage, SignatureSchema};
+use impl_tools::autoimpl;
 
 /// A proof for [`w_execute_signed(msg, proof)`](defuse_wallet::contract::Wallet::w_execute_signed)
 pub type Proof = String;
@@ -7,9 +11,10 @@ pub type Proof = String;
 /// [`SignatureSchema`].
 // #[cfg_attr(not(target_family = "wasm"), async_trait)]
 // #[cfg_attr(target_family = "wasm", async_trait(?Send))]
-#[trait_variant::make(WalletSigner: Send)]
-// #[autoimpl(for<T: ?Sized + trait> &T, &mut T, Box<T>, Arc<T>)]
-pub trait LocalWalletSigner<S: SignatureSchema> {
+
+#[async_trait]
+#[autoimpl(for<T: ?Sized + trait> &T, &mut T, Box<T>, Arc<T>)]
+pub trait WalletSigner<S: SignatureSchema>: Send + Sync {
     /// Signature error
     type Error;
 

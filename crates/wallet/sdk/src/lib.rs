@@ -87,7 +87,7 @@ impl WalletBuilder {
     pub fn build<SS, S>(self, code: impl Into<GlobalContractId>, signer: S) -> Wallet<SS, S>
     where
         SS: SignatureSchema<PublicKey: BorshSerialize>,
-        S: LocalWalletSigner<SS>,
+        S: WalletSigner<SS>,
     {
         let state_init = StateInit::V1(StateInitV1 {
             code: code.into(),
@@ -113,7 +113,7 @@ impl WalletBuilder {
 /// Signer handle to a wallet contract instance implementing a specific
 /// [`SignatureSchema`].
 #[autoimpl(Debug, Clone where S: trait)]
-pub struct Wallet<SS: SignatureSchema, S: LocalWalletSigner<SS>> {
+pub struct Wallet<SS: SignatureSchema, S: WalletSigner<SS>> {
     account_id: AccountId,
     state_init: StateInit,
 
@@ -128,7 +128,7 @@ pub struct Wallet<SS: SignatureSchema, S: LocalWalletSigner<SS>> {
 impl<SS, S> Wallet<SS, S>
 where
     SS: SignatureSchema,
-    S: LocalWalletSigner<SS>,
+    S: WalletSigner<SS>,
 {
     /// Shorthand for [`WalletBuilder::new()`].[`build()`](WalletBuilder::build).
     #[inline]
@@ -192,6 +192,7 @@ where
     /// different chains. So, each signed message needs to include id of a chain where
     /// it's intended to be executed on.
     // #[allow(clippy::future_not_send)]
+    #[allow(clippy::future_not_send)]
     #[cfg_attr(feature = "tracing", instrument(level = Level::DEBUG, skip_all, fields(
         msg.chain_id,
         msg.signer_id,

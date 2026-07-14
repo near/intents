@@ -1,7 +1,7 @@
-use defuse_wallet_ed25519::WalletEd25519;
+use defuse_digest::common::Generate;
+use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer};
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
 use defuse_wallet_sdk::{MAINNET, NearPromise, Request, Wallet, WalletOp, actions::FunctionCall};
-use ed25519_dalek::ed25519::signature::rand_core::OsRng;
 use near_kit::{AccountIdRef, Gas, Near, NearToken};
 use serde_json::json;
 
@@ -14,15 +14,17 @@ const EXAMPLE_EXTENSION: &AccountIdRef = AccountIdRef::new_or_panic("extension.n
 #[tokio::main]
 async fn main() {
     // 0.0) Generate keypair
-    let wallet_signer = ed25519_dalek::SigningKey::generate(&mut OsRng);
+    let wallet_signer = <ed25519_dalek::SigningKey as Generate>::generate();
     println!(
         "wallet_keypair: 'ed25519:{}'",
         bs58::encode(wallet_signer.to_keypair_bytes()).into_string()
     );
 
     // 0.1) Build wallet state
-    let wallet =
-        Wallet::<WalletEd25519, _>::new(WALLET_GLOBAL_CONTRACT_ID.to_owned(), wallet_signer);
+    let wallet = Wallet::<WalletEd25519, _>::new(
+        WALLET_GLOBAL_CONTRACT_ID.to_owned(),
+        WalletEd25519Signer(wallet_signer),
+    );
 
     // 0.2) Derive wallet account_id
     println!("wallet.account_id() = {}", wallet.account_id());

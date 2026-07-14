@@ -1867,7 +1867,6 @@ dependencies = [
  "defuse-digest",
  "defuse-fees",
  "defuse-near-utils",
- "defuse-rand-compat",
  "defuse-randomness",
  "defuse-sandbox",
  "defuse-test-utils",
@@ -2006,6 +2005,7 @@ dependencies = [
  "defuse-wallet",
  "defuse-wallet-ed25519",
  "defuse-wallet-sdk",
+ "derive_more",
  "hex-literal",
  "near-sdk",
  "rstest",
@@ -2053,6 +2053,7 @@ dependencies = [
 name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "borsh",
  "bs58 0.5.1",
  "defuse-wallet",
@@ -2064,7 +2065,6 @@ dependencies = [
  "rand 0.10.2",
  "serde",
  "tracing",
- "trait-variant",
 ]
 
 [[package]]
@@ -6749,17 +6749,6 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
-]
-
-[[package]]
-name = "trait-variant"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70977707304198400eb4835a78f6a9f928bf41bba420deb8fdb175cd965d77a7"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.118",
 ]
 
 [[package]]
