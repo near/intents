@@ -1478,10 +1478,12 @@ dependencies = [
  "k256 0.14.0",
  "near-sdk",
  "p256 0.14.0",
+ "rand 0.10.2",
  "rstest",
  "schemars 0.8.22",
  "serde_with",
  "thiserror 2.0.18",
+ "tokio",
 ]
 
 [[package]]

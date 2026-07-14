@@ -1,11 +1,8 @@
 use defuse_crypto::{RecoverableCurve, secp256k1::Secp256k1};
 use k256::{
-    NonZeroScalar, ProjectivePoint, U256,
+    FieldBytes, NonZeroScalar, ProjectivePoint, WideBytes,
     ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey},
-    elliptic_curve::{
-        bigint::U512,
-        ops::{MulByGenerator, Reduce},
-    },
+    elliptic_curve::ops::Reduce,
 };
 
 use crate::{
@@ -17,14 +14,17 @@ impl CurveArithmetic for Secp256k1 {
 
     type Point = ProjectivePoint;
 
+    #[inline]
     fn mul_by_generator(scalar: &Self::Scalar) -> Self::Point {
         ProjectivePoint::mul_by_generator(scalar)
     }
 
+    #[inline]
     fn pk2point(public_key: &Self::PublicKey) -> Self::Point {
         public_key.as_affine().into()
     }
 
+    #[inline]
     fn point2pk(point: Self::Point) -> Self::PublicKey {
         VerifyingKey::from_affine(point.to_affine())
             .expect("derived public key is the point at infinity")
@@ -69,9 +69,7 @@ impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
             "derived public key mismatch",
         );
 
-        let (sig, recovery_id) = derived_sk
-            .sign_prehash_recoverable(prehash)
-            .expect("invalid derived signing key");
+        let (sig, recovery_id) = derived_sk.sign_prehash_recoverable(prehash);
 
         debug_assert_eq!(
             Secp256k1::recover(prehash, &sig, recovery_id).expect("failed to recover public key"),
@@ -88,7 +86,7 @@ impl Schema<[u8; 32]> for ReduceScalar<Secp256k1> {
 
     #[inline]
     fn derive_path(&self, path: [u8; 32]) -> Self::Output {
-        Reduce::<U256>::reduce_bytes(&path.into())
+        <NonZeroScalar as Reduce<FieldBytes>>::reduce(&path.into())
     }
 }
 
@@ -97,12 +95,13 @@ impl Schema<[u8; 64]> for ReduceScalar<Secp256k1> {
 
     #[inline]
     fn derive_path(&self, path: [u8; 64]) -> Self::Output {
-        Reduce::<U512>::reduce_bytes(&path.into())
+        <NonZeroScalar as Reduce<WideBytes>>::reduce(&path.into())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use defuse_crypto::secp256k1::Secp256k1UncompressedPublicKey;
     use hex_literal::hex;
     use rstest::rstest;
 
@@ -144,7 +143,7 @@ mod tests {
     fn derived_pk_has_not_changed(
         #[case] root_sk: [u8; 32],
         #[case] tweak: [u8; 32],
-        #[case] expected_derived_pk: [u8; 64],
+        #[case] expected_derived_pk: impl Into<Secp256k1UncompressedPublicKey>,
     ) {
         let (derived_pk, _signature) = assert_signer_roundtrip(
             &SigningKey::from_bytes(&root_sk.into())
@@ -155,8 +154,8 @@ mod tests {
         );
         assert_eq!(
             // compress and skip tag byte
-            derived_pk.to_encoded_point(false).as_bytes()[1..],
-            expected_derived_pk,
+            Secp256k1UncompressedPublicKey::from(derived_pk),
+            expected_derived_pk.into(),
             "derived public key has changed"
         );
     }

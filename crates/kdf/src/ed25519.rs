@@ -13,14 +13,17 @@ impl CurveArithmetic for Ed25519 {
 
     type Point = EdwardsPoint;
 
+    #[inline]
     fn mul_by_generator(scalar: &Self::Scalar) -> Self::Point {
         EdwardsPoint::mul_base(scalar)
     }
 
+    #[inline]
     fn pk2point(public_key: &Self::PublicKey) -> Self::Point {
         public_key.to_edwards()
     }
 
+    #[inline]
     fn point2pk(point: Self::Point) -> Self::PublicKey {
         point.into()
     }
@@ -121,7 +124,8 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
 
 #[cfg(test)]
 mod tests {
-    use ed25519_dalek::{PUBLIC_KEY_LENGTH, SecretKey};
+    use defuse_crypto::ed25519::Ed25519PublicKey;
+    use ed25519_dalek::SecretKey;
     use hex_literal::hex;
     use rstest::rstest;
 
@@ -157,7 +161,7 @@ mod tests {
     fn derived_pk_has_not_changed(
         #[case] root_sk: SecretKey,
         #[case] tweak: [u8; 32],
-        #[case] expected_derived_pk: [u8; PUBLIC_KEY_LENGTH],
+        #[case] expected_derived_pk: impl Into<Ed25519PublicKey>,
     ) {
         let (derived_pk, _signature) = assert_signer_roundtrip(
             &SigningKey::from_bytes(&root_sk).derive(ReduceScalar::<Ed25519>::new()),
@@ -165,8 +169,8 @@ mod tests {
             b"message",
         );
         assert_eq!(
-            derived_pk.to_bytes(),
-            expected_derived_pk,
+            Ed25519PublicKey::from(derived_pk),
+            expected_derived_pk.into(),
             "derived public key has changed"
         );
     }

@@ -44,10 +44,15 @@ serde = ["dep:serde_with", "fmt"]
 signing = []
 
 [dev-dependencies]
-defuse-crypto = { path = ".", features = ["ed25519", "p256", "secp256k1", "abi"] }
+defuse-crypto = { path = ".", features = ["ed25519", "p256", "secp256k1", "abi", "signing"] }
 
+ed25519-dalek = { workspace = true, features = ["rand_core"] }
 hex-literal.workspace = true
+k256 = { workspace = true, features = ["getrandom"] }
+p256 = { workspace = true, features = ["getrandom"] }
+rand.workspace = true
 rstest.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }
 
 [target.'cfg(near)'.dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }

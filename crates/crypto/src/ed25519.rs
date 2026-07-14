@@ -260,8 +260,12 @@ const _: () = {
 
 #[cfg(test)]
 mod tests {
+    use ed25519_dalek::SigningKey;
     use hex_literal::hex;
+    use rand::{rand_core::UnwrapErr, rngs::SysRng};
     use rstest::rstest;
+
+    use crate::tests::test_sign_verify;
 
     use super::*;
 
@@ -320,5 +324,16 @@ mod tests {
             ),
             "invalid signature passed verification",
         );
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("test")]
+    #[case(
+        hex!("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+    )]
+    #[tokio::test]
+    async fn sign_verify(#[case] msg: impl AsRef<[u8]>) {
+        test_sign_verify(SigningKey::generate(&mut UnwrapErr(SysRng)), msg).await;
     }
 }

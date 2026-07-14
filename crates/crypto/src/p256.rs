@@ -47,6 +47,7 @@ const _: () = {
     use crate::Signer;
 
     impl Signer<P256> for SigningKey {
+        // TODO: maybe our custom error?
         type Error = Error;
 
         #[inline]
@@ -54,11 +55,19 @@ const _: () = {
             *self.verifying_key()
         }
 
-        // TODO: docs: prehash
+        /// Sign **32-byte prehash** (i.e. output of cryptographic hash
+        /// function).
+        ///
+        /// If given prehash is of different length, an error will be returned.
         async fn sign(&self, prehash: &[u8]) -> Result<<P256 as Curve>::Signature, Self::Error> {
             let prehash: &[u8; 32] = prehash.try_into().map_err(|_| Error::new())?;
 
-            Ok(self.sign_prehash_recoverable(prehash).0)
+            let signature = self.sign_prehash_recoverable(prehash).0;
+            // Signature is **not** automatically normalized to be low-S
+            // form, since `<k256::Secp256k1 as EcdsaCurve>::NORMALIZE_S`
+            // is not set.
+            // So, we need to notmalize ourselves:
+            Ok(signature.normalize_s())
         }
     }
 };
@@ -421,7 +430,10 @@ const _: () = {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
+    use p256::{ecdsa::SigningKey, elliptic_curve::Generate};
     use rstest::rstest;
+
+    use crate::tests::test_sign_verify;
 
     use super::*;
 
@@ -480,5 +492,17 @@ mod tests {
             ),
             "invalid signature passed verification",
         );
+    }
+
+    #[rstest]
+    #[case(
+        hex!("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+    )]
+    #[case(
+        hex!("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+    )]
+    #[tokio::test]
+    async fn sign_verify(#[case] prehash: [u8; 32]) {
+        test_sign_verify(SigningKey::generate(), prehash).await;
     }
 }
