@@ -40,6 +40,26 @@ impl Curve for P256 {
     }
 }
 
+#[cfg(feature = "signing")]
+const _: () = {
+    use p256::ecdsa::{Error, SigningKey, signature::hazmat::PrehashSigner};
+
+    use crate::Signer;
+
+    impl Signer<P256> for SigningKey {
+        type Error = Error;
+
+        #[inline]
+        fn public_key(&self) -> <P256 as Curve>::PublicKey {
+            *self.verifying_key()
+        }
+
+        async fn sign(&self, prehash: &[u8]) -> Result<<P256 as Curve>::Signature, Self::Error> {
+            self.sign_prehash(prehash)
+        }
+    }
+};
+
 /// Uncompressed P256 public key **without** leading SEC-1 tag byte.
 #[cfg_attr(
     feature = "serde",

@@ -34,13 +34,14 @@ arbitrary = ["dep:arbitrary"]
 borsh = ["dep:borsh"]
 borsh-schema = ["borsh", "borsh/unstable__schema"]
 fmt = ["dep:bs58", "dep:thiserror"]
-serde = ["dep:serde_with", "fmt"]
 schemars-v0_8 = [
   "dep:hex-literal",
   "dep:schemars",
   "serde",
   "serde_with?/schemars_0_8",
 ]
+serde = ["dep:serde_with", "fmt"]
+signing = []
 
 [dev-dependencies]
 defuse-crypto = { path = ".", features = ["ed25519", "p256", "secp256k1", "abi"] }

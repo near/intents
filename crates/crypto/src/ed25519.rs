@@ -38,6 +38,28 @@ impl Curve for Ed25519 {
     }
 }
 
+#[cfg(feature = "signing")]
+const _: () = {
+    use core::convert::Infallible;
+
+    use ed25519_dalek::SigningKey;
+
+    use crate::Signer;
+
+    impl Signer<Ed25519> for SigningKey {
+        type Error = Infallible;
+
+        #[inline]
+        fn public_key(&self) -> <Ed25519 as Curve>::PublicKey {
+            self.verifying_key()
+        }
+
+        async fn sign(&self, msg: &[u8]) -> Result<<Ed25519 as Curve>::Signature, Self::Error> {
+            Ok(ed25519_dalek::Signer::sign(self, msg))
+        }
+    }
+};
+
 /// Ed25519 public key
 #[cfg_attr(
     feature = "serde",

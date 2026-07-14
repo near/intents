@@ -1,6 +1,6 @@
-use std::{borrow::Cow, rc::Rc, sync::Arc};
+use std::{borrow::Cow, convert::Infallible, rc::Rc, sync::Arc};
 
-use defuse_crypto::{Curve, RecoverableCurve};
+use defuse_crypto::{Curve, RecoverableCurve, Signer};
 use impl_tools::autoimpl;
 
 use crate::{BoxSchema, Derive, DeriveExt, Schema};
@@ -89,6 +89,25 @@ where
     #[inline]
     fn derive_sign(&self, path: P, msg: &[u8]) -> C::Signature {
         self.0.derive_sign(self.1.derive_path(path), msg)
+    }
+}
+
+impl<C, S, D> Signer<C> for Derive<S, D>
+where
+    C: Curve,
+    D: Schema<()>,
+    S: DeriveSigner<C, D::Output>,
+{
+    type Error = Infallible; // TODO
+
+    #[inline]
+    fn public_key(&self) -> <C as Curve>::PublicKey {
+        self.derive_public_key(())
+    }
+
+    async fn sign(&self, msg: &[u8]) -> Result<<C as Curve>::Signature, Self::Error> {
+        // TODO: error
+        Ok(DeriveSigner::<C, _>::derive_sign(self, (), msg))
     }
 }
 

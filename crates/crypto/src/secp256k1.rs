@@ -66,7 +66,7 @@ impl RecoverableCurve for Secp256k1 {
         recovery_id: Self::RecoveryId,
     ) -> Option<Self::PublicKey> {
         // accept only 32 byte prehash
-        let prehash = <&[u8; 32]>::try_from(prehash).ok()?;
+        let prehash: &[u8; 32] = prehash.try_into().ok()?;
 
         let public_key = {
             cfg_select! {
@@ -98,6 +98,48 @@ impl RecoverableCurve for Secp256k1 {
         Some(public_key)
     }
 }
+
+#[cfg(feature = "signing")]
+const _: () = {
+    use k256::ecdsa::{Error, SigningKey};
+
+    use crate::{RecoverableSigner, Signer};
+
+    impl Signer<Secp256k1> for SigningKey {
+        type Error = Error;
+
+        #[inline]
+        fn public_key(&self) -> <Secp256k1 as Curve>::PublicKey {
+            *self.verifying_key()
+        }
+
+        async fn sign(
+            &self,
+            prehash: &[u8],
+        ) -> Result<<Secp256k1 as Curve>::Signature, Self::Error> {
+            RecoverableSigner::sign_recoverable(self, prehash)
+                .await
+                .map(|s| s.0)
+        }
+    }
+
+    impl RecoverableSigner<Secp256k1> for SigningKey {
+        async fn sign_recoverable(
+            &self,
+            prehash: &[u8],
+        ) -> Result<
+            (
+                <Secp256k1 as Curve>::Signature,
+                <Secp256k1 as RecoverableCurve>::RecoveryId,
+            ),
+            Self::Error,
+        > {
+            let prehash: &[u8; 32] = prehash.try_into().map_err(|_| Error::new())?;
+
+            self.sign_prehash_recoverable(prehash)
+        }
+    }
+};
 
 /// Uncompressed Secp256k1 public key **without** leading SEC-1 tag byte.
 #[cfg_attr(
