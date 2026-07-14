@@ -5,6 +5,7 @@ use crate::{Curve, RecoverableCurve};
 /// A signer capable of producing signatures for a specific [`Curve`].
 pub trait Signer<C: Curve> {
     /// An error that can occur during [signing](Self::sign).
+    // TODO: trait bounds? StdError?
     type Error: Debug;
 
     /// Public key of the signer
@@ -36,6 +37,8 @@ pub trait RecoverableSigner<C: RecoverableCurve>: Signer<C> {
 #[cfg(test)]
 #[allow(dead_code)]
 pub(crate) mod tests {
+    use std::fmt::Debug;
+
     use super::*;
 
     pub async fn test_sign_verify<C: Curve, S: Signer<C>>(signer: S, msg: impl AsRef<[u8]>) {

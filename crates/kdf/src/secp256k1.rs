@@ -1,7 +1,7 @@
 use defuse_crypto::{RecoverableCurve, secp256k1::Secp256k1};
 use k256::{
     FieldBytes, NonZeroScalar, ProjectivePoint, WideBytes,
-    ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey},
+    ecdsa::{self, RecoveryId, Signature, SigningKey, VerifyingKey},
     elliptic_curve::ops::Reduce,
 };
 
@@ -32,6 +32,9 @@ impl CurveArithmetic for Secp256k1 {
 }
 
 impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
+    // TODO: maybe different error?
+    type Error = ecdsa::Error;
+
     type Schema<'a>
         = Additive<Secp256k1>
     where
@@ -42,24 +45,29 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
         Additive::new(*self.verifying_key())
     }
 
-    fn derive_sign(&self, tweak: NonZeroScalar, prehash: &[u8]) -> Signature {
-        self.derive_sign_recoverable(tweak, prehash).0
+    fn derive_sign(&self, tweak: NonZeroScalar, prehash: &[u8]) -> Result<Signature, Self::Error> {
+        self.derive_sign_recoverable(tweak, prehash).map(|s| s.0)
     }
 }
 
 impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
+    // TODO: docs prehash
     fn derive_sign_recoverable(
         &self,
         tweak: NonZeroScalar,
         prehash: &[u8],
-    ) -> (Signature, RecoveryId) {
-        // TODO: return error if prehash is not 32 bytes long
+    ) -> Result<(Signature, RecoveryId), Self::Error> {
+        // check prehash length
+        let prehash: &[u8; 32] = prehash.try_into().map_err(|_| ecdsa::Error::new())?;
 
         let derived_scalar = NonZeroScalar::new(
             // sk' = sk + tweak
             **self.as_nonzero_scalar() + *tweak,
         )
-        .expect("derived secret key is zero");
+        .into_option()
+        // TODO
+        // .expect("derived secret key is zero");
+        .ok_or_else(ecdsa::Error::new)?;
 
         let derived_sk = Self::from(derived_scalar);
 
@@ -72,12 +80,12 @@ impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
         let (sig, recovery_id) = derived_sk.sign_prehash_recoverable(prehash);
 
         debug_assert_eq!(
-            Secp256k1::recover(prehash, &sig, recovery_id).expect("failed to recover public key"),
-            self.derive_public_key(tweak),
+            Secp256k1::recover(prehash, &sig, recovery_id),
+            Some(self.derive_public_key(tweak)),
             "invalid recovered public key",
         );
 
-        (sig, recovery_id)
+        Ok((sig, recovery_id))
     }
 }
 
@@ -86,7 +94,7 @@ impl Schema<[u8; 32]> for ReduceScalar<Secp256k1> {
 
     #[inline]
     fn derive_path(&self, path: [u8; 32]) -> Self::Output {
-        <NonZeroScalar as Reduce<FieldBytes>>::reduce(&path.into())
+        Reduce::<FieldBytes>::reduce(&path.into())
     }
 }
 
@@ -95,7 +103,7 @@ impl Schema<[u8; 64]> for ReduceScalar<Secp256k1> {
 
     #[inline]
     fn derive_path(&self, path: [u8; 64]) -> Self::Output {
-        <NonZeroScalar as Reduce<WideBytes>>::reduce(&path.into())
+        Reduce::<WideBytes>::reduce(&path.into())
     }
 }
 

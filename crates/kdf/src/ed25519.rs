@@ -1,3 +1,5 @@
+use core::convert::Infallible;
+
 pub use curve25519_dalek;
 use curve25519_dalek::{EdwardsPoint, Scalar};
 use defuse_crypto::ed25519::Ed25519;
@@ -48,6 +50,8 @@ impl Schema<[u8; 64]> for ReduceScalar<Ed25519> {
 }
 
 impl DeriveSigner<Ed25519, Scalar> for SigningKey {
+    type Error = Infallible;
+
     type Schema<'a>
         = Additive<Ed25519>
     where
@@ -58,7 +62,7 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
         Additive::new(self.verifying_key())
     }
 
-    fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Signature {
+    fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
         let esk = ExpandedSecretKey::from(self.as_bytes());
 
         debug_assert_eq!(
@@ -73,6 +77,8 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
 }
 
 impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
+    type Error = Infallible;
+
     type Schema<'a>
         = Additive<Ed25519>
     where
@@ -83,7 +89,7 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
         Additive::new(VerifyingKey::from(self))
     }
 
-    fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Signature {
+    fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
         let derived_esk = Self {
             // sk' = sk + tweak
             scalar: self.scalar + tweak,
@@ -93,6 +99,7 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
             // reuse the same nonce for different challenges, as it might
             // lead to leaking the root private key.
             hash_prefix: {
+                // TODO: remove outlayer prefix
                 const DOMAIN_SEPARATOR: &[u8] = b"outlayer/ed25519/derive-hash_prefix/v1";
 
                 thread_local! {
@@ -118,7 +125,11 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
             "derived public key mismatch",
         );
 
-        raw_sign::<Sha512>(&derived_esk, msg, &derived_verifying_key)
+        Ok(raw_sign::<Sha512>(
+            &derived_esk,
+            msg,
+            &derived_verifying_key,
+        ))
     }
 }
 
