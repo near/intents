@@ -149,8 +149,16 @@ impl AppPrivateKey {
         Some(secret.to_compressed())
     }
 
+    /// Decrypt the secret without verifying that it was derived from a given
+    /// MPC public key for a given predecessor and path.
+    ///
+    /// **NOTE**: unlike [`Self::decrypt_verify`] and
+    /// [`Self::decrypt_verify_app_id`], this does not check [`CkdResponse`]
+    /// validity or verify the result against an MPC public key, so callers
+    /// must perform that verification themselves before trusting the output.
+    ///
     /// See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/ckd-example-cli/src/ckd.rs#L128-L129>
-    fn decrypt(&self, resp: CkdResponse) -> G1Affine {
+    pub fn decrypt(&self, resp: CkdResponse) -> G1Affine {
         cfg_select! {
             near => {
                 let uncompressed: [u8; G1Affine::uncompressed_size()] =
