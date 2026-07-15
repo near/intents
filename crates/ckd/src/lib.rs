@@ -112,6 +112,7 @@ impl AppPrivateKey {
     /// **NOTE**: Returned secret's entropy is not distrubuted uniformly, so
     /// it shouldn't be used as-is. Instead, use HKDF to derive a strong
     /// uniformly-distributed key.
+    #[must_use = "use HKDF to derive a strong uniformly-distributed key"]
     #[inline]
     pub fn decrypt_verify(
         &self,
@@ -131,6 +132,7 @@ impl AppPrivateKey {
     /// **NOTE**: Returned secret's entropy is not distrubuted uniformly, so
     /// it shouldn't be used as-is. Instead, use HKDF to derive a strong
     /// uniformly-distributed key.
+    #[must_use = "use HKDF to derive a strong uniformly-distributed key"]
     pub fn decrypt_verify_app_id(
         &self,
         mpc_public_key: G2Affine,
@@ -154,6 +156,7 @@ impl AppPrivateKey {
     /// uniformly-distributed key.
     ///
     /// See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/ckd-example-cli/src/ckd.rs#L128-L129>
+    #[must_use = "use HKDF to derive a strong uniformly-distributed key"]
     #[inline]
     pub fn decrypt_unchecked(&self, resp: CkdResponse) -> Option<Secret> {
         let secret = self.decrypt(resp)?;
@@ -161,6 +164,7 @@ impl AppPrivateKey {
         Some(secret.to_compressed())
     }
 
+    #[must_use = "use decrypted secret"]
     fn decrypt(&self, resp: CkdResponse) -> Option<G1Affine> {
         if !resp.is_valid() {
             return None;
