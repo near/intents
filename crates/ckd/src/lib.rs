@@ -112,6 +112,8 @@ impl AppPrivateKey {
     /// **NOTE**: Returned secret's entropy is not distrubuted uniformly, so
     /// it shouldn't be used as-is. Instead, use HKDF to derive a strong
     /// uniformly-distributed key.
+    #[must_use = "use HKDF to derive a strong uniformly-distributed key"]
+    #[inline]
     pub fn decrypt_verify(
         &self,
         mpc_public_key: G2Affine,
@@ -125,22 +127,19 @@ impl AppPrivateKey {
     }
 
     /// Decrypt the secret and verify that it was derived from given MPC
-    /// public key for given predecessor and path.
+    /// public key for given `app_id`.
     ///
     /// **NOTE**: Returned secret's entropy is not distrubuted uniformly, so
     /// it shouldn't be used as-is. Instead, use HKDF to derive a strong
     /// uniformly-distributed key.
+    #[must_use = "use HKDF to derive a strong uniformly-distributed key"]
     pub fn decrypt_verify_app_id(
         &self,
         mpc_public_key: G2Affine,
         app_id: &[u8; 32],
         resp: CkdResponse,
     ) -> Option<Secret> {
-        if !resp.is_valid() {
-            return None;
-        }
-
-        let secret = self.decrypt(resp);
+        let secret = self.decrypt(resp)?;
 
         if !Self::verify(mpc_public_key, app_id, secret) {
             return None;
@@ -149,10 +148,30 @@ impl AppPrivateKey {
         Some(secret.to_compressed())
     }
 
+    /// Decrypt a secret from given response **without** [verifying](Self::decrypt_verify)
+    /// that it was derived from a given MPC public key for a given predecessor and path.
+    ///
+    /// **NOTE**: Returned secret's entropy is not distrubuted uniformly, so
+    /// it shouldn't be used as-is. Instead, use HKDF to derive a strong
+    /// uniformly-distributed key.
+    ///
     /// See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/ckd-example-cli/src/ckd.rs#L128-L129>
-    fn decrypt(&self, resp: CkdResponse) -> G1Affine {
-        cfg_select! {
-            near => {
+    #[must_use = "use HKDF to derive a strong uniformly-distributed key"]
+    #[inline]
+    pub fn decrypt_unchecked(&self, resp: CkdResponse) -> Option<Secret> {
+        let secret = self.decrypt(resp)?;
+
+        Some(secret.to_compressed())
+    }
+
+    #[must_use = "use decrypted secret"]
+    fn decrypt(&self, resp: CkdResponse) -> Option<G1Affine> {
+        if !resp.is_valid() {
+            return None;
+        }
+
+        let secret = cfg_select! {
+            near => {{
                 let uncompressed: [u8; G1Affine::uncompressed_size()] =
                     ::near_sdk::env::bls12381_p1_sum(
                         [
@@ -175,18 +194,21 @@ impl AppPrivateKey {
 
                 G1Affine::from_uncompressed_unchecked(&uncompressed)
                     .expect("uncompressed G1 affine: failed to deserialize")
-            }
-            _ => {
+            }}
+            _ => {{
                 use pairing::group::Curve;
 
                 (resp.big_c - resp.big_y * self.private_key).to_affine()
-            }
-        }
+            }}
+        };
+
+        Some(secret)
     }
 
     /// Check that `e(sig, g2) = e(hash_point, mpc_public_key)`
     ///
     /// See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/ckd-example-cli/src/ckd.rs#L100-L115>
+    #[must_use = "check whether verification succeeded"]
     fn verify(mpc_public_key: G2Affine, app_id: &[u8; 32], signature: G1Affine) -> bool {
         if !is_valid_g1(&signature) || !is_valid_g2(&mpc_public_key) {
             return false;
@@ -235,6 +257,7 @@ impl AppPublicKeyPV {
     /// Check that `e(app_pk1, g2) = e(g1, app_pk2)`
     ///
     /// See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/contract/src/primitives/ckd.rs#L34-L54>
+    #[must_use = "check whether validation passed"]
     pub fn is_valid(&self) -> bool {
         if !is_valid_g1(&self.pk1) || !is_valid_g2(&self.pk2) {
             return false;
@@ -273,6 +296,8 @@ impl AppPublicKeyPV {
 
     /// Shorthand for [`.verify_app_id()`](AppPublicKeyPV::verify_app_id) with `app_id`
     /// derived from `predecessor_id` and `path`
+    #[must_use = "check whether verification passed"]
+    #[inline]
     pub fn verify(
         &self,
         mpc_public_key: G2Affine,
@@ -288,6 +313,7 @@ impl AppPublicKeyPV {
     /// Verify that `e(big_c, g2) = e(big_y, app_pk2) * e(hash_point, public_key)`
     ///
     /// See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/contract/src/primitives/ckd.rs#L56-L83>
+    #[must_use = "check whether verification passed"]
     pub fn verify_app_id(
         &self,
         mpc_public_key: G2Affine,
@@ -345,6 +371,7 @@ impl CkdResponse {
     /// Check if points in the response are valid.
     ///
     /// See [`AppPublicKeyPV::verify`] for full public verification.
+    #[must_use = "check whether validation passed"]
     #[inline]
     pub fn is_valid(&self) -> bool {
         // See <https://github.com/near/mpc/blob/f7a959d2bfd723e92c3bd71a5b60e03d972a2ddb/crates/contract/src/primitives/ckd.rs#L69-L71>
