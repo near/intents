@@ -6,6 +6,7 @@ use defuse_wallet_sdk::{Proof, RequestMessage, WalletSigner};
 
 use crate::WalletEd25519;
 
+/// Signer wrapper for [`WalletEd25519`] signature schema.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::From, derive_more::AsRef)]
 pub struct WalletEd25519Signer<S>(pub S);
 

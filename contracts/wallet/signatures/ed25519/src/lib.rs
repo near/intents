@@ -1,3 +1,5 @@
+#[cfg(feature = "contract")]
+mod contract;
 #[cfg(feature = "signer")]
 mod signer;
 #[cfg(feature = "signer")]
@@ -30,21 +32,6 @@ impl SignatureSchema for WalletEd25519 {
         Ed25519::verify(&public_key, &msg.hash(), &signature.into())
     }
 }
-
-#[cfg(feature = "contract")]
-const _: () = {
-    use defuse_wallet::wallet;
-
-    wallet! {
-        #[wallet(
-            schema = WalletEd25519,
-            metadata(
-                standard(standard = "wallet-ed25519", version = "1.0.0")
-            )
-        )]
-        struct Contract(_);
-    }
-};
 
 #[cfg(test)]
 mod tests {
