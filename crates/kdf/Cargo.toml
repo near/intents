@@ -8,9 +8,9 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-trait-variant.workspace = true
 defuse-crypto = { workspace = true, features = ["signing"] }
 impl-tools.workspace = true
+trait-variant.workspace = true
 
 borsh = { workspace = true, optional = true }
 curve25519-dalek = { workspace = true, optional = true }
