@@ -11,6 +11,7 @@ use crate::WalletEd25519;
 /// # Examples
 ///
 /// ```rust
+/// # use defuse_wallet_ed25519::crypto::ed25519::ed25519_dalek;
 /// use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer};
 /// use defuse_wallet_sdk::{Request, SignatureSchema, Wallet};
 /// # use defuse_wallet_sdk::GlobalContractId;
