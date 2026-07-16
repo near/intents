@@ -160,55 +160,6 @@ where
     }
 }
 
-// TODO: move dyn to outlayer?
-// /// Object-safe version of [`DeriveSigner`] trait.
-// pub trait DynDeriveSigner<C: Curve, P> {
-//     fn schema_dyn<'a>(&'a self) -> BoxSchema<'a, P, C::PublicKey>
-//     where
-//         P: 'a;
-
-//     // TODO: add more bounds? + Send + Sync?
-//     async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Box<dyn Error>>;
-// }
-
-// impl<C, P, S> DynDeriveSigner<C, P> for S
-// where
-//     C: Curve,
-//     S: DeriveSigner<C, P, Error: Error + 'static>,
-// {
-//     #[inline]
-//     fn schema_dyn<'a>(&'a self) -> BoxSchema<'a, P, C::PublicKey>
-//     where
-//         P: 'a,
-//     {
-//         Box::new(self.schema())
-//     }
-
-//     #[inline]
-//     fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Box<dyn Error>> {
-//         DeriveSigner::<C, P>::derive_sign(self, path, msg).map_err(Into::into)
-//     }
-// }
-
-// impl<C: Curve, P> DeriveSigner<C, P> for dyn DynDeriveSigner<C, P> {
-//     type Error = Box<dyn Error>;
-
-//     type Schema<'a>
-//         = BoxSchema<'a, P, C::PublicKey>
-//     where
-//         Self: 'a;
-
-//     #[inline]
-//     fn schema(&self) -> Self::Schema<'_> {
-//         self.schema_dyn()
-//     }
-
-//     #[inline]
-//     async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error> {
-//         DynDeriveSigner::<C, P>::derive_sign(self, path, msg)
-//     }
-// }
-
 #[cfg(any(test, feature = "testing"))]
 pub async fn assert_signer_roundtrip<C, S, P>(
     signer: &S,
