@@ -149,7 +149,7 @@ where
     #[inline]
     pub fn chain_id(mut self, chain_id: impl Into<ChainId>) -> Self {
         self.chain_id = chain_id.into();
-        // contracts on different chains have keep track of their own nonces
+        // contracts on different chains keep track of their own nonces
         self.reseed_nonces();
         self
     }

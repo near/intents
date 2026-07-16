@@ -65,8 +65,8 @@ const _: () = {
 
             let signature = self.sign_prehash_recoverable(prehash).0;
             // Signature is **not** automatically normalized to be low-S
-            // form, since `<p256::Secp256k1 as EcdsaCurve>::NORMALIZE_S`
-            // is not set. So, we need to notmalize ourselves:
+            // form, since `<p256::NistP256 as EcdsaCurve>::NORMALIZE_S`
+            // is not set. So, we need to normalize ourselves:
             Ok(signature.normalize_s())
         }
     }
