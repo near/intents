@@ -29,21 +29,17 @@ pub const DEFAULT_TIMEOUT: Duration = Duration::from_hours(1);
 pub struct Nonces {
     /// Fixed timeout, i.e. maximum validity timespan for each nonce.
     #[cfg_attr(
-        feature = "borsh-schema",
+        feature = "borsh",
         borsh(
             serialize_with = "As::<DurationSeconds<u32>>::serialize",
             deserialize_with = "As::<DurationSeconds<u32>>::deserialize",
-            schema(with_funcs(
+        ),
+        cfg_attr(
+            feature = "borsh-schema",
+            borsh(schema(with_funcs(
                 definitions = "As::<DurationSeconds<u32>>::add_definitions_recursively",
                 declaration = "As::<DurationSeconds<u32>>::declaration",
-            ))
-        )
-    )]
-    #[cfg_attr(
-        all(feature = "borsh", not(feature = "borsh-schema")),
-        borsh(
-            serialize_with = "As::<DurationSeconds<u32>>::serialize",
-            deserialize_with = "As::<DurationSeconds<u32>>::deserialize",
+            )))
         )
     )]
     timeout: Duration,
@@ -54,21 +50,17 @@ pub struct Nonces {
         arbitrary(with = ::arbitrary_with::As::<RangeNanos::<0>>::arbitrary)
     )]
     #[cfg_attr(
-        feature = "borsh-schema",
+        feature = "borsh",
         borsh(
             serialize_with = "As::<TimestampNanoSeconds<u64>>::serialize",
             deserialize_with = "As::<TimestampNanoSeconds<u64>>::deserialize",
-            schema(with_funcs(
+        ),
+        cfg_attr(
+            feature = "borsh-schema",
+            borsh(schema(with_funcs(
                 definitions = "As::<TimestampNanoSeconds<u64>>::add_definitions_recursively",
                 declaration = "As::<TimestampNanoSeconds<u64>>::declaration",
-            ))
-        )
-    )]
-    #[cfg_attr(
-        all(feature = "borsh", not(feature = "borsh-schema")),
-        borsh(
-            serialize_with = "As::<TimestampNanoSeconds<u64>>::serialize",
-            deserialize_with = "As::<TimestampNanoSeconds<u64>>::deserialize",
+            )))
         )
     )]
     last_cleaned_at: Timestamp,
