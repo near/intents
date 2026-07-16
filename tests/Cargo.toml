@@ -30,7 +30,6 @@ serde_json.workspace = true
 strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
-defuse-rand-compat = { workspace = true, optional = true }
 defuse-wallet-ed25519 = { workspace = true, features = ["signer"], optional = true }
 defuse-wallet-relayer = { workspace = true, optional = true }
 
@@ -65,7 +64,6 @@ imt = ["defuse", "defuse-sandbox/imt"]
 outlayer = ["defuse-sandbox/outlayer", "defuse-test-utils/outlayer"]
 poa = ["defuse-sandbox/poa", "defuse-test-utils/poa"]
 wallet = [
-  "defuse-rand-compat/rand_core_0_6",
   "defuse-sandbox/wallet",
   "defuse-test-utils/wallet",
   "dep:defuse-wallet-ed25519",

@@ -1,6 +1,6 @@
 pub use p256;
 use p256::{
-    EncodedPoint,
+    Sec1Point,
     ecdsa::{Signature, VerifyingKey},
     elliptic_curve::scalar::IsHigh,
 };
@@ -39,6 +39,38 @@ impl Curve for P256 {
         }
     }
 }
+
+#[cfg(feature = "signing")]
+const _: () = {
+    use p256::ecdsa::{self, SigningKey};
+
+    use crate::Signer;
+
+    impl Signer<P256> for SigningKey {
+        type Error = ecdsa::Error;
+
+        #[inline]
+        fn public_key(&self) -> <P256 as Curve>::PublicKey {
+            *self.verifying_key()
+        }
+
+        /// Sign **32-byte prehash** (i.e. output of cryptographic hash
+        /// function).
+        ///
+        /// If given prehash is of different length, an error will be returned.
+        async fn sign(&self, prehash: &[u8]) -> Result<<P256 as Curve>::Signature, Self::Error> {
+            let prehash: &[u8; 32] = prehash
+                .try_into()
+                .map_err(|_| ecdsa::Error::from_source("prehash must be 32-bytes long"))?;
+
+            let signature = self.sign_prehash_recoverable(prehash).0;
+            // Signature is **not** automatically normalized to be low-S
+            // form, since `<p256::NistP256 as EcdsaCurve>::NORMALIZE_S`
+            // is not set. So, we need to normalize ourselves:
+            Ok(signature.normalize_s())
+        }
+    }
+};
 
 /// Uncompressed P256 public key **without** leading SEC-1 tag byte.
 #[cfg_attr(
@@ -106,7 +138,7 @@ impl P256UncompressedPublicKey {
     /// ```
     #[inline]
     pub fn compress(&self) -> P256CompressedPublicKey {
-        EncodedPoint::from_untagged_bytes((&self.0).into())
+        Sec1Point::from_untagged_bytes((&self.0).into())
             .compress()
             .as_bytes()
             .try_into()
@@ -129,7 +161,7 @@ impl From<&VerifyingKey> for P256UncompressedPublicKey {
     fn from(value: &VerifyingKey) -> Self {
         Self(
             value
-                .to_encoded_point(false) // do not compress
+                .to_sec1_point(false) // do not compress
                 .as_bytes()[1..] // skip SEC-1 leading tag byte
                 .try_into()
                 .unwrap_or_else(|_| unreachable!()),
@@ -151,7 +183,7 @@ impl TryFrom<&P256UncompressedPublicKey> for VerifyingKey {
 
     #[inline]
     fn try_from(value: &P256UncompressedPublicKey) -> Result<Self, Self::Error> {
-        Self::from_encoded_point(&EncodedPoint::from_untagged_bytes((&value.0).into()))
+        Self::from_sec1_point(&Sec1Point::from_untagged_bytes((&value.0).into()))
     }
 }
 
@@ -213,7 +245,7 @@ impl From<&VerifyingKey> for P256CompressedPublicKey {
     fn from(value: &VerifyingKey) -> Self {
         Self(
             value
-                .to_encoded_point(true) // compress
+                .to_sec1_point(true) // compress
                 .as_bytes()
                 .try_into()
                 .unwrap_or_else(|_| unreachable!()),
@@ -398,7 +430,10 @@ const _: () = {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
+    use p256::{ecdsa::SigningKey, elliptic_curve::Generate};
     use rstest::rstest;
+
+    use crate::tests::test_sign_verify;
 
     use super::*;
 
@@ -457,5 +492,17 @@ mod tests {
             ),
             "invalid signature passed verification",
         );
+    }
+
+    #[rstest]
+    #[case(
+        hex!("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+    )]
+    #[case(
+        hex!("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+    )]
+    #[tokio::test]
+    async fn sign_verify(#[case] prehash: [u8; 32]) {
+        test_sign_verify(SigningKey::generate(), prehash).await;
     }
 }

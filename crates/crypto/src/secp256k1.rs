@@ -1,7 +1,7 @@
 pub use k256;
 
 use k256::{
-    EncodedPoint,
+    Sec1Point,
     ecdsa::{RecoveryId, Signature, VerifyingKey},
 };
 
@@ -66,7 +66,7 @@ impl RecoverableCurve for Secp256k1 {
         recovery_id: Self::RecoveryId,
     ) -> Option<Self::PublicKey> {
         // accept only 32 byte prehash
-        let prehash = <&[u8; 32]>::try_from(prehash).ok()?;
+        let prehash: &[u8; 32] = prehash.try_into().ok()?;
 
         let public_key = {
             cfg_select! {
@@ -98,6 +98,60 @@ impl RecoverableCurve for Secp256k1 {
         Some(public_key)
     }
 }
+
+#[cfg(feature = "signing")]
+const _: () = {
+    use k256::ecdsa::{Error, SigningKey};
+
+    use crate::{RecoverableSigner, Signer};
+
+    impl Signer<Secp256k1> for SigningKey {
+        type Error = Error;
+
+        #[inline]
+        fn public_key(&self) -> <Secp256k1 as Curve>::PublicKey {
+            *self.verifying_key()
+        }
+
+        /// Sign **32-byte prehash** (i.e. output of cryptographic hash
+        /// function).
+        ///
+        /// If given prehash is of different length, an error will be returned.
+        async fn sign(
+            &self,
+            prehash: &[u8],
+        ) -> Result<<Secp256k1 as Curve>::Signature, Self::Error> {
+            RecoverableSigner::sign_recoverable(self, prehash)
+                .await
+                .map(|s| s.0)
+        }
+    }
+
+    impl RecoverableSigner<Secp256k1> for SigningKey {
+        /// Sign **32-byte prehash** (i.e. output of cryptographic hash
+        /// function) and return a signature along with recovery id.
+        ///
+        /// If given prehash is of different length, an error will be returned.
+        async fn sign_recoverable(
+            &self,
+            prehash: &[u8],
+        ) -> Result<
+            (
+                <Secp256k1 as Curve>::Signature,
+                <Secp256k1 as RecoverableCurve>::RecoveryId,
+            ),
+            Self::Error,
+        > {
+            let prehash: &[u8; 32] = prehash
+                .try_into()
+                .map_err(|_| Error::from_source("prehash must be 32 bytes long"))?;
+
+            // Signature is automatically normalized to be low-S form, since
+            // `<k256::Secp256k1 as EcdsaCurve>::NORMALIZE_S` is set.
+            Ok(self.sign_prehash_recoverable(prehash))
+        }
+    }
+};
 
 /// Uncompressed Secp256k1 public key **without** leading SEC-1 tag byte.
 #[cfg_attr(
@@ -157,7 +211,7 @@ impl From<&VerifyingKey> for Secp256k1UncompressedPublicKey {
     fn from(value: &VerifyingKey) -> Self {
         Self(
             value
-                .to_encoded_point(false) // do not compress
+                .to_sec1_point(false) // do not compress
                 .as_bytes()[1..] // skip SEC-1 leading tag byte
                 .try_into()
                 .unwrap_or_else(|_| unreachable!()),
@@ -179,7 +233,7 @@ impl TryFrom<&Secp256k1UncompressedPublicKey> for VerifyingKey {
 
     #[inline]
     fn try_from(value: &Secp256k1UncompressedPublicKey) -> Result<Self, Self::Error> {
-        Self::from_encoded_point(&EncodedPoint::from_untagged_bytes((&value.0).into()))
+        Self::from_sec1_point(&Sec1Point::from_untagged_bytes((&value.0).into()))
     }
 }
 
@@ -336,7 +390,10 @@ const _: () = {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
+    use k256::{ecdsa::SigningKey, elliptic_curve::Generate};
     use rstest::rstest;
+
+    use crate::tests::test_sign_recover;
 
     use super::*;
 
@@ -415,5 +472,17 @@ mod tests {
             Some(public_key.into().try_into().unwrap()),
             "invalid recovered public key",
         );
+    }
+
+    #[rstest]
+    #[case(
+        hex!("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+    )]
+    #[case(
+        hex!("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
+    )]
+    #[tokio::test]
+    async fn sign_recover(#[case] prehash: [u8; 32]) {
+        test_sign_recover(SigningKey::generate(), prehash).await;
     }
 }

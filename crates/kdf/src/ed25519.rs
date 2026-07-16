@@ -1,3 +1,5 @@
+use core::convert::Infallible;
+
 pub use curve25519_dalek;
 use curve25519_dalek::{EdwardsPoint, Scalar};
 use defuse_crypto::ed25519::Ed25519;
@@ -13,14 +15,17 @@ impl CurveArithmetic for Ed25519 {
 
     type Point = EdwardsPoint;
 
+    #[inline]
     fn mul_by_generator(scalar: &Self::Scalar) -> Self::Point {
         EdwardsPoint::mul_base(scalar)
     }
 
+    #[inline]
     fn pk2point(public_key: &Self::PublicKey) -> Self::Point {
         public_key.to_edwards()
     }
 
+    #[inline]
     fn point2pk(point: Self::Point) -> Self::PublicKey {
         point.into()
     }
@@ -45,6 +50,8 @@ impl Schema<[u8; 64]> for ReduceScalar<Ed25519> {
 }
 
 impl DeriveSigner<Ed25519, Scalar> for SigningKey {
+    type Error = Infallible;
+
     type Schema<'a>
         = Additive<Ed25519>
     where
@@ -55,7 +62,7 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
         Additive::new(self.verifying_key())
     }
 
-    fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Signature {
+    async fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
         let esk = ExpandedSecretKey::from(self.as_bytes());
 
         debug_assert_eq!(
@@ -65,11 +72,13 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
         );
 
         // delegate signing to expanded secret key
-        esk.derive_sign(tweak, msg)
+        esk.derive_sign(tweak, msg).await
     }
 }
 
 impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
+    type Error = Infallible;
+
     type Schema<'a>
         = Additive<Ed25519>
     where
@@ -80,7 +89,7 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
         Additive::new(VerifyingKey::from(self))
     }
 
-    fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Signature {
+    async fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
         let derived_esk = Self {
             // sk' = sk + tweak
             scalar: self.scalar + tweak,
@@ -90,7 +99,7 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
             // reuse the same nonce for different challenges, as it might
             // lead to leaking the root private key.
             hash_prefix: {
-                const DOMAIN_SEPARATOR: &[u8] = b"outlayer/ed25519/derive-hash_prefix/v1";
+                const DOMAIN_SEPARATOR: &[u8] = b"ed25519/derive-hash_prefix/v1";
 
                 thread_local! {
                     // per-thread lazily-initialized hasher with pre-processed domain separator
@@ -115,13 +124,18 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
             "derived public key mismatch",
         );
 
-        raw_sign::<Sha512>(&derived_esk, msg, &derived_verifying_key)
+        Ok(raw_sign::<Sha512>(
+            &derived_esk,
+            msg,
+            &derived_verifying_key,
+        ))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use ed25519_dalek::{PUBLIC_KEY_LENGTH, SecretKey};
+    use defuse_crypto::ed25519::Ed25519PublicKey;
+    use ed25519_dalek::SecretKey;
     use hex_literal::hex;
     use rstest::rstest;
 
@@ -130,7 +144,8 @@ mod tests {
     use super::*;
 
     #[rstest]
-    fn roundtrip(
+    #[tokio::test]
+    async fn roundtrip(
         #[values(
             hex!("c9997b51c4eeb50681a52ae87d30daa6cfafc56fddade04ddeb3e1a670f04987"),
         )]
@@ -145,7 +160,8 @@ mod tests {
             &SigningKey::from_bytes(&root_sk).derive(ReduceScalar::<Ed25519>::new()),
             tweak,
             msg,
-        );
+        )
+        .await;
     }
 
     #[rstest]
@@ -154,19 +170,21 @@ mod tests {
         hex!("108a8530b779de5245e65e92c3590bc8e87034afa8774e8c7365be3732f4b19e"),
         hex!("abb9efe579ee145410090ec74eb15165e9d8ff708cbef75ac99106d5535362ed"),
     )]
-    fn derived_pk_has_not_changed(
+    #[tokio::test]
+    async fn derived_pk_has_not_changed(
         #[case] root_sk: SecretKey,
         #[case] tweak: [u8; 32],
-        #[case] expected_derived_pk: [u8; PUBLIC_KEY_LENGTH],
+        #[case] expected_derived_pk: impl Into<Ed25519PublicKey>,
     ) {
         let (derived_pk, _signature) = assert_signer_roundtrip(
             &SigningKey::from_bytes(&root_sk).derive(ReduceScalar::<Ed25519>::new()),
             tweak,
             b"message",
-        );
+        )
+        .await;
         assert_eq!(
-            derived_pk.to_bytes(),
-            expected_derived_pk,
+            Ed25519PublicKey::from(derived_pk),
+            expected_derived_pk.into(),
             "derived public key has changed"
         );
     }

@@ -1,5 +1,13 @@
+#[cfg(feature = "contract")]
+mod contract;
+#[cfg(feature = "signer")]
+mod signer;
+#[cfg(feature = "signer")]
+pub use self::signer::*;
+
 use core::str::FromStr;
 
+pub use defuse_crypto as crypto;
 use defuse_crypto::{
     Curve,
     ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
@@ -25,47 +33,6 @@ impl SignatureSchema for WalletEd25519 {
         Ed25519::verify(&public_key, &msg.hash(), &signature.into())
     }
 }
-
-#[cfg(feature = "signer")]
-const _: () = {
-    use core::convert::Infallible;
-
-    use async_trait::async_trait;
-    use defuse_crypto::ed25519::ed25519_dalek::{Signer, SigningKey};
-    use defuse_wallet_sdk::{Proof, WalletSigner};
-
-    #[cfg_attr(not(target_family = "wasm"), async_trait)]
-    #[cfg_attr(target_family = "wasm", async_trait(?Send))]
-    impl WalletSigner<WalletEd25519> for SigningKey {
-        type Error = Infallible;
-
-        #[inline]
-        fn public_key(&self) -> Ed25519PublicKey {
-            self.verifying_key().into()
-        }
-
-        async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
-            let sig = self.sign(&msg.hash());
-
-            Ok(Ed25519Signature::from(sig).to_string())
-        }
-    }
-};
-
-#[cfg(feature = "contract")]
-const _: () = {
-    use defuse_wallet::wallet;
-
-    wallet! {
-        #[wallet(
-            schema = WalletEd25519,
-            metadata(
-                standard(standard = "wallet-ed25519", version = "1.0.0")
-            )
-        )]
-        struct Contract(_);
-    }
-};
 
 #[cfg(test)]
 mod tests {

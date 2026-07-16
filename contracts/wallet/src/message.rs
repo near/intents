@@ -22,6 +22,9 @@ use serde_with::DurationSeconds;
 /// range for on-chain messages.
 pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
 
+/// Chain id (e.g. `mainnet`)
+pub type ChainId = String;
+
 /// Signable message containing [`Request`] to execute via
 /// [`w_execute_signed()`](crate::contract::Wallet::w_execute_signed) contract
 /// method.
@@ -42,7 +45,7 @@ pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
 pub struct RequestMessage {
     /// Chain id (e.g. `mainnet`).
     /// MUST be equal to `chain_id` of the network.
-    pub chain_id: String,
+    pub chain_id: ChainId,
 
     /// Signer id.
     /// MUST be equal to the `AccountId` of the wallet-contract instance.
