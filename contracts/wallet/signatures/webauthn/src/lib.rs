@@ -1,10 +1,9 @@
 #[cfg(feature = "ed25519")]
 pub mod ed25519;
+#[cfg(feature = "mock")]
+pub mod mock;
 #[cfg(feature = "p256")]
 pub mod p256;
-// TODO: dummy
-#[cfg(feature = "signer")]
-pub mod signer;
 
 pub use defuse_webauthn as webauthn;
 

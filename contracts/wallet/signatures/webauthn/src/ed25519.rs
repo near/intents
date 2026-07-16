@@ -17,7 +17,7 @@ mod tests {
     use rand::rng;
     use rstest::rstest;
 
-    use crate::{WalletWebauthn, signer::LocalSigner};
+    use crate::{WalletWebauthn, mock::MockWalletWebauthnSigner};
 
     use super::*;
 
@@ -26,7 +26,7 @@ mod tests {
     #[rstest]
     #[tokio::test]
     async fn sign_verify_ok() {
-        let signer = LocalSigner::new(ed25519_dalek::SigningKey::generate(&mut rng()));
+        let signer = MockWalletWebauthnSigner::new(ed25519_dalek::SigningKey::generate(&mut rng()));
 
         let msg = RequestMessage {
             chain_id: MAINNET.to_string(),

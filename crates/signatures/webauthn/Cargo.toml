@@ -17,6 +17,7 @@ serde_with = { workspace = true, features = ["base64"] }
 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
+hex-literal = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
@@ -32,8 +33,9 @@ schemars-v0_8 = [
   "dep:schemars",
   "serde_with/schemars_0_8",
 ]
+mock = ["defuse-crypto/signing", "dep:hex-literal"]
 
 [dev-dependencies]
-defuse-webauthn = { path = ".", features = ["arbitrary", "ed25519", "p256", "schemars-v0_8", "borsh", "borsh-schema"] }
+defuse-webauthn = { path = ".", features = ["arbitrary", "ed25519", "p256", "schemars-v0_8", "borsh", "borsh-schema", "mock"] }
 hex-literal.workspace = true
 rstest.workspace = true

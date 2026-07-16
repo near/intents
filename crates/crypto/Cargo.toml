@@ -46,8 +46,11 @@ serde = ["dep:serde_with", "fmt"]
 signing = [
   "dep:impl-tools",
   "dep:trait-variant",
+  "ed25519-dalek?/alloc",
   "ed25519-dalek?/digest",
   "ed25519-dalek?/rand_core",
+  "k256?/alloc",
+  "p256?/alloc",
 ]
 
 [dev-dependencies]

@@ -9,7 +9,7 @@ pub struct P256;
 impl Algorithm for P256 {
     type Curve = defuse_crypto::p256::P256;
 
-    fn preprocess(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]> {
+    fn maybe_prehash(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]> {
         // prehash via SHA-256
         Sha256::digest(msg)
     }
