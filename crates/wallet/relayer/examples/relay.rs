@@ -1,8 +1,8 @@
-use defuse_digest::common::Generate;
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
 use defuse_wallet_sdk::{NearPromise, Request, Wallet, WalletOp, actions::FunctionCall};
 use near_kit::{AccountIdRef, Gas, Near, NearToken};
+use rand::{rand_core::UnwrapErr, rngs::SysRng};
 use serde_json::json;
 
 const WALLET_GLOBAL_CONTRACT_ID: &AccountIdRef =
@@ -14,7 +14,7 @@ const EXAMPLE_EXTENSION: &AccountIdRef = AccountIdRef::new_or_panic("extension.n
 #[tokio::main]
 async fn main() {
     // 0.0) Generate keypair
-    let wallet_signer = <ed25519_dalek::SigningKey as Generate>::generate();
+    let wallet_signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
     println!(
         "wallet_keypair: 'ed25519:{}'",
         bs58::encode(wallet_signer.to_keypair_bytes()).into_string()

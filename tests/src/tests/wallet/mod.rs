@@ -1,7 +1,7 @@
 mod no_sign;
 
 use defuse_core::crypto::ed25519::{Ed25519PublicKey, ed25519_dalek};
-use defuse_digest::common::Generate;
+use defuse_randomness::rng;
 use defuse_sandbox::{
     account::Account,
     extensions::wallet::{
@@ -274,7 +274,7 @@ impl Env {
     ) -> Wallet<WalletEd25519, WalletEd25519Signer<ed25519_dalek::SigningKey>> {
         Wallet::new(
             self.wallet_global_id.clone(),
-            WalletEd25519Signer(<ed25519_dalek::SigningKey as Generate>::generate()),
+            WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut rng())),
         )
     }
 }
