@@ -101,23 +101,16 @@ pub struct Params {
     // TODO: direction? src per 1 dst vs dst per 1 src?
     pub price: UD128, // TODO: dutch auction
 
-    #[cfg_attr(
-        not(feature = "abi"),
-        borsh(
-            serialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::serialize",
-            deserialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::deserialize",
-        )
+    #[borsh(
+        serialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::serialize",
+        deserialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::deserialize"
     )]
     #[cfg_attr(
         feature = "abi",
-        borsh(
-            serialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::serialize",
-            deserialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::deserialize",
-            schema(with_funcs(
-                declaration = "i64::declaration",
-                definitions = "i64::add_definitions_recursively",
-            ))
-        )
+        borsh(schema(with_funcs(
+            declaration = "i64::declaration",
+            definitions = "i64::add_definitions_recursively",
+        )))
     )]
     pub deadline: Timestamp,
 
@@ -281,23 +274,16 @@ pub struct State {
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub maker_dst_lost: u128,
 
-    #[cfg_attr(
-        not(feature = "abi"),
-        borsh(
-            serialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::serialize",
-            deserialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::deserialize",
-        )
+    #[borsh(
+        serialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::serialize",
+        deserialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::deserialize"
     )]
     #[cfg_attr(
         feature = "abi",
-        borsh(
-            serialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::serialize",
-            deserialize_with = "BorshAs::<BorshTimestampNanoSeconds<i64>>::deserialize",
-            schema(with_funcs(
-                declaration = "i64::declaration",
-                definitions = "i64::add_definitions_recursively",
-            ))
-        )
+        borsh(schema(with_funcs(
+            declaration = "i64::declaration",
+            definitions = "i64::add_definitions_recursively",
+        )))
     )]
     pub deadline: Timestamp,
 
