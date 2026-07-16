@@ -103,6 +103,7 @@ impl WalletBuilder {
             subwallet_id: self.subwallet_id,
             timeout: self.timeout,
             nonces: Arc::new(Mutex::new(ConcurrentNonces::new(make_rng()))),
+            chain_id: MAINNET.to_string(),
             signer,
             _schema: PhantomData,
         }
@@ -119,6 +120,8 @@ pub struct Wallet<SS: SignatureSchema, S: WalletSigner<SS>> {
     subwallet_id: u32,
     timeout: Duration,
     nonces: Arc<Mutex<ConcurrentNonces<SmallRng>>>,
+
+    chain_id: ChainId,
 
     signer: S,
     _schema: PhantomData<SS>,
@@ -137,6 +140,17 @@ where
         SS::PublicKey: BorshSerialize,
     {
         WalletBuilder::new().build(code, signer)
+    }
+
+    /// Set a custom [`chain_id`](RequestMessage::chain_id) for [`.sign()`](Self::sign)
+    /// instead of a [default](MAINNET) one.
+    #[must_use]
+    #[inline]
+    pub fn chain_id(mut self, chain_id: impl Into<ChainId>) -> Self {
+        self.chain_id = chain_id.into();
+        // contracts on different chains have keep track of their own nonces
+        self.reseed_nonces();
+        self
     }
 
     /// Get derived account id for this wallet contract instance.
@@ -200,12 +214,8 @@ where
         msg.timeout_secs,
         msg.hash
     )))]
-    pub async fn sign(
-        &self,
-        request: Request,
-        chain_id: impl Into<String>,
-    ) -> Result<(RequestMessage, Proof), S::Error> {
-        let msg = self.wrap_request_msg(request, chain_id);
+    pub async fn sign(&self, request: Request) -> Result<(RequestMessage, Proof), S::Error> {
+        let msg = self.wrap_request_msg(request);
 
         #[cfg(feature = "tracing")]
         record_all!(
@@ -231,9 +241,9 @@ where
     /// Wraps [`Request`] in [`RequestMessage`] for signing
     #[must_use = "`.sign()` the wrapped request"]
     #[inline]
-    fn wrap_request_msg(&self, request: Request, chain_id: impl Into<String>) -> RequestMessage {
+    fn wrap_request_msg(&self, request: Request) -> RequestMessage {
         RequestMessage {
-            chain_id: chain_id.into(),
+            chain_id: self.chain_id.clone(),
             signer_id: self.account_id().clone(),
             nonce: self.nonces.lock().unwrap().next(),
             // set `created_at` slightly before the actual time of signing,

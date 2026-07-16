@@ -6,7 +6,7 @@ use defuse_sandbox::{
     account::Account,
     extensions::wallet::{
         WalletExt,
-        sdk::{MAINNET, NearPromise, Request, State, Wallet, WalletOp, actions::FunctionCall},
+        sdk::{NearPromise, Request, State, Wallet, WalletOp, actions::FunctionCall},
     },
     global_contract::GlobalContract,
     kit::{Finality::Optimistic, Gas, GlobalContractId, Near, NearToken, StateInit, StateInitV1},
@@ -46,7 +46,6 @@ async fn test_signed(#[future] env: Env) {
                     NearPromise::new(receiver.account_id()).transfer(NearToken::from_yoctonear(2)),
                     NearPromise::new(receiver.account_id()).transfer(NearToken::from_yoctonear(3)),
                 ]),
-            MAINNET,
         )
         .await
         .unwrap();
@@ -119,7 +118,6 @@ async fn test_rotate(#[future] env: Env) {
                                                 ))
                                                 .gas(Gas::from_tgas(10)),
                                         )]),
-                                        MAINNET,
                                     )
                                     .await
                                     .unwrap();
@@ -128,7 +126,6 @@ async fn test_rotate(#[future] env: Env) {
                             })
                             .gas(Gas::from_tgas(20)),
                     )]),
-            MAINNET,
         )
         .await
         .unwrap();
@@ -155,7 +152,7 @@ async fn test_rotate(#[future] env: Env) {
     );
 
     {
-        let (msg, proof) = old_wallet.sign(Request::default(), MAINNET).await.unwrap();
+        let (msg, proof) = old_wallet.sign(Request::default()).await.unwrap();
 
         assert!(
             env.relayer
@@ -175,7 +172,6 @@ async fn test_rotate(#[future] env: Env) {
                     .args_json(WExecuteExtensionArgs::from(Request::new()))
                     .gas(Gas::from_tgas(10)),
             )]),
-            MAINNET,
         )
         .await
         .unwrap();
@@ -253,7 +249,7 @@ async fn test_no_storage_staking(#[future] env: Env) {
         .unwrap();
 
     join_all((0..wallet.timeout().as_secs() * 2).map(|_n| async {
-        let (msg, proof) = wallet.sign(Request::new(), MAINNET).await.unwrap();
+        let (msg, proof) = wallet.sign(Request::new()).await.unwrap();
         let req = WalletRelayRequest::new(msg, proof);
         assert!(
             env.relayer

@@ -11,6 +11,8 @@ pub type Proof = String;
 
 /// A signer that can sign [`RequestMessage`] according to specific
 /// [`SignatureSchema`].
+///
+/// For usage, see [`Wallet`](crate::Wallet).
 #[trait_variant::make(Send)]
 #[autoimpl(for<T: ?Sized + trait> &T, &mut T, Box<T>, Arc<T>)]
 pub trait WalletSigner<S: SignatureSchema>: Sync {

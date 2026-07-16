@@ -5,7 +5,7 @@ use std::{env, fs, path::Path, sync::LazyLock};
 use defuse_digest::{Digest, common::Generate, sha2::Sha256};
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer};
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
-use defuse_wallet_sdk::{MAINNET, NearToken, Request, Wallet};
+use defuse_wallet_sdk::{NearToken, Request, Wallet};
 use futures::{StreamExt, TryStreamExt, stream};
 use near_kit::{Final, GlobalContractId, PublishMode, sandbox::SandboxConfig};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
@@ -53,7 +53,7 @@ async fn main() {
 
     stream::iter(0..txs_count)
         // TODO: relayer.client().chain_id().as_str()
-        .then(|_n| wallet.sign(Request::new(), MAINNET))
+        .then(|_n| wallet.sign(Request::new()))
         .err_into()
         .map_ok(|(msg, proof)| {
             relayer.w_execute_signed(

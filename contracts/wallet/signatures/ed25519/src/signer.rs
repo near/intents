@@ -12,7 +12,7 @@ use crate::WalletEd25519;
 ///
 /// ```rust
 /// use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer};
-/// use defuse_wallet_sdk::{MAINNET, Request, SignatureSchema, Wallet};
+/// use defuse_wallet_sdk::{Request, SignatureSchema, Wallet};
 /// # use defuse_wallet_sdk::GlobalContractId;
 /// # use hex_literal::hex;
 /// use rand::{rand_core::UnwrapErr, rngs::SysRng};
@@ -27,7 +27,7 @@ use crate::WalletEd25519;
 ///     WalletEd25519Signer(signer),
 /// );
 ///
-/// let (msg, proof) = wallet.sign(Request::new(), MAINNET).await?;
+/// let (msg, proof) = wallet.sign(Request::new()).await?;
 ///
 /// assert!(
 ///     WalletEd25519::verify(&wallet.public_key(), &msg, &proof),
