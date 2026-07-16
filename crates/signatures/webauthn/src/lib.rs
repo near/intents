@@ -133,22 +133,6 @@ pub struct WebauthnAssertion {
 impl WebauthnAssertion {
     /// Returns effective signable message to be verified by the signature
     /// algorithm.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use defuse_webauthn::WebauthnAssertion;
-    /// # use hex_literal::hex;
-    /// let assertion = WebauthnAssertion {
-    ///     authenticator_data: hex!("49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d00000000").to_vec(),
-    ///     client_data_json: r#"{"type":"webauthn.get","challenge":"BvJpGRQxNyM3oMYGoVgi40m9DV7DF3BPl77xpO1vXh0","origin":"http://localhost:5173","crossOrigin":false}"#.to_string(),
-    /// };
-    ///
-    /// assert_eq!(
-    ///     assertion.effective_msg(),
-    ///     hex!("49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d000000007f105e868e4e52b17998984478130627a6e301002d9928c48c1a95b0b0e2e0da"),
-    /// );
-    /// ```
     fn effective_msg(&self) -> Vec<u8> {
         // 20. Let hash be the result of computing a hash over the cData using
         // SHA-256
@@ -244,5 +228,25 @@ pub trait Algorithm {
 
         // verify using `Self::Curve`
         Self::Curve::verify(public_key, msg.as_ref(), signature)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case(
+        WebauthnAssertion {
+            authenticator_data: hex!("49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d00000000").to_vec(),
+            client_data_json: r#"{"type":"webauthn.get","challenge":"BvJpGRQxNyM3oMYGoVgi40m9DV7DF3BPl77xpO1vXh0","origin":"http://localhost:5173","crossOrigin":false}"#.to_string(),
+        },
+        hex!("49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d000000007f105e868e4e52b17998984478130627a6e301002d9928c48c1a95b0b0e2e0da"),
+    )]
+    fn effective_msg(#[case] assertion: WebauthnAssertion, #[case] msg: impl AsRef<[u8]>) {
+        assert_eq!(assertion.effective_msg(), msg.as_ref());
     }
 }

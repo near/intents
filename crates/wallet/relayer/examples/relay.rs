@@ -13,19 +13,14 @@ const EXAMPLE_EXTENSION: &AccountIdRef = AccountIdRef::new_or_panic("extension.n
 
 #[tokio::main]
 async fn main() {
-    // 0.0) Generate keypair
-    let wallet_signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
-    println!(
-        "wallet_keypair: 'ed25519:{}'",
-        bs58::encode(wallet_signer.to_keypair_bytes()).into_string()
-    );
-
-    // 0.1) Build wallet state
+    // 0.0) Generate a keypair
+    let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
+    // 0.1) Build wallet state with signer's public key
     let wallet = Wallet::<WalletEd25519, _>::new(
         WALLET_GLOBAL_CONTRACT_ID.to_owned(),
-        WalletEd25519Signer(wallet_signer),
+        WalletEd25519Signer(signer),
     );
-
+    println!("public key: {}", wallet.public_key());
     // 0.2) Derive wallet account_id
     println!("wallet.account_id() = {}", wallet.account_id());
 

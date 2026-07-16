@@ -2,12 +2,13 @@ use defuse_crypto::{Curve, Signer};
 use defuse_wallet::RequestMessage;
 use defuse_wallet_sdk::{Proof, WalletSigner};
 use defuse_webauthn::{UserVerification, mock::MockWebauthnSigner};
+use impl_tools::autoimpl;
 use serde::Serialize;
 
 use crate::{WalletWebauthn, WalletWebauthnAlgorithm, WalletWebauthnProof};
 
 /// Mock [`WalletSigner`] for [`WalletWebauthn`] signature schema
-#[derive(Debug, Clone)]
+#[autoimpl(Debug, Clone where S: trait)]
 pub struct MockWalletWebauthnSigner<
     A: WalletWebauthnAlgorithm,
     UV: UserVerification,
