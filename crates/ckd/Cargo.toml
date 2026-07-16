@@ -38,7 +38,12 @@ serde = ["dep:serde", "dep:serde_with", "fmt"]
 arbitrary = ["dep:arbitrary", "fmt"]
 borsh = ["dep:borsh", "fmt"]
 borsh-schema = ["borsh", "borsh/unstable__schema"]
-schemars-v0_8 = ["dep:hex-literal", "dep:schemars", "serde", "serde_with?/schemars_0_8"]
+schemars-v0_8 = [
+  "dep:hex-literal",
+  "dep:schemars",
+  "serde",
+  "serde_with?/schemars_0_8",
+]
 abi = ["borsh-schema", "schemars-v0_8"]
 
 [dev-dependencies]

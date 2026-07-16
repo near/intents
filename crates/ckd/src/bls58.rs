@@ -381,5 +381,4 @@ mod tests {
             Err(ParseBlsPointError::InvalidPoint)
         ));
     }
-
 }
