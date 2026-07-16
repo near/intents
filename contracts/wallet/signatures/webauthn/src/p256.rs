@@ -59,7 +59,6 @@ mod tests {
         );
     }
 
-    #[rstest]
     #[tokio::test]
     async fn sign_verify_ok() {
         type SS = WalletWebauthn<P256, IgnoreUserVerification>;

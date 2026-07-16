@@ -15,13 +15,11 @@ mod tests {
     use defuse_wallet_sdk::{MAINNET, WalletSigner};
     use defuse_webauthn::IgnoreUserVerification;
     use rand::rng;
-    use rstest::rstest;
 
     use crate::{WalletWebauthn, mock::MockWalletWebauthnSigner};
 
     use super::*;
 
-    #[rstest]
     #[tokio::test]
     async fn sign_verify_ok() {
         type SS = WalletWebauthn<Ed25519, IgnoreUserVerification>;
