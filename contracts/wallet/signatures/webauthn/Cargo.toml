@@ -21,6 +21,9 @@ serde_json.workspace = true
 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
+defuse-digest = { workspace = true, features = ["sha2"], optional = true }
+defuse-wallet-sdk = { workspace = true, optional = true }
+derive_more = { workspace = true, features = ["as_ref"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
@@ -50,9 +53,19 @@ schemars-v0_8 = [
   "defuse-webauthn/schemars-v0_8",
   "dep:schemars",
 ]
+# TODO: rename to dummy-signer?
+signer = [
+  "defuse-crypto/signing",
+  "dep:defuse-digest",
+  "dep:defuse-wallet-sdk",
+  "dep:derive_more",
+]
 
 [dev-dependencies]
-defuse-wallet-webauthn = { path = ".", features = ["abi", "ed25519", "p256"] }
+defuse-wallet-webauthn = { path = ".", features = ["abi", "ed25519", "p256", "signer"] }
 
+ed25519-dalek = { workspace = true, features = ["rand_core"] }
 hex-literal.workspace = true
+rand = { workspace = true, features = ["thread_rng"] }
 rstest.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }

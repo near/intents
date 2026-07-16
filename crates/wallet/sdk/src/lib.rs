@@ -16,7 +16,6 @@ use std::{
 
 use borsh::BorshSerialize;
 use impl_tools::autoimpl;
-use near_global_contracts::{GlobalContractId, StateInit, StateInitV1};
 use rand::{make_rng, rngs::SmallRng};
 #[cfg(feature = "tracing")]
 use tracing::{Level, instrument, record_all};

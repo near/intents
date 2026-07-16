@@ -8,4 +8,42 @@ impl WalletWebauthnAlgorithm for Ed25519 {
     type Signature = Ed25519Signature;
 }
 
-// TODO: tests
+#[cfg(test)]
+mod tests {
+    use defuse_crypto::ed25519::ed25519_dalek;
+    use defuse_wallet::{DEFAULT_TIMEOUT, Request, RequestMessage, SignatureSchema, Timestamp};
+    use defuse_wallet_sdk::{MAINNET, WalletSigner};
+    use defuse_webauthn::IgnoreUserVerification;
+    use rand::rng;
+    use rstest::rstest;
+
+    use crate::{WalletWebauthn, signer::LocalSigner};
+
+    use super::*;
+
+    type SS = WalletWebauthn<Ed25519, IgnoreUserVerification>;
+
+    #[rstest]
+    #[tokio::test]
+    async fn sign_verify_ok() {
+        let signer = LocalSigner::new(ed25519_dalek::SigningKey::generate(&mut rng()));
+
+        let msg = RequestMessage {
+            chain_id: MAINNET.to_string(),
+            signer_id: "signer.near".parse().unwrap(),
+            nonce: 0,
+            created_at: Timestamp::now(),
+            timeout: DEFAULT_TIMEOUT,
+            request: Request::new(),
+        };
+
+        let proof = WalletSigner::<SS>::sign_request_msg(&signer, &msg)
+            .await
+            .unwrap();
+
+        assert!(
+            SS::verify(&WalletSigner::<SS>::public_key(&signer), &msg, &proof),
+            "signer produced invalid signature"
+        );
+    }
+}

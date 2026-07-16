@@ -137,6 +137,15 @@ pub struct WebauthnAssertion {
     pub client_data_json: String,
 }
 
+// TODO: remove?
+impl WebauthnAssertion {
+    pub fn prepare_payload(&self) -> Vec<u8> {
+        let hash = Sha256::digest(self.client_data_json.as_bytes());
+
+        [self.authenticator_data.as_slice(), hash.as_ref()].concat()
+    }
+}
+
 /// [`CollectedClientData`](https://w3c.github.io/webauthn/#dictdef-collectedclientdata)
 #[serde_as]
 #[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]

@@ -22,7 +22,7 @@ near-sdk = { workspace = true, optional = true }
 [features]
 abi = ["defuse-crypto/abi", "defuse-wallet/abi", "near-sdk?/abi"]
 
-signer = ["dep:defuse-wallet-sdk", "dep:derive_more"]
+signer = ["defuse-crypto/signing", "dep:defuse-wallet-sdk", "dep:derive_more"]
 
 contract = [
   "defuse-crypto/borsh",
@@ -33,8 +33,11 @@ contract = [
 [dev-dependencies]
 defuse-wallet-ed25519 = { path = ".", features = ["abi", "signer", "contract"] }
 
+ed25519-dalek = { workspace = true, features = ["rand_core"] }
 hex-literal.workspace = true
+rand = { workspace = true, features = ["sys_rng"] }
 rstest.workspace = true
+tokio-test.workspace = true
 
 near-sdk = { workspace = true, features = ["unit-testing"] }
 

@@ -7,6 +7,34 @@ use defuse_wallet_sdk::{Proof, RequestMessage, WalletSigner};
 use crate::WalletEd25519;
 
 /// Signer wrapper for [`WalletEd25519`] signature schema.
+///
+/// # Examples
+///
+/// ```rust
+/// use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer};
+/// use defuse_wallet_sdk::{MAINNET, Request, SignatureSchema, Wallet};
+/// # use defuse_wallet_sdk::GlobalContractId;
+/// # use hex_literal::hex;
+/// use rand::{rand_core::UnwrapErr, rngs::SysRng};
+/// # const GLOBAL_CONTRACT_ID: GlobalContractId = GlobalContractId::CodeHash(
+/// #     hex!("0000000000000000000000000000000000000000000000000000000000000000"),
+/// # );
+///
+/// # tokio_test::block_on(async {
+/// let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
+/// let wallet = Wallet::<WalletEd25519, _>::new(
+///     GLOBAL_CONTRACT_ID,
+///     WalletEd25519Signer(signer),
+/// );
+///
+/// let (msg, proof) = wallet.sign(Request::new(), MAINNET).await?;
+///
+/// assert!(
+///     WalletEd25519::verify(&wallet.public_key(), &msg, &proof),
+///     "signer produced invalid signature",
+/// );
+/// # Ok::<_, Box<dyn core::error::Error>>(()) }).unwrap();
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::From, derive_more::AsRef)]
 pub struct WalletEd25519Signer<S>(pub S);
 

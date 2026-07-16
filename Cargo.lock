@@ -2005,9 +2005,12 @@ dependencies = [
  "defuse-wallet-ed25519",
  "defuse-wallet-sdk",
  "derive_more",
+ "ed25519-dalek 3.0.0",
  "hex-literal",
  "near-sdk",
+ "rand 0.10.2",
  "rstest",
+ "tokio-test",
 ]
 
 [[package]]
@@ -2073,14 +2076,20 @@ dependencies = [
  "arbitrary",
  "borsh",
  "defuse-crypto",
+ "defuse-digest",
  "defuse-wallet",
+ "defuse-wallet-sdk",
  "defuse-wallet-webauthn",
  "defuse-webauthn",
+ "derive_more",
+ "ed25519-dalek 3.0.0",
  "hex-literal",
+ "rand 0.10.2",
  "rstest",
  "schemars 0.8.22",
  "serde",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -6448,6 +6457,17 @@ dependencies = [
  "futures-core",
  "pin-project-lite",
  "tokio",
+]
+
+[[package]]
+name = "tokio-test"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f6d24790a10a7af737693a3e8f1d03faef7e6ca0cc99aae5066f533766de545"
+dependencies = [
+ "futures-core",
+ "tokio",
+ "tokio-stream",
 ]
 
 [[package]]

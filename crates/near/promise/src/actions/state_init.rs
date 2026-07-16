@@ -1,4 +1,4 @@
-pub use near_global_contracts::StateInit;
+use near_global_contracts::StateInit;
 use near_token::NearToken;
 
 /// `DeterministicStateInit` [action](crate::actions::NearAction)

@@ -2,9 +2,8 @@ pub mod actions;
 
 pub use near_account_id::{AccountId, AccountIdRef};
 pub use near_gas::NearGas as Gas;
+pub use near_global_contracts::{GlobalContractId, StateInit, StateInitV1};
 pub use near_token::NearToken;
-
-use near_global_contracts::StateInit;
 
 use self::actions::{DeterministicStateInit, FunctionCall, NearAction, Transfer};
 
