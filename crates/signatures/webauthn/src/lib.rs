@@ -149,7 +149,7 @@ impl WebauthnAssertion {
     ///     hex!("49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d000000007f105e868e4e52b17998984478130627a6e301002d9928c48c1a95b0b0e2e0da"),
     /// );
     /// ```
-    pub fn effective_msg(&self) -> Vec<u8> {
+    fn effective_msg(&self) -> Vec<u8> {
         // 20. Let hash be the result of computing a hash over the cData using
         // SHA-256
         let hash = Sha256::digest(self.client_data_json.as_bytes());

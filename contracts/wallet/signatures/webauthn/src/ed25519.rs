@@ -21,11 +21,11 @@ mod tests {
 
     use super::*;
 
-    type SS = WalletWebauthn<Ed25519, IgnoreUserVerification>;
-
     #[rstest]
     #[tokio::test]
     async fn sign_verify_ok() {
+        type SS = WalletWebauthn<Ed25519, IgnoreUserVerification>;
+
         let signer = MockWalletWebauthnSigner::new(ed25519_dalek::SigningKey::generate(&mut rng()));
 
         let msg = RequestMessage {

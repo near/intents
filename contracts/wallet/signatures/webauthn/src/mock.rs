@@ -6,7 +6,8 @@ use serde::Serialize;
 
 use crate::{WalletWebauthn, WalletWebauthnAlgorithm, WalletWebauthnProof};
 
-#[derive(Debug, Clone, derive_more::Deref)]
+/// Mock [`WalletSigner`] for [`WalletWebauthn`] signature schema
+#[derive(Debug, Clone)]
 pub struct MockWalletWebauthnSigner<
     A: WalletWebauthnAlgorithm,
     UV: UserVerification,
@@ -22,6 +23,11 @@ where
     #[inline]
     pub fn new(signer: S) -> Self {
         Self(MockWebauthnSigner::new(signer))
+    }
+
+    #[inline]
+    pub const fn signer(&self) -> &S {
+        self.0.signer()
     }
 }
 

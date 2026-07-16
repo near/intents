@@ -22,7 +22,6 @@ serde_json.workspace = true
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
 defuse-wallet-sdk = { workspace = true, optional = true }
-derive_more = { workspace = true, features = ["deref"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
@@ -56,7 +55,6 @@ mock = [
   "defuse-crypto/signing",
   "defuse-webauthn/mock",
   "dep:defuse-wallet-sdk",
-  "dep:derive_more",
 ]
 
 [dev-dependencies]

@@ -12,15 +12,18 @@ impl WalletWebauthnAlgorithm for P256 {
 mod tests {
     use std::time::Duration;
 
+    use defuse_crypto::p256::p256::{ecdsa::SigningKey, elliptic_curve::Generate};
     use defuse_wallet::{
-        AccountId, Gas, NearPromise, NearToken, RequestMessage, SignatureSchema,
-        actions::FunctionCall,
+        AccountId, DEFAULT_TIMEOUT, Gas, NearPromise, NearToken, Request, RequestMessage,
+        SignatureSchema, Timestamp, actions::FunctionCall,
     };
+    use defuse_wallet_sdk::{MAINNET, WalletSigner};
     use defuse_webauthn::IgnoreUserVerification;
     use hex_literal::hex;
+    use rand::rng;
     use rstest::rstest;
 
-    use crate::WalletWebauthn;
+    use crate::{WalletWebauthn, mock::MockWalletWebauthnSigner};
 
     use super::*;
 
@@ -53,6 +56,32 @@ mod tests {
         assert!(
             WalletWebauthn::<P256, IgnoreUserVerification>::verify(&public_key.into(), &msg, proof),
             "signature is invalid"
+        );
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn sign_verify_ok() {
+        type SS = WalletWebauthn<P256, IgnoreUserVerification>;
+
+        let signer = MockWalletWebauthnSigner::new(SigningKey::generate_from_rng(&mut rng()));
+
+        let msg = RequestMessage {
+            chain_id: MAINNET.to_string(),
+            signer_id: "signer.near".parse().unwrap(),
+            nonce: 0,
+            created_at: Timestamp::now(),
+            timeout: DEFAULT_TIMEOUT,
+            request: Request::new(),
+        };
+
+        let proof = WalletSigner::<SS>::sign_request_msg(&signer, &msg)
+            .await
+            .unwrap();
+
+        assert!(
+            SS::verify(&WalletSigner::<SS>::public_key(&signer), &msg, &proof),
+            "signer produced invalid signature"
         );
     }
 }

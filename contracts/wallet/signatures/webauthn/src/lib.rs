@@ -5,6 +5,7 @@ pub mod mock;
 #[cfg(feature = "p256")]
 pub mod p256;
 
+pub use defuse_crypto as crypto;
 pub use defuse_webauthn as webauthn;
 
 use core::marker::PhantomData;

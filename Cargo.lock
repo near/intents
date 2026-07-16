@@ -2077,7 +2077,6 @@ dependencies = [
  "defuse-wallet-sdk",
  "defuse-wallet-webauthn",
  "defuse-webauthn",
- "derive_more",
  "hex-literal",
  "rand 0.10.2",
  "rstest",
