@@ -64,8 +64,11 @@ where
         let assertion = WebauthnAssertion {
             // https://w3c.github.io/webauthn/#table-authData
             authenticator_data: [
+                // rpIdHash
                 Sha256::digest(ORIGIN).as_slice(), // rpIdHash
+                // flags
                 &[0b00000001u8],                   // TODO: UV
+                // signCount
                 &self.sign_count.fetch_add(1, Ordering::SeqCst).to_be_bytes(),
             ]
             .concat(),

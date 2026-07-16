@@ -32,7 +32,6 @@ impl CurveArithmetic for Secp256k1 {
 }
 
 impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
-    // TODO: maybe different error?
     type Error = ecdsa::Error;
 
     type Schema<'a>
@@ -45,6 +44,7 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
         Additive::new(*self.verifying_key())
     }
 
+    /// Sign given **32-bytes prehash** with _internally_ derived secret key
     async fn derive_sign(
         &self,
         tweak: NonZeroScalar,
@@ -57,23 +57,23 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
 }
 
 impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
-    // TODO: docs prehash
+    /// Sign given **32-bytes prehash** with _internally_ derived secret key
+    /// and return signature along with recovery id.
     async fn derive_sign_recoverable(
         &self,
         tweak: NonZeroScalar,
         prehash: &[u8],
     ) -> Result<(Signature, RecoveryId), Self::Error> {
-        // TODO: are we sure?
-        // check prehash length
-        let prehash: &[u8; 32] = prehash.try_into().map_err(|_| ecdsa::Error::new())?;
+        let prehash: &[u8; 32] = prehash
+            .try_into()
+            .map_err(|_| ecdsa::Error::from_source("prehash must be 32-bytes long"))?;
 
         let derived_scalar = NonZeroScalar::new(
             // sk' = sk + tweak
             **self.as_nonzero_scalar() + *tweak,
         )
         .into_option()
-        // TODO
-        // .expect("derived secret key is zero");
+        // derived secret key is zero
         .ok_or_else(ecdsa::Error::new)?;
 
         let derived_sk = Self::from(derived_scalar);

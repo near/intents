@@ -142,7 +142,9 @@ const _: () = {
             ),
             Self::Error,
         > {
-            let prehash: &[u8; 32] = prehash.try_into().map_err(|_| Error::new())?;
+            let prehash: &[u8; 32] = prehash
+                .try_into()
+                .map_err(|_| Error::from_source("prehash must be 32 bytes long"))?;
 
             // Signature is automatically normalized to be low-S form, since
             // `<k256::Secp256k1 as EcdsaCurve>::NORMALIZE_S` is set.
