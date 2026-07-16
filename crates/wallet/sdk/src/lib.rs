@@ -124,7 +124,8 @@ pub struct Wallet<SS: SignatureSchema, S: WalletSigner<SS>> {
     chain_id: ChainId,
 
     signer: S,
-    _schema: PhantomData<SS>,
+    // `fn() -> SS` implements Send + Sync unconditionally
+    _schema: PhantomData<fn() -> SS>,
 }
 
 impl<SS, S> Wallet<SS, S>
@@ -205,7 +206,6 @@ where
     /// A single signer can control wallet contract instances with same account id on
     /// different chains. So, each signed message needs to include id of a chain where
     /// it's intended to be executed on.
-    #[allow(clippy::future_not_send)]
     #[cfg_attr(feature = "tracing", instrument(level = Level::DEBUG, skip_all, fields(
         msg.chain_id,
         msg.signer_id,
@@ -214,7 +214,10 @@ where
         msg.timeout_secs,
         msg.hash
     )))]
-    pub async fn sign(&self, request: Request) -> Result<(RequestMessage, Proof), S::Error> {
+    pub async fn sign(
+        &self,
+        request: impl Into<Request>,
+    ) -> Result<(RequestMessage, Proof), S::Error> {
         let msg = self.wrap_request_msg(request);
 
         #[cfg(feature = "tracing")]
@@ -241,7 +244,7 @@ where
     /// Wraps [`Request`] in [`RequestMessage`] for signing
     #[must_use = "`.sign()` the wrapped request"]
     #[inline]
-    fn wrap_request_msg(&self, request: Request) -> RequestMessage {
+    fn wrap_request_msg(&self, request: impl Into<Request>) -> RequestMessage {
         RequestMessage {
             chain_id: self.chain_id.clone(),
             signer_id: self.account_id().clone(),
@@ -250,7 +253,7 @@ where
             // so it doesn't fail on-chain if arrives too fast.
             created_at: Timestamp::now() - self.optimal_lag(),
             timeout: self.timeout(),
-            request,
+            request: request.into(),
         }
     }
 

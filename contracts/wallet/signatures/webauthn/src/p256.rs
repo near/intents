@@ -13,7 +13,7 @@ mod tests {
     use std::time::Duration;
 
     use defuse_wallet::{
-        AccountId, Gas, NearPromise, NearToken, Request, RequestMessage, SignatureSchema,
+        AccountId, Gas, NearPromise, NearToken, RequestMessage, SignatureSchema,
         actions::FunctionCall,
     };
     use defuse_webauthn::IgnoreUserVerification;
@@ -34,15 +34,14 @@ mod tests {
             nonce: 2845491008,
             created_at: "2026-07-07T11:13:29Z".parse().unwrap(),
             timeout: Duration::from_hours(1),
-            request: Request::new().external([
-                NearPromise::new("v1.signer".parse::<AccountId>().unwrap())
-                    .function_call(
-                        FunctionCall::name("sign")
-                            .args(hex!("7b2272657175657374223a7b227061796c6f61645f7632223a7b224563647361223a2230303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030227d2c22646f6d61696e5f6964223a302c2270617468223a22227d7d"))
-                            .attach_deposit(NearToken::from_yoctonear(1))
-                            .gas(Gas::from_gas(0))
-                    )
-            ]),
+            request: NearPromise::new("v1.signer".parse::<AccountId>().unwrap())
+                .function_call(
+                    FunctionCall::name("sign")
+                        .args(hex!("7b2272657175657374223a7b227061796c6f61645f7632223a7b224563647361223a2230303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030227d2c22646f6d61696e5f6964223a302c2270617468223a22227d7d"))
+                        .attach_deposit(NearToken::from_yoctonear(1))
+                        .gas(Gas::from_gas(0))
+                )
+                .into(),
         },
         r#"{"authenticator_data":"SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MdAAAAAA==","client_data_json":"{\"type\":\"webauthn.get\",\"challenge\":\"BvJpGRQxNyM3oMYGoVgi40m9DV7DF3BPl77xpO1vXh0\",\"origin\":\"http://localhost:5173\",\"crossOrigin\":false}","signature":"p256:1AmAt2duibsS6ohWTPXwpb98JMMJu5gZEyCKxD2EktkYsApkaRRXyHNjcdpKMk428Dfy5DLMTg6uF3KmxRdPGyv"}"#
     )]

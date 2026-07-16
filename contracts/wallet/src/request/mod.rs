@@ -115,3 +115,17 @@ impl FromIterator<NearPromise> for Request {
         r
     }
 }
+
+impl From<WalletOp> for Request {
+    #[inline]
+    fn from(op: WalletOp) -> Self {
+        Self::from_iter([op])
+    }
+}
+
+impl From<NearPromise> for Request {
+    #[inline]
+    fn from(p: NearPromise) -> Self {
+        Self::from_iter([p])
+    }
+}

@@ -103,10 +103,7 @@ async fn test_rotate(#[future] env: Env) {
                             .args_json({
                                 let (msg, proof) = new_wallet
                                     .sign(
-                                        Request::new().external([NearPromise::new(
-                                            old_wallet.account_id(),
-                                        )
-                                        .function_call(
+                                        NearPromise::new(old_wallet.account_id()).function_call(
                                             FunctionCall::name("w_execute_extension")
                                                 .attach_deposit(NearToken::from_yoctonear(1))
                                                 .args_json(WExecuteExtensionArgs::from(
@@ -117,7 +114,7 @@ async fn test_rotate(#[future] env: Env) {
                                                     ]),
                                                 ))
                                                 .gas(Gas::from_tgas(10)),
-                                        )]),
+                                        ),
                                     )
                                     .await
                                     .unwrap();
@@ -166,12 +163,12 @@ async fn test_rotate(#[future] env: Env) {
 
     let (msg, proof) = new_wallet
         .sign(
-            Request::new().external([NearPromise::new(old_wallet.account_id()).function_call(
+            NearPromise::new(old_wallet.account_id()).function_call(
                 FunctionCall::name("w_execute_extension")
                     .attach_deposit(NearToken::from_yoctonear(1))
                     .args_json(WExecuteExtensionArgs::from(Request::new()))
                     .gas(Gas::from_tgas(10)),
-            )]),
+            ),
         )
         .await
         .unwrap();
