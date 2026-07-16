@@ -38,5 +38,8 @@ mock = ["defuse-crypto/signing", "dep:hex-literal", "dep:impl-tools"]
 
 [dev-dependencies]
 defuse-webauthn = { path = ".", features = ["arbitrary", "ed25519", "p256", "schemars-v0_8", "borsh", "borsh-schema", "mock"] }
+
 hex-literal.workspace = true
+rand = { workspace = true, features = ["thread_rng"] }
 rstest.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }
