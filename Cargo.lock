@@ -1343,9 +1343,13 @@ dependencies = [
 name = "defuse-ckd"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
  "blstrs",
+ "borsh",
+ "bs58 0.5.1",
  "defuse-kdf-mpc",
  "defuse-rand-compat",
+ "derive_more",
  "hex-literal",
  "near-account-id",
  "near-sdk",
@@ -1353,6 +1357,11 @@ dependencies = [
  "rand 0.10.2",
  "rand_core 0.10.1",
  "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "thiserror 2.0.18",
 ]
 
 [[package]]

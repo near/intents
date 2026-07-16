@@ -2,6 +2,9 @@
 
 pub use blstrs;
 
+#[cfg(feature = "fmt")]
+pub mod bls58;
+
 use blstrs::{G1Affine, G1Projective, G2Affine, Scalar};
 use defuse_kdf_mpc::kdf::Schema;
 use defuse_rand_compat::RandCompat;
