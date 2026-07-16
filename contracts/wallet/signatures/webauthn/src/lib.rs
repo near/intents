@@ -11,7 +11,7 @@ pub use defuse_webauthn as webauthn;
 use core::marker::PhantomData;
 
 use defuse_crypto::Curve;
-use defuse_wallet::{RequestMessage, SignatureSchema};
+use defuse_wallet::SignatureSchema;
 use defuse_webauthn::{Algorithm, UserVerification, Webauthn, WebauthnAssertion};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
@@ -29,7 +29,7 @@ where
 {
     type PublicKey = A::PublicKey;
 
-    fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
+    fn verify_hash(public_key: &Self::PublicKey, hash: &[u8; 32], proof: &str) -> bool {
         // try to convert public key
         let Ok(public_key) = <A::Curve as Curve>::PublicKey::try_from(public_key) else {
             return false;
@@ -45,13 +45,13 @@ where
             return false;
         };
 
-        // Verify `msg.hash()` according to webauthn spec.
+        // Verify the given digest according to webauthn spec.
         //
-        // We `msg.hash()` as the challenge, since:
+        // We use the canonical message hash as the challenge, since:
         // * Authenticators are general-purpose signers and they usually
         //   implement blind singing.
         // * This reduces length of the `proof` submitted on-chain.
-        Webauthn::<A, UV>::verify(&public_key, msg.hash(), &proof.assertion, &signature)
+        Webauthn::<A, UV>::verify(&public_key, *hash, &proof.assertion, &signature)
     }
 }
 
@@ -63,6 +63,33 @@ pub trait WalletWebauthnAlgorithm: Algorithm {
 
     /// Used as [`WalletWebauthnProof::signature`]
     type Signature: DeserializeOwned;
+}
+
+#[cfg(test)]
+pub(crate) mod tests {
+    use core::time::Duration;
+    use std::collections::BTreeSet;
+
+    use defuse_wallet::{AuthMessage, AuthSignerBinding, Timestamp};
+
+    /// Sample NEP-641 [`AuthMessage`] with the passkey-style
+    /// [`Code`](AuthSignerBinding::Code) binding.
+    pub fn sample_auth_message() -> AuthMessage {
+        AuthMessage {
+            chain_id: "mainnet".to_string(),
+            signer: AuthSignerBinding::Code {
+                signature_enabled: true,
+                subwallet_id: 0,
+                timeout: Duration::from_hours(1),
+                extensions: BTreeSet::new(),
+            },
+            purpose: "PROVE_OWNERSHIP".to_string(),
+            recipient: "trezu.app".to_string(),
+            payload: "Login to trezu.app at 2026-07-16T00:00:00Z".to_string(),
+            created_at: Timestamp::UNIX_EPOCH,
+            timeout: Duration::from_hours(1),
+        }
+    }
 }
 
 /// JSON proof used by [`WalletWebauthn`]

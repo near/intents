@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use defuse_wallet::{RequestMessage, SignatureSchema};
+use defuse_wallet::{AuthMessage, RequestMessage, SignatureSchema};
 use impl_tools::autoimpl;
 
 /// A proof for [`w_execute_signed(msg, proof)`](defuse_wallet::contract::Wallet::w_execute_signed)
@@ -26,4 +26,11 @@ pub trait WalletSigner<S: SignatureSchema>: Sync {
     /// and return a proof serialized to string ready to be submitted to
     /// [`w_execute_signed(msg, proof)`](defuse_wallet::contract::Wallet::w_execute_signed) contract method
     async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error>;
+
+    /// Sign [`AuthMessage`] (NEP-641) according to [`SignatureSchema`]
+    /// and return a proof serialized to string ready to be wrapped in a
+    /// [`SignedAuthMessage`](defuse_wallet::SignedAuthMessage) and resolved via
+    /// [`w_resolve_auth()`](defuse_wallet::contract::Wallet::w_resolve_auth)
+    /// contract method
+    async fn sign_auth_msg(&self, msg: &AuthMessage) -> Result<Proof, Self::Error>;
 }

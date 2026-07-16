@@ -93,7 +93,7 @@ impl WalletBuilder {
             data: State::new(signer.public_key())
                 .subwallet_id(self.subwallet_id)
                 .timeout(self.timeout)
-                .extensions(self.extensions)
+                .extensions(self.extensions.clone())
                 .as_storage(),
         });
 
@@ -102,6 +102,7 @@ impl WalletBuilder {
             state_init,
             subwallet_id: self.subwallet_id,
             timeout: self.timeout,
+            extensions: self.extensions,
             nonces: Arc::new(Mutex::new(ConcurrentNonces::new(make_rng()))),
             chain_id: MAINNET.to_string(),
             signer,
@@ -119,6 +120,7 @@ pub struct Wallet<SS: SignatureSchema, S: WalletSigner<SS>> {
 
     subwallet_id: u32,
     timeout: Duration,
+    extensions: BTreeSet<AccountId>,
     nonces: Arc<Mutex<ConcurrentNonces<SmallRng>>>,
 
     chain_id: ChainId,
@@ -266,5 +268,96 @@ where
     #[inline]
     pub fn reseed_nonces(&self) {
         *self.nonces.lock().unwrap() = ConcurrentNonces::new(make_rng());
+    }
+
+    /// Wrap given authorization parameters in an [`AuthMessage`] (NEP-641)
+    /// with [`SignerId`](AuthSignerBinding::SignerId) binding to this
+    /// wallet's account id.
+    ///
+    /// Clients SHOULD prefer this binding whenever the account id is
+    /// already known. See [`auth_message_code_binding()`](Self::auth_message_code_binding)
+    /// for the discovery-friendly alternative.
+    #[must_use = "`.sign_auth()` the wrapped message"]
+    #[inline]
+    pub fn auth_message(
+        &self,
+        purpose: impl Into<String>,
+        recipient: impl Into<String>,
+        payload: impl Into<String>,
+    ) -> AuthMessage {
+        self.wrap_auth_msg(
+            AuthSignerBinding::SignerId {
+                signer_id: self.account_id().clone(),
+            },
+            purpose,
+            recipient,
+            payload,
+        )
+    }
+
+    /// Wrap given authorization parameters in an [`AuthMessage`] (NEP-641)
+    /// with [`Code`](AuthSignerBinding::Code) binding built from this
+    /// wallet's own initialization config.
+    ///
+    /// The contract validates this binding by re-deriving the deterministic
+    /// account id (NEP-616) from it, so it stays constructible before the
+    /// signing ceremony reveals which key answers, and remains valid even
+    /// after post-creation config mutations.
+    #[must_use = "`.sign_auth()` the wrapped message"]
+    #[inline]
+    pub fn auth_message_code_binding(
+        &self,
+        purpose: impl Into<String>,
+        recipient: impl Into<String>,
+        payload: impl Into<String>,
+    ) -> AuthMessage {
+        self.wrap_auth_msg(
+            AuthSignerBinding::Code {
+                signature_enabled: true,
+                subwallet_id: self.subwallet_id,
+                timeout: self.timeout,
+                extensions: self.extensions.clone(),
+            },
+            purpose,
+            recipient,
+            payload,
+        )
+    }
+
+    fn wrap_auth_msg(
+        &self,
+        signer: AuthSignerBinding,
+        purpose: impl Into<String>,
+        recipient: impl Into<String>,
+        payload: impl Into<String>,
+    ) -> AuthMessage {
+        AuthMessage {
+            chain_id: self.chain_id.clone(),
+            signer,
+            purpose: purpose.into(),
+            recipient: recipient.into(),
+            payload: payload.into(),
+            // set `created_at` slightly before the actual time of signing,
+            // so it doesn't fail on-chain if arrives too fast.
+            created_at: Timestamp::now() - self.optimal_lag(),
+            timeout: self.timeout(),
+        }
+    }
+
+    /// Sign given [`AuthMessage`] and return the [`SignedAuthMessage`]
+    /// ready to be JSON-serialized into the `authorization` argument of
+    /// [`w_resolve_auth()`](defuse_wallet::contract::Wallet::w_resolve_auth).
+    pub async fn sign_auth(&self, msg: AuthMessage) -> Result<SignedAuthMessage, S::Error> {
+        let proof = self.signer.sign_auth_msg(&msg).await?;
+
+        debug_assert!(
+            SS::verify_hash(&self.signer.public_key(), &msg.hash(), &proof),
+            "signer produced invalid signature",
+        );
+
+        Ok(SignedAuthMessage {
+            message: msg,
+            proof,
+        })
     }
 }

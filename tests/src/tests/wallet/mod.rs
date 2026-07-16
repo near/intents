@@ -1,3 +1,4 @@
+mod auth;
 mod no_sign;
 
 use defuse_core::crypto::ed25519::{Ed25519PublicKey, ed25519_dalek};

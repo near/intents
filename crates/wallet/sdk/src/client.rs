@@ -2,7 +2,9 @@
 
 use std::{borrow::Cow, collections::BTreeSet};
 
-use defuse_wallet::{Request, RequestMessage, Timestamp};
+use defuse_wallet::{
+    AuthorizationResolution, Request, RequestMessage, SignedAuthMessage, Timestamp,
+};
 use derive_more::From;
 use near_kit::{AccountId, AccountIdRef};
 use serde::Serialize;
@@ -28,6 +30,8 @@ pub trait WalletContract {
     fn w_timeout_secs(&self) -> u32;
 
     fn w_last_cleaned_at(&self) -> Timestamp;
+
+    fn w_resolve_auth(&self, args: WResolveAuthArgs<'_>) -> AuthorizationResolution;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -96,4 +100,32 @@ impl From<Request> for WExecuteExtensionArgs<'_> {
 #[from(forward)]
 pub struct WIsExtensionEnabledArgs<'a> {
     pub account_id: Cow<'a, AccountIdRef>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct WResolveAuthArgs<'a> {
+    pub purpose: Cow<'a, str>,
+    pub recipient: Cow<'a, str>,
+    pub authorization: Cow<'a, str>,
+}
+
+impl WResolveAuthArgs<'_> {
+    /// Build args from a [`SignedAuthMessage`]: `purpose`/`recipient` are
+    /// taken from the signed message itself and the `authorization` blob is
+    /// its JSON serialization.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the message fails to serialize to JSON (never happens for
+    /// well-formed messages).
+    #[must_use]
+    pub fn from_signed(signed: &SignedAuthMessage) -> Self {
+        Self {
+            purpose: Cow::Owned(signed.message.purpose.clone()),
+            recipient: Cow::Owned(signed.message.recipient.clone()),
+            authorization: Cow::Owned(
+                serde_json::to_string(signed).unwrap_or_else(|_| unreachable!()),
+            ),
+        }
+    }
 }

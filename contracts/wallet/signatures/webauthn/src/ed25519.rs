@@ -44,4 +44,27 @@ mod tests {
             "signer produced invalid signature"
         );
     }
+
+    /// End-to-end NEP-641 flow: the challenge is
+    /// [`AuthMessage::hash()`](defuse_wallet::AuthMessage::hash), exactly as
+    /// used by `w_resolve_auth()`.
+    #[tokio::test]
+    async fn sign_verify_auth_ok() {
+        type SS = WalletWebauthn<Ed25519, IgnoreUserVerification>;
+
+        let signer = MockWalletWebauthnSigner::new(ed25519_dalek::SigningKey::generate(&mut rng()));
+
+        let msg = crate::tests::sample_auth_message();
+
+        let proof = WalletSigner::<SS>::sign_auth_msg(&signer, &msg).await.unwrap();
+
+        assert!(
+            SS::verify_hash(&WalletSigner::<SS>::public_key(&signer), &msg.hash(), &proof),
+            "signer produced invalid signature"
+        );
+        assert!(
+            !SS::verify_hash(&WalletSigner::<SS>::public_key(&signer), &[0xab; 32], &proof),
+            "assertion over another challenge should not verify"
+        );
+    }
 }

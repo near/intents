@@ -11,7 +11,7 @@
 use std::{collections::BTreeSet, fmt::Display};
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use defuse_near_promise::{NearPromise, actions::NearAction};
+use defuse_near_promise::{NearPromise, StateInit, StateInitV1, actions::NearAction};
 use defuse_time::Timestamp;
 use impl_tools::autoimpl;
 use near_account_id::{AccountId, AccountIdRef};
@@ -19,7 +19,8 @@ use near_sdk::{FunctionError, Promise, env, ext_contract};
 
 pub use crate::ContractError as Error;
 use crate::{
-    Request, RequestMessage, SignatureSchema, State, WalletOp,
+    AuthError, AuthSignerBinding, AuthorizationResolution, Request, RequestMessage,
+    SignatureSchema, SignedAuthMessage, State, WalletOp,
     events::{Actor, WalletEvent},
 };
 
@@ -84,6 +85,37 @@ pub trait Wallet {
 
     /// Returns a timestamp when nonces were last cleaned up.
     fn w_last_cleaned_at(&self) -> Timestamp;
+
+    /// Resolve an off-chain authorization
+    /// ([NEP-641](https://github.com/near/NEPs/blob/master/neps/nep-0641.md)).
+    ///
+    /// MUST be a view method: it doesn't modify contract state and is
+    /// callable via `view_call` RPC without a signed transaction.
+    ///
+    /// The `authorization` blob is a JSON-serialized [`SignedAuthMessage`].
+    ///
+    /// Being a single-signer wallet, this MUST return either
+    /// [`RESOLVED`](AuthorizationResolution::Resolved) or
+    /// [`INVALID`](AuthorizationResolution::Invalid), never
+    /// [`PENDING`](AuthorizationResolution::Pending). It MUST return
+    /// `INVALID` (instead of panicking) in following cases:
+    /// * `authorization` is not a valid JSON-serialized [`SignedAuthMessage`]
+    /// * signature is [currently disabled](WalletOp::SetSignatureMode)
+    /// * [`message.purpose`](crate::AuthMessage::purpose) or
+    ///   [`message.recipient`](crate::AuthMessage::recipient) don't match the
+    ///   supplied arguments
+    /// * [`message.chain_id`](crate::AuthMessage::chain_id) is from another network
+    /// * [`message.created_at`](crate::AuthMessage::created_at) is expired or
+    ///   from the future
+    /// * [`message.signer`](crate::AuthMessage::signer) binding doesn't match this
+    ///   account / its current code and config
+    /// * `proof` is [invalid](SignatureSchema::verify_hash)
+    fn w_resolve_auth(
+        &self,
+        purpose: String,
+        recipient: String,
+        authorization: String,
+    ) -> AuthorizationResolution;
 }
 
 /// Reference implementation of [`Wallet`] standard, generic over the underlying
@@ -119,7 +151,7 @@ pub struct WalletImpl<S: SignatureSchema>(
 
 impl<S> Wallet for WalletImpl<S>
 where
-    S: SignatureSchema<PublicKey: Display>,
+    S: SignatureSchema<PublicKey: Display + Clone + BorshSerialize>,
 {
     #[inline]
     fn w_execute_signed(&mut self, msg: RequestMessage, proof: String) {
@@ -172,6 +204,19 @@ where
     fn w_last_cleaned_at(&self) -> Timestamp {
         self.0.nonces.last_cleaned_at()
     }
+
+    #[inline]
+    fn w_resolve_auth(
+        &self,
+        purpose: String,
+        recipient: String,
+        authorization: String,
+    ) -> AuthorizationResolution {
+        self.resolve_auth(&purpose, &recipient, &authorization)
+            .map_or_else(Into::into, |payload| AuthorizationResolution::Resolved {
+                payload,
+            })
+    }
 }
 
 impl<S> WalletImpl<S>
@@ -207,6 +252,106 @@ where
         WalletEvent::SignedRequest { hash }.emit();
 
         self.execute_request(msg.request, &Actor::SignedRequest(hash))
+    }
+
+    fn resolve_auth(
+        &self,
+        purpose: &str,
+        recipient: &str,
+        authorization: &str,
+    ) -> Result<String, AuthError>
+    where
+        S::PublicKey: Clone + BorshSerialize,
+    {
+        let SignedAuthMessage { message: msg, proof } = serde_json::from_str(authorization)
+            .map_err(|err| AuthError::MalformedAuthorization(err.to_string()))?;
+
+        // same policy as `execute_signed()`
+        if !self.0.is_signature_allowed() {
+            return Err(AuthError::SignatureDisabled);
+        }
+
+        // check purpose binding
+        if msg.purpose != purpose {
+            return Err(AuthError::PurposeMismatch);
+        }
+
+        // check recipient binding
+        if msg.recipient != recipient {
+            return Err(AuthError::RecipientMismatch);
+        }
+
+        // check chain_id
+        if msg.chain_id != utils::chain_id() {
+            return Err(AuthError::InvalidChainId);
+        }
+
+        // check validity window: same rule as `Nonces::commit()`, sans bitmap
+        let now = Timestamp::now();
+        if !(now - self.0.nonces.timeout().min(msg.timeout) <= msg.created_at
+            && msg.created_at <= now)
+        {
+            return Err(AuthError::ExpiredOrFuture);
+        }
+
+        // check signer binding
+        match &msg.signer {
+            AuthSignerBinding::SignerId { signer_id } => {
+                if *signer_id != env::current_account_id() {
+                    return Err(AuthError::SignerBindingMismatch);
+                }
+            }
+            AuthSignerBinding::Code {
+                signature_enabled,
+                subwallet_id,
+                timeout,
+                extensions,
+            } => {
+                // Reconstruct the `StateInit` this account must have been
+                // created with: the code identity is the code this account
+                // is currently running under, the config comes from the
+                // envelope, and `public_key` comes from the contract's own
+                // state (and is additionally bound by the signature
+                // verification below). The derived deterministic account
+                // id commits to all three, so it can only match
+                // `env::current_account_id()` if this envelope was
+                // intended for this exact account.
+                //
+                // NOTE: requires near-sdk >= 5.29.0, where
+                // `current_contract_code()` was fixed to return the global
+                // contract's account id (rather than the current account's
+                // own id) for GlobalByAccount deployments.
+                let Some(code) = env::current_global_contract_id() else {
+                    // not running under a global contract: this cannot be
+                    // a deterministic wallet-contract instance
+                    return Err(AuthError::SignerBindingMismatch);
+                };
+
+                let initial_state = State {
+                    signature_enabled: *signature_enabled,
+                    subwallet_id: *subwallet_id,
+                    public_key: self.0.public_key.clone(),
+                    nonces: crate::Nonces::new(*timeout),
+                    extensions: extensions.clone(),
+                };
+
+                let state_init = StateInit::V1(StateInitV1 {
+                    code,
+                    data: initial_state.as_storage(),
+                });
+
+                if state_init.derive_account_id() != env::current_account_id() {
+                    return Err(AuthError::SignerBindingMismatch);
+                }
+            }
+        }
+
+        // verify signature over the domain-separated authorization hash
+        if !S::verify_hash(&self.0.public_key, &msg.hash(), &proof) {
+            return Err(AuthError::InvalidSignature);
+        }
+
+        Ok(msg.payload)
     }
 
     fn execute_extension(&mut self, request: Request) -> Result<()> {
@@ -354,7 +499,7 @@ mod utils {
 ///
 /// ```rust
 /// # use core::fmt::{self, Display};
-/// use defuse_wallet::{RequestMessage, SignatureSchema, wallet};
+/// use defuse_wallet::{SignatureSchema, wallet};
 /// use near_sdk::near;
 ///
 /// // Define the contract struct and impl
@@ -377,17 +522,19 @@ mod utils {
 ///     /// Public key stored in the contract's state.
 ///     type PublicKey = MyPublicKey;
 ///
-///    /// Verify given proof over the request message in respect to the public
-///    /// key and return whether verification passed.
+///    /// Verify given proof over a 32-byte domain-separated digest in
+///    /// respect to the public key and return whether verification passed.
 ///    ///
-///    /// Used by the `w_execute_signed(msg, proof)` contract method.
-///     fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
-///         todo!("verify signature over `msg` in respect to the public key")
+///    /// Used by the `w_execute_signed(msg, proof)` and
+///    /// `w_resolve_auth(purpose, recipient, authorization)` contract methods.
+///     fn verify_hash(public_key: &Self::PublicKey, hash: &[u8; 32], proof: &str) -> bool {
+///         todo!("verify signature over `hash` in respect to the public key")
 ///     }
 /// }
 ///
 /// // Public key is stored in the contract's state.
 /// #[near(serializers = [borsh])]
+/// #[derive(Clone)]
 /// pub struct MyPublicKey([u8; 64]);
 ///
 /// // `Display` is needed for `w_public_key()` contract method.
@@ -479,6 +626,19 @@ macro_rules! wallet {
             /// Returns a timestamp when nonces were last cleaned up.
             fn w_last_cleaned_at(&self) -> $crate::Timestamp {
                 self.0.w_last_cleaned_at()
+            }
+
+            /// Resolve an off-chain authorization (NEP-641).
+            ///
+            /// This is a view method: it never modifies contract state and
+            /// returns `INVALID` instead of panicking.
+            fn w_resolve_auth(
+                &self,
+                purpose: ::std::string::String,
+                recipient: ::std::string::String,
+                authorization: ::std::string::String,
+            ) -> $crate::AuthorizationResolution {
+                self.0.w_resolve_auth(purpose, recipient, authorization)
             }
         }
     };

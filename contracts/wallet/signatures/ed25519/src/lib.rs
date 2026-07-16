@@ -21,7 +21,7 @@ pub struct WalletEd25519;
 impl SignatureSchema for WalletEd25519 {
     type PublicKey = Ed25519PublicKey;
 
-    fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
+    fn verify_hash(public_key: &Self::PublicKey, hash: &[u8; 32], proof: &str) -> bool {
         let Ok(signature) = Ed25519Signature::from_str(proof) else {
             return false;
         };
@@ -30,7 +30,7 @@ impl SignatureSchema for WalletEd25519 {
             return false;
         };
 
-        Ed25519::verify(&public_key, &msg.hash(), &signature.into())
+        Ed25519::verify(&public_key, hash, &signature.into())
     }
 }
 

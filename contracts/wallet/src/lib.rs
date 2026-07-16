@@ -1,5 +1,6 @@
 #![doc = include_str!("../README.md")]
 
+mod auth;
 #[cfg(feature = "near-contract")]
 pub mod contract;
 mod error;
@@ -9,7 +10,7 @@ mod nonces;
 mod request;
 mod schema;
 mod state;
-pub use self::{error::*, message::*, nonces::*, request::*, schema::*, state::*};
+pub use self::{auth::*, error::*, message::*, nonces::*, request::*, schema::*, state::*};
 
 pub use defuse_time::Timestamp;
 pub use near_account_id::{AccountId, AccountIdRef};

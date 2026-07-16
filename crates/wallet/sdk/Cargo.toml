@@ -19,11 +19,12 @@ bs58 = { workspace = true, optional = true }
 derive_more = { workspace = true, features = ["from"], optional = true }
 near-kit = { workspace = true, default-features = false, optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
+serde_json = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }
 
 [features]
 json = ["defuse-wallet/json", "serde"]
-near-kit = ["dep:derive_more", "dep:near-kit", "derive_more/from", "serde"]
+near-kit = ["dep:derive_more", "dep:near-kit", "dep:serde_json", "derive_more/from", "serde"]
 serde = ["defuse-wallet/serde", "dep:serde"]
 tracing = ["dep:bs58", "dep:tracing"]
 
