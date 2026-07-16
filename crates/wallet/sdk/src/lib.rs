@@ -199,7 +199,7 @@ where
         self.signer().public_key()
     }
 
-    /// Wrap given request in a [`RequestMessage`] for given chain id and sign it.
+    /// Wrap given request in a [`RequestMessage`] and sign it.
     ///
     /// # Chain Id
     ///
