@@ -129,7 +129,8 @@ where
     SS: SignatureSchema,
     S: WalletSigner<SS>,
 {
-    /// Shorthand for [`WalletBuilder::new()`].[`build()`](WalletBuilder::build).
+    #[allow(clippy::doc_link_code)]
+    /// Shorthand for [`WalletBuilder::new()`](WalletBuilder::new)[`.build()`](WalletBuilder::build).
     #[inline]
     pub fn new(code: impl Into<GlobalContractId>, signer: S) -> Self
     where

@@ -12,7 +12,6 @@ defuse-wallet = { workspace = true, features = ["borsh", "digest"] }
 
 borsh.workspace = true
 impl-tools.workspace = true
-near-global-contracts = { workspace = true, features = ["borsh"] }
 rand.workspace = true
 trait-variant.workspace = true
 
@@ -25,7 +24,7 @@ tracing = { workspace = true, optional = true }
 [features]
 json = ["defuse-wallet/json", "serde"]
 near-kit = ["dep:derive_more", "dep:near-kit", "derive_more/from", "serde"]
-serde = ["defuse-wallet/serde", "dep:serde", "near-global-contracts/serde"]
+serde = ["defuse-wallet/serde", "dep:serde"]
 tracing = ["dep:bs58", "dep:tracing"]
 
 [dev-dependencies]
