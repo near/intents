@@ -1,5 +1,5 @@
 use defuse_digest::common::Generate;
-use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer};
+use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
 use defuse_wallet_sdk::{NearPromise, Request, Wallet, WalletOp, actions::FunctionCall};
 use near_kit::{AccountIdRef, Gas, Near, NearToken};

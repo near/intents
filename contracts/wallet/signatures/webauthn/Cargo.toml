@@ -64,7 +64,6 @@ signer = [
 [dev-dependencies]
 defuse-wallet-webauthn = { path = ".", features = ["abi", "ed25519", "p256", "signer"] }
 
-ed25519-dalek = { workspace = true, features = ["rand_core"] }
 hex-literal.workspace = true
 rand = { workspace = true, features = ["thread_rng"] }
 rstest.workspace = true

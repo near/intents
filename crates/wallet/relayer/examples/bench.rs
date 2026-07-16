@@ -3,11 +3,12 @@
 use std::{env, fs, path::Path, sync::LazyLock};
 
 use defuse_digest::{Digest, common::Generate, sha2::Sha256};
-use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer};
+use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
 use defuse_wallet_sdk::{NearToken, Request, Wallet};
 use futures::{StreamExt, TryStreamExt, stream};
 use near_kit::{Final, GlobalContractId, PublishMode, sandbox::SandboxConfig};
+use rand::rng;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 static WALLET_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
@@ -45,7 +46,7 @@ async fn main() {
 
     let wallet = Wallet::<WalletEd25519, _>::new(
         global_contract_id,
-        WalletEd25519Signer(<ed25519_dalek::SigningKey as Generate>::generate()),
+        WalletEd25519Signer(ed25519_dalek::SigningKey::generate_from_rng(&mut rng())),
     );
 
     let started_at = tokio::time::Instant::now();

@@ -33,7 +33,6 @@ contract = [
 [dev-dependencies]
 defuse-wallet-ed25519 = { path = ".", features = ["abi", "signer", "contract"] }
 
-ed25519-dalek = { workspace = true, features = ["rand_core"] }
 hex-literal.workspace = true
 rand = { workspace = true, features = ["sys_rng"] }
 rstest.workspace = true

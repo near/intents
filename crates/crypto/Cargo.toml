@@ -43,12 +43,16 @@ schemars-v0_8 = [
   "serde_with?/schemars_0_8",
 ]
 serde = ["dep:serde_with", "fmt"]
-signing = ["dep:impl-tools", "dep:trait-variant"]
+signing = [
+  "dep:impl-tools",
+  "dep:trait-variant",
+  "ed25519-dalek?/digest",
+  "ed25519-dalek?/rand_core",
+]
 
 [dev-dependencies]
 defuse-crypto = { path = ".", features = ["ed25519", "p256", "secp256k1", "abi", "signing"] }
 
-ed25519-dalek = { workspace = true, features = ["rand_core"] }
 hex-literal.workspace = true
 k256 = { workspace = true, features = ["getrandom"] }
 p256 = { workspace = true, features = ["getrandom"] }

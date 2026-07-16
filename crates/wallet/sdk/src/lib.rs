@@ -207,8 +207,8 @@ where
     /// different chains. So, each signed message needs to include id of a chain where
     /// it's intended to be executed on.
     #[cfg_attr(feature = "tracing", instrument(level = Level::DEBUG, skip_all, fields(
-        msg.chain_id,
-        msg.signer_id,
+        msg.chain_id = &self.chain_id,
+        msg.signer_id = %self.account_id(),
         msg.nonce,
         msg.created_at,
         msg.timeout_secs,
@@ -223,8 +223,6 @@ where
         #[cfg(feature = "tracing")]
         record_all!(
             tracing::Span::current(),
-            msg.chain_id,
-            %msg.signer_id,
             msg.nonce,
             %msg.created_at,
             msg.timeout_secs = msg.timeout.as_secs(),

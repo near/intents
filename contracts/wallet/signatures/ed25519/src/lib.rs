@@ -7,6 +7,7 @@ pub use self::signer::*;
 
 use core::str::FromStr;
 
+pub use defuse_crypto as crypto;
 use defuse_crypto::{
     Curve,
     ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
