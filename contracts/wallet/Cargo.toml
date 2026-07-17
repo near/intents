@@ -28,6 +28,8 @@ serde_json = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true }
 
 near-sdk = { workspace = true, optional = true }
+# TODO: Remove this dependency after upgrading to near-sdk 5.29+
+near-sys = { workspace = true, optional = true }
 
 [features]
 default = ["std"]
@@ -83,9 +85,9 @@ near-contract = [
   "defuse-near-promise/near-contract",
   "dep:impl-tools",
   "dep:near-sdk",
+  "dep:near-sys",
   "dep:serde_json",
   "digest",
-  "near-sdk/deterministic-account-ids",
   "serde",
   "std",
 ]
