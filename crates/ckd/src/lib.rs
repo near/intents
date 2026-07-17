@@ -1,5 +1,8 @@
 #![allow(clippy::items_after_statements)]
 
+mod types;
+pub use self::types::*;
+
 pub use blstrs;
 
 use blstrs::{G1Affine, G1Projective, G2Affine, Scalar};
@@ -247,9 +250,25 @@ impl AppPrivateKey {
 }
 
 /// Publicly-verifiable app public key
+#[cfg_attr(
+    feature = "serde",
+    cfg_eval::cfg_eval,
+    serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AppPublicKeyPV {
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "::serde_with::TryFromInto<Bls12381G1Compressed>")
+    )]
     pub pk1: G1Affine,
+
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "::serde_with::TryFromInto<Bls12381G2Compressed>")
+    )]
     pub pk2: G2Affine,
 }
 
@@ -361,9 +380,24 @@ impl AppPublicKeyPV {
 }
 
 /// CKD response
+#[cfg_attr(
+    feature = "serde",
+    cfg_eval::cfg_eval,
+    serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CkdResponse {
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "::serde_with::TryFromInto<Bls12381G1Compressed>")
+    )]
     pub big_y: G1Affine,
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "::serde_with::TryFromInto<Bls12381G1Compressed>")
+    )]
     pub big_c: G1Affine,
 }
 

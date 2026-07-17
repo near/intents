@@ -1,7 +1,5 @@
-use crate::Curve;
-
 /// Helper trait to encode/decode bytes as `<CURVE>:<base58>`
-pub trait TypedCurve: Curve {
+pub trait TypedCurve {
     /// Used as prefix: `<CURVE>:...`
     const CURVE_TYPE: &str;
 
