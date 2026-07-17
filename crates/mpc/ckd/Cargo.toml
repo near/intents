@@ -1,14 +1,14 @@
 lints.workspace = true
 
 [package]
-name = "defuse-ckd"
+name = "defuse-mpc-ckd"
 edition.workspace = true
 version.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-kdf-mpc.workspace = true
+defuse-mpc-kdf.workspace = true
 defuse-rand-compat = { workspace = true, features = ["rand_core_0_6"] }
 
 # TODO: activate "zeroize" feature once this PR is released:
@@ -37,7 +37,7 @@ schemars-v0_8 = ["dep:schemars", "serde", "serde_with?/schemars_0_8"]
 serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with", "fmt"]
 
 [dev-dependencies]
-defuse-ckd = { path = ".", features = ["abi", "fmt", "serde"] }
+defuse-mpc-ckd = { path = ".", features = ["abi", "fmt", "serde"] }
 
 hex-literal.workspace = true
 rand = { workspace = true, features = ["sys_rng"] }

@@ -193,6 +193,8 @@ where
 }
 
 impl<SS, S> Wallet<SS, S> {
+    // TODO: as_extension_of()
+
     /// Set a custom [`chain_id`](RequestMessage::chain_id) for [`.sign()`](Self::sign)
     /// instead of a [default](MAINNET) one.
     #[must_use]

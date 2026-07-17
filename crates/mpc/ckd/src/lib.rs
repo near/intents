@@ -6,7 +6,7 @@ pub use self::types::*;
 pub use blstrs;
 
 use blstrs::{G1Affine, G1Projective, G2Affine, Scalar};
-use defuse_kdf_mpc::kdf::Schema;
+use defuse_mpc_kdf::kdf::Schema;
 use defuse_rand_compat::RandCompat;
 use near_account_id::AccountIdRef;
 use pairing::group::{ff::Field, prime::PrimeCurveAffine};
@@ -124,7 +124,7 @@ impl AppPrivateKey {
         path: impl AsRef<str>,
         resp: CkdResponse,
     ) -> Option<Secret> {
-        let app_id = defuse_kdf_mpc::ckd(predecessor_id).derive_path(path.as_ref());
+        let app_id = defuse_mpc_kdf::ckd(predecessor_id).derive_path(path.as_ref());
 
         self.decrypt_verify_app_id(mpc_public_key, &app_id, resp)
     }
@@ -324,7 +324,7 @@ impl AppPublicKeyPV {
         path: impl AsRef<str>,
         resp: &CkdResponse,
     ) -> bool {
-        let app_id = defuse_kdf_mpc::ckd(predecessor_id).derive_path(path.as_ref());
+        let app_id = defuse_mpc_kdf::ckd(predecessor_id).derive_path(path.as_ref());
 
         self.verify_app_id(mpc_public_key, app_id, resp)
     }

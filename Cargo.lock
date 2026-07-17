@@ -1388,31 +1388,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-ckd"
-version = "0.1.0"
-dependencies = [
- "blstrs",
- "cfg_eval",
- "defuse-ckd",
- "defuse-crypto",
- "defuse-kdf-mpc",
- "defuse-rand-compat",
- "derive_more",
- "hex-literal",
- "near-account-id",
- "near-sdk",
- "pairing",
- "rand 0.10.2",
- "rand_core 0.10.1",
- "rstest",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "serde_with",
- "thiserror 2.0.18",
-]
-
-[[package]]
 name = "defuse-cli-utils"
 version = "0.1.0"
 dependencies = [
@@ -1636,7 +1611,40 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-kdf-mpc"
+name = "defuse-map-utils"
+version = "0.1.0"
+dependencies = [
+ "impl-tools 0.12.0",
+ "near-sdk",
+]
+
+[[package]]
+name = "defuse-mpc-ckd"
+version = "0.1.0"
+dependencies = [
+ "blstrs",
+ "cfg_eval",
+ "defuse-crypto",
+ "defuse-mpc-ckd",
+ "defuse-mpc-kdf",
+ "defuse-rand-compat",
+ "derive_more",
+ "hex-literal",
+ "near-account-id",
+ "near-sdk",
+ "pairing",
+ "rand 0.10.2",
+ "rand_core 0.10.1",
+ "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "defuse-mpc-kdf"
 version = "0.1.0"
 dependencies = [
  "defuse-digest",
@@ -1646,14 +1654,6 @@ dependencies = [
  "near-account-id",
  "near-sdk",
  "rstest",
-]
-
-[[package]]
-name = "defuse-map-utils"
-version = "0.1.0"
-dependencies = [
- "impl-tools 0.12.0",
- "near-sdk",
 ]
 
 [[package]]
@@ -2072,6 +2072,7 @@ dependencies = [
  "near-kit",
  "rand 0.10.2",
  "serde",
+ "thiserror 2.0.18",
  "tracing",
  "trait-variant",
 ]

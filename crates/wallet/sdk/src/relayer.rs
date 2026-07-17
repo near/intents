@@ -1,7 +1,7 @@
 use std::{borrow::Cow, sync::Arc};
 
 use defuse_wallet::{
-    AccountId, AccountIdRef, NearPromise, SignatureSchema,
+    AccountId, AccountIdRef, NearPromise, Request, SignatureSchema,
     actions::{FunctionCall, NearAction},
 };
 use impl_tools::autoimpl;
@@ -14,31 +14,21 @@ pub struct RelayedWallet<SS, S, R> {
     relayer: R,
 }
 
-impl<SS, S, R> Relayer for RelayedWallet<SS, S, R>
+impl<SS, S, R> RelayedWallet<SS, S, R>
 where
     SS: SignatureSchema,
     S: WalletSigner<SS>,
     R: Relayer,
 {
-    type Error = R::Error; // TODO: or signer error?
-
-    async fn send(
+    // TODO: tracing
+    pub async fn sign_and_relay(
         &self,
-        receiver_id: AccountId,
-        actions: Vec<NearAction>,
-    ) -> Result<SentTransaction, Self::Error> {
+        request: impl Into<Request>,
+    ) -> Result<SentTransaction, RelayedWalletError<S::Error, R::Error>> {
         let (msg, proof) = self
-            .wallet
-            .sign(
-                actions
-                    .into_iter()
-                    .fold(NearPromise::new(receiver_id), |promise, action| {
-                        promise.add_action(action)
-                    }),
-            )
+            .sign(request)
             .await
-            // TODO: return signer error
-            .unwrap();
+            .map_err(RelayedWalletError::Signer)?;
 
         self.relayer
             .send(
@@ -51,10 +41,43 @@ where
                 ],
             )
             .await
+            .map_err(RelayedWalletError::Relayer)
     }
 }
 
-impl<SS, S, R> FixedRelayer for RelayedWallet<SS, S, R>
+#[derive(Debug, thiserror::Error)]
+pub enum RelayedWalletError<S, R> {
+    #[error("signer: {0}")]
+    Signer(S),
+    #[error("relayer: {0}")]
+    Relayer(R),
+}
+
+impl<SS, S, R> Relayer for RelayedWallet<SS, S, R>
+where
+    SS: SignatureSchema,
+    S: WalletSigner<SS>,
+    R: Relayer,
+{
+    type Error = RelayedWalletError<S::Error, R::Error>;
+
+    async fn send(
+        &self,
+        receiver_id: AccountId,
+        actions: Vec<NearAction>,
+    ) -> Result<SentTransaction, Self::Error> {
+        self.sign_and_relay(
+            actions
+                .into_iter()
+                .fold(NearPromise::new(receiver_id), |promise, action| {
+                    promise.add_action(action)
+                }),
+        )
+        .await
+    }
+}
+
+impl<SS, S, R> Sender for RelayedWallet<SS, S, R>
 where
     SS: SignatureSchema,
     S: WalletSigner<SS>,
@@ -71,8 +94,11 @@ where
 pub trait Relayer: Sync {
     type Error;
 
+    // TODO: chain_id?
+
     // TODO: ask for compensation?
 
+    // TODO: relayer shouldn't blidly trust and execute all transfers
     async fn send(
         &self,
         receiver_id: AccountId,
@@ -80,7 +106,7 @@ pub trait Relayer: Sync {
     ) -> Result<SentTransaction, Self::Error>;
 }
 
-pub trait FixedRelayer: Relayer {
+pub trait Sender: Relayer {
     fn account_id(&self) -> Cow<'_, AccountIdRef>;
 }
 
@@ -121,7 +147,7 @@ const _: () = {
         }
     }
 
-    impl FixedRelayer for Near {
+    impl Sender for Near {
         #[inline]
         fn account_id(&self) -> Cow<'_, AccountIdRef> {
             self.account_id().into()
