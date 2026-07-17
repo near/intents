@@ -1391,10 +1391,10 @@ dependencies = [
 name = "defuse-ckd"
 version = "0.1.0"
 dependencies = [
- "arbitrary",
  "blstrs",
- "borsh",
- "bs58 0.5.1",
+ "cfg_eval",
+ "defuse-ckd",
+ "defuse-crypto",
  "defuse-kdf-mpc",
  "defuse-rand-compat",
  "derive_more",

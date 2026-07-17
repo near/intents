@@ -18,35 +18,27 @@ derive_more = { workspace = true, features = ["as_ref", "from", "into"] }
 near-account-id.workspace = true
 pairing.workspace = true
 rand_core.workspace = true
+thiserror.workspace = true
 # zeroize = { workspace = true, features = ["derive"] }
 
-arbitrary = { workspace = true, features = ["derive"], optional = true }
-borsh = { workspace = true, features = ["derive"], optional = true }
-bs58 = { workspace = true, optional = true }
-hex-literal = { workspace = true, optional = true }
+cfg_eval = { workspace = true, optional = true }
+defuse-crypto = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
-thiserror = { workspace = true, optional = true }
 
 [target.'cfg(near)'.dependencies]
 near-sdk.workspace = true
 
 [features]
-fmt = ["dep:bs58", "dep:thiserror"]
-serde = ["dep:serde", "dep:serde_with", "fmt"]
-arbitrary = ["dep:arbitrary", "fmt"]
-borsh = ["dep:borsh", "fmt"]
-borsh-schema = ["borsh", "borsh/unstable__schema"]
-schemars-v0_8 = [
-  "dep:hex-literal",
-  "dep:schemars",
-  "serde",
-  "serde_with?/schemars_0_8",
-]
-abi = ["borsh-schema", "schemars-v0_8"]
+abi = ["schemars-v0_8"]
+fmt = ["defuse-crypto/fmt", "dep:defuse-crypto"]
+schemars-v0_8 = ["dep:schemars", "serde", "serde_with?/schemars_0_8"]
+serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with", "fmt"]
 
 [dev-dependencies]
+defuse-ckd = { path = ".", features = ["abi", "fmt", "serde"] }
+
 hex-literal.workspace = true
 rand = { workspace = true, features = ["sys_rng"] }
 rstest.workspace = true
