@@ -1,5 +1,7 @@
 #[cfg(feature = "near-kit")]
 pub mod client;
+#[cfg(feature = "mpc")]
+pub use defuse_mpc_signer as mpc;
 mod nonces;
 #[cfg(feature = "relayer")]
 pub mod relayer;

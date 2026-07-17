@@ -117,6 +117,13 @@ impl NearPromise {
         self
     }
 
+    /// Add given actions to this promise.
+    #[inline]
+    pub fn add_actions(mut self, actions: impl IntoIterator<Item = NearAction>) -> Self {
+        self.actions.extend(actions);
+        self
+    }
+
     /// Returns whether the promise is no-op, i.e. list of actions is empty.
     ///
     /// # Examples

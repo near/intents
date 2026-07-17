@@ -2082,6 +2082,7 @@ version = "0.1.0"
 dependencies = [
  "borsh",
  "bs58 0.5.1",
+ "defuse-mpc-signer",
  "defuse-wallet",
  "defuse-wallet-sdk",
  "derive_more",

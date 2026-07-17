@@ -16,6 +16,7 @@ rand.workspace = true
 trait-variant.workspace = true
 
 bs58 = { workspace = true, optional = true }
+defuse-mpc-signer = { workspace = true, optional = true }
 derive_more = { workspace = true, features = ["from"], optional = true }
 near-kit = { workspace = true, default-features = false, optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
@@ -31,9 +32,10 @@ near-kit = [
   "derive_more/from",
   "serde",
 ]
+mpc = ["dep:defuse-mpc-signer", "relayer"]
 relayer = ["dep:thiserror", "near-kit"] # TODO
 serde = ["defuse-wallet/serde", "dep:serde"]
 tracing = ["dep:bs58", "dep:tracing"]
 
 [dev-dependencies]
-defuse-wallet-sdk = { path = ".", features = ["json", "near-kit", "relayer", "serde"] }
+defuse-wallet-sdk = { path = ".", features = ["json", "near-kit", "relayer", "serde", "mpc"] }
