@@ -1,27 +1,26 @@
+mod contract;
 mod convert;
-#[cfg(feature = "ed25519")]
 mod ed25519;
-#[cfg(feature = "secp256k1")]
 mod secp256k1;
 mod sender;
-mod types;
 
 pub use self::{convert::*, sender::*};
+
+pub use defuse_kdf as kdf;
 
 use std::{cell::LazyCell, fmt::Debug};
 
 use defuse_kdf::{
-    Additive, Derive, DeriveExt, DeriveSigner, RecoverableDeriveSigner,
-    crypto::{Curve, RecoverableCurve},
+    Additive, Derive, DeriveExt, DeriveSigner, RecoverableDeriveSigner, crypto::Curve,
 };
 use defuse_mpc_kdf::TweakSchema;
 use defuse_near_promise::{AccountId, AccountIdRef, Gas, NearToken, actions::FunctionCall};
 use impl_tools::autoimpl;
-use near_kit::{ExecutedOptimistic, ExecutionStatus, RpcClient, WaitLevel};
+use near_kit::{CryptoHash, ExecutedOptimistic, ExecutionStatus, Near};
 
-use crate::types::{SignRequest, SignResponse};
+use crate::contract::{MpcContract, Payload, PublicKeyArgs, SignArgs, SignRequest, SignResponse};
 
-// TODO: docs
+// TODO: docs, known domain_id mappings
 pub const MAINNET_MPC_CONTRACT_ID: &AccountIdRef = AccountIdRef::new_or_panic("v1.signer");
 
 #[autoimpl(Debug, Clone where C::PublicKey: trait, S: trait)]
@@ -32,29 +31,108 @@ pub struct MpcOnChainSigner<C: Curve, S> {
     mpc_public_key: C::PublicKey,
     domain_id: u64,
 
-    client: RpcClient,
+    client: Near,
 }
 
 impl<C, S> MpcOnChainSigner<C, S>
 where
-    C: Curve,
+    C: OnChainNearMpcCurve<PublicKey: Sync>,
     S: Sender,
 {
     pub async fn new(
         sender: S,
         mpc_contract_id: impl Into<AccountId>,
         domain_id: u64,
-        client: RpcClient,
-    ) -> Self {
-        todo!()
+        client: Near,
+    ) -> Result<Self, Error<S::Error>> {
+        let mpc_contract_id = mpc_contract_id.into();
+
+        let mpc_public_key = client
+            .contract::<MpcContract>(&mpc_contract_id)
+            .public_key(PublicKeyArgs { domain_id })
+            .await?;
+
+        Ok(Self {
+            sender,
+            mpc_contract_id,
+            mpc_public_key: C::parse_public_key(mpc_public_key)
+                .ok_or(Error::InvalidDomain(domain_id))?,
+            domain_id,
+            client,
+        })
+    }
+
+    async fn sign_extract<R>(
+        &self,
+        path: impl AsRef<str>,
+        payload: Payload<'_>,
+        extract: impl Fn(SignResponse) -> Option<R>,
+    ) -> Result<R, Error<S::Error>> {
+        let sent = self
+            .send_sign_request(path, payload)
+            .await
+            .map_err(Error::Sender)?;
+
+        let tx_outcome = self
+            .client
+            .tx_status(
+                &sent.tx_hash.into(),
+                &sent.sender_id,
+                // wait for `mpc_contract_id::sign()` receipt to execute
+                ExecutedOptimistic,
+            )
+            .await?;
+
+        tx_outcome
+            .receipts_outcome
+            .into_iter()
+            .filter(|o| o.outcome.executor_id == self.mpc_contract_id)
+            .find_map(|outcome| {
+                let ExecutionStatus::SuccessValue(value) = outcome.outcome.status else {
+                    return None;
+                };
+                let sig_resp: SignResponse = serde_json::from_slice(&value).ok()?;
+                let sig = extract(sig_resp)?;
+
+                // TODO: tracing: receipt_id
+
+                Some(sig)
+            })
+            .ok_or_else(|| Error::SignatureNotFound(tx_outcome.transaction_outcome.id))
+    }
+
+    async fn send_sign_request(
+        &self,
+        path: impl AsRef<str>,
+        payload: Payload<'_>,
+    ) -> Result<SentTransaction, S::Error> {
+        self.sender
+            .send(
+                self.mpc_contract_id.clone(),
+                vec![
+                    FunctionCall::name("sign")
+                        .attach_deposit(NearToken::from_yoctonear(1))
+                        .args_json(SignArgs {
+                            request: SignRequest {
+                                path: path.as_ref().into(),
+                                payload,
+                                domain_id: self.domain_id,
+                            },
+                        })
+                        // TODO: is it enough?
+                        .gas(Gas::from_tgas(10))
+                        .into(),
+                ],
+            )
+            .await
     }
 }
 
 impl<C, P, S> DeriveSigner<C, P> for MpcOnChainSigner<C, S>
 where
     C: OnChainNearMpcCurve<PublicKey: Clone + Send + Sync>,
-    P: AsRef<str> + AsRef<[u8]>, // TODO
-    S: Sender,
+    P: AsRef<str> + AsRef<[u8]>,
+    S: Sender<Error: Send>,
 {
     type Error = Error<S::Error>;
 
@@ -74,65 +152,26 @@ where
         P: Send,
     {
         let path: &str = path.as_ref();
-
-        let call = FunctionCall::name("sign")
-            .attach_deposit(NearToken::from_yoctonear(1))
-            .args_json(SignRequest {
-                path: path.into(),
-                payload: C::to_payload(msg).ok_or(Error::InvalidPayload)?,
-                domain_id: self.domain_id,
-            })
-            // TODO: is it enough?
-            .gas(Gas::from_tgas(10));
-
-        let sent_tx = self
-            .sender
-            .send(self.mpc_contract_id.clone(), vec![call.into()])
-            .await
-            .map_err(Error::Sender)?;
-
-        let tx_status = self
-            .client
-            .tx_status(
-                &sent_tx.tx_hash.into(),
-                &sent_tx.sender_id,
-                // wait for `mpc_contract_id::sign()` receipt to execute
-                near_kit::TxExecutionStatus::ExecutedOptimistic,
-            )
-            .await
-            .map_err(near_kit::Error::from)?;
-
-        let tx_outcome = ExecutedOptimistic::convert(tx_status, &sent_tx.sender_id)?;
-
-        let derived_public_key = LazyCell::new(|| self.derive_public_key(path));
-        for outcome in tx_outcome.receipts_outcome {
-            if outcome.outcome.executor_id != self.mpc_contract_id {
-                continue;
+        self.sign_extract(path, C::to_payload(msg).ok_or(Error::InvalidPayload)?, {
+            let derived_public_key = LazyCell::new(|| self.derive_public_key(path));
+            move |sig| {
+                let sig = C::parse_signature(sig)?;
+                if !C::verify(&derived_public_key, msg, &sig) {
+                    // the signature is either invalid or not ours
+                    return None;
+                }
+                Some(sig)
             }
-            let ExecutionStatus::SuccessValue(value) = outcome.outcome.status else {
-                continue;
-            };
-            let Ok(sig) = serde_json::from_slice::<SignResponse>(&value) else {
-                continue;
-            };
-            let Some(sig) = C::parse_signature(sig) else {
-                continue;
-            };
-            if C::verify(&derived_public_key, msg, &sig) {
-                // TODO: tracing: receipt_id
-                return Ok(sig);
-            }
-        }
-
-        return Err(Error::SignatureNotFound);
+        })
+        .await
     }
 }
 
 impl<C, P, S> RecoverableDeriveSigner<C, P> for MpcOnChainSigner<C, S>
 where
-    C: RecoverableCurve,
+    C: RecoverableOnChainNearMpcCurve<PublicKey: Clone + PartialEq + Send + Sync, RecoveryId: Copy>,
     P: AsRef<str> + AsRef<[u8]>,
-    S: Sender,
+    S: Sender<Error: Send>,
 {
     async fn derive_sign_recoverable(
         &self,
@@ -142,12 +181,28 @@ where
     where
         P: Send,
     {
-        todo!()
+        let path: &str = path.as_ref();
+        self.sign_extract(path, C::to_payload(msg).ok_or(Error::InvalidPayload)?, {
+            let derived_public_key = LazyCell::new(|| self.derive_public_key(path));
+            move |sig| {
+                let (sig, rec_id) = C::parse_recoverable_signature(sig)?;
+                let recovered_public_key = C::recover(msg, &sig, rec_id)?;
+                if recovered_public_key != *derived_public_key {
+                    // the signature is either invalid or not ours
+                    return None;
+                }
+                Some((sig, rec_id))
+            }
+        })
+        .await
     }
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error<S> {
+    #[error("invalid domain: {0}")]
+    InvalidDomain(u64),
+
     #[error("invalid sign payload")]
     InvalidPayload,
 
@@ -157,59 +212,6 @@ pub enum Error<S> {
     #[error(transparent)]
     Sender(S),
 
-    // TODO: provide tx hash
-    #[error("signature was not found in transaction")]
-    SignatureNotFound,
+    #[error("no matching signature was found in transaction '{0}'")]
+    SignatureNotFound(CryptoHash),
 }
-
-// TODO
-// impl<C, P, S> RecoverableDeriveSigner<C, P> for MpcOnChainSigner<S>
-// where
-//     C: NearMpcCurve + RecoverableCurve,
-//     P: AsRef<str> + AsRef<[u8]>, // TODO
-//     S: Sender,
-// {
-//     async fn derive_sign_recoverable(
-//         &self,
-//         path: P,
-//         msg: &[u8],
-//     ) -> Result<(C::Signature, C::RecoveryId), Self::Error>
-//     where
-//         P: Send,
-//     {
-//         todo!()
-//     }
-// }
-
-// use near_kit::{Error, Included, Near, SendTxResponse};
-
-// impl Relayer for Near {
-//     type Error = Error;
-
-//     async fn send(
-//         &self,
-//         receiver_id: AccountId,
-//         actions: Vec<NearAction>,
-//     ) -> Result<SentTransaction, Self::Error> {
-//         // TODO: reuse logic from relayer
-
-//         actions
-//             .into_iter()
-//             .fold(self.transaction(receiver_id), |tx, action| {
-//                 tx.add_action(action)
-//             })
-//             .send()
-//             // TODO: maybe IncludedFinal?
-//             .wait_until(Included)
-//             // TODO: max_nonce_retries
-//             .await
-//             .map(Into::into)
-//     }
-// }
-
-// impl Sender for Near {
-//     #[inline]
-//     fn account_id(&self) -> Cow<'_, AccountIdRef> {
-//         self.account_id().into()
-//     }
-// }

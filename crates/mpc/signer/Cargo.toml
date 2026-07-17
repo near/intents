@@ -8,8 +8,9 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-kdf.workspace = true
-defuse-mpc-kdf.workspace = true
+defuse-crypto = { workspace = true, features = ["ed25519", "secp256k1", "serde"] }
+defuse-kdf = { workspace = true, features = ["ed25519", "secp256k1"] }
+defuse-mpc-kdf = { workspace = true, features = ["ed25519", "secp256k1"] }
 defuse-near-promise = { workspace = true, features = ["json"] }
 
 impl-tools.workspace = true
@@ -19,10 +20,3 @@ serde_json.workspace = true
 serde_with = { workspace = true, features = ["hex"] }
 thiserror.workspace = true
 trait-variant.workspace = true
-
-[features]
-ed25519 = ["defuse-mpc-kdf/ed25519"]
-secp256k1 = ["defuse-mpc-kdf/secp256k1"]
-
-[dev-dependencies]
-defuse-mpc-signer = { path = ".", features = ["ed25519", "secp256k1"] }

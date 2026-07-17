@@ -2,10 +2,18 @@ use defuse_kdf::crypto::secp256k1::{Secp256k1, Secp256k1RecoverableSignature};
 
 use crate::{
     OnChainNearMpcCurve, RecoverableOnChainNearMpcCurve,
-    types::{Payload, SignResponse},
+    contract::{Payload, PublicKey, SignResponse},
 };
 
 impl OnChainNearMpcCurve for Secp256k1 {
+    #[inline]
+    fn parse_public_key(public_key: PublicKey) -> Option<Self::PublicKey> {
+        let PublicKey::Secp256k1(pk) = public_key else {
+            return None;
+        };
+        pk.try_into().ok()
+    }
+
     #[inline]
     fn to_payload(prehash: &[u8]) -> Option<Payload<'_>> {
         <[u8; 32]>::try_from(prehash).map(Payload::Ecdsa).ok()
