@@ -1,16 +1,19 @@
-use std::{borrow::Cow, rc::Rc, sync::Arc};
+use std::{
+    fmt::{Debug, Display},
+    sync::Arc,
+};
 
-use defuse_crypto::{Curve, RecoverableCurve};
+use defuse_crypto::{Curve, RecoverableCurve, RecoverableSigner, Signer};
 use impl_tools::autoimpl;
 
-use crate::{BoxSchema, Derive, DeriveExt, Schema};
+use crate::{Derive, DeriveExt, Schema};
 
-#[autoimpl(for<T: trait + ?Sized + ToOwned> Cow<'_, T>)]
-#[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
 /// A signer that can sign messages by **internally** deriving signing keys
 /// according to its public key derivation [schema](DeriveSigner::schema).
-pub trait DeriveSigner<C: Curve, P> {
-    // TODO: type Error;
+#[trait_variant::make(Send)]
+#[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
+pub trait DeriveSigner<C: Curve, P>: Sync {
+    type Error: Debug + Display;
 
     /// [`Schema`] for public key derivation.
     /// See [`.schema()`](DeriveSigner::schema) for details.
@@ -42,7 +45,9 @@ pub trait DeriveSigner<C: Curve, P> {
     /// * The returned signatures MIGHT be non-deterministic, i.e.
     ///   implementations MAY return different signatures for the same
     ///   `path` and `msg`.
-    fn derive_sign(&self, path: P, msg: &[u8]) -> C::Signature;
+    async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
+    where
+        P: Send;
 
     /// Helper method to [derive](Schema::derive_path) public key for given
     /// `path` via [`.schema()`](DeriveSigner::Schema)
@@ -54,6 +59,7 @@ pub trait DeriveSigner<C: Curve, P> {
 
 /// A [signer](DeriveSigner) that can recoverably sign messages by
 /// **internally** deriving signing keys.
+#[trait_variant::make(Send)]
 pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
     /// Recoveryably [sign](DeriveSigner::derive_sign) given message with a
     /// secret key **internally** derived for given `path` according to
@@ -67,15 +73,23 @@ pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
     /// * The returned signatures MIGHT be non-deterministic, i.e.
     ///   implementations MAY return different signatures for the same
     ///   `path` and `msg`.
-    fn derive_sign_recoverable(&self, path: P, msg: &[u8]) -> (C::Signature, C::RecoveryId);
+    async fn derive_sign_recoverable(
+        &self,
+        path: P,
+        msg: &[u8],
+    ) -> Result<(C::Signature, C::RecoveryId), Self::Error>
+    where
+        P: Send;
 }
 
 impl<C, P, S, D> DeriveSigner<C, P> for Derive<S, D>
 where
     C: Curve,
-    D: Schema<P>,
     S: DeriveSigner<C, D::Output>,
+    D: Schema<P, Output: Send> + Send + Sync,
 {
+    type Error = S::Error;
+
     type Schema<'a>
         = Derive<S::Schema<'a>, &'a D>
     where
@@ -86,60 +100,68 @@ where
         self.0.schema().derive(&self.1)
     }
 
-    #[inline]
-    fn derive_sign(&self, path: P, msg: &[u8]) -> C::Signature {
-        self.0.derive_sign(self.1.derive_path(path), msg)
+    async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
+    where
+        P: Send,
+    {
+        self.0.derive_sign(self.1.derive_path(path), msg).await
     }
 }
 
-/// Object-safe version of [`DeriveSigner`] trait.
-pub trait DynDeriveSigner<C: Curve, P> {
-    fn schema_dyn<'a>(&'a self) -> BoxSchema<'a, P, C::PublicKey>
+impl<C, P, S, D> RecoverableDeriveSigner<C, P> for Derive<S, D>
+where
+    C: RecoverableCurve,
+    S: RecoverableDeriveSigner<C, D::Output>,
+    D: Schema<P, Output: Send> + Send + Sync,
+{
+    async fn derive_sign_recoverable(
+        &self,
+        path: P,
+        msg: &[u8],
+    ) -> Result<(C::Signature, C::RecoveryId), Self::Error>
     where
-        P: 'a;
-
-    fn derive_sign(&self, path: P, msg: &[u8]) -> C::Signature;
+        P: Send,
+    {
+        self.0
+            .derive_sign_recoverable(self.1.derive_path(path), msg)
+            .await
+    }
 }
 
-impl<C, P, S> DynDeriveSigner<C, P> for S
+impl<C, S, D> Signer<C> for Derive<S, D>
 where
     C: Curve,
-    S: DeriveSigner<C, P>,
+    S: DeriveSigner<C, D::Output>,
+    D: Schema<(), Output: Send> + Send + Sync,
 {
-    #[inline]
-    fn schema_dyn<'a>(&'a self) -> BoxSchema<'a, P, C::PublicKey>
-    where
-        P: 'a,
-    {
-        Box::new(self.schema())
-    }
+    type Error = S::Error;
 
     #[inline]
-    fn derive_sign(&self, path: P, msg: &[u8]) -> C::Signature {
-        DeriveSigner::<C, P>::derive_sign(self, path, msg)
+    fn public_key(&self) -> <C as Curve>::PublicKey {
+        self.derive_public_key(())
+    }
+
+    async fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
+        DeriveSigner::<C, _>::derive_sign(self, (), msg).await
     }
 }
 
-impl<C: Curve, P> DeriveSigner<C, P> for dyn DynDeriveSigner<C, P> {
-    type Schema<'a>
-        = BoxSchema<'a, P, C::PublicKey>
-    where
-        Self: 'a;
-
-    #[inline]
-    fn schema(&self) -> Self::Schema<'_> {
-        self.schema_dyn()
-    }
-
-    #[inline]
-    fn derive_sign(&self, path: P, msg: &[u8]) -> C::Signature {
-        DynDeriveSigner::<C, P>::derive_sign(self, path, msg)
+impl<C, S, D> RecoverableSigner<C> for Derive<S, D>
+where
+    C: RecoverableCurve,
+    S: RecoverableDeriveSigner<C, D::Output>,
+    D: Schema<(), Output: Send> + Send + Sync,
+{
+    async fn sign_recoverable(
+        &self,
+        msg: &[u8],
+    ) -> Result<(C::Signature, C::RecoveryId), Self::Error> {
+        RecoverableDeriveSigner::<C, _>::derive_sign_recoverable(self, (), msg).await
     }
 }
 
 #[cfg(any(test, feature = "testing"))]
-#[track_caller]
-pub fn assert_signer_roundtrip<C, S, P>(
+pub async fn assert_signer_roundtrip<C, S, P>(
     signer: &S,
     path: P,
     msg: &[u8],
@@ -147,10 +169,10 @@ pub fn assert_signer_roundtrip<C, S, P>(
 where
     C: Curve,
     S: DeriveSigner<C, P>,
-    P: Clone,
+    P: Clone + Send,
 {
     let derived_pk = signer.derive_public_key(path.clone());
-    let signature = signer.derive_sign(path, msg);
+    let signature = signer.derive_sign(path, msg).await.expect("failed to sign");
 
     assert!(C::verify(&derived_pk, msg, &signature), "invalid signature");
 

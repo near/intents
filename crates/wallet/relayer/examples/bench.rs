@@ -3,12 +3,12 @@
 use std::{env, fs, path::Path, sync::LazyLock};
 
 use defuse_digest::{Digest, sha2::Sha256};
-use defuse_wallet_ed25519::WalletEd25519;
+use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
-use defuse_wallet_sdk::{MAINNET, NearToken, Request, Wallet};
-use ed25519_dalek::ed25519::signature::rand_core::OsRng;
+use defuse_wallet_sdk::{NearToken, Request, Wallet};
 use futures::{StreamExt, TryStreamExt, stream};
 use near_kit::{Final, GlobalContractId, PublishMode, sandbox::SandboxConfig};
+use rand::rng;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 static WALLET_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
@@ -46,7 +46,7 @@ async fn main() {
 
     let wallet = Wallet::<WalletEd25519, _>::new(
         global_contract_id,
-        ed25519_dalek::SigningKey::generate(&mut OsRng),
+        WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut rng())),
     );
 
     let started_at = tokio::time::Instant::now();
@@ -54,7 +54,7 @@ async fn main() {
 
     stream::iter(0..txs_count)
         // TODO: relayer.client().chain_id().as_str()
-        .then(|_n| wallet.sign(Request::new(), MAINNET))
+        .then(|_n| wallet.sign(Request::new()))
         .err_into()
         .map_ok(|(msg, proof)| {
             relayer.w_execute_signed(

@@ -1,3 +1,10 @@
+#[cfg(feature = "ed25519")]
+pub mod ed25519;
+#[cfg(feature = "mock")]
+pub mod mock;
+#[cfg(feature = "p256")]
+pub mod p256;
+
 use core::marker::PhantomData;
 
 use defuse_crypto::Curve;
@@ -8,12 +15,6 @@ use serde_with::{
     formats::Unpadded,
     serde_as,
 };
-
-#[cfg(feature = "ed25519")]
-pub mod ed25519;
-
-#[cfg(feature = "p256")]
-pub mod p256;
 
 /// [Webauthn](https://w3c.github.io/webauthn/) signing standard generic over
 /// underlying [`Algorithm`]
@@ -45,17 +46,9 @@ where
             return false;
         }
 
-        // 20. Let hash be the result of computing a hash over the cData using
-        // SHA-256
-        let hash = Sha256::digest(assertion.client_data_json.as_bytes());
-
         // 21. Using credentialRecord.publicKey, verify that sig is a valid
         // signature over the binary concatenation of authData and hash.
-        A::verify(
-            public_key,
-            [assertion.authenticator_data.as_slice(), hash.as_ref()].concat(),
-            signature,
-        )
+        A::verify(public_key, assertion.effective_msg(), signature)
     }
 
     /// Check the assertion and whether is corresponds to given `challenge`.
@@ -137,6 +130,20 @@ pub struct WebauthnAssertion {
     pub client_data_json: String,
 }
 
+impl WebauthnAssertion {
+    /// Returns effective signable message to be verified by the signature
+    /// algorithm.
+    fn effective_msg(&self) -> Vec<u8> {
+        // 20. Let hash be the result of computing a hash over the cData using
+        // SHA-256
+        let hash = Sha256::digest(self.client_data_json.as_bytes());
+
+        // 21. Using credentialRecord.publicKey, verify that sig is a valid
+        // signature over the binary concatenation of authData and hash.
+        [self.authenticator_data.as_slice(), hash.as_ref()].concat()
+    }
+}
+
 /// [`CollectedClientData`](https://w3c.github.io/webauthn/#dictdef-collectedclientdata)
 #[serde_as]
 #[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
@@ -204,7 +211,7 @@ pub trait Algorithm {
     ///
     /// > 21. Using credentialRecord.publicKey, verify that sig is a valid
     /// > signature over the binary concatenation of authData and hash.
-    fn preprocess(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]>;
+    fn maybe_prehash(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]>;
 
     /// Last algorithm-specific signature verification step:
     ///
@@ -217,9 +224,29 @@ pub trait Algorithm {
         signature: &<Self::Curve as Curve>::Signature,
     ) -> bool {
         // optionally prehash the message (or perform any other manipulations)
-        let msg = Self::preprocess(msg);
+        let msg = Self::maybe_prehash(msg);
 
         // verify using `Self::Curve`
         Self::Curve::verify(public_key, msg.as_ref(), signature)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case(
+        WebauthnAssertion {
+            authenticator_data: hex!("49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d00000000").to_vec(),
+            client_data_json: r#"{"type":"webauthn.get","challenge":"BvJpGRQxNyM3oMYGoVgi40m9DV7DF3BPl77xpO1vXh0","origin":"http://localhost:5173","crossOrigin":false}"#.to_string(),
+        },
+        hex!("49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97631d000000007f105e868e4e52b17998984478130627a6e301002d9928c48c1a95b0b0e2e0da"),
+    )]
+    fn effective_msg(#[case] assertion: WebauthnAssertion, #[case] msg: impl AsRef<[u8]>) {
+        assert_eq!(assertion.effective_msg(), msg.as_ref());
     }
 }

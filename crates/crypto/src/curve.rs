@@ -1,5 +1,5 @@
 /// Digital Signature Algorithm.
-pub trait Curve: 'static {
+pub trait Curve {
     /// Public key
     type PublicKey;
 

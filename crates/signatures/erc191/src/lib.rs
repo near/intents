@@ -41,10 +41,7 @@ impl Erc191 {
 
 #[cfg(test)]
 mod tests {
-    use defuse_crypto::secp256k1::k256::{
-        EncodedPoint,
-        ecdsa::{RecoveryId, Signature, VerifyingKey},
-    };
+    use defuse_crypto::secp256k1::{Secp256k1RecoverableSignature, Secp256k1UncompressedPublicKey};
     use hex_literal::hex;
     use rstest::rstest;
 
@@ -57,23 +54,15 @@ mod tests {
         hex!("7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e4701"),
     )]
     fn recover_ok(
-        #[case] public_key: [u8; 64],
+        #[case] public_key: impl Into<Secp256k1UncompressedPublicKey>,
         #[case] msg: impl AsRef<[u8]>,
-        #[case] signature: [u8; 65],
+        #[case] signature: impl Into<Secp256k1RecoverableSignature>,
     ) {
-        let msg = msg.as_ref();
-        let [signature @ .., v] = signature;
-
-        let public_key = VerifyingKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
-            &public_key.into(),
-        ))
-        .unwrap();
-        let signature = Signature::from_bytes(&signature.into()).unwrap();
-        let recovery_id = RecoveryId::from_byte(v).unwrap();
+        let (signature, recovery_id) = signature.into().try_into().unwrap();
 
         assert_eq!(
             Erc191::recover(msg, &signature, recovery_id),
-            Some(public_key),
+            Some(public_key.into().try_into().unwrap()),
             "invalid recovered public key",
         );
     }

@@ -8,14 +8,15 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-crypto.workspace = true
+defuse-crypto = { workspace = true, features = ["signing"] }
 impl-tools.workspace = true
+trait-variant.workspace = true
 
 borsh = { workspace = true, optional = true }
 curve25519-dalek = { workspace = true, optional = true }
 digest = { workspace = true, optional = true }
 digest-io = { workspace = true, optional = true }
-ed25519-dalek = { workspace = true, features = ["digest", "hazmat", "std"], optional = true }
+ed25519-dalek = { workspace = true, features = ["digest", "hazmat"], optional = true }
 hex = { workspace = true, optional = true }
 k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"], optional = true }
 
@@ -35,6 +36,7 @@ defuse-kdf = { workspace = true, features = ["borsh", "digest", "ed25519", "secp
 defuse-digest = { workspace = true, features = ["sha3"] }
 hex-literal.workspace = true
 rstest.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }
 
 [target.'cfg(near)'.dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }

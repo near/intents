@@ -16,7 +16,6 @@ use std::{
 
 use borsh::BorshSerialize;
 use impl_tools::autoimpl;
-use near_global_contracts::{GlobalContractId, StateInit, StateInitV1};
 use rand::{make_rng, rngs::SmallRng};
 #[cfg(feature = "tracing")]
 use tracing::{Level, instrument, record_all};
@@ -104,6 +103,7 @@ impl WalletBuilder {
             subwallet_id: self.subwallet_id,
             timeout: self.timeout,
             nonces: Arc::new(Mutex::new(ConcurrentNonces::new(make_rng()))),
+            chain_id: MAINNET.to_string(),
             signer,
             _schema: PhantomData,
         }
@@ -121,8 +121,11 @@ pub struct Wallet<SS: SignatureSchema, S: WalletSigner<SS>> {
     timeout: Duration,
     nonces: Arc<Mutex<ConcurrentNonces<SmallRng>>>,
 
+    chain_id: ChainId,
+
     signer: S,
-    _schema: PhantomData<SS>,
+    // `fn() -> SS` implements Send + Sync unconditionally
+    _schema: PhantomData<fn() -> SS>,
 }
 
 impl<SS, S> Wallet<SS, S>
@@ -130,13 +133,25 @@ where
     SS: SignatureSchema,
     S: WalletSigner<SS>,
 {
-    /// Shorthand for [`WalletBuilder::new()`].[`build()`](WalletBuilder::build).
+    #[allow(clippy::doc_link_code)]
+    /// Shorthand for [`WalletBuilder::new()`](WalletBuilder::new)[`.build()`](WalletBuilder::build).
     #[inline]
     pub fn new(code: impl Into<GlobalContractId>, signer: S) -> Self
     where
         SS::PublicKey: BorshSerialize,
     {
         WalletBuilder::new().build(code, signer)
+    }
+
+    /// Set a custom [`chain_id`](RequestMessage::chain_id) for [`.sign()`](Self::sign)
+    /// instead of a [default](MAINNET) one.
+    #[must_use]
+    #[inline]
+    pub fn chain_id(mut self, chain_id: impl Into<ChainId>) -> Self {
+        self.chain_id = chain_id.into();
+        // contracts on different chains keep track of their own nonces
+        self.reseed_nonces();
+        self
     }
 
     /// Get derived account id for this wallet contract instance.
@@ -184,17 +199,16 @@ where
         self.signer().public_key()
     }
 
-    /// Wrap given request in a [`RequestMessage`] for given chain id and sign it.
+    /// Wrap given request in a [`RequestMessage`] and sign it.
     ///
     /// # Chain Id
     ///
     /// A single signer can control wallet contract instances with same account id on
     /// different chains. So, each signed message needs to include id of a chain where
     /// it's intended to be executed on.
-    #[allow(clippy::future_not_send)]
     #[cfg_attr(feature = "tracing", instrument(level = Level::DEBUG, skip_all, fields(
-        msg.chain_id,
-        msg.signer_id,
+        msg.chain_id = &self.chain_id,
+        msg.signer_id = %self.account_id(),
         msg.nonce,
         msg.created_at,
         msg.timeout_secs,
@@ -202,16 +216,13 @@ where
     )))]
     pub async fn sign(
         &self,
-        request: Request,
-        chain_id: impl Into<String>,
+        request: impl Into<Request>,
     ) -> Result<(RequestMessage, Proof), S::Error> {
-        let msg = self.wrap_request_msg(request, chain_id);
+        let msg = self.wrap_request_msg(request);
 
         #[cfg(feature = "tracing")]
         record_all!(
             tracing::Span::current(),
-            msg.chain_id,
-            %msg.signer_id,
             msg.nonce,
             %msg.created_at,
             msg.timeout_secs = msg.timeout.as_secs(),
@@ -231,16 +242,16 @@ where
     /// Wraps [`Request`] in [`RequestMessage`] for signing
     #[must_use = "`.sign()` the wrapped request"]
     #[inline]
-    fn wrap_request_msg(&self, request: Request, chain_id: impl Into<String>) -> RequestMessage {
+    fn wrap_request_msg(&self, request: impl Into<Request>) -> RequestMessage {
         RequestMessage {
-            chain_id: chain_id.into(),
+            chain_id: self.chain_id.clone(),
             signer_id: self.account_id().clone(),
             nonce: self.nonces.lock().unwrap().next(),
             // set `created_at` slightly before the actual time of signing,
             // so it doesn't fail on-chain if arrives too fast.
             created_at: Timestamp::now() - self.optimal_lag(),
             timeout: self.timeout(),
-            request,
+            request: request.into(),
         }
     }
 

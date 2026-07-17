@@ -1,19 +1,19 @@
 mod no_sign;
 
 use defuse_core::crypto::ed25519::{Ed25519PublicKey, ed25519_dalek};
-use defuse_rand_compat::rand_core_0_6::OsRng;
+use defuse_randomness::rng;
 use defuse_sandbox::{
     account::Account,
     extensions::wallet::{
         WalletExt,
-        sdk::{MAINNET, NearPromise, Request, State, Wallet, WalletOp, actions::FunctionCall},
+        sdk::{NearPromise, Request, State, Wallet, WalletOp, actions::FunctionCall},
     },
     global_contract::GlobalContract,
     kit::{Finality::Optimistic, Gas, GlobalContractId, Near, NearToken, StateInit, StateInitV1},
     root,
 };
 use defuse_test_utils::wasms::WALLET_ED25519_WASM;
-use defuse_wallet_ed25519::WalletEd25519;
+use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer};
 use defuse_wallet_relayer::{
     WalletRelayRequest, WalletRelayer,
     wallet::client::{WExecuteExtensionArgs, WExecuteSignedArgs, WalletContract},
@@ -46,7 +46,6 @@ async fn test_signed(#[future] env: Env) {
                     NearPromise::new(receiver.account_id()).transfer(NearToken::from_yoctonear(2)),
                     NearPromise::new(receiver.account_id()).transfer(NearToken::from_yoctonear(3)),
                 ]),
-            MAINNET,
         )
         .await
         .unwrap();
@@ -104,10 +103,7 @@ async fn test_rotate(#[future] env: Env) {
                             .args_json({
                                 let (msg, proof) = new_wallet
                                     .sign(
-                                        Request::new().external([NearPromise::new(
-                                            old_wallet.account_id(),
-                                        )
-                                        .function_call(
+                                        NearPromise::new(old_wallet.account_id()).function_call(
                                             FunctionCall::name("w_execute_extension")
                                                 .attach_deposit(NearToken::from_yoctonear(1))
                                                 .args_json(WExecuteExtensionArgs::from(
@@ -118,8 +114,7 @@ async fn test_rotate(#[future] env: Env) {
                                                     ]),
                                                 ))
                                                 .gas(Gas::from_tgas(10)),
-                                        )]),
-                                        MAINNET,
+                                        ),
                                     )
                                     .await
                                     .unwrap();
@@ -128,7 +123,6 @@ async fn test_rotate(#[future] env: Env) {
                             })
                             .gas(Gas::from_tgas(20)),
                     )]),
-            MAINNET,
         )
         .await
         .unwrap();
@@ -155,7 +149,7 @@ async fn test_rotate(#[future] env: Env) {
     );
 
     {
-        let (msg, proof) = old_wallet.sign(Request::default(), MAINNET).await.unwrap();
+        let (msg, proof) = old_wallet.sign(Request::default()).await.unwrap();
 
         assert!(
             env.relayer
@@ -169,13 +163,12 @@ async fn test_rotate(#[future] env: Env) {
 
     let (msg, proof) = new_wallet
         .sign(
-            Request::new().external([NearPromise::new(old_wallet.account_id()).function_call(
+            NearPromise::new(old_wallet.account_id()).function_call(
                 FunctionCall::name("w_execute_extension")
                     .attach_deposit(NearToken::from_yoctonear(1))
                     .args_json(WExecuteExtensionArgs::from(Request::new()))
                     .gas(Gas::from_tgas(10)),
-            )]),
-            MAINNET,
+            ),
         )
         .await
         .unwrap();
@@ -253,7 +246,7 @@ async fn test_no_storage_staking(#[future] env: Env) {
         .unwrap();
 
     join_all((0..wallet.timeout().as_secs() * 2).map(|_n| async {
-        let (msg, proof) = wallet.sign(Request::new(), MAINNET).await.unwrap();
+        let (msg, proof) = wallet.sign(Request::new()).await.unwrap();
         let req = WalletRelayRequest::new(msg, proof);
         assert!(
             env.relayer
@@ -276,10 +269,12 @@ struct Env {
 }
 
 impl Env {
-    pub fn generate_wallet(&self) -> Wallet<WalletEd25519, ed25519_dalek::SigningKey> {
+    pub fn generate_wallet(
+        &self,
+    ) -> Wallet<WalletEd25519, WalletEd25519Signer<ed25519_dalek::SigningKey>> {
         Wallet::new(
             self.wallet_global_id.clone(),
-            ed25519_dalek::SigningKey::generate(&mut OsRng),
+            WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut rng())),
         )
     }
 }

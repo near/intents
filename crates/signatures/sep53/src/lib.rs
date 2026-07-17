@@ -36,7 +36,7 @@ impl Sep53 {
 
 #[cfg(test)]
 mod tests {
-    use defuse_crypto::ed25519::ed25519_dalek::{SIGNATURE_LENGTH, Signature, VerifyingKey};
+    use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
     use hex_literal::hex;
     use rstest::rstest;
     use stellar_strkey::Strkey;
@@ -63,7 +63,7 @@ mod tests {
     fn verify_ok(
         #[case] address: &str,
         #[case] msg: impl AsRef<[u8]>,
-        #[case] signature: [u8; SIGNATURE_LENGTH],
+        #[case] signature: impl Into<Ed25519Signature>,
     ) {
         let Strkey::PublicKeyEd25519(stellar_strkey::ed25519::PublicKey(public_key)) =
             address.parse().unwrap()
@@ -71,11 +71,12 @@ mod tests {
             panic!("invalid ed25519 public key address");
         };
 
-        let public_key = VerifyingKey::from_bytes(&public_key).unwrap();
-        let signature = Signature::from_bytes(&signature);
-
         assert!(
-            Sep53::verify(&public_key, msg, &signature),
+            Sep53::verify(
+                &Ed25519PublicKey(public_key).try_into().unwrap(),
+                msg,
+                &signature.into().into(),
+            ),
             "invalid signature",
         );
     }

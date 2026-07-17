@@ -7,5 +7,9 @@ pub mod fmt;
 pub mod p256;
 #[cfg(feature = "secp256k1")]
 pub mod secp256k1;
+#[cfg(feature = "signing")]
+mod signer;
 
 pub use self::curve::*;
+#[cfg(feature = "signing")]
+pub use self::signer::*;
