@@ -25,3 +25,13 @@ impl From<NearToken> for Transfer {
         Self { amount }
     }
 }
+
+#[cfg(feature = "near-kit")]
+impl From<Transfer> for near_kit::TransferAction {
+    #[inline]
+    fn from(value: Transfer) -> Self {
+        Self {
+            deposit: value.amount,
+        }
+    }
+}

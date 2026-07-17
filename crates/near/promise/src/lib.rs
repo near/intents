@@ -112,7 +112,7 @@ impl NearPromise {
 
     /// Add given action to this promise.
     #[inline]
-    fn add_action(mut self, action: impl Into<NearAction>) -> Self {
+    pub fn add_action(mut self, action: impl Into<NearAction>) -> Self {
         self.actions.push(action.into());
         self
     }

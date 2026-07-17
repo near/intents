@@ -1,6 +1,8 @@
 #[cfg(feature = "near-kit")]
 pub mod client;
 mod nonces;
+#[cfg(feature = "relayer")]
+pub mod relayer;
 mod signer;
 
 pub use self::{nonces::*, signer::*};
@@ -113,7 +115,7 @@ impl WalletBuilder {
 /// Signer handle to a wallet contract instance implementing a specific
 /// [`SignatureSchema`].
 #[autoimpl(Debug, Clone where S: trait)]
-pub struct Wallet<SS: SignatureSchema, S: WalletSigner<SS>> {
+pub struct Wallet<SS, S> {
     account_id: AccountId,
     state_init: StateInit,
 
@@ -143,6 +145,54 @@ where
         WalletBuilder::new().build(code, signer)
     }
 
+    /// Get [signer](Self::signer)'s public key
+    #[inline]
+    pub fn public_key(&self) -> SS::PublicKey {
+        self.signer().public_key()
+    }
+
+    /// Wrap given request in a [`RequestMessage`] and sign it.
+    ///
+    /// # Chain Id
+    ///
+    /// A single signer can control wallet contract instances with same account id on
+    /// different chains. So, each signed message needs to include id of a chain where
+    /// it's intended to be executed on.
+    #[cfg_attr(feature = "tracing", instrument(level = Level::DEBUG, skip_all, fields(
+        msg.chain_id = &self.chain_id,
+        msg.signer_id = %self.account_id(),
+        msg.nonce,
+        msg.created_at,
+        msg.timeout_secs,
+        msg.hash
+    )))]
+    pub async fn sign(
+        &self,
+        request: impl Into<Request>,
+    ) -> Result<(RequestMessage, Proof), S::Error> {
+        let msg = self.wrap_request_msg(request);
+
+        #[cfg(feature = "tracing")]
+        record_all!(
+            tracing::Span::current(),
+            msg.nonce,
+            %msg.created_at,
+            msg.timeout_secs = msg.timeout.as_secs(),
+            msg.hash = %bs58::encode(msg.hash()).into_string(),
+        );
+
+        let proof = self.signer.sign_request_msg(&msg).await?;
+
+        debug_assert!(
+            SS::verify(&self.signer.public_key(), &msg, &proof),
+            "signer produced invalid signature",
+        );
+
+        Ok((msg, proof))
+    }
+}
+
+impl<SS, S> Wallet<SS, S> {
     /// Set a custom [`chain_id`](RequestMessage::chain_id) for [`.sign()`](Self::sign)
     /// instead of a [default](MAINNET) one.
     #[must_use]
@@ -191,52 +241,6 @@ where
     #[inline]
     pub const fn signer(&self) -> &S {
         &self.signer
-    }
-
-    /// Get [signer](Self::signer)'s public key
-    #[inline]
-    pub fn public_key(&self) -> SS::PublicKey {
-        self.signer().public_key()
-    }
-
-    /// Wrap given request in a [`RequestMessage`] and sign it.
-    ///
-    /// # Chain Id
-    ///
-    /// A single signer can control wallet contract instances with same account id on
-    /// different chains. So, each signed message needs to include id of a chain where
-    /// it's intended to be executed on.
-    #[cfg_attr(feature = "tracing", instrument(level = Level::DEBUG, skip_all, fields(
-        msg.chain_id = &self.chain_id,
-        msg.signer_id = %self.account_id(),
-        msg.nonce,
-        msg.created_at,
-        msg.timeout_secs,
-        msg.hash
-    )))]
-    pub async fn sign(
-        &self,
-        request: impl Into<Request>,
-    ) -> Result<(RequestMessage, Proof), S::Error> {
-        let msg = self.wrap_request_msg(request);
-
-        #[cfg(feature = "tracing")]
-        record_all!(
-            tracing::Span::current(),
-            msg.nonce,
-            %msg.created_at,
-            msg.timeout_secs = msg.timeout.as_secs(),
-            msg.hash = %bs58::encode(msg.hash()).into_string(),
-        );
-
-        let proof = self.signer.sign_request_msg(&msg).await?;
-
-        debug_assert!(
-            SS::verify(&self.signer.public_key(), &msg, &proof),
-            "signer produced invalid signature",
-        );
-
-        Ok((msg, proof))
     }
 
     /// Wraps [`Request`] in [`RequestMessage`] for signing

@@ -43,3 +43,14 @@ impl DeterministicStateInit {
         self
     }
 }
+
+#[cfg(feature = "near-kit")]
+impl From<DeterministicStateInit> for near_kit::DeterministicStateInitAction {
+    #[inline]
+    fn from(value: DeterministicStateInit) -> Self {
+        Self {
+            state_init: value.state_init,
+            deposit: value.deposit,
+        }
+    }
+}
