@@ -1657,6 +1657,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-mpc-signer"
+version = "0.1.0"
+dependencies = [
+ "defuse-kdf",
+ "defuse-mpc-kdf",
+ "defuse-mpc-signer",
+ "defuse-near-promise",
+ "impl-tools 0.12.0",
+ "near-kit",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "thiserror 2.0.18",
+ "trait-variant",
+]
+
+[[package]]
 name = "defuse-near-promise"
 version = "0.1.0"
 dependencies = [

@@ -31,8 +31,9 @@ members = [
   "crates/global-deployer/core",
   "crates/global-deployer/near-gds",
 
-  "crates/mpc/kdf",
   "crates/mpc/ckd",
+  "crates/mpc/kdf",
+  "crates/mpc/signer",
 
   "crates/near/admin-utils",
   "crates/near/auth-call",
@@ -105,6 +106,7 @@ defuse-global-deployer-core = { path = "crates/global-deployer/core", default-fe
 
 defuse-mpc-ckd = { path = "crates/mpc/ckd", default-features = false }
 defuse-mpc-kdf = { path = "crates/mpc/kdf", default-features = false }
+defuse-mpc-signer = { path = "crates/mpc/signer", default-features = false }
 
 defuse-admin-utils.path = "crates/near/admin-utils"
 defuse-auth-call.path = "crates/near/auth-call"
