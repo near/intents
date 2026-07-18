@@ -7,6 +7,10 @@
         "chain_id": "mainnet",
         "signer": {
           "type": "code",
+          "allowed_factory_ids": [
+            "ed25519-passkey-wallet-contract.trezu.near",
+            "p256-passkey-wallet-contract.trezu.near"
+          ],
           "signature_enabled": true,
           "subwallet_id": 0,
           "timeout_secs": 3600,
@@ -18,7 +22,7 @@
         "created_at": "1970-01-01T00:00:00Z",
         "timeout_secs": 3600
       },
-      "hash": "c12aed400cf664fc6e095d201e9823e4948fdb389cbd8af5bcb675f38affce26"
+      "hash": "443784c84117260c1b84acc2839155df5a840ef566139251fa3f221b037cba82"
     },
     {
       "name": "signer_id_binding",
@@ -42,6 +46,9 @@
         "chain_id": "mainnet",
         "signer": {
           "type": "code",
+          "allowed_factory_ids": [
+            "p256-passkey-wallet-contract.trezu.near"
+          ],
           "signature_enabled": false,
           "subwallet_id": 5,
           "timeout_secs": 900,
@@ -56,7 +63,7 @@
         "created_at": "2026-07-16T00:00:00Z",
         "timeout_secs": 3600
       },
-      "hash": "35dc09b64e8e93b5304c64c529be468da04c8325328b6d51434391ad1d8a4257"
+      "hash": "370eb1e56e7ba8c01153afdcd2b3215965f946e8b8fd89c508be32b19aeccf9a"
     }
   ]
 }

@@ -78,6 +78,10 @@ pub(crate) mod tests {
         AuthMessage {
             chain_id: "mainnet".to_string(),
             signer: AuthSignerBinding::Code {
+                allowed_factory_ids: BTreeSet::from([
+                    "p256-passkey-wallet-contract.trezu.near".parse().unwrap(),
+                    "ed25519-passkey-wallet-contract.trezu.near".parse().unwrap(),
+                ]),
                 signature_enabled: true,
                 subwallet_id: 0,
                 timeout: Duration::from_hours(1),

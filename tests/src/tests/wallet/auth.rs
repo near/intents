@@ -14,6 +14,16 @@ const RECIPIENT: &str = "trezu.app";
 const PAYLOAD: &str = "Login to trezu.app at 2026-07-16T00:00:00Z";
 
 impl Env {
+    /// The by-account factory id of `wallet_global_id`, for building the
+    /// `allowed_factory_ids` allow-list of `Code` bindings. Panics for a
+    /// code-hash deployment (which `Code` bindings can't target).
+    fn factory_id(&self) -> AccountId {
+        match &self.wallet_global_id {
+            GlobalContractId::AccountId(id) => id.clone(),
+            other => panic!("factory is not deployed by account id: {other:?}"),
+        }
+    }
+
     /// Materialize the wallet's deterministic account on-chain, so that
     /// `w_resolve_auth` view calls can be made against it.
     async fn materialize(
@@ -129,10 +139,11 @@ async fn test_resolve_auth_code_binding(#[future] env: Env) {
     // contract's account id (not the wallet's own account id) for
     // GlobalByAccount deployments: the contract reconstructs the StateInit
     // from the code it is currently running under.
-    let msg = wallet.auth_message_code_binding(PURPOSE, RECIPIENT, PAYLOAD);
+    let msg = wallet.auth_message_code_binding([env.factory_id()], PURPOSE, RECIPIENT, PAYLOAD);
     assert_eq!(
         msg.signer,
         AuthSignerBinding::Code {
+            allowed_factory_ids: BTreeSet::from([env.factory_id()]),
             signature_enabled: true,
             subwallet_id: 0,
             timeout: wallet.timeout(),
@@ -176,7 +187,7 @@ async fn test_resolve_auth_code_binding(#[future] env: Env) {
     // account id), so config mutations do NOT invalidate it: the same
     // initial-defaults envelope still resolves
     let signed = wallet
-        .sign_auth(wallet.auth_message_code_binding(PURPOSE, RECIPIENT, PAYLOAD))
+        .sign_auth(wallet.auth_message_code_binding([env.factory_id()], PURPOSE, RECIPIENT, PAYLOAD))
         .await
         .unwrap();
     assert_eq!(
@@ -189,7 +200,7 @@ async fn test_resolve_auth_code_binding(#[future] env: Env) {
 
     // ...while an envelope built from the MUTATED (live) config derives a
     // different account id and MUST be rejected
-    let mut mutated_msg = wallet.auth_message_code_binding(PURPOSE, RECIPIENT, PAYLOAD);
+    let mut mutated_msg = wallet.auth_message_code_binding([env.factory_id()], PURPOSE, RECIPIENT, PAYLOAD);
     let AuthSignerBinding::Code { extensions, .. } = &mut mutated_msg.signer else {
         unreachable!()
     };
@@ -240,7 +251,7 @@ async fn test_resolve_auth_subwallet_isolation(#[future] env: Env) {
         .await
         .unwrap();
     let code_signed = wallet0
-        .sign_auth(wallet0.auth_message_code_binding(PURPOSE, RECIPIENT, PAYLOAD))
+        .sign_auth(wallet0.auth_message_code_binding([env.factory_id()], PURPOSE, RECIPIENT, PAYLOAD))
         .await
         .unwrap();
 
@@ -333,8 +344,10 @@ async fn test_resolve_auth_validity_window(#[future] env: Env) {
 #[rstest]
 #[awt]
 #[tokio::test]
-async fn test_resolve_auth_immutable_code_hash(#[future] root: Near) {
-    // wallet code deployed immutably (by code hash)
+async fn test_resolve_auth_code_binding_rejects_code_hash(#[future] root: Near) {
+    // A wallet whose code is deployed immutably (by code hash) has no factory
+    // account id, so it can never appear in `allowed_factory_ids`. A `Code`
+    // binding therefore cannot target it — such wallets must use `SignerId`.
     let global_id = root
         .deploy_immutable_global_contract(
             root.account_id().sub_account("wallet-hash").unwrap(),
@@ -354,24 +367,44 @@ async fn test_resolve_auth_immutable_code_hash(#[future] root: Near) {
     let wallet = env.generate_wallet();
     env.materialize(&wallet).await;
 
-    // CodeHash binding resolves
-    let signed = wallet
-        .sign_auth(wallet.auth_message_code_binding(PURPOSE, RECIPIENT, PAYLOAD))
+    // Rejected regardless of allow-list contents: the running code is a
+    // CodeHash deployment, not a by-account factory.
+    let placeholder: AccountId = "any-factory.near".parse().unwrap();
+    let code_signed = wallet
+        .sign_auth(wallet.auth_message_code_binding([placeholder], PURPOSE, RECIPIENT, PAYLOAD))
+        .await
+        .unwrap();
+    assert_invalid(
+        &env.resolve_auth(wallet.account_id(), PURPOSE, RECIPIENT, &code_signed)
+            .await,
+        AuthErrorKind::InvalidInput,
+    );
+
+    // ...but `SignerId` binding still works for code-hash deployments.
+    let signer_id_signed = wallet
+        .sign_auth(wallet.auth_message(PURPOSE, RECIPIENT, PAYLOAD))
         .await
         .unwrap();
     assert_eq!(
-        env.resolve_auth(wallet.account_id(), PURPOSE, RECIPIENT, &signed)
+        env.resolve_auth(wallet.account_id(), PURPOSE, RECIPIENT, &signer_id_signed)
             .await,
         AuthorizationResolution::Resolved {
             payload: PAYLOAD.to_string(),
         },
     );
+}
 
-    // the envelope commits to no particular code identity: the SAME blob
-    // resolves on the same-key/same-config wallet under a DIFFERENT code
-    // identity too (sibling accounts of the same key holder — dApps that
-    // need to distinguish them embed the account id in the payload)
-    let sibling_code = env
+#[rstest]
+#[awt]
+#[tokio::test]
+async fn test_resolve_auth_factory_allow_list(#[future] env: Env) {
+    // Two by-account factories of the SAME curve, same key + config → sibling
+    // accounts of one key holder. `allowed_factory_ids` is what stops a single
+    // signed `Code`-binding message from resolving against more than one.
+    let wallet = env.generate_wallet();
+    env.materialize(&wallet).await;
+
+    let sibling_factory = env
         .deploy_upgradable_global_contract(
             env.account_id().sub_account("wallet-sibling").unwrap(),
             defuse_test_utils::wasms::WALLET_ED25519_WASM.clone(),
@@ -379,19 +412,56 @@ async fn test_resolve_auth_immutable_code_hash(#[future] root: Near) {
         )
         .await
         .unwrap();
+    let GlobalContractId::AccountId(sibling_factory_id) = sibling_factory.clone() else {
+        unreachable!()
+    };
     let sibling = Wallet::<WalletEd25519, _>::new(
-        sibling_code,
+        sibling_factory,
         WalletEd25519Signer(wallet.signer().as_ref().clone()),
     );
     assert_ne!(wallet.account_id(), sibling.account_id());
     env.materialize(&sibling).await;
+
+    // Listing ONLY the canonical factory: resolves on the canonical account,
+    // REJECTED on the sibling (its factory isn't allow-listed) — the
+    // sibling-account replay is closed.
+    let canonical_only = wallet
+        .sign_auth(wallet.auth_message_code_binding([env.factory_id()], PURPOSE, RECIPIENT, PAYLOAD))
+        .await
+        .unwrap();
     assert_eq!(
-        env.resolve_auth(sibling.account_id(), PURPOSE, RECIPIENT, &signed)
+        env.resolve_auth(wallet.account_id(), PURPOSE, RECIPIENT, &canonical_only)
             .await,
         AuthorizationResolution::Resolved {
             payload: PAYLOAD.to_string(),
         },
     );
+    assert_invalid(
+        &env.resolve_auth(sibling.account_id(), PURPOSE, RECIPIENT, &canonical_only)
+            .await,
+        AuthErrorKind::InvalidInput,
+    );
+
+    // Listing TWO same-curve factories violates the documented invariant: the
+    // SAME signed message now resolves against BOTH accounts (cross-account
+    // replay). Pinned here so the invariant is never relaxed by accident.
+    let both = wallet
+        .sign_auth(wallet.auth_message_code_binding(
+            [env.factory_id(), sibling_factory_id],
+            PURPOSE,
+            RECIPIENT,
+            PAYLOAD,
+        ))
+        .await
+        .unwrap();
+    for account in [wallet.account_id(), sibling.account_id()] {
+        assert_eq!(
+            env.resolve_auth(account, PURPOSE, RECIPIENT, &both).await,
+            AuthorizationResolution::Resolved {
+                payload: PAYLOAD.to_string(),
+            },
+        );
+    }
 }
 
 #[rstest]

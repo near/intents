@@ -303,16 +303,21 @@ where
     /// account id (NEP-616) from it, so it stays constructible before the
     /// signing ceremony reveals which key answers, and remains valid even
     /// after post-creation config mutations.
+    /// `allowed_factory_ids` MUST list at most one factory per signature
+    /// curve — see
+    /// [`AuthSignerBinding::Code::allowed_factory_ids`](defuse_wallet::AuthSignerBinding).
     #[must_use = "`.sign_auth()` the wrapped message"]
     #[inline]
     pub fn auth_message_code_binding(
         &self,
+        allowed_factory_ids: impl IntoIterator<Item = AccountId>,
         purpose: impl Into<String>,
         recipient: impl Into<String>,
         payload: impl Into<String>,
     ) -> AuthMessage {
         self.wrap_auth_msg(
             AuthSignerBinding::Code {
+                allowed_factory_ids: allowed_factory_ids.into_iter().collect(),
                 signature_enabled: true,
                 subwallet_id: self.subwallet_id,
                 timeout: self.timeout,

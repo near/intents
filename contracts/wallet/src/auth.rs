@@ -216,12 +216,38 @@ pub enum AuthSignerBinding {
     /// determines its account id forever), post-creation config mutations
     /// (added extensions, signature-mode changes) do NOT invalidate it.
     ///
-    /// NOTE: wallet-contract instances of the *same key holder* with
-    /// identical initial config under different code identities accept the
-    /// same authorization (the envelope commits to no particular code).
-    /// dApps that need to distinguish such sibling accounts SHOULD embed
-    /// the account id in their `payload`.
+    /// The envelope pins the set of *canonical factory code identities* it may
+    /// resolve under ([`allowed_factory_ids`](Self::Code::allowed_factory_ids)),
+    /// which — together with the derived-account-id check — collapses the set
+    /// of accounts a single signed message can authorize down to exactly one
+    /// per curve. See that field's docs for the invariant that MUST hold.
     Code {
+        /// The canonical wallet-contract factory account ids (NEP-591 global
+        /// contracts deployed by account id) this authorization may resolve
+        /// under. Resolution succeeds only if the code this contract is
+        /// currently running under is one of these — a signed, explicit
+        /// allow-list of canonical factories that rejects any other code
+        /// identity (a rogue or not-yet-declared factory) as
+        /// [`SignerBindingMismatch`](crate::AuthError::SignerBindingMismatch).
+        ///
+        /// The client can populate this *before* the signing ceremony reveals
+        /// which curve (and thus which factory) answers, because all canonical
+        /// factory ids are fixed constants independent of the curve — each
+        /// per-curve wallet-contract instance enforces only its own membership.
+        ///
+        /// # Invariant (MUST hold)
+        ///
+        /// `allowed_factory_ids` MUST NOT contain two factories of the **same
+        /// signature curve**. The signed message commits to the *set*, not to
+        /// which member answered; a signature verifies under every factory of
+        /// its own curve that appears here. So if two same-curve factories were
+        /// listed and the key holder had an account under each, the **same
+        /// signed message would resolve `RESOLVED` against both accounts** — a
+        /// cross-account replay. With at most one factory per curve, the
+        /// signature's own curve selects a unique factory, and the set is a
+        /// singleton per curve.
+        allowed_factory_ids: BTreeSet<AccountId>,
+
         /// [`State::signature_enabled`](field@crate::State::signature_enabled)
         /// the account was initialized with.
         signature_enabled: bool,
@@ -476,6 +502,10 @@ mod tests {
         AuthMessage {
             chain_id: "mainnet".to_string(),
             signer: AuthSignerBinding::Code {
+                allowed_factory_ids: BTreeSet::from([
+                    "p256-passkey-wallet-contract.trezu.near".parse().unwrap(),
+                    "ed25519-passkey-wallet-contract.trezu.near".parse().unwrap(),
+                ]),
                 signature_enabled: true,
                 subwallet_id: 0,
                 timeout: Duration::from_hours(1),
@@ -499,6 +529,10 @@ mod tests {
                 "chain_id": "mainnet",
                 "signer": {
                     "type": "code",
+                    "allowed_factory_ids": [
+                        "ed25519-passkey-wallet-contract.trezu.near",
+                        "p256-passkey-wallet-contract.trezu.near",
+                    ],
                     "signature_enabled": true,
                     "subwallet_id": 0,
                     "timeout_secs": 3600,
@@ -539,7 +573,7 @@ mod tests {
             sample_msg().hash(),
             // pinned known-answer; recomputing differently means a breaking
             // change to the wire format
-            hex!("c12aed400cf664fc6e095d201e9823e4948fdb389cbd8af5bcb675f38affce26"),
+            hex!("443784c84117260c1b84acc2839155df5a840ef566139251fa3f221b037cba82"),
         );
     }
 

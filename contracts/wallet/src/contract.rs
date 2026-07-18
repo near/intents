@@ -302,6 +302,7 @@ where
                 }
             }
             AuthSignerBinding::Code {
+                allowed_factory_ids,
                 signature_enabled,
                 subwallet_id,
                 timeout,
@@ -326,6 +327,26 @@ where
                     // a deterministic wallet-contract instance
                     return Err(AuthError::SignerBindingMismatch);
                 };
+
+                // Enforce the signed canonical-factory allow-list: the code
+                // this instance runs under MUST be one of the factory account
+                // ids the signer committed to. This is what caps the set of
+                // accounts a single signed message can authorize to one per
+                // curve (see `AuthSignerBinding::Code::allowed_factory_ids`).
+                // A rogue or not-yet-declared factory — anything the signer
+                // did not list — is rejected here even before the derivation
+                // check below.
+                let near_sdk::GlobalContractId::AccountId(factory_id) = &code else {
+                    // deployed by code hash, not by account id: not a
+                    // canonical (by-account) factory this envelope allows
+                    return Err(AuthError::SignerBindingMismatch);
+                };
+                if !allowed_factory_ids
+                    .iter()
+                    .any(|allowed| allowed.as_str() == factory_id.as_str())
+                {
+                    return Err(AuthError::SignerBindingMismatch);
+                }
 
                 let initial_state = State {
                     signature_enabled: *signature_enabled,
