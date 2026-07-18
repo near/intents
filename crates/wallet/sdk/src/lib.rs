@@ -348,24 +348,6 @@ where
         Ok((msg, proof))
     }
 
-    /// TODO: docs: relayer must be set
-    #[cfg(feature = "relayer")]
-    pub async fn sign_and_relay(
-        &self,
-        request: impl Into<Request>,
-    ) -> Result<defuse_near_sender::SentTransaction, Error> {
-        use crate::relayer::WalletRelayer;
-        // check before signing if relayer is set
-        let relayer = self.relayer();
-
-        let (msg, proof) = self.sign(request).await?;
-
-        relayer
-            .relay_signed_msg(msg, proof)
-            .await
-            .map_err(Error::Relayer)
-    }
-
     /// Wraps [`Request`] in [`RequestMessage`] for signing
     #[must_use = "`.sign()` the wrapped request"]
     #[inline]
@@ -388,11 +370,22 @@ where
         Duration::from_mins(1).min(self.timeout() / 5)
     }
 
-    /// Reseed the [nonces](ConcurrentNonces) and invalidate the current block.
-    /// Use it in case of a collision.
-    #[inline]
-    pub fn reseed_nonces(&self) {
-        *self.nonces.lock().unwrap() = ConcurrentNonces::new(make_rng());
+    /// TODO: docs: relayer must be set
+    #[cfg(feature = "relayer")]
+    pub async fn sign_and_relay(
+        &self,
+        request: impl Into<Request>,
+    ) -> Result<defuse_near_sender::SentTransaction, Error> {
+        use crate::relayer::WalletRelayer;
+        // check before signing if relayer is set
+        let relayer = self.relayer();
+
+        let (msg, proof) = self.sign(request).await?;
+
+        relayer
+            .relay_signed_msg(msg, proof)
+            .await
+            .map_err(Error::Relayer)
     }
 
     #[cfg(feature = "mpc")]
@@ -411,6 +404,13 @@ where
             self.client(),
         )
         .await
+    }
+
+    /// Reseed the [nonces](ConcurrentNonces) and invalidate the current block.
+    /// Use it in case of a collision.
+    #[inline]
+    pub fn reseed_nonces(&self) {
+        *self.nonces.lock().unwrap() = ConcurrentNonces::new(make_rng());
     }
 }
 
