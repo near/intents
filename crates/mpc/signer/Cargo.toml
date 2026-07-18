@@ -20,4 +20,8 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 serde_with = { workspace = true, features = ["hex"] }
 thiserror.workspace = true
-trait-variant.workspace = true
+
+[package.metadata.cargo-machete]
+ignored = [
+  "defuse-crypto", # needed to active "serde" feature
+]

@@ -84,7 +84,8 @@ impl Request {
         self.external
             .iter()
             .map(NearPromise::estimate_gas)
-            .fold(Gas::from_gas(0), Gas::saturating_add)
+            // TODO: 5TGas is minimum...?
+            .fold(Gas::from_tgas(5), Gas::saturating_add)
     }
 }
 

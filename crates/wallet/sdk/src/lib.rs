@@ -186,6 +186,7 @@ where
     }
 
     // TODO: flush_extensions
+    #[must_use]
     #[inline]
     pub fn as_extension_of(mut self, account_id: impl Into<AccountId>) -> Self {
         self.as_extension_chain.push(account_id.into());
@@ -199,7 +200,8 @@ where
     #[inline]
     pub fn with_client(mut self, client: near_kit::Near) -> Self {
         // TODO: are we sure?
-        self = self.with_chain_id(client.chain_id().as_str());
+        // TODO
+        // self = self.with_chain_id(client.chain_id().as_str());
         self.client = Some(client);
         self
     }
@@ -434,9 +436,33 @@ where
         let (msg, proof) = self.sign(request).await?;
 
         relayer
-            .relay_signed_msg(msg, proof)
+            .relay_signed_msg(
+                // TODO: always pass state_init?
+                self.deterministic_state_init().clone().into(),
+                msg,
+                proof,
+            )
             .await
             .map_err(Error::Relayer)
+    }
+
+    #[cfg(all(feature = "near-kit", feature = "relayer"))]
+    // TODO: naming
+    pub async fn sign_and_relay_status<W>(
+        &self,
+        request: impl Into<Request>,
+        level: W,
+    ) -> Result<W::Response, Error>
+    where
+        W: near_kit::WaitLevel,
+    {
+        let client = self.client();
+        let sent = self.sign_and_relay(request).await?;
+
+        client
+            .tx_status(&sent.tx_hash.into(), sent.sender_id, level)
+            .await
+            .map_err(Error::Near)
     }
 
     #[cfg(feature = "mpc")]
@@ -474,9 +500,19 @@ impl<S: SignatureSchema> AsRef<AccountIdRef> for Wallet<S> {
     }
 }
 
+impl<S: SignatureSchema> From<Wallet<S>> for AccountId {
+    // TODO: docs: returns effective
+    #[inline]
+    fn from(value: Wallet<S>) -> Self {
+        value.account_id().clone()
+    }
+}
+
 // TODO: non_exhaustive?
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("near: {0}")]
+    Near(#[from] near_kit::Error),
     #[error("relayer: {0}")]
     Relayer(Box<dyn StdError>),
     #[error("signer: {0}")]

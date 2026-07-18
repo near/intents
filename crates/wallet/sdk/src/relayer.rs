@@ -8,11 +8,19 @@ use std::{
 use async_trait::async_trait;
 use defuse_near_sender::{NearSender, SentTransaction};
 use defuse_wallet::{
-    AccountId, AccountIdRef, NearPromise, RequestMessage, SignatureSchema, actions::NearAction,
+    AccountId, AccountIdRef, Gas, NearPromise, NearToken, RequestMessage, SignatureSchema,
+    StateInit, actions::NearAction,
 };
 use impl_tools::autoimpl;
 
 use crate::{Error, Proof, Wallet};
+
+pub struct WalletRelayRequest {
+    pub deterministic_state_init: Option<StateInit>,
+    pub msg: RequestMessage,
+    pub proof: String,
+    pub gas: Gas,
+}
 
 #[trait_variant::make(Send)]
 #[autoimpl(for<T: ?Sized + trait> &T, &mut T, Box<T>, Arc<T>)]
@@ -26,6 +34,7 @@ pub trait WalletRelayer: Sync {
     // TODO: state_init?
     async fn relay_signed_msg(
         &self,
+        deterministic_state_init: Option<StateInit>,
         msg: RequestMessage,
         proof: Proof,
     ) -> Result<SentTransaction, Self::Error>;
@@ -77,6 +86,7 @@ where
 pub trait DynWalletRelayer: Send + Sync {
     async fn dyn_relay_signed_msg(
         &self,
+        deterministic_state_init: Option<StateInit>,
         msg: RequestMessage,
         proof: Proof,
     ) -> Result<SentTransaction, Box<dyn StdError>>;
@@ -89,10 +99,13 @@ where
 {
     async fn dyn_relay_signed_msg(
         &self,
+        deterministic_state_init: Option<StateInit>,
         msg: RequestMessage,
         proof: Proof,
     ) -> Result<SentTransaction, Box<dyn StdError>> {
-        self.relay_signed_msg(msg, proof).await.map_err(Into::into)
+        self.relay_signed_msg(deterministic_state_init, msg, proof)
+            .await
+            .map_err(Into::into)
     }
 }
 
@@ -101,10 +114,12 @@ impl WalletRelayer for dyn DynWalletRelayer + '_ {
 
     async fn relay_signed_msg(
         &self,
+        deterministic_state_init: Option<StateInit>,
         msg: RequestMessage,
         proof: Proof,
     ) -> Result<SentTransaction, Self::Error> {
-        self.dyn_relay_signed_msg(msg, proof).await
+        self.dyn_relay_signed_msg(deterministic_state_init, msg, proof)
+            .await
     }
 }
 
@@ -119,21 +134,28 @@ const _: () = {
 
         async fn relay_signed_msg(
             &self,
+            deterministic_state_init: Option<StateInit>,
             msg: RequestMessage,
             proof: Proof,
         ) -> Result<SentTransaction, Self::Error> {
-            self.transaction(msg.signer_id.clone())
-                // TODO: state_init
-                .add_action(
-                    // TODO: gas + deposit?
-                    WalletContract::w_execute_signed((msg, proof).into()),
-                )
-                .send()
-                // TODO: maybe IncludedFinal?
-                .wait_until(Included)
-                // TODO: max_nonce_retries
-                .await
-                .map(Into::into)
+            let mut tx = self.transaction(msg.signer_id.clone());
+
+            if let Some(state_init) = deterministic_state_init {
+                tx = tx.state_init(state_init, NearToken::ZERO);
+            }
+            tx.add_action(
+                // TODO: gas + deposit?
+                WalletContract::w_execute_signed((&msg, proof).into())
+                    // TODO: assist deposit
+                    .deposit(NearToken::from_yoctonear(1))
+                    .gas(msg.request.estimate_gas()),
+            )
+            .send()
+            // TODO: maybe IncludedFinal?
+            .wait_until(Included)
+            // TODO: max_nonce_retries
+            .await
+            .map(Into::into)
         }
     }
 };

@@ -43,3 +43,10 @@ tracing = ["dep:bs58", "dep:tracing"]
 
 [dev-dependencies]
 defuse-wallet-sdk = { path = ".", features = ["json", "near-kit", "relayer", "serde", "mpc"] }
+
+defuse-wallet-ed25519 = { workspace = true, features = ["signer"] }
+near-kit = { workspace = true, features = ["sandbox"] }
+rand = { workspace = true, features = ["sys_rng"] }
+rstest.workspace = true
+sha2.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }

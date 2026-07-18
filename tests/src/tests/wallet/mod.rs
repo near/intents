@@ -269,9 +269,7 @@ struct Env {
 }
 
 impl Env {
-    pub fn generate_wallet(
-        &self,
-    ) -> Wallet<WalletEd25519, WalletEd25519Signer<ed25519_dalek::SigningKey>> {
+    pub fn generate_wallet(&self) -> Wallet<WalletEd25519> {
         Wallet::new(
             self.wallet_global_id.clone(),
             WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut rng())),

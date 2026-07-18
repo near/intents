@@ -101,6 +101,7 @@ mod tests {
                 state
                     .nonces
                     .commit(n, created_at, ZBA_TIMEOUT)
+                    // TODO: this happens...
                     .expect("rand collision");
             }
 

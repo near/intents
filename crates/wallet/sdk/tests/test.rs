@@ -1,0 +1,125 @@
+use std::{env, fs, path::Path, sync::LazyLock};
+
+use defuse_wallet::{NearPromise, Request, WalletOp, actions::FunctionCall};
+use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
+use defuse_wallet_sdk::{
+    Gas, NearToken,
+    client::{WExecuteExtensionArgs, WExecuteSignedArgs},
+};
+use near_kit::{Final, Near, PublishMode, sandbox::SandboxConfig};
+use rand::{rand_core::UnwrapErr, rngs::SysRng};
+use rstest::{fixture, rstest};
+use sha2::{Digest, Sha256};
+use tokio::sync::OnceCell;
+
+type Wallet = defuse_wallet_sdk::Wallet<WalletEd25519>;
+
+#[rstest]
+#[tokio::test]
+#[awt]
+async fn rotate(
+    #[from(wallet)]
+    #[future]
+    root: Wallet,
+    #[from(wallet)]
+    #[future]
+    extension: Wallet,
+) {
+    root.sign_and_relay_status(
+        Request::new()
+            .internal([WalletOp::AddExtension {
+                account_id: extension.account_id().clone(),
+            }])
+            .external([NearPromise::new(extension.account_id())
+                .deterministic_state_init(
+                    extension.deterministic_state_init().clone(),
+                    NearToken::ZERO,
+                )
+                .function_call(
+                    FunctionCall::name("w_execute_signed")
+                        .attach_deposit(NearToken::from_yoctonear(1))
+                        .args_json({
+                            let (msg, proof) = extension
+                                .sign(
+                                    NearPromise::new(root.account_id()).function_call(
+                                        FunctionCall::name("w_execute_extension")
+                                            .attach_deposit(NearToken::from_yoctonear(1))
+                                            .args_json(WExecuteExtensionArgs::from(
+                                                Request::new().internal([
+                                                    WalletOp::SetSignatureMode { enable: false },
+                                                ]),
+                                            ))
+                                            .gas(Gas::from_tgas(10)),
+                                    ),
+                                )
+                                .await
+                                .unwrap();
+
+                            WExecuteSignedArgs::from((msg, proof))
+                        })
+                        .gas(Gas::from_tgas(20)),
+                )]),
+        Final,
+    )
+    .await
+    // TODO: this doesn't ensure status of tx
+    .unwrap()
+    .result()
+    .expect("key rotation failed");
+
+    root.sign_and_relay_status(Request::new(), Final)
+        .await
+        .unwrap()
+        .result()
+        .expect_err("signature should be disabled");
+
+    let extension = extension.as_extension_of(root);
+
+    dbg!(
+        extension
+            .sign_and_relay_status(
+                // TODO: enable back?
+                Request::new().internal([WalletOp::SetSignatureMode { enable: true }]),
+                Final
+            )
+            .await
+            .unwrap()
+    )
+    .result()
+    .expect("extension should be able to execute requests on behalf of root");
+}
+
+#[fixture]
+#[awt]
+async fn wallet(#[future] near: Near) -> Wallet {
+    Wallet::new(
+        *WALLET_ED25519_CODE_HASH,
+        WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng))),
+    )
+    .with_client(near.clone())
+    .with_relayer(near)
+}
+
+#[fixture]
+async fn near() -> Near {
+    static NEAR: OnceCell<Near> = OnceCell::const_new();
+
+    NEAR.get_or_init(|| async {
+        let near = SandboxConfig::shared().await.client();
+
+        near.publish(&**WALLET_ED25519_WASM, PublishMode::Immutable)
+            .await
+            .expect("failed to deploy global contract by hash");
+        near
+    })
+    .await
+    .clone()
+}
+
+static WALLET_ED25519_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
+    let wasm = Path::new(env::var("DEFUSE_USE_OUT_DIR").as_deref().unwrap_or("./res"))
+        .join("defuse-wallet-ed25519.wasm");
+    fs::read(wasm).expect("failed to read WASM")
+});
+static WALLET_ED25519_CODE_HASH: LazyLock<[u8; 32]> =
+    LazyLock::new(|| Sha256::digest(&*WALLET_ED25519_WASM).into());
