@@ -2,6 +2,7 @@
 pub mod client;
 #[cfg(feature = "mpc")]
 use defuse_mpc_signer as mpc;
+use defuse_wallet::actions::FunctionCall;
 mod nonces;
 #[cfg(feature = "relayer")]
 pub mod relayer;
@@ -25,7 +26,7 @@ use rand::{make_rng, rngs::SmallRng};
 #[cfg(feature = "tracing")]
 use tracing::{Level, instrument, record_all};
 
-use crate::nonces::ConcurrentNonces;
+use crate::{client::WExecuteExtensionArgs, nonces::ConcurrentNonces};
 
 /// `mainnet` chain id
 pub const MAINNET: &str = "mainnet";
@@ -113,10 +114,13 @@ impl WalletBuilder {
             chain_id: MAINNET.to_string(),
             signer: signer.arced(),
             _schema: PhantomData,
+            as_extension_chain: Vec::new(),
             #[cfg(feature = "near-kit")]
             client: None,
             #[cfg(feature = "relayer")]
             relayer: None,
+            #[cfg(feature = "mpc")]
+            mpc_contract_id: None,
         }
     }
 }
@@ -139,11 +143,16 @@ pub struct Wallet<S: SignatureSchema> {
     // `fn() -> S` implements Send + Sync unconditionally
     _schema: PhantomData<fn() -> S>,
 
+    as_extension_chain: Vec<AccountId>,
+
     #[cfg(feature = "near-kit")]
     client: Option<near_kit::Near>,
 
     #[cfg(feature = "relayer")]
     relayer: Option<relayer::ArcWalletRelayer>,
+
+    #[cfg(feature = "mpc")]
+    mpc_contract_id: Option<AccountId>,
 }
 
 impl<S> Wallet<S>
@@ -161,26 +170,37 @@ where
         WalletBuilder::new().build(code, signer)
     }
 
-    // TODO: as_extension_of()
-
     // TODO: rename: with_chain_id?
     /// Set a custom [`chain_id`](RequestMessage::chain_id) for [`.sign()`](Self::sign)
     /// instead of a [default](MAINNET) one.
     #[must_use]
     #[inline]
     pub fn with_chain_id(mut self, chain_id: impl Into<ChainId>) -> Self {
-        self.chain_id = chain_id.into();
-        // contracts on different chains keep track of their own nonces
-        self.reseed_nonces();
+        let new_chain_id = chain_id.into();
+        if self.chain_id != new_chain_id {
+            // contracts on different chains keep track of their own nonces
+            self.reseed_nonces();
+        }
+        self.chain_id = new_chain_id;
         self
     }
+
+    // TODO: flush_extensions
+    #[inline]
+    pub fn as_extension_of(mut self, account_id: impl Into<AccountId>) -> Self {
+        self.as_extension_chain.push(account_id.into());
+        self
+    }
+
+    // pub fn pop_extension
 
     #[cfg(feature = "near-kit")]
     #[must_use]
     #[inline]
     pub fn with_client(mut self, client: near_kit::Near) -> Self {
+        // TODO: are we sure?
+        self = self.with_chain_id(client.chain_id().as_str());
         self.client = Some(client);
-        // TODO: reset chain_id?
         self
     }
 
@@ -195,17 +215,35 @@ where
         self
     }
 
+    #[cfg(feature = "mpc")]
+    #[must_use]
+    #[inline]
+    pub fn with_mpc_contract_id(mut self, mpc_contract_id: impl Into<AccountId>) -> Self {
+        self.mpc_contract_id = Some(mpc_contract_id.into());
+        self
+    }
+
     #[inline]
     pub const fn chain_id(&self) -> &ChainId {
         &self.chain_id
     }
 
+    // TODO: docs: effective/real
     /// Get derived account id for this wallet contract instance.
     ///
     /// NOTE: the account on NEAR might **not** exist yet and needs to be
     /// initialized first. See [`.deterministic_state_init()`](Self::deterministic_state_init)
     #[inline]
     pub const fn account_id(&self) -> &AccountId {
+        if let Some(last_extension_id) = self.as_extension_chain.as_slice().last() {
+            return last_extension_id;
+        }
+
+        self.real_account_id()
+    }
+
+    #[inline]
+    pub const fn real_account_id(&self) -> &AccountId {
         &self.account_id
     }
 
@@ -258,7 +296,8 @@ where
         use crate::client::WalletContract;
 
         self.client()
-            .contract::<WalletContract>(self.account_id())
+            // TODO: are we sure: real_account_id?
+            .contract::<WalletContract>(self.real_account_id())
             .w_is_signature_allowed()
     }
 
@@ -336,6 +375,8 @@ where
             .await
             .map_err(Error::Signer)?;
 
+        // TODO: emit event with msg hash
+
         debug_assert!(
             S::verify(&self.signer.public_key(), &msg, &proof),
             "signer produced invalid signature",
@@ -350,17 +391,31 @@ where
     fn wrap_request_msg(&self, request: impl Into<Request>) -> RequestMessage {
         RequestMessage {
             chain_id: self.chain_id.clone(),
-            signer_id: self.account_id().clone(),
+            signer_id: self.real_account_id().clone(),
             nonce: self.nonces.lock().unwrap().next(),
             // set `created_at` slightly before the actual time of signing,
             // so it doesn't fail on-chain if arrives too fast.
             created_at: Timestamp::now() - self.optimal_lag(),
             timeout: self.timeout(),
-            request: request.into(),
+            // TODO: explain in comment
+            request: self
+                .as_extension_chain
+                .iter()
+                .rfold(request.into(), |request, extension| {
+                    NearPromise::new(extension)
+                        .function_call(
+                            FunctionCall::name("w_execute_extension")
+                                .attach_deposit(NearToken::from_yoctonear(1))
+                                // TODO: gas
+                                .args_json(WExecuteExtensionArgs::from(request)),
+                        )
+                        .into()
+                }),
         }
     }
 
-    /// Returns an optimal lag for `created_at`, so it doesn't fail on-chain.
+    /// Returns an optimal lag for `created_at`, so it doesn't fail on-chain
+    /// if arrives too early.
     #[inline]
     fn optimal_lag(&self) -> Duration {
         Duration::from_mins(1).min(self.timeout() / 5)
@@ -387,7 +442,6 @@ where
     #[cfg(feature = "mpc")]
     pub async fn mpc_signer<C>(
         &self,
-        mpc_contract_id: impl Into<AccountId>,
         domain_id: u64,
     ) -> Result<mpc::MpcOnChainSigner<C, Self>, mpc::Error<Error>>
     where
@@ -395,7 +449,9 @@ where
     {
         mpc::MpcOnChainSigner::new(
             self.clone(), // TODO: or require self?
-            mpc_contract_id,
+            self.mpc_contract_id
+                .clone()
+                .expect("mpc_contract_id is not set"),
             domain_id,
             self.client(),
         )
@@ -407,6 +463,14 @@ where
     #[inline]
     pub fn reseed_nonces(&self) {
         *self.nonces.lock().unwrap() = ConcurrentNonces::new(make_rng());
+    }
+}
+
+impl<S: SignatureSchema> AsRef<AccountIdRef> for Wallet<S> {
+    // TODO: docs: returns effective
+    #[inline]
+    fn as_ref(&self) -> &AccountIdRef {
+        self.account_id()
     }
 }
 
