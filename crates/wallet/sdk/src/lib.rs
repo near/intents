@@ -1,18 +1,19 @@
 #[cfg(feature = "near-kit")]
 pub mod client;
 #[cfg(feature = "mpc")]
-pub mod mpc;
+use defuse_mpc_signer as mpc;
 mod nonces;
 #[cfg(feature = "relayer")]
 pub mod relayer;
 mod signer;
 
-pub use self::{nonces::*, signer::*};
+pub use self::signer::*;
 
 pub use defuse_wallet::*;
 
 use std::{
     collections::BTreeSet,
+    error::Error as StdError,
     marker::PhantomData,
     sync::{Arc, Mutex},
     time::Duration,
@@ -23,6 +24,8 @@ use impl_tools::autoimpl;
 use rand::{make_rng, rngs::SmallRng};
 #[cfg(feature = "tracing")]
 use tracing::{Level, instrument, record_all};
+
+use crate::nonces::ConcurrentNonces;
 
 /// `mainnet` chain id
 pub const MAINNET: &str = "mainnet";
@@ -90,7 +93,7 @@ impl WalletBuilder {
     pub fn build<S, SS>(self, code: impl Into<GlobalContractId>, signer: SS) -> Wallet<S>
     where
         S: SignatureSchema<PublicKey: BorshSerialize>,
-        SS: WalletSigner<S, Error: Into<Box<dyn core::error::Error>>> + 'static,
+        SS: WalletSigner<S, Error: Into<Box<dyn StdError>>> + 'static,
     {
         let state_init = StateInit::V1(StateInitV1 {
             code: code.into(),
@@ -153,7 +156,7 @@ where
     pub fn new<SS>(code: impl Into<GlobalContractId>, signer: SS) -> Self
     where
         S::PublicKey: BorshSerialize,
-        SS: WalletSigner<S, Error: Into<Box<dyn core::error::Error>>> + 'static,
+        SS: WalletSigner<S, Error: Into<Box<dyn StdError>>> + 'static,
     {
         WalletBuilder::new().build(code, signer)
     }
@@ -192,7 +195,7 @@ where
     #[inline]
     pub fn with_relayer<R>(mut self, relayer: R) -> Self
     where
-        R: relayer::WalletRelayer<Error: Into<Box<dyn core::error::Error>>> + 'static,
+        R: relayer::WalletRelayer<Error: Into<Box<dyn StdError>>> + 'static,
     {
         self.relayer = Some(relayer.arced());
         self
@@ -415,7 +418,7 @@ where
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("relayer: {0}")]
-    Relayer(Box<dyn core::error::Error>),
+    Relayer(Box<dyn StdError>),
     #[error("signer: {0}")]
-    Signer(Box<dyn ::core::error::Error>),
+    Signer(Box<dyn StdError>),
 }

@@ -1,4 +1,5 @@
 use std::{
+    error::Error as StdError,
     fmt::{Debug, Display},
     sync::Arc,
 };
@@ -32,7 +33,7 @@ pub trait WalletSigner<S: SignatureSchema>: Sync {
     fn boxed<'a>(self) -> BoxWalletSigner<'a, S>
     where
         Self: Sized + 'a,
-        Self::Error: Into<Box<dyn core::error::Error>>,
+        Self::Error: Into<Box<dyn StdError>>,
     {
         Box::new(self)
     }
@@ -41,7 +42,7 @@ pub trait WalletSigner<S: SignatureSchema>: Sync {
     fn arced(self) -> ArcWalletSigner<S>
     where
         Self: Sized + 'static,
-        Self::Error: Into<Box<dyn core::error::Error>>,
+        Self::Error: Into<Box<dyn StdError>>,
     {
         Arc::new(self)
     }
@@ -54,27 +55,21 @@ pub type ArcWalletSigner<S> = Arc<dyn DynWalletSigner<S>>;
 pub trait DynWalletSigner<S: SignatureSchema>: Send + Sync {
     fn dyn_public_key(&self) -> S::PublicKey;
 
-    async fn dyn_sign_request_msg(
-        &self,
-        msg: &RequestMessage,
-    ) -> Result<Proof, Box<dyn core::error::Error>>;
+    async fn dyn_sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Box<dyn StdError>>;
 }
 
 #[async_trait]
 impl<SS, S> DynWalletSigner<SS> for S
 where
     SS: SignatureSchema,
-    S: WalletSigner<SS, Error: Into<Box<dyn core::error::Error>>>,
+    S: WalletSigner<SS, Error: Into<Box<dyn StdError>>>,
 {
     #[inline]
     fn dyn_public_key(&self) -> SS::PublicKey {
         self.public_key()
     }
 
-    async fn dyn_sign_request_msg(
-        &self,
-        msg: &RequestMessage,
-    ) -> Result<Proof, Box<dyn core::error::Error>> {
+    async fn dyn_sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Box<dyn StdError>> {
         self.sign_request_msg(msg).await.map_err(Into::into)
     }
 }
@@ -83,7 +78,7 @@ impl<S> WalletSigner<S> for dyn DynWalletSigner<S> + '_
 where
     S: SignatureSchema,
 {
-    type Error = Box<dyn core::error::Error>;
+    type Error = Box<dyn StdError>;
 
     #[inline]
     fn public_key(&self) -> S::PublicKey {

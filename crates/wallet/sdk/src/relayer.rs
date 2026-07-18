@@ -1,5 +1,6 @@
 use std::{
     borrow::Cow,
+    error::Error as StdError,
     fmt::{Debug, Display},
     sync::Arc,
 };
@@ -33,7 +34,7 @@ pub trait WalletRelayer: Sync {
     fn boxed<'a>(self) -> BoxWalletRelayer<'a>
     where
         Self: Sized + 'a,
-        Self::Error: Into<Box<dyn core::error::Error>>,
+        Self::Error: Into<Box<dyn StdError>>,
     {
         Box::new(self)
     }
@@ -42,7 +43,7 @@ pub trait WalletRelayer: Sync {
     fn arced(self) -> ArcWalletRelayer
     where
         Self: Sized + 'static,
-        Self::Error: Into<Box<dyn core::error::Error>>,
+        Self::Error: Into<Box<dyn StdError>>,
     {
         Arc::new(self)
     }
@@ -78,25 +79,25 @@ pub trait DynWalletRelayer: Send + Sync {
         &self,
         msg: RequestMessage,
         proof: Proof,
-    ) -> Result<SentTransaction, Box<dyn core::error::Error>>;
+    ) -> Result<SentTransaction, Box<dyn StdError>>;
 }
 
 #[async_trait]
 impl<R> DynWalletRelayer for R
 where
-    R: WalletRelayer<Error: Into<Box<dyn core::error::Error>>>,
+    R: WalletRelayer<Error: Into<Box<dyn StdError>>>,
 {
     async fn dyn_relay_signed_msg(
         &self,
         msg: RequestMessage,
         proof: Proof,
-    ) -> Result<SentTransaction, Box<dyn core::error::Error>> {
+    ) -> Result<SentTransaction, Box<dyn StdError>> {
         self.relay_signed_msg(msg, proof).await.map_err(Into::into)
     }
 }
 
 impl WalletRelayer for dyn DynWalletRelayer + '_ {
-    type Error = Box<dyn core::error::Error>;
+    type Error = Box<dyn StdError>;
 
     async fn relay_signed_msg(
         &self,
@@ -107,7 +108,6 @@ impl WalletRelayer for dyn DynWalletRelayer + '_ {
     }
 }
 
-// TODO: impl wallet relayer for anything that implements Sender
 #[cfg(feature = "near-kit")]
 const _: () = {
     use near_kit::{Error, Included, Near};
