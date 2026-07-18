@@ -28,10 +28,11 @@ pub trait WalletSigner<S: SignatureSchema>: Sync {
     /// [`w_execute_signed(msg, proof)`](defuse_wallet::contract::Wallet::w_execute_signed) contract method
     async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error>;
 
+    #[inline]
     fn boxed(self) -> Arc<dyn DynWalletSigner<S>>
     where
         Self: Sized + 'static,
-        Self::Error: Into<Box<dyn core::error::Error>> + 'static,
+        Self::Error: Into<Box<dyn core::error::Error>>,
     {
         Arc::new(self)
     }

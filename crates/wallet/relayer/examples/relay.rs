@@ -20,7 +20,7 @@ async fn main() {
     // 0.1) Build wallet state with signer's public key
     let wallet = Wallet::<WalletEd25519>::new(
         WALLET_GLOBAL_CONTRACT_ID.to_owned(),
-        WalletEd25519Signer(signer).boxed(),
+        WalletEd25519Signer(signer),
     );
     println!("public key: {}", wallet.public_key());
     // 0.2) Derive wallet account_id

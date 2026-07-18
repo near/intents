@@ -46,7 +46,7 @@ async fn main() {
 
     let wallet = Wallet::<WalletEd25519>::new(
         global_contract_id,
-        WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut rng())).boxed(),
+        WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut rng())),
     );
 
     let started_at = tokio::time::Instant::now();

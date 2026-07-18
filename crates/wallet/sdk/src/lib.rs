@@ -87,16 +87,11 @@ impl WalletBuilder {
     ///
     /// NOTE: this itself does **not** create an account on NEAR. See
     /// [`.deterministic_state_init()`](Wallet::deterministic_state_init).
-    pub fn build<S>(
-        self,
-        code: impl Into<GlobalContractId>,
-        signer: impl Into<Arc<dyn DynWalletSigner<S>>>,
-    ) -> Wallet<S>
+    pub fn build<S, SS>(self, code: impl Into<GlobalContractId>, signer: SS) -> Wallet<S>
     where
         S: SignatureSchema<PublicKey: BorshSerialize>,
+        SS: WalletSigner<S, Error: Into<Box<dyn core::error::Error>>> + 'static,
     {
-        let signer = signer.into();
-
         let state_init = StateInit::V1(StateInitV1 {
             code: code.into(),
             data: State::new(signer.public_key())
@@ -113,7 +108,7 @@ impl WalletBuilder {
             timeout: self.timeout,
             nonces: Arc::new(Mutex::new(ConcurrentNonces::new(make_rng()))),
             chain_id: MAINNET.to_string(),
-            signer,
+            signer: signer.boxed(),
             _schema: PhantomData,
         }
     }
@@ -148,12 +143,10 @@ where
     #[allow(clippy::doc_link_code)]
     /// Shorthand for [`WalletBuilder::new()`](WalletBuilder::new)[`.build()`](WalletBuilder::build).
     #[inline]
-    pub fn new(
-        code: impl Into<GlobalContractId>,
-        signer: impl Into<Arc<dyn DynWalletSigner<S>>>,
-    ) -> Self
+    pub fn new<SS>(code: impl Into<GlobalContractId>, signer: SS) -> Self
     where
         S::PublicKey: BorshSerialize,
+        SS: WalletSigner<S, Error: Into<Box<dyn core::error::Error>>> + 'static,
     {
         WalletBuilder::new().build(code, signer)
     }
