@@ -110,10 +110,10 @@ impl WalletBuilder {
             chain_id: MAINNET.to_string(),
             signer: signer.arced(),
             _schema: PhantomData,
-            #[cfg(feature = "relayer")]
-            relayer: None,
             #[cfg(feature = "near-kit")]
             client: None,
+            #[cfg(feature = "relayer")]
+            relayer: None,
         }
     }
 }
@@ -136,10 +136,11 @@ pub struct Wallet<S: SignatureSchema> {
     // `fn() -> S` implements Send + Sync unconditionally
     _schema: PhantomData<fn() -> S>,
 
-    #[cfg(feature = "relayer")]
-    relayer: Option<relayer::ArcWalletRelayer>,
     #[cfg(feature = "near-kit")]
     client: Option<near_kit::Near>,
+
+    #[cfg(feature = "relayer")]
+    relayer: Option<relayer::ArcWalletRelayer>,
 }
 
 impl<S> Wallet<S>
@@ -170,11 +171,36 @@ where
     /// instead of a [default](MAINNET) one.
     #[must_use]
     #[inline]
-    pub fn chain_id(mut self, chain_id: impl Into<ChainId>) -> Self {
+    pub fn with_chain_id(mut self, chain_id: impl Into<ChainId>) -> Self {
         self.chain_id = chain_id.into();
         // contracts on different chains keep track of their own nonces
         self.reseed_nonces();
         self
+    }
+
+    #[cfg(feature = "near-kit")]
+    #[must_use]
+    #[inline]
+    pub fn with_client(mut self, client: near_kit::Near) -> Self {
+        self.client = Some(client);
+        // TODO: reset chain_id?
+        self
+    }
+
+    #[cfg(feature = "relayer")]
+    #[must_use]
+    #[inline]
+    pub fn with_relayer<R>(mut self, relayer: R) -> Self
+    where
+        R: relayer::WalletRelayer<Error: Into<Box<dyn core::error::Error>>> + 'static,
+    {
+        self.relayer = Some(relayer.arced());
+        self
+    }
+
+    #[inline]
+    pub const fn chain_id(&self) -> &ChainId {
+        &self.chain_id
     }
 
     /// Get derived account id for this wallet contract instance.
