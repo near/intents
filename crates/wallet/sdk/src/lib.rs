@@ -135,6 +135,7 @@ pub struct Wallet<S: SignatureSchema> {
     signer: ArcWalletSigner<S>,
     // `fn() -> S` implements Send + Sync unconditionally
     _schema: PhantomData<fn() -> S>,
+
     #[cfg(feature = "relayer")]
     relayer: Option<relayer::ArcWalletRelayer>,
     #[cfg(feature = "near-kit")]
@@ -159,7 +160,7 @@ where
     /// Get [signer](Self::signer)'s public key
     #[inline]
     pub fn public_key(&self) -> S::PublicKey {
-        self.signer().public_key()
+        self.signer.public_key()
     }
 
     // TODO: as_extension_of()
@@ -209,24 +210,62 @@ where
         self.timeout
     }
 
-    /// Get a reference to the underlying [signer](WalletSigner)
+    #[cfg(feature = "near-kit")]
     #[inline]
-    pub const fn signer(&self) -> &dyn DynWalletSigner<S> {
-        &self.signer
+    fn try_client(&self) -> Option<near_kit::Near> {
+        self.client.clone()
     }
 
-    // TODO
-    // fn client(&self) ->
+    #[cfg(feature = "near-kit")]
+    #[track_caller]
+    #[inline]
+    fn client(&self) -> near_kit::Near {
+        self.try_client().expect("client is not set")
+    }
+
+    #[cfg(feature = "near-kit")]
+    #[inline]
+    pub fn is_signature_allowed(&self) -> near_kit::ViewCall<bool> {
+        use crate::client::WalletContract;
+
+        self.client()
+            .contract::<WalletContract>(self.account_id())
+            .w_is_signature_allowed()
+    }
+
+    #[cfg(feature = "near-kit")]
+    #[inline]
+    pub fn is_extension_enabled(
+        &self,
+        account_id: impl AsRef<AccountIdRef>,
+    ) -> near_kit::ViewCall<bool> {
+        use crate::client::WalletContract;
+
+        self.client()
+            .contract::<WalletContract>(self.account_id())
+            .w_is_extension_enabled(account_id.as_ref().into())
+    }
+
+    #[cfg(feature = "near-kit")]
+    #[inline]
+    pub fn extensions(&self) -> near_kit::ViewCall<BTreeSet<AccountId>> {
+        use crate::client::WalletContract;
+
+        self.client()
+            .contract::<WalletContract>(self.account_id())
+            .w_extensions()
+    }
 
     #[cfg(feature = "relayer")]
     #[inline]
-    pub fn try_relayer(&self) -> Option<&dyn relayer::DynWalletRelayer> {
+    fn try_relayer(&self) -> Option<&dyn relayer::DynWalletRelayer> {
         self.relayer.as_deref()
     }
 
     #[cfg(feature = "relayer")]
+    #[track_caller]
     #[inline]
-    pub fn relayer(&self) -> &dyn relayer::DynWalletRelayer {
+    fn relayer(&self) -> &dyn relayer::DynWalletRelayer {
         // TODO: better panic
         self.try_relayer().expect("relayer is not set")
     }
@@ -340,7 +379,7 @@ where
             self.clone(), // TODO: or require self?
             mpc_contract_id,
             domain_id,
-            self.client.clone().expect("client is not set"),
+            self.client(),
         )
         .await
     }
