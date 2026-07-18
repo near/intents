@@ -5,7 +5,7 @@ use std::{env, fs, path::Path, sync::LazyLock};
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
-use defuse_wallet_sdk::{NearToken, Request, Wallet};
+use defuse_wallet_sdk::{NearToken, Request, Wallet, WalletSigner};
 use futures::{StreamExt, TryStreamExt, stream};
 use near_kit::{Final, GlobalContractId, PublishMode, sandbox::SandboxConfig};
 use rand::rng;
@@ -44,9 +44,9 @@ async fn main() {
 
     let relayer = WalletRelayer::new(near.clone());
 
-    let wallet = Wallet::<WalletEd25519, _>::new(
+    let wallet = Wallet::<WalletEd25519>::new(
         global_contract_id,
-        WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut rng())),
+        WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut rng())).boxed(),
     );
 
     let started_at = tokio::time::Instant::now();

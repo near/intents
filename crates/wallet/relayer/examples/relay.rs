@@ -1,6 +1,8 @@
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
-use defuse_wallet_sdk::{NearPromise, Request, Wallet, WalletOp, actions::FunctionCall};
+use defuse_wallet_sdk::{
+    NearPromise, Request, Wallet, WalletOp, WalletSigner, actions::FunctionCall,
+};
 use near_kit::{AccountIdRef, Gas, Near, NearToken};
 use rand::{rand_core::UnwrapErr, rngs::SysRng};
 use serde_json::json;
@@ -16,9 +18,9 @@ async fn main() {
     // 0.0) Generate a keypair
     let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
     // 0.1) Build wallet state with signer's public key
-    let wallet = Wallet::<WalletEd25519, _>::new(
+    let wallet = Wallet::<WalletEd25519>::new(
         WALLET_GLOBAL_CONTRACT_ID.to_owned(),
-        WalletEd25519Signer(signer),
+        WalletEd25519Signer(signer).boxed(),
     );
     println!("public key: {}", wallet.public_key());
     // 0.2) Derive wallet account_id

@@ -33,6 +33,8 @@ pub trait WalletRelayer: Sync {
 const _: () = {
     use near_kit::{Error, Included, Near, SendTxResponse};
 
+    use crate::client::WalletContract;
+
     impl WalletRelayer for Near {
         type Error = Error;
 
@@ -41,8 +43,6 @@ const _: () = {
             msg: RequestMessage,
             proof: Proof,
         ) -> Result<SentTransaction, Self::Error> {
-            use crate::client::WalletContract;
-
             self.transaction(msg.signer_id.clone())
                 // TODO: state_init
                 .add_action(
@@ -69,82 +69,82 @@ const _: () = {
     }
 };
 
-#[autoimpl(Deref using self.wallet)]
-pub struct RelayedWallet<SS, S, R> {
-    wallet: Wallet<SS, S>,
-    relayer: R,
-}
+// #[autoimpl(Deref using self.wallet)]
+// pub struct RelayedWallet<SS, S, R> {
+//     wallet: Wallet<SS, S>,
+//     relayer: R,
+// }
 
-impl<SS, S, R> RelayedWallet<SS, S, R>
-where
-    SS: SignatureSchema,
-    S: WalletSigner<SS>,
-    R: WalletRelayer,
-{
-    // TODO: tracing
-    pub async fn sign_and_relay(
-        &self,
-        request: impl Into<Request>,
-    ) -> Result<SentTransaction, RelayedWalletError<S::Error, R::Error>> {
-        let (msg, proof) = self
-            .wallet
-            .sign(request)
-            .await
-            .map_err(RelayedWalletError::Signer)?;
+// impl<SS, S, R> RelayedWallet<SS, S, R>
+// where
+//     SS: SignatureSchema,
+//     S: WalletSigner<SS>,
+//     R: WalletRelayer,
+// {
+//     // TODO: tracing
+//     pub async fn sign_and_relay(
+//         &self,
+//         request: impl Into<Request>,
+//     ) -> Result<SentTransaction, RelayedWalletError<S::Error, R::Error>> {
+//         let (msg, proof) = self
+//             .wallet
+//             .sign(request)
+//             .await
+//             .map_err(RelayedWalletError::Signer)?;
 
-        self.relayer
-            .relay_signed_msg(msg, proof)
-            .await
-            .map_err(RelayedWalletError::Relayer)
-    }
-}
+//         self.relayer
+//             .relay_signed_msg(msg, proof)
+//             .await
+//             .map_err(RelayedWalletError::Relayer)
+//     }
+// }
 
-#[derive(Debug, thiserror::Error)]
-pub enum RelayedWalletError<S, R> {
-    #[error("signer: {0}")]
-    Signer(S),
-    #[error("relayer: {0}")]
-    Relayer(R),
-}
+// #[derive(Debug, thiserror::Error)]
+// pub enum RelayedWalletError<S, R> {
+//     #[error("signer: {0}")]
+//     Signer(S),
+//     #[error("relayer: {0}")]
+//     Relayer(R),
+// }
 
-#[cfg(feature = "mpc")]
-const _: () = {
-    use defuse_mpc_signer::Sender;
+// #[cfg(feature = "mpc")]
+// const _: () = {
+//     use defuse_mpc_signer::Sender;
 
-    impl<SS, S, R> Sender for RelayedWallet<SS, S, R>
-    where
-        SS: SignatureSchema,
-        S: WalletSigner<SS>,
-        R: WalletRelayer,
-    {
-        type Error = RelayedWalletError<S::Error, R::Error>;
+//     impl<SS, S, R> Sender for RelayedWallet<SS, S, R>
+//     where
+//         SS: SignatureSchema,
+//         S: WalletSigner<SS>,
+//         R: WalletRelayer,
+//     {
+//         type Error = RelayedWalletError<S::Error, R::Error>;
 
-        fn account_id(&self) -> Cow<'_, AccountIdRef> {
-            self.wallet.account_id().into()
-        }
+//         fn account_id(&self) -> Cow<'_, AccountIdRef> {
+//             self.wallet.account_id().into()
+//         }
 
-        async fn send(
-            &self,
-            receiver_id: AccountId,
-            actions: Vec<NearAction>,
-        ) -> Result<defuse_mpc_signer::SentTransaction, Self::Error> {
-            self.sign_and_relay(NearPromise::new(receiver_id).add_actions(actions))
-                .await
-                .map(Into::into)
-        }
-    }
+//         async fn send(
+//             &self,
+//             receiver_id: AccountId,
+//             actions: Vec<NearAction>,
+//         ) -> Result<defuse_mpc_signer::SentTransaction, Self::Error> {
+//             self.sign_and_relay(NearPromise::new(receiver_id).add_actions(actions))
+//                 .await
+//                 .map(Into::into)
+//         }
+//     }
 
-    // TODO
-    impl From<SentTransaction> for defuse_mpc_signer::SentTransaction {
-        #[inline]
-        fn from(value: SentTransaction) -> Self {
-            Self {
-                tx_hash: value.tx_hash,
-                sender_id: value.sender_id,
-            }
-        }
-    }
-};
+//     // TODO
+//     impl From<SentTransaction> for defuse_mpc_signer::SentTransaction {
+//         #[inline]
+//         fn from(value: SentTransaction) -> Self {
+//             Self {
+//                 tx_hash: value.tx_hash,
+//                 sender_id: value.sender_id,
+//             }
+//         }
+//     }
+// };
 
 /// TODO: docs
 #[derive(Debug, Clone, PartialEq, Eq)]

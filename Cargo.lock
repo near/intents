@@ -2080,6 +2080,7 @@ dependencies = [
 name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "borsh",
  "bs58 0.5.1",
  "defuse-mpc-signer",

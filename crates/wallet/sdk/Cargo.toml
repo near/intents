@@ -10,6 +10,7 @@ repository.workspace = true
 [dependencies]
 defuse-wallet = { workspace = true, features = ["borsh", "digest"] }
 
+async-trait.workspace = true
 borsh.workspace = true
 impl-tools.workspace = true
 rand.workspace = true
@@ -24,6 +25,8 @@ thiserror = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }
 
 [features]
+default = ["relayer"] # TODO: add more
+
 json = ["defuse-wallet/json", "serde"]
 near-kit = [
   "defuse-wallet/near-kit",

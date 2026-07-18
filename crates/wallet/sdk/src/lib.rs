@@ -87,11 +87,16 @@ impl WalletBuilder {
     ///
     /// NOTE: this itself does **not** create an account on NEAR. See
     /// [`.deterministic_state_init()`](Wallet::deterministic_state_init).
-    pub fn build<SS, S>(self, code: impl Into<GlobalContractId>, signer: S) -> Wallet<SS, S>
+    pub fn build<S>(
+        self,
+        code: impl Into<GlobalContractId>,
+        signer: impl Into<Arc<dyn DynWalletSigner<S>>>,
+    ) -> Wallet<S>
     where
-        SS: SignatureSchema<PublicKey: BorshSerialize>,
-        S: WalletSigner<SS>,
+        S: SignatureSchema<PublicKey: BorshSerialize>,
     {
+        let signer = signer.into();
+
         let state_init = StateInit::V1(StateInitV1 {
             code: code.into(),
             data: State::new(signer.public_key())
@@ -116,8 +121,8 @@ impl WalletBuilder {
 
 /// Signer handle to a wallet contract instance implementing a specific
 /// [`SignatureSchema`].
-#[autoimpl(Debug, Clone where S: trait)]
-pub struct Wallet<SS, S> {
+#[autoimpl(Clone)]
+pub struct Wallet<S: SignatureSchema> {
     account_id: AccountId,
     state_init: StateInit,
 
@@ -127,74 +132,38 @@ pub struct Wallet<SS, S> {
 
     chain_id: ChainId,
 
-    signer: S,
+    signer: Arc<dyn DynWalletSigner<S>>,
     // `fn() -> SS` implements Send + Sync unconditionally
-    _schema: PhantomData<fn() -> SS>,
+    _schema: PhantomData<fn() -> S>,
+    // #[cfg(feature = "relayer")]
+    // relayer: Option<()>,
+    // #[cfg(feature = "client")]
+    // client: Option<near_kit::Near>,
 }
 
-impl<SS, S> Wallet<SS, S>
+impl<S> Wallet<S>
 where
-    SS: SignatureSchema,
-    S: WalletSigner<SS>,
+    S: SignatureSchema,
 {
     #[allow(clippy::doc_link_code)]
     /// Shorthand for [`WalletBuilder::new()`](WalletBuilder::new)[`.build()`](WalletBuilder::build).
     #[inline]
-    pub fn new(code: impl Into<GlobalContractId>, signer: S) -> Self
+    pub fn new(
+        code: impl Into<GlobalContractId>,
+        signer: impl Into<Arc<dyn DynWalletSigner<S>>>,
+    ) -> Self
     where
-        SS::PublicKey: BorshSerialize,
+        S::PublicKey: BorshSerialize,
     {
         WalletBuilder::new().build(code, signer)
     }
 
     /// Get [signer](Self::signer)'s public key
     #[inline]
-    pub fn public_key(&self) -> SS::PublicKey {
+    pub fn public_key(&self) -> S::PublicKey {
         self.signer().public_key()
     }
 
-    /// Wrap given request in a [`RequestMessage`] and sign it.
-    ///
-    /// # Chain Id
-    ///
-    /// A single signer can control wallet contract instances with same account id on
-    /// different chains. So, each signed message needs to include id of a chain where
-    /// it's intended to be executed on.
-    #[cfg_attr(feature = "tracing", instrument(level = Level::DEBUG, skip_all, fields(
-        msg.chain_id = &self.chain_id,
-        msg.signer_id = %self.account_id(),
-        msg.nonce,
-        msg.created_at,
-        msg.timeout_secs,
-        msg.hash
-    )))]
-    pub async fn sign(
-        &self,
-        request: impl Into<Request>,
-    ) -> Result<(RequestMessage, Proof), S::Error> {
-        let msg = self.wrap_request_msg(request);
-
-        #[cfg(feature = "tracing")]
-        record_all!(
-            tracing::Span::current(),
-            msg.nonce,
-            %msg.created_at,
-            msg.timeout_secs = msg.timeout.as_secs(),
-            msg.hash = %bs58::encode(msg.hash()).into_string(),
-        );
-
-        let proof = self.signer.sign_request_msg(&msg).await?;
-
-        debug_assert!(
-            SS::verify(&self.signer.public_key(), &msg, &proof),
-            "signer produced invalid signature",
-        );
-
-        Ok((msg, proof))
-    }
-}
-
-impl<SS, S> Wallet<SS, S> {
     // TODO: as_extension_of()
 
     /// Set a custom [`chain_id`](RequestMessage::chain_id) for [`.sign()`](Self::sign)
@@ -243,8 +212,52 @@ impl<SS, S> Wallet<SS, S> {
 
     /// Get a reference to the underlying [signer](WalletSigner)
     #[inline]
-    pub const fn signer(&self) -> &S {
-        &self.signer
+    pub fn signer(&self) -> Arc<dyn DynWalletSigner<S>> {
+        self.signer.clone()
+    }
+
+    /// Wrap given request in a [`RequestMessage`] and sign it.
+    ///
+    /// # Chain Id
+    ///
+    /// A single signer can control wallet contract instances with same account id on
+    /// different chains. So, each signed message needs to include id of a chain where
+    /// it's intended to be executed on.
+    #[cfg_attr(feature = "tracing", instrument(level = Level::DEBUG, skip_all, fields(
+        msg.chain_id = &self.chain_id,
+        msg.signer_id = %self.account_id(),
+        msg.nonce,
+        msg.created_at,
+        msg.timeout_secs,
+        msg.hash
+    )))]
+    pub async fn sign(
+        &self,
+        request: impl Into<Request>,
+    ) -> Result<(RequestMessage, Proof), Error> {
+        let msg = self.wrap_request_msg(request);
+
+        #[cfg(feature = "tracing")]
+        record_all!(
+            tracing::Span::current(),
+            msg.nonce,
+            %msg.created_at,
+            msg.timeout_secs = msg.timeout.as_secs(),
+            msg.hash = %bs58::encode(msg.hash()).into_string(),
+        );
+
+        let proof = self
+            .signer
+            .sign_request_msg(&msg)
+            .await
+            .map_err(Error::Signer)?;
+
+        debug_assert!(
+            S::verify(&self.signer.public_key(), &msg, &proof),
+            "signer produced invalid signature",
+        );
+
+        Ok((msg, proof))
     }
 
     /// Wraps [`Request`] in [`RequestMessage`] for signing
@@ -275,4 +288,10 @@ impl<SS, S> Wallet<SS, S> {
     pub fn reseed_nonces(&self) {
         *self.nonces.lock().unwrap() = ConcurrentNonces::new(make_rng());
     }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("signer: {0}")]
+    Signer(Box<dyn ::core::error::Error>),
 }

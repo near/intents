@@ -3,6 +3,7 @@ use std::{
     sync::Arc,
 };
 
+use async_trait::async_trait;
 use defuse_wallet::{RequestMessage, SignatureSchema};
 use impl_tools::autoimpl;
 
@@ -26,4 +27,59 @@ pub trait WalletSigner<S: SignatureSchema>: Sync {
     /// and return a proof serialized to string ready to be submitted to
     /// [`w_execute_signed(msg, proof)`](defuse_wallet::contract::Wallet::w_execute_signed) contract method
     async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error>;
+
+    fn boxed(self) -> Arc<dyn DynWalletSigner<S>>
+    where
+        Self: Sized + 'static,
+        Self::Error: Into<Box<dyn core::error::Error>> + 'static,
+    {
+        Arc::new(self)
+    }
+}
+
+#[async_trait]
+pub trait DynWalletSigner<S: SignatureSchema>: Send + Sync {
+    fn dyn_public_key(&self) -> S::PublicKey;
+
+    async fn dyn_sign_request_msg(
+        &self,
+        msg: &RequestMessage,
+    ) -> Result<Proof, Box<dyn core::error::Error>>;
+}
+
+#[async_trait]
+impl<SS, S> DynWalletSigner<SS> for S
+where
+    SS: SignatureSchema,
+    S: WalletSigner<SS, Error: Into<Box<dyn core::error::Error>>>,
+{
+    #[inline]
+    fn dyn_public_key(&self) -> SS::PublicKey {
+        WalletSigner::<SS>::public_key(self)
+    }
+
+    async fn dyn_sign_request_msg(
+        &self,
+        msg: &RequestMessage,
+    ) -> Result<Proof, Box<dyn core::error::Error>> {
+        WalletSigner::sign_request_msg(self, msg)
+            .await
+            .map_err(Into::into)
+    }
+}
+
+impl<S> WalletSigner<S> for dyn DynWalletSigner<S>
+where
+    S: SignatureSchema,
+{
+    type Error = Box<dyn core::error::Error>;
+
+    #[inline]
+    fn public_key(&self) -> S::PublicKey {
+        DynWalletSigner::dyn_public_key(self)
+    }
+
+    async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
+        DynWalletSigner::dyn_sign_request_msg(self, msg).await
+    }
 }
