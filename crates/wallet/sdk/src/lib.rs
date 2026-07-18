@@ -161,12 +161,6 @@ where
         WalletBuilder::new().build(code, signer)
     }
 
-    /// Get [signer](Self::signer)'s public key
-    #[inline]
-    pub fn public_key(&self) -> S::PublicKey {
-        self.signer.public_key()
-    }
-
     // TODO: as_extension_of()
 
     // TODO: rename: with_chain_id?
@@ -226,10 +220,16 @@ where
         &self.state_init
     }
 
-    /// Get `subwallet_id` of this wallet contract instance.
+    /// Get [`subwallet_id`](field@State::subwallet_id) of this wallet contract instance.
     #[inline]
     pub const fn subwallet_id(&self) -> u32 {
         self.subwallet_id
+    }
+
+    /// Get [signer](Self::signer)'s public key
+    #[inline]
+    pub fn public_key(&self) -> S::PublicKey {
+        self.signer.public_key()
     }
 
     /// Get `timeout` (i.e. fixed maximum validity for each nonce) of this wallet contract
@@ -298,10 +298,6 @@ where
         // TODO: better panic
         self.try_relayer().expect("relayer is not set")
     }
-
-    // #[cfg(feature = "near-kit")]
-    // #[inline]
-    // fn client(&self);
 
     /// Wrap given request in a [`RequestMessage`] and sign it.
     ///
