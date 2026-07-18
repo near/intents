@@ -85,13 +85,17 @@ const _: () = {
 };
 
 #[cfg(feature = "near-kit")]
-impl From<NearAction> for near_kit::Action {
-    #[inline]
-    fn from(value: NearAction) -> Self {
-        match value {
-            NearAction::FunctionCall(a) => Self::FunctionCall(a.into()),
-            NearAction::Transfer(a) => Self::Transfer(a.into()),
-            NearAction::DeterministicStateInit(a) => Self::DeterministicStateInit(a.into()),
+const _: () = {
+    use near_kit::Action;
+
+    impl From<NearAction> for Action {
+        #[inline]
+        fn from(value: NearAction) -> Self {
+            match value {
+                NearAction::FunctionCall(a) => Self::FunctionCall(a.into()),
+                NearAction::Transfer(a) => Self::Transfer(a.into()),
+                NearAction::DeterministicStateInit(a) => Self::DeterministicStateInit(a.into()),
+            }
         }
     }
-}
+};

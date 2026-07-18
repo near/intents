@@ -40,6 +40,7 @@ members = [
   "crates/near/controller",
   "crates/near/nep245",
   "crates/near/promise",
+  "crates/near/sender",
   "crates/near/utils",
   "crates/near/wnear",
 
@@ -112,6 +113,7 @@ defuse-admin-utils.path = "crates/near/admin-utils"
 defuse-auth-call.path = "crates/near/auth-call"
 defuse-controller.path = "crates/near/controller"
 defuse-near-promise.path = "crates/near/promise"
+defuse-near-sender = { path = "crates/near/sender", default-features = false }
 defuse-near-utils.path = "crates/near/utils"
 defuse-nep245.path = "crates/near/nep245"
 defuse-wnear.path = "crates/near/wnear"

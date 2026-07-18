@@ -1,7 +1,7 @@
 #[cfg(feature = "near-kit")]
 pub mod client;
 #[cfg(feature = "mpc")]
-pub use defuse_mpc_signer as mpc;
+pub mod mpc;
 mod nonces;
 #[cfg(feature = "relayer")]
 pub mod relayer;
@@ -108,14 +108,19 @@ impl WalletBuilder {
             timeout: self.timeout,
             nonces: Arc::new(Mutex::new(ConcurrentNonces::new(make_rng()))),
             chain_id: MAINNET.to_string(),
-            signer: signer.boxed(),
+            signer: signer.arced(),
             _schema: PhantomData,
+            #[cfg(feature = "relayer")]
+            relayer: None,
+            #[cfg(feature = "near-kit")]
+            client: None,
         }
     }
 }
 
 /// Signer handle to a wallet contract instance implementing a specific
 /// [`SignatureSchema`].
+// TODO: make it clonable
 #[autoimpl(Clone)]
 pub struct Wallet<S: SignatureSchema> {
     account_id: AccountId,
@@ -127,13 +132,13 @@ pub struct Wallet<S: SignatureSchema> {
 
     chain_id: ChainId,
 
-    signer: Arc<dyn DynWalletSigner<S>>,
-    // `fn() -> SS` implements Send + Sync unconditionally
+    signer: ArcWalletSigner<S>,
+    // `fn() -> S` implements Send + Sync unconditionally
     _schema: PhantomData<fn() -> S>,
-    // #[cfg(feature = "relayer")]
-    // relayer: Option<()>,
-    // #[cfg(feature = "client")]
-    // client: Option<near_kit::Near>,
+    #[cfg(feature = "relayer")]
+    relayer: Option<relayer::ArcWalletRelayer>,
+    #[cfg(feature = "near-kit")]
+    client: Option<near_kit::Near>,
 }
 
 impl<S> Wallet<S>
@@ -159,6 +164,7 @@ where
 
     // TODO: as_extension_of()
 
+    // TODO: rename: with_chain_id?
     /// Set a custom [`chain_id`](RequestMessage::chain_id) for [`.sign()`](Self::sign)
     /// instead of a [default](MAINNET) one.
     #[must_use]
@@ -205,9 +211,29 @@ where
 
     /// Get a reference to the underlying [signer](WalletSigner)
     #[inline]
-    pub fn signer(&self) -> Arc<dyn DynWalletSigner<S>> {
-        self.signer.clone()
+    pub const fn signer(&self) -> &dyn DynWalletSigner<S> {
+        &self.signer
     }
+
+    // TODO
+    // fn client(&self) ->
+
+    #[cfg(feature = "relayer")]
+    #[inline]
+    pub fn try_relayer(&self) -> Option<&dyn relayer::DynWalletRelayer> {
+        self.relayer.as_deref()
+    }
+
+    #[cfg(feature = "relayer")]
+    #[inline]
+    pub fn relayer(&self) -> &dyn relayer::DynWalletRelayer {
+        // TODO: better panic
+        self.try_relayer().expect("relayer is not set")
+    }
+
+    // #[cfg(feature = "near-kit")]
+    // #[inline]
+    // fn client(&self);
 
     /// Wrap given request in a [`RequestMessage`] and sign it.
     ///
@@ -224,6 +250,7 @@ where
         msg.timeout_secs,
         msg.hash
     )))]
+    // TODO: rename: sign_request_msg
     pub async fn sign(
         &self,
         request: impl Into<Request>,
@@ -251,6 +278,24 @@ where
         );
 
         Ok((msg, proof))
+    }
+
+    /// TODO: docs: relayer must be set
+    #[cfg(feature = "relayer")]
+    pub async fn sign_and_relay(
+        &self,
+        request: impl Into<Request>,
+    ) -> Result<defuse_near_sender::SentTransaction, Error> {
+        use crate::relayer::WalletRelayer;
+        // check before signing if relayer is set
+        let relayer = self.relayer();
+
+        let (msg, proof) = self.sign(request).await?;
+
+        relayer
+            .relay_signed_msg(msg, proof)
+            .await
+            .map_err(Error::Relayer)
     }
 
     /// Wraps [`Request`] in [`RequestMessage`] for signing
@@ -281,10 +326,31 @@ where
     pub fn reseed_nonces(&self) {
         *self.nonces.lock().unwrap() = ConcurrentNonces::new(make_rng());
     }
+
+    #[cfg(feature = "mpc")]
+    pub async fn mpc_signer<C>(
+        &self,
+        mpc_contract_id: impl Into<AccountId>,
+        domain_id: u64,
+    ) -> Result<mpc::MpcOnChainSigner<C, Self>, mpc::Error<Error>>
+    where
+        C: mpc::OnChainNearMpcCurve,
+    {
+        mpc::MpcOnChainSigner::new(
+            self.clone(), // TODO: or require self?
+            mpc_contract_id,
+            domain_id,
+            self.client.clone().expect("client is not set"),
+        )
+        .await
+    }
 }
 
+// TODO: non_exhaustive?
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("relayer: {0}")]
+    Relayer(Box<dyn core::error::Error>),
     #[error("signer: {0}")]
     Signer(Box<dyn ::core::error::Error>),
 }

@@ -1,0 +1,36 @@
+lints.workspace = true
+
+[package]
+name = "defuse-near-sender"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+defuse-near-promise.workspace = true
+impl-tools.workspace = true
+trait-variant.workspace = true
+
+cfg_eval = { workspace = true, optional = true }
+near-kit = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_with = { workspace = true, features = ["base58"], optional = true }
+
+[features]
+default = ["serde"]
+
+near-kit = ["dep:near-kit"]
+schemars-v0_8 = [
+  "defuse-near-promise/schemars-v0_8",
+  "dep:schemars",
+  "serde",
+  "serde_with?/schemars_0_8",
+]
+serde = [
+  "defuse-near-promise/serde",
+  "dep:cfg_eval",
+  "dep:serde",
+  "dep:serde_with",
+]

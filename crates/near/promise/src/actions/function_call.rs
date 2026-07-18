@@ -242,14 +242,31 @@ const fn is_default_gas_weight(gas_weight: &u64) -> bool {
 }
 
 #[cfg(feature = "near-kit")]
-impl From<FunctionCall> for near_kit::FunctionCallAction {
-    #[inline]
-    fn from(value: FunctionCall) -> Self {
-        Self {
-            method_name: value.function_name,
-            args: value.args,
-            gas: value.gas,
-            deposit: value.deposit,
+const _: () = {
+    use near_kit::FunctionCallAction;
+
+    impl From<FunctionCallAction> for FunctionCall {
+        #[inline]
+        fn from(value: FunctionCallAction) -> Self {
+            Self {
+                function_name: value.method_name,
+                args: value.args,
+                deposit: value.deposit,
+                gas: value.gas,
+                gas_weight: 0,
+            }
         }
     }
-}
+
+    impl From<FunctionCall> for FunctionCallAction {
+        #[inline]
+        fn from(value: FunctionCall) -> Self {
+            Self {
+                method_name: value.function_name,
+                args: value.args,
+                gas: value.gas,
+                deposit: value.deposit,
+            }
+        }
+    }
+};

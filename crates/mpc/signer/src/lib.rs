@@ -2,11 +2,11 @@ mod contract;
 mod convert;
 mod ed25519;
 mod secp256k1;
-mod sender;
 
-pub use self::{convert::*, sender::*};
+pub use self::convert::*;
 
 pub use defuse_kdf as kdf;
+use defuse_near_sender::{NearSender, SentTransaction};
 
 use std::{cell::LazyCell, fmt::Debug};
 
@@ -25,6 +25,7 @@ pub const MAINNET_MPC_CONTRACT_ID: &AccountIdRef = AccountIdRef::new_or_panic("v
 
 #[autoimpl(Debug, Clone where C::PublicKey: trait, S: trait)]
 pub struct MpcOnChainSigner<C: Curve, S> {
+    // TODO: boxed?
     sender: S,
 
     mpc_contract_id: AccountId,
@@ -36,8 +37,8 @@ pub struct MpcOnChainSigner<C: Curve, S> {
 
 impl<C, S> MpcOnChainSigner<C, S>
 where
-    C: OnChainNearMpcCurve<PublicKey: Sync>,
-    S: Sender,
+    C: OnChainNearMpcCurve,
+    S: NearSender,
 {
     pub async fn new(
         sender: S,
@@ -67,7 +68,10 @@ where
         path: impl AsRef<str>,
         payload: Payload<'_>,
         extract: impl Fn(SignResponse) -> Option<R>,
-    ) -> Result<R, Error<S::Error>> {
+    ) -> Result<R, Error<S::Error>>
+    where
+        C::PublicKey: Sync,
+    {
         let sent = self
             .send_sign_request(path, payload)
             .await
@@ -105,7 +109,10 @@ where
         &self,
         path: impl AsRef<str>,
         payload: Payload<'_>,
-    ) -> Result<SentTransaction, S::Error> {
+    ) -> Result<SentTransaction, S::Error>
+    where
+        C::PublicKey: Sync,
+    {
         self.sender
             .send(
                 self.mpc_contract_id.clone(),
@@ -132,7 +139,7 @@ impl<C, P, S> DeriveSigner<C, P> for MpcOnChainSigner<C, S>
 where
     C: OnChainNearMpcCurve<PublicKey: Clone + Send + Sync>,
     P: AsRef<str> + AsRef<[u8]>,
-    S: Sender<Error: Send>,
+    S: NearSender<Error: Send>,
 {
     type Error = Error<S::Error>;
 
@@ -171,7 +178,7 @@ impl<C, P, S> RecoverableDeriveSigner<C, P> for MpcOnChainSigner<C, S>
 where
     C: RecoverableOnChainNearMpcCurve<PublicKey: Clone + PartialEq + Send + Sync, RecoveryId: Copy>,
     P: AsRef<str> + AsRef<[u8]>,
-    S: Sender<Error: Send>,
+    S: NearSender<Error: Send>,
 {
     async fn derive_sign_recoverable(
         &self,
