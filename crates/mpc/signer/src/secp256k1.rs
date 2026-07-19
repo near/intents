@@ -7,7 +7,7 @@ use crate::{
 
 impl OnChainNearMpcCurve for Secp256k1 {
     #[inline]
-    fn parse_public_key(public_key: PublicKey) -> Option<Self::PublicKey> {
+    fn extract_public_key(public_key: PublicKey) -> Option<Self::PublicKey> {
         let PublicKey::Secp256k1(pk) = public_key else {
             return None;
         };
@@ -15,12 +15,12 @@ impl OnChainNearMpcCurve for Secp256k1 {
     }
 
     #[inline]
-    fn to_payload(prehash: &[u8]) -> Option<Payload<'_>> {
+    fn msg_to_payload(prehash: &[u8]) -> Option<Payload<'_>> {
         <[u8; 32]>::try_from(prehash).map(Payload::Ecdsa).ok()
     }
 
     #[inline]
-    fn parse_signature(sig: SignResponse) -> Option<Self::Signature> {
+    fn extract_signature(sig: SignResponse) -> Option<Self::Signature> {
         Self::parse_recoverable_signature(sig).map(|s| s.0)
     }
 }

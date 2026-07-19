@@ -43,7 +43,7 @@ pub trait WalletRelayer: Sync {
     fn boxed<'a>(self) -> BoxWalletRelayer<'a>
     where
         Self: Sized + 'a,
-        Self::Error: Into<Box<dyn StdError>>,
+        Self::Error: Into<Box<dyn StdError + Send + Sync>>,
     {
         Box::new(self)
     }
@@ -52,7 +52,7 @@ pub trait WalletRelayer: Sync {
     fn arced(self) -> ArcWalletRelayer
     where
         Self: Sized + 'static,
-        Self::Error: Into<Box<dyn StdError>>,
+        Self::Error: Into<Box<dyn StdError + Send + Sync>>,
     {
         Arc::new(self)
     }
@@ -89,20 +89,20 @@ pub trait DynWalletRelayer: Send + Sync {
         deterministic_state_init: Option<StateInit>,
         msg: RequestMessage,
         proof: Proof,
-    ) -> Result<SentTransaction, Box<dyn StdError>>;
+    ) -> Result<SentTransaction, Box<dyn StdError + Send + Sync>>;
 }
 
 #[async_trait]
 impl<R> DynWalletRelayer for R
 where
-    R: WalletRelayer<Error: Into<Box<dyn StdError>>>,
+    R: WalletRelayer<Error: Into<Box<dyn StdError + Send + Sync>>>,
 {
     async fn dyn_relay_signed_msg(
         &self,
         deterministic_state_init: Option<StateInit>,
         msg: RequestMessage,
         proof: Proof,
-    ) -> Result<SentTransaction, Box<dyn StdError>> {
+    ) -> Result<SentTransaction, Box<dyn StdError + Send + Sync>> {
         self.relay_signed_msg(deterministic_state_init, msg, proof)
             .await
             .map_err(Into::into)
@@ -110,7 +110,7 @@ where
 }
 
 impl WalletRelayer for dyn DynWalletRelayer + '_ {
-    type Error = Box<dyn StdError>;
+    type Error = Box<dyn StdError + Send + Sync>;
 
     async fn relay_signed_msg(
         &self,

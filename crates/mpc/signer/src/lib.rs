@@ -6,9 +6,9 @@ mod secp256k1;
 pub use self::convert::*;
 
 pub use defuse_kdf as kdf;
-use defuse_near_sender::{NearSender, SentTransaction};
+use defuse_near_sender::{ArcNearSender, NearSender, SentTransaction};
 
-use std::{cell::LazyCell, fmt::Debug};
+use std::{borrow::Cow, cell::LazyCell, error::Error as StdError, fmt::Debug};
 
 use defuse_kdf::{
     Additive, Derive, DeriveExt, DeriveSigner, RecoverableDeriveSigner, crypto::Curve,
@@ -20,13 +20,12 @@ use near_kit::{CryptoHash, ExecutedOptimistic, ExecutionStatus, Near};
 
 use crate::contract::{MpcContract, Payload, PublicKeyArgs, SignArgs, SignRequest, SignResponse};
 
-// TODO: docs, known domain_id mappings
+/// MPC contract ID on Mainnet: `v1.signer`
 pub const MAINNET_MPC_CONTRACT_ID: &AccountIdRef = AccountIdRef::new_or_panic("v1.signer");
 
-#[autoimpl(Debug, Clone where C::PublicKey: trait, S: trait)]
-pub struct MpcOnChainSigner<C: Curve, S> {
-    // TODO: boxed?
-    sender: S,
+#[autoimpl(Clone where C::PublicKey: trait)]
+pub struct MpcOnChainSigner<C: Curve> {
+    sender: ArcNearSender,
 
     mpc_contract_id: AccountId,
     mpc_public_key: C::PublicKey,
@@ -35,17 +34,19 @@ pub struct MpcOnChainSigner<C: Curve, S> {
     client: Near,
 }
 
-impl<C, S> MpcOnChainSigner<C, S>
+impl<C> MpcOnChainSigner<C>
 where
     C: OnChainNearMpcCurve,
-    S: NearSender,
 {
-    pub async fn new(
+    pub async fn new<S>(
         sender: S,
         mpc_contract_id: impl Into<AccountId>,
         domain_id: u64,
         client: Near,
-    ) -> Result<Self, Error<S::Error>> {
+    ) -> Result<Self, Error>
+    where
+        S: NearSender<Error: Into<Box<dyn StdError + Send + Sync>>> + 'static,
+    {
         let mpc_contract_id = mpc_contract_id.into();
 
         let mpc_public_key = client
@@ -54,13 +55,18 @@ where
             .await?;
 
         Ok(Self {
-            sender,
+            sender: sender.arced(),
             mpc_contract_id,
-            mpc_public_key: C::parse_public_key(mpc_public_key)
+            mpc_public_key: C::extract_public_key(mpc_public_key)
                 .ok_or(Error::InvalidDomain(domain_id))?,
             domain_id,
             client,
         })
+    }
+
+    #[inline]
+    pub fn predecessor_id(&self) -> Cow<'_, AccountIdRef> {
+        self.sender.account_id()
     }
 
     async fn sign_extract<R>(
@@ -68,14 +74,11 @@ where
         path: impl AsRef<str>,
         payload: Payload<'_>,
         extract: impl Fn(SignResponse) -> Option<R>,
-    ) -> Result<R, Error<S::Error>>
+    ) -> Result<R, Error>
     where
         C::PublicKey: Sync,
     {
-        let sent = self
-            .send_sign_request(path, payload)
-            .await
-            .map_err(Error::Sender)?;
+        let sent = self.send_sign_request(path, payload).await?;
 
         let tx_outcome = self
             .client
@@ -109,7 +112,7 @@ where
         &self,
         path: impl AsRef<str>,
         payload: Payload<'_>,
-    ) -> Result<SentTransaction, S::Error>
+    ) -> Result<SentTransaction, Error>
     where
         C::PublicKey: Sync,
     {
@@ -132,16 +135,16 @@ where
                 ],
             )
             .await
+            .map_err(Error::Sender)
     }
 }
 
-impl<C, P, S> DeriveSigner<C, P> for MpcOnChainSigner<C, S>
+impl<C, P> DeriveSigner<C, P> for MpcOnChainSigner<C>
 where
     C: OnChainNearMpcCurve<PublicKey: Clone + Send + Sync>,
     P: AsRef<str> + AsRef<[u8]>,
-    S: NearSender<Error: Send>,
 {
-    type Error = Error<S::Error>;
+    type Error = Error;
 
     type Schema<'a>
         = Derive<Additive<C>, TweakSchema<C>>
@@ -159,26 +162,29 @@ where
         P: Send,
     {
         let path: &str = path.as_ref();
-        self.sign_extract(path, C::to_payload(msg).ok_or(Error::InvalidPayload)?, {
-            let derived_public_key = LazyCell::new(|| self.derive_public_key(path));
-            move |sig| {
-                let sig = C::parse_signature(sig)?;
-                if !C::verify(&derived_public_key, msg, &sig) {
-                    // the signature is either invalid or not ours
-                    return None;
+        self.sign_extract(
+            path,
+            C::msg_to_payload(msg).ok_or(Error::InvalidPayload)?,
+            {
+                let derived_public_key = LazyCell::new(|| self.derive_public_key(path));
+                move |sig| {
+                    let sig = C::extract_signature(sig)?;
+                    if !C::verify(&derived_public_key, msg, &sig) {
+                        // the signature is either invalid or not ours
+                        return None;
+                    }
+                    Some(sig)
                 }
-                Some(sig)
-            }
-        })
+            },
+        )
         .await
     }
 }
 
-impl<C, P, S> RecoverableDeriveSigner<C, P> for MpcOnChainSigner<C, S>
+impl<C, P> RecoverableDeriveSigner<C, P> for MpcOnChainSigner<C>
 where
     C: RecoverableOnChainNearMpcCurve<PublicKey: Clone + PartialEq + Send + Sync, RecoveryId: Copy>,
     P: AsRef<str> + AsRef<[u8]>,
-    S: NearSender<Error: Send>,
 {
     async fn derive_sign_recoverable(
         &self,
@@ -189,24 +195,28 @@ where
         P: Send,
     {
         let path: &str = path.as_ref();
-        self.sign_extract(path, C::to_payload(msg).ok_or(Error::InvalidPayload)?, {
-            let derived_public_key = LazyCell::new(|| self.derive_public_key(path));
-            move |sig| {
-                let (sig, rec_id) = C::parse_recoverable_signature(sig)?;
-                let recovered_public_key = C::recover(msg, &sig, rec_id)?;
-                if recovered_public_key != *derived_public_key {
-                    // the signature is either invalid or not ours
-                    return None;
+        self.sign_extract(
+            path,
+            C::msg_to_payload(msg).ok_or(Error::InvalidPayload)?,
+            {
+                let derived_public_key = LazyCell::new(|| self.derive_public_key(path));
+                move |sig| {
+                    let (sig, rec_id) = C::parse_recoverable_signature(sig)?;
+                    let recovered_public_key = C::recover(msg, &sig, rec_id)?;
+                    if recovered_public_key != *derived_public_key {
+                        // the signature is either invalid or not ours
+                        return None;
+                    }
+                    Some((sig, rec_id))
                 }
-                Some((sig, rec_id))
-            }
-        })
+            },
+        )
         .await
     }
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum Error<S> {
+pub enum Error {
     #[error("invalid domain: {0}")]
     InvalidDomain(u64),
 
@@ -217,7 +227,7 @@ pub enum Error<S> {
     Near(#[from] near_kit::Error),
 
     #[error(transparent)]
-    Sender(S),
+    Sender(Box<dyn StdError + Send + Sync>),
 
     #[error("no matching signature was found in transaction '{0}'")]
     SignatureNotFound(CryptoHash),

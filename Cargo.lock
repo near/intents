@@ -1700,6 +1700,7 @@ dependencies = [
 name = "defuse-near-sender"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "cfg_eval",
  "defuse-near-promise",
  "impl-tools 0.12.0",

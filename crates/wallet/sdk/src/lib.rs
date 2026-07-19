@@ -94,7 +94,7 @@ impl WalletBuilder {
     pub fn build<S, SS>(self, code: impl Into<GlobalContractId>, signer: SS) -> Wallet<S>
     where
         S: SignatureSchema<PublicKey: BorshSerialize>,
-        SS: WalletSigner<S, Error: Into<Box<dyn StdError>>> + 'static,
+        SS: WalletSigner<S, Error: Into<Box<dyn StdError + Send + Sync>>> + 'static,
     {
         let state_init = StateInit::V1(StateInitV1 {
             code: code.into(),
@@ -127,7 +127,6 @@ impl WalletBuilder {
 
 /// Signer handle to a wallet contract instance implementing a specific
 /// [`SignatureSchema`].
-// TODO: make it clonable
 #[autoimpl(Clone)]
 pub struct Wallet<S: SignatureSchema> {
     account_id: AccountId,
@@ -140,6 +139,7 @@ pub struct Wallet<S: SignatureSchema> {
     chain_id: ChainId,
 
     signer: ArcWalletSigner<S>,
+    // TODO: remove?
     // `fn() -> S` implements Send + Sync unconditionally
     _schema: PhantomData<fn() -> S>,
 
@@ -165,7 +165,7 @@ where
     pub fn new<SS>(code: impl Into<GlobalContractId>, signer: SS) -> Self
     where
         S::PublicKey: BorshSerialize,
-        SS: WalletSigner<S, Error: Into<Box<dyn StdError>>> + 'static,
+        SS: WalletSigner<S, Error: Into<Box<dyn StdError + Send + Sync>>> + 'static,
     {
         WalletBuilder::new().build(code, signer)
     }
@@ -193,7 +193,12 @@ where
         self
     }
 
-    // pub fn pop_extension
+    #[must_use]
+    #[inline]
+    pub fn as_self(mut self) -> Self {
+        self.as_extension_chain.clear();
+        self
+    }
 
     #[cfg(feature = "near-kit")]
     #[must_use]
@@ -211,7 +216,7 @@ where
     #[inline]
     pub fn with_relayer<R>(mut self, relayer: R) -> Self
     where
-        R: relayer::WalletRelayer<Error: Into<Box<dyn StdError>>> + 'static,
+        R: relayer::WalletRelayer<Error: Into<Box<dyn StdError + Send + Sync>>> + 'static,
     {
         self.relayer = Some(relayer.arced());
         self
@@ -469,9 +474,10 @@ where
     pub async fn mpc_signer<C>(
         &self,
         domain_id: u64,
-    ) -> Result<mpc::MpcOnChainSigner<C, Self>, mpc::Error<Error>>
+    ) -> Result<mpc::MpcOnChainSigner<C>, mpc::Error>
     where
         C: mpc::OnChainNearMpcCurve,
+        S: 'static,
     {
         mpc::MpcOnChainSigner::new(
             self.clone(), // TODO: or require self?
@@ -514,7 +520,7 @@ pub enum Error {
     #[error("near: {0}")]
     Near(#[from] near_kit::Error),
     #[error("relayer: {0}")]
-    Relayer(Box<dyn StdError>),
+    Relayer(Box<dyn StdError + Send + Sync>),
     #[error("signer: {0}")]
-    Signer(Box<dyn StdError>),
+    Signer(Box<dyn StdError + Send + Sync>),
 }

@@ -7,7 +7,7 @@ use crate::{
 
 impl OnChainNearMpcCurve for Ed25519 {
     #[inline]
-    fn parse_public_key(public_key: PublicKey) -> Option<Self::PublicKey> {
+    fn extract_public_key(public_key: PublicKey) -> Option<Self::PublicKey> {
         let PublicKey::Ed25519(pk) = public_key else {
             return None;
         };
@@ -15,12 +15,12 @@ impl OnChainNearMpcCurve for Ed25519 {
     }
 
     #[inline]
-    fn to_payload(msg: &[u8]) -> Option<Payload<'_>> {
+    fn msg_to_payload(msg: &[u8]) -> Option<Payload<'_>> {
         Some(Payload::Eddsa(msg.into()))
     }
 
     #[inline]
-    fn parse_signature(sig: SignResponse) -> Option<Self::Signature> {
+    fn extract_signature(sig: SignResponse) -> Option<Self::Signature> {
         let SignResponse::Ed25519 { signature } = sig else {
             return None;
         };

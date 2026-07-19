@@ -1,7 +1,9 @@
+use async_trait::async_trait;
 pub use defuse_near_promise::*;
 
 use std::{
     borrow::Cow,
+    error::Error as StdError,
     fmt::{Debug, Display},
     sync::Arc,
 };
@@ -9,24 +11,56 @@ use std::{
 use defuse_near_promise::actions::NearAction;
 use impl_tools::autoimpl;
 
-// TODO: docs
+/// A [_fixed_](Self::account_id) sender of arbitrary Near transactions or
+/// promises
 #[trait_variant::make(Send)]
 #[autoimpl(for<T: ?Sized + trait> &T, &mut T, Box<T>, Arc<T>)]
 pub trait NearSender: Sync {
+    /// An error returned from [`.send()`](Self::send)
     type Error: Debug + Display;
 
-    // TODO: docs
+    /// A **fixed** predecessor for target receipts.
+    ///
+    /// This method MUST return the same account ID for every call.
+    ///
+    /// See [`.send()`](Self::send) for details.
     fn account_id(&self) -> Cow<'_, AccountIdRef>;
 
-    // TODO: docs
+    /// Send a transaction which SHOULD result in executing a receipt with
+    /// given actions on the given receiver from a [**fixed**](Self::account_id)
+    /// predecessor.
+    ///
+    /// This "target" receipt MIGHT NOT be the first or the last one - it can
+    /// happen anywhere within the transaction. Moreover, there is no guarantee
+    /// that the receipt will be created and successfully executed at all, since
+    /// the transaction MAY fail at earlier stage.
     async fn send(
         &self,
         receiver_id: AccountId,
         actions: Vec<NearAction>,
     ) -> Result<SentTransaction, Self::Error>;
+
+    #[inline]
+    fn boxed<'a>(self) -> BoxNearSender<'a>
+    where
+        Self: Sized + 'a,
+        Self::Error: Into<Box<dyn StdError + Send + Sync>>,
+    {
+        Box::new(self)
+    }
+
+    #[inline]
+    fn arced(self) -> ArcNearSender
+    where
+        Self: Sized + 'static,
+        Self::Error: Into<Box<dyn StdError + Send + Sync>>,
+    {
+        Arc::new(self)
+    }
 }
 
-/// TODO: docs
+/// A sent transaction identified by its [hash](field::Self::hash) and
+/// [signer](field::Self::signer_id).
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -36,10 +70,63 @@ pub trait NearSender: Sync {
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SentTransaction {
+    /// Hash of the sent transaction
     #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::base58::Base58"))]
     pub tx_hash: [u8; 32],
-    // TODO: docs: must be the same as Sender::account_id
+
+    /// A sender of the whole transaction, i.e. account ID that triggered the
+    /// first receipt.
     pub sender_id: AccountId,
+}
+
+pub type BoxNearSender<'a> = Box<dyn DynNearSender + 'a>;
+pub type ArcNearSender = Arc<dyn DynNearSender>;
+
+/// A `dyn`-compatible adaptor for [`NearSender`]
+#[async_trait]
+pub trait DynNearSender: Send + Sync {
+    fn dyn_account_id(&self) -> Cow<'_, AccountIdRef>;
+    async fn dyn_send(
+        &self,
+        receiver_id: AccountId,
+        actions: Vec<NearAction>,
+    ) -> Result<SentTransaction, Box<dyn StdError + Send + Sync>>;
+}
+
+#[async_trait]
+impl<S> DynNearSender for S
+where
+    S: NearSender<Error: Into<Box<dyn StdError + Send + Sync>>>,
+{
+    #[inline]
+    fn dyn_account_id(&self) -> Cow<'_, AccountIdRef> {
+        self.account_id()
+    }
+
+    async fn dyn_send(
+        &self,
+        receiver_id: AccountId,
+        actions: Vec<NearAction>,
+    ) -> Result<SentTransaction, Box<dyn StdError + Send + Sync>> {
+        self.send(receiver_id, actions).await.map_err(Into::into)
+    }
+}
+
+impl NearSender for dyn DynNearSender + '_ {
+    type Error = Box<dyn StdError + Send + Sync>;
+
+    #[inline]
+    fn account_id(&self) -> Cow<'_, AccountIdRef> {
+        self.dyn_account_id()
+    }
+
+    async fn send(
+        &self,
+        receiver_id: AccountId,
+        actions: Vec<NearAction>,
+    ) -> Result<SentTransaction, Self::Error> {
+        self.dyn_send(receiver_id, actions).await
+    }
 }
 
 #[cfg(feature = "near-kit")]

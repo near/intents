@@ -55,6 +55,7 @@ where
     }
 }
 
+/// A [`Curve`](defuse_kdf::crypto::Curve) supported by Near MPC.
 pub trait NearMpcCurve: CurveArithmetic + sealed::Sealed {
     fn to_scalar(tweak: [u8; 32]) -> Self::Scalar;
 }
