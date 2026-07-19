@@ -5,16 +5,16 @@ mod secp256k1;
 
 pub use self::convert::*;
 
-pub use defuse_kdf as kdf;
-use defuse_near_sender::{ArcNearSender, NearSender, SentTransaction};
+pub use defuse_mpc_kdf as kdf;
 
 use std::{borrow::Cow, cell::LazyCell, error::Error as StdError, fmt::Debug};
 
-use defuse_kdf::{
-    Additive, Derive, DeriveExt, DeriveSigner, RecoverableDeriveSigner, crypto::Curve,
+use defuse_mpc_kdf::{
+    TweakSchema,
+    kdf::{Additive, Derive, DeriveExt, DeriveSigner, RecoverableDeriveSigner, crypto::Curve},
 };
-use defuse_mpc_kdf::TweakSchema;
 use defuse_near_promise::{AccountId, AccountIdRef, Gas, NearToken, actions::FunctionCall};
+use defuse_near_sender::{ArcNearSender, NearSender, SentTransaction};
 use impl_tools::autoimpl;
 use near_kit::{CryptoHash, ExecutedOptimistic, ExecutionStatus, Near};
 
@@ -45,7 +45,8 @@ where
         client: Near,
     ) -> Result<Self, Error>
     where
-        S: NearSender<Error: Into<Box<dyn StdError + Send + Sync>>> + 'static,
+        S: NearSender + 'static,
+        S::Error: Into<Box<dyn StdError + Send + Sync>>,
     {
         let mpc_contract_id = mpc_contract_id.into();
 

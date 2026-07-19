@@ -9,7 +9,6 @@ repository.workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, features = ["ed25519", "secp256k1", "serde"] }
-defuse-kdf = { workspace = true, features = ["ed25519", "secp256k1"] }
 defuse-mpc-kdf = { workspace = true, features = ["ed25519", "secp256k1"] }
 defuse-near-promise = { workspace = true, features = ["json"] }
 defuse-near-sender = { workspace = true, features = ["near-kit"] }
@@ -23,5 +22,5 @@ thiserror.workspace = true
 
 [package.metadata.cargo-machete]
 ignored = [
-  "defuse-crypto", # needed to active "serde" feature
+  "defuse-crypto", # needed to activate "serde" feature
 ]

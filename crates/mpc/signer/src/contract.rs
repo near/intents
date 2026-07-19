@@ -1,6 +1,8 @@
 use std::borrow::Cow;
 
-use defuse_kdf::crypto::{ed25519::Ed25519PublicKey, secp256k1::Secp256k1UncompressedPublicKey};
+use defuse_mpc_kdf::kdf::crypto::{
+    ed25519::Ed25519PublicKey, secp256k1::Secp256k1UncompressedPublicKey,
+};
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
 

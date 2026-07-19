@@ -65,7 +65,8 @@ pub trait DynWalletSigner<S: SignatureSchema>: Send + Sync {
 impl<SS, S> DynWalletSigner<SS> for S
 where
     SS: SignatureSchema,
-    S: WalletSigner<SS, Error: Into<Box<dyn StdError + Send + Sync>>>,
+    S: WalletSigner<SS>,
+    S::Error: Into<Box<dyn StdError + Send + Sync>>,
 {
     #[inline]
     fn dyn_public_key(&self) -> SS::PublicKey {

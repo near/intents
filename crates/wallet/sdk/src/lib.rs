@@ -94,7 +94,8 @@ impl WalletBuilder {
     pub fn build<S, SS>(self, code: impl Into<GlobalContractId>, signer: SS) -> Wallet<S>
     where
         S: SignatureSchema<PublicKey: BorshSerialize>,
-        SS: WalletSigner<S, Error: Into<Box<dyn StdError + Send + Sync>>> + 'static,
+        SS: WalletSigner<S> + 'static,
+        SS::Error: Into<Box<dyn StdError + Send + Sync>>,
     {
         let state_init = StateInit::V1(StateInitV1 {
             code: code.into(),
@@ -165,7 +166,8 @@ where
     pub fn new<SS>(code: impl Into<GlobalContractId>, signer: SS) -> Self
     where
         S::PublicKey: BorshSerialize,
-        SS: WalletSigner<S, Error: Into<Box<dyn StdError + Send + Sync>>> + 'static,
+        SS: WalletSigner<S> + 'static,
+        SS::Error: Into<Box<dyn StdError + Send + Sync>>,
     {
         WalletBuilder::new().build(code, signer)
     }
@@ -185,7 +187,6 @@ where
         self
     }
 
-    // TODO: flush_extensions
     #[must_use]
     #[inline]
     pub fn as_extension_of(mut self, account_id: impl Into<AccountId>) -> Self {

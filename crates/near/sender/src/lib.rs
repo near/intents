@@ -96,7 +96,8 @@ pub trait DynNearSender: Send + Sync {
 #[async_trait]
 impl<S> DynNearSender for S
 where
-    S: NearSender<Error: Into<Box<dyn StdError + Send + Sync>>>,
+    S: NearSender,
+    S::Error: Into<Box<dyn StdError + Send + Sync>>,
 {
     #[inline]
     fn dyn_account_id(&self) -> Cow<'_, AccountIdRef> {

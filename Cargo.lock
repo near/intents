@@ -1661,7 +1661,6 @@ name = "defuse-mpc-signer"
 version = "0.1.0"
 dependencies = [
  "defuse-crypto",
- "defuse-kdf",
  "defuse-mpc-kdf",
  "defuse-near-promise",
  "defuse-near-sender",
