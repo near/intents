@@ -164,12 +164,27 @@ impl AuthMessage {
 ///
 /// Prevents an authorization signed for one wallet-contract account from
 /// being replayed against another account controlled by the same key.
+///
+/// # `deny_unknown_fields`
+///
+/// Deserialization is strict: a binding carrying any field this schema does
+/// not know is rejected. This lets a FUTURE wallet-contract variant of the
+/// **same signature curve** be added to a [`Code`](Self::Code) binding's
+/// [`allowed_factory_ids`](Self::Code::allowed_factory_ids) without
+/// re-introducing cross-account replay — provided that variant's `Code`
+/// binding carries a DIFFERENT (e.g. added, required) field. A message shaped
+/// for the new variant then fails to parse on the old contract (unknown
+/// field), and a message shaped for the old variant fails to parse on the new
+/// one (missing required field), so no single signed message resolves under
+/// both. Without this, serde would silently ignore the extra field and the
+/// old contract would accept the new variant's message — the very replay the
+/// per-curve invariant exists to prevent.
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
-    serde(tag = "type", rename_all = "snake_case"),
+    serde(tag = "type", rename_all = "snake_case", deny_unknown_fields),
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
@@ -547,6 +562,39 @@ mod tests {
         );
         let roundtrip: AuthMessage = serde_json::from_value(json).unwrap();
         assert_eq!(roundtrip, msg);
+    }
+
+    /// `deny_unknown_fields` must actually reject extra fields (serde has
+    /// historically ignored it on internally-tagged enums) — this is what lets
+    /// a future same-curve factory be added to `allowed_factory_ids` safely.
+    #[rstest]
+    fn binding_denies_unknown_field() {
+        // baseline parses
+        let mut json = serde_json::to_value(sample_msg()).unwrap();
+        assert!(serde_json::from_value::<AuthMessage>(json.clone()).is_ok());
+
+        // a `Code` binding carrying an unknown (future-variant) field is rejected
+        json["signer"]["future_variant_field"] = serde_json::json!("x");
+        assert!(
+            serde_json::from_value::<AuthMessage>(json).is_err(),
+            "deny_unknown_fields must reject unknown Code binding fields",
+        );
+
+        // ...and likewise for the SignerId variant
+        let signer_id_json = serde_json::json!({
+            "chain_id": "mainnet",
+            "signer": {
+                "type": "signer_id",
+                "signer_id": "0s0000000000000000000000000000000000000000",
+                "future_variant_field": "x",
+            },
+            "purpose": "PROVE_OWNERSHIP",
+            "recipient": "trezu.app",
+            "payload": "x",
+            "created_at": "1970-01-01T00:00:00Z",
+            "timeout_secs": 3600,
+        });
+        assert!(serde_json::from_value::<AuthMessage>(signer_id_json).is_err());
     }
 
     #[rstest]
