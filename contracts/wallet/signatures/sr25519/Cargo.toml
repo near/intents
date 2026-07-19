@@ -15,15 +15,14 @@ crate-type = ["cdylib", "rlib"]
 defuse-crypto = { workspace = true, features = ["borsh", "fmt", "sr25519"] }
 defuse-wallet = { workspace = true, features = ["borsh", "digest"] }
 
-async-trait = { workspace = true, optional = true }
 defuse-wallet-sdk = { workspace = true, optional = true }
-
+derive_more = { workspace = true, features = ["as_ref", "from"], optional = true }
 near-sdk = { workspace = true, optional = true }
 
 [features]
 abi = ["defuse-crypto/abi", "defuse-wallet/abi", "near-sdk?/abi"]
 
-signer = ["dep:async-trait", "dep:defuse-wallet-sdk"]
+signer = ["defuse-crypto/signing", "dep:defuse-wallet-sdk", "dep:derive_more"]
 
 contract = [
   "defuse-crypto/borsh",
@@ -37,6 +36,7 @@ defuse-wallet-sr25519 = { path = ".", features = ["abi", "signer", "contract"] }
 hex-literal.workspace = true
 rstest.workspace = true
 schnorrkel = { workspace = true, features = ["getrandom", "std"] }
+tokio-test.workspace = true
 
 near-sdk = { workspace = true, features = ["unit-testing"] }
 

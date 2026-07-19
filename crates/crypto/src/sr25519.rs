@@ -30,6 +30,28 @@ impl Curve for Sr25519 {
     }
 }
 
+#[cfg(feature = "signing")]
+const _: () = {
+    use core::convert::Infallible;
+
+    use schnorrkel::Keypair;
+
+    use crate::Signer;
+
+    impl Signer<Sr25519> for Keypair {
+        type Error = Infallible;
+
+        #[inline]
+        fn public_key(&self) -> <Sr25519 as Curve>::PublicKey {
+            self.public
+        }
+
+        async fn sign(&self, msg: &[u8]) -> Result<<Sr25519 as Curve>::Signature, Self::Error> {
+            Ok(self.sign_simple(Sr25519::SIGNING_CTX, msg))
+        }
+    }
+};
+
 /// Sr25519 public key (32-byte compressed Ristretto point).
 #[cfg_attr(
     feature = "serde",

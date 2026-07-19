@@ -22,6 +22,9 @@ use serde_with::DurationSeconds;
 /// range for on-chain messages.
 pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
 
+/// Chain id (e.g. `mainnet`)
+pub type ChainId = String;
+
 /// Signable message containing [`Request`] to execute via
 /// [`w_execute_signed()`](crate::contract::Wallet::w_execute_signed) contract
 /// method.
@@ -42,7 +45,7 @@ pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
 pub struct RequestMessage {
     /// Chain id (e.g. `mainnet`).
     /// MUST be equal to `chain_id` of the network.
-    pub chain_id: String,
+    pub chain_id: ChainId,
 
     /// Signer id.
     /// MUST be equal to the `AccountId` of the wallet-contract instance.
@@ -72,23 +75,20 @@ pub struct RequestMessage {
         arbitrary(with = ::arbitrary_with::As::<RangeNanos::<0>>::arbitrary),
     )]
     #[cfg_attr(
-        feature = "borsh-schema",
+        feature = "borsh",
         borsh(
             serialize_with = "As::<TimestampNanoSeconds<u64>>::serialize",
             deserialize_with = "As::<TimestampNanoSeconds<u64>>::deserialize",
-            schema(with_funcs(
+        ),
+        cfg_attr(
+            feature = "borsh-schema",
+            borsh(schema(with_funcs(
                 definitions = "As::<TimestampNanoSeconds<u64>>::add_definitions_recursively",
                 declaration = "As::<TimestampNanoSeconds<u64>>::declaration",
-            ))
+            )))
         )
     )]
-    #[cfg_attr(
-        all(feature = "borsh", not(feature = "borsh-schema")),
-        borsh(
-            serialize_with = "As::<TimestampNanoSeconds<u64>>::serialize",
-            deserialize_with = "As::<TimestampNanoSeconds<u64>>::deserialize",
-        )
-    )]
+
     /// Timestamp when this request was created (in RFC-3339 format).
     ///
     /// # Optimal lag
@@ -103,21 +103,17 @@ pub struct RequestMessage {
     pub created_at: Timestamp,
 
     #[cfg_attr(
-        feature = "borsh-schema",
+        feature = "borsh",
         borsh(
             serialize_with = "As::<BorshDurationSeconds<u32>>::serialize",
             deserialize_with = "As::<BorshDurationSeconds<u32>>::deserialize",
-            schema(with_funcs(
+        ),
+        cfg_attr(
+            feature = "borsh-schema",
+            borsh(schema(with_funcs(
                 definitions = "As::<BorshDurationSeconds<u32>>::add_definitions_recursively",
                 declaration = "As::<BorshDurationSeconds<u32>>::declaration",
-            ))
-        )
-    )]
-    #[cfg_attr(
-        all(feature = "borsh", not(feature = "borsh-schema")),
-        borsh(
-            serialize_with = "As::<BorshDurationSeconds<u32>>::serialize",
-            deserialize_with = "As::<BorshDurationSeconds<u32>>::deserialize",
+            )))
         )
     )]
     #[cfg_attr(

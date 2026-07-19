@@ -9,7 +9,7 @@ pub struct P256;
 impl Algorithm for P256 {
     type Curve = defuse_crypto::p256::P256;
 
-    fn preprocess(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]> {
+    fn maybe_prehash(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]> {
         // prehash via SHA-256
         Sha256::digest(msg)
     }
@@ -17,11 +17,19 @@ impl Algorithm for P256 {
 
 #[cfg(test)]
 mod tests {
-    use defuse_crypto::p256::{P256CompressedPublicKey, P256Signature};
+    use defuse_crypto::{
+        Signer,
+        p256::{P256CompressedPublicKey, P256Signature, p256::ecdsa::SigningKey},
+    };
+    use defuse_digest::common::Generate;
     use hex_literal::hex;
+    use rand::rng;
     use rstest::rstest;
 
-    use crate::{RequireUserVerification, Webauthn, WebauthnAssertion};
+    use crate::{
+        IgnoreUserVerification, RequireUserVerification, Webauthn, WebauthnAssertion,
+        mock::MockWebauthnSigner,
+    };
 
     use super::*;
 
@@ -49,6 +57,29 @@ mod tests {
                 &signature.into().try_into().unwrap(),
             ),
             "signature is invalid",
+        );
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("test")]
+    #[case(hex!("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"))]
+    #[tokio::test]
+    async fn sign_verify_ok(#[case] challenge: impl AsRef<[u8]>) {
+        let challenge = challenge.as_ref();
+
+        let signer = SigningKey::generate_from_rng(&mut rng());
+        let mock = MockWebauthnSigner::<P256, IgnoreUserVerification, _>::new(signer);
+        let (assertion, signature) = mock.sign(challenge).await.unwrap();
+
+        assert!(
+            Webauthn::<P256, IgnoreUserVerification>::verify(
+                &mock.signer().public_key(),
+                challenge,
+                &assertion,
+                &signature
+            ),
+            "signer produced invalid signature"
         );
     }
 }

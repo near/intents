@@ -7,7 +7,7 @@ pub struct Ed25519;
 impl Algorithm for Ed25519 {
     type Curve = defuse_crypto::ed25519::Ed25519;
 
-    fn preprocess(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]> {
+    fn maybe_prehash(msg: impl AsRef<[u8]>) -> impl AsRef<[u8]> {
         // ed25519 does the hashing inside
         msg
     }
@@ -15,11 +15,18 @@ impl Algorithm for Ed25519 {
 
 #[cfg(test)]
 mod tests {
-    use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
+    use defuse_crypto::{
+        Signer,
+        ed25519::{Ed25519PublicKey, Ed25519Signature, ed25519_dalek},
+    };
     use hex_literal::hex;
+    use rand::rng;
     use rstest::rstest;
 
-    use crate::{RequireUserVerification, Webauthn, WebauthnAssertion};
+    use crate::{
+        IgnoreUserVerification, RequireUserVerification, Webauthn, WebauthnAssertion,
+        mock::MockWebauthnSigner,
+    };
 
     use super::*;
 
@@ -47,6 +54,29 @@ mod tests {
                 &signature.into().into(),
             ),
             "signature is invalid",
+        );
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("test")]
+    #[case(hex!("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"))]
+    #[tokio::test]
+    async fn sign_verify_ok(#[case] challenge: impl AsRef<[u8]>) {
+        let challenge = challenge.as_ref();
+
+        let signer = ed25519_dalek::SigningKey::generate(&mut rng());
+        let mock = MockWebauthnSigner::<Ed25519, IgnoreUserVerification, _>::new(signer);
+        let (assertion, signature) = mock.sign(challenge).await.unwrap();
+
+        assert!(
+            Webauthn::<Ed25519, IgnoreUserVerification>::verify(
+                &mock.signer().public_key(),
+                challenge,
+                &assertion,
+                &signature
+            ),
+            "signer produced invalid signature"
         );
     }
 }

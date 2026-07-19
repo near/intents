@@ -10,4 +10,9 @@ pub mod secp256k1;
 #[cfg(feature = "sr25519")]
 pub mod sr25519;
 
+#[cfg(feature = "signing")]
+mod signer;
+
 pub use self::curve::*;
+#[cfg(feature = "signing")]
+pub use self::signer::*;

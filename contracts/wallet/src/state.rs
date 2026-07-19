@@ -120,8 +120,7 @@ impl<PubKey> State<PubKey> {
         self.extensions.contains(account_id.as_ref())
     }
 
-    /// Returns `data` for [`StateInit`](crate::actions::StateInit) of
-    /// Deterministic `AccountId`.
+    /// Returns `data` for [`StateInit`](crate::StateInit) of Deterministic `AccountId`.
     ///
     /// See [NEP-616](https://github.com/near/NEPs/blob/master/neps/nep-0616.md) for more info
     #[cfg(feature = "borsh")]

@@ -1,5 +1,13 @@
+#[cfg(feature = "contract")]
+mod contract;
+#[cfg(feature = "signer")]
+mod signer;
+#[cfg(feature = "signer")]
+pub use self::signer::*;
+
 use core::str::FromStr;
 
+pub use defuse_crypto as crypto;
 use defuse_crypto::{
     Curve,
     sr25519::{Sr25519, Sr25519PublicKey, Sr25519Signature},
@@ -21,7 +29,7 @@ impl WalletSr25519 {
     /// Wraps `msg` in `<Bytes>...</Bytes>` as done by Polkadot.js Extension
     /// (and other Substrate wallets) on `signRaw`.
     #[inline]
-    fn signed_message(msg: &[u8]) -> Vec<u8> {
+    pub(crate) fn signed_message(msg: &[u8]) -> Vec<u8> {
         [b"<Bytes>", msg, b"</Bytes>"].concat()
     }
 }
@@ -46,56 +54,12 @@ impl SignatureSchema for WalletSr25519 {
     }
 }
 
-#[cfg(feature = "signer")]
-const _: () = {
-    use core::convert::Infallible;
-
-    use async_trait::async_trait;
-    use defuse_crypto::sr25519::schnorrkel::Keypair;
-    use defuse_wallet_sdk::{Proof, WalletSigner};
-
-    #[cfg_attr(not(target_family = "wasm"), async_trait)]
-    #[cfg_attr(target_family = "wasm", async_trait(?Send))]
-    impl WalletSigner<WalletSr25519> for Keypair {
-        type Error = Infallible;
-
-        #[inline]
-        fn public_key(&self) -> Sr25519PublicKey {
-            (&self.public).into()
-        }
-
-        async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
-            let sig = self.sign_simple(
-                Sr25519::SIGNING_CTX,
-                &WalletSr25519::signed_message(&msg.hash()),
-            );
-
-            Ok(Sr25519Signature::from(sig).to_string())
-        }
-    }
-};
-
-#[cfg(feature = "contract")]
-const _: () = {
-    use defuse_wallet::wallet;
-
-    wallet! {
-        #[wallet(
-            schema = WalletSr25519,
-            metadata(
-                standard(standard = "wallet-sr25519", version = "1.0.0")
-            )
-        )]
-        struct Contract(_);
-    }
-};
-
 #[cfg(test)]
 mod tests {
     use core::time::Duration;
 
-    use defuse_crypto::sr25519::schnorrkel::Keypair;
     use defuse_wallet::{Request, RequestMessage, Timestamp};
+    use schnorrkel::Keypair;
 
     use super::*;
 

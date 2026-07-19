@@ -18,8 +18,6 @@ use impl_tools::autoimpl;
 /// steps.
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
 pub trait Schema<P> {
-    // TODO: type Error;
-
     /// [Derivation](Schema::derive_path) output.
     type Output;
 
