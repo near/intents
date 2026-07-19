@@ -81,11 +81,12 @@ impl Request {
     /// Returns an esitmate of mininum gas required to execute all
     /// promises in this request
     pub fn estimate_gas(&self) -> Gas {
+        const REQUEST_BASE: Gas = Gas::from_tgas(5);
+
         self.external
             .iter()
             .map(NearPromise::estimate_gas)
-            // TODO: 5TGas is minimum...?
-            .fold(Gas::from_tgas(5), Gas::saturating_add)
+            .fold(REQUEST_BASE, Gas::saturating_add)
     }
 }
 

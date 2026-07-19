@@ -201,6 +201,24 @@ impl FunctionCall {
     pub const fn gas_exact(self, gas: Gas) -> Self {
         self.gas(gas).unused_gas_weight(0)
     }
+
+    #[inline]
+    pub(crate) fn estimate_gas(&self) -> Gas {
+        const FUNCTION_CALL_BASE: Gas = Gas::from_ggas(1500);
+        const FUNCTION_CALL_PER_BYTE: Gas = Gas::from_gas(75_000_000);
+
+        FUNCTION_CALL_BASE
+            .saturating_add(
+                FUNCTION_CALL_PER_BYTE.saturating_mul(
+                    self.function_name
+                        .len()
+                        .saturating_add(self.args.len())
+                        .try_into()
+                        .unwrap_or(u64::MAX),
+                ),
+            )
+            .saturating_add(self.gas)
+    }
 }
 
 impl From<String> for FunctionCall {

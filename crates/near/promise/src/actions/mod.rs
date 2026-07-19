@@ -51,14 +51,14 @@ impl NearAction {
     }
 
     #[inline]
-    pub(crate) const fn estimate_gas(&self) -> Gas {
+    pub(crate) fn estimate_gas(&self) -> Gas {
         match self {
-            Self::FunctionCall(FunctionCall { gas, .. }) => *gas,
+            Self::FunctionCall(a) => a.estimate_gas(),
             // estimated for Near Implicit AccountId of receiver
             // (most expensive one)
             Self::Transfer(_) => Gas::from_tgas(12),
             // estimated for state_init that fits in ZBA limits
-            Self::DeterministicStateInit(_) => Gas::from_tgas(15),
+            Self::DeterministicStateInit(a) => a.estimate_gas(),
         }
     }
 }

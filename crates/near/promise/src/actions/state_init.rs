@@ -1,3 +1,4 @@
+use near_gas::NearGas as Gas;
 use near_global_contracts::StateInit;
 use near_token::NearToken;
 
@@ -42,6 +43,31 @@ impl DeterministicStateInit {
         self.deposit = deposit;
         self
     }
+
+    pub(crate) fn estimate_gas(&self) -> Gas {
+        const STATE_INIT_BASE: Gas = Gas::from_tgas(9);
+        const STATE_INIT_PER_ENTRY: Gas = Gas::from_ggas(210);
+        const STATE_INIT_PER_BYTE: Gas = Gas::from_gas(160_000_000);
+
+        let StateInit::V1(state_init) = &self.state_init;
+
+        STATE_INIT_BASE
+            .saturating_add(
+                STATE_INIT_PER_ENTRY
+                    .saturating_mul(state_init.data.len().try_into().unwrap_or(u64::MAX)),
+            )
+            .saturating_add(
+                STATE_INIT_PER_BYTE.saturating_mul(
+                    state_init
+                        .data
+                        .iter()
+                        .map(|(k, v)| k.len().saturating_add(v.len()))
+                        .fold(0usize, usize::saturating_add)
+                        .try_into()
+                        .unwrap_or(u64::MAX),
+                ),
+            )
+    }
 }
 
 #[cfg(feature = "near-kit")]
@@ -68,3 +94,32 @@ const _: () = {
         }
     }
 };
+
+#[cfg(test)]
+mod tests {
+
+    use near_global_contracts::{GlobalContractId, StateInitV1};
+
+    use super::*;
+
+    #[test]
+    fn estimate_gas_zba() {
+        let estimate = DeterministicStateInit {
+            state_init: StateInit::V1(StateInitV1 {
+                code: GlobalContractId::AccountId(
+                    "longlonglonglonglonglonglonglonglonglonglonglonglonglonglonglong"
+                        .parse()
+                        .unwrap(),
+                ),
+                data: (0..=16).map(|i| (vec![i], vec![])).collect(),
+            }),
+            deposit: NearToken::from_near(1),
+        }
+        .estimate_gas();
+
+        assert!(
+            estimate <= Gas::from_tgas(15),
+            "DeterministicStateInit for deterministic account within ZBA limits should be no greater than 15 TGas",
+        );
+    }
+}

@@ -401,11 +401,12 @@ where
             chain_id: self.chain_id.clone(),
             signer_id: self.real_account_id().clone(),
             nonce: self.nonces.lock().unwrap().next(),
-            // set `created_at` slightly before the actual time of signing,
+            // Set `created_at` slightly before the actual time of signing,
             // so it doesn't fail on-chain if arrives too fast.
             created_at: Timestamp::now() - self.optimal_lag(),
             timeout: self.timeout(),
-            // TODO: explain in comment
+            // Recursively wrap request as `w_execute_extension()` FunctionCall
+            // for each extension in the chain (starting from the last one)
             request: self
                 .as_extension_chain
                 .iter()
@@ -414,7 +415,7 @@ where
                         .function_call(
                             FunctionCall::name("w_execute_extension")
                                 .attach_deposit(NearToken::from_yoctonear(1))
-                                // TODO: gas
+                                .gas(request.estimate_gas())
                                 .args_json(WExecuteExtensionArgs::from(request)),
                         )
                         .into()

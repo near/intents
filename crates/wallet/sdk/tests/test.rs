@@ -44,11 +44,9 @@ async fn rotate(
                                     NearPromise::new(root.account_id()).function_call(
                                         FunctionCall::name("w_execute_extension")
                                             .attach_deposit(NearToken::from_yoctonear(1))
-                                            .args_json(WExecuteExtensionArgs::from(
-                                                Request::new().internal([
-                                                    WalletOp::SetSignatureMode { enable: false },
-                                                ]),
-                                            ))
+                                            .args_json(WExecuteExtensionArgs::from(Request::from(
+                                                WalletOp::SetSignatureMode { enable: false },
+                                            )))
                                             .gas(Gas::from_tgas(10)),
                                     ),
                                 )
@@ -75,18 +73,16 @@ async fn rotate(
 
     let extension = extension.as_extension_of(root);
 
-    dbg!(
-        extension
-            .sign_and_relay_status(
-                // TODO: enable back?
-                Request::new().internal([WalletOp::SetSignatureMode { enable: true }]),
-                Final
-            )
-            .await
-            .unwrap()
-    )
-    .result()
-    .expect("extension should be able to execute requests on behalf of root");
+    extension
+        .sign_and_relay_status(
+            // TODO: enable back?
+            Request::new().internal([WalletOp::SetSignatureMode { enable: true }]),
+            Final,
+        )
+        .await
+        .unwrap()
+        .result()
+        .expect("extension should be able to execute requests on behalf of root");
 }
 
 #[fixture]

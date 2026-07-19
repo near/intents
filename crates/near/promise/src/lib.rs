@@ -186,10 +186,12 @@ impl NearPromise {
     /// ```
     #[inline]
     pub fn estimate_gas(&self) -> Gas {
+        const PROMISE_CREATE_BASE: Gas = Gas::from_ggas(500);
+
         self.actions
             .iter()
             .map(NearAction::estimate_gas)
-            .fold(Gas::from_gas(0), Gas::saturating_add)
+            .fold(PROMISE_CREATE_BASE, Gas::saturating_add)
     }
 
     /// Build [`near_sdk::Promise`] for execution
