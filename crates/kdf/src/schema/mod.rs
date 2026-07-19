@@ -22,39 +22,28 @@ pub trait Schema<P> {
     type Output;
 
     /// Derive output for given `path`.
-    fn derive_path(&self, path: P) -> Self::Output;
-}
+    fn derive(&self, path: P) -> Self::Output;
 
-/// Helper trait with extensions for [`Schema`] and
-/// [`crate::DeriveSigner`]
-pub trait DeriveExt {
     /// Derive with given [schema](Schema).
     ///
     /// ```rust
-    /// use defuse_kdf::{DeriveExt, Schema, SchemaFn};
+    /// use defuse_kdf::{Schema, SchemaFn};
     ///
     /// let schema_a = SchemaFn::new(|v| v + 1);
     /// let schema_b = SchemaFn::new(|v| v * 2);
     ///
-    /// let schema_ab = schema_a.derive(schema_b);
+    /// let schema_ab = schema_a.derive_with(schema_b);
     ///
     /// assert_eq!(schema_ab.derive_path(3), 7);
     /// ```
     #[inline]
-    fn derive<D>(self, with: D) -> Derive<Self, D>
+    fn derive_with<D>(self, with: D) -> Derive<Self, D>
     where
         Self: Sized,
     {
         Derive(self, with)
     }
-
-    /// Creates "by reference" adaptor.
-    #[inline]
-    fn by_ref(&self) -> &Self {
-        self
-    }
 }
-impl<S> DeriveExt for S {}
 
 /// No-op identity adator for [`Schema`].
 ///
@@ -70,7 +59,7 @@ impl<T> Schema<T> for Identity {
     type Output = T;
 
     #[inline]
-    fn derive_path(&self, path: T) -> T {
+    fn derive(&self, path: T) -> T {
         path
     }
 }
@@ -88,8 +77,8 @@ where
     type Output = S::Output;
 
     #[inline]
-    fn derive_path(&self, path: P) -> Self::Output {
-        self.0.derive_path(self.1.derive_path(path))
+    fn derive(&self, path: P) -> Self::Output {
+        self.0.derive(self.1.derive(path))
     }
 }
 
@@ -119,7 +108,7 @@ where
     type Output = O;
 
     #[inline]
-    fn derive_path(&self, path: P) -> Self::Output {
+    fn derive(&self, path: P) -> Self::Output {
         (self.0)(path)
     }
 }
@@ -154,7 +143,7 @@ where
 {
     type Output = P;
 
-    fn derive_path(&self, _path: ()) -> Self::Output {
+    fn derive(&self, _path: ()) -> Self::Output {
         self.0.clone()
     }
 }

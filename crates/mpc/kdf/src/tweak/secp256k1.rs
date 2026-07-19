@@ -16,7 +16,7 @@ impl Sealed for Secp256k1 {}
 #[cfg(test)]
 mod tests {
     use defuse_kdf::{
-        Additive, DeriveExt, Schema,
+        Additive, Schema,
         crypto::secp256k1::{Secp256k1UncompressedPublicKey, k256::ecdsa::VerifyingKey},
     };
     use hex_literal::hex;
@@ -56,9 +56,9 @@ mod tests {
         let predecessor_id = AccountIdRef::new(predecessor_id).unwrap();
 
         let schema =
-            Additive::<Secp256k1>::new(master_pk).derive(tweak::<Secp256k1>(predecessor_id));
+            Additive::<Secp256k1>::new(master_pk).derive_with(tweak::<Secp256k1>(predecessor_id));
 
-        let derived_pk = schema.derive_path(path);
+        let derived_pk = schema.derive(path);
 
         assert_eq!(
             &Secp256k1UncompressedPublicKey::from(derived_pk),

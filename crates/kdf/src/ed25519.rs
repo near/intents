@@ -35,7 +35,7 @@ impl Schema<[u8; 32]> for ReduceScalar<Ed25519> {
     type Output = Scalar;
 
     #[inline]
-    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
+    fn derive(&self, path: [u8; 32]) -> Self::Output {
         Scalar::from_bytes_mod_order(path)
     }
 }
@@ -44,7 +44,7 @@ impl Schema<[u8; 64]> for ReduceScalar<Ed25519> {
     type Output = Scalar;
 
     #[inline]
-    fn derive_path(&self, path: [u8; 64]) -> Self::Output {
+    fn derive(&self, path: [u8; 64]) -> Self::Output {
         Scalar::from_bytes_mod_order_wide(&path)
     }
 }
@@ -139,7 +139,7 @@ mod tests {
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::{DeriveExt, signer::assert_signer_roundtrip};
+    use crate::signer::assert_signer_roundtrip;
 
     use super::*;
 
@@ -157,7 +157,7 @@ mod tests {
         #[values(b"", b"test", b"message")] msg: &[u8],
     ) {
         assert_signer_roundtrip(
-            &SigningKey::from_bytes(&root_sk).derive(ReduceScalar::<Ed25519>::new()),
+            &SigningKey::from_bytes(&root_sk).derive_with(ReduceScalar::<Ed25519>::new()),
             tweak,
             msg,
         )
@@ -177,7 +177,7 @@ mod tests {
         #[case] expected_derived_pk: impl Into<Ed25519PublicKey>,
     ) {
         let (derived_pk, _signature) = assert_signer_roundtrip(
-            &SigningKey::from_bytes(&root_sk).derive(ReduceScalar::<Ed25519>::new()),
+            &SigningKey::from_bytes(&root_sk).derive_with(ReduceScalar::<Ed25519>::new()),
             tweak,
             b"message",
         )

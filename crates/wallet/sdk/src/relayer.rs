@@ -18,7 +18,7 @@ use crate::{Error, Proof, Wallet};
 pub struct WalletRelayRequest {
     pub deterministic_state_init: Option<StateInit>,
     pub msg: RequestMessage,
-    pub proof: String,
+    pub proof: Proof,
     pub gas: Gas,
 }
 
@@ -138,17 +138,16 @@ const _: () = {
             msg: RequestMessage,
             proof: Proof,
         ) -> Result<SentTransaction, Self::Error> {
-            let mut tx = self.transaction(msg.signer_id.clone());
-
+            let mut tx = self.transaction(&msg.signer_id);
             if let Some(state_init) = deterministic_state_init {
                 tx = tx.state_init(state_init, NearToken::ZERO);
             }
             tx.add_action(
-                // TODO: gas + deposit?
                 WalletContract::w_execute_signed((&msg, proof).into())
-                    // TODO: assist deposit
-                    .deposit(NearToken::from_yoctonear(1))
-                    .gas(msg.request.estimate_gas()),
+                    // TODO: this might be not enough for signature verification
+                    .gas(msg.request.estimate_gas())
+                    // TODO: assist deposit?
+                    .deposit(NearToken::from_yoctonear(1)),
             )
             .send()
             // TODO: maybe IncludedFinal?

@@ -50,7 +50,7 @@ where
     type Output = <OutputSize<D> as ArraySize>::ArrayType<u8>;
 
     #[inline]
-    fn derive_path(&self, path: P) -> Self::Output {
+    fn derive(&self, path: P) -> Self::Output {
         let hasher = self.0.clone(); // branch
         hasher.chain_update(path).finalize().into()
     }

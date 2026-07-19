@@ -17,7 +17,7 @@ where
     type Output = String;
 
     #[inline]
-    fn derive_path(&self, path: P) -> Self::Output {
+    fn derive(&self, path: P) -> Self::Output {
         hex::encode(path)
     }
 }

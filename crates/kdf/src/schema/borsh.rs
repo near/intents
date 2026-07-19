@@ -30,7 +30,7 @@ where
 {
     type Output = W::Output;
 
-    fn derive_path(&self, path: P) -> Self::Output {
+    fn derive(&self, path: P) -> Self::Output {
         let mut w = W::new(self.0.clone()); // branch a new writer
         borsh::to_writer(&mut w, &path).expect("borsh");
         w.finalize()

@@ -11,7 +11,7 @@ use std::{borrow::Cow, cell::LazyCell, error::Error as StdError, fmt::Debug};
 
 use defuse_mpc_kdf::{
     TweakSchema,
-    kdf::{Additive, Derive, DeriveExt, DeriveSigner, RecoverableDeriveSigner, crypto::Curve},
+    kdf::{Additive, Derive, DeriveSigner, RecoverableDeriveSigner, Schema, crypto::Curve},
 };
 use defuse_near_promise::{AccountId, AccountIdRef, Gas, NearToken, actions::FunctionCall};
 use defuse_near_sender::{ArcNearSender, NearSender, SentTransaction};
@@ -117,12 +117,15 @@ where
     where
         C::PublicKey: Sync,
     {
+        const MPC_SIGN_GAS: Gas = Gas::from_tgas(10);
+
         self.sender
             .send(
                 self.mpc_contract_id.clone(),
                 vec![
                     FunctionCall::name("sign")
                         .attach_deposit(NearToken::from_yoctonear(1))
+                        .gas(MPC_SIGN_GAS)
                         .args_json(SignArgs {
                             request: SignRequest {
                                 path: path.as_ref().into(),
@@ -130,8 +133,6 @@ where
                                 domain_id: self.domain_id,
                             },
                         })
-                        // TODO: is it enough?
-                        .gas(Gas::from_tgas(10))
                         .into(),
                 ],
             )
@@ -154,7 +155,7 @@ where
 
     fn schema(&self) -> Self::Schema<'_> {
         Additive::new(self.mpc_public_key.clone())
-            .derive(defuse_mpc_kdf::tweak(self.sender.account_id()))
+            .derive_with(defuse_mpc_kdf::tweak(self.predecessor_id()))
     }
 
     // TODO: tracing

@@ -128,10 +128,6 @@ mod tests {
     ) {
         let schema = ckd(AccountIdRef::new_or_panic(predecessor_id));
 
-        assert_eq!(
-            schema.derive_path(path),
-            app_id,
-            "derived app_id has changed"
-        );
+        assert_eq!(schema.derive(path), app_id, "derived app_id has changed");
     }
 }

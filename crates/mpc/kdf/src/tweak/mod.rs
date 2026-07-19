@@ -6,7 +6,7 @@ mod secp256k1;
 use core::marker::PhantomData;
 
 use defuse_digest::{Digest as _, sha3::Sha3_256};
-use defuse_kdf::{CurveArithmetic, Derive, DeriveExt, Schema, digest::Digest};
+use defuse_kdf::{CurveArithmetic, Derive, Schema, digest::Digest};
 use impl_tools::autoimpl;
 use near_account_id::AccountIdRef;
 
@@ -19,7 +19,7 @@ pub fn tweak<C>(predecessor_id: impl AsRef<AccountIdRef>) -> TweakSchema<C>
 where
     C: NearMpcCurve,
 {
-    ToScalar::<C>::new().derive(derive_tweak(predecessor_id))
+    ToScalar::<C>::new().derive_with(derive_tweak(predecessor_id))
 }
 
 fn derive_tweak(predecessor_id: impl AsRef<AccountIdRef>) -> Digest<Sha3_256> {
@@ -50,7 +50,7 @@ where
 {
     type Output = C::Scalar;
 
-    fn derive_path(&self, tweak: [u8; 32]) -> Self::Output {
+    fn derive(&self, tweak: [u8; 32]) -> Self::Output {
         C::to_scalar(tweak)
     }
 }
@@ -160,6 +160,6 @@ mod tests {
     ) {
         let schema = derive_tweak(AccountIdRef::new_or_panic(predecessor_id));
 
-        assert_eq!(schema.derive_path(path), tweak, "derived tweak has changed");
+        assert_eq!(schema.derive(path), tweak, "derived tweak has changed");
     }
 }
