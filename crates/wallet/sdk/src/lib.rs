@@ -93,7 +93,8 @@ impl WalletBuilder {
     /// [`.deterministic_state_init()`](Wallet::deterministic_state_init).
     pub fn build<S, SS>(self, code: impl Into<GlobalContractId>, signer: SS) -> Wallet<S>
     where
-        S: SignatureSchema<PublicKey: BorshSerialize>,
+        S: SignatureSchema,
+        S::PublicKey: BorshSerialize,
         SS: WalletSigner<S> + 'static,
         SS::Error: Into<Box<dyn StdError + Send + Sync>>,
     {
