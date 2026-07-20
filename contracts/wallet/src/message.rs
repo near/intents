@@ -43,6 +43,14 @@ pub type ChainId = String;
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RequestMessage {
+    /// A flag indicating whether this message is intended to be delivered as
+    /// External Contract Call.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "::core::ops::Not::not")
+    )]
+    pub external: bool,
+
     /// Chain id (e.g. `mainnet`).
     /// MUST be equal to `chain_id` of the network.
     pub chain_id: ChainId,
@@ -144,6 +152,7 @@ impl RequestMessage {
     /// # use defuse_wallet::{Request, RequestMessage, Timestamp};
     /// # use hex_literal::hex;
     /// let msg = RequestMessage {
+    ///     external: false,
     ///     chain_id: "mainnet".to_string(),
     ///     signer_id: "0s0000000000000000000000000000000000000000".parse().unwrap(),
     ///     nonce: 0,
@@ -154,7 +163,7 @@ impl RequestMessage {
     ///
     /// assert_eq!(
     ///     msg.hash(),
-    ///     hex!("e42ac706e27f0157624ee49fc4693c9cc9666c5e51358b7d57f79ee16005ded7"),
+    ///     hex!("a8df85c0e8793716904fd57e9bef7d83b12773508bd3c9fca554afbfb108d4b5"),
     /// );
     /// ```
     #[cfg(all(feature = "digest", feature = "borsh"))]
@@ -178,10 +187,9 @@ mod tests {
     use super::*;
 
     #[rstest]
-    // https://nearblocks.io/txns/6vytw7NgAiPkJ3KYAyt18es4mDnwZ8knjpB7LHVJejAL
     #[case(
         r#"{"nonce":2845491008,"request":{"external":[{"actions":[{"action":"function_call","payload":{"args":"eyJyZXF1ZXN0Ijp7InBheWxvYWRfdjIiOnsiRWNkc2EiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIn0sImRvbWFpbl9pZCI6MCwicGF0aCI6IiJ9fQ==","deposit":"1","function_name":"sign"}}],"receiver_id":"v1.signer"}]},"chain_id":"mainnet","signer_id":"0se5eba21e8f191e1880e453794bc551dfa50a3419","created_at":"2026-07-07T11:13:29Z","timeout_secs":3600}"#,
-        hex!("06f269191431372337a0c606a15822e349bd0d5ec317704f97bef1a4ed6f5e1d"),
+        hex!("7c8560b51380551676a54dac49dcc1e009af3020556cde8e1e2172782ffd6775"),
     )]
     fn json_hash(#[case] json: &str, #[case] hash: [u8; 32]) {
         let msg: RequestMessage = serde_json::from_str(json).unwrap();

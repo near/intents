@@ -244,6 +244,7 @@ where
     #[inline]
     fn wrap_request_msg(&self, request: impl Into<Request>) -> RequestMessage {
         RequestMessage {
+            external: false,
             chain_id: self.chain_id.clone(),
             signer_id: self.account_id().clone(),
             nonce: self.nonces.lock().unwrap().next(),

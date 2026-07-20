@@ -179,6 +179,11 @@ where
     S: SignatureSchema,
 {
     fn execute_signed(&mut self, msg: RequestMessage, proof: &str) -> Result<()> {
+        // TODO: accept External Contract Calls
+        if msg.external {
+            return Err(Error::InvalidSource);
+        }
+
         if !self.0.is_signature_allowed() {
             return Err(Error::SignatureDisabled);
         }

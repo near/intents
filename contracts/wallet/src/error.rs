@@ -16,6 +16,10 @@ pub enum ContractError {
     #[error("invalid chain_id")]
     InvalidChainId,
 
+    // TODO: better error
+    #[error("invalid message source")]
+    InvalidSource,
+
     #[error("invalid signature")]
     InvalidSignature,
 
