@@ -43,6 +43,7 @@ pub type ChainId = String;
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RequestMessage {
+    // TODO: rename to `pay_for_gas`?
     /// A flag indicating whether this message is intended to be delivered as
     /// External Contract Call.
     #[cfg_attr(

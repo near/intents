@@ -179,8 +179,8 @@ where
     S: SignatureSchema,
 {
     fn execute_signed(&mut self, msg: RequestMessage, proof: &str) -> Result<()> {
-        // TODO: accept External Contract Calls
         if msg.external {
+            // TODO: accept External Contract Calls
             return Err(Error::InvalidSource);
         }
 
