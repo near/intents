@@ -338,7 +338,7 @@ where
         &self.state_init
     }
 
-    /// Get [signer](Self::signer)'s public key
+    /// Get signer's public key
     #[inline]
     pub fn public_key(&self) -> S::PublicKey {
         self.signer.public_key()
@@ -594,8 +594,7 @@ where
         .await
     }
 
-    /// Reseed the [nonces](ConcurrentNonces) and invalidate the current block.
-    /// Use it in case of a collision.
+    /// Reseed the nonces and invalidate the current block. Use it in case of a collision.
     #[inline]
     pub fn reseed_nonces(&self) {
         *self.nonces.lock().unwrap() = ConcurrentNonces::new(make_rng());

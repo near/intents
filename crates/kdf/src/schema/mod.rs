@@ -18,7 +18,7 @@ use impl_tools::autoimpl;
 /// steps.
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
 pub trait Schema<P> {
-    /// [Derivation](Schema::derive_path) output.
+    /// [Derivation](Schema::derive) output.
     type Output;
 
     /// Derive output for given `path`.
@@ -65,7 +65,7 @@ impl<T> Schema<T> for Identity {
 }
 
 /// Derive adaptor for [`Schema`] and [`crate::DeriveSigner`].
-/// See [`.derive()`](DeriveExt::derive).
+/// See [`.derive()`](Derive::derive).
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Derive<S, D>(pub(crate) S, pub(crate) D);
 

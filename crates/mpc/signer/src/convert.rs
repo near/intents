@@ -2,7 +2,7 @@ use defuse_mpc_kdf::{NearMpcCurve, crypto::RecoverableCurve};
 
 use crate::contract::{Payload, PublicKey, SignResponse};
 
-/// A [`Curve`](defuse_kdf::crypto::Curve) supported by Near MPC on-chain API.
+/// A [`Curve`](crate::kdf::crypto::Curve) supported by Near MPC on-chain API.
 pub trait OnChainNearMpcCurve: NearMpcCurve {
     /// Try to extract public key associated with this curve from `public_key()`
     /// method of MPC contract

@@ -49,7 +49,7 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
     where
         P: Send;
 
-    /// Helper method to [derive](Schema::derive_path) public key for given
+    /// Helper method to [derive](Schema::derive) public key for given
     /// `path` via [`.schema()`](DeriveSigner::Schema)
     #[inline]
     fn derive_public_key(&self, path: P) -> C::PublicKey {

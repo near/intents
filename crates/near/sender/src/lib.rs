@@ -59,8 +59,8 @@ pub trait NearSender: Sync {
     }
 }
 
-/// A sent transaction identified by its [hash](field::Self::hash) and
-/// [signer](field::Self::signer_id).
+/// A sent transaction identified by its [hash](field@Self::tx_hash) and
+/// [sender](field@Self::sender_id).
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
