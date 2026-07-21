@@ -95,14 +95,24 @@ mod tests {
 
         let msg = crate::tests::sample_auth_message();
 
-        let proof = WalletSigner::<SS>::sign_auth_msg(&signer, &msg).await.unwrap();
+        let proof = WalletSigner::<SS>::sign_auth_msg(&signer, &msg)
+            .await
+            .unwrap();
 
         assert!(
-            SS::verify_hash(&WalletSigner::<SS>::public_key(&signer), &msg.hash(), &proof),
+            SS::verify_hash(
+                &WalletSigner::<SS>::public_key(&signer),
+                &msg.hash(),
+                &proof
+            ),
             "signer produced invalid signature"
         );
         assert!(
-            !SS::verify_hash(&WalletSigner::<SS>::public_key(&signer), &[0xab; 32], &proof),
+            !SS::verify_hash(
+                &WalletSigner::<SS>::public_key(&signer),
+                &[0xab; 32],
+                &proof
+            ),
             "assertion over another challenge should not verify"
         );
     }

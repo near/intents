@@ -12,7 +12,7 @@ use defuse_crypto::{
     Curve,
     ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
 };
-use defuse_wallet::{RequestMessage, SignatureSchema};
+use defuse_wallet::SignatureSchema;
 
 /// Simple [`Ed25519`] wallet [signature schema](SignatureSchema)
 /// over [canonical request hash](RequestMessage::hash).
@@ -39,7 +39,8 @@ mod tests {
     use std::time::Duration;
 
     use defuse_wallet::{
-        AccountId, Gas, NearPromise, NearToken, Request, WalletOp, actions::FunctionCall,
+        AccountId, Gas, NearPromise, NearToken, Request, RequestMessage, WalletOp,
+        actions::FunctionCall,
     };
     use hex_literal::hex;
     use rstest::rstest;

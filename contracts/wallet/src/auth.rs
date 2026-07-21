@@ -463,7 +463,9 @@ mod tests {
             signer: AuthSignerBinding::Code {
                 allowed_factory_ids: BTreeSet::from([
                     "p256-passkey-wallet-contract.trezu.near".parse().unwrap(),
-                    "ed25519-passkey-wallet-contract.trezu.near".parse().unwrap(),
+                    "ed25519-passkey-wallet-contract.trezu.near"
+                        .parse()
+                        .unwrap(),
                 ]),
                 signature_enabled: true,
                 subwallet_id: 0,
@@ -588,5 +590,4 @@ mod tests {
             r#"{"status":"INVALID","error_kind":"INVALID_SIGNATURE","error_message":"invalid signature"}"#,
         );
     }
-
 }

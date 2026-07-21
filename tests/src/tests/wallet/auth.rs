@@ -1,9 +1,9 @@
+use defuse_sandbox::extensions::wallet::sdk::MAINNET;
 use defuse_sandbox::extensions::wallet::sdk::{
     AccountId, AuthErrorKind, AuthMessage, AuthSignerBinding, AuthorizationResolution,
     SignedAuthMessage, Timestamp, WalletBuilder,
 };
 use defuse_test_utils::wasms::WALLET_NO_SIGN_WASM;
-use defuse_sandbox::extensions::wallet::sdk::MAINNET;
 use defuse_wallet_relayer::wallet::client::WResolveAuthArgs;
 use std::{borrow::Cow, collections::BTreeSet, time::Duration};
 
@@ -20,7 +20,9 @@ impl Env {
     fn factory_id(&self) -> AccountId {
         match &self.wallet_global_id {
             GlobalContractId::AccountId(id) => id.clone(),
-            other => panic!("factory is not deployed by account id: {other:?}"),
+            other @ GlobalContractId::CodeHash(_) => {
+                panic!("factory is not deployed by account id: {other:?}")
+            }
         }
     }
 
@@ -86,8 +88,13 @@ async fn test_resolve_auth_signer_id(#[future] env: Env) {
 
     // purpose binding
     assert_invalid(
-        &env.resolve_auth(wallet.account_id(), "trezu/proposal:VoteApprove", RECIPIENT, &signed)
-            .await,
+        &env.resolve_auth(
+            wallet.account_id(),
+            "trezu/proposal:VoteApprove",
+            RECIPIENT,
+            &signed,
+        )
+        .await,
         AuthErrorKind::InvalidInput,
     );
 
@@ -164,11 +171,9 @@ async fn test_resolve_auth_code_binding(#[future] env: Env) {
     // mutate live config: add an extension
     let extension = env.create_subaccount("extension", NearToken::ZERO).await;
     let (msg, proof) = wallet
-        .sign(
-            Request::new().internal([WalletOp::AddExtension {
-                account_id: extension.account_id().clone(),
-            }]),
-        )
+        .sign(Request::new().internal([WalletOp::AddExtension {
+            account_id: extension.account_id().clone(),
+        }]))
         .await
         .unwrap();
     assert!(
@@ -187,7 +192,12 @@ async fn test_resolve_auth_code_binding(#[future] env: Env) {
     // account id), so config mutations do NOT invalidate it: the same
     // initial-defaults envelope still resolves
     let signed = wallet
-        .sign_auth(wallet.auth_message_code_binding([env.factory_id()], PURPOSE, RECIPIENT, PAYLOAD))
+        .sign_auth(wallet.auth_message_code_binding(
+            [env.factory_id()],
+            PURPOSE,
+            RECIPIENT,
+            PAYLOAD,
+        ))
         .await
         .unwrap();
     assert_eq!(
@@ -200,7 +210,8 @@ async fn test_resolve_auth_code_binding(#[future] env: Env) {
 
     // ...while an envelope built from the MUTATED (live) config derives a
     // different account id and MUST be rejected
-    let mut mutated_msg = wallet.auth_message_code_binding([env.factory_id()], PURPOSE, RECIPIENT, PAYLOAD);
+    let mut mutated_msg =
+        wallet.auth_message_code_binding([env.factory_id()], PURPOSE, RECIPIENT, PAYLOAD);
     let AuthSignerBinding::Code { extensions, .. } = &mut mutated_msg.signer else {
         unreachable!()
     };
@@ -251,7 +262,12 @@ async fn test_resolve_auth_subwallet_isolation(#[future] env: Env) {
         .await
         .unwrap();
     let code_signed = wallet0
-        .sign_auth(wallet0.auth_message_code_binding([env.factory_id()], PURPOSE, RECIPIENT, PAYLOAD))
+        .sign_auth(wallet0.auth_message_code_binding(
+            [env.factory_id()],
+            PURPOSE,
+            RECIPIENT,
+            PAYLOAD,
+        ))
         .await
         .unwrap();
 
@@ -280,14 +296,12 @@ async fn test_resolve_auth_signature_disabled(#[future] env: Env) {
 
     let extension = env.create_subaccount("extension", NearToken::ZERO).await;
     let (msg, proof) = wallet
-        .sign(
-            Request::new().internal([
-                WalletOp::AddExtension {
-                    account_id: extension.account_id().clone(),
-                },
-                WalletOp::SetSignatureMode { enable: false },
-            ]),
-        )
+        .sign(Request::new().internal([
+            WalletOp::AddExtension {
+                account_id: extension.account_id().clone(),
+            },
+            WalletOp::SetSignatureMode { enable: false },
+        ]))
         .await
         .unwrap();
     assert!(
@@ -426,7 +440,12 @@ async fn test_resolve_auth_factory_allow_list(#[future] env: Env) {
     // REJECTED on the sibling (its factory isn't allow-listed) — the
     // sibling-account replay is closed.
     let canonical_only = wallet
-        .sign_auth(wallet.auth_message_code_binding([env.factory_id()], PURPOSE, RECIPIENT, PAYLOAD))
+        .sign_auth(wallet.auth_message_code_binding(
+            [env.factory_id()],
+            PURPOSE,
+            RECIPIENT,
+            PAYLOAD,
+        ))
         .await
         .unwrap();
     assert_eq!(

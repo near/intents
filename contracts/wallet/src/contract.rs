@@ -263,7 +263,10 @@ where
     where
         S::PublicKey: Clone + BorshSerialize,
     {
-        let SignedAuthMessage { message: msg, proof } = serde_json::from_str(authorization)
+        let SignedAuthMessage {
+            message: msg,
+            proof,
+        } = serde_json::from_str(authorization)
             .map_err(|err| AuthError::MalformedAuthorization(err.to_string()))?;
 
         // same policy as `execute_signed()`
