@@ -450,62 +450,6 @@ pub struct SignedAuthMessage {
     pub proof: String,
 }
 
-/// Global contract code identity of the code the current contract is
-/// running under, or `None` if it is not using globally deployed code.
-///
-/// # Vendored fix (TEMPORARY)
-///
-/// This is a local copy of
-/// [`near_sdk::env::current_global_contract_id()`] with the fix from
-/// [near/near-sdk-rs#1601](https://github.com/near/near-sdk-rs/pull/1601)
-/// applied: `near-sdk` 5.28.x reads the current account id (rather than
-/// the register the host filled) for the `GlobalByAccount` case, so it
-/// wrongly returns the wallet's own account id instead of the global
-/// contract's account id.
-///
-/// We stay on `near-sdk` 5.28.x (rather than 5.29.0, which ships the fix)
-/// because 5.29.0 also imports protocol host functions that are not yet
-/// live on mainnet. **Remove this vendored function and switch back to
-/// `env::current_global_contract_id()` once 5.29.x is deployable.**
-///
-/// Only `sys::current_contract_code` (live on mainnet) is imported here;
-/// the host writes the account id / code hash into `ATOMIC_OP_REGISTER`
-/// and returns the mode.
-#[cfg(feature = "near-contract")]
-pub fn current_global_contract_id() -> Option<near_sdk::GlobalContractId> {
-    use near_sdk::GlobalContractId;
-
-    // `near_sdk::env::ATOMIC_OP_REGISTER` is private; mirror its value.
-    const ATOMIC_OP_REGISTER: u64 = u64::MAX - 2;
-
-    // SAFETY: `current_contract_code` writes into the given register and
-    // returns the account-contract mode.
-    let mode = unsafe { near_sys::current_contract_code(ATOMIC_OP_REGISTER) };
-    match mode {
-        // 2 => Global(code_hash): 32-byte hash in the register
-        2 => {
-            let hash: [u8; 32] = near_sdk::env::read_register(ATOMIC_OP_REGISTER)
-                .unwrap_or_else(|| unreachable!("current_contract_code left register empty"))
-                .try_into()
-                .unwrap_or_else(|_| unreachable!("code hash must be 32 bytes"));
-            Some(GlobalContractId::CodeHash(hash))
-        }
-        // 3 => GlobalByAccount(account_id): account id bytes in the register
-        // (this is the branch near-sdk 5.28.x gets wrong)
-        3 => {
-            let bytes = near_sdk::env::read_register(ATOMIC_OP_REGISTER)
-                .unwrap_or_else(|| unreachable!("current_contract_code left register empty"));
-            let account_id = String::from_utf8(bytes)
-                .ok()
-                .and_then(|s| s.parse().ok())
-                .unwrap_or_else(|| unreachable!("current_contract_code wrote an invalid account id"));
-            Some(GlobalContractId::AccountId(account_id))
-        }
-        // 0 => None, 1 => Local(code_hash): not globally deployed code
-        _ => None,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
