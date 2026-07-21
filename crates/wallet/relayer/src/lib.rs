@@ -5,7 +5,7 @@ pub use self::request::*;
 use std::{convert::Infallible, time::Duration};
 
 pub use defuse_wallet_sdk as wallet;
-use defuse_wallet_sdk::{RequestMessage, Timestamp, client::WalletContract};
+use defuse_wallet_sdk::{RequestMessage, client::WalletContract};
 pub use near_kit;
 use near_kit::{ExecutedOptimistic, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken};
 use thiserror::Error as ThisError;
@@ -18,6 +18,11 @@ pub struct WalletRelayer {
     gas: Gas,
 }
 
+/// Signers are recommended to set `created_at` a bit in the past,
+/// so that transaction doesn't fail on-chain due to possible lag
+/// in block timestamps.
+const BLOCKCHAIN_LAG: Duration = Duration::from_mins(1);
+
 impl WalletRelayer {
     #[allow(clippy::doc_markdown)]
     // TODO: remove once https://github.com/near/nearcore/pull/15461 is on mainnet
@@ -26,9 +31,7 @@ impl WalletRelayer {
     /// ensure predecessor is not using FunctionCall access key
     const MAX_ASSIST_DEPOSIT: NearToken = NearToken::from_yoctonear(1);
 
-    // TODO: change to 1PGas once protocol version 83 is on mainnet
-    // https://github.com/near/nearcore/releases/tag/2.11.0
-    const GAS_DEFAULT: Gas = Gas::from_tgas(300);
+    const GAS_DEFAULT: Gas = Gas::from_pgas(1);
 
     pub const fn new(client: Near) -> Self {
         Self {
@@ -105,7 +108,12 @@ impl WalletRelayer {
         );
 
         tokio::time::timeout(
-            Self::request_timeout(&request.msg)?,
+            request
+                .msg
+                .time_left()
+                .ok_or(Error::ExpiredOrFuture)?
+                // add more buffer for short-living requests
+                .saturating_add(BLOCKCHAIN_LAG),
             tx.send()
                 // wait for execution, so we have an access to wallet's receipt
                 .wait_until(ExecutedOptimistic)
@@ -113,7 +121,7 @@ impl WalletRelayer {
                 .max_nonce_retries(u32::MAX),
         )
         .await
-        .map_err(|_| Error::Expired)?
+        .map_err(|_| Error::ExpiredOrFuture)?
         .map_err(Error::Transaction)
     }
 
@@ -131,48 +139,18 @@ impl WalletRelayer {
 
         Ok(max_gas)
     }
-
-    fn request_timeout(msg: &RequestMessage) -> Result<Duration> {
-        /// Signers are recommended to set `created_at` a bit in the past,
-        /// so that transaction doesn't fail on-chain due to possible lag
-        /// in block timestamps.
-        const BLOCKCHAIN_LAG: Duration = Duration::from_mins(1);
-
-        let now = Timestamp::now();
-
-        if now < msg.created_at {
-            // Since block timestamps can lag a bit behind, failing here can
-            // only encourage signers to take this lag into account and set
-            // `created_at` a bit in the past.
-            return Err(Error::FromTheFuture);
-        }
-
-        let deadline = msg
-            .created_at
-            .checked_add_unsigned(msg.timeout)
-            .ok_or(Error::InvalidTimeout)?;
-
-        let timeout: Duration = deadline.duration_since(now).map_err(|_| Error::Expired)?;
-
-        // add more buffer for short-living requests
-        Ok(timeout.saturating_add(BLOCKCHAIN_LAG))
-    }
 }
 
 pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 
 #[derive(Debug, ThisError)]
 pub enum Error {
-    #[error("expired")]
-    Expired,
-    #[error("from the future")]
-    FromTheFuture,
+    #[error("expired or from the future")]
+    ExpiredOrFuture,
     #[error("gas limit exceeded")]
     GasLimit,
     #[error("invalid chain_id")]
     InvalidChainId,
-    #[error("invalid timeout")]
-    InvalidTimeout,
     #[error("invalid state_init")]
     InvalidStateInit,
     #[error("transaction: {0}")]

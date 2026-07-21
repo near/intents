@@ -2102,7 +2102,6 @@ dependencies = [
  "defuse-near-sender",
  "defuse-wallet",
  "defuse-wallet-ed25519",
- "defuse-wallet-sdk",
  "derive_more",
  "impl-tools 0.12.0",
  "near-kit",

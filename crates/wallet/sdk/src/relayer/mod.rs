@@ -23,9 +23,8 @@ use crate::{Error, Wallet};
 pub trait WalletRelayer: Sync {
     type Error: Debug + Display;
 
-    // async fn estimate_gas_costs(&self) -> Result<Vec<NearPromise>, Self::Error>;
-
     // TODO: ask for compensation?
+    // async fn cover_gas_costs(&self, gas: Gas) -> Result<Vec<NearPromise>, Self::Error>;
 
     async fn relay_wallet_msg(
         &self,
@@ -109,9 +108,17 @@ impl WalletRelayer for dyn DynWalletRelayer + '_ {
 
 #[cfg(feature = "near-kit")]
 const _: () = {
-    use near_kit::{Error, Included, Near};
+    use near_kit::{Error, Gas, Included, Near};
 
     use crate::client::WalletContract;
+
+    // TODO: remove once https://github.com/near/nearcore/pull/15461 is on mainnet
+    /// Only assist with at most 1yN: it's enough for a single permissioned
+    /// action on Near: most contracts require 1yN of attached deposit to
+    /// ensure predecessor is not using FunctionCall access key
+    const MAX_ASSIST_DEPOSIT: NearToken = NearToken::from_yoctonear(1);
+
+    const MAX_GAS: Gas = Gas::from_pgas(1);
 
     impl WalletRelayer for Near {
         type Error = Error;
@@ -120,21 +127,32 @@ const _: () = {
             &self,
             request: WalletRelayRequest,
         ) -> Result<SentTransaction, Self::Error> {
-            let mut tx = self.transaction(&request.msg.signer_id);
-            if let Some(state_init) = request.deterministic_state_init {
-                tx = tx.state_init(state_init, NearToken::ZERO);
+            // TODO: replace with `self.client.chain_id().as_str()`
+            if request.msg.chain_id != near_kit::ChainId::mainnet().as_str() {
+                return Err(Error::InvalidTransaction("invalid chain_id".to_string()));
             }
+
+            let mut tx = self.transaction(&request.msg.signer_id);
+
+            if let Some(state_init) = request.deterministic_state_init {
+                if state_init.derive_account_id() != request.msg.signer_id {
+                    return Err(Error::InvalidTransaction("invalid state_init".to_string()));
+                }
+
+                tx = tx.state_init(
+                    state_init,
+                    // wallet-contract should fit into ZBA limits
+                    NearToken::ZERO,
+                );
+            }
+
             tx.add_action(
                 WalletContract::w_execute_signed((&request.msg, request.proof).into())
-                    // TODO: this might be not enough for signature verification
-                    .gas(request.msg.request.estimate_gas())
-                    // TODO: assist deposit?
-                    .deposit(NearToken::from_yoctonear(1)),
+                    .deposit(request.msg.request.total_deposit().min(MAX_ASSIST_DEPOSIT))
+                    .gas(MAX_GAS),
             )
             .send()
-            // TODO: maybe IncludedFinal?
             .wait_until(Included)
-            // TODO: max_nonce_retries
             .await
             .map(Into::into)
         }

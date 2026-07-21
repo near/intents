@@ -98,6 +98,24 @@ impl Timestamp {
         self.0.checked_sub(rhs).map(Self)
     }
 
+    #[must_use]
+    #[inline]
+    pub fn saturating_add_unsigned(self, rhs: Duration) -> Self {
+        Self(
+            self.0
+                .saturating_add(rhs.try_into().unwrap_or(::time::Duration::MAX)),
+        )
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn saturating_sub_unsigned(self, rhs: Duration) -> Self {
+        Self(
+            self.0
+                .saturating_sub(rhs.try_into().unwrap_or(::time::Duration::MAX)),
+        )
+    }
+
     #[inline]
     pub fn duration_since(&self, other: Self) -> Result<Duration, Duration> {
         let dur = self.0 - other.0;

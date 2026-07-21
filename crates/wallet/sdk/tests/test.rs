@@ -1,3 +1,5 @@
+#![cfg(all(feature = "near-kit", feature = "relayer"))]
+
 use std::{env, fs, path::Path, sync::LazyLock};
 
 use defuse_wallet::{NearPromise, Request, WalletOp, actions::FunctionCall};
@@ -25,47 +27,51 @@ async fn rotate(
     #[future]
     extension: Wallet,
 ) {
-    master.sign_and_send_status(
-        Request::new()
-            .internal([WalletOp::AddExtension {
-                account_id: extension.real_account_id().clone(),
-            }])
-            .external([NearPromise::new(extension.real_account_id())
-                .deterministic_state_init(
-                    extension.deterministic_state_init().clone(),
-                    NearToken::ZERO,
-                )
-                .function_call(
-                    FunctionCall::name("w_execute_signed")
-                        .attach_deposit(NearToken::from_yoctonear(1))
-                        .args_json({
-                            let (msg, proof) = extension
-                                .sign(
-                                    NearPromise::new(master.real_account_id()).function_call(
-                                        FunctionCall::name("w_execute_extension")
-                                            .attach_deposit(NearToken::from_yoctonear(1))
-                                            .args_json(WExecuteExtensionArgs::from(Request::from(
-                                                WalletOp::SetSignatureMode { enable: false },
-                                            )))
-                                            .gas(Gas::from_tgas(10)),
-                                    ),
-                                )
-                                .await
-                                .unwrap();
+    master
+        .sign_and_send_status(
+            Request::new()
+                .internal([WalletOp::AddExtension {
+                    account_id: extension.real_account_id().clone(),
+                }])
+                .external([NearPromise::new(extension.real_account_id())
+                    .deterministic_state_init(
+                        extension.deterministic_state_init().clone(),
+                        NearToken::ZERO,
+                    )
+                    .function_call(
+                        FunctionCall::name("w_execute_signed")
+                            .attach_deposit(NearToken::from_yoctonear(1))
+                            .args_json({
+                                let (msg, proof) = extension
+                                    .sign(
+                                        NearPromise::new(master.real_account_id()).function_call(
+                                            FunctionCall::name("w_execute_extension")
+                                                .attach_deposit(NearToken::from_yoctonear(1))
+                                                .args_json(WExecuteExtensionArgs::from(
+                                                    Request::from(WalletOp::SetSignatureMode {
+                                                        enable: false,
+                                                    }),
+                                                ))
+                                                .gas(Gas::from_tgas(10)),
+                                        ),
+                                    )
+                                    .await
+                                    .unwrap();
 
-                            WExecuteSignedArgs::from((msg, proof))
-                        })
-                        .gas(Gas::from_tgas(20)),
-                )]),
-        Final,
-    )
-    .await
-    // TODO: this doesn't ensure status of tx
-    .unwrap()
-    .result()
-    .expect("key rotation failed");
+                                WExecuteSignedArgs::from((msg, proof))
+                            })
+                            .gas(Gas::from_tgas(20)),
+                    )]),
+            Final,
+        )
+        .await
+        // TODO: this doesn't ensure status of tx
+        .unwrap()
+        .result()
+        .expect("key rotation failed");
 
-    master.sign_and_send_status(Request::new(), Final)
+    master
+        .sign_and_send_status(Request::new(), Final)
         .await
         .unwrap()
         .result()
