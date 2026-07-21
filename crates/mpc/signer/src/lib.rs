@@ -38,7 +38,7 @@ impl<C> MpcOnChainSigner<C>
 where
     C: OnChainNearMpcCurve,
 {
-    pub async fn new<S>(
+    pub async fn from_domain_id<S>(
         sender: S,
         mpc_contract_id: impl Into<AccountId>,
         domain_id: u64,
@@ -117,7 +117,7 @@ where
     where
         C::PublicKey: Sync,
     {
-        const MPC_SIGN_GAS: Gas = Gas::from_tgas(10);
+        const MPC_SIGN_GAS: Gas = Gas::from_tgas(15);
 
         self.sender
             .send(

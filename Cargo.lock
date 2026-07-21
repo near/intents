@@ -1670,6 +1670,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "thiserror 2.0.18",
+ "tracing",
 ]
 
 [[package]]
@@ -2107,6 +2108,7 @@ dependencies = [
  "near-kit",
  "rand 0.10.2",
  "rstest",
+ "schemars 0.8.22",
  "serde",
  "sha2 0.11.0",
  "thiserror 2.0.18",

@@ -25,7 +25,7 @@ async fn rotate(
     #[future]
     extension: Wallet,
 ) {
-    root.sign_and_relay_status(
+    root.sign_and_send_status(
         Request::new()
             .internal([WalletOp::AddExtension {
                 account_id: extension.account_id().clone(),
@@ -65,7 +65,7 @@ async fn rotate(
     .result()
     .expect("key rotation failed");
 
-    root.sign_and_relay_status(Request::new(), Final)
+    root.sign_and_send_status(Request::new(), Final)
         .await
         .unwrap()
         .result()
@@ -74,7 +74,7 @@ async fn rotate(
     let extension = extension.as_extension_of(root);
 
     extension
-        .sign_and_relay_status(
+        .sign_and_send_status(
             // TODO: enable back?
             Request::new().internal([WalletOp::SetSignatureMode { enable: true }]),
             Final,

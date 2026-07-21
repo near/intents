@@ -90,11 +90,13 @@ impl FunctionCall {
     /// ```
     #[inline]
     pub fn name(function_name: impl Into<String>) -> Self {
+        const DEFAULT_GAS: Gas = Gas::from_tgas(50);
+
         Self {
             function_name: function_name.into(),
             args: Vec::new(),
             deposit: NearToken::ZERO,
-            gas: Gas::from_tgas(50),
+            gas: DEFAULT_GAS,
             gas_weight: default_gas_weight(),
         }
     }

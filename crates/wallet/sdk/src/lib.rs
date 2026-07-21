@@ -15,7 +15,7 @@ pub use defuse_wallet::*;
 use std::{
     collections::BTreeSet,
     error::Error as StdError,
-    marker::PhantomData,
+    mem,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -110,12 +110,10 @@ impl WalletBuilder {
         Wallet {
             account_id: state_init.derive_account_id(),
             state_init,
-            subwallet_id: self.subwallet_id,
             timeout: self.timeout,
             nonces: Arc::new(Mutex::new(ConcurrentNonces::new(make_rng()))),
             chain_id: MAINNET.to_string(),
             signer: signer.arced(),
-            _schema: PhantomData,
             as_extension_chain: Vec::new(),
             #[cfg(feature = "near-kit")]
             client: None,
@@ -131,21 +129,15 @@ impl WalletBuilder {
 /// [`SignatureSchema`].
 #[autoimpl(Clone)]
 pub struct Wallet<S: SignatureSchema> {
-    account_id: AccountId,
     state_init: StateInit,
-
-    subwallet_id: u32,
-    timeout: Duration,
-    nonces: Arc<Mutex<ConcurrentNonces<SmallRng>>>,
+    account_id: AccountId,
 
     chain_id: ChainId,
+    timeout: Duration,
+    nonces: Arc<Mutex<ConcurrentNonces<SmallRng>>>,
+    as_extension_chain: Vec<AccountId>,
 
     signer: ArcWalletSigner<S>,
-    // TODO: remove?
-    // `fn() -> S` implements Send + Sync unconditionally
-    _schema: PhantomData<fn() -> S>,
-
-    as_extension_chain: Vec<AccountId>,
 
     #[cfg(feature = "near-kit")]
     client: Option<near_kit::Near>,
@@ -173,28 +165,87 @@ where
         WalletBuilder::new().build(code, signer)
     }
 
-    // TODO: rename: with_chain_id?
-    /// Set a custom [`chain_id`](RequestMessage::chain_id) for [`.sign()`](Self::sign)
-    /// instead of a [default](MAINNET) one.
+    /// Set a custom [`chain_id`](RequestMessage::chain_id) for [signing](Self::sign)
+    /// requests instead of a [default](MAINNET) one.
+    ///
+    /// This doesn't change the [account ID](Self::account_id) of the wallet.
     #[must_use]
     #[inline]
     pub fn with_chain_id(mut self, chain_id: impl Into<ChainId>) -> Self {
-        let new_chain_id = chain_id.into();
-        if self.chain_id != new_chain_id {
+        let old_chain_id = mem::replace(&mut self.chain_id, chain_id.into());
+        if self.chain_id != old_chain_id {
             // contracts on different chains keep track of their own nonces
             self.reseed_nonces();
         }
-        self.chain_id = new_chain_id;
         self
     }
 
+    /// Add another wallet to the extension chain, making it an
+    /// [effective account id](Self::account_id), and act on behalf of it.
+    ///
+    /// This will automatically wrap all [signed](Self::sign) requests
+    /// to be routed through
+    /// [`master_id::w_execute_extension()`](crate::contract::Wallet::w_execute_extension)
+    /// method, so that target [operations](field@Request::internal) are
+    /// applied on the master wallet and created
+    /// [promises](field::Request::external) will have `master_id` as their
+    /// predecessor ID.
+    ///
+    /// The master wallet SHOULD have current [effective account id](Self::account_id)
+    /// already [added as an extension](crate::WalletOp::AddExtension).
+    /// Otherwise, transactions will fail on-chain.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
+    /// # use defuse_wallet_ed25519::{
+    /// #   WalletEd25519, WalletEd25519Signer,
+    /// #   crypto::ed25519::ed25519_dalek::SigningKey,
+    /// # };
+    /// # const SUBMASTER_WALLET_ID: &AccountIdRef = AccountIdRef::new_or_panic("sub.master");
+    /// # const MASTER_WALLET_ID: &AccountIdRef = AccountIdRef::new_or_panic("master");
+    /// # let wallet = Wallet::<WalletEd25519>::new(
+    /// #     [0u8; 32],
+    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32])),
+    /// # );
+    /// // wallet -> submaster
+    /// let as_sub_master = wallet.as_extension_of(SUBMASTER_WALLET_ID);
+    /// assert_eq!(as_sub_master.account_id(), SUBMASTER_WALLET_ID);
+    ///
+    /// // wallet -> submaster -> master
+    /// let as_master = as_sub_master.as_extension_of(MASTER_WALLET_ID);
+    /// assert_eq!(as_master.account_id(), MASTER_WALLET_ID);
+    /// ```
     #[must_use]
     #[inline]
-    pub fn as_extension_of(mut self, account_id: impl Into<AccountId>) -> Self {
-        self.as_extension_chain.push(account_id.into());
+    pub fn as_extension_of(mut self, master_id: impl Into<AccountId>) -> Self {
+        self.as_extension_chain.push(master_id.into());
         self
     }
 
+    /// Reset the [extension chain](Self::as_extension_of) and act on behalf
+    /// of the [real account ID](Self::real_account_id).
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
+    /// # use defuse_wallet_ed25519::{
+    /// #   WalletEd25519, WalletEd25519Signer,
+    /// #   crypto::ed25519::ed25519_dalek::SigningKey,
+    /// # };
+    /// # const MASTER_WALLET_ID: &AccountIdRef = AccountIdRef::new_or_panic("master");
+    /// # let wallet = Wallet::<WalletEd25519>::new(
+    /// #     [0u8; 32],
+    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32])),
+    /// # );
+    /// let as_master = wallet.as_extension_of(MASTER_WALLET_ID);
+    /// assert_eq!(as_master.account_id(), MASTER_WALLET_ID);
+    ///
+    /// let as_self = as_master.as_self();
+    /// assert_eq!(as_self.account_id(), as_self.real_account_id());
+    /// ```
     #[must_use]
     #[inline]
     pub fn as_self(mut self) -> Self {
@@ -206,8 +257,7 @@ where
     #[must_use]
     #[inline]
     pub fn with_client(mut self, client: near_kit::Near) -> Self {
-        // TODO: are we sure?
-        // TODO
+        // TODO: reset with client's chain_id
         // self = self.with_chain_id(client.chain_id().as_str());
         self.client = Some(client);
         self
@@ -232,13 +282,17 @@ where
         self
     }
 
+    /// Returns currently [configured](Self::with_chain_id) chain ID.
     #[inline]
     pub const fn chain_id(&self) -> &ChainId {
         &self.chain_id
     }
 
-    // TODO: docs: effective/real
-    /// Get derived account id for this wallet contract instance.
+    /// Get an _effective_ account ID which this wallet acts on behalf of.
+    ///
+    /// This is the last account ID from the currently configured
+    /// [extension chain](Self::as_extension_of) or
+    /// [`.real_account_id()`](Self::real_account_id) otherwise.
     ///
     /// NOTE: the account on NEAR might **not** exist yet and needs to be
     /// initialized first. See [`.deterministic_state_init()`](Self::deterministic_state_init)
@@ -247,10 +301,10 @@ where
         if let Some(last_extension_id) = self.as_extension_chain.as_slice().last() {
             return last_extension_id;
         }
-
         self.real_account_id()
     }
 
+    /// Returns _real_ account ID of this wallet instance.
     #[inline]
     pub const fn real_account_id(&self) -> &AccountId {
         &self.account_id
@@ -267,20 +321,14 @@ where
         &self.state_init
     }
 
-    /// Get [`subwallet_id`](field@State::subwallet_id) of this wallet contract instance.
-    #[inline]
-    pub const fn subwallet_id(&self) -> u32 {
-        self.subwallet_id
-    }
-
     /// Get [signer](Self::signer)'s public key
     #[inline]
     pub fn public_key(&self) -> S::PublicKey {
         self.signer.public_key()
     }
 
-    /// Get `timeout` (i.e. fixed maximum validity for each nonce) of this wallet contract
-    /// instance.
+    /// Get `timeout`, i.e. fixed maximum validity for each nonce in signed
+    /// requests
     #[inline]
     pub const fn timeout(&self) -> Duration {
         self.timeout
@@ -433,30 +481,28 @@ where
 
     /// TODO: docs: relayer must be set
     #[cfg(feature = "relayer")]
-    pub async fn sign_and_relay(
+    pub async fn sign_and_send(
         &self,
         request: impl Into<Request>,
     ) -> Result<defuse_near_sender::SentTransaction, Error> {
-        use crate::relayer::WalletRelayer;
+        use crate::relayer::{WalletRelayRequest, WalletRelayer};
         // check before signing if relayer is set
         let relayer = self.relayer();
 
         let (msg, proof) = self.sign(request).await?;
 
+        let relay_request = WalletRelayRequest::new(msg, proof)
+            .deterministic_state_init(self.deterministic_state_init().clone());
+
         relayer
-            .relay_signed_msg(
-                // TODO: always pass state_init?
-                self.deterministic_state_init().clone().into(),
-                msg,
-                proof,
-            )
+            .relay_wallet_msg(relay_request)
             .await
             .map_err(Error::Relayer)
     }
 
     #[cfg(all(feature = "near-kit", feature = "relayer"))]
     // TODO: naming
-    pub async fn sign_and_relay_status<W>(
+    pub async fn sign_and_send_status<W>(
         &self,
         request: impl Into<Request>,
         level: W,
@@ -464,8 +510,10 @@ where
     where
         W: near_kit::WaitLevel,
     {
+        // get client before signing
         let client = self.client();
-        let sent = self.sign_and_relay(request).await?;
+
+        let sent = self.sign_and_send(request).await?;
 
         client
             .tx_status(&sent.tx_hash.into(), sent.sender_id, level)
@@ -473,7 +521,7 @@ where
             .map_err(Error::Near)
     }
 
-    #[cfg(feature = "mpc")]
+    #[cfg(all(feature = "mpc", feature = "relayer", feature = "near-kit"))]
     pub async fn mpc_signer<C>(
         &self,
         domain_id: u64,
@@ -482,8 +530,8 @@ where
         C: mpc::OnChainNearMpcCurve,
         S: 'static,
     {
-        mpc::MpcOnChainSigner::new(
-            self.clone(), // TODO: or require self?
+        mpc::MpcOnChainSigner::from_domain_id(
+            self.clone(),
             self.mpc_contract_id
                 .clone()
                 .expect("mpc_contract_id is not set"),
