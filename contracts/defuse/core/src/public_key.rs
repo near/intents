@@ -207,6 +207,7 @@ const _: () = {
             match pk {
                 NearPublicKey::Ed25519(pk) => Self::Ed25519(pk.into()),
                 NearPublicKey::Secp256k1(pk) => Self::Secp256k1(pk.into()),
+                NearPublicKey::MlDsa65(_) | NearPublicKey::MlDsa65Hash(_) => todo!(),
             }
         }
     }

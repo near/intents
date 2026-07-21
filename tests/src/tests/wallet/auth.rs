@@ -142,7 +142,7 @@ async fn test_resolve_auth_code_binding(#[future] env: Env) {
     env.materialize(&wallet).await;
 
     // NOTE: resolution of this binding also guards the near-sdk >= 5.29.0
-    // fix for `env::current_contract_code()` returning the global
+    // fix for `env::current_global_contract_id()` returning the global
     // contract's account id (not the wallet's own account id) for
     // GlobalByAccount deployments: the contract reconstructs the StateInit
     // from the code it is currently running under.

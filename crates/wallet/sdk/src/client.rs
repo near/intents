@@ -124,7 +124,7 @@ impl WResolveAuthArgs<'_> {
             purpose: Cow::Owned(signed.message.purpose.clone()),
             recipient: Cow::Owned(signed.message.recipient.clone()),
             authorization: Cow::Owned(
-                serde_json::to_string(signed).unwrap_or_else(|_| unreachable!()),
+                serde_json::to_string(signed).expect("JSON: failed to serialize SignedAuthMessage"),
             ),
         }
     }

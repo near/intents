@@ -322,9 +322,9 @@ where
                 // intended for this exact account.
                 //
                 // NOTE: requires near-sdk >= 5.29.0, where
-                // `current_contract_code()` was fixed to return the global
-                // contract's account id (rather than the current account's
-                // own id) for GlobalByAccount deployments.
+                // `current_global_contract_id()` was fixed to return the
+                // global contract's account id (rather than the current
+                // account's own id) for GlobalByAccount deployments.
                 let Some(code) = env::current_global_contract_id() else {
                     // not running under a global contract: this cannot be
                     // a deterministic wallet-contract instance
