@@ -115,7 +115,7 @@ const _: () = {
     // TODO: remove once https://github.com/near/nearcore/pull/15461 is on mainnet
     /// Only assist with at most 1yN: it's enough for a single permissioned
     /// action on Near: most contracts require 1yN of attached deposit to
-    /// ensure predecessor is not using FunctionCall access key
+    /// ensure predecessor is not using Function Call access key
     const MAX_ASSIST_DEPOSIT: NearToken = NearToken::from_yoctonear(1);
 
     const MAX_GAS: Gas = Gas::from_pgas(1);

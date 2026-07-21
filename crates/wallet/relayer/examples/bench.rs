@@ -5,7 +5,7 @@ use std::{env, fs, path::Path, sync::LazyLock};
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_relayer::{WalletRelayRequest, WalletRelayer};
-use defuse_wallet_sdk::{NearToken, Request, Wallet, WalletSigner};
+use defuse_wallet_sdk::{NearToken, Request, Wallet};
 use futures::{StreamExt, TryStreamExt, stream};
 use near_kit::{Final, GlobalContractId, PublishMode, sandbox::SandboxConfig};
 use rand::rng;

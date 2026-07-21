@@ -234,7 +234,7 @@ where
             "extension cycle detected",
         );
 
-        self.as_extension_chain.push(account_id.into());
+        self.as_extension_chain.push(account_id);
         debug_assert_eq!(self.account_id(), self.as_extension_chain.last().unwrap());
         self
     }
@@ -490,6 +490,7 @@ where
             .map_err(Error::Relayer)
     }
 
+    #[allow(clippy::doc_markdown)]
     /// Create a new MPC signer for curve with given domain that can sign
     /// arbitrary payloads on behalf of [effective account ID](Self::account_id).
     ///
