@@ -46,6 +46,7 @@ tracing = ["defuse-mpc-signer?/tracing", "dep:bs58", "dep:tracing"]
 
 [dev-dependencies]
 defuse-wallet-ed25519 = { workspace = true, features = ["signer"] }
+futures.workspace = true
 hex-literal.workspace = true
 near-kit = { workspace = true, features = ["sandbox"] }
 rand = { workspace = true, features = ["sys_rng"] }

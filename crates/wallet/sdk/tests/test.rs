@@ -6,9 +6,10 @@ use defuse_wallet::{NearPromise, Request, WalletOp, actions::FunctionCall};
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_sdk::{
     Gas, NearToken,
-    client::{WExecuteExtensionArgs, WExecuteSignedArgs},
+    client::{WExecuteExtensionArgs, WExecuteSignedArgs, WalletContract},
 };
-use near_kit::{Final, Near, PublishMode, sandbox::SandboxConfig};
+use futures::try_join;
+use near_kit::{CryptoHash, Final, Near, PublishMode, sandbox::SandboxConfig};
 use rand::{rand_core::UnwrapErr, rngs::SysRng};
 use rstest::{fixture, rstest};
 use sha2::{Digest, Sha256};
@@ -95,6 +96,79 @@ async fn rotate(
         .expect("extension should be able to execute requests on behalf of root");
 }
 
+#[rstest]
+#[tokio::test]
+#[awt]
+async fn w_init(
+    #[future] near: Near,
+    #[from(wallet)]
+    #[future]
+    extension: Wallet,
+
+    #[from(wallet)]
+    #[future]
+    receiver: Wallet,
+) {
+    near.deploy_from(CryptoHash::from(*WALLET_NO_SIGN_CODE_HASH))
+        .add_action(
+            near_kit::FunctionCall::new("w_init")
+                .gas(Gas::from_tgas(5))
+                .deposit(NearToken::from_yoctonear(1)),
+        )
+        .wait_until(Final)
+        .await
+        .unwrap()
+        .result()
+        .unwrap();
+
+    near.contract::<WalletContract>(near.account_id())
+        .w_execute_extension(
+            Request::new()
+                .internal([WalletOp::RemoveExtension {
+                    account_id: near.account_id().into(),
+                }])
+                .into(),
+        )
+        .deposit(NearToken::from_yoctonear(1))
+        .await
+        .unwrap()
+        .result()
+        .expect_err("cannot accidentally delete itself from extension");
+
+    near.contract::<WalletContract>(near.account_id())
+        .w_execute_extension(
+            Request::new()
+                .internal([WalletOp::AddExtension {
+                    account_id: extension.account_id().clone(),
+                }])
+                .into(),
+        )
+        .deposit(NearToken::from_yoctonear(1))
+        .await
+        .unwrap()
+        .result()
+        .unwrap();
+
+    extension
+        .as_extension_of(near.account_id())
+        .sign_and_send(NearPromise::new(receiver.account_id()).transfer(NearToken::from_near(5)))
+        .await
+        .unwrap()
+        .status(&near, Final)
+        .await
+        .unwrap()
+        .result()
+        .unwrap();
+
+    assert_eq!(
+        near.balance(receiver.account_id())
+            .await
+            .expect("implicit account should be created by incoming transfer")
+            .total,
+        NearToken::from_near(5),
+    );
+}
+
 #[fixture]
 #[awt]
 async fn wallet(#[future] near: Near) -> Wallet {
@@ -113,9 +187,13 @@ async fn near() -> Near {
     NEAR.get_or_init(|| async {
         let near = SandboxConfig::shared().await.client();
 
-        near.publish(&**WALLET_ED25519_WASM, PublishMode::Immutable)
-            .await
-            .expect("failed to deploy global contract by hash");
+        try_join!(
+            near.publish(&**WALLET_ED25519_WASM, PublishMode::Immutable)
+                .into_future(),
+            near.publish(&**WALLET_NO_SIGN_WASM, PublishMode::Immutable)
+                .into_future(),
+        )
+        .expect("failed to deploy global contracts by hash");
         near
     })
     .await
@@ -129,3 +207,11 @@ static WALLET_ED25519_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
 });
 static WALLET_ED25519_CODE_HASH: LazyLock<[u8; 32]> =
     LazyLock::new(|| Sha256::digest(&*WALLET_ED25519_WASM).into());
+
+static WALLET_NO_SIGN_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
+    let wasm = Path::new(env::var("DEFUSE_USE_OUT_DIR").as_deref().unwrap_or("./res"))
+        .join("defuse-wallet-no-sign.wasm");
+    fs::read(wasm).expect("failed to read WASM")
+});
+static WALLET_NO_SIGN_CODE_HASH: LazyLock<[u8; 32]> =
+    LazyLock::new(|| Sha256::digest(&*WALLET_NO_SIGN_WASM).into());

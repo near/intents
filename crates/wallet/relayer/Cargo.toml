@@ -10,7 +10,6 @@ repository.workspace = true
 [dependencies]
 defuse-wallet-sdk = { workspace = true, features = ["near-kit", "relayer"] }
 
-futures.workspace = true
 near-kit.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
