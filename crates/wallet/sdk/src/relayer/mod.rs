@@ -27,7 +27,6 @@ pub trait WalletRelayer: Sync {
 
     // TODO: ask for compensation?
 
-    // TODO: state_init?
     async fn relay_wallet_msg(
         &self,
         request: WalletRelayRequest,

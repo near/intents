@@ -168,7 +168,10 @@ where
     /// Set a custom [`chain_id`](RequestMessage::chain_id) for [signing](Self::sign)
     /// requests instead of a [default](MAINNET) one.
     ///
-    /// This doesn't change the [account ID](Self::account_id) of the wallet.
+    /// This doesn't change the [account ID](Self::account_id) of the wallet:
+    /// a single signer can control multiple wallet contract instances with
+    /// the same account ID on different chains by setting
+    /// [`chain_id`](field@RequestMessage::chain_id) field in signed requests.
     #[must_use]
     #[inline]
     pub fn with_chain_id(mut self, chain_id: impl Into<ChainId>) -> Self {
@@ -186,9 +189,9 @@ where
     /// This will automatically wrap all [signed](Self::sign) requests
     /// to be routed through
     /// [`master_id::w_execute_extension()`](crate::contract::Wallet::w_execute_extension)
-    /// method, so that target [operations](field@Request::internal) are
+    /// method, so that target [internal operations](field@Request::internal) are
     /// applied on the master wallet and created
-    /// [promises](field::Request::external) will have `master_id` as their
+    /// [external promises](field@Request::external) will have `master_id` as their
     /// predecessor ID.
     ///
     /// The master wallet SHOULD have current [effective account id](Self::account_id)
@@ -220,6 +223,7 @@ where
     #[must_use]
     #[inline]
     pub fn as_extension_of(mut self, master_id: impl Into<AccountId>) -> Self {
+        // TODO: check not self?
         self.as_extension_chain.push(master_id.into());
         self
     }
@@ -282,7 +286,8 @@ where
         self
     }
 
-    /// Returns currently [configured](Self::with_chain_id) chain ID.
+    /// Returns currently [configured](Self::with_chain_id) chain ID for [signing](Self::sign)
+    /// requests.
     #[inline]
     pub const fn chain_id(&self) -> &ChainId {
         &self.chain_id
@@ -293,9 +298,6 @@ where
     /// This is the last account ID from the currently configured
     /// [extension chain](Self::as_extension_of) or
     /// [`.real_account_id()`](Self::real_account_id) otherwise.
-    ///
-    /// NOTE: the account on NEAR might **not** exist yet and needs to be
-    /// initialized first. See [`.deterministic_state_init()`](Self::deterministic_state_init)
     #[inline]
     pub const fn account_id(&self) -> &AccountId {
         if let Some(last_extension_id) = self.as_extension_chain.as_slice().last() {
@@ -305,6 +307,9 @@ where
     }
 
     /// Returns _real_ account ID of this wallet instance.
+    ///
+    /// NOTE: the account on NEAR might **not** exist yet and needs to be
+    /// initialized first. See [`.deterministic_state_init()`](Self::deterministic_state_init)
     #[inline]
     pub const fn real_account_id(&self) -> &AccountId {
         &self.account_id
@@ -312,10 +317,10 @@ where
 
     /// Get initialization state for this wallet contract instance.
     ///
-    /// A first transaction to the wallet's account needs to include
-    /// [`.deterministic_state_init()`](Wallet::deterministic_state_init) action in order
-    /// to initialize the contract before calling methods on it. Relayers should have a
-    /// support for passing (optional) state init along signed requests.
+    /// A first transaction to the wallet's [real account id](Self::real_account_id)
+    /// needs to include [`.deterministic_state_init()`](Wallet::deterministic_state_init)
+    /// action in order to initialize the contract before calling methods on it. Relayers
+    /// should have a support for passing (optional) state init along signed requests.
     #[inline]
     pub const fn deterministic_state_init(&self) -> &StateInit {
         &self.state_init
@@ -344,41 +349,8 @@ where
     #[track_caller]
     #[inline]
     fn client(&self) -> near_kit::Near {
-        self.try_client().expect("client is not set")
-    }
-
-    #[cfg(feature = "near-kit")]
-    #[inline]
-    pub fn is_signature_allowed(&self) -> near_kit::ViewCall<bool> {
-        use crate::client::WalletContract;
-
-        self.client()
-            // TODO: are we sure: real_account_id?
-            .contract::<WalletContract>(self.real_account_id())
-            .w_is_signature_allowed()
-    }
-
-    #[cfg(feature = "near-kit")]
-    #[inline]
-    pub fn is_extension_enabled(
-        &self,
-        account_id: impl AsRef<AccountIdRef>,
-    ) -> near_kit::ViewCall<bool> {
-        use crate::client::WalletContract;
-
-        self.client()
-            .contract::<WalletContract>(self.account_id())
-            .w_is_extension_enabled(account_id.as_ref().into())
-    }
-
-    #[cfg(feature = "near-kit")]
-    #[inline]
-    pub fn extensions(&self) -> near_kit::ViewCall<BTreeSet<AccountId>> {
-        use crate::client::WalletContract;
-
-        self.client()
-            .contract::<WalletContract>(self.account_id())
-            .w_extensions()
+        self.try_client()
+            .expect("client was not configured, use `with_client()` to set one")
     }
 
     #[cfg(feature = "relayer")]
@@ -391,17 +363,19 @@ where
     #[track_caller]
     #[inline]
     fn relayer(&self) -> &dyn relayer::DynWalletRelayer {
-        // TODO: better panic
-        self.try_relayer().expect("relayer is not set")
+        self.try_relayer()
+            .expect("relayer was not configured, use `with_relayer()` to set one")
     }
 
-    /// Wrap given request in a [`RequestMessage`] and sign it.
+    /// Sign given [request](Request) to be executed on-chain on behalf of
+    /// [effective account ID](Self::account_id).
     ///
-    /// # Chain Id
+    /// The returned [`RequestMessage`] along with the proof should be delivered to
+    /// [`w_execute_signed()`](crate::contract::Wallet::w_execute_signed) method on
+    /// [real account ID](Self::real_account_id) of this wallet.
     ///
-    /// A single signer can control wallet contract instances with same account id on
-    /// different chains. So, each signed message needs to include id of a chain where
-    /// it's intended to be executed on.
+    /// NOTE: The wallet account itself might **not** be initialized yet. See
+    /// [`.deterministic_state_init()`](Wallet::deterministic_state_init).
     #[cfg_attr(feature = "tracing", instrument(level = Level::DEBUG, skip_all, fields(
         msg.chain_id = &self.chain_id,
         msg.signer_id = %self.account_id(),

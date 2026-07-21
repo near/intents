@@ -1,18 +1,12 @@
 use defuse_wallet::{RequestMessage, StateInit};
+use serde::{Deserialize, Serialize};
 
 use crate::Proof;
 
-#[cfg_attr(
-    feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
-)]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WalletRelayRequest {
-    #[cfg_attr(
-        feature = "serde",
-        serde(default, skip_serializing_if = "Option::is_none")
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub deterministic_state_init: Option<StateInit>,
     pub msg: RequestMessage,
     pub proof: Proof,

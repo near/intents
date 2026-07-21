@@ -20,17 +20,17 @@ type Wallet = defuse_wallet_sdk::Wallet<WalletEd25519>;
 async fn rotate(
     #[from(wallet)]
     #[future]
-    root: Wallet,
+    master: Wallet,
     #[from(wallet)]
     #[future]
     extension: Wallet,
 ) {
-    root.sign_and_send_status(
+    master.sign_and_send_status(
         Request::new()
             .internal([WalletOp::AddExtension {
-                account_id: extension.account_id().clone(),
+                account_id: extension.real_account_id().clone(),
             }])
-            .external([NearPromise::new(extension.account_id())
+            .external([NearPromise::new(extension.real_account_id())
                 .deterministic_state_init(
                     extension.deterministic_state_init().clone(),
                     NearToken::ZERO,
@@ -41,7 +41,7 @@ async fn rotate(
                         .args_json({
                             let (msg, proof) = extension
                                 .sign(
-                                    NearPromise::new(root.account_id()).function_call(
+                                    NearPromise::new(master.real_account_id()).function_call(
                                         FunctionCall::name("w_execute_extension")
                                             .attach_deposit(NearToken::from_yoctonear(1))
                                             .args_json(WExecuteExtensionArgs::from(Request::from(
@@ -65,13 +65,13 @@ async fn rotate(
     .result()
     .expect("key rotation failed");
 
-    root.sign_and_send_status(Request::new(), Final)
+    master.sign_and_send_status(Request::new(), Final)
         .await
         .unwrap()
         .result()
         .expect_err("signature should be disabled");
 
-    let extension = extension.as_extension_of(root);
+    let extension = extension.as_extension_of(master);
 
     extension
         .sign_and_send_status(

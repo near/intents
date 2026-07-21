@@ -83,6 +83,8 @@ impl Request {
     pub fn estimate_gas(&self) -> Gas {
         const REQUEST_BASE: Gas = Gas::from_tgas(5);
 
+        // TODO: account for internal ops, too
+
         self.external
             .iter()
             .map(NearPromise::estimate_gas)
