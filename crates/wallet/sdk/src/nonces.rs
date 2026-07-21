@@ -93,16 +93,15 @@ mod tests {
             let mut state = State::new(PUBLIC_KEY).timeout(ZBA_TIMEOUT);
             let created_at = Timestamp::now() - Duration::from_mins(1);
 
-            for n in ns
-                .by_ref()
-                // 1 tx/s
-                .take(ZBA_TIMEOUT.as_secs().try_into().unwrap())
-            {
-                state
+            // 1 tx/s
+            for _ in 0..=ZBA_TIMEOUT.as_secs() {
+                while state
                     .nonces
-                    .commit(n, created_at, ZBA_TIMEOUT)
-                    // TODO: this happens...
-                    .expect("rand collision");
+                    .commit(ns.next(), created_at, ZBA_TIMEOUT)
+                    .is_err()
+                {
+                    ns = ConcurrentNonces::new(rng());
+                }
             }
 
             let serialized_len = borsh::to_vec(&state).unwrap().len();
