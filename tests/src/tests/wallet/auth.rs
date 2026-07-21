@@ -513,8 +513,13 @@ async fn test_resolve_auth_no_sign(
         .result()
         .unwrap();
 
-    // no-sign wallets have no signing identity: any authorization
-    // MUST be rejected with INVALID_SIGNATURE
+    // no-sign wallets disable signature verification and hold self as their
+    // only extension, so `is_signature_allowed()` is false. `w_resolve_auth`
+    // therefore rejects any authorization as signature-disabled BEFORE reaching
+    // signature verification (the same INVALID_INPUT a `SetSignatureMode(false)`
+    // wallet returns — see `test_resolve_auth_signature_disabled`). This
+    // short-circuit is required: a signature-disabled wallet must be rejected
+    // even if the signature itself would verify.
     let signed = SignedAuthMessage {
         message: AuthMessage {
             chain_id: MAINNET.to_string(),
@@ -532,6 +537,6 @@ async fn test_resolve_auth_no_sign(
     assert_invalid(
         &env.resolve_auth(user.account_id(), PURPOSE, RECIPIENT, &signed)
             .await,
-        AuthErrorKind::InvalidSignature,
+        AuthErrorKind::InvalidInput,
     );
 }
