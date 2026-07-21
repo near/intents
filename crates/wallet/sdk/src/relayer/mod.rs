@@ -118,7 +118,7 @@ const _: () = {
     /// ensure predecessor is not using Function Call access key
     const MAX_ASSIST_DEPOSIT: NearToken = NearToken::from_yoctonear(1);
 
-    const MAX_GAS: Gas = Gas::from_pgas(1);
+    const MAX_GAS: Gas = Gas::from_tgas(300);
 
     impl WalletRelayer for Near {
         type Error = Error;

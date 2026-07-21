@@ -8,11 +8,10 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-wallet-sdk = { workspace = true, features = ["near-kit"] }
+defuse-wallet-sdk = { workspace = true, features = ["near-kit", "relayer"] }
 
 futures.workspace = true
 near-kit.workspace = true
-serde.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 
