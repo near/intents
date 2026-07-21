@@ -79,6 +79,19 @@ pub struct SentTransaction {
     pub sender_id: AccountId,
 }
 
+impl SentTransaction {
+    #[cfg(feature = "near-kit")]
+    pub async fn status<W: ::near_kit::WaitLevel>(
+        self,
+        client: &::near_kit::Near,
+        level: W,
+    ) -> Result<W::Response, ::near_kit::Error> {
+        client
+            .tx_status::<W>(&self.tx_hash.into(), self.sender_id, level)
+            .await
+    }
+}
+
 pub type BoxNearSender<'a> = Box<dyn DynNearSender + 'a>;
 pub type ArcNearSender = Arc<dyn DynNearSender>;
 

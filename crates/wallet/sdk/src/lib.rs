@@ -396,7 +396,6 @@ where
         msg.timeout_secs,
         msg.hash
     )))]
-    // TODO: rename: sign_request_msg
     pub async fn sign(
         &self,
         request: impl Into<Request>,
@@ -417,8 +416,6 @@ where
             .sign_request_msg(&msg)
             .await
             .map_err(Error::Signer)?;
-
-        // TODO: emit event with msg hash
 
         debug_assert!(
             S::verify(&self.signer.public_key(), &msg, &proof),
@@ -473,7 +470,6 @@ where
     ///
     /// This method panics if relayer is not [configured](Self::with_relayer)
     /// for this wallet.
-    // TODO: tracing
     #[cfg(feature = "relayer")]
     pub async fn sign_and_send(
         &self,
@@ -492,28 +488,6 @@ where
             .relay_wallet_msg(relay_request)
             .await
             .map_err(Error::Relayer)
-    }
-
-    // TODO: naming
-    // TODO: tracing
-    #[cfg(all(feature = "near-kit", feature = "relayer"))]
-    pub async fn sign_and_send_status<W>(
-        &self,
-        request: impl Into<Request>,
-        level: W,
-    ) -> Result<W::Response, Error>
-    where
-        W: near_kit::WaitLevel,
-    {
-        // get client before signing
-        let client = self.client();
-
-        let sent = self.sign_and_send(request).await?;
-
-        client
-            .tx_status(&sent.tx_hash.into(), sent.sender_id, level)
-            .await
-            .map_err(Into::into)
     }
 
     /// Create a new MPC signer for curve with given domain that can sign

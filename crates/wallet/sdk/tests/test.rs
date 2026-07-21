@@ -20,6 +20,7 @@ type Wallet = defuse_wallet_sdk::Wallet<WalletEd25519>;
 #[tokio::test]
 #[awt]
 async fn rotate(
+    #[future] near: Near,
     #[from(wallet)]
     #[future]
     master: Wallet,
@@ -28,7 +29,7 @@ async fn rotate(
     extension: Wallet,
 ) {
     master
-        .sign_and_send_status(
+        .sign_and_send(
             Request::new()
                 .internal([WalletOp::AddExtension {
                     account_id: extension.real_account_id().clone(),
@@ -62,15 +63,20 @@ async fn rotate(
                             })
                             .gas(Gas::from_tgas(20)),
                     )]),
-            Final,
         )
+        .await
+        .unwrap()
+        .status(&near, Final)
         .await
         .unwrap()
         .result()
         .expect("key rotation failed");
 
     master
-        .sign_and_send_status(Request::new(), Final)
+        .sign_and_send(Request::new())
+        .await
+        .unwrap()
+        .status(&near, Final)
         .await
         .unwrap()
         .result()
@@ -79,7 +85,10 @@ async fn rotate(
     let extension = extension.as_extension_of(master);
 
     extension
-        .sign_and_send_status(Request::new(), Final)
+        .sign_and_send(Request::new())
+        .await
+        .unwrap()
+        .status(&near, Final)
         .await
         .unwrap()
         .result()
