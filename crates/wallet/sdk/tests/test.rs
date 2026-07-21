@@ -65,7 +65,6 @@ async fn rotate(
             Final,
         )
         .await
-        // TODO: this doesn't ensure status of tx
         .unwrap()
         .result()
         .expect("key rotation failed");

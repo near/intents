@@ -186,17 +186,21 @@ where
     /// Add another wallet to the extension chain, making it an
     /// [effective account id](Self::account_id), and act on behalf of it.
     ///
-    /// This will automatically wrap all [signed](Self::sign) requests
-    /// to be routed through
+    /// This will automatically wrap all future [signed](Self::sign) requests to funnel them into
     /// [`master_id::w_execute_extension()`](crate::contract::Wallet::w_execute_extension)
     /// method, so that target [internal operations](field@Request::internal) are
     /// applied on the master wallet and created
     /// [external promises](field@Request::external) will have `master_id` as their
     /// predecessor ID.
     ///
-    /// The master wallet SHOULD have current [effective account id](Self::account_id)
+    /// The master wallet SHOULD have **current** [effective account id](Self::account_id)
     /// already [added as an extension](crate::WalletOp::AddExtension).
     /// Otherwise, transactions will fail on-chain.
+    ///
+    /// # Panics
+    ///
+    /// This method panics if given account ID is [real account ID](Self::real_account_id)
+    /// of this wallet or already in the extension chain.
     ///
     /// # Examples
     ///
@@ -222,9 +226,16 @@ where
     /// ```
     #[must_use]
     #[inline]
-    pub fn as_extension_of(mut self, master_id: impl Into<AccountId>) -> Self {
-        // TODO: check not self?
-        self.as_extension_chain.push(master_id.into());
+    pub fn as_extension_of(mut self, account_id: impl Into<AccountId>) -> Self {
+        let account_id = account_id.into();
+
+        assert!(
+            account_id != *self.real_account_id() && !self.as_extension_chain.contains(&account_id),
+            "extension cycle detected",
+        );
+
+        self.as_extension_chain.push(account_id.into());
+        debug_assert_eq!(self.account_id(), self.as_extension_chain.last().unwrap());
         self
     }
 
@@ -254,6 +265,7 @@ where
     #[inline]
     pub fn as_self(mut self) -> Self {
         self.as_extension_chain.clear();
+        debug_assert_eq!(self.account_id(), self.real_account_id());
         self
     }
 
@@ -315,7 +327,7 @@ where
         &self.account_id
     }
 
-    /// Get initialization state for this wallet contract instance.
+    /// Get initialization state for [real account ID](Self::real_account_id) of this wallet.
     ///
     /// A first transaction to the wallet's [real account id](Self::real_account_id)
     /// needs to include [`.deterministic_state_init()`](Wallet::deterministic_state_init)
@@ -367,11 +379,11 @@ where
             .expect("relayer was not configured, use `with_relayer()` to set one")
     }
 
-    /// Sign given on-chain [request](Request) to be executed on behalf of
+    /// Sign on-chain request to be executed on behalf of
     /// [effective account ID](Self::account_id).
     ///
     /// The returned [`RequestMessage`] along with the proof should be delivered to
-    /// [`w_execute_signed()`](crate::contract::Wallet::w_execute_signed) method on
+    /// [`w_execute_signed()`](crate::contract::Wallet::w_execute_signed) method of
     /// [real account ID](Self::real_account_id) of this wallet.
     ///
     /// NOTE: The wallet account itself might **not** be initialized yet. See
@@ -616,7 +628,7 @@ where
 }
 
 impl<S: SignatureSchema> AsRef<AccountIdRef> for Wallet<S> {
-    // TODO: docs: returns effective
+    /// Returns [effective account ID](Self::account_id) of the wallet.
     #[inline]
     fn as_ref(&self) -> &AccountIdRef {
         self.account_id()
@@ -624,7 +636,7 @@ impl<S: SignatureSchema> AsRef<AccountIdRef> for Wallet<S> {
 }
 
 impl<S: SignatureSchema> From<Wallet<S>> for AccountId {
-    // TODO: docs: returns effective
+    /// Coverts to [effective account ID](Wallet::account_id) of the wallet.
     #[inline]
     fn from(value: Wallet<S>) -> Self {
         value.account_id().clone()

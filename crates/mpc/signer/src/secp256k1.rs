@@ -14,6 +14,8 @@ impl OnChainNearMpcCurve for Secp256k1 {
         pk.try_into().ok()
     }
 
+    /// Secp256k1 signs **32-byte prehash** (i.e. output of
+    /// cryptographic hash function)
     #[inline]
     fn msg_to_payload(prehash: &[u8]) -> Option<Payload<'_>> {
         <[u8; 32]>::try_from(prehash).map(Payload::Ecdsa).ok()

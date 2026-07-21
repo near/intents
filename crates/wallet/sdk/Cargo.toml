@@ -42,7 +42,7 @@ schemars-v0_8 = [
   "defuse-wallet/schemars-v0_8",
   "dep:schemars",
 ]
-tracing = ["dep:bs58", "dep:tracing"]
+tracing = ["dep:bs58", "dep:tracing", "defuse-mpc-signer?/tracing"]
 
 [dev-dependencies]
 defuse-wallet-ed25519 = { workspace = true, features = ["signer"] }

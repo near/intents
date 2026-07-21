@@ -23,9 +23,6 @@ use crate::contract::{MpcContract, Payload, PublicKeyArgs, SignArgs, SignRequest
 pub const MAINNET_MPC_CONTRACT_ID: &AccountIdRef = AccountIdRef::new_or_panic("v1.signer");
 
 /// On-chain MPC signer.
-///
-///
-// TODO: docs
 #[autoimpl(Clone where C::PublicKey: trait)]
 pub struct MpcOnChainSigner<C: Curve> {
     sender: ArcNearSender,
@@ -68,6 +65,7 @@ where
         })
     }
 
+    /// Get predecessor ID on behalf of which messages will be singed.
     #[inline]
     pub fn predecessor_id(&self) -> Cow<'_, AccountIdRef> {
         self.sender.account_id()
@@ -84,10 +82,20 @@ where
     {
         let sent = self.send_sign_request(path, payload).await?;
 
+        let tx_hash: CryptoHash = sent.tx_hash.into();
+
+        #[cfg(feature = "tracing")]
+        tracing::debug!(
+            tx.hash = %tx_hash,
+            tx.sender_id = %sent.sender_id,
+            "{}::sign() transaction sent",
+            self.mpc_contract_id,
+        );
+
         let tx_outcome = self
             .client
             .tx_status(
-                &sent.tx_hash.into(),
+                &tx_hash,
                 &sent.sender_id,
                 // wait for `mpc_contract_id::sign()` receipt to execute
                 ExecutedOptimistic,
@@ -98,17 +106,13 @@ where
             .receipts_outcome
             .into_iter()
             .filter(|o| o.outcome.executor_id == self.mpc_contract_id)
-            .find_map(|outcome| {
-                let ExecutionStatus::SuccessValue(value) = outcome.outcome.status else {
+            .filter_map(|o| {
+                let ExecutionStatus::SuccessValue(value) = o.outcome.status else {
                     return None;
                 };
-                let sig_resp: SignResponse = serde_json::from_slice(&value).ok()?;
-                let sig = extract(sig_resp)?;
-
-                // TODO: tracing: receipt_id
-
-                Some(sig)
+                serde_json::from_slice::<SignResponse>(&value).ok()
             })
+            .find_map(extract)
             .ok_or_else(|| Error::SignatureNotFound(tx_outcome.transaction_outcome.id))
     }
 
@@ -161,7 +165,10 @@ where
             .derive_with(defuse_mpc_kdf::tweak(self.predecessor_id()))
     }
 
-    // TODO: tracing
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all, fields(
+        mpc_contract_id = %self.mpc_contract_id,
+        domain_id = self.domain_id,
+    )))]
     async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
     where
         P: Send,
@@ -191,6 +198,10 @@ where
     C: RecoverableOnChainNearMpcCurve<PublicKey: Clone + PartialEq + Send + Sync, RecoveryId: Copy>,
     P: AsRef<str> + AsRef<[u8]>,
 {
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all, fields(
+        mpc_contract_id = %self.mpc_contract_id,
+        domain_id = self.domain_id,
+    )))]
     async fn derive_sign_recoverable(
         &self,
         path: P,
@@ -221,6 +232,7 @@ where
 }
 
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum Error {
     #[error("invalid domain: {0}")]
     InvalidDomain(u64),
