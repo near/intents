@@ -10,8 +10,7 @@ pub use defuse_mpc_kdf as kdf;
 use std::{borrow::Cow, cell::LazyCell, error::Error as StdError, fmt::Debug};
 
 use defuse_mpc_kdf::{
-    TweakSchema,
-    kdf::{Additive, Derive, DeriveSigner, RecoverableDeriveSigner, Schema, crypto::Curve},
+    Additive, Derive, DeriveSigner, RecoverableDeriveSigner, Schema, TweakSchema, crypto::Curve,
 };
 use defuse_near_promise::{AccountId, AccountIdRef, Gas, NearToken, actions::FunctionCall};
 use defuse_near_sender::{ArcNearSender, NearSender, SentTransaction};
@@ -23,6 +22,10 @@ use crate::contract::{MpcContract, Payload, PublicKeyArgs, SignArgs, SignRequest
 /// MPC contract ID on Mainnet: `v1.signer`
 pub const MAINNET_MPC_CONTRACT_ID: &AccountIdRef = AccountIdRef::new_or_panic("v1.signer");
 
+/// On-chain MPC signer.
+///
+///
+// TODO: docs
 #[autoimpl(Clone where C::PublicKey: trait)]
 pub struct MpcOnChainSigner<C: Curve> {
     sender: ArcNearSender,

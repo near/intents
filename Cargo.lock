@@ -2103,6 +2103,7 @@ dependencies = [
  "defuse-wallet",
  "defuse-wallet-ed25519",
  "derive_more",
+ "hex-literal",
  "impl-tools 0.12.0",
  "near-kit",
  "rand 0.10.2",

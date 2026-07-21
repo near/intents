@@ -6,7 +6,7 @@ pub use self::types::*;
 pub use blstrs;
 
 use blstrs::{G1Affine, G1Projective, G2Affine, Scalar};
-use defuse_mpc_kdf::kdf::Schema;
+use defuse_mpc_kdf::Schema;
 use defuse_rand_compat::RandCompat;
 use near_account_id::AccountIdRef;
 use pairing::group::{ff::Field, prime::PrimeCurveAffine};

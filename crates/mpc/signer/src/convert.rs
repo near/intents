@@ -1,4 +1,4 @@
-use defuse_mpc_kdf::{NearMpcCurve, kdf::crypto::RecoverableCurve};
+use defuse_mpc_kdf::{NearMpcCurve, crypto::RecoverableCurve};
 
 use crate::contract::{Payload, PublicKey, SignResponse};
 

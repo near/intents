@@ -1,4 +1,4 @@
-use defuse_mpc_kdf::kdf::crypto::ed25519::{Ed25519, ed25519_dalek::Signature};
+use defuse_mpc_kdf::crypto::ed25519::{Ed25519, ed25519_dalek::Signature};
 
 use crate::{
     OnChainNearMpcCurve,

@@ -3,7 +3,7 @@ mod tweak;
 
 pub use self::{ckd::*, tweak::*};
 
-pub use defuse_kdf as kdf;
+pub use defuse_kdf::*;
 
 use defuse_digest::{Digest as _, sha3::Sha3_256};
 use defuse_kdf::digest::Digest;

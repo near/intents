@@ -1,4 +1,4 @@
-use defuse_mpc_kdf::kdf::crypto::secp256k1::{Secp256k1, Secp256k1RecoverableSignature};
+use defuse_mpc_kdf::crypto::secp256k1::{Secp256k1, Secp256k1RecoverableSignature};
 
 use crate::{
     OnChainNearMpcCurve, RecoverableOnChainNearMpcCurve,

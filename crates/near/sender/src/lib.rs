@@ -156,9 +156,7 @@ const _: () = {
                     self.transaction(receiver_id),
                     TransactionBuilder::add_action,
                 )
-                // TODO: maybe IncludedFinal?
                 .wait_until(Included)
-                // TODO: max_nonce_retries
                 .await
                 .map(Into::into)
         }

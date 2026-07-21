@@ -80,11 +80,7 @@ async fn rotate(
     let extension = extension.as_extension_of(master);
 
     extension
-        .sign_and_send_status(
-            // TODO: enable back?
-            Request::new().internal([WalletOp::SetSignatureMode { enable: true }]),
-            Final,
-        )
+        .sign_and_send_status(Request::new(), Final)
         .await
         .unwrap()
         .result()

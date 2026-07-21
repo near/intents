@@ -1,7 +1,7 @@
 #[cfg(feature = "near-kit")]
 pub mod client;
 #[cfg(feature = "mpc")]
-use defuse_mpc_signer as mpc;
+pub use defuse_mpc_signer as mpc;
 use defuse_wallet::actions::FunctionCall;
 mod nonces;
 #[cfg(feature = "relayer")]
@@ -367,7 +367,7 @@ where
             .expect("relayer was not configured, use `with_relayer()` to set one")
     }
 
-    /// Sign given [request](Request) to be executed on-chain on behalf of
+    /// Sign given on-chain [request](Request) to be executed on behalf of
     /// [effective account ID](Self::account_id).
     ///
     /// The returned [`RequestMessage`] along with the proof should be delivered to
@@ -453,7 +453,15 @@ where
         Duration::from_mins(1).min(self.timeout() / 5)
     }
 
-    /// TODO: docs: relayer must be set
+    /// [Sign](Self::sign) the given on-chain [request](Request) to be
+    /// executed on behalf of [effective account ID](Self::account_id) and
+    /// relay it.
+    ///
+    /// # Panics
+    ///
+    /// This method panics if relayer is not [configured](Self::with_relayer)
+    /// for this wallet.
+    // TODO: tracing
     #[cfg(feature = "relayer")]
     pub async fn sign_and_send(
         &self,
@@ -474,8 +482,9 @@ where
             .map_err(Error::Relayer)
     }
 
-    #[cfg(all(feature = "near-kit", feature = "relayer"))]
     // TODO: naming
+    // TODO: tracing
+    #[cfg(all(feature = "near-kit", feature = "relayer"))]
     pub async fn sign_and_send_status<W>(
         &self,
         request: impl Into<Request>,
@@ -492,9 +501,92 @@ where
         client
             .tx_status(&sent.tx_hash.into(), sent.sender_id, level)
             .await
-            .map_err(Error::Near)
+            .map_err(Into::into)
     }
 
+    /// Create a new MPC signer for curve with given domain that can sign
+    /// arbitrary payloads on behalf of [effective account ID](Self::account_id).
+    ///
+    /// # Panics
+    ///
+    /// This method panics if [MPC contract ID](Self::with_mpc_contract_id),
+    /// [relayer](Self::with_relayer) and [client](Self::with_client) are not
+    /// configured for this wallet.
+    ///
+    /// # Examples
+    ///
+    /// On-chain MPC signer currently supports `ed25519` and `secp256k1` curves:
+    ///
+    /// ## EdDSA
+    ///
+    /// ```rust,no_run
+    /// use defuse_wallet_sdk::mpc::kdf::{
+    ///     DeriveSigner, crypto::{Curve, ed25519::Ed25519},
+    /// };
+    /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
+    /// # use defuse_wallet_ed25519::{
+    /// #   WalletEd25519, WalletEd25519Signer,
+    /// #   crypto::ed25519::ed25519_dalek::SigningKey,
+    /// # };
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let wallet = Wallet::<WalletEd25519>::new(
+    /// #     [0u8; 32],
+    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32])),
+    /// # );
+    ///
+    /// // prepare signer for Ed25519 curve
+    /// let signer = wallet.mpc_signer::<Ed25519>(1).await?;
+    ///
+    /// // derive public key
+    /// let path = "derivation path";
+    /// let public_key = signer.derive_public_key(path);
+    ///
+    /// // sign arbitrary message
+    /// let msg = b"some message";
+    /// let signature = signer.derive_sign(path, msg).await?;
+    ///
+    /// assert!(Ed25519::verify(&public_key, msg, &signature));
+    /// # Ok(()) }
+    /// ```
+    ///
+    /// ## ECDSA
+    ///
+    /// ```rust,no_run
+    /// use defuse_wallet_sdk::mpc::kdf::{
+    ///     DeriveSigner, RecoverableDeriveSigner,
+    ///     crypto::{RecoverableCurve, secp256k1::Secp256k1},
+    /// };
+    /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
+    /// # use defuse_wallet_ed25519::{
+    /// #   WalletEd25519, WalletEd25519Signer,
+    /// #   crypto::ed25519::ed25519_dalek::SigningKey,
+    /// # };
+    /// # use hex_literal::hex;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let wallet = Wallet::<WalletEd25519>::new(
+    /// #     [0u8; 32],
+    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32])),
+    /// # );
+    ///
+    /// // prepare signer for secp256k1 curve
+    /// let signer = wallet.mpc_signer::<Secp256k1>(0).await?;
+    ///
+    /// // derive public key
+    /// let path = "derivation path";
+    /// let public_key = signer.derive_public_key(path);
+    ///
+    /// // sign **32-byte prehash** (recoverable)
+    /// let prehash = hex!("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08");
+    /// let (signature, recovery_id) = signer.derive_sign_recoverable(path, &prehash).await?;
+    ///
+    /// assert_eq!(
+    ///     Secp256k1::recover(&prehash, &signature, recovery_id),
+    ///     Some(public_key),
+    /// );
+    /// # Ok(()) }
+    /// ```
     #[cfg(all(feature = "mpc", feature = "relayer", feature = "near-kit"))]
     pub async fn mpc_signer<C>(
         &self,
@@ -506,9 +598,9 @@ where
     {
         mpc::MpcOnChainSigner::from_domain_id(
             self.clone(),
-            self.mpc_contract_id
-                .clone()
-                .expect("mpc_contract_id is not set"),
+            self.mpc_contract_id.clone().expect(
+                "mpc_contract_id is not configured, use `with_mpc_contract_id()` to set one",
+            ),
             domain_id,
             self.client(),
         )
@@ -539,13 +631,17 @@ impl<S: SignatureSchema> From<Wallet<S>> for AccountId {
     }
 }
 
-// TODO: non_exhaustive?
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum Error {
+    #[cfg(feature = "near-kit")]
     #[error("near: {0}")]
     Near(#[from] near_kit::Error),
+
+    #[cfg(feature = "relayer")]
     #[error("relayer: {0}")]
     Relayer(Box<dyn StdError + Send + Sync>),
+
     #[error("signer: {0}")]
     Signer(Box<dyn StdError + Send + Sync>),
 }
