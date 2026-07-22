@@ -25,7 +25,6 @@ pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
 /// Chain id (e.g. `mainnet`)
 pub type ChainId = String;
 
-// TODO: can it be reused with ECCs?
 /// Signable message containing [`Request`] to execute via
 /// [`w_execute_signed()`](crate::contract::Wallet::w_execute_signed) contract
 /// method.
@@ -44,7 +43,6 @@ pub type ChainId = String;
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RequestMessage {
-    // TODO: external: bool,
     /// Chain id (e.g. `mainnet`).
     /// MUST be equal to `chain_id` of the network.
     pub chain_id: ChainId,
