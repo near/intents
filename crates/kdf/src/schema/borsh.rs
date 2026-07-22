@@ -11,7 +11,7 @@ use crate::Schema;
 /// use defuse_kdf::{borsh::Borsh, Schema};
 ///
 /// let schema = Borsh::<Vec<u8>>::default();
-/// assert_eq!(schema.derive_path(b"abc"), [97, 98, 99]);
+/// assert_eq!(schema.derive(b"abc"), [97, 98, 99]);
 /// ```
 #[autoimpl(Debug, Clone, Copy, Default where W::Data: trait)]
 pub struct Borsh<W: WriteFinalizer = Vec<u8>>(W::Data);
@@ -81,7 +81,7 @@ const _: () = {
     ///
     /// let schema = Borsh::<IoWrapper<Sha3_256>>::default();
     /// assert_eq!(
-    ///     schema.derive_path(vec!["test"]),
+    ///     schema.derive(vec!["test"]),
     ///     hex!("d6a8690f047eb598dc2999da0a16254a18be2f59883932a26e057efbc209a15a"),
     /// );
     /// ```

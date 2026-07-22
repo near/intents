@@ -34,7 +34,7 @@ pub trait Schema<P> {
     ///
     /// let schema_ab = schema_a.derive_with(schema_b);
     ///
-    /// assert_eq!(schema_ab.derive_path(3), 7);
+    /// assert_eq!(schema_ab.derive(3), 7);
     /// ```
     #[inline]
     fn derive_with<D>(self, with: D) -> Derive<Self, D>
@@ -50,7 +50,7 @@ pub trait Schema<P> {
 /// ```rust
 /// use defuse_kdf::{Schema, Identity};
 ///
-/// assert_eq!(Identity.derive_path(42), 42);
+/// assert_eq!(Identity.derive(42), 42);
 /// ```
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Identity;
@@ -89,7 +89,7 @@ where
 ///
 /// let schema = SchemaFn::new(|v| v + 2);
 ///
-/// assert_eq!(schema.derive_path(3), 5);
+/// assert_eq!(schema.derive(3), 5);
 /// ```
 #[derive(Debug, Clone, Copy)]
 pub struct SchemaFn<F>(F);
@@ -120,7 +120,7 @@ where
 ///  
 /// let schema = Value::new("abc");
 ///
-/// assert_eq!(schema.derive_path(()), "abc");
+/// assert_eq!(schema.derive(()), "abc");
 /// ```
 #[derive(Debug, Clone, Copy)]
 pub struct Value<P>(P);

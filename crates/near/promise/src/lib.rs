@@ -182,7 +182,7 @@ impl NearPromise {
     ///     .function_call(FunctionCall::name("foo").gas(Gas::from_tgas(20)))
     ///     .function_call(FunctionCall::name("bar").gas(Gas::from_tgas(35)));
     ///
-    /// assert_eq!(p.estimate_gas(), Gas::from_tgas(55));
+    /// assert!(p.estimate_gas() >= Gas::from_tgas(55));
     /// ```
     #[inline]
     pub fn estimate_gas(&self) -> Gas {

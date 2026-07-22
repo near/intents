@@ -64,7 +64,7 @@ impl AppPrivateKey {
     /// Calculate corresponding publicly-verifiable public key
     ///
     /// ```rust
-    /// # use defuse_ckd::AppPrivateKey;
+    /// # use defuse_mpc_ckd::AppPrivateKey;
     /// use rand::{rand_core::UnwrapErr, rngs::SysRng};
     ///
     /// let sk = AppPrivateKey::ephemeral(UnwrapErr(SysRng));

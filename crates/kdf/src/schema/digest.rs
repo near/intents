@@ -11,7 +11,7 @@ use crate::Schema;
 ///
 /// let schema = Digest::<Sha3_256>::default();
 /// assert_eq!(
-///     schema.derive_path(b"test"),
+///     schema.derive(b"test"),
 ///     hex!("36f028580bb02cc8272a9a020f4200e346e276ae664e45ee80745574e2f5ab80"),
 /// );
 /// ```
@@ -31,7 +31,7 @@ where
     ///
     /// let schema = Digest::new(Sha3_256::new_with_prefix(b"prefix"));
     /// assert_eq!(
-    ///     schema.derive_path(b"test"),
+    ///     schema.derive(b"test"),
     ///     hex!("c71179eae984b918c4a7736419745670d1a6fb81e441d703dcd76193a78c5007"),
     /// );
     /// ```

@@ -23,7 +23,7 @@ use crate::WalletEd25519;
 ///
 /// # tokio_test::block_on(async {
 /// let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
-/// let wallet = Wallet::<WalletEd25519, _>::new(
+/// let wallet = Wallet::<WalletEd25519>::new(
 ///     GLOBAL_CONTRACT_ID,
 ///     WalletEd25519Signer(signer),
 /// );
