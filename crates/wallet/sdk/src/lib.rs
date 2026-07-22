@@ -127,7 +127,7 @@ impl WalletBuilder {
             client: None,
             relayer: None,
             #[cfg(feature = "mpc")]
-            mpc_contract_id: None,
+            mpc_contract_id: Some(mpc::MAINNET_MPC_CONTRACT_ID.to_owned()),
         }
     }
 }
@@ -204,6 +204,9 @@ where
     /// a single signer can control multiple wallet contract instances with
     /// the same account ID on different chains by setting
     /// [`chain_id`](field@RequestMessage::chain_id) field in signed requests.
+    ///
+    /// This resets previously set [MPC contract ID](Self::with_mpc_contract_id)
+    /// unless the chain ID didn't change.
     #[must_use]
     #[inline]
     pub fn with_chain_id(mut self, chain_id: impl Into<ChainId>) -> Self {
@@ -211,16 +214,25 @@ where
         if self.chain_id != old_chain_id {
             // contracts on different chains keep track of their own nonces
             self.reseed_nonces();
+
+            #[cfg(feature = "mpc")]
+            {
+                // reset MPC contract ID
+                self.mpc_contract_id =
+                    (self.chain_id == MAINNET).then(|| mpc::MAINNET_MPC_CONTRACT_ID.to_owned());
+            }
         }
         self
     }
 
+    /// Configure Near client for this wallet.
+    ///
+    /// This also resets [`chain_id`](Self::with_chain_id) with client's one.
     #[cfg(feature = "near-kit")]
     #[must_use]
     #[inline]
     pub fn with_client(mut self, client: near_kit::Near) -> Self {
-        // TODO: reset with client's chain_id
-        // self = self.with_chain_id(client.chain_id().as_str());
+        self = self.with_chain_id(client.chain_id().as_str());
         self.client = Some(client);
         self
     }

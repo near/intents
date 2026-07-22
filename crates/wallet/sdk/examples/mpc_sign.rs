@@ -1,18 +1,16 @@
-use defuse_mpc_signer::{
-    MAINNET_MPC_CONTRACT_ID,
-    kdf::{DeriveSigner, RecoverableDeriveSigner},
-};
-use defuse_wallet_ed25519::{
-    WalletEd25519, WalletEd25519Signer,
-    crypto::{
-        RecoverableCurve,
-        ed25519::ed25519_dalek,
-        secp256k1::{Secp256k1RecoverableSignature, Secp256k1UncompressedPublicKey},
+use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
+use defuse_wallet_sdk::{
+    AccountIdRef, Wallet,
+    mpc::kdf::{
+        DeriveSigner, RecoverableDeriveSigner,
+        crypto::{
+            RecoverableCurve,
+            secp256k1::{Secp256k1, Secp256k1RecoverableSignature, Secp256k1UncompressedPublicKey},
+        },
     },
 };
-use defuse_wallet_sdk::{Wallet, mpc::kdf::crypto::secp256k1::Secp256k1};
 use hex_literal::hex;
-use near_kit::{AccountIdRef, Near};
+use near_kit::Near;
 use rand::{rand_core::UnwrapErr, rngs::SysRng};
 
 const WALLET_GLOBAL_CONTRACT_ID: &AccountIdRef =
@@ -31,8 +29,7 @@ async fn main() {
         WalletEd25519Signer(signer),
     )
     .with_client(near.clone())
-    .with_relayer(near)
-    .with_mpc_contract_id(MAINNET_MPC_CONTRACT_ID);
+    .with_relayer(near);
 
     println!("wallet account ID: {}", wallet.account_id());
 

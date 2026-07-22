@@ -138,16 +138,16 @@ defuse-test-utils.path = "crates/testing/utils"
 
 defuse-tests.path = "tests"
 
-cargo-near-build = "0.11.4"
+cargo-near-build = "0.11.5"
 near-account-id = "2.6.0"
-near-contract-standards = "5.28.3"
+near-contract-standards = "5.29.0"
 near-gas = "0.3.6"
-near-global-contracts = "0.2.2"
+near-global-contracts = "0.2.5"
 near-kit = { version = "0.12.1", default-features = false }
 near-plugins = "0.5.3"
-near-sdk = "5.28.3"
-near-sdk-core = "4.1.3"
-near-sdk-env = "0.1.4"
+near-sdk = "5.29.0"
+near-sdk-core = "4.2.2"
+near-sdk-env = "0.1.5"
 near-token = "0.3.4"
 
 anyhow = "1"
