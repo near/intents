@@ -22,7 +22,7 @@ const PATH: &str = "derivation path";
 async fn main() {
     let near = Near::from_env().unwrap();
 
-    // 1) Generate a keypair and Build a wallet
+    // 0. Generate a keypair and Build a wallet
     let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
     let wallet = Wallet::<WalletEd25519>::new(
         WALLET_GLOBAL_CONTRACT_ID.to_owned(),
@@ -33,17 +33,17 @@ async fn main() {
 
     println!("wallet account ID: {}", wallet.account_id());
 
-    // 1) Prepare MPC signer
+    // 1. Prepare MPC signer
     let mpc_signer = wallet.mpc_signer::<Secp256k1>(0).await.unwrap();
 
-    // 2) Derive MPC public key
+    // 2. Derive MPC public key
     let derived_pk = mpc_signer.derive_public_key(PATH);
     println!(
         "derived public key: {}",
         Secp256k1UncompressedPublicKey::from(derived_pk)
     );
 
-    // 3) Sign via MPC
+    // 3. Sign via MPC
     let prehash = hex!("0128fdba02691843069aba70c0523b9c43f4b0de4e34962462b0525490780a53");
     let started_at = tokio::time::Instant::now();
     let (signature, recovery_id) = mpc_signer
@@ -57,7 +57,7 @@ async fn main() {
         started_at.elapsed(),
     );
 
-    // 4) Verify the signature
+    // 4. Verify the signature
     assert_eq!(
         Secp256k1::recover(&prehash, &signature, recovery_id),
         Some(derived_pk)
