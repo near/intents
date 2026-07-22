@@ -301,6 +301,7 @@ where
     /// assert_eq!(as_master.account_id(), MASTER_WALLET_ID);
     /// ```
     #[must_use]
+    #[track_caller]
     #[inline]
     pub fn as_extension_of(mut self, account_id: impl Into<AccountId>) -> Self {
         let account_id = account_id.into();

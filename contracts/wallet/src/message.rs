@@ -178,6 +178,7 @@ impl RequestMessage {
     /// Get the time left before the [deadline](Self::deadline) or `None` if
     /// reques has already expired or is from the future.
     #[cfg(feature = "std")]
+    #[inline]
     pub fn time_left(&self) -> Option<Duration> {
         let now = Timestamp::now();
         if now < self.created_at {
