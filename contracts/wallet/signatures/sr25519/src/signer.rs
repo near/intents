@@ -53,7 +53,7 @@ where
         self.0.public_key().into()
     }
 
-    async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
+    async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
         let sig = self
             .0
             .sign(&WalletSr25519::signed_message(&msg.hash()))
