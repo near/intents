@@ -30,6 +30,7 @@ pub trait WalletSigner<S: SignatureSchema>: Sync {
     async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error>;
 }
 
+#[allow(clippy::redundant_pub_crate)]
 #[async_trait]
 pub(crate) trait DynWalletSigner<S: SignatureSchema>: Send + Sync {
     fn dyn_public_key(&self) -> S::PublicKey;
