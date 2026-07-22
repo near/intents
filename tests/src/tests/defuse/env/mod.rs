@@ -132,7 +132,7 @@ impl Env {
         let account_id = generate_random_account_id(self.account_id())
             .expect("Failed to generate next account id");
 
-        println!("Creating user account: {}", &account_id);
+        println!("Creating user account: {account_id}");
         let name = account_id
             .as_str()
             .trim_end_matches(&format!(".{}", self.account_id()));

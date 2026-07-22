@@ -30,7 +30,7 @@ impl ImtTokenId {
 impl std::fmt::Debug for ImtTokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", &self.minter_id, &self.token_id)
+        write!(f, "{}:{}", self.minter_id, self.token_id)
     }
 }
 
