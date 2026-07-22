@@ -23,12 +23,10 @@ use self::actions::{DeterministicStateInit, FunctionCall, NearAction, Transfer};
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NearPromise {
     /// Receiver of the receipt to be created.
-    ///
-    /// NOTE: self-calls are prohibited.
     pub receiver_id: AccountId,
 
     /// Receiver for refunds of failed or unused NEAR deposits.
-    /// By default, it's the caller contract itself.
+    /// By default, it's the caller's account itself.
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Option::is_none")

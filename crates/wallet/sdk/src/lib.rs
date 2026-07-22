@@ -2,9 +2,9 @@
 pub mod client;
 #[cfg(feature = "mpc")]
 pub use defuse_mpc_signer as mpc;
-use defuse_wallet::actions::FunctionCall;
+use defuse_near_sender::{NearSender, SentTransaction};
+use defuse_wallet::actions::NearAction;
 mod nonces;
-#[cfg(feature = "relayer")]
 pub mod relayer;
 mod signer;
 
@@ -13,6 +13,7 @@ pub use self::signer::*;
 pub use defuse_wallet::*;
 
 use std::{
+    borrow::Cow,
     collections::BTreeSet,
     error::Error as StdError,
     mem,
@@ -26,7 +27,12 @@ use rand::{make_rng, rngs::SmallRng};
 #[cfg(feature = "tracing")]
 use tracing::{Level, instrument, record_all};
 
-use crate::{client::WExecuteExtensionArgs, nonces::ConcurrentNonces};
+use crate::{
+    actions::FunctionCall,
+    client::WExecuteExtensionArgs,
+    nonces::ConcurrentNonces,
+    relayer::{DynWalletRelayer, WalletRelayRequest, WalletRelayer},
+};
 
 /// `mainnet` chain id
 pub const MAINNET: &str = "mainnet";
@@ -87,7 +93,8 @@ impl WalletBuilder {
     }
 
     /// Derive and build a [`Wallet`] handle for a wallet instance by signer's public key
-    /// and an id of (globally deployed) wallet contract code.
+    /// and an ID of (globally deployed) contract code for wallet variant implementing
+    /// this [`SignatureSchema`].
     ///
     /// NOTE: this itself does **not** create an account on NEAR. See
     /// [`.deterministic_state_init()`](Wallet::deterministic_state_init).
@@ -110,14 +117,14 @@ impl WalletBuilder {
         Wallet {
             account_id: state_init.derive_account_id(),
             state_init,
+            initialized: false,
             timeout: self.timeout,
             nonces: Arc::new(Mutex::new(ConcurrentNonces::new(make_rng()))),
             chain_id: MAINNET.to_string(),
-            signer: signer.arced(),
+            signer: Arc::new(signer),
             as_extension_chain: Vec::new(),
             #[cfg(feature = "near-kit")]
             client: None,
-            #[cfg(feature = "relayer")]
             relayer: None,
             #[cfg(feature = "mpc")]
             mpc_contract_id: None,
@@ -125,25 +132,50 @@ impl WalletBuilder {
     }
 }
 
-/// Signer handle to a wallet contract instance implementing a specific
-/// [`SignatureSchema`].
+/// Handle to a wallet contract implementing a specific [`SignatureSchema`].
+///
+/// # Examples
+///
+/// ```rust
+/// use defuse_wallet_sdk::Wallet;
+/// # use defuse_wallet_sdk::GlobalContractId;
+/// use defuse_wallet_ed25519::{
+///     WalletEd25519, WalletEd25519Signer,
+///     crypto::ed25519::ed25519_dalek,
+/// };
+/// use rand::{rngs::SysRng, rand_core::UnwrapErr};
+/// # const WALLET_ED25519_GLOBAL_CONTRACT_ID: GlobalContractId =
+/// #     GlobalContractId::CodeHash([0u8; 32]);
+///
+/// // Generate keypair
+/// let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
+///
+/// // Build wallet
+/// let wallet = Wallet::<WalletEd25519>::new(
+///     WALLET_ED25519_GLOBAL_CONTRACT_ID,
+///     WalletEd25519Signer(signer),
+/// );
+///
+/// // Derive account ID
+/// println!("wallet: {}", wallet.account_id());
+/// ```
 #[autoimpl(Clone)]
 pub struct Wallet<S: SignatureSchema> {
     state_init: StateInit,
     account_id: AccountId,
+    initialized: bool,
 
     chain_id: ChainId,
     timeout: Duration,
     nonces: Arc<Mutex<ConcurrentNonces<SmallRng>>>,
     as_extension_chain: Vec<AccountId>,
 
-    signer: ArcWalletSigner<S>,
+    signer: Arc<dyn DynWalletSigner<S>>,
 
     #[cfg(feature = "near-kit")]
     client: Option<near_kit::Near>,
 
-    #[cfg(feature = "relayer")]
-    relayer: Option<relayer::ArcWalletRelayer>,
+    relayer: Option<Arc<dyn DynWalletRelayer>>,
 
     #[cfg(feature = "mpc")]
     mpc_contract_id: Option<AccountId>,
@@ -180,6 +212,50 @@ where
             // contracts on different chains keep track of their own nonces
             self.reseed_nonces();
         }
+        self
+    }
+
+    #[cfg(feature = "near-kit")]
+    #[must_use]
+    #[inline]
+    pub fn with_client(mut self, client: near_kit::Near) -> Self {
+        // TODO: reset with client's chain_id
+        // self = self.with_chain_id(client.chain_id().as_str());
+        self.client = Some(client);
+        self
+    }
+
+    /// Configure [relayer](WalletRelayer) for this wallet.
+    ///
+    /// This is currently required for [`.sign_and_send()`](Self::sign_and_send) to work.
+    #[must_use]
+    #[inline]
+    pub fn with_relayer<R>(mut self, relayer: R) -> Self
+    where
+        R: WalletRelayer + 'static,
+        R::Error: Into<Box<dyn StdError + Send + Sync>>,
+    {
+        self.relayer = Some(Arc::new(relayer));
+        self
+    }
+
+    /// Configure MPC contract ID for this wallet.
+    /// See [`.mpc_signer()`](Self::mpc_signer) method.
+    #[cfg(feature = "mpc")]
+    #[must_use]
+    #[inline]
+    pub fn with_mpc_contract_id(mut self, mpc_contract_id: impl Into<AccountId>) -> Self {
+        self.mpc_contract_id = Some(mpc_contract_id.into());
+        self
+    }
+
+    /// Mark wallet's [real account ID](Self::real_account_id) as already
+    /// initilized, so that future requests won't include unnecessary
+    /// [state init](Self::deterministic_state_init).
+    #[must_use]
+    #[inline]
+    pub const fn initialized(mut self) -> Self {
+        self.initialized = true;
         self
     }
 
@@ -269,35 +345,6 @@ where
         self
     }
 
-    #[cfg(feature = "near-kit")]
-    #[must_use]
-    #[inline]
-    pub fn with_client(mut self, client: near_kit::Near) -> Self {
-        // TODO: reset with client's chain_id
-        // self = self.with_chain_id(client.chain_id().as_str());
-        self.client = Some(client);
-        self
-    }
-
-    #[cfg(feature = "relayer")]
-    #[must_use]
-    #[inline]
-    pub fn with_relayer<R>(mut self, relayer: R) -> Self
-    where
-        R: relayer::WalletRelayer<Error: Into<Box<dyn StdError + Send + Sync>>> + 'static,
-    {
-        self.relayer = Some(relayer.arced());
-        self
-    }
-
-    #[cfg(feature = "mpc")]
-    #[must_use]
-    #[inline]
-    pub fn with_mpc_contract_id(mut self, mpc_contract_id: impl Into<AccountId>) -> Self {
-        self.mpc_contract_id = Some(mpc_contract_id.into());
-        self
-    }
-
     /// Returns currently [configured](Self::with_chain_id) chain ID for [signing](Self::sign)
     /// requests.
     #[inline]
@@ -331,8 +378,7 @@ where
     ///
     /// A first transaction to the wallet's [real account id](Self::real_account_id)
     /// needs to include [`.deterministic_state_init()`](Wallet::deterministic_state_init)
-    /// action in order to initialize the contract before calling methods on it. Relayers
-    /// should have a support for passing (optional) state init along signed requests.
+    /// action in order to initialize the contract before calling methods on it.
     #[inline]
     pub const fn deterministic_state_init(&self) -> &StateInit {
         &self.state_init
@@ -365,16 +411,14 @@ where
             .expect("client was not configured, use `with_client()` to set one")
     }
 
-    #[cfg(feature = "relayer")]
     #[inline]
-    fn try_relayer(&self) -> Option<&dyn relayer::DynWalletRelayer> {
+    fn try_relayer(&self) -> Option<&dyn DynWalletRelayer> {
         self.relayer.as_deref()
     }
 
-    #[cfg(feature = "relayer")]
     #[track_caller]
     #[inline]
-    fn relayer(&self) -> &dyn relayer::DynWalletRelayer {
+    fn relayer(&self) -> &dyn DynWalletRelayer {
         self.try_relayer()
             .expect("relayer was not configured, use `with_relayer()` to set one")
     }
@@ -413,7 +457,7 @@ where
 
         let proof = self
             .signer
-            .sign_request_msg(&msg)
+            .sign_wallet_msg(&msg)
             .await
             .map_err(Error::Signer)?;
 
@@ -470,24 +514,22 @@ where
     ///
     /// This method panics if relayer is not [configured](Self::with_relayer)
     /// for this wallet.
-    #[cfg(feature = "relayer")]
     pub async fn sign_and_send(
         &self,
         request: impl Into<Request>,
     ) -> Result<defuse_near_sender::SentTransaction, Error> {
-        use crate::relayer::{WalletRelayRequest, WalletRelayer};
         // check before signing if relayer is set
         let relayer = self.relayer();
 
         let (msg, proof) = self.sign(request).await?;
 
-        let relay_request = WalletRelayRequest::new(msg, proof)
-            .deterministic_state_init(self.deterministic_state_init().clone());
+        let mut req = WalletRelayRequest::new(msg, proof);
 
-        relayer
-            .relay_wallet_msg(relay_request)
-            .await
-            .map_err(Error::Relayer)
+        if !self.initialized {
+            req = req.deterministic_state_init(self.deterministic_state_init().clone());
+        }
+
+        relayer.relay_wallet_msg(req).await.map_err(Error::Relayer)
     }
 
     #[allow(clippy::doc_markdown)]
@@ -574,7 +616,7 @@ where
     /// );
     /// # Ok(()) }
     /// ```
-    #[cfg(all(feature = "mpc", feature = "relayer", feature = "near-kit"))]
+    #[cfg(all(feature = "mpc", feature = "near-kit"))]
     pub async fn mpc_signer<C>(
         &self,
         domain_id: u64,
@@ -617,17 +659,38 @@ impl<S: SignatureSchema> From<Wallet<S>> for AccountId {
     }
 }
 
+/// An error returned from [`Wallet`] methods
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum Error {
-    #[cfg(feature = "near-kit")]
-    #[error("near: {0}")]
-    Near(#[from] near_kit::Error),
-
-    #[cfg(feature = "relayer")]
+    /// An error occurred during [relaying](WalletRelayer::relay_wallet_msg)
+    /// signed [request](RequestMessage).
     #[error("relayer: {0}")]
     Relayer(Box<dyn StdError + Send + Sync>),
 
+    /// An error occurred during [signing](WalletSigner::sign_wallet_msg)
+    /// wallet [request](RequestMessage).
     #[error("signer: {0}")]
     Signer(Box<dyn StdError + Send + Sync>),
+}
+
+impl<S> NearSender for Wallet<S>
+where
+    S: SignatureSchema,
+{
+    type Error = Error;
+
+    #[inline]
+    fn account_id(&self) -> Cow<'_, AccountIdRef> {
+        self.account_id().into()
+    }
+
+    async fn send(
+        &self,
+        receiver_id: AccountId,
+        actions: Vec<NearAction>,
+    ) -> Result<SentTransaction, Self::Error> {
+        self.sign_and_send(NearPromise::new(receiver_id).add_actions(actions))
+            .await
+    }
 }

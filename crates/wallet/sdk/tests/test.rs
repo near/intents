@@ -1,4 +1,4 @@
-#![cfg(all(feature = "near-kit", feature = "relayer"))]
+#![cfg(feature = "near-kit")]
 
 use std::{env, fs, path::Path, sync::LazyLock};
 

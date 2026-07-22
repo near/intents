@@ -2069,25 +2069,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-wallet-relayer"
-version = "0.1.0"
-dependencies = [
- "bs58 0.5.1",
- "defuse-digest",
- "defuse-wallet-ed25519",
- "defuse-wallet-relayer",
- "defuse-wallet-sdk",
- "hex",
- "near-kit",
- "rand 0.10.2",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
