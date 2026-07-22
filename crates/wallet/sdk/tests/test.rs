@@ -201,18 +201,26 @@ async fn near() -> Near {
     near
 }
 
-static WALLET_ED25519_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
-    let wasm = Path::new(env::var("DEFUSE_USE_OUT_DIR").as_deref().unwrap_or("./res"))
-        .join("defuse-wallet-ed25519.wasm");
-    fs::read(wasm).expect("failed to read WASM")
-});
+static WALLET_ED25519_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("defuse-wallet-ed25519.wasm"));
 static WALLET_ED25519_CODE_HASH: LazyLock<[u8; 32]> =
     LazyLock::new(|| Sha256::digest(&*WALLET_ED25519_WASM).into());
 
-static WALLET_NO_SIGN_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
-    let wasm = Path::new(env::var("DEFUSE_USE_OUT_DIR").as_deref().unwrap_or("./res"))
-        .join("defuse-wallet-no-sign.wasm");
-    fs::read(wasm).expect("failed to read WASM")
-});
+static WALLET_NO_SIGN_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("defuse-wallet-no-sign.wasm"));
 static WALLET_NO_SIGN_CODE_HASH: LazyLock<[u8; 32]> =
     LazyLock::new(|| Sha256::digest(&*WALLET_NO_SIGN_WASM).into());
+
+fn read_wasm(path: impl AsRef<Path>) -> Vec<u8> {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../")
+        // if out dir path is absolute - base is ignored during join
+        .join(env::var("DEFUSE_USE_OUT_DIR").as_deref().unwrap_or("./res"))
+        .join(path);
+
+    let path = fs::canonicalize(&path)
+        .unwrap_or_else(|e| panic!("Failed to canonicalize path: {} {e}", path.display()));
+
+    fs::read(&path)
+        .unwrap_or_else(|e| panic!("Failed to read WASM file at {}: {e}", path.display()))
+}
