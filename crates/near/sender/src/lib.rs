@@ -191,6 +191,7 @@ const _: () = {
             Self {
                 transaction_hash: value.tx_hash.into(),
                 sender_id: value.sender_id,
+                outcome: None,
             }
         }
     }

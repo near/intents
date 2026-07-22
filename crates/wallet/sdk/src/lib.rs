@@ -652,14 +652,21 @@ impl<S: SignatureSchema> AsRef<AccountIdRef> for Wallet<S> {
     }
 }
 
-impl<S: SignatureSchema> From<Wallet<S>> for AccountId {
+impl<S: SignatureSchema> From<&Wallet<S>> for AccountId {
     /// Coverts to [effective account ID](Wallet::account_id) of the wallet.
     #[inline]
-    fn from(value: Wallet<S>) -> Self {
-        value.account_id().clone()
+    fn from(wallet: &Wallet<S>) -> Self {
+        wallet.account_id().clone()
     }
 }
 
+impl<S: SignatureSchema> From<Wallet<S>> for AccountId {
+    /// Coverts to [effective account ID](Wallet::account_id) of the wallet.
+    #[inline]
+    fn from(wallet: Wallet<S>) -> Self {
+        (&wallet).into()
+    }
+}
 /// An error returned from [`Wallet`] methods
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
