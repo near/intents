@@ -26,8 +26,8 @@ defuse-wallet-webauthn-ed25519 = { path = ".", features = ["abi"] }
 near-sdk = { workspace = true, features = ["unit-testing"] }
 
 [package.metadata.near.reproducible_build]
-image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"
-image_digest = "sha256:ccb22bb4e677ed022d8b9d1aa1b32f0af52dd0471ef1c32e48dedbf68ee6ee17"
+image = "sourcescan/cargo-near:0.22.0-rust-1.97.1"
+image_digest = "sha256:7467038bdddc86484b73b416eeadce926ff59013e128e53dec5a19e1cb4b2234"
 passed_env = []
 container_build_command = [
   "cargo",

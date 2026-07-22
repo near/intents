@@ -35,8 +35,7 @@ impl WalletRelayer for Near {
         &self,
         request: WalletRelayRequest,
     ) -> Result<SentTransaction, Self::Error> {
-        // TODO: replace with `self.client.chain_id().as_str()`
-        if request.msg.chain_id != near_kit::ChainId::mainnet().as_str() {
+        if request.msg.chain_id != self.chain_id().as_str() {
             return Err(Error::InvalidTransaction(
                 TxError::InvalidChainId.to_string(),
             ));

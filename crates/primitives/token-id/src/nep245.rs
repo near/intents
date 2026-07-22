@@ -29,7 +29,7 @@ impl Nep245TokenId {
 impl std::fmt::Debug for Nep245TokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", &self.contract_id, &self.mt_token_id)
+        write!(f, "{}:{}", self.contract_id, self.mt_token_id)
     }
 }
 

@@ -184,7 +184,7 @@ where
         }
 
         // check chain_id
-        if msg.chain_id != utils::chain_id() {
+        if msg.chain_id != env::chain_id() {
             return Err(Error::InvalidChainId);
         }
 
@@ -337,13 +337,6 @@ impl<S: SignatureSchema> From<State<S::PublicKey>> for WalletImpl<S> {
     #[inline]
     fn from(state: State<S::PublicKey>) -> Self {
         Self(state)
-    }
-}
-
-mod utils {
-    // TODO: remove in favor of `env::chain_id()` when NEP-638 lands
-    pub fn chain_id() -> String {
-        "mainnet".to_string()
     }
 }
 
