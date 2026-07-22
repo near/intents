@@ -2109,6 +2109,7 @@ dependencies = [
  "defuse-webauthn",
  "hex-literal",
  "impl-tools 0.12.0",
+ "near-sdk",
  "rand 0.10.2",
  "rstest",
  "schemars 0.8.22",
