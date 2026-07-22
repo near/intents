@@ -182,9 +182,9 @@ async fn wallet(#[future] near: Near) -> Wallet {
 
 #[fixture]
 async fn near() -> Near {
-    let near = SandboxConfig::shared().await.client();
-
     static DEPLOY: OnceCell<()> = OnceCell::const_new();
+
+    let near = SandboxConfig::shared().await.client();
 
     DEPLOY
         .get_or_init(|| async {
