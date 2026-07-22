@@ -49,7 +49,7 @@ where
         self.signer().public_key().into()
     }
 
-    async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
+    async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
         let (assertion, signature) = self.0.sign(msg.hash()).await?;
 
         Ok(serde_json::to_string(&WalletWebauthnProof::<A::Signature> {

@@ -6,7 +6,7 @@ use std::{
 use defuse_crypto::{Curve, RecoverableCurve, RecoverableSigner, Signer};
 use impl_tools::autoimpl;
 
-use crate::{Derive, DeriveExt, Schema};
+use crate::{Derive, Schema, Value};
 
 /// A signer that can sign messages by **internally** deriving signing keys
 /// according to its public key derivation [schema](DeriveSigner::schema).
@@ -49,11 +49,27 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
     where
         P: Send;
 
-    /// Helper method to [derive](Schema::derive_path) public key for given
+    /// Helper method to [derive](Schema::derive) public key for given
     /// `path` via [`.schema()`](DeriveSigner::Schema)
     #[inline]
     fn derive_public_key(&self, path: P) -> C::PublicKey {
-        self.schema().derive_path(path)
+        self.schema().derive(path)
+    }
+
+    #[inline]
+    fn derive_with<D>(self, with: D) -> Derive<Self, D>
+    where
+        Self: Sized,
+    {
+        Derive(self, with)
+    }
+
+    #[inline]
+    fn derive(self, value: P) -> Derive<Self, Value<P>>
+    where
+        Self: Sized,
+    {
+        self.derive_with(Value::new(value))
     }
 }
 
@@ -97,14 +113,14 @@ where
 
     #[inline]
     fn schema(&self) -> Self::Schema<'_> {
-        self.0.schema().derive(&self.1)
+        self.0.schema().derive_with(&self.1)
     }
 
     async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
     where
         P: Send,
     {
-        self.0.derive_sign(self.1.derive_path(path), msg).await
+        self.0.derive_sign(self.1.derive(path), msg).await
     }
 }
 
@@ -123,7 +139,7 @@ where
         P: Send,
     {
         self.0
-            .derive_sign_recoverable(self.1.derive_path(path), msg)
+            .derive_sign_recoverable(self.1.derive(path), msg)
             .await
     }
 }

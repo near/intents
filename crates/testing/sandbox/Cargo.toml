@@ -26,7 +26,7 @@ defuse-global-deployer = { workspace = true, optional = true }
 defuse-outlayer-app = { workspace = true, optional = true }
 defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
 defuse-test-utils = { workspace = true, optional = true }
-defuse-wallet-sdk = { workspace = true, optional = true, features = ["json", "near-kit"] }
+defuse-wallet-sdk = { workspace = true, optional = true, features = ["near-kit"] }
 
 near-sdk = { workspace = true, features = ["unit-testing"] }
 

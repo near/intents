@@ -74,7 +74,7 @@ mod tests {
             request: Request::new(),
         };
 
-        let proof = WalletSigner::<SS>::sign_request_msg(&signer, &msg)
+        let proof = WalletSigner::<SS>::sign_wallet_msg(&signer, &msg)
             .await
             .unwrap();
 

@@ -23,7 +23,7 @@ use crate::WalletEd25519;
 ///
 /// # tokio_test::block_on(async {
 /// let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
-/// let wallet = Wallet::<WalletEd25519, _>::new(
+/// let wallet = Wallet::<WalletEd25519>::new(
 ///     GLOBAL_CONTRACT_ID,
 ///     WalletEd25519Signer(signer),
 /// );
@@ -50,7 +50,7 @@ where
         self.0.public_key().into()
     }
 
-    async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
+    async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
         let sig = self.0.sign(&msg.hash()).await?;
 
         Ok(Ed25519Signature::from(sig).to_string())

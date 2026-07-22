@@ -30,7 +30,13 @@ impl Curve for P256 {
         }
 
         cfg_select! {
-            // TODO: cfg(near)
+            near => {
+                ::near_sdk::env::p256_verify(
+                    signature.to_bytes().as_ref(),
+                    prehash,
+                    P256CompressedPublicKey::from(public_key).as_ref(),
+                )
+            }
             _ => {{
                 use p256::ecdsa::signature::hazmat::PrehashVerifier;
 
