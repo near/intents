@@ -26,7 +26,7 @@ use crate::WalletSr25519;
 ///
 /// # tokio_test::block_on(async {
 /// let signer = Keypair::generate();
-/// let wallet = Wallet::<WalletSr25519, _>::new(
+/// let wallet = Wallet::<WalletSr25519>::new(
 ///     GLOBAL_CONTRACT_ID,
 ///     WalletSr25519Signer(signer),
 /// );

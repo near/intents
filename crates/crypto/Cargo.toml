@@ -53,7 +53,7 @@ signing = [
   "ed25519-dalek?/rand_core",
   "k256?/alloc",
   "p256?/alloc",
-  "schnorrkel?/std",
+  "schnorrkel?/alloc",
 ]
 
 [dev-dependencies]

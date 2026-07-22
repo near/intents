@@ -2127,6 +2127,7 @@ dependencies = [
  "near-sdk",
  "rstest",
  "schnorrkel",
+ "tokio",
  "tokio-test",
 ]
 

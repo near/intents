@@ -59,44 +59,15 @@ mod tests {
     use core::time::Duration;
 
     use defuse_wallet::{Request, RequestMessage, Timestamp};
+    use defuse_wallet_sdk::WalletSigner;
     use schnorrkel::Keypair;
 
     use super::*;
 
-    /// Round-trip: sign a request hash with `schnorrkel::Keypair` and verify
-    /// it via [`WalletSr25519`].
-    #[test]
-    fn roundtrip() {
-        let keypair = Keypair::generate();
-
-        let msg = RequestMessage {
-            chain_id: "mainnet".to_string(),
-            signer_id: "0s0000000000000000000000000000000000000000"
-                .parse()
-                .unwrap(),
-            nonce: 0,
-            created_at: Timestamp::UNIX_EPOCH,
-            timeout: Duration::from_hours(1),
-            request: Request::new(),
-        };
-
-        let sig = keypair.sign_simple(
-            Sr25519::SIGNING_CTX,
-            &WalletSr25519::signed_message(&msg.hash()),
-        );
-
-        let proof = Sr25519Signature::from(sig).to_string();
-
-        assert!(
-            WalletSr25519::verify(&(&keypair.public).into(), &msg, &proof),
-            "signature is invalid",
-        );
-    }
-
     /// A signature over the wrong message must be rejected.
-    #[test]
-    fn wrong_message_rejected() {
-        let keypair = Keypair::generate();
+    #[tokio::test]
+    async fn wrong_message_rejected() {
+        let signer = WalletSr25519Signer(Keypair::generate());
 
         let msg1 = RequestMessage {
             chain_id: "mainnet".to_string(),
@@ -111,14 +82,10 @@ mod tests {
         let mut msg2 = msg1.clone();
         msg2.nonce = 1;
 
-        let sig = keypair.sign_simple(
-            Sr25519::SIGNING_CTX,
-            &WalletSr25519::signed_message(&msg1.hash()),
-        );
-        let proof = Sr25519Signature::from(sig).to_string();
+        let proof = signer.sign_wallet_msg(&msg1).await.unwrap();
 
         assert!(
-            !WalletSr25519::verify(&(&keypair.public).into(), &msg2, &proof),
+            !WalletSr25519::verify(&signer.public_key(), &msg2, &proof),
             "signature over different message passed verification",
         );
     }

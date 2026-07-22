@@ -12,7 +12,7 @@ impl Sr25519 {
     /// Signing context expected by `sign_simple` / `verify_simple` in
     /// `schnorrkel`. Matches what Polkadot.js Extension, Talisman, Subwallet,
     /// etc. use when signing arbitrary messages.
-    pub const SIGNING_CTX: &'static [u8] = b"substrate";
+    const SIGNING_CTX: &'static [u8] = b"substrate";
 }
 
 impl Curve for Sr25519 {
