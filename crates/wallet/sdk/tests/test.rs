@@ -182,22 +182,23 @@ async fn wallet(#[future] near: Near) -> Wallet {
 
 #[fixture]
 async fn near() -> Near {
-    static NEAR: OnceCell<Near> = OnceCell::const_new();
+    let near = SandboxConfig::shared().await.client();
 
-    NEAR.get_or_init(|| async {
-        let near = SandboxConfig::shared().await.client();
+    static DEPLOY: OnceCell<()> = OnceCell::const_new();
 
-        try_join!(
-            near.publish(&**WALLET_ED25519_WASM, PublishMode::Immutable)
-                .into_future(),
-            near.publish(&**WALLET_NO_SIGN_WASM, PublishMode::Immutable)
-                .into_future(),
-        )
-        .expect("failed to deploy global contracts by hash");
-        near
-    })
-    .await
-    .clone()
+    DEPLOY
+        .get_or_init(|| async {
+            try_join!(
+                near.publish(&**WALLET_ED25519_WASM, PublishMode::Immutable)
+                    .into_future(),
+                near.publish(&**WALLET_NO_SIGN_WASM, PublishMode::Immutable)
+                    .into_future(),
+            )
+            .expect("failed to deploy global contracts by hash");
+        })
+        .await;
+
+    near
 }
 
 static WALLET_ED25519_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
