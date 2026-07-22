@@ -24,7 +24,6 @@ digest-io = { workspace = true, optional = true }
 impl-tools = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
-serde_json = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true }
 
 near-sdk = { workspace = true, optional = true }
@@ -62,6 +61,7 @@ borsh-schema = [
 ]
 digest = ["dep:defuse-digest", "dep:digest-io"]
 json = ["defuse-near-promise/json", "serde"]
+near-kit = ["defuse-near-promise/near-kit"]
 schemars-v0_8 = [
   "defuse-near-promise/schemars-v0_8",
   "defuse-time/schemars-v0_8",
@@ -83,7 +83,6 @@ near-contract = [
   "defuse-near-promise/near-contract",
   "dep:impl-tools",
   "dep:near-sdk",
-  "dep:serde_json",
   "digest",
   "near-sdk/deterministic-account-ids",
   "serde",

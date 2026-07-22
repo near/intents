@@ -38,7 +38,7 @@ where
 {
     type Output = C::PublicKey;
 
-    fn derive_path(&self, tweak: C::Scalar) -> Self::Output {
+    fn derive(&self, tweak: C::Scalar) -> Self::Output {
         let master_pk = C::pk2point(&self.master_pk);
 
         // pk' <- pk + G * tweak

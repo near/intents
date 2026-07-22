@@ -1,6 +1,6 @@
 use std::{
     fmt::{Debug, Display},
-    sync::Arc,
+    sync::{Arc, OnceLock},
 };
 
 use impl_tools::autoimpl;
@@ -23,6 +23,14 @@ pub trait Signer<C: Curve>: Sync {
     /// of cryptographic hash function) of a fixed length and return
     /// an error otherwise. Check corresponding docs before using.
     async fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error>;
+
+    #[inline]
+    fn cache_public_key(self) -> CachePublicKey<C, Self>
+    where
+        Self: Sized,
+    {
+        CachePublicKey::new(self)
+    }
 }
 
 /// A [`Signer`] that can produce [recoverable](RecoverableCurve::recover)
@@ -39,6 +47,58 @@ pub trait RecoverableSigner<C: RecoverableCurve>: Signer<C> {
         &self,
         msg: &[u8],
     ) -> Result<(C::Signature, C::RecoveryId), Self::Error>;
+}
+
+/// TODO: docs
+#[autoimpl(Deref using self.signer)]
+#[autoimpl(Debug, Clone, PartialEq, Eq where C::PublicKey: trait, S: trait)]
+pub struct CachePublicKey<C: Curve, S> {
+    public_key: OnceLock<C::PublicKey>,
+    signer: S,
+}
+
+impl<C: Curve, S> CachePublicKey<C, S> {
+    #[inline]
+    const fn new(signer: S) -> Self {
+        Self {
+            public_key: OnceLock::new(),
+            signer,
+        }
+    }
+}
+
+impl<C, S> Signer<C> for CachePublicKey<C, S>
+where
+    C: Curve,
+    C::PublicKey: Clone + Send + Sync,
+    S: Signer<C>,
+{
+    type Error = S::Error;
+
+    #[inline]
+    fn public_key(&self) -> C::PublicKey {
+        self.public_key
+            .get_or_init(|| self.signer.public_key())
+            .clone()
+    }
+
+    async fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
+        self.signer.sign(msg).await
+    }
+}
+
+impl<C, S> RecoverableSigner<C> for CachePublicKey<C, S>
+where
+    C: RecoverableCurve,
+    C::PublicKey: Clone + Send + Sync,
+    S: RecoverableSigner<C>,
+{
+    async fn sign_recoverable(
+        &self,
+        msg: &[u8],
+    ) -> Result<(<C>::Signature, <C as RecoverableCurve>::RecoveryId), Self::Error> {
+        self.signer.sign_recoverable(msg).await
+    }
 }
 
 /// Test helpers

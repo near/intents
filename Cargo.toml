@@ -18,13 +18,11 @@ members = [
 
   "crates/bitmap",
   "crates/borsh-utils",
-  "crates/ckd",
   "crates/cli-utils",
   "crates/crypto",
   "crates/digest",
   "crates/io-utils",
   "crates/kdf",
-  "crates/kdf/mpc",
   "crates/map-utils",
   "crates/num-utils",
   "crates/rand-compat",
@@ -33,11 +31,16 @@ members = [
   "crates/global-deployer/core",
   "crates/global-deployer/near-gds",
 
+  "crates/mpc/ckd",
+  "crates/mpc/kdf",
+  "crates/mpc/signer",
+
   "crates/near/admin-utils",
   "crates/near/auth-call",
   "crates/near/controller",
   "crates/near/nep245",
   "crates/near/promise",
+  "crates/near/sender",
   "crates/near/utils",
   "crates/near/wnear",
 
@@ -54,7 +57,6 @@ members = [
   "crates/signatures/tip191",
   "crates/signatures/ton-connect",
 
-  "crates/wallet/relayer",
   "crates/wallet/sdk",
 
   "crates/testing/utils",
@@ -89,13 +91,12 @@ defuse-wallet-webauthn-p256.path = "contracts/wallet/signatures/webauthn/p256"
 
 defuse-bitmap.path = "crates/bitmap"
 defuse-borsh-utils.path = "crates/borsh-utils"
-defuse-ckd = { path = "crates/ckd", default-features = false }
 defuse-cli-utils = { path = "crates/cli-utils", default-features = false }
 defuse-crypto = { path = "crates/crypto", default-features = false }
 defuse-digest.path = "crates/digest"
 defuse-io-utils.path = "crates/io-utils"
 defuse-kdf = { path = "crates/kdf", default-features = false }
-defuse-kdf-mpc = { path = "crates/kdf/mpc", default-features = false }
+
 defuse-map-utils.path = "crates/map-utils"
 defuse-num-utils.path = "crates/num-utils"
 defuse-rand-compat.path = "crates/rand-compat"
@@ -103,10 +104,15 @@ defuse-serde-utils.path = "crates/serde-utils"
 
 defuse-global-deployer-core = { path = "crates/global-deployer/core", default-features = false }
 
+defuse-mpc-ckd = { path = "crates/mpc/ckd", default-features = false }
+defuse-mpc-kdf = { path = "crates/mpc/kdf", default-features = false }
+defuse-mpc-signer = { path = "crates/mpc/signer", default-features = false }
+
 defuse-admin-utils.path = "crates/near/admin-utils"
 defuse-auth-call.path = "crates/near/auth-call"
 defuse-controller.path = "crates/near/controller"
 defuse-near-promise.path = "crates/near/promise"
+defuse-near-sender = { path = "crates/near/sender", default-features = false }
 defuse-near-utils.path = "crates/near/utils"
 defuse-nep245.path = "crates/near/nep245"
 defuse-wnear.path = "crates/near/wnear"
@@ -124,7 +130,6 @@ defuse-tip191.path = "crates/signatures/tip191"
 defuse-ton-connect = { path = "crates/signatures/ton-connect", default-features = false }
 defuse-webauthn = { path = "crates/signatures/webauthn", default-features = false }
 
-defuse-wallet-relayer.path = "crates/wallet/relayer"
 defuse-wallet-sdk.path = "crates/wallet/sdk"
 
 defuse-randomness.path = "crates/testing/randomness"
@@ -133,31 +138,32 @@ defuse-test-utils.path = "crates/testing/utils"
 
 defuse-tests.path = "tests"
 
-cargo-near-build = "0.11.4"
+cargo-near-build = "0.11.5"
 near-account-id = "2.6.0"
-near-contract-standards = "5.28.3"
+near-contract-standards = "5.29.0"
 near-gas = "0.3.6"
-near-global-contracts = "0.2.2"
+near-global-contracts = "0.2.5"
 near-kit = { version = "0.12.1", default-features = false }
 near-plugins = "0.5.3"
 near-sdk = "5.29.0"
-near-sdk-core = "4.1.3"
-near-sdk-env = "0.1.4"
+near-sdk-core = "4.2.2"
+near-sdk-env = "0.1.5"
 near-token = "0.3.4"
 
 anyhow = "1"
 arbitrary = "1"
 arbitrary_with = "0.3.2"
 array-util = "1"
+async-trait = "0.1.91"
 base64 = "0.22.1"
 bitflags = "2.13"
 blstrs = "0.7.1"
 bnum = "0.13"
-borsh = "1.7.0"
+borsh = "1.8.0"
 bs58 = "0.5.1"
 bytes = "1.12.1"
 cfg_eval = "0.1.2"
-clap = { version = "4.5.55", features = ["derive"] }
+clap = { version = "4.6.4", features = ["derive"] }
 curve25519-dalek = "5.0.0"
 derive_more = "2.0"
 digest = { version = "0.11", default-features = false }
@@ -187,9 +193,9 @@ sha3 = "0.11"
 stellar-strkey = "0.0.18"
 strum = "0.28"
 thiserror = "2"
-time = { version = "0.3.51", default-features = false }
+time = { version = "0.3.54", default-features = false }
 tlb-ton = { version = "0.11", default-features = false }
-tokio = { version = "1.45", default-features = false }
+tokio = { version = "1.53.1", default-features = false }
 tokio-test = "0.4.5"
 tokio-util = { version = "0.7", default-features = false }
 tracing = "0.1"

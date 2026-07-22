@@ -710,7 +710,10 @@ async fn test_state_init_pre_approve_allows_immediate_deploy(
         .await
         .unwrap();
 
-    assert!(bob.account_id().clone() != controller_instance.gd_owner_id().await.unwrap());
+    assert_ne!(
+        bob.account_id().clone(),
+        controller_instance.gd_owner_id().await.unwrap()
+    );
     bob.gd_deploy(
         controller_instance.contract_id(),
         &DEPLOYER_WASM,

@@ -31,7 +31,7 @@ impl Nep171TokenId {
 impl std::fmt::Debug for Nep171TokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", &self.contract_id, &self.nft_token_id)
+        write!(f, "{}:{}", self.contract_id, self.nft_token_id)
     }
 }
 

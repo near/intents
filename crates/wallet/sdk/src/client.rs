@@ -2,9 +2,7 @@
 
 use std::{borrow::Cow, collections::BTreeSet};
 
-use defuse_wallet::{
-    AuthorizationResolution, Request, RequestMessage, SignedAuthMessage, Timestamp,
-};
+use defuse_wallet::{AuthorizationResolution, Request, RequestMessage, Timestamp};
 use derive_more::From;
 use near_kit::{AccountId, AccountIdRef};
 use serde::Serialize;
@@ -107,25 +105,4 @@ pub struct WResolveAuthArgs<'a> {
     pub purpose: Cow<'a, str>,
     pub recipient: Cow<'a, str>,
     pub authorization: Cow<'a, str>,
-}
-
-impl WResolveAuthArgs<'_> {
-    /// Build args from a [`SignedAuthMessage`]: `purpose`/`recipient` are
-    /// taken from the signed message itself and the `authorization` blob is
-    /// its JSON serialization.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the message fails to serialize to JSON (never happens for
-    /// well-formed messages).
-    #[must_use]
-    pub fn from_signed(signed: &SignedAuthMessage) -> Self {
-        Self {
-            purpose: Cow::Owned(signed.message.purpose.clone()),
-            recipient: Cow::Owned(signed.message.recipient.clone()),
-            authorization: Cow::Owned(
-                serde_json::to_string(signed).expect("JSON: failed to serialize SignedAuthMessage"),
-            ),
-        }
-    }
 }

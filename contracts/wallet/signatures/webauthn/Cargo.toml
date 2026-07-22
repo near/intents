@@ -66,3 +66,6 @@ hex-literal.workspace = true
 rand = { workspace = true, features = ["thread_rng"] }
 rstest.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
+
+[target.'cfg(near)'.dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }

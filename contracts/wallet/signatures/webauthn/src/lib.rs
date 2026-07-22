@@ -65,39 +65,6 @@ pub trait WalletWebauthnAlgorithm: Algorithm {
     type Signature: DeserializeOwned;
 }
 
-#[cfg(test)]
-pub(crate) mod tests {
-    use core::time::Duration;
-    use std::collections::BTreeSet;
-
-    use defuse_wallet::{AuthMessage, AuthSignerBinding, Timestamp};
-
-    /// Sample NEP-641 [`AuthMessage`] with the passkey-style
-    /// [`Code`](AuthSignerBinding::Code) binding.
-    pub fn sample_auth_message() -> AuthMessage {
-        AuthMessage {
-            chain_id: "mainnet".to_string(),
-            signer: AuthSignerBinding::Code {
-                allowed_factory_ids: BTreeSet::from([
-                    "p256-passkey-wallet-contract.trezu.near".parse().unwrap(),
-                    "ed25519-passkey-wallet-contract.trezu.near"
-                        .parse()
-                        .unwrap(),
-                ]),
-                signature_enabled: true,
-                subwallet_id: 0,
-                timeout: Duration::from_hours(1),
-                extensions: BTreeSet::new(),
-            },
-            purpose: "PROVE_OWNERSHIP".to_string(),
-            recipient: "trezu.app".to_string(),
-            payload: "Login to trezu.app at 2026-07-16T00:00:00Z".to_string(),
-            created_at: Timestamp::UNIX_EPOCH,
-            timeout: Duration::from_hours(1),
-        }
-    }
-}
-
 /// JSON proof used by [`WalletWebauthn`]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(

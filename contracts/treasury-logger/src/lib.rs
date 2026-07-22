@@ -20,23 +20,16 @@ use self::{
 #[autoimpl(DerefMut using self.0)]
 #[derive(Default)]
 pub struct Contract(
-    #[cfg_attr(
-        not(feature = "abi"),
-        borsh(
-            deserialize_with = "As::<VersionedState>::deserialize",
-            serialize_with = "As::<VersionedState>::serialize"
-        )
+    #[borsh(
+        deserialize_with = "As::<VersionedState>::deserialize",
+        serialize_with = "As::<VersionedState>::serialize"
     )]
     #[cfg_attr(
         feature = "abi",
-        borsh(
-            deserialize_with = "As::<VersionedState>::deserialize",
-            serialize_with = "As::<VersionedState>::serialize",
-            schema(with_funcs(
-                declaration = "VersionedState::declaration",
-                definitions = "VersionedState::add_definitions_recursively",
-            )),
-        )
+        borsh(schema(with_funcs(
+            declaration = "VersionedState::declaration",
+            definitions = "VersionedState::add_definitions_recursively",
+        )),)
     )]
     State,
 );

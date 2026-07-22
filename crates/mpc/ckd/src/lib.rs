@@ -1,9 +1,12 @@
 #![allow(clippy::items_after_statements)]
 
+mod types;
+pub use self::types::*;
+
 pub use blstrs;
 
 use blstrs::{G1Affine, G1Projective, G2Affine, Scalar};
-use defuse_kdf_mpc::kdf::Schema;
+use defuse_mpc_kdf::Schema;
 use defuse_rand_compat::RandCompat;
 use near_account_id::AccountIdRef;
 use pairing::group::{ff::Field, prime::PrimeCurveAffine};
@@ -61,7 +64,7 @@ impl AppPrivateKey {
     /// Calculate corresponding publicly-verifiable public key
     ///
     /// ```rust
-    /// # use defuse_ckd::AppPrivateKey;
+    /// # use defuse_mpc_ckd::AppPrivateKey;
     /// use rand::{rand_core::UnwrapErr, rngs::SysRng};
     ///
     /// let sk = AppPrivateKey::ephemeral(UnwrapErr(SysRng));
@@ -121,7 +124,7 @@ impl AppPrivateKey {
         path: impl AsRef<str>,
         resp: CkdResponse,
     ) -> Option<Secret> {
-        let app_id = defuse_kdf_mpc::ckd(predecessor_id).derive_path(path.as_ref());
+        let app_id = defuse_mpc_kdf::ckd(predecessor_id).derive(path.as_ref());
 
         self.decrypt_verify_app_id(mpc_public_key, &app_id, resp)
     }
@@ -247,9 +250,25 @@ impl AppPrivateKey {
 }
 
 /// Publicly-verifiable app public key
+#[cfg_attr(
+    feature = "serde",
+    cfg_eval::cfg_eval,
+    serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AppPublicKeyPV {
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "::serde_with::TryFromInto<Bls12381G1Compressed>")
+    )]
     pub pk1: G1Affine,
+
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "::serde_with::TryFromInto<Bls12381G2Compressed>")
+    )]
     pub pk2: G2Affine,
 }
 
@@ -305,7 +324,7 @@ impl AppPublicKeyPV {
         path: impl AsRef<str>,
         resp: &CkdResponse,
     ) -> bool {
-        let app_id = defuse_kdf_mpc::ckd(predecessor_id).derive_path(path.as_ref());
+        let app_id = defuse_mpc_kdf::ckd(predecessor_id).derive(path.as_ref());
 
         self.verify_app_id(mpc_public_key, app_id, resp)
     }
@@ -361,9 +380,24 @@ impl AppPublicKeyPV {
 }
 
 /// CKD response
+#[cfg_attr(
+    feature = "serde",
+    cfg_eval::cfg_eval,
+    serde_with::serde_as,
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CkdResponse {
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "::serde_with::TryFromInto<Bls12381G1Compressed>")
+    )]
     pub big_y: G1Affine,
+    #[cfg_attr(
+        feature = "serde",
+        serde_as(as = "::serde_with::TryFromInto<Bls12381G1Compressed>")
+    )]
     pub big_c: G1Affine,
 }
 

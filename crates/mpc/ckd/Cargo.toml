@@ -1,31 +1,48 @@
 lints.workspace = true
 
 [package]
-name = "defuse-ckd"
+name = "defuse-mpc-ckd"
 edition.workspace = true
 version.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-kdf-mpc.workspace = true
+defuse-mpc-kdf.workspace = true
 defuse-rand-compat = { workspace = true, features = ["rand_core_0_6"] }
 
 # TODO: activate "zeroize" feature once this PR is released:
 # https://github.com/filecoin-project/blstrs/pull/66
 blstrs.workspace = true
+derive_more = { workspace = true, features = ["as_ref", "from", "into"] }
 near-account-id.workspace = true
 pairing.workspace = true
 rand_core.workspace = true
+thiserror.workspace = true
 # zeroize = { workspace = true, features = ["derive"] }
+
+cfg_eval = { workspace = true, optional = true }
+defuse-crypto = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_with = { workspace = true, optional = true }
 
 [target.'cfg(near)'.dependencies]
 near-sdk.workspace = true
 
+[features]
+abi = ["schemars-v0_8"]
+fmt = ["defuse-crypto/fmt", "dep:defuse-crypto"]
+schemars-v0_8 = ["dep:schemars", "serde", "serde_with?/schemars_0_8"]
+serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with", "fmt"]
+
 [dev-dependencies]
+defuse-mpc-ckd = { path = ".", features = ["abi", "fmt", "serde"] }
+
 hex-literal.workspace = true
 rand = { workspace = true, features = ["sys_rng"] }
 rstest.workspace = true
+serde_json.workspace = true
 
 [target.'cfg(near)'.dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }

@@ -229,7 +229,7 @@ where
         }
 
         // check chain_id
-        if msg.chain_id != utils::chain_id() {
+        if msg.chain_id != env::chain_id() {
             return Err(Error::InvalidChainId);
         }
 
@@ -266,7 +266,7 @@ where
         let SignedAuthMessage {
             message: msg,
             proof,
-        } = serde_json::from_str(authorization)
+        } = near_sdk::serde_json::from_str(authorization)
             .map_err(|err| AuthError::MalformedAuthorization(err.to_string()))?;
 
         // same policy as `execute_signed()`
@@ -285,7 +285,7 @@ where
         }
 
         // check chain_id
-        if msg.chain_id != utils::chain_id() {
+        if msg.chain_id != env::chain_id() {
             return Err(AuthError::InvalidChainId);
         }
 
@@ -506,13 +506,6 @@ impl<S: SignatureSchema> From<State<S::PublicKey>> for WalletImpl<S> {
     #[inline]
     fn from(state: State<S::PublicKey>) -> Self {
         Self(state)
-    }
-}
-
-mod utils {
-    // TODO: remove in favor of `env::chain_id()` when NEP-638 lands
-    pub fn chain_id() -> String {
-        "mainnet".to_string()
     }
 }
 

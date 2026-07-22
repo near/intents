@@ -9,13 +9,13 @@ pub type CkdSchema = Digest<Sha3_256>;
 /// Prepare [`Schema`](defuse_kdf::Schema) for MPC CKD `AppId` derivation.
 ///
 /// ```rust
-/// # use defuse_kdf_mpc::{ckd, kdf::Schema};
+/// # use defuse_mpc_kdf::{ckd, Schema};
 /// # use hex_literal::hex;
 /// # use near_account_id::AccountIdRef;
 /// let predecessor_id = AccountIdRef::new_or_panic("predecessor.near");
 ///
 /// assert_eq!(
-///     ckd(predecessor_id).derive_path("mykey"),
+///     ckd(predecessor_id).derive("mykey"),
 ///     hex!("7bd78cf4f92b146e3781b3ef3c37f00352e0127d643136291d9992d052524afe"),
 /// );
 /// ```
@@ -128,10 +128,6 @@ mod tests {
     ) {
         let schema = ckd(AccountIdRef::new_or_panic(predecessor_id));
 
-        assert_eq!(
-            schema.derive_path(path),
-            app_id,
-            "derived app_id has changed"
-        );
+        assert_eq!(schema.derive(path), app_id, "derived app_id has changed");
     }
 }

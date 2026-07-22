@@ -74,46 +74,13 @@ mod tests {
             request: Request::new(),
         };
 
-        let proof = WalletSigner::<SS>::sign_request_msg(&signer, &msg)
+        let proof = WalletSigner::<SS>::sign_wallet_msg(&signer, &msg)
             .await
             .unwrap();
 
         assert!(
             SS::verify(&WalletSigner::<SS>::public_key(&signer), &msg, &proof),
             "signer produced invalid signature"
-        );
-    }
-
-    /// End-to-end NEP-641 flow: the challenge is
-    /// [`AuthMessage::hash()`](defuse_wallet::AuthMessage::hash), exactly as
-    /// used by `w_resolve_auth()`.
-    #[tokio::test]
-    async fn sign_verify_auth_ok() {
-        type SS = WalletWebauthn<P256, IgnoreUserVerification>;
-
-        let signer = MockWalletWebauthnSigner::new(SigningKey::generate_from_rng(&mut rng()));
-
-        let msg = crate::tests::sample_auth_message();
-
-        let proof = WalletSigner::<SS>::sign_auth_msg(&signer, &msg)
-            .await
-            .unwrap();
-
-        assert!(
-            SS::verify_hash(
-                &WalletSigner::<SS>::public_key(&signer),
-                &msg.hash(),
-                &proof
-            ),
-            "signer produced invalid signature"
-        );
-        assert!(
-            !SS::verify_hash(
-                &WalletSigner::<SS>::public_key(&signer),
-                &[0xab; 32],
-                &proof
-            ),
-            "assertion over another challenge should not verify"
         );
     }
 }

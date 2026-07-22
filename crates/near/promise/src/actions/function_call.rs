@@ -90,11 +90,13 @@ impl FunctionCall {
     /// ```
     #[inline]
     pub fn name(function_name: impl Into<String>) -> Self {
+        const DEFAULT_GAS: Gas = Gas::from_tgas(50);
+
         Self {
             function_name: function_name.into(),
             args: Vec::new(),
             deposit: NearToken::ZERO,
-            gas: Gas::from_tgas(50),
+            gas: DEFAULT_GAS,
             gas_weight: default_gas_weight(),
         }
     }
@@ -201,6 +203,24 @@ impl FunctionCall {
     pub const fn gas_exact(self, gas: Gas) -> Self {
         self.gas(gas).unused_gas_weight(0)
     }
+
+    #[inline]
+    pub(crate) fn estimate_gas(&self) -> Gas {
+        const FUNCTION_CALL_BASE: Gas = Gas::from_ggas(1500);
+        const FUNCTION_CALL_PER_BYTE: Gas = Gas::from_gas(75_000_000);
+
+        FUNCTION_CALL_BASE
+            .saturating_add(
+                FUNCTION_CALL_PER_BYTE.saturating_mul(
+                    self.function_name
+                        .len()
+                        .saturating_add(self.args.len())
+                        .try_into()
+                        .unwrap_or(u64::MAX),
+                ),
+            )
+            .saturating_add(self.gas)
+    }
 }
 
 impl From<String> for FunctionCall {
@@ -240,3 +260,33 @@ const fn default_gas_weight() -> u64 {
 const fn is_default_gas_weight(gas_weight: &u64) -> bool {
     *gas_weight == default_gas_weight()
 }
+
+#[cfg(feature = "near-kit")]
+const _: () = {
+    use near_kit::FunctionCallAction;
+
+    impl From<FunctionCallAction> for FunctionCall {
+        #[inline]
+        fn from(value: FunctionCallAction) -> Self {
+            Self {
+                function_name: value.method_name,
+                args: value.args,
+                deposit: value.deposit,
+                gas: value.gas,
+                gas_weight: 0,
+            }
+        }
+    }
+
+    impl From<FunctionCall> for FunctionCallAction {
+        #[inline]
+        fn from(value: FunctionCall) -> Self {
+            Self {
+                method_name: value.function_name,
+                args: value.args,
+                gas: value.gas,
+                deposit: value.deposit,
+            }
+        }
+    }
+};

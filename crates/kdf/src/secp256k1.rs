@@ -100,7 +100,7 @@ impl Schema<[u8; 32]> for ReduceScalar<Secp256k1> {
     type Output = NonZeroScalar;
 
     #[inline]
-    fn derive_path(&self, path: [u8; 32]) -> Self::Output {
+    fn derive(&self, path: [u8; 32]) -> Self::Output {
         Reduce::<FieldBytes>::reduce(&path.into())
     }
 }
@@ -109,7 +109,7 @@ impl Schema<[u8; 64]> for ReduceScalar<Secp256k1> {
     type Output = NonZeroScalar;
 
     #[inline]
-    fn derive_path(&self, path: [u8; 64]) -> Self::Output {
+    fn derive(&self, path: [u8; 64]) -> Self::Output {
         Reduce::<WideBytes>::reduce(&path.into())
     }
 }
@@ -120,7 +120,7 @@ mod tests {
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::{DeriveExt, signer::assert_signer_roundtrip};
+    use crate::signer::assert_signer_roundtrip;
 
     use super::*;
 
@@ -144,7 +144,7 @@ mod tests {
         assert_signer_roundtrip(
             &SigningKey::from_bytes(&root_sk.into())
                 .expect("invalid root sk")
-                .derive(ReduceScalar::<Secp256k1>::new()),
+                .derive_with(ReduceScalar::<Secp256k1>::new()),
             tweak,
             &prehash,
         )
@@ -166,7 +166,7 @@ mod tests {
         let (derived_pk, _signature) = assert_signer_roundtrip(
             &SigningKey::from_bytes(&root_sk.into())
                 .expect("invalid root sk")
-                .derive(ReduceScalar::<Secp256k1>::new()),
+                .derive_with(ReduceScalar::<Secp256k1>::new()),
             tweak,
             &hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
         )
