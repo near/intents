@@ -23,12 +23,10 @@ use self::actions::{DeterministicStateInit, FunctionCall, NearAction, Transfer};
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NearPromise {
     /// Receiver of the receipt to be created.
-    ///
-    /// NOTE: self-calls are prohibited.
     pub receiver_id: AccountId,
 
     /// Receiver for refunds of failed or unused NEAR deposits.
-    /// By default, it's the caller contract itself.
+    /// By default, it's the caller's account itself.
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Option::is_none")
@@ -112,8 +110,15 @@ impl NearPromise {
 
     /// Add given action to this promise.
     #[inline]
-    fn add_action(mut self, action: impl Into<NearAction>) -> Self {
+    pub fn add_action(mut self, action: impl Into<NearAction>) -> Self {
         self.actions.push(action.into());
+        self
+    }
+
+    /// Add given actions to this promise.
+    #[inline]
+    pub fn add_actions(mut self, actions: impl IntoIterator<Item = NearAction>) -> Self {
+        self.actions.extend(actions);
         self
     }
 
@@ -175,14 +180,16 @@ impl NearPromise {
     ///     .function_call(FunctionCall::name("foo").gas(Gas::from_tgas(20)))
     ///     .function_call(FunctionCall::name("bar").gas(Gas::from_tgas(35)));
     ///
-    /// assert_eq!(p.estimate_gas(), Gas::from_tgas(55));
+    /// assert!(p.estimate_gas() >= Gas::from_tgas(55));
     /// ```
     #[inline]
     pub fn estimate_gas(&self) -> Gas {
+        const PROMISE_CREATE_BASE: Gas = Gas::from_ggas(500);
+
         self.actions
             .iter()
             .map(NearAction::estimate_gas)
-            .fold(Gas::from_gas(0), Gas::saturating_add)
+            .fold(PROMISE_CREATE_BASE, Gas::saturating_add)
     }
 
     /// Build [`near_sdk::Promise`] for execution

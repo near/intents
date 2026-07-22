@@ -3,8 +3,9 @@ mod tweak;
 
 pub use self::{ckd::*, tweak::*};
 
+pub use defuse_kdf::*;
+
 use defuse_digest::{Digest as _, sha3::Sha3_256};
-pub use defuse_kdf as kdf;
 use defuse_kdf::digest::Digest;
 use near_account_id::AccountIdRef;
 

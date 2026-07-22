@@ -1388,31 +1388,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-ckd"
-version = "0.1.0"
-dependencies = [
- "blstrs",
- "cfg_eval",
- "defuse-ckd",
- "defuse-crypto",
- "defuse-kdf-mpc",
- "defuse-rand-compat",
- "derive_more",
- "hex-literal",
- "near-account-id",
- "near-sdk",
- "pairing",
- "rand 0.10.2",
- "rand_core 0.10.1",
- "rstest",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "serde_with",
- "thiserror 2.0.18",
-]
-
-[[package]]
 name = "defuse-cli-utils"
 version = "0.1.0"
 dependencies = [
@@ -1636,7 +1611,40 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-kdf-mpc"
+name = "defuse-map-utils"
+version = "0.1.0"
+dependencies = [
+ "impl-tools 0.12.0",
+ "near-sdk",
+]
+
+[[package]]
+name = "defuse-mpc-ckd"
+version = "0.1.0"
+dependencies = [
+ "blstrs",
+ "cfg_eval",
+ "defuse-crypto",
+ "defuse-mpc-ckd",
+ "defuse-mpc-kdf",
+ "defuse-rand-compat",
+ "derive_more",
+ "hex-literal",
+ "near-account-id",
+ "near-sdk",
+ "pairing",
+ "rand 0.10.2",
+ "rand_core 0.10.1",
+ "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "defuse-mpc-kdf"
 version = "0.1.0"
 dependencies = [
  "defuse-digest",
@@ -1649,11 +1657,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-map-utils"
+name = "defuse-mpc-signer"
 version = "0.1.0"
 dependencies = [
+ "defuse-crypto",
+ "defuse-mpc-kdf",
+ "defuse-near-promise",
+ "defuse-near-sender",
  "impl-tools 0.12.0",
- "near-sdk",
+ "near-kit",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "thiserror 2.0.18",
+ "tracing",
 ]
 
 [[package]]
@@ -1669,6 +1686,7 @@ dependencies = [
  "near-account-id",
  "near-gas",
  "near-global-contracts",
+ "near-kit",
  "near-sdk",
  "near-token",
  "rstest",
@@ -1676,6 +1694,21 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
+]
+
+[[package]]
+name = "defuse-near-sender"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "cfg_eval",
+ "defuse-near-promise",
+ "impl-tools 0.12.0",
+ "near-kit",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
+ "trait-variant",
 ]
 
 [[package]]
@@ -1879,8 +1912,6 @@ dependencies = [
  "defuse-randomness",
  "defuse-sandbox",
  "defuse-test-utils",
- "defuse-wallet-ed25519",
- "defuse-wallet-relayer",
  "derive_more",
  "futures",
  "impl-tools 0.12.0",
@@ -2038,39 +2069,28 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-wallet-relayer"
-version = "0.1.0"
-dependencies = [
- "bs58 0.5.1",
- "defuse-digest",
- "defuse-wallet-ed25519",
- "defuse-wallet-relayer",
- "defuse-wallet-sdk",
- "futures",
- "hex",
- "near-kit",
- "rand 0.10.2",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "borsh",
  "bs58 0.5.1",
+ "defuse-mpc-signer",
+ "defuse-near-sender",
  "defuse-wallet",
- "defuse-wallet-sdk",
+ "defuse-wallet-ed25519",
  "derive_more",
+ "futures",
+ "hex-literal",
  "impl-tools 0.12.0",
  "near-kit",
  "rand 0.10.2",
+ "rstest",
+ "schemars 0.8.22",
  "serde",
+ "sha2 0.11.0",
+ "thiserror 2.0.18",
+ "tokio",
  "tracing",
  "trait-variant",
 ]

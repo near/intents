@@ -168,6 +168,24 @@ impl RequestMessage {
 
         hasher.0.finalize().into()
     }
+
+    /// Get a deadline for delivering this message to the wallet contract.
+    #[inline]
+    pub fn deadline(&self) -> Timestamp {
+        self.created_at.saturating_add_unsigned(self.timeout)
+    }
+
+    /// Get the time left before the [deadline](Self::deadline) or `None` if
+    /// reques has already expired or is from the future.
+    #[cfg(feature = "std")]
+    #[inline]
+    pub fn time_left(&self) -> Option<Duration> {
+        let now = Timestamp::now();
+        if now < self.created_at {
+            return None;
+        }
+        self.deadline().duration_since(now).ok()
+    }
 }
 
 #[cfg(test)]
