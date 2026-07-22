@@ -23,8 +23,8 @@ pub trait WalletRelayer: Sync {
     // TODO: ask for compensation?
     // async fn cover_gas_costs(&self, gas: Gas) -> Result<Vec<NearPromise>, Self::Error>;
 
-    /// Relay wallet request
-    /// TODO
+    /// Relay wallet request to [`w_execute_signed()`](crate::contract::Wallet::w_execute_signed)
+    /// method on [`msg.signer_id`](field@RequestMessage::signer_id) contract
     async fn relay_wallet_msg(
         &self,
         request: WalletRelayRequest,

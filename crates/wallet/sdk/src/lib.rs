@@ -147,16 +147,16 @@ impl WalletBuilder {
 /// # const WALLET_ED25519_GLOBAL_CONTRACT_ID: GlobalContractId =
 /// #     GlobalContractId::CodeHash([0u8; 32]);
 ///
-/// // Generate keypair
+/// // 1. Generate keypair
 /// let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
 ///
-/// // Build wallet
+/// // 2. Build wallet for a specific signature schema
 /// let wallet = Wallet::<WalletEd25519>::new(
 ///     WALLET_ED25519_GLOBAL_CONTRACT_ID,
 ///     WalletEd25519Signer(signer),
 /// );
 ///
-/// // Derive account ID
+/// // 3. Derive account ID
 /// println!("wallet: {}", wallet.account_id());
 /// ```
 #[autoimpl(Clone)]
