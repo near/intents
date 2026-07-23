@@ -166,7 +166,7 @@ impl RequestMessage {
     /// # use defuse_wallet::{Request, RequestMessage, Timestamp};
     /// # use hex_literal::hex;
     /// let msg = RequestMessage {
-    ///     external: false,
+    ///     pay_for_gas: false,
     ///     chain_id: "mainnet".to_string(),
     ///     signer_id: "0s0000000000000000000000000000000000000000".parse().unwrap(),
     ///     nonce: 0,
