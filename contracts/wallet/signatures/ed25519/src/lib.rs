@@ -47,9 +47,8 @@ mod tests {
     use super::*;
 
     #[rstest]
-    // https://nearblocks.io/txns/fpeDPPwee7iYsfLundSCMWmVJektdM9gZYC3sTmYMTU
     #[case(
-        hex!("8565df94b8caab08f28cdd2ee014b800915741d4694fa840e50cca02ae5c6466"),
+        hex!("42be545513aacf13e895cae91e4ecd04498d7e9556795855c8787dbdccf55e9c"),
         RequestMessage {
             pay_for_gas: false,
             chain_id: "mainnet".to_string(),
@@ -76,7 +75,7 @@ mod tests {
                         )
                 ]),
         },
-        hex!("e4822e15e5988bf08c80b72f2d1292b7229029f342d42bb9dfe4e230c66c10a6c4a86a47ddc58b1446baedf2f1312294d59638c812082a0124e513d4eb16c40e")
+        hex!("3dedecfbde9e59cebdc7f9bcca1de1fd52bcc2fa0512ea41d7f12e430bbf2dc58b70c5fc8ceeadd21d70540172b977b1f631776102ea79f858cc039c6ef0870e")
     )]
     fn verify_ok(
         #[case] public_key: impl Into<Ed25519PublicKey>,

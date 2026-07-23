@@ -2050,6 +2050,7 @@ dependencies = [
  "near-sdk",
  "rand 0.10.2",
  "rstest",
+ "tokio",
  "tokio-test",
 ]
 
