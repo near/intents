@@ -55,9 +55,7 @@ pub struct RequestMessage {
     /// transaction.
     #[cfg_attr(
         feature = "serde",
-        serde(default, skip_serializing_if = "::core::ops::Not::not"),
-        // TODO: are we sure? what if ignored by text repr signature schemas?
-        serde(skip), // TODO: remove when External Contract Calls land
+        serde(default, skip_serializing_if = "::core::ops::Not::not")
     )]
     pub pay_for_gas: bool,
 
