@@ -27,7 +27,7 @@ impl DeployDeterministicAccountExt for Near {
 
         self.state_init(si, deposit)
             .send()
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?
             .result()?;
 

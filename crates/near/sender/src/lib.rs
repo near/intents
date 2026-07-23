@@ -81,14 +81,9 @@ pub struct SentTransaction {
 
 impl SentTransaction {
     #[cfg(feature = "near-kit")]
-    pub async fn status<W: ::near_kit::WaitLevel>(
-        self,
-        client: &::near_kit::Near,
-        level: W,
-    ) -> Result<W::Response, ::near_kit::Error> {
-        client
-            .tx_status::<W>(&self.tx_hash.into(), self.sender_id, level)
-            .await
+    #[inline]
+    pub fn status(self, client: &::near_kit::Near) -> ::near_kit::TransactionStatusQuery {
+        client.tx_status(&self.tx_hash.into(), self.sender_id)
     }
 }
 
@@ -169,7 +164,7 @@ const _: () = {
                     self.transaction(receiver_id),
                     TransactionBuilder::add_action,
                 )
-                .wait_until(Included)
+                .wait_until::<Included>()
                 .await
                 .map(Into::into)
         }

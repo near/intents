@@ -67,7 +67,8 @@ async fn rotate(
         )
         .await
         .unwrap()
-        .status(&near, Final)
+        .status(&near)
+        .wait_until::<Final>()
         .await
         .unwrap()
         .result()
@@ -77,7 +78,8 @@ async fn rotate(
         .sign_and_send(Request::new())
         .await
         .unwrap()
-        .status(&near, Final)
+        .status(&near)
+        .wait_until::<Final>()
         .await
         .unwrap()
         .result()
@@ -89,7 +91,8 @@ async fn rotate(
         .sign_and_send(Request::new())
         .await
         .unwrap()
-        .status(&near, Final)
+        .status(&near)
+        .wait_until::<Final>()
         .await
         .unwrap()
         .result()
@@ -115,7 +118,7 @@ async fn w_init(
                 .gas(Gas::from_tgas(5))
                 .deposit(NearToken::from_yoctonear(1)),
         )
-        .wait_until(Final)
+        .wait_until::<Final>()
         .await
         .unwrap()
         .result()
@@ -154,7 +157,8 @@ async fn w_init(
         .sign_and_send(NearPromise::new(receiver.account_id()).transfer(NearToken::from_near(5)))
         .await
         .unwrap()
-        .status(&near, Final)
+        .status(&near)
+        .wait_until::<Final>()
         .await
         .unwrap()
         .result()

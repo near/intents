@@ -41,7 +41,7 @@ impl Account for Near {
         }
 
         tx.send()
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await
             .unwrap()
             .result()
@@ -63,7 +63,7 @@ impl Account for Near {
             self.transaction(&account_id)
                 .transfer(balance)
                 .send()
-                .wait_until(Final)
+                .wait_until::<Final>()
                 .await
                 .unwrap()
                 .result()
@@ -97,7 +97,7 @@ impl Account for Near {
             tx = tx.add_action(Action::FunctionCall(init_call));
         }
 
-        tx.wait_until(Final).await?.result().map_err(|e| {
+        tx.wait_until::<Final>().await?.result().map_err(|e| {
             anyhow::anyhow!("failed to deploy sub contract to '{account_id}': {e:?}")
         })?;
 

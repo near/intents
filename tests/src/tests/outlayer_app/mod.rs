@@ -22,7 +22,7 @@ pub struct OutlayerAppEnv {
 #[fixture]
 pub async fn outlayer_app_env(#[future(awt)] root: Near) -> OutlayerAppEnv {
     root.publish(OUTLAYER_APP_WASM.clone(), PublishMode::Immutable)
-        .wait_until(Final)
+        .wait_until::<Final>()
         .await
         .unwrap()
         .result()

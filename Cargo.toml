@@ -143,7 +143,7 @@ near-account-id = "2.6.0"
 near-contract-standards = "5.29.0"
 near-gas = "0.3.6"
 near-global-contracts = "0.2.5"
-near-kit = { version = "0.12.1", default-features = false }
+near-kit = { version = "0.13", default-features = false }
 near-plugins = "0.5.3"
 near-sdk = "5.29.0"
 near-sdk-core = "4.2.2"

@@ -262,7 +262,7 @@ impl MtExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?
             .try_into()
     }
@@ -290,7 +290,7 @@ impl MtExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?;
 
         let res = outcome.json::<Vec<U128>>()?;
@@ -321,7 +321,7 @@ impl MtExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?;
 
         let res = outcome.json::<Vec<U128>>()?;
@@ -370,7 +370,7 @@ impl MtExt for Near {
                     .deposit(NearToken::from_near(0))
                     .gas(Gas::from_tgas(300)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?;
         let amounts = res.json::<Vec<U128>>()?;
         Ok((res.try_into()?, amounts))

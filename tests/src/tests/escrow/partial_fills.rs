@@ -134,7 +134,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
                     )
                     .unwrap(),
                 )
-                .wait_until(Final)
+                .wait_until::<Final>()
                 .await
                 .unwrap()
                 .json::<U128>()
@@ -192,7 +192,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
                     .unwrap(),
                 )
                 .gas(Gas::from_tgas(300))
-                .wait_until(Final)
+                .wait_until::<Final>()
                 .await
                 .unwrap()
                 .json::<U128>()
