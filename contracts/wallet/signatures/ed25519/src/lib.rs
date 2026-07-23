@@ -51,7 +51,7 @@ mod tests {
     #[case(
         hex!("8565df94b8caab08f28cdd2ee014b800915741d4694fa840e50cca02ae5c6466"),
         RequestMessage {
-            external: false,
+            pay_for_gas: false,
             chain_id: "mainnet".to_string(),
             signer_id: "0scdb6cfeed476fc878af9d3246768cbe803714c87".parse().unwrap(),
             nonce: 2169412064,

@@ -32,7 +32,7 @@ mod tests {
     #[case(
         hex!("03b87da10683d04e6ec4e2f1775556a63cbb01be843058eb737fe02f9e22663093"),
         RequestMessage {
-            external: false,
+            pay_for_gas: false,
             chain_id: "mainnet".to_string(),
             signer_id: "0se5eba21e8f191e1880e453794bc551dfa50a3419".parse().unwrap(),
             nonce: 2845491008,
@@ -67,7 +67,7 @@ mod tests {
         let signer = MockWalletWebauthnSigner::new(SigningKey::generate_from_rng(&mut rng()));
 
         let msg = RequestMessage {
-            external: false,
+            pay_for_gas: false,
             chain_id: MAINNET.to_string(),
             signer_id: "signer.near".parse().unwrap(),
             nonce: 0,

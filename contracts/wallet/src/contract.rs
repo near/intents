@@ -179,9 +179,12 @@ where
     S: SignatureSchema,
 {
     fn execute_signed(&mut self, msg: RequestMessage, proof: &str) -> Result<()> {
-        if msg.external {
-            // TODO: accept External Contract Calls
-            return Err(Error::InvalidSource);
+        // TODO: change to the following when External Contract Calls land:
+        // if !msg.pay_for_gas && env::is_external() {
+        //     return Err(Error::UnauthorizedGasPayment);
+        // }
+        if msg.pay_for_gas {
+            env::panic_str("`pay_for_gas` is not currently supported");
         }
 
         if !self.0.is_signature_allowed() {

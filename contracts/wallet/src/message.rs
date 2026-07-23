@@ -43,21 +43,33 @@ pub type ChainId = String;
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RequestMessage {
-    // TODO: rename to `pay_for_gas`?
-    /// A flag indicating whether this message is intended to be delivered as
-    /// External Contract Call.
+    /// _(Currently Unsupported)_
+    /// A flag indicating whether the [signer](field@Self::signer_id) has authorized
+    /// paying for the gas costs of executing this request from his own balance.
+    ///
+    /// If _set_, then the [`w_execute_signed()`](crate::contract::Wallet::w_execute_signed)
+    /// method MAY be executed as External Contract Call, in which case the wallet's account
+    /// will incurs gas costs for the whole transaction.
+    ///
+    /// If _not set_, then this request can only be relayed and executed as part of another
+    /// transaction.
     #[cfg_attr(
         feature = "serde",
-        serde(default, skip_serializing_if = "::core::ops::Not::not")
+        serde(default, skip_serializing_if = "::core::ops::Not::not"),
+        // TODO: are we sure? what if ignored by text repr signature schemas?
+        serde(skip), // TODO: remove when External Contract Calls land
     )]
-    pub external: bool,
+    pub pay_for_gas: bool,
 
     /// Chain id (e.g. `mainnet`).
+    ///
     /// MUST be equal to `chain_id` of the network.
     pub chain_id: ChainId,
 
     /// Signer id.
-    /// MUST be equal to the `AccountId` of the wallet-contract instance.
+    ///
+    /// MUST be equal to the `AccountId` of the wallet-contract instance
+    /// executing this request.
     pub signer_id: AccountId,
 
     /// A non-sequential `timeout`-bounded nonce for this request.
@@ -131,6 +143,7 @@ pub struct RequestMessage {
         serde(rename = "timeout_secs")
     )]
     /// Maximum timeout for validity of this request after `created_at`.
+    ///
     /// The actual timeout for the request is `min(msg.timeout, contract.timeout)`
     /// to prevent replay attacks.
     pub timeout: Duration,
