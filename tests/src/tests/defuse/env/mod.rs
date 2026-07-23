@@ -73,7 +73,7 @@ impl Env {
                 serde_json::to_string(&msg).unwrap(),
             )
             .gas(Gas::from_tgas(300))
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?
             .json::<U128>()
             .map(|v| v.0)?
@@ -170,7 +170,7 @@ impl Env {
                         let ft = self.ft(token).unwrap();
                         all_accounts.iter().map(move |account_id| {
                             ft.storage_deposit(account_id, TOKEN_STORAGE_DEPOSIT)
-                                .wait_until(Final)
+                                .wait_until::<Final>()
                                 .into_future()
                                 .map(move |r| {
                                     r.context(format!(
@@ -200,7 +200,7 @@ impl Env {
     pub async fn upgrade_defuse(&self, wasm: impl Into<Vec<u8>>) {
         self.defuse_near
             .deploy(wasm)
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await
             .unwrap()
             .result()
@@ -215,7 +215,7 @@ impl Env {
         self.transaction(account_id)
             .transfer(amount)
             .send()
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?;
         Ok(())
     }

@@ -979,7 +979,7 @@ async fn test_post_deploy_fails_when_approval_changed(
             .deposit(NearToken::from_yoctonear(1))
             .gas(Gas::from_tgas(10)),
         )
-        .wait_until(Final)
+        .wait_until::<Final>()
         .await
         .unwrap();
 
@@ -1039,7 +1039,7 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
     root.transaction(controller_instance.contract_id())
         .transfer(NearToken::from_near(50))
         .send()
-        .wait_until(Final)
+        .wait_until::<Final>()
         .await
         .unwrap()
         .result()

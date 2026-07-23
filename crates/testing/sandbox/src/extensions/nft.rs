@@ -80,7 +80,7 @@ impl NftAdminExt for Near {
                 gas: Gas::from_tgas(50),
                 deposit: NearToken::from_near(1),
             }))
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?
             .json()
             .map_err(Into::into)
