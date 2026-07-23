@@ -14,7 +14,7 @@ impl Sealed for Ed25519 {}
 #[cfg(test)]
 mod tests {
     use defuse_kdf::{
-        Additive, DeriveExt, Schema,
+        Additive, Schema,
         crypto::ed25519::ed25519_dalek::{self, VerifyingKey},
     };
     use hex_literal::hex;
@@ -54,9 +54,10 @@ mod tests {
         let master_pk = VerifyingKey::from_bytes(&ED25519_MPC_PK).unwrap();
         let predecessor_id = AccountIdRef::new(predecessor_id).unwrap();
 
-        let schema = Additive::<Ed25519>::new(master_pk).derive(tweak::<Ed25519>(predecessor_id));
+        let schema =
+            Additive::<Ed25519>::new(master_pk).derive_with(tweak::<Ed25519>(predecessor_id));
 
-        let derived_pk = schema.derive_path(path);
+        let derived_pk = schema.derive(path);
 
         assert_eq!(
             derived_pk.to_bytes(),

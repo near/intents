@@ -51,14 +51,14 @@ impl NearAction {
     }
 
     #[inline]
-    pub(crate) const fn estimate_gas(&self) -> Gas {
+    pub(crate) fn estimate_gas(&self) -> Gas {
         match self {
-            Self::FunctionCall(FunctionCall { gas, .. }) => *gas,
+            Self::FunctionCall(a) => a.estimate_gas(),
             // estimated for Near Implicit AccountId of receiver
             // (most expensive one)
             Self::Transfer(_) => Gas::from_tgas(12),
             // estimated for state_init that fits in ZBA limits
-            Self::DeterministicStateInit(_) => Gas::from_tgas(15),
+            Self::DeterministicStateInit(a) => a.estimate_gas(),
         }
     }
 }
@@ -79,6 +79,22 @@ const _: () = {
                 ),
                 Self::Transfer(a) => p.transfer(a.amount),
                 Self::DeterministicStateInit(a) => p.state_init(a.state_init, a.deposit),
+            }
+        }
+    }
+};
+
+#[cfg(feature = "near-kit")]
+const _: () = {
+    use near_kit::Action;
+
+    impl From<NearAction> for Action {
+        #[inline]
+        fn from(value: NearAction) -> Self {
+            match value {
+                NearAction::FunctionCall(a) => Self::FunctionCall(a.into()),
+                NearAction::Transfer(a) => Self::Transfer(a.into()),
+                NearAction::DeterministicStateInit(a) => Self::DeterministicStateInit(a.into()),
             }
         }
     }

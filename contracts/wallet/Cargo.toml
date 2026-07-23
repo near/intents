@@ -61,6 +61,7 @@ borsh-schema = [
 ]
 digest = ["dep:defuse-digest", "dep:digest-io"]
 json = ["defuse-near-promise/json", "serde"]
+near-kit = ["defuse-near-promise/near-kit"]
 schemars-v0_8 = [
   "defuse-near-promise/schemars-v0_8",
   "defuse-time/schemars-v0_8",

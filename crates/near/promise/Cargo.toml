@@ -17,6 +17,7 @@ near-token.workspace = true
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
 cfg_eval = { workspace = true, optional = true }
+near-kit = { workspace = true, optional = true }
 near-sdk = { workspace = true, features = ["deterministic-account-ids"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
@@ -48,6 +49,7 @@ borsh-schema = [
   "near-token/abi",
 ]
 json = ["dep:serde_json", "serde"]
+near-kit = ["dep:near-kit"]
 schemars-v0_8 = [
   "dep:schemars",
   "near-account-id/schemars-v0_8",

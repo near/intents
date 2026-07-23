@@ -1,7 +1,7 @@
 lints.workspace = true
 
 [package]
-name = "defuse-kdf-mpc"
+name = "defuse-mpc-kdf"
 edition.workspace = true
 version.workspace = true
 rust-version.workspace = true
