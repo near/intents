@@ -45,7 +45,7 @@ impl WalletExt for Near {
                 .deposit(deposit)
                 .gas(Gas::from_tgas(300)),
         )
-        .wait_until(Final)
+        .wait_until::<Final>()
         .await?
         .try_into()
     }
@@ -67,7 +67,7 @@ impl WalletExt for Near {
                 .deposit(deposit)
                 .gas(Gas::from_tgas(300)),
         )
-        .wait_until(Final)
+        .wait_until::<Final>()
         .await?
         .try_into()
     }

@@ -82,24 +82,18 @@ where
     {
         let sent = self.send_sign_request(path, payload).await?;
 
-        let tx_hash: CryptoHash = sent.tx_hash.into();
-
         #[cfg(feature = "tracing")]
         tracing::debug!(
-            tx.hash = %tx_hash,
+            tx.hash = %CryptoHash::from(sent.tx_hash),
             tx.sender_id = %sent.sender_id,
             "{}::sign() transaction sent",
             self.mpc_contract_id,
         );
 
-        let tx_outcome = self
-            .client
-            .tx_status(
-                &tx_hash,
-                &sent.sender_id,
-                // wait for `mpc_contract_id::sign()` receipt to execute
-                ExecutedOptimistic,
-            )
+        let tx_outcome = sent
+            .status(&self.client)
+            // wait for `mpc_contract_id::sign()` receipt to execute
+            .wait_until::<ExecutedOptimistic>()
             .await?;
 
         tx_outcome

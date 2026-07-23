@@ -45,7 +45,7 @@ impl EscrowExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(escrow_id.as_ref())
             .add_action(Escrow::es_close(EsParams { params }).gas(Gas::from_tgas(300)))
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?
             .try_into()
     }
@@ -57,7 +57,7 @@ impl EscrowExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(escrow_id.as_ref())
             .add_action(Escrow::es_lost_found(EsParams { params }).gas(Gas::from_tgas(300)))
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?
             .try_into()
     }

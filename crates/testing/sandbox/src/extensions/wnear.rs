@@ -44,7 +44,7 @@ impl WNearDeployerExt for Near {
                 gas: Gas::from_tgas(10),
                 deposit: NearToken::from_near(0),
             }))
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await
             .unwrap()
             .result()
@@ -74,7 +74,7 @@ impl WNearExt for Near {
                     .deposit(amount)
                     .gas(Gas::from_tgas(10)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?
             .try_into()
     }

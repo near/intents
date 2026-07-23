@@ -38,7 +38,7 @@ impl FnCallTransaction for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(contract.into())
             .add_action(action)
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?
             .try_into()
     }
