@@ -61,6 +61,13 @@ impl Eip712 {
         buf
     }
 
+    /// `encodeData` for `bool` members, which are encoded as `uint256`
+    /// `0`/`1`.
+    #[inline]
+    pub fn encode_bool(value: bool) -> Hash {
+        Self::encode_uint(u8::from(value))
+    }
+
     /// Derive prehash for signing according to following schema:
     ///
     /// ```text
@@ -164,6 +171,13 @@ mod tests {
     )]
     fn encode_uint(#[case] value: u32, #[case] encoded: Hash) {
         assert_eq!(Eip712::encode_uint(value), encoded);
+    }
+
+    #[rstest]
+    #[case(false, hex!("0000000000000000000000000000000000000000000000000000000000000000"))]
+    #[case(true, hex!("0000000000000000000000000000000000000000000000000000000000000001"))]
+    fn encode_bool(#[case] value: bool, #[case] encoded: Hash) {
+        assert_eq!(Eip712::encode_bool(value), encoded);
     }
 
     #[rstest]

@@ -159,6 +159,7 @@ mod tests {
 
     fn request_msg() -> RequestMessage {
         RequestMessage {
+            pay_for_gas: false,
             chain_id: "mainnet".to_string(),
             signer_id: "0s0000000000000000000000000000000000000000"
                 .parse()
@@ -228,6 +229,7 @@ mod tests {
     /// The typed data the signer sees MUST bind every field of the message
     /// the contract acts upon.
     #[rstest]
+    #[case::pay_for_gas(|msg: &mut RequestMessage| msg.pay_for_gas = !msg.pay_for_gas)]
     #[case::chain_id(|msg: &mut RequestMessage| msg.chain_id = "testnet".to_string())]
     #[case::signer_id(|msg: &mut RequestMessage| {
         msg.signer_id = "0s1111111111111111111111111111111111111111".parse().unwrap();

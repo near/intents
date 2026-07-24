@@ -57,6 +57,7 @@ pub struct SignedEip712<M> {
 ///       { "name": "version", "type": "string" }
 ///     ],
 ///     "WalletRequest": [
+///       { "name": "payForGas", "type": "bool" },
 ///       { "name": "chainId", "type": "string" },
 ///       { "name": "signerId", "type": "string" },
 ///       { "name": "nonce", "type": "uint32" },
@@ -69,6 +70,7 @@ pub struct SignedEip712<M> {
 ///   "primaryType": "WalletRequest",
 ///   "domain": { "name": "NEAR Wallet Contract", "version": "1" },
 ///   "message": {
+///     "payForGas": false,
 ///     "chainId": "mainnet",
 ///     "signerId": "0s0000000000000000000000000000000000000000",
 ///     "nonce": 42,
@@ -82,6 +84,9 @@ pub struct SignedEip712<M> {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Eip712RequestMessage {
+    /// [`RequestMessage::pay_for_gas`]
+    pub pay_for_gas: bool,
+
     /// [`RequestMessage::chain_id`]
     pub chain_id: String,
 
@@ -107,13 +112,14 @@ pub struct Eip712RequestMessage {
 }
 
 impl Eip712Message for Eip712RequestMessage {
-    const ENCODE_TYPE: &'static str = "WalletRequest(string chainId,string signerId,uint32 nonce,string createdAt,uint32 timeoutSecs,string internal,string external)";
+    const ENCODE_TYPE: &'static str = "WalletRequest(bool payForGas,string chainId,string signerId,uint32 nonce,string createdAt,uint32 timeoutSecs,string internal,string external)";
 
     #[inline]
     fn struct_hash(&self) -> Hash {
         Eip712::hash_struct(
             &Eip712::type_hash(Self::ENCODE_TYPE),
             [
+                Eip712::encode_bool(self.pay_for_gas),
                 Eip712::encode_bytes(&self.chain_id),
                 Eip712::encode_bytes(&self.signer_id),
                 Eip712::encode_uint(self.nonce),
@@ -135,7 +141,8 @@ impl Eip712RequestMessage {
     /// JSON formatting doesn't have to be canonical.
     #[must_use]
     pub fn matches(&self, msg: &RequestMessage) -> bool {
-        self.chain_id == msg.chain_id
+        self.pay_for_gas == msg.pay_for_gas
+            && self.chain_id == msg.chain_id
             && self.signer_id == msg.signer_id.as_str()
             && self.nonce == msg.nonce
             && matches_timestamp(&self.created_at, msg.created_at)
@@ -150,6 +157,7 @@ impl Eip712RequestMessage {
 impl From<&RequestMessage> for Eip712RequestMessage {
     fn from(msg: &RequestMessage) -> Self {
         Self {
+            pay_for_gas: msg.pay_for_gas,
             chain_id: msg.chain_id.clone(),
             signer_id: msg.signer_id.to_string(),
             nonce: msg.nonce,
@@ -301,7 +309,7 @@ mod tests {
     #[rstest]
     #[case(
         Eip712RequestMessage::ENCODE_TYPE,
-        hex!("be70fc31c9a3093a9e9fcf9a4c08e420b21454c7cd0cf187861a08946152fd48")
+        hex!("1dd8d3b498246adfecef1936d8120de268cc04e0dc5c6a0fe5a3fffd0597e0c8")
     )]
     #[case(
         Eip712AuthMessage::ENCODE_TYPE,

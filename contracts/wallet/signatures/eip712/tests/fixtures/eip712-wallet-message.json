@@ -18,6 +18,10 @@
     ],
     "WalletRequest": [
       {
+        "name": "payForGas",
+        "type": "bool"
+      },
+      {
         "name": "chainId",
         "type": "string"
       },
@@ -90,6 +94,7 @@
         "request": {}
       },
       "typed_message": {
+        "payForGas": false,
         "chainId": "mainnet",
         "signerId": "0s0000000000000000000000000000000000000000",
         "nonce": 0,
@@ -98,9 +103,10 @@
         "internal": "[]",
         "external": "[]"
       },
-      "prehash": "118b7f0f80a640732a51fa1aa97a816ad7cb9360a3a72e177cc697cb3625a9cb",
+      "prehash": "8ccffe6835c7b5250eb7f468d94ec249125b14b1242932b3ff223d6154789ed5",
       "proof": {
         "message": {
+          "payForGas": false,
           "chainId": "mainnet",
           "signerId": "0s0000000000000000000000000000000000000000",
           "nonce": 0,
@@ -109,7 +115,7 @@
           "internal": "[]",
           "external": "[]"
         },
-        "signature": "secp256k1:8RvE64sZX4Pd1Z3WgGUk6rhdZWbsFcgdR42C4Bi6f3AgNXm9tx7SjMYtU9PLyJCHhEZv9mW4ef4JXDqsgbLEgPgfh"
+        "signature": "secp256k1:4pzrgEmzg3H8G9mARPQd9vfoVv8n71jCYHUMGCiasxFReQCEax9kiFKp4xe32k2kFWjghps3jqUxznCSYbmZfsjkj"
       }
     },
     {
@@ -132,6 +138,7 @@
         }
       },
       "typed_message": {
+        "payForGas": false,
         "chainId": "mainnet",
         "signerId": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
         "nonce": 42,
@@ -140,9 +147,10 @@
         "internal": "[{\"op\":\"add_extension\",\"payload\":{\"account_id\":\"extension.near\"}}]",
         "external": "[]"
       },
-      "prehash": "29ab5654820fc49881129a568a85dc74277181934daf58e8fa6b3f56d76636e9",
+      "prehash": "61136939ea1a1a2423876a51b2ed141e1e9fcd1b7757d3d8a800721971c22195",
       "proof": {
         "message": {
+          "payForGas": false,
           "chainId": "mainnet",
           "signerId": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
           "nonce": 42,
@@ -151,7 +159,43 @@
           "internal": "[{\"op\":\"add_extension\",\"payload\":{\"account_id\":\"extension.near\"}}]",
           "external": "[]"
         },
-        "signature": "secp256k1:BsgexFgsYz67eYCQvuUHtYYRxdKzuPqAq5dTsombbf6UDvrg3RCTLNJGWpDtShjfKbkJkp6M5PxaZDfPcfBCSEutj"
+        "signature": "secp256k1:Lw6tXt7E2zw8pEmVb6ANoNHFa4cJaJsCq5D7XcQ1KKvchQvNYQDpUnRjmUxCWsFiXktngrFyjEKd3U5pRymnSi5V2"
+      }
+    },
+    {
+      "name": "pay_for_gas",
+      "message": {
+        "pay_for_gas": true,
+        "chain_id": "mainnet",
+        "signer_id": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
+        "nonce": 43,
+        "created_at": "2026-07-16T12:34:56.789Z",
+        "timeout_secs": 300,
+        "request": {}
+      },
+      "typed_message": {
+        "payForGas": true,
+        "chainId": "mainnet",
+        "signerId": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
+        "nonce": 43,
+        "createdAt": "2026-07-16T12:34:56.789Z",
+        "timeoutSecs": 300,
+        "internal": "[]",
+        "external": "[]"
+      },
+      "prehash": "eab9b1201cc52ed3ff3296676cfb5679c36fd39cc4fdc4479c4d8efbc64f91e6",
+      "proof": {
+        "message": {
+          "payForGas": true,
+          "chainId": "mainnet",
+          "signerId": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
+          "nonce": 43,
+          "createdAt": "2026-07-16T12:34:56.789Z",
+          "timeoutSecs": 300,
+          "internal": "[]",
+          "external": "[]"
+        },
+        "signature": "secp256k1:FvUUZi8PepvBNcjKxZbdqWBtEWh4ueM2Vb2SmLCQFASNwpgDFmVhqYak8e87ZKWKJEY6pUgc33bGjCvLCyNLtJidW"
       }
     }
   ],
