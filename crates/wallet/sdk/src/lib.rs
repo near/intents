@@ -212,7 +212,10 @@ where
     pub fn with_chain_id(mut self, chain_id: impl Into<ChainId>) -> Self {
         let old_chain_id = mem::replace(&mut self.chain_id, chain_id.into());
         if self.chain_id != old_chain_id {
-            // contracts on different chains keep track of their own nonces
+            // same wallet account ID on different chain might not have been
+            // initialized yet
+            self.initialized = false;
+            // same wallet instances on different chains keep track of their own nonces
             self.reseed_nonces();
 
             #[cfg(feature = "mpc")]
@@ -227,7 +230,7 @@ where
 
     /// Configure Near client for this wallet.
     ///
-    /// This also resets [`chain_id`](Self::with_chain_id) with client's one.
+    /// This also [resets chain ID](Self::with_chain_id) with client's one.
     #[cfg(feature = "near-kit")]
     #[must_use]
     #[inline]
@@ -487,6 +490,7 @@ where
     #[inline]
     fn wrap_request_msg(&self, request: impl Into<Request>) -> RequestMessage {
         RequestMessage {
+            pay_for_gas: false, // TODO: add support for External Contract Calls
             chain_id: self.chain_id.clone(),
             signer_id: self.real_account_id().clone(),
             nonce: self.nonces.lock().unwrap().next(),

@@ -97,7 +97,7 @@ impl OutlayerAppExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(10)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?
             .try_into()
     }
@@ -115,7 +115,7 @@ impl OutlayerAppExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(30)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?
             .try_into()
     }

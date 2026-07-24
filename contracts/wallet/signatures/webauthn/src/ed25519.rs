@@ -27,6 +27,7 @@ mod tests {
         let signer = MockWalletWebauthnSigner::new(ed25519_dalek::SigningKey::generate(&mut rng()));
 
         let msg = RequestMessage {
+            pay_for_gas: false,
             chain_id: MAINNET.to_string(),
             signer_id: "signer.near".parse().unwrap(),
             nonce: 0,

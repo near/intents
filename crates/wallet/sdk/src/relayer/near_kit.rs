@@ -76,7 +76,7 @@ impl WalletRelayer for Near {
                 // add more buffer for short-living requests
                 .saturating_add(BLOCKCHAIN_LAG),
             tx.send()
-                .wait_until(Included)
+                .wait_until::<Included>()
                 // rely on timeouts instead of number of retry attempts
                 .max_nonce_retries(u32::MAX),
         )

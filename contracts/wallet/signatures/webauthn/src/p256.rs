@@ -28,10 +28,10 @@ mod tests {
     use super::*;
 
     #[rstest]
-    // https://nearblocks.io/txns/6vytw7NgAiPkJ3KYAyt18es4mDnwZ8knjpB7LHVJejAL
     #[case(
-        hex!("03b87da10683d04e6ec4e2f1775556a63cbb01be843058eb737fe02f9e22663093"),
+        hex!("02c0cad83d84b6bf228366971ddcb1738b9af862c64446a9feea85964743a5b390"),
         RequestMessage {
+            pay_for_gas: false,
             chain_id: "mainnet".to_string(),
             signer_id: "0se5eba21e8f191e1880e453794bc551dfa50a3419".parse().unwrap(),
             nonce: 2845491008,
@@ -46,7 +46,7 @@ mod tests {
                 )
                 .into(),
         },
-        r#"{"authenticator_data":"SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MdAAAAAA==","client_data_json":"{\"type\":\"webauthn.get\",\"challenge\":\"BvJpGRQxNyM3oMYGoVgi40m9DV7DF3BPl77xpO1vXh0\",\"origin\":\"http://localhost:5173\",\"crossOrigin\":false}","signature":"p256:1AmAt2duibsS6ohWTPXwpb98JMMJu5gZEyCKxD2EktkYsApkaRRXyHNjcdpKMk428Dfy5DLMTg6uF3KmxRdPGyv"}"#
+        r#"{"authenticator_data":"SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MdAAAAAA==","client_data_json":"{\"type\":\"webauthn.get\",\"challenge\":\"fIVgtROAVRZ2pU2sSdzB4AmvMCBVbN6OHiFyeC_9Z3U\",\"origin\":\"http://localhost:5173\",\"crossOrigin\":false}","signature":"p256:2S9WKwvKY7zgLaC9ihYDMQmbGtCvqqYy6RvvpgqRs7VXBR3GKXke4LKLNKyvtWRRB3dmU3awuCh2EYY7Sfk34qmh"}"#
     )]
     fn verify_ok(
         #[case] public_key: impl Into<P256CompressedPublicKey>,
@@ -66,6 +66,7 @@ mod tests {
         let signer = MockWalletWebauthnSigner::new(SigningKey::generate_from_rng(&mut rng()));
 
         let msg = RequestMessage {
+            pay_for_gas: false,
             chain_id: MAINNET.to_string(),
             signer_id: "signer.near".parse().unwrap(),
             nonce: 0,

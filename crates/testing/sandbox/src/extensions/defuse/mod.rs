@@ -503,7 +503,7 @@ impl DefuseExt for Near {
                     .deposit(NearToken::from_yoctonear(1))
                     .gas(Gas::from_tgas(30)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?;
         let salt = outcome.json::<Salt>()?;
         Ok((outcome.try_into()?, salt))
@@ -523,7 +523,7 @@ impl DefuseExt for Near {
                 .gas(Gas::from_tgas(300))
                 .deposit(NearToken::from_yoctonear(1)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?;
         let salt = outcome.json::<Salt>()?;
         Ok((outcome.try_into()?, salt))
@@ -671,7 +671,7 @@ impl DefuseExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(30)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?;
         let locked = res.json::<bool>()?;
 
@@ -692,7 +692,7 @@ impl DefuseExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(30)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?;
         let unlocked = res.json::<bool>()?;
 
@@ -753,7 +753,7 @@ impl DefuseExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?;
         let transferred = res.json::<U128>()?.0;
         Ok((res.try_into()?, transferred))
@@ -783,7 +783,7 @@ impl DefuseExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?;
         Ok(res.json::<U128>()?.0)
     }
@@ -812,7 +812,7 @@ impl DefuseExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?;
         let transferred = res.json::<Vec<U128>>()?.into_iter().map(|x| x.0).collect();
         Ok((res.try_into()?, transferred))
@@ -840,7 +840,7 @@ impl DefuseExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await?;
         let transferred = res.json::<bool>()?;
         Ok((res.try_into()?, transferred))
@@ -854,7 +854,7 @@ impl DefuseExt for Near {
     ) -> Result<FinalExecutionOutcome> {
         self.transaction(defuse.into())
             .add_action(Defuse::do_auth_call(args).gas(gas))
-            .wait_until(Final)
+            .wait_until::<Final>()
             .await
             .map_err(Into::into)
     }
