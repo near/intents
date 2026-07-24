@@ -109,7 +109,7 @@ pub trait Wallet {
     ///   from the future
     /// * [`message.signer`](crate::AuthMessage::signer) binding doesn't match this
     ///   account / its current code and config
-    /// * `proof` is [invalid](SignatureSchema::verify_hash)
+    /// * `proof` is [invalid](SignatureSchema::verify_auth)
     fn w_resolve_auth(
         &self,
         purpose: String,
@@ -370,8 +370,8 @@ where
             }
         }
 
-        // verify signature over the domain-separated authorization hash
-        if !S::verify_hash(&self.0.public_key, &msg.hash(), &proof) {
+        // verify signature over the authorization message
+        if !S::verify_auth(&self.0.public_key, &msg, &proof) {
             return Err(AuthError::InvalidSignature);
         }
 

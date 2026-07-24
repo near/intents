@@ -1,4 +1,4 @@
-use crate::RequestMessage;
+use crate::{AuthMessage, RequestMessage};
 
 /// Signature schema used by [`Wallet`](crate::contract::Wallet) contract
 /// variant.
@@ -29,10 +29,30 @@ pub trait SignatureSchema {
     /// public key and return whether verification passed.
     ///
     /// Used by the `w_execute_signed(msg, proof)` contract method.
+    ///
+    /// Schemas that bind the proof to the *contents* of the message rather
+    /// than to its digest (e.g. clear-signing standards, which show the
+    /// signer what they are authorizing) MUST override this method.
     #[cfg(all(feature = "digest", feature = "borsh"))]
     #[must_use = "check if verification passed"]
     #[inline]
     fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
+        Self::verify_hash(public_key, &msg.hash(), proof)
+    }
+
+    /// Verify given proof over the authorization message in respect to the
+    /// public key and return whether verification passed.
+    ///
+    /// Used by the `w_resolve_auth(purpose, recipient, authorization)`
+    /// contract method.
+    ///
+    /// Schemas that bind the proof to the *contents* of the message rather
+    /// than to its digest (e.g. clear-signing standards, which show the
+    /// signer what they are authorizing) MUST override this method.
+    #[cfg(all(feature = "digest", feature = "borsh"))]
+    #[must_use = "check if verification passed"]
+    #[inline]
+    fn verify_auth(public_key: &Self::PublicKey, msg: &AuthMessage, proof: &str) -> bool {
         Self::verify_hash(public_key, &msg.hash(), proof)
     }
 }
