@@ -56,3 +56,42 @@ where
         Ok(Ed25519Signature::from(sig).to_string())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use defuse_crypto::ed25519::ed25519_dalek;
+    use defuse_wallet::{DEFAULT_TIMEOUT, Request, SignatureSchema, Timestamp};
+    use defuse_wallet_sdk::MAINNET;
+    use rand::{rand_core::UnwrapErr, rngs::SysRng};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn sign_verify_ok() {
+        let signer =
+            WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng)));
+
+        let msg = RequestMessage {
+            pay_for_gas: false,
+            chain_id: MAINNET.to_string(),
+            signer_id: "signer.near".parse().unwrap(),
+            nonce: 0,
+            created_at: Timestamp::now(),
+            timeout: DEFAULT_TIMEOUT,
+            request: Request::new(),
+        };
+
+        let proof = WalletSigner::<WalletEd25519>::sign_wallet_msg(&signer, &msg)
+            .await
+            .unwrap();
+
+        assert!(
+            WalletEd25519::verify(
+                &WalletSigner::<WalletEd25519>::public_key(&signer),
+                &msg,
+                &proof
+            ),
+            "signer produced invalid signature"
+        );
+    }
+}

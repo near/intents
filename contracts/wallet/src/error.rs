@@ -6,6 +6,7 @@ use crate::NonceError;
 /// An error that can occur in [`Wallet`](crate::contract::Wallet) contract.
 #[cfg_attr(feature = "near-contract", derive(::near_sdk::FunctionError))]
 #[derive(Debug, ThisError)]
+#[non_exhaustive]
 pub enum ContractError {
     #[error("extension '{0}' is already enabled")]
     ExtensionEnabled(AccountId),

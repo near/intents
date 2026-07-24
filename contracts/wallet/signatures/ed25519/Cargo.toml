@@ -36,6 +36,7 @@ defuse-wallet-ed25519 = { path = ".", features = ["abi", "signer", "contract"] }
 hex-literal.workspace = true
 rand = { workspace = true, features = ["sys_rng"] }
 rstest.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }
 tokio-test.workspace = true
 
 near-sdk = { workspace = true, features = ["unit-testing"] }

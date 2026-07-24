@@ -490,6 +490,7 @@ where
     #[inline]
     fn wrap_request_msg(&self, request: impl Into<Request>) -> RequestMessage {
         RequestMessage {
+            pay_for_gas: false, // TODO: add support for External Contract Calls
             chain_id: self.chain_id.clone(),
             signer_id: self.real_account_id().clone(),
             nonce: self.nonces.lock().unwrap().next(),
