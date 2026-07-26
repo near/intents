@@ -110,8 +110,6 @@ impl Contract {
         contract
     }
 
-    /// Migrates state from the previous layout (without `deposits`/`withdrawals`)
-    /// by initializing the new fields to empty.
     #[init(ignore_state)]
     #[must_use]
     pub fn migrate() -> Self {
