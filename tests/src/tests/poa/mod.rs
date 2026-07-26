@@ -173,14 +173,14 @@ async fn ft_deposit_duplicate_id_fails(#[future(awt)] root: Near) {
     );
 
     let balance: u128 = ft.balance_of(user.account_id()).await.unwrap().into();
-    assert_eq!(balance, 1000, "second deposit must not have credited tokens");
+    assert_eq!(
+        balance, 1000,
+        "second deposit must not have credited tokens"
+    );
 
-    root.poa_factory_remove_deposits(
-        poa_factory.contract_id(),
-        vec!["same-deposit".to_string()],
-    )
-    .await
-    .unwrap();
+    root.poa_factory_remove_deposits(poa_factory.contract_id(), vec!["same-deposit".to_string()])
+        .await
+        .unwrap();
 
     root.poa_factory_ft_deposit(
         poa_factory.contract_id(),

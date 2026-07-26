@@ -185,8 +185,7 @@ impl Env {
     }
 
     async fn ft_deposit_to_root(&self, token: &AccountIdRef) -> Result<()> {
-        static DEPOSIT_COUNTER: std::sync::atomic::AtomicU64 =
-            std::sync::atomic::AtomicU64::new(0);
+        static DEPOSIT_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
         let deposit_id = format!(
             "root-{token}-{}",
             DEPOSIT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
