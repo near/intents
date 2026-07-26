@@ -19,7 +19,7 @@ pub struct Withdrawal {
     pub chain_id: String,
     pub payload_hash: Base64VecU8,
     pub timestamp: u64,
-    pub extra_metadata: String,
+    pub metadata: String,
 }
 
 #[must_use = "make sure to `.emit()` this event"]
@@ -36,6 +36,7 @@ pub enum FactoryEvent<'a> {
         transfer_id: &'a str,
         prev_payload_hash: &'a Base64VecU8,
         new_payload_hash: &'a Base64VecU8,
+        metadata: &'a String,
     },
 }
 
@@ -75,6 +76,7 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
         transfer_id: String,
         prev_payload_hash: Base64VecU8,
         new_payload_hash: Base64VecU8,
+        metadata: String,
     );
 
     /// Returns the withdrawal stored under `withdrawal_id`, if any.

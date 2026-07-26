@@ -248,6 +248,7 @@ impl PoaFactory for Contract {
         transfer_id: String,
         prev_payload_hash: Base64VecU8,
         new_payload_hash: Base64VecU8,
+        metadata: String,
     ) {
         let withdrawal = self
             .withdrawals
@@ -259,12 +260,14 @@ impl PoaFactory for Contract {
             "payload hash mismatch"
         );
 
-        withdrawal.payload_hash = new_payload_hash.clone();
+        withdrawal.payload_hash = new_payload_hash;
+        withdrawal.metadata = metadata;
 
         FactoryEvent::FtUpdateWithdraw {
             transfer_id: &transfer_id,
             prev_payload_hash: &prev_payload_hash,
-            new_payload_hash: &new_payload_hash,
+            new_payload_hash: &withdrawal.payload_hash,
+            metadata: &withdrawal.metadata,
         }
         .emit();
     }
