@@ -112,6 +112,7 @@ impl Contract {
 
     #[init(ignore_state)]
     #[must_use]
+    #[allow(clippy::use_self)]
     pub fn migrate() -> Self {
         let old: OldContract = env::state_read().expect("failed to read old state");
         Self {
