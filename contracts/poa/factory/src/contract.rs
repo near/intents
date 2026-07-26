@@ -1,4 +1,8 @@
 use core::iter;
+use near_sdk::{
+    json_types::Base64VecU8,
+    store::{LookupMap, LookupSet},
+};
 use std::collections::{HashMap, HashSet};
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
@@ -20,7 +24,7 @@ use near_sdk::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::PoaFactory;
+use crate::{FactoryEvent, PoaFactory, Withdrawal};
 
 const POA_TOKEN_WASM: &[u8] = include_bytes!(std::env!("POA_TOKEN_WASM"));
 
@@ -50,6 +54,7 @@ pub enum Role {
     TokenDepositer,
     PauseManager,
     UnpauseManager,
+    TokenWithdrawer,
 }
 
 #[near(contract_state, contract_metadata())]
@@ -62,6 +67,8 @@ pub enum Role {
 pub struct Contract {
     tokens: IterableSet<String>,
     bridge_token_storage_deposit_required: NearToken,
+    deposits: LookupSet<String>,
+    withdrawals: LookupMap<String, Withdrawal>,
 }
 
 #[near]
@@ -81,6 +88,8 @@ impl Contract {
                     .account_storage_usage
                     .into(),
             ),
+            deposits: LookupSet::new(Prefix::Deposits),
+            withdrawals: LookupMap::new(Prefix::Withdrawals),
         };
 
         let mut acl = contract.acl_get_or_init();
@@ -100,6 +109,27 @@ impl Contract {
         );
         contract
     }
+
+    /// Migrates state from the previous layout (without `deposits`/`withdrawals`)
+    /// by initializing the new fields to empty.
+    #[init(ignore_state)]
+    #[must_use]
+    pub fn migrate() -> Self {
+        let old: OldContract = env::state_read().expect("failed to read old state");
+        Self {
+            tokens: old.tokens,
+            bridge_token_storage_deposit_required: old.bridge_token_storage_deposit_required,
+            deposits: LookupSet::new(Prefix::Deposits),
+            withdrawals: LookupMap::new(Prefix::Withdrawals),
+        }
+    }
+}
+
+#[derive(BorshDeserialize)]
+#[borsh(crate = "::near_sdk::borsh")]
+struct OldContract {
+    tokens: IterableSet<String>,
+    bridge_token_storage_deposit_required: NearToken,
 }
 
 #[near]
@@ -156,6 +186,7 @@ impl PoaFactory for Contract {
     #[payable]
     fn ft_deposit(
         &mut self,
+        deposit_id: String,
         token: String,
         owner_id: AccountId,
         amount: U128,
@@ -167,6 +198,11 @@ impl PoaFactory for Contract {
             "not enough deposit attached for token storage_deposit"
         );
         require!(self.tokens.contains(&token), "token does not exist");
+
+        require!(
+            self.deposits.insert(deposit_id),
+            "deposit id already exists"
+        );
 
         let token_id = Self::token_id(token);
 
@@ -191,6 +227,70 @@ impl PoaFactory for Contract {
                 .with_static_gas(POA_TOKEN_FT_DEPOSIT_GAS)
                 .ft_deposit(owner_id, amount, memo)
         }
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO, Role::TokenWithdrawer))]
+    fn ft_withdraw(&mut self, withdrawal_id: String, withdrawal: Withdrawal) {
+        require!(
+            self.withdrawals
+                .insert(withdrawal_id.clone(), withdrawal.clone())
+                .is_none(),
+            "withdrawal for withdrawal_id already exists"
+        );
+        FactoryEvent::FtWithdraw {
+            withdrawal_id: &withdrawal_id,
+            withdrawal: &withdrawal,
+        }
+        .emit();
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO, Role::TokenWithdrawer))]
+    fn ft_update_withdraw(
+        &mut self,
+        transfer_id: String,
+        prev_payload_hash: Base64VecU8,
+        new_payload_hash: Base64VecU8,
+    ) {
+        let withdrawal = self
+            .withdrawals
+            .get_mut(&transfer_id)
+            .unwrap_or_else(|| panic!("withdrawal for transfer_id {transfer_id} does not exist"));
+
+        require!(
+            withdrawal.payload_hash == prev_payload_hash,
+            "previous hash does not match previous withdrawal"
+        );
+
+        withdrawal.payload_hash = new_payload_hash.clone();
+
+        FactoryEvent::FtUpdateWithdraw {
+            transfer_id: &transfer_id,
+            prev_payload_hash: &prev_payload_hash,
+            new_payload_hash: &new_payload_hash,
+        }
+        .emit();
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO))]
+    fn remove_withdraws(&mut self, withdrawals: Vec<String>) {
+        for id in withdrawals {
+            self.withdrawals.remove(&id);
+        }
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO))]
+    fn remove_deposits(&mut self, deposits: Vec<String>) {
+        for id in deposits {
+            self.deposits.remove(&id);
+        }
+    }
+
+    fn get_withdraw(&self, withdrawal_id: String) -> Option<&Withdrawal> {
+        self.withdrawals.get(&withdrawal_id)
     }
 
     fn tokens(&self) -> HashMap<String, AccountId> {
@@ -238,4 +338,6 @@ impl FullAccessKeys for Contract {
 #[borsh(crate = "::near_sdk::borsh")]
 enum Prefix {
     Tokens,
+    Deposits,
+    Withdrawals,
 }

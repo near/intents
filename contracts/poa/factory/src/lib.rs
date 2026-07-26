@@ -6,7 +6,38 @@ use std::collections::HashMap;
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_plugins::AccessControllable;
-use near_sdk::{AccountId, Promise, ext_contract, json_types::U128};
+use near_sdk::{
+    AccountId, Promise, ext_contract,
+    json_types::{Base64VecU8, U128},
+    near,
+};
+
+/// Metadata about a cross-chain withdrawal tracked by the factory.
+#[near(serializers=[borsh, json])]
+#[derive(Debug, Clone)]
+pub struct Withdrawal {
+    pub chain_id: String,
+    pub payload_hash: Base64VecU8,
+    pub timestamp: u64,
+    pub extra_metadata: String,
+}
+
+#[must_use = "make sure to `.emit()` this event"]
+#[near(event_json(standard = "factory"))]
+#[derive(Debug, Clone)]
+pub enum FactoryEvent<'a> {
+    #[event_version("0.1.0")]
+    FtWithdraw {
+        withdrawal_id: &'a str,
+        withdrawal: &'a Withdrawal,
+    },
+    #[event_version("0.1.0")]
+    FtUpdateWithdraw {
+        transfer_id: &'a str,
+        prev_payload_hash: &'a Base64VecU8,
+        new_payload_hash: &'a Base64VecU8,
+    },
+}
 
 #[ext_contract(ext_poa_factory)]
 pub trait PoaFactory: AccessControllable + FullAccessKeys {
@@ -24,6 +55,7 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     /// Requires to attach enough Ⓝ to cover storage costs.
     fn ft_deposit(
         &mut self,
+        deposit_id: String,
         token: String,
         owner_id: AccountId,
         amount: U128,
@@ -33,4 +65,24 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
 
     /// Returns a mapping of token names to their account ids.
     fn tokens(&self) -> HashMap<String, AccountId>;
+
+    /// Records a new withdrawal under `withdrawal_id`. Fails if the id is already used.
+    fn ft_withdraw(&mut self, withdrawal_id: String, withdrawal: Withdrawal);
+
+    /// Replaces the payload hash of an existing withdrawal, guarded by the previous hash.
+    fn ft_update_withdraw(
+        &mut self,
+        transfer_id: String,
+        prev_payload_hash: Base64VecU8,
+        new_payload_hash: Base64VecU8,
+    );
+
+    /// Returns the withdrawal stored under `withdrawal_id`, if any.
+    fn get_withdraw(&self, withdrawal_id: String) -> Option<&Withdrawal>;
+
+    /// Removes the given withdrawal ids from storage.
+    fn remove_withdraws(&mut self, withdrawals: Vec<String>);
+
+    /// Removes the given deposit ids from storage, allowing them to be reused.
+    fn remove_deposits(&mut self, deposits: Vec<String>);
 }
