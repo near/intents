@@ -197,10 +197,7 @@ impl PoaFactory for Contract {
         );
         require!(self.tokens.contains(&token), "token does not exist");
 
-        require!(
-            self.deposits.insert(deposit_id),
-            "deposit id already exists"
-        );
+        require!(self.deposits.insert(deposit_id), "deposit already exists");
 
         let token_id = Self::token_id(token);
 
@@ -234,7 +231,7 @@ impl PoaFactory for Contract {
             self.withdrawals
                 .insert(withdrawal_id.clone(), withdrawal.clone())
                 .is_none(),
-            "withdrawal for withdrawal_id already exists"
+            "withdrawal already exists"
         );
         FactoryEvent::FtWithdraw {
             withdrawal_id: &withdrawal_id,
@@ -254,11 +251,11 @@ impl PoaFactory for Contract {
         let withdrawal = self
             .withdrawals
             .get_mut(&transfer_id)
-            .unwrap_or_else(|| panic!("withdrawal for transfer_id {transfer_id} does not exist"));
+            .unwrap_or_else(|| panic!("withdrawal not found"));
 
         require!(
             withdrawal.payload_hash == prev_payload_hash,
-            "previous hash does not match previous withdrawal"
+            "payload hash mismatch"
         );
 
         withdrawal.payload_hash = new_payload_hash.clone();
