@@ -40,6 +40,7 @@ Transfers control to a new admin. Admin-only, requires 1 yoctoNEAR. Emits `Trans
 
 ### View methods
 - `oa_admin_id()` — current admin
+- `oa_admin_public_key()` — current admin public key
 - `oa_code_hash()` — approved hash (hex)
 - `oa_code_url()` — current code URL
 

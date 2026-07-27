@@ -1,21 +1,19 @@
+use std::{collections::BTreeMap, io};
+
+use anyhow::Context;
 use clap::Parser;
-use defuse_outlayer_app::State;
-use near_sdk::{AccountId, base64::prelude::*, serde_json};
-use std::collections::BTreeMap;
+use defuse_cli_utils::hash::HashSource;
+use defuse_outlayer_app_core::{AdminPublicKey, State};
+use near_account_id::AccountId;
+use serde_with::{base64::Base64, ser::SerializeAsWrap};
+use sha2::Sha256;
 use url::Url;
 
-fn parse_hex_hash(s: &str) -> Result<[u8; 32], String> {
-    let s = s.strip_prefix("0x").unwrap_or(s);
-    hex::decode(s)
-        .map_err(|err| format!("hex: {err}"))?
-        .try_into()
-        .map_err(|_| "hash must be 32 bytes encoded as hex (with or without 0x prefix)".to_string())
-}
-
 #[derive(Parser)]
-#[command(about = "Compute StateInit for a near-oa contract instance")]
+/// Print JSON storage key-value pairs (as base64) for `StateInit`
+/// of a Outlayer App contract
 struct Args {
-    /// Admin account ID (controls code approval and env vars)
+    /// Admin account ID (controls code approval and configuration)
     #[arg(long, value_name = "AccountId")]
     admin_id: AccountId,
 
@@ -24,35 +22,44 @@ struct Args {
     #[arg(long, value_name = "URL")]
     code_url: Url,
 
-    /// SHA-256 hash of the approved code (hex, with or without 0x prefix).
-    /// Defaults to all-zeros if omitted.
-    #[arg(long, value_parser = parse_hex_hash, value_name = "HASH")]
-    code_hash: [u8; 32],
+    /// SHA-256 hash of the approved code.
+    ///
+    /// `HASH` can be encoded as base58 or hex with `0x` prefix.
+    /// `@FILE` will calculate SHA-256 hash of the `FILE` contents.
+    /// `@-` will calculate SHA-256 hash of the stdin contents.
+    #[arg(long, value_name = "HASH | @FILE | @-")]
+    code_hash: HashSource<Sha256>,
+
+    /// Admin's public key (e.g. `ed25519:...`)
+    #[arg(long, value_name = "PublicKey")]
+    admin_public_key: AdminPublicKey,
 
     /// Output single-line JSON only (no human-readable annotations)
     #[arg(short, long)]
     quiet: bool,
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
-    let state = State::new(
-        args.admin_id.clone(),
-        args.code_hash,
-        args.code_url.to_string(),
-    );
+    let code_hash = args.code_hash.hash().context("code_hash")?;
+
+    let state = State::new(args.admin_id, args.admin_public_key)
+        .with_code_hash(code_hash)
+        .with_code_url(args.code_url.to_string());
 
     if !args.quiet {
-        eprintln!("{:<20} {}", "admin_id:", state.admin_id);
-        eprintln!("{:<20} {}", "code_hash:", hex::encode(state.code_hash));
-        eprintln!("{:<20} {}", "code_url:", state.code_url);
+        eprintln!("// State:");
+        serde_json::to_writer_pretty(io::stderr(), &state).context("JSON")?;
+        eprintln!("\n\n// Storage key-value pairs (as base64):");
     }
 
-    let state_init = state.state_init();
-    let map = state_init
-        .iter()
-        .map(|(k, v)| (BASE64_STANDARD.encode(k), BASE64_STANDARD.encode(v)))
-        .collect::<BTreeMap<_, _>>();
-    println!("{}", serde_json::to_string(&map).unwrap());
+    let storage = state.as_storage();
+
+    serde_json::to_writer(
+        io::stdout(),
+        #[allow(clippy::zero_sized_map_values)]
+        &SerializeAsWrap::<_, BTreeMap<Base64, Base64>>::new(&storage),
+    )
+    .context("JSON")
 }

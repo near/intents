@@ -1,5 +1,5 @@
 use anyhow::Result;
-use defuse_outlayer_app::{AsHex, State as OutlayerState};
+use defuse_outlayer_app::{AdminPublicKey, AsHex, State as OutlayerState};
 use near_kit::{AccountId, AccountIdRef, Final, Gas, GlobalContractId, Near, NearToken};
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
@@ -23,6 +23,11 @@ pub struct OaTransferAdminArgs {
     pub new_admin_id: AccountId,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct OaSetAdminPublicKeyArgs {
+    pub new_admin_public_key: AdminPublicKey,
+}
+
 #[near_kit::contract]
 pub trait OutlayerApp {
     #[call]
@@ -31,7 +36,11 @@ pub trait OutlayerApp {
     #[call]
     fn oa_transfer_admin(&mut self, args: OaTransferAdminArgs);
 
+    #[call]
+    fn oa_set_admin_public_key(&mut self, args: OaSetAdminPublicKeyArgs);
+
     fn oa_admin_id(&self) -> AccountId;
+    fn oa_admin_public_key(&self) -> AdminPublicKey;
     fn oa_code_hash(&self) -> AsHex<[u8; 32]>;
     fn oa_code_url(&self) -> String;
 }
@@ -54,7 +63,7 @@ impl OutlayerAppDeployerExt for Near {
         self.contract::<OutlayerApp>(
             self.deploy_deterministic_account(
                 global_contract_id,
-                state.state_init(),
+                state.as_storage(),
                 NearToken::ZERO,
             )
             .await
@@ -76,6 +85,12 @@ pub trait OutlayerAppExt {
         &self,
         target: impl AsRef<AccountIdRef>,
         new_admin_id: impl Into<AccountId>,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn oa_set_admin_public_key(
+        &self,
+        target: impl AsRef<AccountIdRef>,
+        new_admin_public_key: AdminPublicKey,
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
@@ -114,6 +129,24 @@ impl OutlayerAppExt for Near {
                 })
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(30)),
+            )
+            .wait_until::<Final>()
+            .await?
+            .try_into()
+    }
+
+    async fn oa_set_admin_public_key(
+        &self,
+        target: impl AsRef<AccountIdRef>,
+        new_admin_public_key: AdminPublicKey,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(target.as_ref())
+            .add_action(
+                OutlayerApp::oa_set_admin_public_key(OaSetAdminPublicKeyArgs {
+                    new_admin_public_key,
+                })
+                .deposit(NearToken::from_yoctonear(1))
+                .gas(Gas::from_tgas(10)),
             )
             .wait_until::<Final>()
             .await?

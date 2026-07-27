@@ -1,41 +1,41 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::BTreeMap};
 
 use near_account_id::AccountIdRef;
+
+mod public_key;
+pub use public_key::AdminPublicKey;
+mod state;
+pub use state::IMMUTABLE_ADMIN_ID;
 
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema))
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
 )]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+/// State of an Outlayer App contract
+#[cfg_attr(feature = "parse", derive(Debug))]
+#[derive(Clone, PartialEq, Eq)]
+#[allow(clippy::struct_field_names)]
 pub struct State<'a> {
     pub admin_id: Cow<'a, AccountIdRef>,
     #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::hex::Hex"))]
     pub code_hash: [u8; 32],
     pub code_url: Cow<'a, str>,
+    pub admin_public_key: AdminPublicKey,
+    pub state: BTreeMap<Vec<u8>, Vec<u8>>,
+    pub config: BTreeMap<Vec<u8>, Vec<u8>>,
 }
 
 impl<'a> State<'a> {
     pub const STATE_KEY: &'static [u8] = b"";
-
-    pub fn new(
-        admin_id: impl Into<Cow<'a, AccountIdRef>>,
-        code_hash: impl Into<[u8; 32]>,
-        code_url: impl Into<Cow<'a, str>>,
-    ) -> Self {
-        Self {
-            admin_id: admin_id.into(),
-            code_hash: code_hash.into(),
-            code_url: code_url.into(),
-        }
-    }
 
     #[cfg(feature = "borsh")]
     pub fn state_init(&self) -> std::collections::BTreeMap<Vec<u8>, Vec<u8>> {
