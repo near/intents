@@ -22,10 +22,7 @@ contract = []
 [dev-dependencies]
 defuse-outlayer-app = { path = ".", features = ["abi"] }
 
-clap = { workspace = true, features = ["wrap_help"] }
-hex.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
-url.workspace = true
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.22.0-rust-1.97.1"

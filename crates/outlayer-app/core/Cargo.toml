@@ -9,19 +9,31 @@ repository.workspace = true
 
 [dependencies]
 near-account-id.workspace = true
+defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
 
+arbitrary = { workspace = true, features = ["derive"], optional = true }
 borsh = { workspace = true, optional = true, features = ["derive"] }
 cfg_eval = { workspace = true, optional = true }
+defuse-digest = { workspace = true, features = ["sha2"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
-serde_with = { workspace = true, optional = true, features = ["hex"] }
+serde_with = { workspace = true, optional = true, features = ["hex", "base64"] }
 
 [features]
-borsh = ["dep:borsh", "near-account-id/borsh"]
-serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with", "near-account-id/serde"]
-abi = [
-  "borsh?/unstable__schema",
+abi = ["borsh-schema", "schemars-v0_8"]
+arbitrary = ["dep:arbitrary", "near-account-id/arbitrary", "defuse-crypto/arbitrary"]
+borsh = ["dep:borsh", "near-account-id/borsh", "defuse-crypto/borsh"]
+borsh-schema = ["borsh", "borsh/unstable__schema", "near-account-id/abi", "defuse-crypto/abi"]
+digest = ["dep:defuse-digest"]
+parse = ["defuse-crypto/fmt"]
+serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with", "near-account-id/serde", "defuse-crypto/serde", "parse"]
+schemars-v0_8 = [
   "dep:schemars",
-  "near-account-id/abi",
+  "near-account-id/schemars-v0_8",
+  "defuse-crypto/abi",
+  "serde",
   "serde_with?/schemars_0_8",
 ]
+
+[dev-dependencies]
+hex-literal.workspace = true

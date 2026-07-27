@@ -10,11 +10,14 @@ One admin account manages the instance: it approves the expected code hash and s
 
 ## Contract State
 
-| Field       | Type        | Default       | Description                                          |
-|-------------|-------------|---------------|------------------------------------------------------|
-| `admin_id`  | `AccountId` | set at init   | Account authorized to approve and configure          |
-| `code_hash` | `[u8; 32]`  | set at init   | SHA-256 of the approved code binary                  |
-| `code_url`  | `Url`       | set at init   | URL where the code binary can be fetched             |
+| Field              | Type                          | Default       | Description                                          |
+|--------------------|-------------------------------|---------------|------------------------------------------------------|
+| `admin_id`         | `AccountId`                   | set at init   | Account authorized to approve and configure          |
+| `code_hash`        | `[u8; 32]`                    | set at init   | SHA-256 of the approved code binary                  |
+| `code_url`         | `Url`                         | set at init   | URL where the code binary can be fetched             |
+| `admin_public_key` | `AdminPublicKey`              | set at init   | Admin's public key (ed25519)                         |
+| `state`            | `BTreeMap<Vec<u8>, Vec<u8>>`  | empty         | Arbitrary encrypted key-value blobs                  |
+| `config`           | `BTreeMap<String, Vec<u8>>`  | empty         | Arbitrary config key-value pairs                     |
 
 ## StateInit Parameters
 
@@ -23,6 +26,7 @@ The deterministic address is derived from the Borsh-serialized `State`. All para
 - **`admin_id`** *(required)* — account that controls code approval and configuration
 - **`code_hash`** *(required)* — SHA-256 hash of the approved code binary (`[0u8; 32]` if no code is pre-approved)
 - **`code_url`** *(required)* — URL pointing to the code binary (`https://...` or `data:application/wasm;base64,...`)
+- **`admin_public_key`** *(required)* — admin's ed25519 public key (`ed25519:...`)
 
 Use the [`near-oa`](#near-oa-cli-tool) tool to compute the `StateInit` JSON for a given set of parameters.
 
@@ -56,28 +60,33 @@ The `near-oa` command is an extension for [near-cli-rs](https://github.com/near/
 ### Install
 
 ```sh
-cargo install --path contracts/outlayer-app --example near-oa
+cargo install --path ./crates/outlayer-app/near-oa
 ```
 
 ### Running
 
 ```sh
-near oa [OPTIONS] --admin-id <AccountId> --code-url <URL>
+near oa [OPTIONS] --admin-id <AccountId> --code-url <URL> --code-hash <HASH>
 ```
 
 ### Usage
 
-```
+```sh
+$ near oa --help
 Compute StateInit for a near-oa contract instance
 
-Usage: near-oa [OPTIONS] --admin-id <AccountId> --code-url <URL>
+Usage: near-oa [OPTIONS] --admin-id <AccountId> --code-url <URL> --code-hash <HASH | @FILE | @->
 
 Options:
-      --admin-id <AccountId>  Admin account ID (controls code approval)
-      --code-url <URL>        URL where the code binary can be fetched
-      --code-hash <HASH>      SHA-256 hash of the approved code (hex, with or without 0x prefix)
-  -q, --quiet                 Output single-line JSON only (no human-readable annotations)
-  -h, --help                  Print help
+      --admin-id <AccountId>            Admin account ID (controls code approval and configuration)
+      --code-url <URL>                  URL where the code binary can be fetched from (e.g.
+                                         `https://...` or `data:application/wasm;base64,...`)
+      --code-hash <HASH | @FILE | @->   SHA-256 hash of the approved code. `HASH` can be encoded
+                                         as base58 or hex with `0x` prefix. `@FILE` will calculate
+                                         SHA-256 hash of the `FILE` contents. `@-` will calculate
+                                         SHA-256 hash of the stdin contents
+  -q, --quiet                           Output single-line JSON only (no human-readable annotations)
+  -h, --help                            Print help
 ```
 
 ### Example
@@ -85,13 +94,18 @@ Options:
 ```bash
 near oa \
   --admin-id alice.near \
-  --code-hash faf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc86 \
+  --code-hash 0xfaf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc8 \
   --code-url https://example.com/contract.wasm
 ```
 ```
-admin_id:            alice.near
-code_hash:           faf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc86
-code_url:            https://example.com/contract.wasm
+// State:
+{
+  "admin_id": "alice.near",
+  "code_hash": "faf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc8",
+  "code_url": "https://example.com/contract.wasm"
+}
+
+// Storage key-value pairs (as base64):
 {"":"..."}
 ```
 
