@@ -34,7 +34,7 @@ pub struct State<'a> {
     pub config: BTreeMap<Vec<u8>, Vec<u8>>,
 }
 
-impl<'a> State<'a> {
+impl State<'_> {
     pub const STATE_KEY: &'static [u8] = b"";
 
     #[cfg(feature = "borsh")]
