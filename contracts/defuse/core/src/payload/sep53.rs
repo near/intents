@@ -1,7 +1,7 @@
 use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use defuse_sep53::Sep53;
-use near_sdk::{CryptoHash, serde::de::DeserializeOwned, serde_json};
-use serde::{Deserialize, Serialize};
+use near_sdk::CryptoHash;
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::payload::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
 

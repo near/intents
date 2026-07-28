@@ -1,6 +1,6 @@
 use derive_more::derive::From;
-use near_sdk::{CryptoHash, serde::de::DeserializeOwned, serde_json};
-use serde::{Deserialize, Serialize};
+use near_sdk::CryptoHash;
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_with::serde_as;
 
 use crate::{

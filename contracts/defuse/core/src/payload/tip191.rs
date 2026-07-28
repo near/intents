@@ -1,6 +1,6 @@
 use defuse_crypto::secp256k1::{Secp256k1RecoverableSignature, Secp256k1UncompressedPublicKey};
 use defuse_tip191::Tip191;
-use near_sdk::{CryptoHash, serde_json};
+use near_sdk::CryptoHash;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::payload::{Payload, SignedPayload};

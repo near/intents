@@ -1,7 +1,7 @@
 use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 pub use defuse_nep413::{Nep413, Nep413Payload};
 use impl_tools::autoimpl;
-use near_sdk::AccountId;
+use near_account_id::AccountId;
 use serde::{
     Deserialize, Serialize,
     de::{self, DeserializeOwned},

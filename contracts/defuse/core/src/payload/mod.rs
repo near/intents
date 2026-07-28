@@ -74,7 +74,7 @@ pub trait SignedPayload: Payload {
 mod examples {
     use super::Nonce;
 
-    use near_sdk::base64::{self, Engine};
+    use base64::Engine;
 
     pub fn nonce() -> String {
         base64::engine::general_purpose::STANDARD.encode(Nonce::default())

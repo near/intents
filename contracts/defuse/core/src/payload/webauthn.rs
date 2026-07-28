@@ -80,10 +80,11 @@ where
 
 #[cfg(test)]
 mod tests {
+    use near_account_id::AccountIdRef;
+
     use crate::intents::DefuseIntents;
 
     use super::*;
-    use near_sdk::{AccountIdRef, serde_json};
 
     #[test]
     fn p256() {
