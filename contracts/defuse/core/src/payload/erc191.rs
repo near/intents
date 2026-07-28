@@ -3,7 +3,6 @@ use crate::payload::{Payload, SignedPayload};
 use super::{DefusePayload, ExtractDefusePayload};
 use defuse_crypto::secp256k1::{Secp256k1RecoverableSignature, Secp256k1UncompressedPublicKey};
 use defuse_erc191::Erc191;
-use near_sdk::CryptoHash;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_with::serde_as;
 
@@ -20,7 +19,7 @@ pub struct SignedErc191Payload {
 
 impl Payload for SignedErc191Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> [u8; 32] {
         Erc191::prehash(&self.payload)
     }
 }

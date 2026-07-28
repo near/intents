@@ -1,7 +1,6 @@
 use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use defuse_ton_connect::TonConnect;
 pub use defuse_ton_connect::{TonConnectPayload, TonConnectPayloadSchema};
-use near_sdk::CryptoHash;
 use serde::{
     Deserialize, Serialize,
     de::{DeserializeOwned, Error},
@@ -23,7 +22,7 @@ pub struct SignedTonConnectPayload {
 
 impl Payload for SignedTonConnectPayload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> [u8; 32] {
         self.payload.try_prehash().expect("ton-connect hash")
     }
 }

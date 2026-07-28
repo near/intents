@@ -1,7 +1,6 @@
 use defuse_digest::{Digest, sha2::Sha256};
 pub use defuse_webauthn::WebauthnAssertion;
 use defuse_webauthn::{IgnoreUserVerification, ed25519::Ed25519, p256::P256};
-use near_sdk::CryptoHash;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::{
@@ -25,7 +24,7 @@ pub struct SignedWebAuthnPayload {
 
 impl Payload for SignedWebAuthnPayload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> [u8; 32] {
         Sha256::digest(self.payload.as_bytes()).into()
     }
 }

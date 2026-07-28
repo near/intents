@@ -2,7 +2,6 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use near_account_id::{AccountId, AccountIdRef};
 use near_gas::NearGas;
 use near_global_contracts::StateInit;
-use near_sdk::CryptoHash;
 use near_token::NearToken;
 use serde::{Deserialize, Serialize};
 
@@ -61,7 +60,7 @@ impl ExecutableIntent for AuthCall {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        _intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,

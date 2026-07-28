@@ -1,6 +1,5 @@
 use defuse_crypto::secp256k1::{Secp256k1RecoverableSignature, Secp256k1UncompressedPublicKey};
 use defuse_tip191::Tip191;
-use near_sdk::CryptoHash;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::payload::{Payload, SignedPayload};
@@ -19,7 +18,7 @@ pub struct SignedTip191Payload {
 
 impl Payload for SignedTip191Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> [u8; 32] {
         Tip191::prehash(&self.payload)
     }
 }

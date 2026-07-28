@@ -5,7 +5,7 @@ use near_account_id::{AccountId, AccountIdRef};
 use near_contract_standards::non_fungible_token;
 use near_gas::NearGas;
 use near_global_contracts::StateInit;
-use near_sdk::{CryptoHash, json_types::U128};
+use near_sdk::json_types::U128;
 use near_token::NearToken;
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
@@ -90,7 +90,7 @@ impl ExecutableIntent for Transfer {
         self,
         sender_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -209,7 +209,7 @@ impl ExecutableIntent for FtWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -304,7 +304,7 @@ impl ExecutableIntent for NftWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -405,7 +405,7 @@ impl ExecutableIntent for MtWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -442,7 +442,7 @@ impl ExecutableIntent for NativeWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -492,7 +492,7 @@ impl ExecutableIntent for StorageDeposit {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,

@@ -8,7 +8,6 @@ pub mod imt;
 
 use derive_more::derive::From;
 use near_account_id::AccountIdRef;
-use near_sdk::CryptoHash;
 use serde::{Deserialize, Serialize};
 use serde_with::{base58::Base58, serde_as};
 
@@ -89,7 +88,7 @@ pub trait ExecutableIntent {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -101,7 +100,7 @@ impl ExecutableIntent for DefuseIntents {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -119,7 +118,7 @@ impl ExecutableIntent for Intent {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -156,7 +155,7 @@ impl ExecutableIntent for Intent {
 pub struct MaybeIntentEvent<T> {
     #[serde_as(as = "Option<Base58>")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub intent_hash: Option<CryptoHash>,
+    pub intent_hash: Option<[u8; 32]>,
 
     #[serde(flatten)]
     pub event: T,
@@ -172,7 +171,7 @@ impl<T> MaybeIntentEvent<T> {
     }
 
     #[inline]
-    pub const fn new_intent(event: T, intent_hash: CryptoHash) -> Self {
+    pub const fn new_intent(event: T, intent_hash: [u8; 32]) -> Self {
         Self {
             intent_hash: Some(intent_hash),
             event,

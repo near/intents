@@ -11,7 +11,6 @@ use core::convert::Infallible;
 
 use impl_tools::autoimpl;
 use near_account_id::AccountId;
-use near_sdk::CryptoHash;
 use serde::{Deserialize, Serialize};
 use serde_with::{base64::Base64, serde_as};
 
@@ -56,7 +55,7 @@ impl<T> ExtractDefusePayload<T> for DefusePayload<T> {
 /// according to an external signing standard. The [`.hash()`](Self::hash)
 /// method returns the digest that should be signed or used for verification.
 pub trait Payload {
-    fn hash(&self) -> CryptoHash;
+    fn hash(&self) -> [u8; 32];
 }
 
 /// Extension of [`Payload`] for types that include a signature.

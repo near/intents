@@ -1,5 +1,5 @@
 use derive_more::derive::From;
-use near_sdk::{CryptoHash, near};
+use near_sdk::near;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_with::{base58::Base58, serde_as};
@@ -22,7 +22,7 @@ use crate::{
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IntentEvent<T> {
     #[serde_as(as = "Base58")]
-    pub intent_hash: CryptoHash,
+    pub intent_hash: [u8; 32],
 
     #[serde(flatten)]
     pub event: T,
