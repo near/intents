@@ -116,8 +116,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use near_sdk::bs58;
-
     use super::*;
 
     #[test]

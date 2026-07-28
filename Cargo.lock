@@ -1414,6 +1414,7 @@ dependencies = [
  "arbitrary",
  "base64 0.22.1",
  "borsh",
+ "bs58 0.5.1",
  "defuse-bitmap",
  "defuse-borsh-utils",
  "defuse-core",
