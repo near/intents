@@ -1445,6 +1445,7 @@ dependencies = [
  "near-global-contracts",
  "near-kit",
  "near-sdk",
+ "near-sdk-macros",
  "near-token",
  "rstest",
  "schemars 0.8.22",

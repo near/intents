@@ -6,12 +6,15 @@ use crate::{
 };
 use defuse_nep245::ErrorLogTooLong;
 use near_account_id::AccountId;
-use near_sdk::FunctionError;
 use thiserror::Error as ThisError;
+
+#[cfg(feature = "runtime")]
+use near_sdk_macros::FunctionError;
 
 pub type Result<T, E = DefuseError> = ::core::result::Result<T, E>;
 
-#[derive(Debug, ThisError, FunctionError)]
+#[cfg_attr(feature = "runtime", derive(FunctionError))]
+#[derive(Debug, ThisError)]
 pub enum DefuseError {
     #[error("account '{0}' not found")]
     AccountNotFound(AccountId),
