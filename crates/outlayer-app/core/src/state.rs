@@ -51,6 +51,36 @@ impl<'a> State<'a> {
         self
     }
 
+    /// Overwrite the initial state key-value pairs.
+    #[must_use]
+    #[inline]
+    pub fn with_state<K, V>(mut self, state: impl IntoIterator<Item = (K, V)>) -> Self
+    where
+        K: Into<Vec<u8>>,
+        V: Into<Vec<u8>>,
+    {
+        self.state = state
+            .into_iter()
+            .map(|(key, value)| (key.into(), value.into()))
+            .collect();
+        self
+    }
+
+    /// Overwrite the initial config key-value pairs.
+    #[must_use]
+    #[inline]
+    pub fn with_config<K, V>(mut self, config: impl IntoIterator<Item = (K, V)>) -> Self
+    where
+        K: Into<Vec<u8>>,
+        V: Into<Vec<u8>>,
+    {
+        self.config = config
+            .into_iter()
+            .map(|(key, value)| (key.into(), value.into()))
+            .collect();
+        self
+    }
+
     #[cfg(feature = "digest")]
     /// Set [`Self::code_hash`] to the SHA-256 digest of the given code.
     ///
@@ -105,5 +135,24 @@ mod tests {
         assert!(state.code_url.is_empty());
         assert!(state.state.is_empty());
         assert!(state.config.is_empty());
+    }
+
+    #[test]
+    fn state_and_config_can_be_set_from_iterables() {
+        let admin_public_key = AdminPublicKey::Ed25519(Ed25519PublicKey([0; 32]));
+        let config = BTreeMap::from([(b"config-key".to_vec(), b"config-value".to_vec())]);
+
+        let state = State::new_immutable(admin_public_key)
+            .with_state([
+                (b"state-key".as_slice(), b"first-value".as_slice()),
+                (b"state-key".as_slice(), b"state-value".as_slice()),
+            ])
+            .with_config(config.clone());
+
+        assert_eq!(
+            state.state,
+            BTreeMap::from([(b"state-key".to_vec(), b"state-value".to_vec())])
+        );
+        assert_eq!(state.config, config);
     }
 }
