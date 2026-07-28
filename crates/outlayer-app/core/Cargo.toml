@@ -21,12 +21,28 @@ serde_with = { workspace = true, features = ["base64", "hex"], optional = true }
 
 [features]
 abi = ["borsh-schema", "schemars-v0_8"]
-arbitrary = ["defuse-crypto/arbitrary", "dep:arbitrary", "near-account-id/arbitrary"]
+arbitrary = [
+  "defuse-crypto/arbitrary",
+  "dep:arbitrary",
+  "near-account-id/arbitrary",
+]
 borsh = ["defuse-crypto/borsh", "dep:borsh", "near-account-id/borsh"]
-borsh-schema = ["borsh", "borsh/unstable__schema", "defuse-crypto/abi", "near-account-id/abi"]
+borsh-schema = [
+  "borsh",
+  "borsh/unstable__schema",
+  "defuse-crypto/abi",
+  "near-account-id/abi",
+]
 digest = ["dep:defuse-digest"]
 parse = ["defuse-crypto/fmt"]
-serde = ["defuse-crypto/serde", "dep:cfg_eval", "dep:serde", "dep:serde_with", "near-account-id/serde", "parse"]
+serde = [
+  "defuse-crypto/serde",
+  "dep:cfg_eval",
+  "dep:serde",
+  "dep:serde_with",
+  "near-account-id/serde",
+  "parse",
+]
 schemars-v0_8 = [
   "defuse-crypto/abi",
   "dep:schemars",

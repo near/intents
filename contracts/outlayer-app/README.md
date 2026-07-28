@@ -4,7 +4,7 @@ A per-app code configuration contract, deployed as one [NEP-591 global contract]
 
 ## Overview
 
-An Outlayer App instance is a [NEP-616 deterministic account](https://github.com/near/NEPs/blob/master/neps/nep-0616.md) derived from its `StateInit`. The `StateInit` encodes the initial contract state, uniquely identifying the instance — two instances with the same `admin_id`, `code_hash`, and `code_url` will share the same address.
+An Outlayer App instance is a [NEP-616 deterministic account](https://github.com/near/NEPs/blob/master/neps/nep-0616.md) derived from its `StateInit`. The `StateInit` encodes the complete initial contract state, uniquely identifying the instance. Differences in `admin_public_key`, `state`, or `config` produce different addresses even when `admin_id`, `code_hash`, and `code_url` match.
 
 One admin account manages the instance: it approves the expected code hash and sets the URL where the binary can be fetched. The URL can be an HTTPS link or a `data:` URI embedding the binary inline.
 
@@ -17,7 +17,7 @@ One admin account manages the instance: it approves the expected code hash and s
 | `code_url`         | `Url`                         | set at init   | URL where the code binary can be fetched             |
 | `admin_public_key` | `AdminPublicKey`              | set at init   | Admin's public key (ed25519)                         |
 | `state`            | `BTreeMap<Vec<u8>, Vec<u8>>`  | empty         | Arbitrary encrypted key-value blobs                  |
-| `config`           | `BTreeMap<String, Vec<u8>>`  | empty         | Arbitrary config key-value pairs                     |
+| `config`           | `BTreeMap<Vec<u8>, Vec<u8>>`  | empty         | Arbitrary config key-value pairs                     |
 
 ## StateInit Parameters
 
@@ -38,6 +38,9 @@ Atomically sets the approved SHA-256 hash and the code URL. Admin-only, requires
 ### `oa_transfer_admin(new_admin_id)`
 Transfers control to a new admin. Admin-only, requires 1 yoctoNEAR. Emits `TransferAdmin`.
 
+### `oa_set_admin_public_key(new_admin_public_key)`
+Sets the admin public key. Admin-only, requires exactly 1 yoctoNEAR. Emits `SetAdminPublicKey`.
+
 ### View methods
 - `oa_admin_id()` — current admin
 - `oa_admin_public_key()` — current admin public key
@@ -48,11 +51,11 @@ Transfers control to a new admin. Admin-only, requires 1 yoctoNEAR. Emits `Trans
 
 All events follow [NEP-297](https://github.com/near/NEPs/blob/master/neps/nep-0297.md) with standard `"near-outlayer-app"` version `"1.0.0"`.
 
-| Event           | Fields                         | Description                       |
-|-----------------|--------------------------------|-----------------------------------|
-| `SetCode`       | `hash`, `url`                  | Code URL and approved hash updated |
-| `TransferAdmin` | `old_admin_id`, `new_admin_id` | Admin transferred                 |
-
+| Event               | Fields                         | Description                        |
+|---------------------|--------------------------------|------------------------------------|
+| `SetCode`           | `hash`, `url`                  | Code URL and approved hash updated |
+| `TransferAdmin`     | `old_admin_id`, `new_admin_id` | Admin transferred                  |
+| `SetAdminPublicKey` | `new_admin_public_key`         | Admin public key updated           |
 
 ## `near oa` extension
 
@@ -67,27 +70,39 @@ cargo install --path ./crates/outlayer-app/near-oa
 ### Running
 
 ```sh
-near oa [OPTIONS] --admin-id <AccountId> --code-url <URL> --code-hash <HASH>
+near oa [OPTIONS] --admin-id <AccountId> --code-url <URL> --code-hash <HASH> --admin-public-key <PublicKey>
 ```
 
 ### Usage
 
 ```sh
 $ near oa --help
-Compute StateInit for a near-oa contract instance
+Print JSON storage key-value pairs (as base64) for `StateInit` of a Outlayer App contract
 
-Usage: near-oa [OPTIONS] --admin-id <AccountId> --code-url <URL> --code-hash <HASH | @FILE | @->
+Usage: near-oa [OPTIONS] --admin-id <AccountId> --code-url <URL> --code-hash <HASH | @FILE | @-> --admin-public-key <PublicKey>
 
 Options:
-      --admin-id <AccountId>            Admin account ID (controls code approval and configuration)
-      --code-url <URL>                  URL where the code binary can be fetched from (e.g.
-                                         `https://...` or `data:application/wasm;base64,...`)
-      --code-hash <HASH | @FILE | @->   SHA-256 hash of the approved code. `HASH` can be encoded
-                                         as base58 or hex with `0x` prefix. `@FILE` will calculate
-                                         SHA-256 hash of the `FILE` contents. `@-` will calculate
-                                         SHA-256 hash of the stdin contents
-  -q, --quiet                           Output single-line JSON only (no human-readable annotations)
-  -h, --help                            Print help
+      --admin-id <AccountId>
+          Admin account ID (controls code approval and configuration)
+
+      --code-url <URL>
+          URL where the code binary can be fetched from (e.g. `https://...` or
+          `data:application/wasm;base64,...`)
+
+      --code-hash <HASH | @FILE | @->
+          SHA-256 hash of the approved code.
+
+          `HASH` can be encoded as base58 or hex with `0x` prefix. `@FILE` will calculate SHA-256
+          hash of the `FILE` contents. `@-` will calculate SHA-256 hash of the stdin contents.
+
+      --admin-public-key <PublicKey>
+          Admin's public key (e.g. `ed25519:...`)
+
+  -q, --quiet
+          Output single-line JSON only (no human-readable annotations)
+
+  -h, --help
+          Print help (see a summary with '-h')
 ```
 
 ### Example
@@ -95,15 +110,19 @@ Options:
 ```bash
 near oa \
   --admin-id alice.near \
-  --code-hash 0xfaf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc8 \
-  --code-url https://example.com/contract.wasm
+  --code-hash 0xfaf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc80 \
+  --code-url https://example.com/contract.wasm \
+  --admin-public-key ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJugxm
 ```
-```
+```text
 // State:
 {
   "admin_id": "alice.near",
-  "code_hash": "faf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc8",
-  "code_url": "https://example.com/contract.wasm"
+  "code_hash": "faf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc80",
+  "code_url": "https://example.com/contract.wasm",
+  "admin_public_key": "ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJugxm",
+  "state": {},
+  "config": {}
 }
 
 // Storage key-value pairs (as base64):
@@ -119,6 +138,7 @@ near transaction construct-transaction <admin-id> \
     --admin-id <admin-id> \
     --code-url <url> \
     --code-hash <code-sha256-hex> \
+    --admin-public-key <admin-public-key> \
     --quiet)" \
   deposit 0NEAR \
   skip \

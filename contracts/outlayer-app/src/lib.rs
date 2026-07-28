@@ -32,7 +32,7 @@ pub trait OutlayerApp {
     /// Sets a new admin public key.
     /// Admin-only. Requires exactly 1 yoctoNEAR.
     /// Emits [`Event::SetAdminPublicKey`].
-    fn oa_set_admin_public_key(&mut self, admin_public_key: AdminPublicKey);
+    fn oa_set_admin_public_key(&mut self, new_admin_public_key: AdminPublicKey);
 
     /// Returns the current admin's account ID.
     fn oa_admin_id(&self) -> AccountId;
