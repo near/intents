@@ -130,7 +130,7 @@ mod tests {
         let state = State::new_immutable(admin_public_key);
 
         assert_eq!(state.admin_id.as_ref(), IMMUTABLE_ADMIN_ID);
-        assert_eq!(state.admin_public_key, admin_public_key);
+        assert!(state.admin_public_key == admin_public_key);
         assert_eq!(state.code_hash, [0; 32]);
         assert!(state.code_url.is_empty());
         assert!(state.state.is_empty());
