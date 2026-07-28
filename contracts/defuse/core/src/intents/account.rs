@@ -1,7 +1,8 @@
 use std::borrow::Cow;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::{AccountIdRef, CryptoHash};
+use near_account_id::AccountIdRef;
+use near_sdk::CryptoHash;
 use serde::{Deserialize, Serialize};
 
 use crate::{

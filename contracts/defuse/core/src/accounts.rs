@@ -1,6 +1,6 @@
 use std::{borrow::Cow, collections::BTreeSet};
 
-use near_sdk::AccountIdRef;
+use near_account_id::AccountIdRef;
 use serde::{Deserialize, Serialize};
 use serde_with::{base64::Base64, serde_as};
 

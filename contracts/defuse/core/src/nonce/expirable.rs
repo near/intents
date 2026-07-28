@@ -1,10 +1,9 @@
+use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_borsh_utils::As;
 use defuse_time::{Timestamp, borsh::TimestampNanoSeconds};
-use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 
 /// Expirable nonces contain deadline which is 8 bytes of timestamp in nanoseconds
 #[derive(Clone, Debug, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
-#[borsh(crate = "::near_sdk::borsh")]
 pub struct ExpirableNonce<T>
 where
     T: BorshSerialize + BorshDeserialize,

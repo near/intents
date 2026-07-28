@@ -3,8 +3,8 @@ use crate::payload::{Payload, SignedPayload};
 use super::{DefusePayload, ExtractDefusePayload};
 use defuse_crypto::secp256k1::{Secp256k1RecoverableSignature, Secp256k1UncompressedPublicKey};
 use defuse_erc191::Erc191;
-use near_sdk::{CryptoHash, serde::de::DeserializeOwned, serde_json};
-use serde::{Deserialize, Serialize};
+use near_sdk::CryptoHash;
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_with::serde_as;
 
 #[serde_as]

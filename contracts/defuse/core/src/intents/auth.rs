@@ -1,5 +1,9 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, state_init::StateInit};
+use near_account_id::{AccountId, AccountIdRef};
+use near_gas::NearGas;
+use near_global_contracts::StateInit;
+use near_sdk::CryptoHash;
+use near_token::NearToken;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -40,14 +44,14 @@ pub struct AuthCall {
     /// Remaining gas will be distributed evenly across all Function Call
     /// Promises created during execution of current receipt.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub min_gas: Option<Gas>,
+    pub min_gas: Option<NearGas>,
 }
 
 impl AuthCall {
-    pub const MIN_GAS_DEFAULT: Gas = Gas::from_tgas(10);
+    pub const MIN_GAS_DEFAULT: NearGas = NearGas::from_tgas(10);
 
     #[inline]
-    pub fn min_gas(&self) -> Gas {
+    pub fn min_gas(&self) -> NearGas {
         self.min_gas.unwrap_or(Self::MIN_GAS_DEFAULT)
     }
 }

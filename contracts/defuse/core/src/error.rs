@@ -5,7 +5,8 @@ use crate::{
     tokens::MAX_TOKEN_ID_LEN,
 };
 use defuse_nep245::ErrorLogTooLong;
-use near_sdk::{AccountId, FunctionError, serde_json};
+use near_account_id::AccountId;
+use near_sdk::FunctionError;
 use thiserror::Error as ThisError;
 
 pub type Result<T, E = DefuseError> = ::core::result::Result<T, E>;

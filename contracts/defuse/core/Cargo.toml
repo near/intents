@@ -33,8 +33,13 @@ derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
 hex-literal.workspace = true
 impl-tools.workspace = true
+near-account-id.workspace = true
 near-contract-standards.workspace = true
+near-gas.workspace = true
+near-global-contracts.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
+near-token.workspace = true
+
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 serde_with = { workspace = true, features = ["base58", "base64"] }

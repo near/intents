@@ -16,7 +16,7 @@ use crate::{
 };
 use cached::CachedState;
 use impl_tools::autoimpl;
-use near_sdk::{AccountId, AccountIdRef};
+use near_account_id::{AccountId, AccountIdRef};
 use std::borrow::Cow;
 
 #[cfg(feature = "imt")]

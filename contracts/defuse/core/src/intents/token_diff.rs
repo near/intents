@@ -12,7 +12,8 @@ use crate::{
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_num_utils::CheckedMulDiv;
 use impl_tools::autoimpl;
-use near_sdk::{AccountId, AccountIdRef, CryptoHash};
+use near_account_id::{AccountId, AccountIdRef};
+use near_sdk::CryptoHash;
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::{borrow::Cow, collections::BTreeMap};

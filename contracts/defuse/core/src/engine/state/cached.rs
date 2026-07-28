@@ -13,7 +13,7 @@ use crate::{
 };
 use defuse_bitmap::{U248, U256};
 use defuse_near_utils::Lock;
-use near_sdk::{AccountId, AccountIdRef};
+use near_account_id::{AccountId, AccountIdRef};
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},

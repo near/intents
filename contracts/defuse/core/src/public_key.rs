@@ -11,7 +11,7 @@ use defuse_crypto::{
     secp256k1::{Secp256k1, Secp256k1UncompressedPublicKey},
 };
 use defuse_digest::{Digest, sha3::Keccak256};
-use near_sdk::{AccountId, AccountIdRef};
+use near_account_id::{AccountId, AccountIdRef};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
@@ -216,7 +216,7 @@ const _: () = {
 
 #[cfg(test)]
 mod tests {
-    use near_sdk::AccountIdRef;
+    use near_account_id::AccountIdRef;
     use rstest::rstest;
 
     use super::*;

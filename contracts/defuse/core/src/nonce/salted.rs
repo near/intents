@@ -1,8 +1,8 @@
+use borsh::{BorshDeserialize, BorshSerialize};
 use core::mem;
 use hex::FromHex;
 use near_sdk::{
     IntoStorageKey,
-    borsh::{BorshDeserialize, BorshSerialize},
     env::{self, sha256_array},
     store::{IterableMap, key::Identity},
 };
@@ -69,7 +69,7 @@ impl FromStr for Salt {
 
 #[cfg(feature = "abi")]
 const _: () = {
-    use near_sdk::schemars::{
+    use schemars::{
         JsonSchema,
         r#gen::SchemaGenerator,
         schema::{InstanceType, Schema, SchemaObject},
@@ -167,7 +167,6 @@ impl SaltRegistry {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
-#[borsh(crate = "::near_sdk::borsh")]
 pub struct SaltedNonce<T>
 where
     T: BorshSerialize + BorshDeserialize,

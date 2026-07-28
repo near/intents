@@ -1,6 +1,7 @@
 use crate::{Nonce, Timestamp, events::DefuseEvent};
 use impl_tools::autoimpl;
-use near_sdk::{AccountIdRef, CryptoHash};
+use near_account_id::AccountIdRef;
+use near_sdk::CryptoHash;
 
 #[autoimpl(for <T: trait + ?Sized> &mut T, Box<T>)]
 pub trait Inspector {

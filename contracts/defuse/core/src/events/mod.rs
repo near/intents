@@ -1,5 +1,6 @@
 use derive_more::derive::From;
-use near_sdk::{near, serde::Deserialize};
+use near_sdk::near;
+use serde::Deserialize;
 use std::borrow::Cow;
 
 use crate::{

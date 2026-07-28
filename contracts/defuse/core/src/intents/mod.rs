@@ -7,7 +7,8 @@ pub mod tokens;
 pub mod imt;
 
 use derive_more::derive::From;
-use near_sdk::{AccountIdRef, CryptoHash};
+use near_account_id::AccountIdRef;
+use near_sdk::CryptoHash;
 use serde::{Deserialize, Serialize};
 use serde_with::{base58::Base58, serde_as};
 
