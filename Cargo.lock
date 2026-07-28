@@ -1339,7 +1339,6 @@ dependencies = [
  "futures",
  "impl-tools 0.12.0",
  "itertools",
- "near-contract-standards",
  "near-plugins",
  "near-sdk",
  "proptest",

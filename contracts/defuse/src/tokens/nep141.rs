@@ -1,4 +1,4 @@
-use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
+use defuse_core::near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_plugins::AccessControllable;
 use near_sdk::{AccountId, PromiseOrValue, ext_contract, json_types::U128};
 

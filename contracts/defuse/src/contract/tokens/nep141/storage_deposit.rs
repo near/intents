@@ -1,6 +1,8 @@
-use defuse_core::intents::tokens::StorageDeposit;
+use defuse_core::{
+    intents::tokens::StorageDeposit,
+    near_contract_standards::storage_management::ext_storage_management,
+};
 use defuse_near_utils::promise_result_checked_void;
-use near_contract_standards::storage_management::ext_storage_management;
 use near_sdk::{Gas, Promise, near, require};
 
 use crate::contract::{Contract, ContractExt, tokens::STORAGE_DEPOSIT_GAS};

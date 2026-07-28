@@ -1,9 +1,10 @@
 use defuse_core::{
     DefuseError,
-    token_id::{TokenId, nep171::Nep171TokenId},
+    near_contract_standards::non_fungible_token::TokenId,
+    near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver,
+    token_id::{TokenId as DefuseTokenId, nep171::Nep171TokenId},
     tokens::MAX_TOKEN_ID_LEN,
 };
-use near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, FunctionError, PromiseOrValue, env, json_types::U128, near};
 
@@ -24,7 +25,7 @@ impl NonFungibleTokenReceiver for Contract {
         &mut self,
         sender_id: AccountId,
         previous_owner_id: AccountId,
-        token_id: near_contract_standards::non_fungible_token::TokenId,
+        token_id: TokenId,
         msg: String,
     ) -> PromiseOrValue<bool> {
         if token_id.len() > MAX_TOKEN_ID_LEN {
@@ -40,7 +41,7 @@ impl NonFungibleTokenReceiver for Contract {
             msg.parse().unwrap_or_else(|e| panic!("{e}"))
         };
 
-        let core_token_id: TokenId =
+        let core_token_id: DefuseTokenId =
             Nep171TokenId::new(env::predecessor_account_id(), token_id.clone()).into();
 
         self.deposit(
@@ -95,7 +96,7 @@ impl Contract {
         &mut self,
         receiver_id: AccountId,
         contract_id: AccountId,
-        nft_token_id: near_contract_standards::non_fungible_token::TokenId,
+        nft_token_id: TokenId,
     ) -> PromiseOrValue<bool> {
         let mut amount = 1u128;
 

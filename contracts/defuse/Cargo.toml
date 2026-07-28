@@ -23,7 +23,6 @@ defuse-serde-utils = { workspace = true, features = ["base64"] }
 borsh = { workspace = true, features = ["derive"] }
 impl-tools.workspace = true
 itertools.workspace = true
-near-contract-standards.workspace = true
 near-plugins.workspace = true
 near-sdk.workspace = true
 serde = { workspace = true, features = ["derive"] }
