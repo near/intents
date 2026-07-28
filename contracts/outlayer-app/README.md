@@ -30,6 +30,19 @@ The deterministic address is derived from the Borsh-serialized `State`. All para
 
 Use the [`near-oa`](#near-oa-cli-tool) tool to compute the `StateInit` JSON for a given set of parameters.
 
+> [!IMPORTANT]
+> `State::state_init()` serializes the complete `State`, so initial `state` and
+> `config` entries become part of the deterministic account address. In most
+> deployments, leave both maps empty so application data and configuration do
+> not become additional inputs to the instance's identity. Set them during
+> deployment only when you intentionally want their contents to affect the
+> resulting address.
+>
+> Post-deployment `set_state` and `set_config` methods are planned but not yet
+> available. Once implemented, they can be chained as promises to the
+> `StateInit` deployment transaction, keeping runtime state and configuration
+> out of the address derivation.
+
 ## Public API
 
 ### `oa_set_code(code_hash, code_url)`
