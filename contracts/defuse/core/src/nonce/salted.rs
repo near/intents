@@ -1,11 +1,8 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use core::mem;
 use defuse_digest::{Digest, sha2::Sha256};
+use defuse_map_utils::Map;
 use hex::FromHex;
-use near_sdk::{
-    IntoStorageKey,
-    store::{IterableMap, key::Identity},
-};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use std::{
     fmt::{self, Debug},
@@ -101,20 +98,17 @@ const _: () = {
 /// salts that can be valid or invalid.
 #[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
 #[derive(Debug, BorshSerialize, BorshDeserialize)]
-pub struct SaltRegistry {
-    previous: IterableMap<Salt, bool, Identity>,
+pub struct SaltRegistry<T: Map<K = Salt, V = bool>> {
+    previous: T,
     current: Salt,
 }
 
-impl SaltRegistry {
+impl<T: Map<K = Salt, V = bool>> SaltRegistry<T> {
     /// There can be only one valid salt at the beginning
     #[inline]
-    pub fn new<S>(prefix: S, seed: impl Into<[u8; 32]>) -> Self
-    where
-        S: IntoStorageKey,
-    {
+    pub fn new(map: T, seed: impl Into<[u8; 32]>) -> Self {
         Self {
-            previous: IterableMap::with_hasher(prefix),
+            previous: map,
             current: Salt::derive(0, seed),
         }
     }
@@ -188,6 +182,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use super::*;
 
     use arbitrary::Unstructured;
@@ -212,15 +208,16 @@ mod tests {
     #[rstest]
     fn contains_salt_test(random_bytes: Vec<u8>, mut rng: impl Rng) {
         let random_salt: Salt = Unstructured::new(&random_bytes).arbitrary().unwrap();
-        let salts = SaltRegistry::new(random_bytes, rng.random::<[u8; 32]>());
+        let salts = SaltRegistry::new(BTreeMap::<Salt, bool>::default(), rng.random::<[u8; 32]>());
 
         assert!(salts.is_valid(salts.current));
         assert!(!salts.is_valid(random_salt));
     }
 
     #[rstest]
-    fn update_current_salt_test(random_bytes: Vec<u8>, mut rng: impl Rng) {
-        let mut salts = SaltRegistry::new(random_bytes, rng.random::<[u8; 32]>());
+    fn update_current_salt_test(mut rng: impl Rng) {
+        let mut salts =
+            SaltRegistry::new(BTreeMap::<Salt, bool>::default(), rng.random::<[u8; 32]>());
 
         let seed = rng.random::<[u8; 32]>();
         let previous_salt = salts.set_new(seed).expect("should set new salt");
@@ -235,8 +232,9 @@ mod tests {
     }
 
     #[rstest]
-    fn reset_salt_test(random_bytes: Vec<u8>, mut rng: impl Rng) {
-        let mut salts = SaltRegistry::new(random_bytes, rng.random::<[u8; 32]>());
+    fn reset_salt_test(mut rng: impl Rng) {
+        let mut salts =
+            SaltRegistry::new(BTreeMap::<Salt, bool>::default(), rng.random::<[u8; 32]>());
         let random_salt = rng.random::<[u8; 4]>().as_slice().into();
 
         let seed = rng.random::<[u8; 32]>();
@@ -265,8 +263,9 @@ mod tests {
     }
 
     #[rstest]
-    fn derive_next_test(random_bytes: Vec<u8>, mut rng: impl Rng) {
-        let mut salt_registry = SaltRegistry::new(random_bytes, rng.random::<[u8; 32]>());
+    fn derive_next_test(mut rng: impl Rng) {
+        let mut salt_registry =
+            SaltRegistry::new(BTreeMap::<Salt, bool>::default(), rng.random::<[u8; 32]>());
 
         let prev = salt_registry.set_new(rng.random::<[u8; 32]>()).unwrap();
 
