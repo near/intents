@@ -12,13 +12,14 @@ defuse-borsh-utils.workspace = true
 
 borsh = { workspace = true, features = ["derive"] }
 impl-tools.workspace = true
-near-sdk.workspace = true
+near-sdk = { workspace = true , optional = true }
 serde = { workspace = true, features = ["derive"] }
 
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 abi = ["borsh/unstable__schema", "dep:schemars"]
+near-contract = ["dep:near-sdk"]
 
 [dev-dependencies]
 defuse-test-utils.workspace = true

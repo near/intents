@@ -1,4 +1,5 @@
-use near_sdk::{BorshStorageKey, IntoStorageKey, borsh::BorshSerialize};
+use borsh::BorshSerialize;
+use near_sdk::{BorshStorageKey, IntoStorageKey};
 
 pub trait NestPrefix: Sized + IntoStorageKey {
     fn nest<S>(self, nested: S) -> NestedPrefix<Self, S>

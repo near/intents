@@ -31,7 +31,7 @@ serde_with = { workspace = true, features = ["hex"] }
 thiserror.workspace = true
 
 defuse-auth-call = { workspace = true, optional = true }
-defuse-near-utils = { workspace = true, optional = true }
+defuse-near-utils = { workspace = true, optional = true, features = ["near-contract"] }
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]

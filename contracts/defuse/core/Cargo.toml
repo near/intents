@@ -14,7 +14,7 @@ defuse-crypto = { workspace = true, features = ["borsh", "ed25519", "secp256k1",
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-erc191.workspace = true
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
-defuse-map-utils = { workspace = true, features = ["near"] }
+defuse-map-utils.workspace = true
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-nep413 = { workspace = true, features = ["serde"] }
@@ -77,7 +77,7 @@ arbitrary = [
 ]
 imt = []
 near-kit = ["defuse-nep413/near-kit", "dep:near-kit"]
-near-contract = ["dep:near-sdk", "defuse-nep245/near-contract"]
+near-contract = ["dep:near-sdk", "defuse-nep245/near-contract", "defuse-near-utils/near-contract"]
 
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }

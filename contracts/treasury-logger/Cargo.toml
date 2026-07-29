@@ -12,7 +12,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 defuse-borsh-utils.workspace = true
-defuse-near-utils.workspace = true
+defuse-near-utils = { workspace = true, features = ["near-contract"] }
 defuse-nep245 = { workspace = true, features = ["near-contract"] }
 
 borsh = { workspace = true, features = ["derive"] }

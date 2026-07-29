@@ -1,6 +1,5 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use impl_tools::autoimpl;
-use near_sdk::env;
 
 /// This struct is used as a tool to make it possible to derive borsh
 /// serialization in such a way where serialization can take over a reference
@@ -42,7 +41,11 @@ impl<T> From<T> for PanicOnClone<T> {
 impl<T> Clone for PanicOnClone<T> {
     #[track_caller]
     fn clone(&self) -> Self {
-        env::panic_str("PanicOnClone")
+        #[cfg(feature = "near-contract")]
+        near_sdk::env::panic_str("PanicOnClone");
+
+        #[cfg(not(feature = "near-contract"))]
+        panic!("PanicOnClone");
     }
 }
 
