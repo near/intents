@@ -15,7 +15,7 @@ crate-type = ["cdylib", "rlib"]
 defuse-admin-utils.workspace = true
 defuse-auth-call.workspace = true
 defuse-controller.workspace = true
-defuse-core = { workspace = true, features = ["runtime"] }
+defuse-core = { workspace = true, features = ["near-contract"] }
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-serde-utils = { workspace = true, features = ["base64"] }

@@ -77,7 +77,7 @@ arbitrary = [
 ]
 imt = []
 near-kit = ["defuse-nep413/near-kit", "dep:near-kit"]
-runtime = ["dep:near-sdk"]
+near-contract = ["dep:near-sdk"]
 
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }
