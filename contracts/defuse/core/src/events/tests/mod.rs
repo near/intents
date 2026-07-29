@@ -7,7 +7,7 @@ use defuse_test_utils::random::{Rng, RngExt, rng};
 use defuse_token_id::TokenId;
 use near_account_id::{AccountId, AccountIdRef};
 use near_gas::NearGas;
-use near_sdk::json_types::U128;
+use near_sdk_core::json_types::U128;
 use near_token::NearToken;
 use rstest::rstest;
 

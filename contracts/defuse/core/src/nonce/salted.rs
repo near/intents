@@ -227,7 +227,7 @@ mod tests {
 
         let seed = rng.random::<[u8; 32]>();
         let previous_salt = salts.set_new(seed).expect("should set new salt");
-        assert!(salts.is_valid(seed_to_salt(&seed, 1)));
+        assert!(salts.is_valid(seed_to_salt(&seed, 0)));
         assert!(salts.is_valid(previous_salt));
     }
 

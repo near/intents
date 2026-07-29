@@ -5,7 +5,7 @@ use near_account_id::{AccountId, AccountIdRef};
 use near_contract_standards::non_fungible_token;
 use near_gas::NearGas;
 use near_global_contracts::StateInit;
-use near_sdk::json_types::U128;
+use near_sdk_core::json_types::U128;
 use near_token::NearToken;
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
