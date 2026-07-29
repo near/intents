@@ -5,7 +5,7 @@ pub use v0::ContractStateV0;
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_core::{SaltRegistry, amounts::Amounts, fees::FeesConfig, token_id::TokenId};
 use defuse_near_utils::NestPrefix;
-use near_sdk::{AccountId, BorshStorageKey, IntoStorageKey, store::IterableMap};
+use near_sdk::{AccountId, BorshStorageKey, IntoStorageKey, env, store::IterableMap};
 
 pub type TokenBalances = Amounts<IterableMap<TokenId, u128>>;
 
@@ -35,7 +35,10 @@ impl ContractState {
             )),
             wnear_id,
             fees,
-            salts: SaltRegistry::new(prefix.as_slice().nest(Prefix::Salts)),
+            salts: SaltRegistry::new(
+                prefix.as_slice().nest(Prefix::Salts),
+                env::random_seed_array(),
+            ),
         }
     }
 }

@@ -6,7 +6,7 @@ use defuse_fees::Pips;
 use defuse_token_id::TokenId;
 use near_account_id::{AccountId, AccountIdRef};
 use near_gas::NearGas;
-use near_sdk::json_types::U128;
+use near_sdk::{env, json_types::U128};
 use near_token::NearToken;
 use rstest::rstest;
 
@@ -328,8 +328,13 @@ fn set_auth_by_predecessor_id_direct_event<'a>() -> DefuseEvent<'a> {
 
 fn salt_rotation_event<'a>() -> DefuseEvent<'a> {
     DefuseEvent::SaltRotation(SaltRotationEvent {
-        current: Salt::derive(3),
-        invalidated: [Salt::derive(2), Salt::derive(1)].into_iter().collect(),
+        current: Salt::derive(3, env::random_seed_array()),
+        invalidated: [
+            Salt::derive(2, env::random_seed_array()),
+            Salt::derive(1, env::random_seed_array()),
+        ]
+        .into_iter()
+        .collect(),
     })
 }
 

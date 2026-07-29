@@ -1,7 +1,7 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_core::{SaltRegistry, fees::FeesConfig};
 use defuse_near_utils::NestPrefix;
-use near_sdk::{AccountId, IntoStorageKey};
+use near_sdk::{AccountId, IntoStorageKey, env};
 
 use crate::contract::{
     MigrateStorageWithPrefix,
@@ -34,7 +34,10 @@ impl MigrateStorageWithPrefix<ContractStateV0> for ContractState {
             total_supplies,
             wnear_id,
             fees,
-            salts: SaltRegistry::new(prefix.into_storage_key().nest(Prefix::Salts)),
+            salts: SaltRegistry::new(
+                prefix.into_storage_key().nest(Prefix::Salts),
+                env::random_seed_array(),
+            ),
         }
     }
 }
