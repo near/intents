@@ -21,7 +21,7 @@ use crate::{intents::imt::ImtBurn, tokens::imt::ImtMintEvent};
     not(feature = "near-contract"),
     must_use,
     derive(::serde::Serialize),
-    serde(tag = "event", content = "data")
+    serde(tag = "event", content = "data", rename_all = "snake_case")
 )]
 #[cfg_attr(
     feature = "near-contract",
