@@ -1,10 +1,9 @@
 use defuse_core::{
     DefuseError,
-    near_contract_standards::non_fungible_token::TokenId,
-    near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver,
     token_id::{TokenId as DefuseTokenId, nep171::Nep171TokenId},
     tokens::MAX_TOKEN_ID_LEN,
 };
+use near_contract_standards::non_fungible_token::{TokenId, core::NonFungibleTokenReceiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, FunctionError, PromiseOrValue, env, json_types::U128, near};
 

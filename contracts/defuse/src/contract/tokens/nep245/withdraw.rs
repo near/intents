@@ -10,7 +10,6 @@ use defuse_core::{
     DefuseError, Result,
     engine::StateView,
     intents::tokens::MtWithdraw,
-    near_contract_standards::storage_management::ext_storage_management,
     token_id::{nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
 use defuse_near_utils::{
@@ -18,6 +17,7 @@ use defuse_near_utils::{
 };
 use defuse_nep245::ext_mt_core;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
+use near_contract_standards::storage_management::ext_storage_management;
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
     AccountId, FunctionError, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env,

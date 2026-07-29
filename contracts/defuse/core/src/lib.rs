@@ -23,7 +23,6 @@ pub use defuse_token_id as token_id;
 pub use defuse_ton_connect as ton_connect;
 
 pub use near_account_id;
-pub use near_contract_standards;
 pub use near_gas;
 pub use near_global_contracts;
 pub use near_token;

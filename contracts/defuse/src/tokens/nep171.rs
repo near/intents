@@ -1,6 +1,4 @@
-use defuse_core::near_contract_standards::non_fungible_token::{
-    TokenId, core::NonFungibleTokenReceiver,
-};
+use near_contract_standards::non_fungible_token::{TokenId, core::NonFungibleTokenReceiver};
 use near_plugins::AccessControllable;
 use near_sdk::{AccountId, PromiseOrValue, ext_contract};
 

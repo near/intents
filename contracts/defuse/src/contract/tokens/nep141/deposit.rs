@@ -1,7 +1,5 @@
-use defuse_core::{
-    near_contract_standards::fungible_token::receiver::FungibleTokenReceiver,
-    token_id::{TokenId, nep141::Nep141TokenId},
-};
+use defuse_core::token_id::{TokenId, nep141::Nep141TokenId};
+use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, FunctionError, PromiseOrValue, env, json_types::U128, near, require};
 

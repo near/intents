@@ -6,16 +6,14 @@ use crate::{
 };
 use core::iter;
 use defuse_core::{
-    DefuseError, Result,
-    engine::StateView,
-    intents::tokens::FtWithdraw,
-    near_contract_standards::{
-        fungible_token::core::ext_ft_core, storage_management::ext_storage_management,
-    },
+    DefuseError, Result, engine::StateView, intents::tokens::FtWithdraw,
     token_id::nep141::Nep141TokenId,
 };
 use defuse_near_utils::{REFUND_MEMO, promise_result_checked_json, promise_result_checked_void};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
+use near_contract_standards::{
+    fungible_token::core::ext_ft_core, storage_management::ext_storage_management,
+};
 
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
