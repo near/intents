@@ -11,10 +11,10 @@ repository.workspace = true
 borsh = { workspace = true, features = ["derive"] }
 defuse-near-utils.workspace = true
 derive_more = { workspace = true, features = ["from"] }
-near-account-id = { workspace = true }
+near-account-id = { workspace = true, features = ["borsh", "serde"] }
 near-sdk = { workspace = true, optional = true }
 # TODO: replace with near_json_types crate, when it is available
-near-sdk-core.workspace = true
+near-sdk-core = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
 thiserror.workspace = true
 

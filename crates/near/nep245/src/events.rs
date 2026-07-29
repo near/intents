@@ -29,6 +29,7 @@ pub enum MtEvent<'a> {
 }
 
 impl MtEvent<'_> {
+    // TODO: move out from `near-contract` feature when near event crate is available
     /// Validates that the event log (including potential refund overhead) fits within limits.
     /// Returns a [`CheckedMtEvent`] that can be emitted.
     #[cfg(feature = "near-contract")]

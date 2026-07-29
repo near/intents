@@ -76,13 +76,18 @@ impl MtEvent<'_> {
     feature = "near-contract",
     must_use = "call `.emit()` to emit the event"
 )]
+pub struct CheckedMtEvent(pub(crate) String);
 
-pub struct CheckedMtEvent(pub String);
+impl CheckedMtEvent {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
 
 #[cfg(feature = "near-contract")]
 impl CheckedMtEvent {
     pub fn emit(self) {
-        near_sdk::env::log_str(&self.0);
+        near_sdk::env::log_str(self.as_str());
     }
 }
 

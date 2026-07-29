@@ -1,7 +1,7 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use defuse_token_id::nep171::TokenId;
+use defuse_token_id::nep171;
 use near_account_id::{AccountId, AccountIdRef};
 use near_gas::NearGas;
 use near_global_contracts::StateInit;
@@ -235,7 +235,7 @@ impl ExecutableIntent for FtWithdraw {
 pub struct NftWithdraw {
     pub token: AccountId,
     pub receiver_id: AccountId,
-    pub token_id: TokenId,
+    pub token_id: nep171::TokenId,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
 

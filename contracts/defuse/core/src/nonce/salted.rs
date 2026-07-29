@@ -117,7 +117,7 @@ impl<T: Map<K = Salt, V = bool>> SaltRegistry<T> {
         let seed = seed.into();
 
         (0..=u8::MAX)
-            .map(|num| Salt::derive(num, seed.clone()))
+            .map(|num| Salt::derive(num, seed))
             .find(|s| !self.is_used(*s))
             .ok_or(DefuseError::SaltGenerationFailed)
     }
