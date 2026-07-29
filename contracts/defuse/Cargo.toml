@@ -17,14 +17,14 @@ defuse-auth-call.workspace = true
 defuse-controller.workspace = true
 defuse-core = { workspace = true, features = ["near-contract"] }
 defuse-near-utils.workspace = true
-defuse-nep245.workspace = true
+defuse-nep245 = { workspace = true, features = ["near-contract"] }
 defuse-serde-utils = { workspace = true, features = ["base64"] }
 
 borsh = { workspace = true, features = ["derive"] }
 impl-tools.workspace = true
 itertools.workspace = true
 near-plugins.workspace = true
-near-sdk.workspace = true
+near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 thiserror.workspace = true

@@ -1738,6 +1738,7 @@ version = "0.1.0"
 dependencies = [
  "borsh",
  "defuse-near-utils",
+ "defuse-nep245",
  "derive_more",
  "near-account-id",
  "near-sdk",

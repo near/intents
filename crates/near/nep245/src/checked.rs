@@ -1,8 +1,8 @@
 use crate::MtEvent;
 use defuse_near_utils::REFUND_MEMO;
-use near_sdk::FunctionError;
 
-#[derive(Debug, Clone, PartialEq, Eq, FunctionError, thiserror::Error)]
+#[cfg_attr(feature = "near-contract", derive(::near_sdk::FunctionError))]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("refund event log would be too long")]
 pub struct ErrorLogTooLong;
 
@@ -72,9 +72,14 @@ impl MtEvent<'_> {
 /// A validated event log that has been checked for refund overhead.
 /// Use [`CheckedMtEvent::emit`] to emit the event.
 #[derive(Debug)]
-#[must_use = "call `.emit()` to emit the event"]
-pub struct CheckedMtEvent(pub(crate) String);
+#[cfg_attr(
+    feature = "near-contract",
+    must_use = "call `.emit()` to emit the event"
+)]
 
+pub struct CheckedMtEvent(pub String);
+
+#[cfg(feature = "near-contract")]
 impl CheckedMtEvent {
     pub fn emit(self) {
         near_sdk::env::log_str(&self.0);

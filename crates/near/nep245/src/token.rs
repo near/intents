@@ -1,5 +1,5 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::AccountId;
+use near_account_id::AccountId;
 use serde::{Deserialize, Serialize};
 
 pub type TokenId = String;

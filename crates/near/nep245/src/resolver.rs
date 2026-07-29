@@ -1,4 +1,5 @@
-use near_sdk::{AccountId, json_types::U128};
+use near_account_id::AccountId;
+use near_sdk_core::json_types::U128;
 
 use super::{ClearedApproval, TokenId};
 

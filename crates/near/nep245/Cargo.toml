@@ -11,7 +11,10 @@ repository.workspace = true
 borsh = { workspace = true, features = ["derive"] }
 defuse-near-utils.workspace = true
 derive_more = { workspace = true, features = ["from"] }
-near-sdk.workspace = true
+near-account-id.workspace = true
+near-sdk = { workspace = true, optional = true }
+# TODO: replace with near_json_types crate, when it is available
+near-sdk-core.workspace = true
 serde = { workspace = true, features = ["derive"] }
 thiserror.workspace = true
 
@@ -19,6 +22,8 @@ schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 abi = ["borsh/unstable__schema", "dep:schemars", "near-sdk/abi"]
+near-contract = ["dep:near-sdk"]
 
 [dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }
+defuse-nep245 = { workspace = true, features = ["near-contract"] }

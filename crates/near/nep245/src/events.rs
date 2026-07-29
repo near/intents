@@ -2,25 +2,36 @@ use super::TokenId;
 use crate::checked::{CheckedMtEvent, ErrorLogTooLong};
 use defuse_near_utils::TOTAL_LOG_LENGTH_LIMIT;
 use derive_more::derive::From;
-use near_sdk::{AccountIdRef, AsNep297Event, json_types::U128, near};
+use near_account_id::AccountIdRef;
+use near_sdk_core::{events::AsNep297Event, json_types::U128};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
-#[must_use = "make sure to `.emit()` this event"]
-#[near(event_json(standard = "nep245"))]
+#[cfg_attr(
+    not(feature = "near-contract"),
+    must_use,
+    derive(::serde::Serialize),
+    serde(tag = "event", content = "data")
+)]
+#[cfg_attr(
+    feature = "near-contract",
+    must_use = "make sure to `.emit()` this event",
+    ::near_sdk::near(event_json(standard = "nep245"))
+)]
 #[derive(Debug, Clone, Deserialize, From)]
 pub enum MtEvent<'a> {
-    #[event_version("1.0.0")]
+    #[cfg_attr(feature = "near-contract", event_version("1.0.0"))]
     MtMint(Cow<'a, [MtMintEvent<'a>]>),
-    #[event_version("1.0.0")]
+    #[cfg_attr(feature = "near-contract", event_version("1.0.0"))]
     MtBurn(Cow<'a, [MtBurnEvent<'a>]>),
-    #[event_version("1.0.0")]
+    #[cfg_attr(feature = "near-contract", event_version("1.0.0"))]
     MtTransfer(Cow<'a, [MtTransferEvent<'a>]>),
 }
 
 impl MtEvent<'_> {
     /// Validates that the event log (including potential refund overhead) fits within limits.
     /// Returns a [`CheckedMtEvent`] that can be emitted.
+    #[cfg(feature = "near-contract")]
     pub fn check_refund(self) -> Result<CheckedMtEvent, ErrorLogTooLong> {
         let log = self.to_nep297_event().to_event_log();
         let delta = self.compute_refund_delta();
@@ -80,15 +91,16 @@ mod tests {
     use defuse_near_utils::REFUND_MEMO;
 
     use super::*;
-    use near_sdk::json_types::U128;
+    use near_account_id::AccountId;
+    use near_sdk_core::json_types::U128;
 
     const REFUND_STR_LEN: usize = REFUND_MEMO.len();
 
     /// Create a single-event `MtTransfer` with exact log length.
     /// Pads `token_id` to achieve the desired length.
     fn create_single_event_mt(length: usize, memo: Option<&str>) -> MtEvent<'static> {
-        let old_owner: near_sdk::AccountId = "aa".parse().unwrap();
-        let new_owner: near_sdk::AccountId = "bb".parse().unwrap();
+        let old_owner: AccountId = "aa".parse().unwrap();
+        let new_owner: AccountId = "bb".parse().unwrap();
         let base_token_id = "t";
 
         // Measure base log length
@@ -129,8 +141,8 @@ mod tests {
     /// Create a triple-event `MtTransfer` with exact log length.
     /// Each event has its own memo. Pads first event's `token_id` to achieve the desired length.
     fn create_triple_event_mt(length: usize, memos: [Option<&str>; 3]) -> MtEvent<'static> {
-        let old_owner: near_sdk::AccountId = "aa".parse().unwrap();
-        let new_owner: near_sdk::AccountId = "bb".parse().unwrap();
+        let old_owner: AccountId = "aa".parse().unwrap();
+        let new_owner: AccountId = "bb".parse().unwrap();
         let base_token_id = "t";
 
         // Measure base log length with 3 events
