@@ -29,10 +29,7 @@ pub struct IntentEvent<T> {
 
 // Defuse events according to defuse v0.4.1,
 #[must_use = "make sure to `.emit()` this event"]
-#[cfg_attr(
-    feature = "runtime",
-    ::near_sdk_macros::near(event_json(standard = "dip4"))
-)]
+#[cfg_attr(feature = "runtime", ::near_sdk::near(event_json(standard = "dip4")))]
 #[derive(Debug, Clone, Deserialize, From)]
 pub enum DefuseEventV0_4_1<'a> {
     #[cfg_attr(feature = "runtime", event_version("0.3.0"))]

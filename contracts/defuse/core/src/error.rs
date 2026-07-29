@@ -9,7 +9,7 @@ use near_account_id::AccountId;
 use thiserror::Error as ThisError;
 
 #[cfg(feature = "runtime")]
-use near_sdk_macros::FunctionError;
+use near_sdk::FunctionError;
 
 pub type Result<T, E = DefuseError> = ::core::result::Result<T, E>;
 

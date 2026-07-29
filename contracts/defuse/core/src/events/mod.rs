@@ -18,10 +18,7 @@ use crate::{
 use crate::{intents::imt::ImtBurn, tokens::imt::ImtMintEvent};
 
 #[must_use = "make sure to `.emit()` this event"]
-#[cfg_attr(
-    feature = "runtime",
-    ::near_sdk_macros::near(event_json(standard = "dip4"))
-)]
+#[cfg_attr(feature = "runtime", ::near_sdk::near(event_json(standard = "dip4")))]
 #[derive(Debug, Clone, Deserialize, From)]
 pub enum DefuseEvent<'a> {
     #[cfg_attr(feature = "runtime", event_version("0.4.3"))]

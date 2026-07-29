@@ -38,7 +38,6 @@ near-contract-standards.workspace = true
 near-gas.workspace = true
 near-global-contracts.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
-near-sdk-macros = { workspace = true, optional = true }
 near-token.workspace = true
 
 serde = { workspace = true, features = ["derive"] }
@@ -76,10 +75,11 @@ arbitrary = [
 ]
 imt = []
 near-kit = ["defuse-nep413/near-kit", "dep:near-kit"]
-runtime = ["dep:near-sdk-macros"]
+# runtime = ["dep:near-sdk"]
+runtime = []
 
 [dev-dependencies]
-defuse-core = { workspace = true, features = ["arbitrary", "runtime"] }
+defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-test-utils.workspace = true
 
 bs58.workspace = true
