@@ -3,10 +3,11 @@ mod v0_4_1;
 use std::borrow::Cow;
 
 use defuse_fees::Pips;
+use defuse_test_utils::random::{Rng, RngExt, rng};
 use defuse_token_id::TokenId;
 use near_account_id::{AccountId, AccountIdRef};
 use near_gas::NearGas;
-use near_sdk::{env, json_types::U128};
+use near_sdk::json_types::U128;
 use near_token::NearToken;
 use rstest::rstest;
 
@@ -326,19 +327,19 @@ fn set_auth_by_predecessor_id_direct_event<'a>() -> DefuseEvent<'a> {
     }))
 }
 
-fn salt_rotation_event<'a>() -> DefuseEvent<'a> {
+fn salt_rotation_event<'a>(mut rng: impl Rng) -> DefuseEvent<'a> {
     DefuseEvent::SaltRotation(SaltRotationEvent {
-        current: Salt::derive(3, env::random_seed_array()),
+        current: Salt::derive(3, rng.random::<[u8; 32]>()),
         invalidated: [
-            Salt::derive(2, env::random_seed_array()),
-            Salt::derive(1, env::random_seed_array()),
+            Salt::derive(2, rng.random::<[u8; 32]>()),
+            Salt::derive(1, rng.random::<[u8; 32]>()),
         ]
         .into_iter()
         .collect(),
     })
 }
 
-fn get_all_events<'a>() -> Vec<DefuseEvent<'a>> {
+fn get_all_events<'a>(rng: impl Rng) -> Vec<DefuseEvent<'a>> {
     #[allow(unused_mut)]
     let mut all_events = vec![
         pk_added_direct_event(),
@@ -357,7 +358,7 @@ fn get_all_events<'a>() -> Vec<DefuseEvent<'a>> {
         account_unlocked_event(),
         set_auth_by_predecessor_id_intent_event(),
         set_auth_by_predecessor_id_direct_event(),
-        salt_rotation_event(),
+        salt_rotation_event(rng),
     ];
 
     #[cfg(feature = "imt")]
@@ -370,8 +371,8 @@ fn get_all_events<'a>() -> Vec<DefuseEvent<'a>> {
 
 #[rstest]
 #[case(DefuseEventVersion::V0_4_1)]
-fn event_backward_compatibility_test(#[case] event_version: DefuseEventVersion) {
-    for event in get_all_events() {
+fn event_backward_compatibility_test(#[case] event_version: DefuseEventVersion, rng: impl Rng) {
+    for event in get_all_events(rng) {
         event_version.assert_compatible(&event);
     }
 }
