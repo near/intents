@@ -41,10 +41,6 @@ impl<T> From<T> for PanicOnClone<T> {
 impl<T> Clone for PanicOnClone<T> {
     #[track_caller]
     fn clone(&self) -> Self {
-        #[cfg(feature = "near-contract")]
-        near_sdk::env::panic_str("PanicOnClone");
-
-        #[cfg(not(feature = "near-contract"))]
         panic!("PanicOnClone");
     }
 }
