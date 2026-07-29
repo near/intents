@@ -1764,6 +1764,27 @@ name = "defuse-nep461"
 version = "0.1.0"
 
 [[package]]
+name = "defuse-nep641"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "borsh",
+ "bs58 0.5.1",
+ "defuse-digest",
+ "defuse-nep641",
+ "digest-io",
+ "futures",
+ "hex-literal",
+ "near-account-id",
+ "near-kit",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.19",
+ "tracing",
+]
+
+[[package]]
 name = "defuse-num-utils"
 version = "0.1.0"
 dependencies = [

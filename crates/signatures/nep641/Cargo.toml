@@ -1,0 +1,49 @@
+lints.workspace = true
+
+[package]
+name = "defuse-nep641"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+near-account-id.workspace = true
+
+arbitrary = { workspace = true, features = ["derive"], optional = true }
+borsh = { workspace = true, features = ["derive"], optional = true }
+bs58 = { workspace = true, optional = true }
+defuse-digest = { workspace = true, features = ["sha3"], optional = true }
+digest-io = { workspace = true, optional = true }
+futures = { workspace = true, features = ["std"], optional = true }
+near-kit = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_json = { workspace = true, optional = true }
+thiserror = { workspace = true, optional = true }
+tracing = { workspace = true, optional = true }
+
+[features]
+abi = ["borsh-schema", "schemars-v0_8"]
+arbitrary = ["dep:arbitrary", "near-account-id/arbitrary"]
+borsh = ["dep:borsh", "near-account-id/borsh"]
+borsh-schema = ["borsh", "borsh?/unstable__schema", "near-account-id/abi"]
+digest = ["dep:defuse-digest", "dep:digest-io"]
+near-kit = ["dep:near-kit", "serde"]
+serde = ["dep:serde", "near-account-id/serde"]
+schemars-v0_8 = ["dep:schemars", "near-account-id/schemars-v0_8", "serde"]
+tracing = ["borsh", "dep:bs58", "dep:tracing", "digest", "near-kit?/tracing"]
+resolver = [
+  "borsh",
+  "dep:futures",
+  "dep:serde_json",
+  "dep:thiserror",
+  "digest",
+  "near-kit",
+  "serde",
+]
+
+[dev-dependencies]
+defuse-nep641 = { path = ".", features = ["abi", "borsh", "digest", "serde", "resolver", "near-kit", "tracing"] }
+
+hex-literal.workspace = true
