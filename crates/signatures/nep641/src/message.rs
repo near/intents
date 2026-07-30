@@ -69,6 +69,7 @@ pub struct OffchainMessage {
     // TODO: schema?
     // TODO: deadline like in TON Connect?
     pub msg: String,
+    // TODO: "verify that account A has >= 1000 tokens B", "owns NFT", etc..
 }
 
 impl OffchainMessage {
