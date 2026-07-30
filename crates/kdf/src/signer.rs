@@ -56,6 +56,7 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
         self.schema().derive(path)
     }
 
+    /// Derive a signer with sub-[schema](Schema).
     #[inline]
     fn derive_with<D>(self, with: D) -> Derive<Self, D>
     where
@@ -64,6 +65,9 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
         Derive(self, with)
     }
 
+    /// Derive a signer with a given value for [current](Self::schema) schema,
+    /// so that returned signer implements [`Signer`] and doesn't take any
+    /// derivation path.
     #[inline]
     fn derive(self, value: P) -> Derive<Self, Value<P>>
     where
@@ -76,6 +80,7 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
 /// A [signer](DeriveSigner) that can recoverably sign messages by
 /// **internally** deriving signing keys.
 #[trait_variant::make(Send)]
+#[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
 pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
     /// Recoveryably [sign](DeriveSigner::derive_sign) given message with a
     /// secret key **internally** derived for given `path` according to
