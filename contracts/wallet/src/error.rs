@@ -26,6 +26,10 @@ pub enum ContractError {
     #[error("insufficient attached deposit")]
     InsufficientDeposit,
 
+    #[cfg(feature = "json")]
+    #[error("JSON: {0}")]
+    JSON(#[from] serde_json::Error),
+
     #[error("lockout: signature is disabled and extensions are empty")]
     Lockout,
 

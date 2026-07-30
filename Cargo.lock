@@ -2043,6 +2043,7 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-digest",
  "defuse-near-promise",
+ "defuse-nep641",
  "defuse-time",
  "defuse-wallet",
  "digest-io",

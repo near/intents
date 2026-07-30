@@ -1,3 +1,9 @@
+#[cfg(feature = "offchain")]
+mod offchain;
+
+#[cfg(feature = "offchain")]
+pub use self::offchain::*;
+
 use crate::RequestMessage;
 
 /// Signature schema used by [`Wallet`](crate::contract::Wallet) contract
@@ -22,3 +28,4 @@ pub trait SignatureSchema {
     #[must_use = "check if verification passed"]
     fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool;
 }
+

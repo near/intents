@@ -20,10 +20,12 @@ borsh = { workspace = true, features = ["derive"], optional = true }
 cfg_eval = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
 defuse-digest = { workspace = true, features = ["sha3"], optional = true }
+defuse-nep641 = { workspace = true, optional = true }
 digest-io = { workspace = true, optional = true }
 impl-tools = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
+serde_json = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true }
 
 near-sdk = { workspace = true, optional = true }
@@ -37,6 +39,7 @@ abi = ["borsh-schema", "near-sdk?/abi", "schemars-v0_8"]
 arbitrary = [
   "defuse-bitmap/arbitrary",
   "defuse-near-promise/arbitrary",
+  "defuse-nep641?/arbitrary",
   "defuse-time/arbitrary",
   "dep:arbitrary",
   "dep:arbitrary_with",
@@ -45,6 +48,7 @@ arbitrary = [
 borsh = [
   "defuse-bitmap/borsh",
   "defuse-near-promise/borsh",
+  "defuse-nep641?/borsh",
   "defuse-time/borsh",
   "dep:borsh",
   "dep:defuse-borsh-utils",
@@ -56,14 +60,17 @@ borsh-schema = [
   "defuse-bitmap/borsh-schema",
   "defuse-borsh-utils?/schema",
   "defuse-near-promise/borsh-schema",
+  "defuse-nep641?/borsh-schema",
   "defuse-time/borsh-schema",
   "near-account-id/abi",
 ]
-digest = ["dep:defuse-digest", "dep:digest-io"]
-json = ["defuse-near-promise/json", "serde"]
+digest = ["defuse-nep641?/digest", "dep:defuse-digest", "dep:digest-io"]
+json = ["defuse-near-promise/json", "dep:serde_json", "serde"]
 near-kit = ["defuse-near-promise/near-kit"]
+offchain = ["dep:defuse-nep641"]
 schemars-v0_8 = [
   "defuse-near-promise/schemars-v0_8",
+  "defuse-nep641?/schemars-v0_8",
   "defuse-time/schemars-v0_8",
   "dep:schemars",
   "near-account-id/schemars-v0_8",
@@ -71,6 +78,7 @@ schemars-v0_8 = [
 ]
 serde = [
   "defuse-near-promise/serde",
+  "defuse-nep641?/serde",
   "defuse-time/serde",
   "dep:cfg_eval",
   "dep:serde",
@@ -84,12 +92,13 @@ near-contract = [
   "dep:impl-tools",
   "dep:near-sdk",
   "digest",
+  "json",
   "serde",
   "std",
 ]
 
 [dev-dependencies]
-defuse-wallet = { path = ".", features = ["abi", "arbitrary", "borsh", "digest", "schemars-v0_8", "serde", "near-contract"] }
+defuse-wallet = { path = ".", features = ["abi", "arbitrary", "borsh", "digest", "offchain", "schemars-v0_8", "serde", "near-contract"] }
 
 bs58.workspace = true
 hex-literal.workspace = true

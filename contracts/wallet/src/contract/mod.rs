@@ -8,6 +8,9 @@
 //! See [`wallet!`](macro@crate::wallet) macro to define and implement wallet
 //! contract variants.
 
+#[cfg(feature = "offchain")]
+pub mod offchain;
+
 use std::{collections::BTreeSet, fmt::Display};
 
 use borsh::{BorshDeserialize, BorshSerialize};

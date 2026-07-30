@@ -1,7 +1,11 @@
-use crate::OffchainAuthorization;
+use std::collections::BTreeMap;
+
+use near_account_id::AccountId;
+
+use crate::{OffchainMessage, Proof};
 
 /// A smart-contract implementing NEP-641 interface.
-pub trait OffchainAuthorizer {
+pub trait AuthResolver {
     /// A view-method to resolve [offchain](#offchain-only) authorization
     /// according to NEP-641.
     ///
@@ -12,10 +16,10 @@ pub trait OffchainAuthorizer {
     /// TODO: returned auths fields
     ///
     /// The implementation MUST panic if:
-    /// * [`signer_id`](field@crate::OffchainMessage::signer_id) doesn't match
-    ///   `env::current_account_id()`
     /// * [`chain_id`](field@crate::OffchainMessage::chain_id) doesn't match
     ///   `env::chain_id()`
+    /// * [`resolver_id`](field@crate::OffchainMessage::resolver_id) doesn't
+    ///   match `env::current_account_id()`
     /// * `proof` is invalid for given [`OffchainMessage`](crate::OffchainMessage)
     ///
     /// # Offchain Only
@@ -30,5 +34,8 @@ pub trait OffchainAuthorizer {
     ///
     /// Instead, use on-chain messages (e.g. request messages, transactions, delegate actions),
     /// which are specifically designed with replay-protection mechanism in mind.
-    fn w_resolve_auth(&self, auth: OffchainAuthorization) -> Vec<OffchainAuthorization>;
+    // TODO: can we resolve (different?) signatures on same account id multiple
+    // times? e.g. intents.near
+    // TODO: what if cycles with SAME signatures? dao1.near -> dao2.near -> dao1.near -> ...
+    fn w_resolve_auth(&self, msg: OffchainMessage, proof: Proof) -> BTreeMap<AccountId, Proof>;
 }
