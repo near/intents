@@ -1,12 +1,15 @@
+use std::collections::HashSet;
+
+use near_account_id::AccountId;
 use serde::Serialize;
 
-use crate::{OffchainMessage, PendingAuthorization};
+use crate::{OffchainMessage, Proof};
 
 /// Bindings to [`OffchainAuthorizer`](crate::contract::OffchainAuthorizer)
 /// contract interface.
 #[near_kit::contract]
 pub trait AuthResolverContract {
-    fn w_resolve_auth(&self, args: WResolveAuthArgs<'_>) -> Vec<PendingAuthorization>;
+    fn w_resolve_auth(&self, args: WResolveAuthArgs<'_>) -> HashSet<AccountId, Proof>;
 }
 
 /// Arguments for [`w_resolve_auth()`](OffchainAuthorizerContractClient::w_resolve_auth)

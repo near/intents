@@ -2,8 +2,6 @@ use near_account_id::AccountId;
 
 /// Chain ID (e.g. `mainnet`)
 pub type ChainId = String;
-/// Mainnet [chain ID](ChainId).
-pub const MAINNET: &str = "mainnet";
 
 /// A proof for [`OffchainAuthorization`]
 pub type Proof = String;
@@ -47,29 +45,27 @@ pub type Proof = String;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct OffchainMessage {
     // TODO: versioned?
-    /// _Effective_ signer ID, i.e. top-level account ID for the whole
-    /// authorization.
+    /// Signer ID.
     ///
-    // TODO
-    /// MUST be equal to
+    /// MUST be equal to account ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
     pub signer_id: AccountId,
 
-    /// _Real_ resolver ID.
+    /// Account ID which the top-level authorization is intended to be
+    /// [resolved](crate::contract::AuthResolver::w_resolve_auth) for.
     ///
-    /// MUST be equal to account ID of [resolving](crate::contract::OffchainAuthorizer::w_resolve_auth) contract.
-    // TODO: resolver_ids?
-    pub resolver_ids: Vec<AccountId>,
+    /// If this authorization is top-level itself, then this field MUST match
+    /// `field@Self::signer_id`.
+    pub sign_for: AccountId,
 
     /// Chain ID.
     ///
-    /// MUST be equal to chain ID of [verifying](crate::contract::OffchainAuthorizer::w_resolve_auth) contract.
+    /// MUST be equal to chain ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
     pub chain_id: ChainId,
 
     // TODO: domain
     // TODO: schema?
     // TODO: deadline like in TON Connect?
     pub msg: String,
-    // TODO: "verify that account A has >= 1000 tokens B", "owns NFT", etc..
 }
 
 impl OffchainMessage {
@@ -81,20 +77,41 @@ impl OffchainMessage {
     /// range for on-chain messages.
     // TODO: "on/off chain"
     // TODO: rename to PREFIX?
-    pub const DOMAIN: &[u8] = b"NEAR_NEP641_OFFCHAIN_MESSAGE/V1";
+    pub const DOMAIN_SEPARATOR: &[u8] = b"NEAR_NEP641_OFFCHAIN_MESSAGE/V1";
 
+    /// Replace [`signer_id`](field@Self::signer_id) with given account ID
+    /// on this message.
     #[inline]
-    pub const fn resolver_id(&self) -> &AccountId {
-        if let Some(resolver_id) = self.resolver_ids.as_slice().last() {
-            return resolver_id;
-        }
-        &self.signer_id
+    pub fn with_signer_id(mut self, signer_id: impl Into<AccountId>) -> Self {
+        self.signer_id = signer_id.into();
+        self
     }
 
+    /// Returns whether this message is a top-level authorization.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use defuse_nep641::OffchainMessage;
+    /// let top_level = OffchainMessage {
+    ///     signer_id: "wallet.near".parse().unwrap(),
+    ///     sign_for: "wallet.near".parse().unwrap(),
+    ///     chain_id: "mainnet".to_string(),
+    ///     msg: "Hello, world!".to_string(),
+    /// };
+    /// assert!(top_level.is_top_level());
+    ///
+    /// let sub_auth = OffchainMessage {
+    ///     signer_id: "extension.near".parse().unwrap(),
+    ///     sign_for: "wallet.near".parse().unwrap(),
+    ///     chain_id: "mainnet".to_string(),
+    ///     msg: "Hello, world!".to_string(),
+    /// };
+    /// assert!(!sub_auth.is_top_level());
+    /// ```
     #[inline]
-    pub fn with_downstream_resolver(mut self, resolver_id: impl Into<AccountId>) -> Self {
-        self.resolver_ids.push(resolver_id.into());
-        self
+    pub fn is_top_level(&self) -> bool {
+        self.sign_for == self.signer_id
     }
 
     /// Returns canonical hash of this offchain message:
@@ -106,13 +123,13 @@ impl OffchainMessage {
     /// # Examples
     ///
     /// ```rust
-    /// use defuse_nep641::{OffchainMessage, MAINNET};
+    /// # use defuse_nep641::OffchainMessage;
     /// # use hex_literal::hex;
-    ///
     /// let msg = OffchainMessage {
-    ///     signer_id: "signer.near".parse().unwrap(),
-    ///     chain_id: MAINNET.to_string(),
-    ///     msg: "some message".to_string(),
+    ///     signer_id: "wallet.near".parse().unwrap(),
+    ///     sign_for: "wallet.near".parse().unwrap(),
+    ///     chain_id: "mainnet".to_string(),
+    ///     msg: "Hello, world!".to_string(),
     /// };
     ///
     /// assert_eq!(
@@ -126,7 +143,7 @@ impl OffchainMessage {
         use defuse_digest::{Digest, sha3::Sha3_256};
         use digest_io::IoWrapper;
 
-        let mut hasher = IoWrapper(Sha3_256::new_with_prefix(Self::DOMAIN));
+        let mut hasher = IoWrapper(Sha3_256::new_with_prefix(Self::DOMAIN_SEPARATOR));
         // serialize directly to hasher
         ::borsh::to_writer(&mut hasher, self).expect("borsh: failed to serialize");
 
@@ -134,21 +151,21 @@ impl OffchainMessage {
     }
 }
 
-/// TODO: docs
-#[cfg_attr(
-    feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
-)]
-#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-// TODO: no borsh?
+// /// TODO: docs
 // #[cfg_attr(
-//     feature = "borsh",
-//     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-//     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
+//     feature = "serde",
+//     derive(::serde::Serialize, ::serde::Deserialize),
+//     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
 // )]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct PendingAuthorization {
-    pub resolver_id: AccountId,
-    pub proof: Proof,
-}
+// #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+// // TODO: no borsh?
+// // #[cfg_attr(
+// //     feature = "borsh",
+// //     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+// //     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
+// // )]
+// #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+// pub struct PendingAuthorization {
+//     pub resolver_id: AccountId,
+//     pub proof: Proof,
+// }

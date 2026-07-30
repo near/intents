@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::HashSet;
 
 use near_account_id::AccountId;
 
@@ -37,5 +37,5 @@ pub trait AuthResolver {
     // TODO: can we resolve (different?) signatures on same account id multiple
     // times? e.g. intents.near
     // TODO: what if cycles with SAME signatures? dao1.near -> dao2.near -> dao1.near -> ...
-    fn w_resolve_auth(&self, msg: OffchainMessage, proof: Proof) -> BTreeMap<AccountId, Proof>;
+    fn w_resolve_auth(&self, msg: OffchainMessage, proof: Proof) -> HashSet<AccountId, Proof>;
 }

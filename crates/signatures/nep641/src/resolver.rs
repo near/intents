@@ -1,17 +1,18 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use futures::stream::{FuturesUnordered, TryStreamExt};
+use near_account_id::AccountId;
 use near_kit::{BlockReference, CryptoHash, Finality, Near};
 #[cfg(feature = "tracing")]
 use tracing::{Span, field, instrument, record_all};
 
-use crate::{OffchainMessage, PendingAuthorization, Proof, client::WResolveAuthArgs};
+use crate::{OffchainMessage, Proof, client::WResolveAuthArgs};
 
 /// Verifier for NEP-641 [offchain messages](OffchainMessage).
 #[derive(Debug, Clone)]
 pub struct OffchainResolver {
     client: Near,
-    at_fixed_block_hash: Option<CryptoHash>,
+    at_block_hash: Option<CryptoHash>,
     max_pending: usize,
     // state_inits: HashMap<AccountId, StateInit>,
 }
@@ -24,7 +25,7 @@ impl OffchainResolver {
         Self {
             client,
             // fetch final block hash by default
-            at_fixed_block_hash: None,
+            at_block_hash: None,
             // unbounded by default
             max_pending: usize::MAX,
         }
@@ -39,7 +40,9 @@ impl OffchainResolver {
     // }
 
     #[allow(clippy::doc_markdown)]
-    /// Set an upper limit for maxumim number of subaccounts to resolve authorizations on.
+    /// Set an upper limit for maxumim number of pending sub-authorizations to resolve.
+    ///
+    /// A value of zero means that only top-level authorizations are allowed.
     ///
     /// By default, there is _no_ limit. It's recommended to set one to prevent from DoS attacks.
     #[must_use]
@@ -60,11 +63,11 @@ impl OffchainResolver {
     #[must_use]
     #[inline]
     pub fn at_block_hash(mut self, fixed_block_hash: impl Into<CryptoHash>) -> Self {
-        self.at_fixed_block_hash = Some(fixed_block_hash.into());
+        self.at_block_hash = Some(fixed_block_hash.into());
         self
     }
 
-    /// Resolve (i.e. verify) an authorization for given top-level [offchain message](OffchainMessage)
+    /// Resolve (i.e. verify) top-level authorization for given [offchain message](OffchainMessage)
     /// according to NEP-641.
     ///
     /// This method recursively calls
@@ -91,12 +94,6 @@ impl OffchainResolver {
     /// See [`.at_block_hash()`](Self::at_block_hash) to resolve authorizations against
     /// the chain state from the past.
     ///
-    /// # Cycles
-    ///
-    /// [`w_resolve_auth()`](crate::contract::OffchainAuthorizer::w_resolve_auth) cycles are not
-    /// allowed. If a cycle is detected, all pending view-calls are immediatelly aborted and an
-    /// error is returned.
-    ///
     // TODO: # Not yet initialized accounts
     /// # Legacy accounts
     ///
@@ -104,31 +101,33 @@ impl OffchainResolver {
     /// offchain signature according to [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)
     /// standard.
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
-        msg.chain_id = &msg.chain_id,
-        msg.signer_id = %msg.signer_id,
-        // TODO: resolver_id
+        %msg.signer_id,
+        %msg.sign_for,
+        %msg.chain_id,
         msg.hash = %bs58::encode(msg.hash()).into_string(),
         at_block.hash, // will be recorded after top-level resolve
     )))]
     pub async fn resolve_auth(
         &self,
         msg: OffchainMessage,
-        proof: Proof, // TODO: &str?
+        proof: Proof,
     ) -> Result<(), ResolveError> {
+        // TODO: maybe leave it for caller?
+        if !msg.is_top_level() {
+            return Err(ResolveError::NonTopLevel);
+        }
+
         // a pool of futures to resolve authorizations concurrently
         let mut in_flight = FuturesUnordered::new();
-        // keep track of already seen accounts to detect cycles
+        // keep track of already seen account IDs
         let mut seen = HashSet::new();
 
-        // TODO: check signer_id == resolver_id for top-level
-        // TODO: maybe leave it for caller?
-
         // mark top-level signer_id as already seen
-        seen.insert(msg.resolver_id.clone());
-        // resolve top-level authorization at fixed block hash if set, or final otherwise
-        in_flight.push(self.resolve_single(msg.clone(), proof, self.at_fixed_block_hash));
+        seen.insert(msg.signer_id.clone());
+        // if set, resolve top-level authorization at fixed block hash, or final otherwise
+        in_flight.push(self.resolve_single(msg.clone(), proof, self.at_block_hash));
 
-        // pinned block hash, will be populated from top-level `self.resolve_single()`
+        // pinned block hash, will be populated from top-level `self.resolve_single()` above
         let mut at_block_hash: CryptoHash;
 
         // resolve until no more pending authorizations are left
@@ -138,27 +137,26 @@ impl OffchainResolver {
             #[cfg(feature = "tracing")]
             record_all!(Span::current(), at_block.hash = %at_block_hash);
 
-            for pending in resolved.pending {
-                if seen.len() > self.max_pending {
+            for (signer_id, proof) in resolved.pending {
+                // TODO: better tracing
+                if !seen.insert(signer_id.clone()) {
+                    #[cfg(feature = "tracing")]
+                    tracing::debug!("signer_id {} has been already seen, skipping...", signer_id);
+                    continue;
+                }
+
+                // `seen` has top-level `signer_id`, too, so we need to subtract one
+                if seen.len() - 1 > self.max_pending {
                     // prevent DoS attack in case of malicious contract(s)
                     // returns too many pending authorizations
                     return Err(ResolveError::TooManyAuthorizations(self.max_pending));
                 }
 
-                // TODO: remove cyclic check
-                // if !seen.insert(pending.resolver_id.clone()) {
-                //     // `w_resolve_auth()` cycles are not allowed
-                //     return Err(ResolveError::CycleDetected);
-                // }
-
                 // resolve pending authorizations at the same block hash
                 in_flight.push(self.resolve_single(
-                    OffchainMessage {
-                        resolver_id: pending.resolver_id,
-                        // propagate other fields
-                        ..msg.clone()
-                    },
-                    pending.proof,
+                    // override signer_id for sub-authorization
+                    msg.clone().with_signer_id(signer_id),
+                    proof,
                     Some(at_block_hash),
                 ));
             }
@@ -168,16 +166,16 @@ impl OffchainResolver {
     }
 
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
-        msg.chain_id = &msg.chain_id,
-        msg.signer_id = %msg.signer_id,
-        // TODO: resolver_id
+        %msg.signer_id,
+        %msg.sign_for,
+        %msg.chain_id,
         msg.hash = %bs58::encode(msg.hash()).into_string(),
         at_block.hash = at_block_hash.map(field::display),
     )))]
     async fn resolve_single(
         &self,
         msg: OffchainMessage,
-        proof: Proof, // TODO: &str?
+        proof: Proof,
         at_block_hash: Option<CryptoHash>,
     ) -> Result<SingleResolved, ResolveError> {
         if msg.chain_id != self.client.chain_id().as_str() {
@@ -188,7 +186,7 @@ impl OffchainResolver {
             .client
             .rpc()
             .view_function(
-                &msg.resolver_id,
+                &msg.signer_id,
                 "w_resolve_auth",
                 &serde_json::to_vec(&WResolveAuthArgs::from((&msg, proof.as_str())))
                     .expect("JSON: serialization failed"),
@@ -200,9 +198,10 @@ impl OffchainResolver {
                 // TODO: "pre-init" if we StateInit for this AccountId
                 // self.state_inits.get(&msg.signer_id),
             )
+            // TODO: handle contract errors
             .await?;
 
-        // make sure RPC returned same block hash as requested
+        // if was set, make sure RPC returned same block hash
         if let Some(at_block_hash) = at_block_hash
             && at_block_hash != res.block_hash
         {
@@ -232,7 +231,7 @@ impl OffchainResolver {
 
 // TODO: rename?
 struct SingleResolved {
-    pending: Vec<PendingAuthorization>,
+    pending: HashMap<AccountId, Proof>,
     block_hash: CryptoHash,
 }
 
@@ -240,8 +239,8 @@ struct SingleResolved {
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ResolveError {
-    #[error("a cycle detected")] // TODO
-    CycleDetected,
+    #[error("the authorization is not top-level")]
+    NonTopLevel,
 
     #[error("invalid chain_id")] // TODO
     InvalidChainId,

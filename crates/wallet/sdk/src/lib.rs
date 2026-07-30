@@ -485,6 +485,8 @@ where
         Ok((msg, proof))
     }
 
+    // TODO: sign offchain msg
+
     /// Wraps [`Request`] in [`RequestMessage`] for signing
     #[must_use = "`.sign()` the wrapped request"]
     #[inline]
