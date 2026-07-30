@@ -62,7 +62,7 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
     where
         Self: Sized,
     {
-        Derive(self, with)
+        Derive::new(self, with)
     }
 
     /// Derive a signer with a given value for [current](Self::schema) schema,
@@ -118,14 +118,14 @@ where
 
     #[inline]
     fn schema(&self) -> Self::Schema<'_> {
-        self.0.schema().derive_with(&self.1)
+        self.outer.schema().derive_with(&self.inner)
     }
 
     async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
     where
         P: Send,
     {
-        self.0.derive_sign(self.1.derive(path), msg).await
+        self.outer.derive_sign(self.inner.derive(path), msg).await
     }
 }
 
@@ -143,8 +143,8 @@ where
     where
         P: Send,
     {
-        self.0
-            .derive_sign_recoverable(self.1.derive(path), msg)
+        self.outer
+            .derive_sign_recoverable(self.inner.derive(path), msg)
             .await
     }
 }
