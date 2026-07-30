@@ -76,6 +76,7 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
 /// A [signer](DeriveSigner) that can recoverably sign messages by
 /// **internally** deriving signing keys.
 #[trait_variant::make(Send)]
+#[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
 pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
     /// Recoveryably [sign](DeriveSigner::derive_sign) given message with a
     /// secret key **internally** derived for given `path` according to
