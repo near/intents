@@ -83,7 +83,7 @@ near-contract = [
 ]
 
 [dev-dependencies]
-defuse-core = { workspace = true, features = ["arbitrary"] }
+defuse-core = { workspace = true, features = ["arbitrary", "near-contract"] }
 defuse-test-utils.workspace = true
 
 bs58.workspace = true

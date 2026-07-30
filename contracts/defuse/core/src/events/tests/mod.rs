@@ -376,3 +376,13 @@ fn event_backward_compatibility_test(#[case] event_version: DefuseEventVersion, 
         event_version.assert_compatible(&event);
     }
 }
+
+#[cfg(feature = "near-contract")]
+#[rstest]
+fn event_json_deserializes_under_near_contract(rng: impl Rng) {
+    for event in get_all_events(rng) {
+        let json = serde_json::to_string(&event).expect("serialize event");
+        let _: DefuseEvent = serde_json::from_str(&json)
+            .unwrap_or_else(|e| panic!("failed to deserialize event: {e}\njson: {json}"));
+    }
+}

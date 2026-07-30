@@ -6,12 +6,11 @@ use crate::{
 };
 use defuse_nep245::ErrorLogTooLong;
 use near_account_id::AccountId;
-use thiserror::Error as ThisError;
 
 pub type Result<T, E = DefuseError> = ::core::result::Result<T, E>;
 
 #[cfg_attr(feature = "near-contract", derive(::near_sdk::FunctionError))]
-#[derive(Debug, ThisError)]
+#[derive(Debug, thiserror::Error)]
 pub enum DefuseError {
     #[error("account '{0}' not found")]
     AccountNotFound(AccountId),
