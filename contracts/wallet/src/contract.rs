@@ -8,13 +8,14 @@
 //! See [`wallet!`](macro@crate::wallet) macro to define and implement wallet
 //! contract variants.
 
-#[cfg(feature = "offchain")]
-pub mod offchain;
-
-use std::{collections::BTreeSet, fmt::Display};
+use std::{
+    collections::{BTreeSet, HashMap},
+    fmt::Display,
+};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_near_promise::{NearPromise, actions::NearAction};
+use defuse_nep641::{OffchainMessage, Proof, contract::AuthResolver};
 use defuse_time::Timestamp;
 use impl_tools::autoimpl;
 use near_account_id::{AccountId, AccountIdRef};
@@ -22,7 +23,8 @@ use near_sdk::{FunctionError, Promise, env, ext_contract};
 
 pub use crate::ContractError as Error;
 use crate::{
-    Request, RequestMessage, SignatureSchema, State, WalletOp,
+    OffchainSignatureSchema, Request, RequestMessage, SignatureSchema, State, WalletOffchainProof,
+    WalletOp,
     events::{Actor, WalletEvent},
 };
 
@@ -210,7 +212,7 @@ where
             .commit(msg.nonce, msg.created_at, msg.timeout)?;
 
         // verify signature
-        if !S::verify(&self.0.public_key, &msg, proof) {
+        if !S::verify_request_msg(&self.0.public_key, &msg, proof) {
             return Err(Error::InvalidSignature);
         }
 
@@ -341,6 +343,59 @@ where
         }
 
         Ok(p.build())
+    }
+}
+
+impl<S> AuthResolver for WalletImpl<S>
+where
+    S: OffchainSignatureSchema,
+{
+    #[inline]
+    fn w_resolve_auth(&self, msg: OffchainMessage, proof: Proof) -> HashMap<AccountId, Proof> {
+        self.resolve_auth(msg, &proof)
+            .unwrap_or_else(|err| err.panic())
+    }
+}
+
+impl<S> WalletImpl<S>
+where
+    S: OffchainSignatureSchema,
+{
+    fn resolve_auth(&self, msg: OffchainMessage, proof: &str) -> Result<HashMap<AccountId, Proof>> {
+        // check chain_id
+        if msg.chain_id != env::chain_id() {
+            return Err(Error::InvalidChainId);
+        }
+
+        // check signer_id
+        if msg.signer_id != env::current_account_id() {
+            // TODO: error InvalidResolverId
+            return Err(Error::InvalidSignerId(msg.signer_id));
+        }
+
+        let WalletOffchainProof {
+            as_extension_id,
+            proof,
+        } = serde_json::from_str(proof)?;
+
+        if let Some(extension_id) = as_extension_id {
+            // check whether extension is enabled
+            self.check_extension_enabled(&extension_id)?;
+
+            // forward `w_resolve_auth()` to the extension
+            return Ok([(extension_id, proof)].into());
+        }
+
+        if !self.0.is_signature_allowed() {
+            return Err(Error::SignatureDisabled);
+        }
+
+        if !S::verify_offchain_msg(&self.0.public_key, &msg, &proof) {
+            return Err(Error::InvalidSignature);
+        }
+
+        // signature is valid, terminate our resolve branch
+        Ok(HashMap::new())
     }
 }
 
@@ -483,6 +538,17 @@ macro_rules! wallet {
             /// Returns a timestamp when nonces were last cleaned up.
             fn w_last_cleaned_at(&self) -> $crate::Timestamp {
                 self.0.w_last_cleaned_at()
+            }
+        }
+
+        #[$crate::near_sdk::near]
+        impl $crate::offchain::contract::AuthResolver for $contract {
+            fn w_resolve_auth(
+                &self,
+                msg: $crate::offchain::OffchainMessage,
+                proof: $crate::offchain::Proof,
+            ) -> ::std::collections::HashMap<$crate::AccountId, $crate::offchain::Proof> {
+                self.0.w_resolve_auth(msg, proof)
             }
         }
     };

@@ -478,7 +478,7 @@ where
             .map_err(Error::Signer)?;
 
         debug_assert!(
-            S::verify(&self.signer.public_key(), &msg, &proof),
+            S::verify_request_msg(&self.signer.public_key(), &msg, &proof),
             "signer produced invalid signature",
         );
 

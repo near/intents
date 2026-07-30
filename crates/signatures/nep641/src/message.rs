@@ -3,6 +3,7 @@ use near_account_id::AccountId;
 /// Chain ID (e.g. `mainnet`)
 pub type ChainId = String;
 
+// TODO: maybe remove?
 /// A proof for [`OffchainAuthorization`]
 pub type Proof = String;
 
@@ -48,13 +49,15 @@ pub struct OffchainMessage {
     /// Signer ID.
     ///
     /// MUST be equal to account ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
+    // TODO: rename: resolver_id?
     pub signer_id: AccountId,
 
     /// Account ID which the top-level authorization is intended to be
     /// [resolved](crate::contract::AuthResolver::w_resolve_auth) for.
     ///
     /// If this authorization is top-level itself, then this field MUST match
-    /// `field@Self::signer_id`.
+    /// [`signer_id`](field@Self::signer_id).
+    // TODO: rename: signer_id?
     pub sign_for: AccountId,
 
     /// Chain ID.
@@ -81,6 +84,7 @@ impl OffchainMessage {
 
     /// Replace [`signer_id`](field@Self::signer_id) with given account ID
     /// on this message.
+    #[must_use]
     #[inline]
     pub fn with_signer_id(mut self, signer_id: impl Into<AccountId>) -> Self {
         self.signer_id = signer_id.into();

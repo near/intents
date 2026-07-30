@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 use near_account_id::AccountId;
 use serde::Serialize;
@@ -9,7 +9,7 @@ use crate::{OffchainMessage, Proof};
 /// contract interface.
 #[near_kit::contract]
 pub trait AuthResolverContract {
-    fn w_resolve_auth(&self, args: WResolveAuthArgs<'_>) -> HashSet<AccountId, Proof>;
+    fn w_resolve_auth(&self, args: WResolveAuthArgs<'_>) -> HashMap<AccountId, Proof>;
 }
 
 /// Arguments for [`w_resolve_auth()`](OffchainAuthorizerContractClient::w_resolve_auth)

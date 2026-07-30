@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 use near_account_id::AccountId;
 
@@ -18,7 +18,7 @@ pub trait AuthResolver {
     /// The implementation MUST panic if:
     /// * [`chain_id`](field@crate::OffchainMessage::chain_id) doesn't match
     ///   `env::chain_id()`
-    /// * [`resolver_id`](field@crate::OffchainMessage::resolver_id) doesn't
+    /// * [`signer_id`](field@crate::OffchainMessage::signer_id) doesn't
     ///   match `env::current_account_id()`
     /// * `proof` is invalid for given [`OffchainMessage`](crate::OffchainMessage)
     ///
@@ -36,6 +36,5 @@ pub trait AuthResolver {
     /// which are specifically designed with replay-protection mechanism in mind.
     // TODO: can we resolve (different?) signatures on same account id multiple
     // times? e.g. intents.near
-    // TODO: what if cycles with SAME signatures? dao1.near -> dao2.near -> dao1.near -> ...
-    fn w_resolve_auth(&self, msg: OffchainMessage, proof: Proof) -> HashSet<AccountId, Proof>;
+    fn w_resolve_auth(&self, msg: OffchainMessage, proof: Proof) -> HashMap<AccountId, Proof>;
 }

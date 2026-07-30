@@ -41,7 +41,7 @@ mod tests {
             .unwrap();
 
         assert!(
-            SS::verify(&WalletSigner::<SS>::public_key(&signer), &msg, &proof),
+            SS::verify_request_msg(&WalletSigner::<SS>::public_key(&signer), &msg, &proof),
             "signer produced invalid signature"
         );
     }

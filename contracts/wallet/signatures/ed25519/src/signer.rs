@@ -86,7 +86,7 @@ mod tests {
             .unwrap();
 
         assert!(
-            WalletEd25519::verify(
+            WalletEd25519::verify_request_msg(
                 &WalletSigner::<WalletEd25519>::public_key(&signer),
                 &msg,
                 &proof
