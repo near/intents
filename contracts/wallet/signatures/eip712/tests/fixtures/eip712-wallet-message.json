@@ -1,0 +1,284 @@
+{
+  "comment": "Shared EIP-712 wallet-contract test vectors. Consumed by this crate's tests AND meant to be consumed by any client implementing the `eth_signTypedData_v4` flow — keep the copies in sync. Any change here is a breaking change to the wire format of the `wallet-eip712` contract variant. `typed_message` is the `message` of the `eth_signTypedData_v4` request (primary type `WalletRequest`/`WalletAuth`), `prehash` is keccak256(0x1901 || domainSeparator || hashStruct(typed_message)), i.e. what the Ethereum wallet signs, and `proof` is what gets submitted on-chain. The contract stores the signer's Ethereum `address` (not its public key), which it derives from the public key recovered from the proof. All vectors are signed by the test key 0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318.",
+  "domain": {
+    "name": "NEAR Wallet Contract",
+    "version": "1"
+  },
+  "domain_separator": "9ed0384a9369f42aa89e172b67359e73238fce303b45b92842e471874e2f6d22",
+  "types": {
+    "EIP712Domain": [
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "version",
+        "type": "string"
+      }
+    ],
+    "WalletRequest": [
+      {
+        "name": "payForGas",
+        "type": "bool"
+      },
+      {
+        "name": "chainId",
+        "type": "string"
+      },
+      {
+        "name": "signerId",
+        "type": "string"
+      },
+      {
+        "name": "nonce",
+        "type": "uint32"
+      },
+      {
+        "name": "createdAt",
+        "type": "string"
+      },
+      {
+        "name": "timeoutSecs",
+        "type": "uint32"
+      },
+      {
+        "name": "internal",
+        "type": "string"
+      },
+      {
+        "name": "external",
+        "type": "string"
+      }
+    ],
+    "WalletAuth": [
+      {
+        "name": "chainId",
+        "type": "string"
+      },
+      {
+        "name": "signer",
+        "type": "string"
+      },
+      {
+        "name": "purpose",
+        "type": "string"
+      },
+      {
+        "name": "recipient",
+        "type": "string"
+      },
+      {
+        "name": "payload",
+        "type": "string"
+      },
+      {
+        "name": "createdAt",
+        "type": "string"
+      },
+      {
+        "name": "timeoutSecs",
+        "type": "uint32"
+      }
+    ]
+  },
+  "address": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
+  "request_vectors": [
+    {
+      "name": "empty_request",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "0s0000000000000000000000000000000000000000",
+        "nonce": 0,
+        "created_at": "1970-01-01T00:00:00Z",
+        "timeout_secs": 3600,
+        "request": {}
+      },
+      "typed_message": {
+        "payForGas": false,
+        "chainId": "mainnet",
+        "signerId": "0s0000000000000000000000000000000000000000",
+        "nonce": 0,
+        "createdAt": "1970-01-01T00:00:00Z",
+        "timeoutSecs": 3600,
+        "internal": "[]",
+        "external": "[]"
+      },
+      "prehash": "8ccffe6835c7b5250eb7f468d94ec249125b14b1242932b3ff223d6154789ed5",
+      "proof": {
+        "message": {
+          "payForGas": false,
+          "chainId": "mainnet",
+          "signerId": "0s0000000000000000000000000000000000000000",
+          "nonce": 0,
+          "createdAt": "1970-01-01T00:00:00Z",
+          "timeoutSecs": 3600,
+          "internal": "[]",
+          "external": "[]"
+        },
+        "signature": "secp256k1:4pzrgEmzg3H8G9mARPQd9vfoVv8n71jCYHUMGCiasxFReQCEax9kiFKp4xe32k2kFWjghps3jqUxznCSYbmZfsjkj"
+      }
+    },
+    {
+      "name": "add_extension",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
+        "nonce": 42,
+        "created_at": "2026-07-16T12:34:56.789Z",
+        "timeout_secs": 300,
+        "request": {
+          "internal": [
+            {
+              "op": "add_extension",
+              "payload": {
+                "account_id": "extension.near"
+              }
+            }
+          ]
+        }
+      },
+      "typed_message": {
+        "payForGas": false,
+        "chainId": "mainnet",
+        "signerId": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
+        "nonce": 42,
+        "createdAt": "2026-07-16T12:34:56.789Z",
+        "timeoutSecs": 300,
+        "internal": "[{\"op\":\"add_extension\",\"payload\":{\"account_id\":\"extension.near\"}}]",
+        "external": "[]"
+      },
+      "prehash": "61136939ea1a1a2423876a51b2ed141e1e9fcd1b7757d3d8a800721971c22195",
+      "proof": {
+        "message": {
+          "payForGas": false,
+          "chainId": "mainnet",
+          "signerId": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
+          "nonce": 42,
+          "createdAt": "2026-07-16T12:34:56.789Z",
+          "timeoutSecs": 300,
+          "internal": "[{\"op\":\"add_extension\",\"payload\":{\"account_id\":\"extension.near\"}}]",
+          "external": "[]"
+        },
+        "signature": "secp256k1:Lw6tXt7E2zw8pEmVb6ANoNHFa4cJaJsCq5D7XcQ1KKvchQvNYQDpUnRjmUxCWsFiXktngrFyjEKd3U5pRymnSi5V2"
+      }
+    },
+    {
+      "name": "pay_for_gas",
+      "message": {
+        "pay_for_gas": true,
+        "chain_id": "mainnet",
+        "signer_id": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
+        "nonce": 43,
+        "created_at": "2026-07-16T12:34:56.789Z",
+        "timeout_secs": 300,
+        "request": {}
+      },
+      "typed_message": {
+        "payForGas": true,
+        "chainId": "mainnet",
+        "signerId": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
+        "nonce": 43,
+        "createdAt": "2026-07-16T12:34:56.789Z",
+        "timeoutSecs": 300,
+        "internal": "[]",
+        "external": "[]"
+      },
+      "prehash": "eab9b1201cc52ed3ff3296676cfb5679c36fd39cc4fdc4479c4d8efbc64f91e6",
+      "proof": {
+        "message": {
+          "payForGas": true,
+          "chainId": "mainnet",
+          "signerId": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
+          "nonce": 43,
+          "createdAt": "2026-07-16T12:34:56.789Z",
+          "timeoutSecs": 300,
+          "internal": "[]",
+          "external": "[]"
+        },
+        "signature": "secp256k1:FvUUZi8PepvBNcjKxZbdqWBtEWh4ueM2Vb2SmLCQFASNwpgDFmVhqYak8e87ZKWKJEY6pUgc33bGjCvLCyNLtJidW"
+      }
+    }
+  ],
+  "auth_vectors": [
+    {
+      "name": "signer_id_binding",
+      "message": {
+        "chain_id": "mainnet",
+        "signer": {
+          "type": "signer_id",
+          "signer_id": "0se5eba21e8f191e1880e453794bc551dfa50a3419"
+        },
+        "purpose": "PROVE_OWNERSHIP",
+        "recipient": "trezu.app",
+        "payload": "Login to trezu.app at 2026-07-16T00:00:00Z",
+        "created_at": "1970-01-01T00:00:00Z",
+        "timeout_secs": 3600
+      },
+      "typed_message": {
+        "chainId": "mainnet",
+        "signer": "{\"type\":\"signer_id\",\"signer_id\":\"0se5eba21e8f191e1880e453794bc551dfa50a3419\"}",
+        "purpose": "PROVE_OWNERSHIP",
+        "recipient": "trezu.app",
+        "payload": "Login to trezu.app at 2026-07-16T00:00:00Z",
+        "createdAt": "1970-01-01T00:00:00Z",
+        "timeoutSecs": 3600
+      },
+      "prehash": "ba4b37c92ffe816fa900b37442c9228f73d8a26c9c57c46a80e1b9e3f7c5ea27",
+      "proof": {
+        "message": {
+          "chainId": "mainnet",
+          "signer": "{\"type\":\"signer_id\",\"signer_id\":\"0se5eba21e8f191e1880e453794bc551dfa50a3419\"}",
+          "purpose": "PROVE_OWNERSHIP",
+          "recipient": "trezu.app",
+          "payload": "Login to trezu.app at 2026-07-16T00:00:00Z",
+          "createdAt": "1970-01-01T00:00:00Z",
+          "timeoutSecs": 3600
+        },
+        "signature": "secp256k1:MdXTC3kvnXKSqU2UnQ68DSkYATzngE73vPashnmNPZdrRGdYBJEs9GWdC3KuAEzhz4MnwrpLs8WrnKUZjiwjxYLpf"
+      }
+    },
+    {
+      "name": "code_binding",
+      "message": {
+        "chain_id": "mainnet",
+        "signer": {
+          "type": "code",
+          "allowed_factory_ids": [
+            "eip712-wallet-contract.trezu.near"
+          ],
+          "signature_enabled": true,
+          "subwallet_id": 0,
+          "timeout_secs": 3600,
+          "extensions": []
+        },
+        "purpose": "trezu/proposal:VoteApprove",
+        "recipient": "trezu.app",
+        "payload": "withdraw 100 USDC to bob.near",
+        "created_at": "2026-07-16T12:34:56.789Z",
+        "timeout_secs": 300
+      },
+      "typed_message": {
+        "chainId": "mainnet",
+        "signer": "{\"type\":\"code\",\"allowed_factory_ids\":[\"eip712-wallet-contract.trezu.near\"],\"signature_enabled\":true,\"subwallet_id\":0,\"timeout_secs\":3600,\"extensions\":[]}",
+        "purpose": "trezu/proposal:VoteApprove",
+        "recipient": "trezu.app",
+        "payload": "withdraw 100 USDC to bob.near",
+        "createdAt": "2026-07-16T12:34:56.789Z",
+        "timeoutSecs": 300
+      },
+      "prehash": "0f02023d183b0a4cc42af4a80415421ac57f17d5d88200ab26a797035d42460d",
+      "proof": {
+        "message": {
+          "chainId": "mainnet",
+          "signer": "{\"type\":\"code\",\"allowed_factory_ids\":[\"eip712-wallet-contract.trezu.near\"],\"signature_enabled\":true,\"subwallet_id\":0,\"timeout_secs\":3600,\"extensions\":[]}",
+          "purpose": "trezu/proposal:VoteApprove",
+          "recipient": "trezu.app",
+          "payload": "withdraw 100 USDC to bob.near",
+          "createdAt": "2026-07-16T12:34:56.789Z",
+          "timeoutSecs": 300
+        },
+        "signature": "secp256k1:ZRxDZ2BXbGEa9QiScoSyhYjWJVyc4a9qbDRPPEQQtNU9HtuD1CACbjp4kU4yRpXdtHgQuHw1RECkcYh2SJdm4BvY"
+      }
+    }
+  ]
+}

@@ -11,6 +11,7 @@ members = [
   "contracts/treasury-logger",
   "contracts/wallet",
   "contracts/wallet/signatures/ed25519",
+  "contracts/wallet/signatures/eip712",
   "contracts/wallet/signatures/no-sign",
   "contracts/wallet/signatures/webauthn",
   "contracts/wallet/signatures/webauthn/ed25519",
@@ -49,6 +50,7 @@ members = [
   "crates/primitives/time",
   "crates/primitives/token-id",
 
+  "crates/signatures/eip712",
   "crates/signatures/erc191",
   "crates/signatures/nep413",
   "crates/signatures/nep461",
@@ -84,6 +86,7 @@ defuse-poa-factory.path = "contracts/poa/factory"
 defuse-poa-token.path = "contracts/poa/token"
 defuse-wallet.path = "contracts/wallet"
 defuse-wallet-ed25519.path = "contracts/wallet/signatures/ed25519"
+defuse-wallet-eip712.path = "contracts/wallet/signatures/eip712"
 defuse-wallet-no-sign.path = "contracts/wallet/signatures/no-sign"
 defuse-wallet-webauthn.path = "contracts/wallet/signatures/webauthn"
 defuse-wallet-webauthn-ed25519.path = "contracts/wallet/signatures/webauthn/ed25519"
@@ -122,6 +125,7 @@ defuse-fees.path = "crates/primitives/fees"
 defuse-time = { path = "crates/primitives/time", default-features = false }
 defuse-token-id = { path = "crates/primitives/token-id", default-features = false }
 
+defuse-eip712.path = "crates/signatures/eip712"
 defuse-erc191.path = "crates/signatures/erc191"
 defuse-nep413.path = "crates/signatures/nep413"
 defuse-nep461.path = "crates/signatures/nep461"

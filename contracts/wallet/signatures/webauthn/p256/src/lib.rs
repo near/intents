@@ -1,17 +1,22 @@
 use defuse_wallet::wallet;
-use defuse_wallet_webauthn::{WalletWebauthn, p256::P256, webauthn::IgnoreUserVerification};
+use defuse_wallet_webauthn::{WalletWebauthn, p256::P256, webauthn::RequireUserVerification};
 
 wallet! {
     #[wallet(
         schema = WalletWebauthn<
             P256,
-            // `UV` (User Verified) flag is only set by FIDO2-capable devices with
-            // PIN / biometric setup.
+            // Require the `UV` (User Verified) flag: every signature MUST be
+            // authorized by a biometric / PIN / screen-lock verification, not
+            // mere user presence. This wallet's passkey is the sole key over
+            // funds, so on-chain enforcement is required — the client also
+            // requests `userVerification: "required"`, but a proof submitted
+            // directly to the relayer would bypass that; the contract must not
+            // accept a user-presence-only assertion.
             //
-            // FIDO U2F (CTAP 1) authenticators (such as old Ledger and Yubikey
-            // devices) only set `UP` (User Present) flag and doesn't support `UV`
-            // (User Verified).
-            IgnoreUserVerification,
+            // Trade-off: FIDO U2F (CTAP 1) authenticators (e.g. old Ledger /
+            // YubiKey without a PIN) only set `UP` and cannot satisfy this.
+            // Platform passkeys (Apple/Google/Windows) always perform UV.
+            RequireUserVerification,
         >,
         metadata(
             standard(standard = "wallet-webauthn-p256", version = "1.0.0")

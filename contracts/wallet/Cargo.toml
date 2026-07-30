@@ -84,6 +84,7 @@ near-contract = [
   "dep:impl-tools",
   "dep:near-sdk",
   "digest",
+  "near-sdk/deterministic-account-ids",
   "serde",
   "std",
 ]
@@ -92,6 +93,7 @@ near-contract = [
 defuse-wallet = { path = ".", features = ["abi", "arbitrary", "borsh", "digest", "schemars-v0_8", "serde", "near-contract"] }
 
 bs58.workspace = true
+hex = { workspace = true, features = ["serde"] }
 hex-literal.workspace = true
 rstest.workspace = true
 serde_json.workspace = true

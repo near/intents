@@ -12,7 +12,7 @@ use defuse_crypto::{
     Curve,
     ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
 };
-use defuse_wallet::{RequestMessage, SignatureSchema};
+use defuse_wallet::SignatureSchema;
 
 /// Simple [`Ed25519`] wallet [signature schema](SignatureSchema)
 /// over [canonical request hash](RequestMessage::hash).
@@ -21,7 +21,7 @@ pub struct WalletEd25519;
 impl SignatureSchema for WalletEd25519 {
     type PublicKey = Ed25519PublicKey;
 
-    fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
+    fn verify_hash(public_key: &Self::PublicKey, hash: &[u8; 32], proof: &str) -> bool {
         let Ok(signature) = Ed25519Signature::from_str(proof) else {
             return false;
         };
@@ -30,7 +30,7 @@ impl SignatureSchema for WalletEd25519 {
             return false;
         };
 
-        Ed25519::verify(&public_key, &msg.hash(), &signature.into())
+        Ed25519::verify(&public_key, hash, &signature.into())
     }
 }
 
@@ -39,7 +39,8 @@ mod tests {
     use std::time::Duration;
 
     use defuse_wallet::{
-        AccountId, Gas, NearPromise, NearToken, Request, WalletOp, actions::FunctionCall,
+        AccountId, Gas, NearPromise, NearToken, Request, RequestMessage, WalletOp,
+        actions::FunctionCall,
     };
     use hex_literal::hex;
     use rstest::rstest;
