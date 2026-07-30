@@ -24,7 +24,7 @@ pub trait Schema<P> {
     /// Derive output for given `path`.
     fn derive(&self, path: P) -> Self::Output;
 
-    /// Derive with given [schema](Schema).
+    /// Derive with given inner sub-[schema](Schema).
     ///
     /// ```rust
     /// use defuse_kdf::{Schema, SchemaFn};
@@ -37,11 +37,11 @@ pub trait Schema<P> {
     /// assert_eq!(schema_ab.derive(3), 7);
     /// ```
     #[inline]
-    fn derive_with<D>(self, with: D) -> Derive<Self, D>
+    fn derive_with<D>(self, inner: D) -> Derive<Self, D>
     where
         Self: Sized,
     {
-        Derive::new(self, with)
+        Derive::new(self, inner)
     }
 }
 

@@ -56,13 +56,13 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
         self.schema().derive(path)
     }
 
-    /// Derive a signer with sub-[schema](Schema).
+    /// Derive a signer with inner sub-[schema](Schema).
     #[inline]
-    fn derive_with<D>(self, with: D) -> Derive<Self, D>
+    fn derive_with<D>(self, inner: D) -> Derive<Self, D>
     where
         Self: Sized,
     {
-        Derive::new(self, with)
+        Derive::new(self, inner)
     }
 
     /// Derive a signer with a given value for [current](Self::schema) schema,
