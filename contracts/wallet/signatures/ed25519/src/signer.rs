@@ -39,6 +39,17 @@ use crate::WalletEd25519;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::From, derive_more::AsRef)]
 pub struct WalletEd25519Signer<S>(pub S);
 
+impl<S> WalletEd25519Signer<S>
+where
+    S: Signer<Ed25519>,
+{
+    async fn sign_hash(&self, hash: &[u8; 32]) -> Result<Proof, S::Error> {
+        let sig = self.0.sign(hash).await?;
+
+        Ok(Ed25519Signature::from(sig).to_string())
+    }
+}
+
 impl<S> WalletSigner<WalletEd25519> for WalletEd25519Signer<S>
 where
     S: Signer<Ed25519>,
@@ -51,9 +62,14 @@ where
     }
 
     async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
-        let sig = self.0.sign(&msg.hash()).await?;
+        self.sign_hash(&msg.hash()).await
+    }
 
-        Ok(Ed25519Signature::from(sig).to_string())
+    async fn sign_offchain_msg(
+        &self,
+        msg: &defuse_wallet::offchain::OffchainMessage,
+    ) -> Result<Proof, Self::Error> {
+        self.sign_hash(&msg.hash()).await
     }
 }
 

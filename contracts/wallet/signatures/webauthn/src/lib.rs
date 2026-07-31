@@ -11,9 +11,7 @@ pub use defuse_webauthn as webauthn;
 use core::marker::PhantomData;
 
 use defuse_crypto::Curve;
-use defuse_wallet::{
-    OffchainSignatureSchema, RequestMessage, SignatureSchema, offchain::OffchainMessage,
-};
+use defuse_wallet::{RequestMessage, SignatureSchema, offchain::OffchainMessage};
 use defuse_webauthn::{Algorithm, UserVerification, Webauthn, WebauthnAssertion};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
@@ -29,7 +27,7 @@ where
     <A::Curve as Curve>::Signature: TryFrom<A::Signature>,
     for<'a> <A::Curve as Curve>::PublicKey: TryFrom<&'a A::PublicKey>,
 {
-    fn verify_hash(public_key: &A::PublicKey, hash: [u8; 32], proof: &str) -> bool {
+    fn verify_hash(public_key: &A::PublicKey, hash: &[u8; 32], proof: &str) -> bool {
         // try to convert public key
         let Ok(public_key) = <A::Curve as Curve>::PublicKey::try_from(public_key) else {
             return false;
@@ -66,24 +64,16 @@ where
 
     #[inline]
     fn verify_request_msg(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
-        Self::verify_hash(public_key, msg.hash(), proof)
+        Self::verify_hash(public_key, &msg.hash(), proof)
     }
-}
 
-impl<A, UV> OffchainSignatureSchema for WalletWebauthn<A, UV>
-where
-    A: WalletWebauthnAlgorithm,
-    UV: UserVerification,
-    <A::Curve as Curve>::Signature: TryFrom<A::Signature>,
-    for<'a> <A::Curve as Curve>::PublicKey: TryFrom<&'a A::PublicKey>,
-{
     #[inline]
     fn verify_offchain_msg(
         public_key: &Self::PublicKey,
         msg: &OffchainMessage,
         proof: &str,
     ) -> bool {
-        Self::verify_hash(public_key, msg.hash(), proof)
+        Self::verify_hash(public_key, &msg.hash(), proof)
     }
 }
 

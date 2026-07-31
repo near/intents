@@ -12,16 +12,14 @@ use defuse_crypto::{
     Curve,
     ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
 };
-use defuse_wallet::{
-    OffchainSignatureSchema, RequestMessage, SignatureSchema, offchain::OffchainMessage,
-};
+use defuse_wallet::{RequestMessage, SignatureSchema, offchain::OffchainMessage};
 
 /// Simple [`Ed25519`] wallet [signature schema](SignatureSchema)
 /// over [canonical request hash](RequestMessage::hash).
 pub struct WalletEd25519;
 
 impl WalletEd25519 {
-    fn verify_hash(public_key: &Ed25519PublicKey, hash: [u8; 32], proof: &str) -> bool {
+    fn verify_hash(public_key: &Ed25519PublicKey, hash: &[u8; 32], proof: &str) -> bool {
         let Ok(signature) = Ed25519Signature::from_str(proof) else {
             return false;
         };
@@ -30,7 +28,7 @@ impl WalletEd25519 {
             return false;
         };
 
-        Ed25519::verify(&public_key, &hash, &signature.into())
+        Ed25519::verify(&public_key, hash, &signature.into())
     }
 }
 
@@ -39,18 +37,15 @@ impl SignatureSchema for WalletEd25519 {
 
     #[inline]
     fn verify_request_msg(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
-        Self::verify_hash(public_key, msg.hash(), proof)
+        Self::verify_hash(public_key, &msg.hash(), proof)
     }
-}
 
-impl OffchainSignatureSchema for WalletEd25519 {
-    #[inline]
     fn verify_offchain_msg(
         public_key: &Self::PublicKey,
         msg: &OffchainMessage,
         proof: &str,
     ) -> bool {
-        Self::verify_hash(public_key, msg.hash(), proof)
+        Self::verify_hash(public_key, &msg.hash(), proof)
     }
 }
 
