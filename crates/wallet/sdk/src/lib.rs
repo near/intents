@@ -3,7 +3,7 @@ pub mod client;
 #[cfg(feature = "mpc")]
 pub use defuse_mpc_signer as mpc;
 use defuse_near_sender::{NearSender, SentTransaction};
-use defuse_wallet::actions::NearAction;
+use defuse_wallet::{actions::NearAction, offchain::OffchainMessage};
 mod nonces;
 pub mod relayer;
 mod signer;
@@ -485,8 +485,6 @@ where
         Ok((msg, proof))
     }
 
-    // TODO: sign offchain msg
-
     /// Wraps [`Request`] in [`RequestMessage`] for signing
     #[must_use = "`.sign()` the wrapped request"]
     #[inline]
@@ -549,6 +547,47 @@ where
         }
 
         relayer.relay_wallet_msg(req).await.map_err(Error::Relayer)
+    }
+
+    // TODO: docs
+    pub async fn sign_offchain_msg(
+        &self,
+        msg: String,
+        signer_id: impl Into<Option<AccountId>>,
+    ) -> Result<(OffchainMessage, Proof), Error> {
+        let msg = OffchainMessage {
+            signer_id: signer_id
+                .into()
+                .unwrap_or_else(|| self.account_id().clone()),
+            resolver_id: self.real_account_id().clone(),
+            chain_id: self.chain_id().clone(),
+            msg,
+        };
+
+        let proof = self
+            .signer
+            .sign_offchain_msg(&msg)
+            .await
+            .map_err(Error::Signer)?;
+
+        debug_assert!(
+            S::verify_offchain_msg(&self.signer.public_key(), &msg, &proof),
+            "signer produced invalid signature",
+        );
+
+        Ok((
+            msg.with_resolver_id(self.account_id()),
+            self.as_extension_chain
+                .iter()
+                .cloned()
+                .fold(proof, |proof, extension_id| {
+                    serde_json::to_string(&WalletOffchainProof {
+                        as_extension_id: Some(extension_id),
+                        proof,
+                    })
+                    .expect("JSON: failed to serialize")
+                }),
+        ))
     }
 
     #[allow(clippy::doc_markdown)]

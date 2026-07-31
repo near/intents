@@ -72,7 +72,7 @@ impl OffchainResolver {
     ///
     /// This method recursively calls
     /// [`w_resolve_auth(msg, proof)`](crate::contract::OffchainAuthorizer::w_resolve_auth)
-    /// view-method on [`msg.signer_id`](field@OffchainMessage::signer_id) and all returned
+    /// view-method on [`msg.resolver_id`](field@OffchainMessage::resolver_id) and all returned
     /// sub-accounts until no more pending autorizations are left.
     ///
     /// # Result
@@ -101,8 +101,8 @@ impl OffchainResolver {
     /// offchain signature according to [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)
     /// standard.
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
+        %msg.resolver_id,
         %msg.signer_id,
-        %msg.sign_for,
         %msg.chain_id,
         msg.hash = %bs58::encode(msg.hash()).into_string(),
         at_block.hash, // will be recorded after top-level resolve
@@ -112,7 +112,7 @@ impl OffchainResolver {
         msg: OffchainMessage,
         proof: Proof,
     ) -> Result<(), ResolveError> {
-        // TODO: maybe leave it for caller?
+        // TODO: maybe leave it for caller? intents.near
         if !msg.is_top_level() {
             return Err(ResolveError::NonTopLevel);
         }
@@ -122,8 +122,8 @@ impl OffchainResolver {
         // keep track of already seen account IDs
         let mut seen = HashSet::new();
 
-        // mark top-level signer_id as already seen
-        seen.insert(msg.signer_id.clone());
+        // mark top-level resolver_id as already seen
+        seen.insert(msg.resolver_id.clone());
         // if set, resolve top-level authorization at fixed block hash, or final otherwise
         in_flight.push(self.resolve_single(msg.clone(), proof, self.at_block_hash));
 
@@ -137,15 +137,19 @@ impl OffchainResolver {
             #[cfg(feature = "tracing")]
             record_all!(Span::current(), at_block.hash = %at_block_hash);
 
-            for (signer_id, proof) in resolved.pending {
+            for (resolver_id, proof) in resolved.pending {
                 // TODO: better tracing
-                if !seen.insert(signer_id.clone()) {
+                if !seen.insert(resolver_id.clone()) {
                     #[cfg(feature = "tracing")]
-                    tracing::debug!("signer_id {} has been already seen, skipping...", signer_id);
+                    tracing::debug!(
+                        "resolver_id {} has been already seen, skipping...",
+                        resolver_id
+                    );
                     continue;
                 }
+                // TODO: cycles?
 
-                // `seen` has top-level `signer_id`, too, so we need to subtract one
+                // `seen` has top-level `resolver_id` already, so we need to subtract one
                 if seen.len() - 1 > self.max_pending {
                     // prevent DoS attack in case of malicious contract(s)
                     // returns too many pending authorizations
@@ -154,8 +158,8 @@ impl OffchainResolver {
 
                 // resolve pending authorizations at the same block hash
                 in_flight.push(self.resolve_single(
-                    // override signer_id for sub-authorization
-                    msg.clone().with_signer_id(signer_id),
+                    // override resolver for sub-authorization
+                    msg.clone().with_resolver_id(resolver_id),
                     proof,
                     Some(at_block_hash),
                 ));
@@ -166,8 +170,8 @@ impl OffchainResolver {
     }
 
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
+        %msg.resolver_id,
         %msg.signer_id,
-        %msg.sign_for,
         %msg.chain_id,
         msg.hash = %bs58::encode(msg.hash()).into_string(),
         at_block.hash = at_block_hash.map(field::display),
@@ -186,7 +190,7 @@ impl OffchainResolver {
             .client
             .rpc()
             .view_function(
-                &msg.signer_id,
+                &msg.resolver_id,
                 "w_resolve_auth",
                 &serde_json::to_vec(&WResolveAuthArgs::from((&msg, proof.as_str())))
                     .expect("JSON: serialization failed"),
@@ -196,7 +200,7 @@ impl OffchainResolver {
                     Into::into,
                 ),
                 // TODO: "pre-init" if we StateInit for this AccountId
-                // self.state_inits.get(&msg.signer_id),
+                // self.state_inits.get(&msg.resolver_id),
             )
             // TODO: handle contract errors
             .await?;

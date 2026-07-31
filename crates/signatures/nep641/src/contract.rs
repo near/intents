@@ -18,7 +18,7 @@ pub trait AuthResolver {
     /// The implementation MUST panic if:
     /// * [`chain_id`](field@crate::OffchainMessage::chain_id) doesn't match
     ///   `env::chain_id()`
-    /// * [`signer_id`](field@crate::OffchainMessage::signer_id) doesn't
+    /// * [`resolver_id`](field@crate::OffchainMessage::resolver_id) doesn't
     ///   match `env::current_account_id()`
     /// * `proof` is invalid for given [`OffchainMessage`](crate::OffchainMessage)
     ///
@@ -29,8 +29,8 @@ pub trait AuthResolver {
     /// NEP-641 standard is **not** intended to be used for on-chain transfer "approvals"
     /// or any other actions that modify state of the blockchain. Offchain messages are
     /// intended to be verified _only_ offchain as they doesn't mutate any state on the
-    /// [signer](field@crate::OffchainMessage::signer_id)'s account and, hence, cannot prevent
-    /// replay attacks.
+    /// [resolver](field@crate::OffchainMessage::resolver_id)'s account and, hence, cannot
+    /// prevent replay attacks.
     ///
     /// Instead, use on-chain messages (e.g. request messages, transactions, delegate actions),
     /// which are specifically designed with replay-protection mechanism in mind.

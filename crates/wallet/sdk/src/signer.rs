@@ -5,7 +5,7 @@ use std::{
 };
 
 use async_trait::async_trait;
-use defuse_wallet::{RequestMessage, SignatureSchema};
+use defuse_wallet::{RequestMessage, SignatureSchema, offchain::OffchainMessage};
 use impl_tools::autoimpl;
 
 /// A proof for [`w_execute_signed(msg, proof)`](defuse_wallet::contract::Wallet::w_execute_signed)
@@ -27,7 +27,11 @@ pub trait WalletSigner<S: SignatureSchema>: Sync {
     /// Sign [`RequestMessage`] according to [`SignatureSchema`]
     /// and return a proof serialized to string ready to be submitted to
     /// [`w_execute_signed(msg, proof)`](defuse_wallet::contract::Wallet::w_execute_signed) contract method
+    // TODO: rename: sign_request_msg?
     async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error>;
+
+    // TODO: remove proof?
+    async fn sign_offchain_msg(&self, msg: &OffchainMessage) -> Result<Proof, Self::Error>;
 }
 
 #[allow(clippy::redundant_pub_crate)]
@@ -38,6 +42,11 @@ pub(crate) trait DynWalletSigner<S: SignatureSchema>: Send + Sync {
     async fn dyn_sign_request_msg(
         &self,
         msg: &RequestMessage,
+    ) -> Result<Proof, Box<dyn StdError + Send + Sync>>;
+
+    async fn dyn_sign_offchain_msg(
+        &self,
+        msg: &OffchainMessage,
     ) -> Result<Proof, Box<dyn StdError + Send + Sync>>;
 }
 
@@ -59,6 +68,13 @@ where
     ) -> Result<Proof, Box<dyn StdError + Send + Sync>> {
         self.sign_wallet_msg(msg).await.map_err(Into::into)
     }
+
+    async fn dyn_sign_offchain_msg(
+        &self,
+        msg: &OffchainMessage,
+    ) -> Result<Proof, Box<dyn StdError + Send + Sync>> {
+        self.sign_offchain_msg(msg).await.map_err(Into::into)
+    }
 }
 
 impl<S> WalletSigner<S> for dyn DynWalletSigner<S> + '_
@@ -74,5 +90,9 @@ where
 
     async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
         self.dyn_sign_request_msg(msg).await
+    }
+
+    async fn sign_offchain_msg(&self, msg: &OffchainMessage) -> Result<Proof, Self::Error> {
+        self.dyn_sign_offchain_msg(msg).await
     }
 }

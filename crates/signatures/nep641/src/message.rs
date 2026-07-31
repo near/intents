@@ -45,20 +45,19 @@ pub type Proof = String;
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct OffchainMessage {
-    // TODO: versioned?
-    /// Signer ID.
-    ///
-    /// MUST be equal to account ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
-    // TODO: rename: resolver_id?
-    pub signer_id: AccountId,
-
     /// Account ID which the top-level authorization is intended to be
     /// [resolved](crate::contract::AuthResolver::w_resolve_auth) for.
     ///
     /// If this authorization is top-level itself, then this field MUST match
-    /// [`signer_id`](field@Self::signer_id).
-    // TODO: rename: signer_id?
-    pub sign_for: AccountId,
+    /// [`resolver_id`](field@Self::resolver_id).
+    pub signer_id: AccountId,
+
+    // TODO: versioned?
+    // TODO: docs
+    /// Resolver ID.
+    ///
+    /// MUST be equal to account ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
+    pub resolver_id: AccountId,
 
     /// Chain ID.
     ///
@@ -82,12 +81,12 @@ impl OffchainMessage {
     // TODO: rename to PREFIX?
     pub const DOMAIN_SEPARATOR: &[u8] = b"NEAR_NEP641_OFFCHAIN_MESSAGE/V1";
 
-    /// Replace [`signer_id`](field@Self::signer_id) with given account ID
+    /// Replace [`resolver_id`](field@Self::resolver_id) with given account ID
     /// on this message.
     #[must_use]
     #[inline]
-    pub fn with_signer_id(mut self, signer_id: impl Into<AccountId>) -> Self {
-        self.signer_id = signer_id.into();
+    pub fn with_resolver_id(mut self, resolver_id: impl Into<AccountId>) -> Self {
+        self.resolver_id = resolver_id.into();
         self
     }
 
@@ -99,15 +98,15 @@ impl OffchainMessage {
     /// # use defuse_nep641::OffchainMessage;
     /// let top_level = OffchainMessage {
     ///     signer_id: "wallet.near".parse().unwrap(),
-    ///     sign_for: "wallet.near".parse().unwrap(),
+    ///     resolver_id: "wallet.near".parse().unwrap(),
     ///     chain_id: "mainnet".to_string(),
     ///     msg: "Hello, world!".to_string(),
     /// };
     /// assert!(top_level.is_top_level());
     ///
     /// let sub_auth = OffchainMessage {
-    ///     signer_id: "extension.near".parse().unwrap(),
-    ///     sign_for: "wallet.near".parse().unwrap(),
+    ///     signer_id: "wallet.near".parse().unwrap(),
+    ///     resolver_id: "extension.near".parse().unwrap(),
     ///     chain_id: "mainnet".to_string(),
     ///     msg: "Hello, world!".to_string(),
     /// };
@@ -115,7 +114,7 @@ impl OffchainMessage {
     /// ```
     #[inline]
     pub fn is_top_level(&self) -> bool {
-        self.sign_for == self.signer_id
+        self.signer_id == self.resolver_id
     }
 
     /// Returns canonical hash of this offchain message:
@@ -131,7 +130,7 @@ impl OffchainMessage {
     /// # use hex_literal::hex;
     /// let msg = OffchainMessage {
     ///     signer_id: "wallet.near".parse().unwrap(),
-    ///     sign_for: "wallet.near".parse().unwrap(),
+    ///     resolver_id: "wallet.near".parse().unwrap(),
     ///     chain_id: "mainnet".to_string(),
     ///     msg: "Hello, world!".to_string(),
     /// };

@@ -23,8 +23,7 @@ use near_sdk::{FunctionError, Promise, env, ext_contract};
 
 pub use crate::ContractError as Error;
 use crate::{
-    OffchainSignatureSchema, Request, RequestMessage, SignatureSchema, State, WalletOffchainProof,
-    WalletOp,
+    Request, RequestMessage, SignatureSchema, State, WalletOffchainProof, WalletOp,
     events::{Actor, WalletEvent},
 };
 
@@ -46,7 +45,7 @@ pub trait Wallet {
     ///
     /// MUST panic in following cases:
     /// * [`msg.chain_id`](RequestMessage::chain_id) is from another network
-    /// * [`msg.signer_id`](RequestMessage::signer_id) doesn't match
+    /// * [`msg.resolver_id`](RequestMessage::resolver_id) doesn't match
     ///   [`env::current_account_id()`](near_sdk::env::current_account_id)
     /// * [`msg.nonce`](RequestMessage::nonce) is already used, expired or
     ///   from the future
@@ -348,7 +347,7 @@ where
 
 impl<S> AuthResolver for WalletImpl<S>
 where
-    S: OffchainSignatureSchema,
+    S: SignatureSchema,
 {
     #[inline]
     fn w_resolve_auth(&self, msg: OffchainMessage, proof: Proof) -> HashMap<AccountId, Proof> {
@@ -359,7 +358,7 @@ where
 
 impl<S> WalletImpl<S>
 where
-    S: OffchainSignatureSchema,
+    S: SignatureSchema,
 {
     fn resolve_auth(&self, msg: OffchainMessage, proof: &str) -> Result<HashMap<AccountId, Proof>> {
         // check chain_id
@@ -367,10 +366,10 @@ where
             return Err(Error::InvalidChainId);
         }
 
-        // check signer_id
-        if msg.signer_id != env::current_account_id() {
+        // check resolver_id
+        if msg.resolver_id != env::current_account_id() {
             // TODO: error InvalidResolverId
-            return Err(Error::InvalidSignerId(msg.signer_id));
+            return Err(Error::InvalidSignerId(msg.resolver_id));
         }
 
         let WalletOffchainProof {

@@ -24,10 +24,7 @@ pub trait SignatureSchema {
     /// Used by the `w_execute_signed(msg, proof)` contract method.
     #[must_use = "check if verification passed"]
     fn verify_request_msg(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool;
-}
 
-// TODO: docs
-pub trait OffchainSignatureSchema: SignatureSchema {
     // TODO: docs
     #[must_use = "check if verification passed"]
     fn verify_offchain_msg(
