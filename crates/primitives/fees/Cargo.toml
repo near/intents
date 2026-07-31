@@ -8,8 +8,10 @@ rust-version.workspace = true
 repository.workspace = true
 
 [features]
-abi = ["borsh?/unstable__schema", "dep:schemars"]
+abi = ["borsh-schema", "schemars-v0_8"]
 borsh = ["dep:borsh"]
+borsh-schema = ["borsh", "borsh/unstable__schema"]
+schemars-v0_8 = ["dep:schemars"]
 serde = ["dep:serde"]
 
 [dependencies]

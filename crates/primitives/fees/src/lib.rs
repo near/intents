@@ -9,12 +9,12 @@ use defuse_num_utils::{CheckedAdd, CheckedMulDiv, CheckedSub};
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
     serde(try_from = "u32")
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
