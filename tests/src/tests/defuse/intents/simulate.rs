@@ -36,8 +36,7 @@ use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata,
 };
-use near_sdk_core::json_types::Base64VecU8;
-use near_sdk_core::json_types::U128;
+use near_sdk::json_types::{Base64VecU8, U128};
 use rstest::rstest;
 
 use crate::{

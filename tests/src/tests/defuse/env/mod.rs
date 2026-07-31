@@ -24,7 +24,7 @@ use defuse_sandbox::{
 };
 use futures::future::{FutureExt, try_join_all};
 use impl_tools::autoimpl;
-use near_sdk_core::{json_types::U128, types::account_id::arbitrary::ArbitraryNamedAccountId};
+use near_sdk::{json_types::U128, types::account_id::arbitrary::ArbitraryNamedAccountId};
 use rstest::fixture;
 
 const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_near(1);

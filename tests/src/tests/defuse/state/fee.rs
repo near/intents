@@ -17,7 +17,7 @@ use defuse_sandbox::{
     kit::AccountId,
 };
 use futures::FutureExt;
-use near_sdk_core::events::AsNep297Event;
+use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 
 #[rstest]
