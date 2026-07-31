@@ -8,18 +8,21 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-borsh-utils.workspace = true
-
-borsh = { workspace = true, features = ["derive"] }
 impl-tools.workspace = true
 near-sdk = { workspace = true, optional = true }
-serde = { workspace = true, features = ["derive"] }
 
+borsh = { workspace = true, features = ["derive"], optional = true }
+defuse-borsh-utils = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-abi = ["borsh/unstable__schema", "dep:schemars"]
-near-contract = ["dep:near-sdk"]
+abi = ["borsh-schema", "schemars-v0_8"]
+borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
+borsh-schema = ["borsh", "borsh/unstable__schema"]
+near-contract = ["borsh", "dep:near-sdk"]
+schemars-v0_8 = ["dep:schemars", "serde"]
+serde = ["dep:serde"]
 
 [dev-dependencies]
 defuse-test-utils.workspace = true

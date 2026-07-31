@@ -1,24 +1,33 @@
-use std::io;
-
+#[cfg(feature = "borsh")]
 use borsh::{BorshDeserialize, BorshSerialize};
+#[cfg(feature = "borsh")]
 use defuse_borsh_utils::{AsWrap, BorshDeserializeAs, BorshSerializeAs};
-use serde::{Deserialize, Serialize};
 
 /// A persistent lock, which stores its state (whether it's locked or unlocked)
 /// on-chain, so that the inner value can be accessed depending on
 /// the current state of the lock.
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(
-    Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
 )]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
+)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct Lock<T> {
-    #[serde(
-        default,
-        // do not serialize `false`
-        skip_serializing_if = "::core::ops::Not::not"
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            default,
+            // do not serialize `false`
+            skip_serializing_if = "::core::ops::Not::not"
+        )
     )]
     locked: bool,
-    #[serde(flatten)]
+    #[cfg_attr(feature = "serde", serde(flatten))]
     value: T,
 }
 
@@ -207,14 +216,15 @@ impl<T> From<T> for Lock<T> {
     }
 }
 
+#[cfg(feature = "borsh")]
 impl<T, As> BorshSerializeAs<Lock<T>> for Lock<As>
 where
     As: BorshSerializeAs<T>,
 {
     #[inline]
-    fn serialize_as<W>(source: &Lock<T>, writer: &mut W) -> io::Result<()>
+    fn serialize_as<W>(source: &Lock<T>, writer: &mut W) -> std::io::Result<()>
     where
-        W: io::Write,
+        W: std::io::Write,
     {
         Lock {
             locked: source.locked,
@@ -224,14 +234,15 @@ where
     }
 }
 
+#[cfg(feature = "borsh")]
 impl<T, As> BorshDeserializeAs<Lock<T>> for Lock<As>
 where
     As: BorshDeserializeAs<T>,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<Lock<T>>
+    fn deserialize_as<R>(reader: &mut R) -> std::io::Result<Lock<T>>
     where
-        R: io::Read,
+        R: std::io::Read,
     {
         Lock::<AsWrap<T, As>>::deserialize_reader(reader).map(|v| Lock {
             locked: v.locked,

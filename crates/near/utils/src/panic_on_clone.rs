@@ -1,4 +1,3 @@
-use borsh::{BorshDeserialize, BorshSerialize};
 use impl_tools::autoimpl;
 
 /// This struct is used as a tool to make it possible to derive borsh
@@ -9,8 +8,12 @@ use impl_tools::autoimpl;
 #[autoimpl(DerefMut using self.0)]
 #[autoimpl(AsRef using self.0)]
 #[autoimpl(AsMut using self.0)]
-#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(
+    feature = "borsh",
+    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
+)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)] // needed for `transmute()` below
 pub struct PanicOnClone<T: ?Sized>(T);
 
