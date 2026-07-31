@@ -1676,7 +1676,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
     .await;
 
     let transfer_amounts = [1000, 2000, 3000].map(U128::from).to_vec();
-    let refund_amounts = [1000, 2000, 1000].map(U128::from).to_vec();
+    let refund_amounts = vec![1000, 2000, 1000];
 
     let ft1_id = TokenId::from(Nep141TokenId::new(ft1.contract_id().clone()));
     let ft2_id = TokenId::from(Nep141TokenId::new(ft2.contract_id().clone()));
@@ -1710,7 +1710,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
             )
             .await
             .unwrap(),
-        refund_amounts: refund_amounts.clone(),
+        refund_amounts: refund_amounts.iter().copied().map(U128).collect(),
     };
 
     let deposit_message = DepositMessage {

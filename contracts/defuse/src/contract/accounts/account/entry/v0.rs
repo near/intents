@@ -59,14 +59,13 @@ pub(super) mod tests {
     use super::*;
 
     use defuse_bitmap::U256;
-    use defuse_near_utils::NestPrefix;
     use near_sdk::{
         AccountIdRef,
         store::{IterableSet, LookupMap},
     };
 
     use defuse_core::{
-        Result,
+        NestPrefix, Result,
         accounts::{AccountEvent, PublicKeyEvent},
         events::DefuseEvent,
         intents::MaybeIntentEvent,

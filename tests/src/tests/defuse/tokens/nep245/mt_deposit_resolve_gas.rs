@@ -142,7 +142,7 @@ fn validate_mt_event_log_size(
     let mt_mint_event = MtEvent::MtMint(Cow::Owned(vec![MtMintEvent {
         owner_id: Cow::Borrowed(owner_id),
         token_ids: Cow::Owned(token_ids.to_vec()),
-        amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
+        amounts: Cow::Borrowed(amounts),
         memo: None,
     }]));
 
@@ -150,7 +150,7 @@ fn validate_mt_event_log_size(
         owner_id: Cow::Borrowed(owner_id),
         authorized_id: None,
         token_ids: Cow::Owned(token_ids.to_vec()),
-        amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
+        amounts: Cow::Borrowed(amounts),
         memo: Some(Cow::Borrowed(REFUND_MEMO)),
     }]));
 
