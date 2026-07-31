@@ -41,11 +41,6 @@ pub trait SignatureSchema {
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-// #[cfg_attr(
-//     feature = "borsh",
-//     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-//     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
-// )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct WalletOffchainProof {
     #[cfg_attr(
@@ -55,4 +50,32 @@ pub struct WalletOffchainProof {
     pub as_extension_id: Option<AccountId>,
 
     pub proof: Proof,
+}
+
+impl WalletOffchainProof {
+    #[inline]
+    pub fn as_self(proof: impl Into<Proof>) -> Self {
+        Self {
+            as_extension_id: None,
+            proof: proof.into(),
+        }
+    }
+
+    #[inline]
+    pub fn as_extension(extension_id: impl Into<AccountId>, proof: impl Into<Proof>) -> Self {
+        Self {
+            as_extension_id: Some(extension_id.into()),
+            proof: proof.into(),
+        }
+    }
+
+    // TODO: naming
+    #[cfg(feature = "json")]
+    #[inline]
+    pub fn wrap_as_extension(self, extension_id: impl Into<AccountId>) -> Self {
+        Self::as_extension(
+            extension_id,
+            serde_json::to_string(&self).expect("JSON: failed to serialize"),
+        )
+    }
 }

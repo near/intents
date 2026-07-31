@@ -16,7 +16,7 @@ use std::{
     borrow::Cow,
     collections::BTreeSet,
     error::Error as StdError,
-    mem,
+    iter, mem,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -577,16 +577,20 @@ where
 
         Ok((
             msg.with_resolver_id(self.account_id()),
-            self.as_extension_chain
-                .iter()
-                .cloned()
-                .fold(proof, |proof, extension_id| {
-                    serde_json::to_string(&WalletOffchainProof {
-                        as_extension_id: Some(extension_id),
-                        proof,
-                    })
-                    .expect("JSON: failed to serialize")
-                }),
+            // TODO: expose convenient wrap functions from wallet crate
+            serde_json::to_string(
+                // wrap as extension with ID of the previous account in the chain:
+                // [real, ext(0), ext(1), .., ext(n - 2)]
+                &iter::once(self.real_account_id())
+                    .chain(&self.as_extension_chain)
+                    .take(self.as_extension_chain.len())
+                    .cloned()
+                    .fold(
+                        WalletOffchainProof::as_self(proof),
+                        WalletOffchainProof::wrap_as_extension,
+                    ),
+            )
+            .expect("JSON: serialization failed"),
         ))
     }
 

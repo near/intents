@@ -22,11 +22,13 @@ impl OffchainResolver {
     #[must_use]
     #[inline]
     pub const fn new(client: Near) -> Self {
+        // TODO: check client.rpc().status().await?.chain_id
         Self {
             client,
             // fetch final block hash by default
             at_block_hash: None,
             // unbounded by default
+            // TODO: set reasonable default
             max_pending: usize::MAX,
         }
     }
@@ -107,6 +109,8 @@ impl OffchainResolver {
         msg.hash = %bs58::encode(msg.hash()).into_string(),
         at_block.hash, // will be recorded after top-level resolve
     )))]
+    // TODO: return signer_id? but this doesn't force the caller
+    // to check the actual message being signed...
     pub async fn resolve_auth(
         &self,
         msg: OffchainMessage,
@@ -133,12 +137,14 @@ impl OffchainResolver {
         // resolve until no more pending authorizations are left
         while let Some(resolved) = in_flight.try_next().await? {
             // populate fetched block hash from top-level `self.resolve_signed()`
+            // TODO: a lagging RPC can resolve old Final block
             at_block_hash = resolved.block_hash;
             #[cfg(feature = "tracing")]
             record_all!(Span::current(), at_block.hash = %at_block_hash);
 
             for (resolver_id, proof) in resolved.pending {
-                // TODO: better tracing
+                // TODO: it means that cycles automatically cancel each other out,
+                // even if proofs are different. Is it ok?
                 if !seen.insert(resolver_id.clone()) {
                     #[cfg(feature = "tracing")]
                     tracing::debug!(
@@ -147,6 +153,7 @@ impl OffchainResolver {
                     );
                     continue;
                 }
+                // TODO: better tracing
                 // TODO: cycles?
 
                 // `seen` has top-level `resolver_id` already, so we need to subtract one
@@ -209,6 +216,8 @@ impl OffchainResolver {
         if let Some(at_block_hash) = at_block_hash
             && at_block_hash != res.block_hash
         {
+            // TODO: RPCs can be behind a load-balancer, so that they can return UnknownBlock error
+            // TODO: maybe we need to retry with minimum-known block_height?
             return Err(
                 near_kit::RpcError::InvalidResponse("block hash mismatch".to_string()).into(),
             );
