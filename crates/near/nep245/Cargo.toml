@@ -8,7 +8,7 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-near-utils.workspace = true
+defuse-near-utils = { workspace = true, optional = true }
 derive_more = { workspace = true, features = ["from"] }
 near-account-id.workspace = true
 near-sdk = { workspace = true, optional = true }
@@ -16,15 +16,12 @@ near-sdk = { workspace = true, optional = true }
 near-sdk-core.workspace = true
 thiserror.workspace = true
 
-borsh = { workspace = true, features = ["derive"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-abi = ["borsh-schema", "near-sdk/abi", "schemars-v0_8"]
-borsh = ["dep:borsh", "near-account-id/borsh"]
-borsh-schema = ["borsh", "borsh/unstable__schema", "near-account-id/abi"]
-near-contract = ["dep:near-sdk", "serde"]
+abi = ["near-account-id/abi", "near-sdk/abi", "schemars-v0_8"]
+near-contract = ["dep:near-sdk", "serde", "dep:defuse-near-utils"]
 schemars-v0_8 = ["dep:schemars", "near-account-id/schemars-v0_8", "near-sdk-core/schemars-v0_8", "serde"]
 serde = ["dep:serde", "near-account-id/serde", "near-sdk-core/serde"]
 

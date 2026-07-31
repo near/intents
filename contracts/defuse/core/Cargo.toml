@@ -65,7 +65,6 @@ borsh-schema = [
   "defuse-bitmap/borsh-schema",
   "defuse-crypto/borsh-schema",
   "defuse-fees/borsh-schema",
-  "defuse-nep245/borsh-schema",
   "defuse-nep413/borsh-schema",
   "defuse-time/borsh-schema",
   "defuse-token-id/abi",

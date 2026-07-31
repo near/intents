@@ -1736,7 +1736,6 @@ dependencies = [
 name = "defuse-nep245"
 version = "0.1.0"
 dependencies = [
- "borsh",
  "defuse-near-utils",
  "defuse-nep245",
  "derive_more",
