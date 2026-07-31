@@ -1,5 +1,4 @@
-use defuse_core::{accounts::AccountEvent, engine::StateView, events::DefuseEvent};
-use defuse_near_utils::Lock;
+use defuse_core::{Lock, accounts::AccountEvent, engine::StateView, events::DefuseEvent};
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{AccountId, assert_one_yocto, near};
 

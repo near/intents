@@ -26,7 +26,6 @@ container_build_command = [
 
 [dependencies]
 defuse-admin-utils.workspace = true
-defuse-near-utils = { workspace = true, features = ["near-contract"] }
 defuse-poa-token.workspace = true
 
 near-contract-standards.workspace = true
@@ -43,7 +42,7 @@ rstest.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
 [features]
-abi = ["defuse-near-utils/abi", "dep:schemars"]
+abi = ["dep:schemars"]
 
 contract = []
 

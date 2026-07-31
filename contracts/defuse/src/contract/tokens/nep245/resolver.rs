@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
-use defuse_near_utils::{Lock, REFUND_MEMO, promise_result_checked_json_with_len};
+use defuse_core::Lock;
+use defuse_near_utils::{REFUND_MEMO, promise_result_checked_json_with_len};
 use defuse_nep245::{
     ClearedApproval, MtEvent, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };

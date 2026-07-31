@@ -13,7 +13,7 @@ use defuse::core::{
 };
 use defuse_core::payload::Payload;
 use near_kit::AccountId;
-use near_sdk::{events::AsNep297Event, types::CryptoHash};
+use near_sdk::{CryptoHash, events::AsNep297Event};
 use std::borrow::Cow;
 
 #[cfg(feature = "imt")]

@@ -1810,7 +1810,6 @@ version = "0.1.0"
 dependencies = [
  "cargo-near-build",
  "defuse-admin-utils",
- "defuse-near-utils",
  "defuse-poa-token",
  "defuse-sandbox",
  "futures",

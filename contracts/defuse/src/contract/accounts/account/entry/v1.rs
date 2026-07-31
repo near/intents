@@ -1,6 +1,6 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_bitmap::{U248, U256};
-use defuse_near_utils::NestPrefix;
+use defuse_core::NestPrefix;
 use impl_tools::autoimpl;
 use near_sdk::store::{IterableSet, LookupMap};
 
