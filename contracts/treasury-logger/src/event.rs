@@ -1,4 +1,5 @@
 use defuse_nep245::TokenId;
+use defuse_serde_utils::cow::AsCow;
 use near_sdk::{AccountIdRef, near};
 use serde_with::{DisplayFromStr, serde_as};
 use std::borrow::Cow;
@@ -13,7 +14,7 @@ pub enum Event<'a> {
         sender_id: Cow<'a, AccountIdRef>,
         previous_owner_ids: Cow<'a, [Cow<'a, AccountIdRef>]>,
         token_ids: Cow<'a, [TokenId]>,
-        #[serde_as(as = "[DisplayFromStr]")]
+        #[serde_as(as = "AsCow<DisplayFromStr>")]
         amounts: Cow<'a, [u128]>,
         msg: Cow<'a, str>,
         #[serde_as(as = "DisplayFromStr")]

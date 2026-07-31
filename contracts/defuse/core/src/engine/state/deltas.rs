@@ -15,7 +15,6 @@ use crate::{
 use defuse_map_utils::cleanup::DefaultMap;
 use defuse_nep245::{MtEvent, MtTransferEvent};
 use near_account_id::{AccountId, AccountIdRef};
-use near_sdk_core::json_types::U128;
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::{
@@ -437,7 +436,7 @@ impl Transfers {
                 .map(|(sender_id, (receiver_id, transfers))| {
                     let (token_ids, amounts) = transfers
                         .iter()
-                        .map(|(token_id, amount)| (token_id.to_string(), U128(*amount)))
+                        .map(|(token_id, amount)| (token_id.to_string(), *amount))
                         .unzip();
                     MtTransferEvent {
                         authorized_id: None,

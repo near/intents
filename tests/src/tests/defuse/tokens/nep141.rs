@@ -155,7 +155,7 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
             [FtWithdraw {
                 token: ft.contract_id().clone(),
                 receiver_id: other_user.account_id().clone(),
-                amount: U128(600),
+                amount: 600,
                 memo: None,
                 msg: None,
                 storage_deposit: None,
@@ -254,7 +254,7 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
             [FtWithdraw {
                 token: ft.contract_id().clone(),
                 receiver_id: user.account_id().clone(),
-                amount: U128(1001),
+                amount: 1001,
                 memo: None,
                 msg: None,
                 storage_deposit: None,

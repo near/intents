@@ -261,7 +261,7 @@ where
             owner_id,
             std::iter::once((
                 Nep141TokenId::new(withdraw.token.clone()).into(),
-                withdraw.amount.0,
+                withdraw.amount,
             ))
             .chain(withdraw.storage_deposit.map(|amount| {
                 (
@@ -301,7 +301,7 @@ where
                 .cloned()
                 .map(|token_id| Nep245TokenId::new(withdraw.token.clone(), token_id))
                 .map(Into::into)
-                .zip(withdraw.amounts.iter().map(|a| a.0))
+                .zip(withdraw.amounts.iter().copied())
                 .chain(
                     withdraw
                         .storage_deposit

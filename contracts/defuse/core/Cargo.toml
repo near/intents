@@ -38,8 +38,6 @@ near-gas.workspace = true
 near-global-contracts.workspace = true
 near-sdk = { workspace = true, optional = true }
 near-token.workspace = true
-# TODO: replace with near_json_types crate, when it is available
-near-sdk-core.workspace = true
 
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true

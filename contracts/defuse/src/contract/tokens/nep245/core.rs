@@ -202,7 +202,7 @@ impl Contract {
                 old_owner_id: sender_id.into(),
                 new_owner_id: Cow::Borrowed(receiver_id),
                 token_ids: token_ids.into(),
-                amounts: amounts.into(),
+                amounts: Cow::Owned(amounts.iter().map(|a| a.0).collect()),
                 memo: memo.map(Into::into),
             }]
             .as_slice()

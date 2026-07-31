@@ -44,7 +44,7 @@ impl MultiTokenWithdrawer for Contract {
                 token,
                 receiver_id,
                 token_ids,
-                amounts,
+                amounts: amounts.into_iter().map(|a| a.0).collect(),
                 memo,
                 msg,
                 storage_deposit: None,
@@ -75,7 +75,7 @@ impl Contract {
                 .cloned()
                 .map(|token_id| Nep245TokenId::new(withdraw.token.clone(), token_id))
                 .map(Into::into)
-                .zip(withdraw.amounts.iter().map(|a| a.0))
+                .zip(withdraw.amounts.iter().copied())
                 .chain(withdraw.storage_deposit.map(|amount| {
                     (
                         Nep141TokenId::new(self.wnear_id().into_owned()).into(),
@@ -117,7 +117,7 @@ impl Contract {
                     withdraw.token,
                     owner_id,
                     withdraw.token_ids,
-                    withdraw.amounts,
+                    withdraw.amounts.into_iter().map(U128).collect(),
                     is_call,
                 ),
         )
@@ -175,11 +175,12 @@ impl Contract {
             .with_static_gas(min_gas)
             // distribute remaining gas here
             .with_unused_gas_weight(1);
+        let amounts: Vec<U128> = withdraw.amounts.into_iter().map(U128).collect();
         if let Some(msg) = withdraw.msg {
             p.mt_batch_transfer_call(
                 withdraw.receiver_id,
                 withdraw.token_ids,
-                withdraw.amounts,
+                amounts,
                 None,
                 withdraw.memo,
                 msg,
@@ -188,7 +189,7 @@ impl Contract {
             p.mt_batch_transfer(
                 withdraw.receiver_id,
                 withdraw.token_ids,
-                withdraw.amounts,
+                amounts,
                 None,
                 withdraw.memo,
             )
@@ -276,7 +277,7 @@ impl MultiTokenForcedWithdrawer for Contract {
                 token,
                 receiver_id,
                 token_ids,
-                amounts,
+                amounts: amounts.into_iter().map(|a| a.0).collect(),
                 memo,
                 msg,
                 storage_deposit: None,

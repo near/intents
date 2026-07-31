@@ -1,11 +1,15 @@
 use super::TokenId;
 use crate::checked::{CheckedMtEvent, ErrorLogTooLong};
 use defuse_near_utils::TOTAL_LOG_LENGTH_LIMIT;
+use defuse_serde_utils::cow::AsCow;
 use derive_more::derive::From;
 use near_account_id::AccountIdRef;
-use near_sdk_core::{events::AsNep297Event, json_types::U128};
 use serde::{Deserialize, Serialize};
+use serde_with::{DisplayFromStr, serde_as};
 use std::borrow::Cow;
+
+#[cfg(feature = "near-contract")]
+use near_sdk::events::AsNep297Event;
 
 #[cfg_attr(
     not(feature = "near-contract"),
@@ -50,30 +54,35 @@ impl MtEvent<'_> {
 
 #[must_use = "make sure to `.emit()` this event"]
 #[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MtMintEvent<'a> {
     pub owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
-    pub amounts: Cow<'a, [U128]>,
+    #[serde_as(as = "AsCow<DisplayFromStr>")]
+    pub amounts: Cow<'a, [u128]>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<Cow<'a, str>>,
 }
 
 #[must_use = "make sure to `.emit()` this event"]
 #[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MtBurnEvent<'a> {
     pub owner_id: Cow<'a, AccountIdRef>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub authorized_id: Option<Cow<'a, AccountIdRef>>,
     pub token_ids: Cow<'a, [TokenId]>,
-    pub amounts: Cow<'a, [U128]>,
+    #[serde_as(as = "AsCow<DisplayFromStr>")]
+    pub amounts: Cow<'a, [u128]>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<Cow<'a, str>>,
 }
 
 #[must_use = "make sure to `.emit()` this event"]
 #[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MtTransferEvent<'a> {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -81,7 +90,8 @@ pub struct MtTransferEvent<'a> {
     pub old_owner_id: Cow<'a, AccountIdRef>,
     pub new_owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
-    pub amounts: Cow<'a, [U128]>,
+    #[serde_as(as = "AsCow<DisplayFromStr>")]
+    pub amounts: Cow<'a, [u128]>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<Cow<'a, str>>,
 }
@@ -93,7 +103,6 @@ mod tests {
 
     use super::*;
     use near_account_id::AccountId;
-    use near_sdk_core::json_types::U128;
 
     const REFUND_STR_LEN: usize = REFUND_MEMO.len();
 
@@ -110,7 +119,7 @@ mod tests {
             old_owner_id: Cow::Owned(old_owner.clone()),
             new_owner_id: Cow::Owned(new_owner.clone()),
             token_ids: Cow::Owned(vec![base_token_id.to_string()]),
-            amounts: Cow::Owned(vec![U128(1)]),
+            amounts: Cow::Owned(vec![1]),
             memo: memo.map(|m| Cow::Owned(m.to_string())),
         };
         let base_mt_event = MtEvent::MtTransfer(Cow::Owned(vec![base_event]));
@@ -125,7 +134,7 @@ mod tests {
             old_owner_id: Cow::Owned(old_owner),
             new_owner_id: Cow::Owned(new_owner),
             token_ids: Cow::Owned(vec![padded_token_id]),
-            amounts: Cow::Owned(vec![U128(1)]),
+            amounts: Cow::Owned(vec![1]),
             memo: memo.map(|m| Cow::Owned(m.to_string())),
         };
 
@@ -155,7 +164,7 @@ mod tests {
                 old_owner_id: Cow::Owned(old_owner.clone()),
                 new_owner_id: Cow::Owned(new_owner.clone()),
                 token_ids: Cow::Owned(vec![format!("{base_token_id}{i}")]),
-                amounts: Cow::Owned(vec![U128(1)]),
+                amounts: Cow::Owned(vec![1]),
                 memo: memo.map(|m| Cow::Owned(m.to_string())),
             })
             .collect();
@@ -181,7 +190,7 @@ mod tests {
                     old_owner_id: Cow::Owned(old_owner.clone()),
                     new_owner_id: Cow::Owned(new_owner.clone()),
                     token_ids: Cow::Owned(vec![token_id]),
-                    amounts: Cow::Owned(vec![U128(1)]),
+                    amounts: Cow::Owned(vec![1]),
                     memo: memo.map(|m| Cow::Owned(m.to_string())),
                 }
             })

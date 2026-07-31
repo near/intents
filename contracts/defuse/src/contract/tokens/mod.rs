@@ -41,7 +41,7 @@ impl Contract {
             }
 
             mint_event.token_ids.to_mut().push(token_id.to_string());
-            mint_event.amounts.to_mut().push(U128(amount));
+            mint_event.amounts.to_mut().push(amount);
 
             let total_supply = self
                 .storage
@@ -102,7 +102,7 @@ impl Contract {
             }
 
             burn_event.token_ids.to_mut().push(token_id.to_string());
-            burn_event.amounts.to_mut().push(U128(amount));
+            burn_event.amounts.to_mut().push(amount);
 
             owner
                 .token_balances
@@ -196,7 +196,7 @@ impl Contract {
             }
 
             burn_event.token_ids.to_mut().push(token_id.to_string());
-            burn_event.amounts.to_mut().push(U128(refund_amount));
+            burn_event.amounts.to_mut().push(refund_amount);
 
             receiver
                 .token_balances
