@@ -22,7 +22,8 @@ pub type TokenDeltas = Amounts<BTreeMap<TokenId, i128>>;
 #[autoimpl(Deref using self.diff)]
 #[autoimpl(DerefMut using self.diff)]
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(
     Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
 )]
@@ -109,7 +110,7 @@ impl ExecutableIntent for TokenDiff {
 }
 
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// An event emitted when a `TokenDiff` intent is executed.
 pub struct TokenDiffEvent<'a> {

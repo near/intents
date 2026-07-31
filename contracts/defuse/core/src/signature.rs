@@ -12,7 +12,7 @@ use defuse_crypto::{
 };
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
-#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[derive(
     Clone,
     Copy,
@@ -81,7 +81,7 @@ impl FromStr for Signature {
     }
 }
 
-#[cfg(feature = "abi")]
+#[cfg(feature = "schemars-v0_8")]
 const _: () = {
     use schemars::{
         JsonSchema,

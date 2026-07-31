@@ -15,7 +15,8 @@ use crate::{
 
 use super::ExecutableIntent;
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 /// Given an account id, the user can add public keys. The added public keys can sign
 /// intents on behalf of these accounts, even to add new ones.
@@ -57,7 +58,8 @@ impl ExecutableIntent for AddPublicKey {
     }
 }
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 /// Remove the public key associated with a given account. See `AddPublicKey`.
 pub struct RemovePublicKey {
@@ -94,7 +96,8 @@ impl ExecutableIntent for RemovePublicKey {
     }
 }
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 pub struct SetAuthByPredecessorId {
     pub enabled: bool,

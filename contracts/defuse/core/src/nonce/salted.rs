@@ -12,7 +12,7 @@ use std::{
 use crate::{DefuseError, Result};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[derive(
     Clone,
     Copy,
@@ -64,7 +64,7 @@ impl FromStr for Salt {
     }
 }
 
-#[cfg(feature = "abi")]
+#[cfg(feature = "schemars-v0_8")]
 const _: () = {
     use schemars::{
         JsonSchema,
@@ -96,7 +96,7 @@ const _: () = {
 
 /// Contains current valid salt and set of previous
 /// salts that can be valid or invalid.
-#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[derive(Debug, BorshSerialize, BorshDeserialize)]
 pub struct SaltRegistry<T: Map<K = Salt, V = bool>> {
     previous: T,

@@ -10,7 +10,7 @@ use crate::{
 
 use super::{DefusePayload, ExtractDefusePayload};
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignedWebAuthnPayload {
     pub payload: String,
