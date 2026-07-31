@@ -4,21 +4,24 @@ use defuse_near_utils::TOTAL_LOG_LENGTH_LIMIT;
 use derive_more::derive::From;
 use near_account_id::AccountIdRef;
 use near_sdk_core::{events::AsNep297Event, json_types::U128};
-use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
 #[cfg_attr(
-    not(feature = "near-contract"),
-    must_use,
-    derive(::serde::Serialize),
-    serde(tag = "event", content = "data", rename_all = "snake_case")
+    feature = "serde",
+    derive(::serde::Deserialize),
+    cfg_attr(
+        not(feature = "near-contract"),
+        must_use,
+        derive(::serde::Serialize),
+        serde(tag = "event", content = "data", rename_all = "snake_case")
+    ),
+    cfg_attr(
+        feature = "near-contract",
+        must_use = "make sure to `.emit()` this event",
+        ::near_sdk::near(event_json(standard = "nep245"))
+    )
 )]
-#[cfg_attr(
-    feature = "near-contract",
-    must_use = "make sure to `.emit()` this event",
-    ::near_sdk::near(event_json(standard = "nep245"))
-)]
-#[derive(Debug, Clone, Deserialize, From)]
+#[derive(Debug, Clone, From)]
 pub enum MtEvent<'a> {
     #[cfg_attr(feature = "near-contract", event_version("1.0.0"))]
     MtMint(Cow<'a, [MtMintEvent<'a>]>),
@@ -49,40 +52,52 @@ impl MtEvent<'_> {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+)]
+#[derive(Debug, Clone)]
 pub struct MtMintEvent<'a> {
     pub owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
     pub amounts: Cow<'a, [U128]>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(default, skip_serializing_if = "Option::is_none"))]
     pub memo: Option<Cow<'a, str>>,
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+)]
+#[derive(Debug, Clone)]
 pub struct MtBurnEvent<'a> {
     pub owner_id: Cow<'a, AccountIdRef>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(default, skip_serializing_if = "Option::is_none"))]
     pub authorized_id: Option<Cow<'a, AccountIdRef>>,
     pub token_ids: Cow<'a, [TokenId]>,
     pub amounts: Cow<'a, [U128]>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(default, skip_serializing_if = "Option::is_none"))]
     pub memo: Option<Cow<'a, str>>,
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+)]
+#[derive(Debug, Clone)]
 pub struct MtTransferEvent<'a> {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(default, skip_serializing_if = "Option::is_none"))]
     pub authorized_id: Option<Cow<'a, AccountIdRef>>,
     pub old_owner_id: Cow<'a, AccountIdRef>,
     pub new_owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
     pub amounts: Cow<'a, [U128]>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(default, skip_serializing_if = "Option::is_none"))]
     pub memo: Option<Cow<'a, str>>,
 }
 

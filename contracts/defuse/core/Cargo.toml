@@ -66,6 +66,7 @@ abi = [
   "dep:schemars",
   "near-sdk/abi",
   "serde_with/schemars_0_8",
+  "defuse-nep245/abi",
 ]
 arbitrary = [
   "defuse-bitmap/arbitrary",
