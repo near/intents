@@ -438,6 +438,7 @@ impl Transfers {
                         .iter()
                         .map(|(token_id, amount)| (token_id.to_string(), *amount))
                         .unzip();
+
                     MtTransferEvent {
                         authorized_id: None,
                         old_owner_id: Cow::Borrowed(sender_id),

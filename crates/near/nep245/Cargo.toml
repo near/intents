@@ -21,7 +21,12 @@ thiserror.workspace = true
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-abi = ["borsh/unstable__schema", "defuse-serde-utils/schemars-v0_8", "dep:schemars", "near-sdk/abi"]
+abi = [
+  "borsh/unstable__schema",
+  "defuse-serde-utils/schemars-v0_8",
+  "dep:schemars",
+  "near-sdk/abi",
+]
 near-contract = ["dep:near-sdk"]
 
 [dev-dependencies]
