@@ -151,6 +151,7 @@ impl OffchainResolver {
                         "resolver_id {} has been already seen, skipping...",
                         resolver_id
                     );
+                    // TODO: cyclic errors
                     continue;
                 }
                 // TODO: better tracing

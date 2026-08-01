@@ -38,3 +38,6 @@ pub trait AuthResolver {
     // times? e.g. intents.near
     fn w_resolve_auth(&self, msg: OffchainMessage, proof: Proof) -> HashMap<AccountId, Proof>;
 }
+
+// -> [Pending {resolver_id: AccountId, result: String, auth: String}]
+// not from the bottom, because it's unclear how to combine answers from multple children to a single parent
