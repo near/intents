@@ -110,23 +110,29 @@ async fn w_resolve_auth(
 
     #[from(extension)]
     #[future]
-    mut wallet: Wallet,
+    wallet: Wallet,
 ) {
     const PAYLOAD: &str = "Hello, Near!";
 
-    // TODO: this will be not needed when RPC adds support for
-    // state_init param for view-calls
-    wallet
-        .initialize()
-        .await
-        .expect("failed to initialize a wallet");
+    println!("{} -> {}", wallet.real_account_id(), wallet.account_id());
+
+    // // TODO: this will be not needed when RPC adds support for
+    // // state_init param for view-calls
+    // wallet
+    //     .clone()
+    //     .initialize()
+    //     .await
+    //     .expect("failed to initialize a wallet");
 
     let input = wallet
         .sign_offchain_msg(PAYLOAD, [])
         .await
         .expect("failed to sign");
+    println!("input:\n{input}");
 
     let output = OffchainResolver::new(near)
+        // unbounded for tests
+        .with_max_pending(usize::MAX)
         .resolve_auth(wallet.account_id(), input)
         .await
         .expect("invalid authorization");
@@ -215,13 +221,20 @@ async fn wallet(
     #[default(WalletBuilder::new())] builder: WalletBuilder,
     #[future] near: Near,
 ) -> Wallet {
-    builder
+    let mut w = builder
         .build(
             *WALLET_ED25519_CODE_HASH,
             WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng))),
         )
         .with_client(near.clone())
-        .with_relayer(near)
+        .with_relayer(near);
+
+    // TODO: maybe remove?
+    w.initialize()
+        .await
+        .expect("failed to initialize the wallet");
+
+    w
 }
 
 #[fixture]
@@ -237,10 +250,7 @@ async fn extension(
 
     #[future] near: Near,
 ) -> Wallet {
-    let master_id = master.real_account_id().clone();
-
     master
-        .as_self()
         .sign_and_send(Request::new().internal([WalletOp::AddExtension {
             account_id: ext.account_id().into(),
         }]))
@@ -252,7 +262,7 @@ async fn extension(
         // TODO: check receipts
         .unwrap();
 
-    ext.as_extension_of(master_id)
+    ext.as_extension_of(master)
 }
 
 #[fixture]

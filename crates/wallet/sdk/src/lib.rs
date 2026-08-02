@@ -565,6 +565,10 @@ where
         // check before signing if client is set
         let client = self.client();
 
+        if self.initialized {
+            return Ok(());
+        }
+
         self.sign_and_send(Request::new())
             .await?
             // TODO: check receipts
@@ -584,6 +588,10 @@ where
         // TODO: better API?
         path: impl Into<Vec<AccountId>>,
     ) -> Result<String, Error> {
+        if !self.initialized {
+            // TODOreturn err for now
+        }
+
         let msg = OffchainMessage {
             path: {
                 let mut path = path.into();
