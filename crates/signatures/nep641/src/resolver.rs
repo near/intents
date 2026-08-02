@@ -27,7 +27,7 @@ impl OffchainResolver {
             at_block_hash: None,
             // unbounded by default
             // TODO: set reasonable default
-            max_pending: usize::MAX,
+            max_pending: 0,
         }
     }
 
@@ -102,7 +102,7 @@ impl OffchainResolver {
     /// standard.
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
         // TODO
-        %account_id,
+        // %account_id,
         // %msg.resolver_id,
         // %msg.signer_id,
         // %msg.chain_id,
@@ -113,9 +113,11 @@ impl OffchainResolver {
     // to check the actual message being signed...
     pub async fn resolve_auth(
         &self,
-        account_id: AccountId, // TODO: impl Into<>?
+        account_id: impl Into<AccountId>, // TODO: is it not Send?
         input: String,
     ) -> Result<String, ResolveError> {
+        let account_id = account_id.into();
+
         let SingleResolved {
             mut path,
             resolution:

@@ -2101,6 +2101,7 @@ dependencies = [
  "bs58 0.5.1",
  "defuse-mpc-signer",
  "defuse-near-sender",
+ "defuse-nep641",
  "defuse-wallet",
  "defuse-wallet-ed25519",
  "derive_more",

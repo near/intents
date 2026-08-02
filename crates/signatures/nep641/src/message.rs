@@ -94,7 +94,7 @@ impl OffchainMessage {
     ///     signer_id: "wallet.near".parse().unwrap(),
     ///     resolver_id: "wallet.near".parse().unwrap(),
     ///     chain_id: "mainnet".to_string(),
-    ///     msg: "Hello, world!".to_string(),
+    ///     msg: "Hello, Near!".to_string(),
     /// };
     /// assert!(top_level.is_top_level());
     ///
@@ -102,7 +102,7 @@ impl OffchainMessage {
     ///     signer_id: "wallet.near".parse().unwrap(),
     ///     resolver_id: "extension.near".parse().unwrap(),
     ///     chain_id: "mainnet".to_string(),
-    ///     msg: "Hello, world!".to_string(),
+    ///     msg: "Hello, Near!".to_string(),
     /// };
     /// assert!(!sub_auth.is_top_level());
     /// ```
@@ -136,7 +136,7 @@ impl OffchainMessage {
     ///     signer_id: "wallet.near".parse().unwrap(),
     ///     resolver_id: "wallet.near".parse().unwrap(),
     ///     chain_id: "mainnet".to_string(),
-    ///     msg: "Hello, world!".to_string(),
+    ///     msg: "Hello, Near!".to_string(),
     /// };
     ///
     /// assert_eq!(

@@ -33,6 +33,7 @@ near-kit = ["dep:near-kit", "serde"]
 serde = ["dep:serde", "near-account-id/serde"]
 schemars-v0_8 = ["dep:schemars", "near-account-id/schemars-v0_8", "serde"]
 tracing = ["borsh", "dep:bs58", "dep:tracing", "digest", "near-kit?/tracing"]
+# TODO: do we need all these features?
 resolver = [
   "borsh",
   "dep:futures",

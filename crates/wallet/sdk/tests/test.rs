@@ -2,6 +2,7 @@
 
 use std::{env, fs, path::Path, sync::LazyLock};
 
+use defuse_nep641::resolver::OffchainResolver;
 use defuse_wallet::{NearPromise, Request, WalletOp, actions::FunctionCall};
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_sdk::{
@@ -22,9 +23,11 @@ type Wallet = defuse_wallet_sdk::Wallet<WalletEd25519>;
 #[awt]
 async fn rotate(
     #[future] near: Near,
+
     #[from(wallet)]
     #[future]
     master: Wallet,
+
     #[from(wallet)]
     #[future]
     extension: Wallet,
@@ -102,8 +105,34 @@ async fn rotate(
 #[rstest]
 #[tokio::test]
 #[awt]
+async fn w_resolve_auth(#[future] near: Near, #[future] wallet: Wallet) {
+    const PAYLOAD: &str = "Hello, Near!";
+
+    // TODO: this will be not needed when RPC adds support for state init for view-calls
+    near.state_init(wallet.deterministic_state_init().clone(), NearToken::ZERO)
+        .wait_until::<Final>()
+        .await
+        .expect("failed to initialize a wallet");
+
+    let input = wallet
+        .sign_offchain_msg(PAYLOAD, [])
+        .await
+        .expect("failed to sign");
+
+    let output = OffchainResolver::new(near)
+        .resolve_auth(wallet.account_id(), input)
+        .await
+        .expect("invalid authorization");
+
+    assert_eq!(output, PAYLOAD);
+}
+
+#[rstest]
+#[tokio::test]
+#[awt]
 async fn w_init(
     #[future] near: Near,
+
     #[from(wallet)]
     #[future]
     extension: Wallet,

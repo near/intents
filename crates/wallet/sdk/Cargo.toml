@@ -53,6 +53,7 @@ tracing = [
 ]
 
 [dev-dependencies]
+defuse-nep641 = { workspace = true, features = ["resolver"] }
 defuse-wallet-ed25519 = { workspace = true, features = ["signer"] }
 futures.workspace = true
 hex-literal.workspace = true

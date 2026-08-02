@@ -552,7 +552,7 @@ where
     // TODO: docs
     pub async fn sign_offchain_msg(
         &self,
-        payload: String,
+        payload: impl Into<String>, // TODO: is it not Send?
         // TODO: better API?
         path: impl Into<Vec<AccountId>>,
     ) -> Result<String, Error> {
@@ -566,7 +566,7 @@ where
             },
             signer_id: self.real_account_id().clone(),
             chain_id: self.chain_id().clone(),
-            payload,
+            payload: payload.into(),
         };
 
         let proof = self
