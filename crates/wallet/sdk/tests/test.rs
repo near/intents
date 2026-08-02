@@ -6,7 +6,7 @@ use defuse_nep641::resolver::OffchainResolver;
 use defuse_wallet::{NearPromise, Request, WalletOp, actions::FunctionCall};
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_sdk::{
-    Gas, NearToken,
+    Gas, NearToken, WalletBuilder,
     client::{WExecuteExtensionArgs, WExecuteSignedArgs, WalletContract},
 };
 use futures::try_join;
@@ -105,12 +105,19 @@ async fn rotate(
 #[rstest]
 #[tokio::test]
 #[awt]
-async fn w_resolve_auth(#[future] near: Near, #[future] wallet: Wallet) {
+async fn w_resolve_auth(
+    #[future] near: Near,
+
+    #[from(extension)]
+    #[future]
+    mut wallet: Wallet,
+) {
     const PAYLOAD: &str = "Hello, Near!";
 
-    // TODO: this will be not needed when RPC adds support for state init for view-calls
-    near.state_init(wallet.deterministic_state_init().clone(), NearToken::ZERO)
-        .wait_until::<Final>()
+    // TODO: this will be not needed when RPC adds support for
+    // state_init param for view-calls
+    wallet
+        .initialize()
         .await
         .expect("failed to initialize a wallet");
 
@@ -204,13 +211,48 @@ async fn w_init(
 
 #[fixture]
 #[awt]
-async fn wallet(#[future] near: Near) -> Wallet {
-    Wallet::new(
-        *WALLET_ED25519_CODE_HASH,
-        WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng))),
-    )
-    .with_client(near.clone())
-    .with_relayer(near)
+async fn wallet(
+    #[default(WalletBuilder::new())] builder: WalletBuilder,
+    #[future] near: Near,
+) -> Wallet {
+    builder
+        .build(
+            *WALLET_ED25519_CODE_HASH,
+            WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng))),
+        )
+        .with_client(near.clone())
+        .with_relayer(near)
+}
+
+#[fixture]
+#[awt]
+async fn extension(
+    #[from(wallet)]
+    #[future]
+    master: Wallet,
+
+    #[from(wallet)]
+    #[future]
+    ext: Wallet,
+
+    #[future] near: Near,
+) -> Wallet {
+    let master_id = master.real_account_id().clone();
+
+    master
+        .as_self()
+        .sign_and_send(Request::new().internal([WalletOp::AddExtension {
+            account_id: ext.account_id().into(),
+        }]))
+        .await
+        .expect("failed to add an extension")
+        .status(&near)
+        .wait_until::<Final>()
+        .await
+        // TODO: check receipts
+        .unwrap();
+
+    ext.as_extension_of(master_id)
 }
 
 #[fixture]

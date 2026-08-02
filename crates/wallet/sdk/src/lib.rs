@@ -85,6 +85,13 @@ impl WalletBuilder {
         self
     }
 
+    /// TODO: docs
+    #[inline]
+    pub fn extension(mut self, account_id: impl Into<AccountId>) -> Self {
+        self.extensions.insert(account_id.into());
+        self
+    }
+
     /// Pre-enable extensions with given account ids.
     #[inline]
     pub fn extensions(mut self, account_ids: impl IntoIterator<Item = AccountId>) -> Self {
@@ -534,7 +541,7 @@ where
     pub async fn sign_and_send(
         &self,
         request: impl Into<Request>,
-    ) -> Result<defuse_near_sender::SentTransaction, Error> {
+    ) -> Result<SentTransaction, Error> {
         // check before signing if relayer is set
         let relayer = self.relayer();
 
@@ -547,6 +554,27 @@ where
         }
 
         relayer.relay_wallet_msg(req).await.map_err(Error::Relayer)
+    }
+
+    #[cfg(feature = "near-kit")]
+    // TODO: docs
+    // TODO: do we need it?
+    pub async fn initialize(&mut self) -> Result<(), Error> {
+        use near_kit::Final;
+
+        // check before signing if client is set
+        let client = self.client();
+
+        self.sign_and_send(Request::new())
+            .await?
+            // TODO: check receipts
+            .status(&client)
+            .wait_until::<Final>()
+            .await?;
+
+        self.initialized = true;
+
+        Ok(())
     }
 
     // TODO: docs
@@ -743,6 +771,10 @@ impl<S: SignatureSchema> From<Wallet<S>> for AccountId {
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum Error {
+    #[cfg(feature = "near-kit")]
+    #[error(transparent)]
+    Near(#[from] ::near_kit::Error),
+
     /// An error occurred during [relaying](WalletRelayer::relay_wallet_msg)
     /// signed [request](RequestMessage).
     #[error("relayer: {0}")]
