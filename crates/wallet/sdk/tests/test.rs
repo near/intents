@@ -6,7 +6,7 @@ use defuse_nep641::resolver::OffchainResolver;
 use defuse_wallet::{NearPromise, Request, WalletOp, actions::FunctionCall};
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_sdk::{
-    Gas, NearToken, WalletBuilder,
+    AccountIdRef, Gas, NearToken, WalletBuilder,
     client::{WExecuteExtensionArgs, WExecuteSignedArgs, WalletContract},
 };
 use futures::try_join;
@@ -113,6 +113,7 @@ async fn w_resolve_auth(
     wallet: Wallet,
 ) {
     const PAYLOAD: &str = "Hello, Near!";
+    const SIGN_FOR: &AccountIdRef = AccountIdRef::new_or_panic("dao.near");
 
     println!(
         "{} -> {}: \"{PAYLOAD}\"",
@@ -129,7 +130,11 @@ async fn w_resolve_auth(
     //     .expect("failed to initialize a wallet");
 
     let input = wallet
-        .sign_offchain_msg(PAYLOAD, [])
+        .sign_offchain_msg(
+            PAYLOAD,
+            // [SIGN_FOR.into()]
+            [],
+        )
         .await
         .expect("failed to sign");
     println!("input:\n{input}");

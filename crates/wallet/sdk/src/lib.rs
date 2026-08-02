@@ -585,19 +585,25 @@ where
     pub async fn sign_offchain_msg(
         &self,
         payload: impl Into<String>, // TODO: is it not Send?
-        // TODO: better API?
-        path: impl Into<Vec<AccountId>>,
+        path: impl IntoIterator<Item = AccountId>,
     ) -> Result<String, Error> {
         if !self.initialized {
             // TODOreturn err for now
         }
 
         let msg = OffchainMessage {
+            // append extension chain (reserved) to the path to reach
+            // the real signer ID from the effective one.
             path: {
-                let mut path = path.into();
-                // append extension chain (reserved) to the path to reach
-                // the real signer ID from the effective one.
-                path.extend(self.as_extension_chain.iter().rev().cloned());
+                let mut path: Vec<_> = self
+                    .as_extension_chain
+                    .iter()
+                    .cloned()
+                    .chain(path)
+                    .collect();
+                // reverse the path, so that it starts from top-level account,
+                // as per NEP-641
+                path.reverse();
                 path
             },
             signer_id: self.real_account_id().clone(),

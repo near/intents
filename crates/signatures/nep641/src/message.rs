@@ -43,6 +43,7 @@ pub struct OffchainMessage {
     // TODO: docs: direction?
     // TODO: is it a good fields order for HW wallets?
     // TODO: is path alone enough?
+    /// Path starting from top-level authorizing account ID.
     pub path: Vec<AccountId>,
 
     /// Signer ID.
