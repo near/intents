@@ -158,3 +158,10 @@ impl OffchainMessage {
         hasher.0.finalize().into()
     }
 }
+
+// TODO
+pub struct Message {
+    pub domain: String,
+    pub action: String,
+    pub payload: String,
+}

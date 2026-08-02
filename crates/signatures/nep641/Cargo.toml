@@ -34,7 +34,7 @@ serde = ["dep:serde", "near-account-id/serde"]
 schemars-v0_8 = ["dep:schemars", "near-account-id/schemars-v0_8", "serde"]
 tracing = ["borsh", "dep:bs58", "dep:tracing", "digest", "near-kit?/tracing"]
 # TODO: do we need all these features?
-resolver = [
+verifier = [
   "borsh",
   "dep:futures",
   "dep:serde_json",
@@ -45,6 +45,6 @@ resolver = [
 ]
 
 [dev-dependencies]
-defuse-nep641 = { path = ".", features = ["abi", "borsh", "digest", "serde", "resolver", "near-kit", "tracing"] }
+defuse-nep641 = { path = ".", features = ["abi", "borsh", "digest", "serde", "verifier", "near-kit", "tracing"] }
 
 hex-literal.workspace = true

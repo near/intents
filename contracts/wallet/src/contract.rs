@@ -12,7 +12,7 @@ use std::{collections::BTreeSet, fmt::Display};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_near_promise::{NearPromise, actions::NearAction};
-use defuse_nep641::{AuthorizationResolution, contract::AuthResolver};
+use defuse_nep641::{AuthResolver, AuthorizationResolution};
 use defuse_time::Timestamp;
 use impl_tools::autoimpl;
 use near_account_id::{AccountId, AccountIdRef};
@@ -387,12 +387,7 @@ where
                 }
 
                 // TODO: docs: terminate
-                AuthorizationResolution::new(
-                    // TODO: do not serialize, return initial...
-                    // serde_json::to_string(value)
-                    // TODO: return msg.msg
-                    msg.payload,
-                )
+                AuthorizationResolution::new(msg.payload)
             }
             WalletOffchainInput::AsExtension {
                 account_id,
@@ -553,7 +548,7 @@ macro_rules! wallet {
         }
 
         #[$crate::near_sdk::near]
-        impl $crate::offchain::contract::AuthResolver for $contract {
+        impl $crate::offchain::AuthResolver for $contract {
             fn w_resolve_auth(
                 &self,
                 path: ::std::vec::Vec<$crate::AccountId>,

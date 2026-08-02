@@ -2,7 +2,7 @@
 
 use std::{env, fs, path::Path, sync::LazyLock};
 
-use defuse_nep641::resolver::OffchainResolver;
+use defuse_nep641::verifier::OffchainVerifier;
 use defuse_wallet::{NearPromise, Request, WalletOp, actions::FunctionCall};
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_sdk::{
@@ -113,7 +113,7 @@ async fn w_resolve_auth(
     wallet: Wallet,
 ) {
     const PAYLOAD: &str = "Hello, Near!";
-    const SIGN_FOR: &AccountIdRef = AccountIdRef::new_or_panic("dao.near");
+    // const SIGN_FOR: &AccountIdRef = AccountIdRef::new_or_panic("dao.near");
 
     println!(
         "{} -> {}: \"{PAYLOAD}\"",
@@ -121,22 +121,15 @@ async fn w_resolve_auth(
         wallet.account_id()
     );
 
-    // // TODO: this will be not needed when RPC adds support for
-    // // state_init param for view-calls
-    // wallet
-    //     .clone()
-    //     .initialize()
-    //     .await
-    //     .expect("failed to initialize a wallet");
-
     let input = wallet
-        // .sign_offchain_msg(PAYLOAD, [SIGN_FOR.into()])
         .sign_offchain_msg(PAYLOAD, None)
+        // TODO
+        // .sign_offchain_msg(PAYLOAD, [SIGN_FOR.into()])
         .await
         .expect("failed to sign");
     println!("input:\n{input}");
 
-    let output = OffchainResolver::new(near)
+    let output = OffchainVerifier::new(near)
         // unbounded for tests
         .with_max_pending(usize::MAX)
         .resolve_auth(wallet.account_id(), input)

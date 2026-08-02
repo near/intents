@@ -8,14 +8,18 @@ use crate::{AuthorizationResolution, PendingAuthorization, client::WResolveAuthA
 
 /// Verifier for NEP-641 [offchain messages](OffchainMessage).
 #[derive(Debug, Clone)]
-pub struct OffchainResolver {
+pub struct OffchainVerifier {
     client: Near,
     at_block_hash: Option<CryptoHash>,
     max_pending: usize,
+    // TODO
+    // max_depth: usize,
+    // // TODO
+    // bound_in_flight: usize,
     // state_inits: HashMap<AccountId, StateInit>,
 }
 
-impl OffchainResolver {
+impl OffchainVerifier {
     /// Create new verifier with given Near client
     #[must_use]
     #[inline]
@@ -122,7 +126,7 @@ impl OffchainResolver {
             mut path,
             resolution:
                 AuthorizationResolution {
-                    output,
+                    authorized,
                     mut pending,
                 },
             block_hash: at_block_hash,
@@ -167,7 +171,7 @@ impl OffchainResolver {
 
             let Some(resolved) = in_flight.try_next().await? else {
                 // no more authorizations left, return the top-level output
-                return Ok(output);
+                return Ok(authorized);
             };
 
             PendingResolved { path, pending } = resolved;
@@ -184,10 +188,15 @@ impl OffchainResolver {
         let SingleResolved {
             path, resolution, ..
         } = self
-            .resolve_single(pending.account_id, path, pending.input, Some(at_block_hash))
+            .resolve_single(
+                pending.account_id,
+                path,
+                pending.authorization,
+                Some(at_block_hash),
+            )
             .await?;
 
-        if resolution.output != pending.output {
+        if resolution.authorized != pending.expect {
             return Err(ResolveError::InvalidOutput);
         }
 

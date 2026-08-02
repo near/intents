@@ -368,6 +368,8 @@ where
         self
     }
 
+    // TODO: fn extension_of(&self) -> &[AccountId]
+
     /// Returns currently [configured](Self::with_chain_id) chain ID for [signing](Self::sign)
     /// requests.
     #[inline]

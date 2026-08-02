@@ -1,30 +1,192 @@
 #[cfg(feature = "near-kit")]
 pub mod client;
-pub mod contract;
 mod message;
-#[cfg(feature = "resolver")]
-pub mod resolver;
+#[cfg(feature = "verifier")]
+pub mod verifier;
 
 pub use self::message::*;
 
 use near_account_id::AccountId;
 
+/// A smart-contract implementing NEP-641 interface.
+pub trait AuthResolver {
+    /// A view-method to resolve [offchain](#offchain-only) authorization according to NEP-641.
+    ///
+    /// The implementation SHOULD resolve given `authorization` along with [`path`](#path) and
+    /// return an [`authorized`](field@AuthorizationResolution::authorized) payload along with
+    /// an optional list of [pending sub-authorizations](PendingAuthorization). The authorized
+    /// payload will be accepted if and only if **all** pending sub-authorizations resolve
+    /// successfully into corresponding [expected](PendingAuthorization::expect) payloads.
+    ///
+    /// # Path
+    ///
+    /// Offchain verifier starts the verification procedure from the top-level authorization with
+    /// empty `path`. If the authorization resolves successfully and the pending sub-authorizations
+    /// list is not empty, then the current resolver contract ID is _appended to the end_ of `path`
+    /// and the latter gets propagated to all sub-resolvers.
+    ///
+    /// Thus, the `path` argument includes the whole traversal path _starting_ from the top-level
+    /// resolver and _ending_ with the closest ancestor (i.e. parent), which triggered the current
+    /// `w_resolve_auth()`:
+    ///
+    /// <table>
+    ///   <thead>
+    ///     <tr>
+    ///       <th align="right">Depth</th>
+    ///       <th>Resolver ID</th>
+    ///       <th>Args</th>
+    ///       <th>Return</th>
+    ///     </tr>
+    ///   </thead>
+    /// <tbody>
+    /// <tr>
+    /// <td align="right">0</td>
+    /// <td>resolver.near</td>
+    /// <td>
+    ///
+    /// ```json
+    /// {
+    ///   "path": [],
+    ///   "authorization": "auth0"
+    /// }
+    /// ```
+    ///
+    /// </td>
+    /// <td>
+    ///
+    /// ```json
+    /// {
+    ///   "authorized": "payload0",
+    ///   "pending": [{
+    ///     "account_id": "sub.resolver.near",
+    ///     "authorization": "auth1",
+    ///     "expect": "payload1"
+    ///   }]
+    /// }
+    /// ```
+    ///
+    /// </td>
+    /// </tr>
+    /// <tr>
+    /// <td align="right">1</td>
+    /// <td>sub.resolver.near</td>
+    /// <td>
+    ///
+    /// ```json
+    /// {
+    ///   "path": ["resolver.near"],
+    ///   "authorization": "auth1"
+    /// }
+    /// ```
+    ///
+    /// </td>
+    /// <td>
+    ///
+    /// ```json
+    /// {
+    ///   "authorized": "payload1",
+    ///   "pending": [{
+    ///     "account_id": "sub.sub.resolver.near",
+    ///     "authorization": "auth2",
+    ///     "expect": "payload2"
+    ///   }]
+    /// }
+    /// ```
+    ///
+    /// </td>
+    /// </tr>
+    /// <tr>
+    /// <td align="right">2</td>
+    /// <td>sub.sub.resolver.near</td>
+    /// <td>
+    ///
+    /// ```json
+    /// {
+    ///   "path": ["resolver.near", "sub.resolver.near"],
+    ///   "authorization": "auth2"
+    /// }
+    /// ```
+    ///
+    /// </td>
+    /// <td>
+    ///
+    /// ```json
+    /// {
+    ///   "authorized": "payload2"
+    /// }
+    /// ```
+    ///
+    /// </td>
+    /// </tr>
+    /// </tbody>
+    /// </table>
+    ///
+    /// is _appended to the end_
+    /// of `path` and it gets propagated to all sub-resolvers.
+    ///
+    ///  and _appends_ resolver contract ID _to the end_. For each pending sub-authorization and passed to the sub-resolver.
+    /// keeps track of the path. Top-level authorization is resolved with empty `path`, and each
+    /// is _appended to the end_
+    ///
+
+    /// TODO
+    ///
+    /// TODO: doc params
+    /// TODO: callback pattern: ft::w_resolve_auth("tell me how many tokens a user has and call me back with the number + this string")
+    /// TODO: doc return
+    ///
+    /// # Panics
+    ///
+    /// The implementation MUST panic if the authorization is invalid. The panic SHOULD include
+    /// informative message explaining the failure reason.
+    ///
+    /// # Cycles
+    ///
+    /// Cycles between sub-resolvers are _allowed_ only as long as they are _finite_. However,
+    /// keep in mind that offchain verifiers MAY impose limits on the number and/or recursion
+    /// depth for pending sub-authorizations to prevent from DoS attacks and reject long
+    /// sub-authorizations chains.
+    ///
+    /// # Offchain Only
+    ///
+    /// **DO NOT** call this view-method in on-chain transactions!
+    ///
+    /// NEP-641 standard is **NOT** designed to be used for on-chain transfer "approvals"
+    /// or any other actions that modify state of the blockchain. Offchain messages are
+    /// intended to be verified _only_ offchain as they don't mutate any state and, hence,
+    /// cannot prevent replay attacks.
+    ///
+    /// Instead, use on-chain messages (e.g. request messages, transactions, delegate actions),
+    /// which are specifically designed with replay-protection mechanism in mind.
+    fn w_resolve_auth(
+        &self,
+        path: Vec<AccountId>,
+        authorization: String,
+    ) -> AuthorizationResolution;
+}
+
+/// Authorization resolution returned from [`w_resolve_auth()`](AuthResolver::w_resolve_auth)
+/// method.
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
 )]
-#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-#[cfg_attr(
-    feature = "borsh",
-    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
-)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AuthorizationResolution {
+    /// A payload that was successfully authorized from given authorization blob and the current
+    /// contract state.
+    ///
+    /// TODO: in case of wallets/DAOs this should be Message
     // TODO: rename to "authorized"?
-    pub output: String,
+    pub authorized: String,
 
+    /// Optional list of pending sub-authorizations that MUST be successfully
+    /// [resolved](AuthResolver::w_resolve_auth) before accepting this
+    /// [authorization](field@Self::authorized).
+    ///
+    /// If emtpy, then this authorization is a leaf that terminates the current branch.
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Vec::is_empty")
@@ -35,7 +197,7 @@ pub struct AuthorizationResolution {
 impl AuthorizationResolution {
     /// Create a leaf authorization resolution.
     ///
-    /// See [`.add_pending()`](Self::add_pending) to add pending ones.
+    /// See [`.add_pending()`](Self::add_pending) to add pending sub-authorizations.
     ///
     /// # Examples
     ///
@@ -47,7 +209,7 @@ impl AuthorizationResolution {
     #[inline]
     pub fn new(output: impl Into<String>) -> Self {
         Self {
-            output: output.into(),
+            authorized: output.into(),
             pending: Vec::new(),
         }
     }
@@ -76,8 +238,8 @@ impl AuthorizationResolution {
     ) -> Self {
         self.pending.push(PendingAuthorization {
             account_id: account_id.into(),
-            input: input.into(),
-            output: output.into(),
+            authorization: input.into(),
+            expect: output.into(),
         });
         self
     }
@@ -113,6 +275,7 @@ impl Extend<PendingAuthorization> for AuthorizationResolution {
     }
 }
 
+/// A [pending](field@AuthorizationResolution::pending) sub-authorization.
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
@@ -126,11 +289,45 @@ impl Extend<PendingAuthorization> for AuthorizationResolution {
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PendingAuthorization {
-    // TODO: returning self should be not allowed
+    // TODO: returning self should be not allowed?
+    /// Account ID to [resolve](AuthResolver::w_resolve_auth) the
+    /// [sub-authorization](field@Self::authorization) on.
     pub account_id: AccountId,
-    // TODO: method like in JSON-RPC?
-    pub input: String,
-    // TODO: can we avoid fixing the output?
-    // callback pattern: ft::w_resolve_auth("tell me how many tokens a user has and call me back with the number + this string")
-    pub output: String,
+
+    /// Authorization blob to pass to [`w_resolve_auth()`](AuthResolver::w_resolve_auth)
+    /// method on the [sub-resolver](field@Self::account_id).
+    pub authorization: String,
+
+    /// Expected [`authorized`](field@AuthorizationResolution::authorized)
+    /// payload to be successfully [resolved](AuthResolver::w_resolve_auth) by
+    /// [sub-resolver](field@Self::account_id) from this
+    /// [sub-authorization](field@Self::authorization).
+    ///
+    /// If the pending resolution fails or returns a different payload, then
+    /// the whole verification procedure MUST fail and top-level authorization
+    /// MUST be considered invalid.
+    pub expect: String,
 }
+
+// pub trait AuthResolver {
+//     /// A view-method to resolve [offchain](#offchain-only) authorization
+//     /// according to NEP-641.
+//     ///
+//     /// The implementation MUST verify given `proof` over offchain message, including
+//     /// all of its fields, and return a list of "pending authorizations" that need to be
+//     /// [resolved](crate::resolver::OffchainResolver::resolve_auth) on other accounts.
+//     ///
+//     /// TODO: returned auths fields
+//     ///
+//     /// The implementation MUST panic if:
+//     /// * [`chain_id`](field@crate::OffchainMessage::chain_id) doesn't match
+//     ///   `env::chain_id()`
+//     /// * [`resolver_id`](field@crate::OffchainMessage::resolver_id) doesn't
+//     ///   match `env::current_account_id()`
+//     /// * `proof` is invalid for given [`OffchainMessage`](crate::OffchainMessage)
+//     ///
+
+//     // TODO: can we resolve (different?) signatures on same account id multiple
+//     // times? e.g. intents.near
+//     fn w_resolve_auth(&self, msg: OffchainMessage, proof: Proof) -> HashMap<AccountId, Proof>;
+// }
