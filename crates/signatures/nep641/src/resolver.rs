@@ -1,14 +1,10 @@
-use std::collections::{HashMap, HashSet};
-
 use futures::stream::{FuturesUnordered, TryStreamExt};
 use near_account_id::AccountId;
 use near_kit::{BlockReference, CryptoHash, Finality, Near};
 #[cfg(feature = "tracing")]
 use tracing::{Span, field, instrument, record_all};
 
-use crate::{
-    AuthorizationResolution, OffchainMessage, PendingAuthorization, Proof, client::WResolveAuthArgs,
-};
+use crate::{AuthorizationResolution, PendingAuthorization, client::WResolveAuthArgs};
 
 /// Verifier for NEP-641 [offchain messages](OffchainMessage).
 #[derive(Debug, Clone)]
@@ -105,6 +101,7 @@ impl OffchainResolver {
     /// offchain signature according to [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)
     /// standard.
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
+        // TODO
         %account_id,
         // %msg.resolver_id,
         // %msg.signer_id,
@@ -120,7 +117,7 @@ impl OffchainResolver {
         input: String,
     ) -> Result<String, ResolveError> {
         let SingleResolved {
-            mut receiver_id,
+            mut path,
             resolution:
                 AuthorizationResolution {
                     output,
@@ -130,8 +127,8 @@ impl OffchainResolver {
         } = self
             .resolve_single(
                 account_id.clone(),
-                // receiver is the top-level account itself
-                account_id,
+                // path is empty for top-level authorization
+                vec![],
                 input,
                 // if set, resolve top-level authorization at fixed block hash,
                 // or final otherwise
@@ -158,7 +155,7 @@ impl OffchainResolver {
                     .map(|pending| {
                         self.resolve_pending(
                             // propagate receiver to sub-authorization
-                            receiver_id.clone(),
+                            path.clone(),
                             pending,
                             // resolve pending authorizations at the same block hash
                             at_block_hash,
@@ -171,30 +168,21 @@ impl OffchainResolver {
                 return Ok(output);
             };
 
-            PendingResolved {
-                receiver_id,
-                pending,
-            } = resolved;
+            PendingResolved { path, pending } = resolved;
         }
     }
 
+    // TODO: tracing?
     async fn resolve_pending(
         &self,
-        receiver_id: AccountId,
+        path: Vec<AccountId>,
         pending: PendingAuthorization,
         at_block_hash: CryptoHash,
     ) -> Result<PendingResolved, ResolveError> {
         let SingleResolved {
-            receiver_id,
-            resolution,
-            ..
+            path, resolution, ..
         } = self
-            .resolve_single(
-                pending.account_id,
-                receiver_id,
-                pending.input,
-                Some(at_block_hash),
-            )
+            .resolve_single(pending.account_id, path, pending.input, Some(at_block_hash))
             .await?;
 
         if resolution.output != pending.output {
@@ -202,13 +190,14 @@ impl OffchainResolver {
         }
 
         Ok(PendingResolved {
-            receiver_id,
+            path,
             pending: resolution.pending,
         })
     }
 
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
-        %receiver_id,
+        // TODO
+        // %receiver_id,
         // %msg.resolver_id,
         // %msg.signer_id,
         // %msg.chain_id,
@@ -218,7 +207,7 @@ impl OffchainResolver {
     async fn resolve_single(
         &self,
         account_id: AccountId,
-        receiver_id: AccountId,
+        mut path: Vec<AccountId>,
         input: String,
         at_block_hash: Option<CryptoHash>,
     ) -> Result<SingleResolved, ResolveError> {
@@ -233,8 +222,8 @@ impl OffchainResolver {
                 &account_id,
                 "w_resolve_auth",
                 &serde_json::to_vec(&WResolveAuthArgs {
-                    receiver_id: (&receiver_id).into(),
-                    input: input.into(),
+                    path: &path,
+                    input: &input,
                 })
                 .expect("JSON: serialization failed"),
                 at_block_hash.map_or(
@@ -271,8 +260,11 @@ impl OffchainResolver {
         // TODO: fallback to NEP-413 (for all cases above?)
         // TODO: fallback to intents.near(far?) as resolver_id?
 
+        // append the account ID to path for pending sub-authorizations
+        path.push(account_id);
+
         Ok(SingleResolved {
-            receiver_id,
+            path,
             resolution: res.json()?,
             block_hash: res.block_hash,
         })
@@ -280,13 +272,13 @@ impl OffchainResolver {
 }
 
 struct PendingResolved {
-    receiver_id: AccountId,
+    path: Vec<AccountId>,
     pending: Vec<PendingAuthorization>,
 }
 
 // TODO: rename?
 struct SingleResolved {
-    receiver_id: AccountId,
+    path: Vec<AccountId>,
     resolution: AuthorizationResolution,
     block_hash: CryptoHash,
 }

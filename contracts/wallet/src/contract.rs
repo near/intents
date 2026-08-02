@@ -8,16 +8,11 @@
 //! See [`wallet!`](macro@crate::wallet) macro to define and implement wallet
 //! contract variants.
 
-use std::{
-    collections::{BTreeSet, HashMap},
-    fmt::Display,
-};
+use std::{collections::BTreeSet, fmt::Display};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_near_promise::{NearPromise, actions::NearAction};
-use defuse_nep641::{
-    AuthorizationResolution, OffchainMessage, PendingAuthorization, Proof, contract::AuthResolver,
-};
+use defuse_nep641::{AuthorizationResolution, contract::AuthResolver};
 use defuse_time::Timestamp;
 use impl_tools::autoimpl;
 use near_account_id::{AccountId, AccountIdRef};
@@ -25,8 +20,7 @@ use near_sdk::{FunctionError, Promise, env, ext_contract};
 
 pub use crate::ContractError as Error;
 use crate::{
-    Request, RequestMessage, SignatureSchema, State, WalletOffchainInput, WalletOffchainMessage,
-    WalletOp,
+    Request, RequestMessage, SignatureSchema, State, WalletOffchainInput, WalletOp,
     events::{Actor, WalletEvent},
 };
 
@@ -353,8 +347,8 @@ where
     S: SignatureSchema,
 {
     #[inline]
-    fn w_resolve_auth(&self, receiver_id: AccountId, input: String) -> AuthorizationResolution {
-        self.resolve_auth(receiver_id, input)
+    fn w_resolve_auth(&self, path: Vec<AccountId>, input: String) -> AuthorizationResolution {
+        self.resolve_auth(path, input)
             .unwrap_or_else(|err| err.panic())
     }
 }
@@ -363,11 +357,7 @@ impl<S> WalletImpl<S>
 where
     S: SignatureSchema,
 {
-    fn resolve_auth(
-        &self,
-        receiver_id: AccountId,
-        input: String,
-    ) -> Result<AuthorizationResolution> {
+    fn resolve_auth(&self, path: Vec<AccountId>, input: String) -> Result<AuthorizationResolution> {
         // TODO: check if receiver_id is self?
         let input: WalletOffchainInput = serde_json::from_str(&input)?;
 
@@ -385,6 +375,12 @@ where
                 // check chain_id
                 if msg.chain_id != env::chain_id() {
                     return Err(Error::InvalidChainId);
+                }
+
+                // check path
+                if msg.path != path {
+                    // TODO: return Err(Error::InvalidPath);
+                    todo!()
                 }
 
                 if !S::verify_offchain_msg(&self.0.public_key, &msg.msg, &proof) {
@@ -560,10 +556,10 @@ macro_rules! wallet {
         impl $crate::offchain::contract::AuthResolver for $contract {
             fn w_resolve_auth(
                 &self,
-                receiver_id: $crate::AccountId,
+                path: ::std::vec::Vec<$crate::AccountId>,
                 input: ::std::string::String,
             ) -> $crate::offchain::AuthorizationResolution {
-                self.0.w_resolve_auth(receiver_id, input)
+                self.0.w_resolve_auth(path, input)
             }
         }
     };

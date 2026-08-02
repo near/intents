@@ -4,7 +4,7 @@ use crate::AuthorizationResolution;
 
 pub trait AuthResolver {
     // TODO: replace receiver_id with path: Vec<AccountIds>?
-    fn w_resolve_auth(&self, receiver_id: AccountId, input: String) -> AuthorizationResolution;
+    fn w_resolve_auth(&self, path: Vec<AccountId>, input: String) -> AuthorizationResolution;
 }
 
 // /// A smart-contract implementing NEP-641 interface.

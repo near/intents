@@ -1,6 +1,4 @@
-use std::borrow::Cow;
-
-use near_account_id::AccountIdRef;
+use near_account_id::AccountId;
 use serde::Serialize;
 
 use crate::AuthorizationResolution;
@@ -16,6 +14,6 @@ pub trait AuthResolverContract {
 /// view-method.
 #[derive(Serialize)]
 pub struct WResolveAuthArgs<'a> {
-    pub receiver_id: Cow<'a, AccountIdRef>,
-    pub input: Cow<'a, str>,
+    pub path: &'a [AccountId],
+    pub input: &'a str,
 }

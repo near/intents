@@ -25,7 +25,7 @@ pub trait SignatureSchema {
     #[must_use = "check if verification passed"]
     fn verify_request_msg(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool;
 
-    // TODO: docs
+    // TODO: docs, naming
     #[must_use = "check if verification passed"]
     fn verify_offchain_msg(
         public_key: &Self::PublicKey,
@@ -63,9 +63,10 @@ pub enum WalletOffchainInput {
 // TODO: arbitrary
 // TODO: derives
 pub struct WalletOffchainMessage {
+    pub path: Vec<AccountId>,
     pub signer_id: AccountId,
     pub chain_id: ChainId,
-    // TODO: path
+    // TODO: direction?
     pub msg: OffchainMessage,
 }
 

@@ -1,12 +1,3 @@
-use near_account_id::AccountId;
-
-/// Chain ID (e.g. `mainnet`)
-pub type ChainId = String;
-
-// TODO: maybe remove?
-/// A proof for [`OffchainAuthorization`]
-pub type Proof = String;
-
 // /// An authorization to be [resolved](crate::resolver::OffchainResolver::resolve_auth)
 // /// **offchain**.
 // #[cfg_attr(
