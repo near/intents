@@ -592,8 +592,6 @@ where
         }
 
         let msg = OffchainMessage {
-            // append extension chain (reserved) to the path to reach
-            // the real signer ID from the effective one.
             path: {
                 let mut path: Vec<_> = self
                     .as_extension_chain

@@ -130,11 +130,8 @@ async fn w_resolve_auth(
     //     .expect("failed to initialize a wallet");
 
     let input = wallet
-        .sign_offchain_msg(
-            PAYLOAD,
-            // [SIGN_FOR.into()]
-            [],
-        )
+        // .sign_offchain_msg(PAYLOAD, [SIGN_FOR.into()])
+        .sign_offchain_msg(PAYLOAD, None)
         .await
         .expect("failed to sign");
     println!("input:\n{input}");
