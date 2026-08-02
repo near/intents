@@ -402,8 +402,9 @@ where
                 // check whether extension is enabled
                 self.check_extension_enabled(&account_id)?;
 
-                // forward `w_resolve_auth()` to the extension
-                AuthorizationResolution::new(output.clone()).add_pending(account_id, input, output)
+                AuthorizationResolution::new(output.clone())
+                    // forward `w_resolve_auth()` to the extension
+                    .add_pending(account_id, input, output)
             }
         })
     }

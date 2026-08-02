@@ -56,6 +56,14 @@ pub enum WalletOffchainInput {
     },
 }
 
+impl WalletOffchainInput {
+    #[cfg(feature = "json")]
+    #[inline]
+    pub fn to_input(&self) -> String {
+        serde_json::to_string(self).expect("JSON: failed to serialize")
+    }
+}
+
 // // TODO: docs
 // #[cfg_attr(
 //     feature = "serde",

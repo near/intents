@@ -552,16 +552,21 @@ where
     // TODO: docs
     pub async fn sign_offchain_msg(
         &self,
-        msg: String,
-        signer_id: impl Into<Option<AccountId>>,
-    ) -> Result<(OffchainMessage, Proof), Error> {
+        payload: String,
+        // TODO: better API?
+        path: impl Into<Vec<AccountId>>,
+    ) -> Result<String, Error> {
         let msg = OffchainMessage {
-            signer_id: signer_id
-                .into()
-                .unwrap_or_else(|| self.account_id().clone()),
-            resolver_id: self.real_account_id().clone(),
+            path: {
+                let mut path = path.into();
+                // append extension chain (reserved) to the path to reach
+                // the real signer ID from the effective one.
+                path.extend(self.as_extension_chain.iter().rev().cloned());
+                path
+            },
+            signer_id: self.real_account_id().clone(),
             chain_id: self.chain_id().clone(),
-            payload: msg,
+            payload,
         };
 
         let proof = self
@@ -575,28 +580,28 @@ where
             "signer produced invalid signature",
         );
 
-        Ok((
-            msg.with_resolver_id(self.account_id()),
-            // TODO: expose convenient wrap functions from wallet crate
-            serde_json::to_string(&self.wrap_offchain_proof(proof))
-                .expect("JSON: serialization failed"),
-        ))
+        Ok(self.wrap_offchain_msg(msg, proof))
     }
 
-    fn wrap_offchain_proof(&self, proof: Proof) -> WalletOffchainMessage {
+    fn wrap_offchain_msg(&self, msg: OffchainMessage, proof: String) -> String {
+        let payload = msg.payload.clone();
+
         iter::once(self.real_account_id())
-            .chain(
-                self.as_extension_chain
-                    .iter()
-                    // skip last extension
-                    .take(self.as_extension_chain.len().saturating_sub(1)),
-            )
+            .chain(&self.as_extension_chain)
+            // wrap only while there is a next extension in the chain
             .take(self.as_extension_chain.len())
             .cloned()
             .fold(
-                WalletOffchainMessage::as_self(proof),
+                WalletOffchainInput::AsSelf { msg, proof }.to_input(),
                 // wrap as extension with ID of the previous account in the chain
-                WalletOffchainMessage::wrap_as_extension,
+                |input, as_extension_id| {
+                    WalletOffchainInput::AsExtension {
+                        account_id: as_extension_id,
+                        input,
+                        output: payload.clone(),
+                    }
+                    .to_input()
+                },
             )
     }
 

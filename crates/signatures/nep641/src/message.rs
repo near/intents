@@ -42,6 +42,7 @@ use near_account_id::AccountId;
 pub struct OffchainMessage {
     // TODO: docs: direction?
     // TODO: is it a good fields order for HW wallets?
+    // TODO: is path alone enough?
     pub path: Vec<AccountId>,
 
     /// Signer ID.
@@ -59,7 +60,7 @@ pub struct OffchainMessage {
     // TODO: schema?
     // TODO: deadline like in TON Connect?
 
-    // TODO: change to String? how to propagate domain and purpose/action?
+    // TODO: how to propagate domain and purpose/action?
     pub payload: String,
 }
 
