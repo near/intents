@@ -114,7 +114,11 @@ async fn w_resolve_auth(
 ) {
     const PAYLOAD: &str = "Hello, Near!";
 
-    println!("{} -> {}", wallet.real_account_id(), wallet.account_id());
+    println!(
+        "{} -> {}: \"{PAYLOAD}\"",
+        wallet.real_account_id(),
+        wallet.account_id()
+    );
 
     // // TODO: this will be not needed when RPC adds support for
     // // state_init param for view-calls
