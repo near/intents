@@ -153,22 +153,3 @@ impl OffchainMessage {
         hasher.0.finalize().into()
     }
 }
-
-// /// TODO: docs
-// #[cfg_attr(
-//     feature = "serde",
-//     derive(::serde::Serialize, ::serde::Deserialize),
-//     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
-// )]
-// #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-// // TODO: no borsh?
-// // #[cfg_attr(
-// //     feature = "borsh",
-// //     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-// //     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
-// // )]
-// #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-// pub struct PendingAuthorization {
-//     pub resolver_id: AccountId,
-//     pub proof: Proof,
-// }

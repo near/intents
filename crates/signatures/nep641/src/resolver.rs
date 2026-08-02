@@ -6,7 +6,9 @@ use near_kit::{BlockReference, CryptoHash, Finality, Near};
 #[cfg(feature = "tracing")]
 use tracing::{Span, field, instrument, record_all};
 
-use crate::{OffchainMessage, Proof, client::WResolveAuthArgs};
+use crate::{
+    AuthorizationResolution, OffchainMessage, PendingAuthorization, Proof, client::WResolveAuthArgs,
+};
 
 /// Verifier for NEP-641 [offchain messages](OffchainMessage).
 #[derive(Debug, Clone)]
@@ -103,105 +105,138 @@ impl OffchainResolver {
     /// offchain signature according to [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)
     /// standard.
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
-        %msg.resolver_id,
-        %msg.signer_id,
-        %msg.chain_id,
-        msg.hash = %bs58::encode(msg.hash()).into_string(),
+        %account_id,
+        // %msg.resolver_id,
+        // %msg.signer_id,
+        // %msg.chain_id,
+        // msg.hash = %bs58::encode(msg.hash()).into_string(),
         at_block.hash, // will be recorded after top-level resolve
     )))]
     // TODO: return signer_id? but this doesn't force the caller
     // to check the actual message being signed...
     pub async fn resolve_auth(
         &self,
-        msg: OffchainMessage,
-        proof: Proof,
-    ) -> Result<(), ResolveError> {
-        // TODO: maybe leave it for caller? intents.near
-        if !msg.is_top_level() {
-            return Err(ResolveError::NonTopLevel);
-        }
+        account_id: AccountId, // TODO: impl Into<>?
+        input: String,
+    ) -> Result<String, ResolveError> {
+        let SingleResolved {
+            mut receiver_id,
+            resolution:
+                AuthorizationResolution {
+                    output,
+                    mut pending,
+                },
+            block_hash: at_block_hash,
+        } = self
+            .resolve_single(
+                account_id.clone(),
+                // receiver is the top-level account itself
+                account_id,
+                input,
+                // if set, resolve top-level authorization at fixed block hash,
+                // or final otherwise
+                self.at_block_hash,
+            )
+            .await?;
 
-        // a pool of futures to resolve authorizations concurrently
+        #[cfg(feature = "tracing")]
+        record_all!(Span::current(), at_block.hash = %at_block_hash);
+
+        let mut pending_left = self.max_pending;
+        // TODO: .buffer_unordered()
         let mut in_flight = FuturesUnordered::new();
-        // keep track of already seen account IDs
-        let mut seen = HashSet::new();
 
-        // mark top-level resolver_id as already seen
-        seen.insert(msg.resolver_id.clone());
-        // if set, resolve top-level authorization at fixed block hash, or final otherwise
-        in_flight.push(self.resolve_single(msg.clone(), proof, self.at_block_hash));
+        loop {
+            pending_left = pending_left
+                .checked_sub(pending.len())
+                .ok_or(ResolveError::TooManyAuthorizations(self.max_pending))?;
 
-        // pinned block hash, will be populated from top-level `self.resolve_single()` above
-        let mut at_block_hash: CryptoHash;
+            in_flight.extend(
+                pending
+                    .into_iter()
+                    // TODO: inspect tracing
+                    .map(|pending| {
+                        self.resolve_pending(
+                            // propagate receiver to sub-authorization
+                            receiver_id.clone(),
+                            pending,
+                            // resolve pending authorizations at the same block hash
+                            Some(at_block_hash),
+                        )
+                    }),
+            );
 
-        // resolve until no more pending authorizations are left
-        while let Some(resolved) = in_flight.try_next().await? {
-            // populate fetched block hash from top-level `self.resolve_signed()`
-            // TODO: a lagging RPC can resolve old Final block
-            at_block_hash = resolved.block_hash;
-            #[cfg(feature = "tracing")]
-            record_all!(Span::current(), at_block.hash = %at_block_hash);
+            let Some(resolved) = in_flight.try_next().await? else {
+                // no more authorizations left, return the top-level output
+                return Ok(output);
+            };
 
-            for (resolver_id, proof) in resolved.pending {
-                // TODO: it means that cycles automatically cancel each other out,
-                // even if proofs are different. Is it ok?
-                if !seen.insert(resolver_id.clone()) {
-                    #[cfg(feature = "tracing")]
-                    tracing::debug!(
-                        "resolver_id {} has been already seen, skipping...",
-                        resolver_id
-                    );
-                    // TODO: cyclic errors
-                    continue;
-                }
-                // TODO: better tracing
-                // TODO: cycles?
+            PendingResolved {
+                receiver_id,
+                pending,
+            } = resolved;
+        }
+    }
 
-                // `seen` has top-level `resolver_id` already, so we need to subtract one
-                if seen.len() - 1 > self.max_pending {
-                    // prevent DoS attack in case of malicious contract(s)
-                    // returns too many pending authorizations
-                    return Err(ResolveError::TooManyAuthorizations(self.max_pending));
-                }
+    async fn resolve_pending(
+        &self,
+        receiver_id: AccountId,
+        pending: PendingAuthorization,
+        at_block_hash: Option<CryptoHash>,
+    ) -> Result<PendingResolved, ResolveError> {
+        let SingleResolved {
+            receiver_id,
+            resolution,
+            ..
+        } = self
+            .resolve_single(
+                pending.account_id,
+                receiver_id,
+                pending.input,
+                at_block_hash,
+            )
+            .await?;
 
-                // resolve pending authorizations at the same block hash
-                in_flight.push(self.resolve_single(
-                    // override resolver for sub-authorization
-                    msg.clone().with_resolver_id(resolver_id),
-                    proof,
-                    Some(at_block_hash),
-                ));
-            }
+        if resolution.output != pending.output {
+            return Err(ResolveError::InvalidOutput);
         }
 
-        Ok(())
+        Ok(PendingResolved {
+            receiver_id,
+            pending: resolution.pending,
+        })
     }
 
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
-        %msg.resolver_id,
-        %msg.signer_id,
-        %msg.chain_id,
-        msg.hash = %bs58::encode(msg.hash()).into_string(),
+        %receiver_id,
+        // %msg.resolver_id,
+        // %msg.signer_id,
+        // %msg.chain_id,
+        // msg.hash = %bs58::encode(msg.hash()).into_string(),
         at_block.hash = at_block_hash.map(field::display),
     )))]
     async fn resolve_single(
         &self,
-        msg: OffchainMessage,
-        proof: Proof,
+        account_id: AccountId,
+        receiver_id: AccountId,
+        input: String,
         at_block_hash: Option<CryptoHash>,
     ) -> Result<SingleResolved, ResolveError> {
-        if msg.chain_id != self.client.chain_id().as_str() {
-            return Err(ResolveError::InvalidChainId);
-        }
+        // if msg.chain_id != self.client.chain_id().as_str() {
+        //     return Err(ResolveError::InvalidChainId);
+        // }
 
         let res = self
             .client
             .rpc()
             .view_function(
-                &msg.resolver_id,
+                &account_id,
                 "w_resolve_auth",
-                &serde_json::to_vec(&WResolveAuthArgs::from((&msg, proof.as_str())))
-                    .expect("JSON: serialization failed"),
+                &serde_json::to_vec(&WResolveAuthArgs {
+                    receiver_id: (&receiver_id).into(),
+                    input: input.into(),
+                })
+                .expect("JSON: serialization failed"),
                 at_block_hash.map_or(
                     // use final block hash by default
                     BlockReference::Finality(Finality::Final),
@@ -237,15 +272,22 @@ impl OffchainResolver {
         // TODO: fallback to intents.near(far?) as resolver_id?
 
         Ok(SingleResolved {
-            pending: res.json()?,
+            receiver_id,
+            resolution: res.json()?,
             block_hash: res.block_hash,
         })
     }
 }
 
+struct PendingResolved {
+    receiver_id: AccountId,
+    pending: Vec<PendingAuthorization>,
+}
+
 // TODO: rename?
 struct SingleResolved {
-    pending: HashMap<AccountId, Proof>,
+    receiver_id: AccountId,
+    resolution: AuthorizationResolution,
     block_hash: CryptoHash,
 }
 
@@ -253,11 +295,9 @@ struct SingleResolved {
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ResolveError {
-    #[error("the authorization is not top-level")]
-    NonTopLevel,
-
-    #[error("invalid chain_id")] // TODO
-    InvalidChainId,
+    // TODO: better naming
+    #[error("invalid")]
+    InvalidOutput,
 
     #[error(transparent)]
     Near(#[from] near_kit::Error),
