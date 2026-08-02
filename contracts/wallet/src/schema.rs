@@ -1,7 +1,7 @@
-use defuse_nep641::{OffchainMessage, Proof};
+use defuse_nep641::OffchainMessage;
 use near_account_id::AccountId;
 
-use crate::{ChainId, RequestMessage};
+use crate::RequestMessage;
 
 /// Signature schema used by [`Wallet`](crate::contract::Wallet) contract
 /// variant.
@@ -42,10 +42,11 @@ pub trait SignatureSchema {
     serde(tag = "as", content = "data", rename_all = "snake_case")
 )]
 // TODO: arbitrary
-// TODO: derives
+// TODO: are we sure no borsh?
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum WalletOffchainInput {
     AsSelf {
-        msg: WalletOffchainMessage,
+        msg: OffchainMessage,
         proof: String,
     },
     AsExtension {
@@ -53,21 +54,6 @@ pub enum WalletOffchainInput {
         input: String,
         output: String,
     },
-}
-
-#[cfg_attr(
-    feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
-)]
-// TODO: arbitrary
-// TODO: derives
-pub struct WalletOffchainMessage {
-    pub path: Vec<AccountId>,
-    pub signer_id: AccountId,
-    pub chain_id: ChainId,
-    // TODO: direction?
-    pub msg: OffchainMessage,
 }
 
 // // TODO: docs

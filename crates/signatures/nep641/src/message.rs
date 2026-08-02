@@ -1,3 +1,5 @@
+use near_account_id::AccountId;
+
 // /// An authorization to be [resolved](crate::resolver::OffchainResolver::resolve_auth)
 // /// **offchain**.
 // #[cfg_attr(
@@ -27,6 +29,7 @@
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+    // TODO: deny unknown fields?
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -35,32 +38,29 @@
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+// TODO: versioned?
 pub struct OffchainMessage {
-    // // // TODO: versioned?
-    // /// Account ID which the top-level authorization is intended to be
-    // /// [resolved](crate::contract::AuthResolver::w_resolve_auth) for.
-    // ///
-    // /// If this authorization is top-level itself, then this field MUST match
-    // /// [`resolver_id`](field@Self::resolver_id).
-    // pub signer_id: AccountId,
+    // TODO: docs: direction?
+    // TODO: is it a good fields order for HW wallets?
+    pub path: Vec<AccountId>,
 
-    // /// Chain ID.
-    // ///
-    // /// MUST be equal to chain ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
-    // pub chain_id: ChainId,
+    /// Signer ID.
+    ///
+    /// MUST be equal to account ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
+    pub signer_id: AccountId,
 
-    // TODO: path
-
-    // // TODO: docs
-    // /// Resolver ID.
-    // ///
-    // /// MUST be equal to account ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
-    // pub resolver_id: AccountId,
+    /// Chain ID.
+    ///
+    /// MUST be equal to chain ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
+    // TODO: ChainId type alias?
+    pub chain_id: String,
 
     // TODO: domain
     // TODO: schema?
     // TODO: deadline like in TON Connect?
-    pub msg: String,
+
+    // TODO: change to String? how to propagate domain and purpose/action?
+    pub payload: String,
 }
 
 impl OffchainMessage {
@@ -106,9 +106,18 @@ impl OffchainMessage {
     /// assert!(!sub_auth.is_top_level());
     /// ```
     #[inline]
-    pub fn is_top_level(&self) -> bool {
-        todo!()
-        // self.signer_id == self.resolver_id
+    pub const fn is_top_level(&self) -> bool {
+        self.path.is_empty()
+    }
+
+    // TODO: docs, naming, examples
+    #[inline]
+    pub const fn effective_account_id(&self) -> &AccountId {
+        let Some(account_id) = self.path.as_slice().first() else {
+            return &self.signer_id;
+        };
+
+        &account_id
     }
 
     /// Returns canonical hash of this offchain message:

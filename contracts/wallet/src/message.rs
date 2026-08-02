@@ -59,6 +59,7 @@ pub struct RequestMessage {
     )]
     pub pay_for_gas: bool,
 
+    // TODO: change order of fields?
     /// Chain id (e.g. `mainnet`).
     ///
     /// MUST be equal to `chain_id` of the network.

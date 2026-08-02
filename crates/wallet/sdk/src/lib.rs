@@ -561,7 +561,7 @@ where
                 .unwrap_or_else(|| self.account_id().clone()),
             resolver_id: self.real_account_id().clone(),
             chain_id: self.chain_id().clone(),
-            msg,
+            payload: msg,
         };
 
         let proof = self

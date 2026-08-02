@@ -14,17 +14,20 @@ pub enum ContractError {
     #[error("extension '{0}' is not enabled")]
     ExtensionNotEnabled(AccountId),
 
+    #[error("insufficient attached deposit")]
+    InsufficientDeposit,
+
     #[error("invalid chain_id")]
     InvalidChainId,
+
+    #[error("invalid path")]
+    InvalidPath,
 
     #[error("invalid signature")]
     InvalidSignature,
 
     #[error("invalid signer_id: {0}")]
     InvalidSignerId(AccountId),
-
-    #[error("insufficient attached deposit")]
-    InsufficientDeposit,
 
     #[cfg(feature = "json")]
     #[error("JSON: {0}")]
@@ -39,7 +42,7 @@ pub enum ContractError {
     #[error("self-calls are not allowed")]
     SelfCallsNotAllowed,
 
-    #[error("signature is disabled")]
+    #[error("signature is disabled, use extensions to act on behelf of this wallet")]
     SignatureDisabled,
 
     #[error("this signature mode is already set")]

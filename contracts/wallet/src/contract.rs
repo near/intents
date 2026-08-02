@@ -367,6 +367,11 @@ where
                     return Err(Error::SignatureDisabled);
                 }
 
+                // check path
+                if msg.path != path {
+                    return Err(Error::InvalidPath);
+                }
+
                 // check signer_id
                 if msg.signer_id != env::current_account_id() {
                     return Err(Error::InvalidSignerId(msg.signer_id));
@@ -377,13 +382,7 @@ where
                     return Err(Error::InvalidChainId);
                 }
 
-                // check path
-                if msg.path != path {
-                    // TODO: return Err(Error::InvalidPath);
-                    todo!()
-                }
-
-                if !S::verify_offchain_msg(&self.0.public_key, &msg.msg, &proof) {
+                if !S::verify_offchain_msg(&self.0.public_key, &msg, &proof) {
                     return Err(Error::InvalidSignature);
                 }
 
@@ -392,7 +391,7 @@ where
                     // TODO: do not serialize, return initial...
                     // serde_json::to_string(value)
                     // TODO: return msg.msg
-                    msg.msg.msg,
+                    msg.payload,
                 )
             }
             WalletOffchainInput::AsExtension {
