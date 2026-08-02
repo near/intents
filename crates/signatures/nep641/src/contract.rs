@@ -3,6 +3,7 @@ use near_account_id::AccountId;
 use crate::AuthorizationResolution;
 
 pub trait AuthResolver {
+    // TODO: replace receiver_id with path: Vec<AccountIds>?
     fn w_resolve_auth(&self, receiver_id: AccountId, input: String) -> AuthorizationResolution;
 }
 

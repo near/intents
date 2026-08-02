@@ -161,7 +161,7 @@ impl OffchainResolver {
                             receiver_id.clone(),
                             pending,
                             // resolve pending authorizations at the same block hash
-                            Some(at_block_hash),
+                            at_block_hash,
                         )
                     }),
             );
@@ -182,7 +182,7 @@ impl OffchainResolver {
         &self,
         receiver_id: AccountId,
         pending: PendingAuthorization,
-        at_block_hash: Option<CryptoHash>,
+        at_block_hash: CryptoHash,
     ) -> Result<PendingResolved, ResolveError> {
         let SingleResolved {
             receiver_id,
@@ -193,7 +193,7 @@ impl OffchainResolver {
                 pending.account_id,
                 receiver_id,
                 pending.input,
-                at_block_hash,
+                Some(at_block_hash),
             )
             .await?;
 

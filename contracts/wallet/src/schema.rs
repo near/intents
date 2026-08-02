@@ -1,7 +1,7 @@
 use defuse_nep641::{OffchainMessage, Proof};
 use near_account_id::AccountId;
 
-use crate::RequestMessage;
+use crate::{ChainId, RequestMessage};
 
 /// Signature schema used by [`Wallet`](crate::contract::Wallet) contract
 /// variant.
@@ -34,48 +34,88 @@ pub trait SignatureSchema {
     ) -> bool;
 }
 
-// TODO: docs
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
+    // TODO: content rename?
+    serde(tag = "as", content = "data", rename_all = "snake_case")
+)]
+// TODO: arbitrary
+// TODO: derives
+pub enum WalletOffchainInput {
+    AsSelf {
+        msg: WalletOffchainMessage,
+        proof: String,
+    },
+    AsExtension {
+        account_id: AccountId,
+        input: String,
+        output: String,
+    },
+}
+
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
 )]
-#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct WalletOffchainProof {
-    #[cfg_attr(
-        feature = "serde",
-        serde(default, skip_serializing_if = "Option::is_none")
-    )]
-    pub as_extension_id: Option<AccountId>,
-
-    pub proof: Proof,
+// TODO: arbitrary
+// TODO: derives
+pub struct WalletOffchainMessage {
+    pub signer_id: AccountId,
+    pub chain_id: ChainId,
+    // TODO: path
+    pub msg: OffchainMessage,
 }
 
-impl WalletOffchainProof {
-    #[inline]
-    pub fn as_self(proof: impl Into<Proof>) -> Self {
-        Self {
-            as_extension_id: None,
-            proof: proof.into(),
-        }
-    }
+// // TODO: docs
+// #[cfg_attr(
+//     feature = "serde",
+//     derive(::serde::Serialize, ::serde::Deserialize),
+//     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+// )]
+// #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+// #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+// pub struct WalletOffchainMessage {
+//     pub output: String,
 
-    #[inline]
-    pub fn as_extension(extension_id: impl Into<AccountId>, proof: impl Into<Proof>) -> Self {
-        Self {
-            as_extension_id: Some(extension_id.into()),
-            proof: proof.into(),
-        }
-    }
+//     // TODO: maybe only if self?
+//     pub msg: OffchainMessage,
 
-    // TODO: naming
-    #[cfg(feature = "json")]
-    #[inline]
-    pub fn wrap_as_extension(self, extension_id: impl Into<AccountId>) -> Self {
-        Self::as_extension(
-            extension_id,
-            serde_json::to_string(&self).expect("JSON: failed to serialize"),
-        )
-    }
-}
+//     #[cfg_attr(
+//         feature = "serde",
+//         serde(default, skip_serializing_if = "Option::is_none")
+//     )]
+//     pub as_extension_id: Option<AccountId>,
+
+//     pub proof: Proof,
+// }
+
+// impl WalletOffchainMessage {
+//     #[inline]
+//     pub fn as_self(proof: impl Into<Proof>) -> Self {
+//         Self {
+//             as_extension_id: None,
+//             proof: proof.into(),
+//         }
+//     }
+
+//     #[inline]
+//     pub fn as_extension(extension_id: impl Into<AccountId>, proof: impl Into<Proof>) -> Self {
+//         Self {
+//             as_extension_id: Some(extension_id.into()),
+//             proof: proof.into(),
+//         }
+//     }
+
+//     // TODO: naming
+//     #[cfg(feature = "json")]
+//     #[inline]
+//     pub fn wrap_as_extension(self, extension_id: impl Into<AccountId>) -> Self {
+//         Self::as_extension(
+//             extension_id,
+//             serde_json::to_string(&self).expect("JSON: failed to serialize"),
+//         )
+//     }
+// }

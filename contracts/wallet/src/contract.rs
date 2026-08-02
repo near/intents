@@ -15,7 +15,9 @@ use std::{
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_near_promise::{NearPromise, actions::NearAction};
-use defuse_nep641::{OffchainMessage, Proof, contract::AuthResolver};
+use defuse_nep641::{
+    AuthorizationResolution, OffchainMessage, PendingAuthorization, Proof, contract::AuthResolver,
+};
 use defuse_time::Timestamp;
 use impl_tools::autoimpl;
 use near_account_id::{AccountId, AccountIdRef};
@@ -23,7 +25,8 @@ use near_sdk::{FunctionError, Promise, env, ext_contract};
 
 pub use crate::ContractError as Error;
 use crate::{
-    Request, RequestMessage, SignatureSchema, State, WalletOffchainProof, WalletOp,
+    Request, RequestMessage, SignatureSchema, State, WalletOffchainInput, WalletOffchainMessage,
+    WalletOp,
     events::{Actor, WalletEvent},
 };
 
@@ -350,8 +353,8 @@ where
     S: SignatureSchema,
 {
     #[inline]
-    fn w_resolve_auth(&self, msg: OffchainMessage, proof: Proof) -> HashMap<AccountId, Proof> {
-        self.resolve_auth(msg, &proof)
+    fn w_resolve_auth(&self, receiver_id: AccountId, input: String) -> AuthorizationResolution {
+        self.resolve_auth(receiver_id, input)
             .unwrap_or_else(|err| err.panic())
     }
 }
@@ -360,41 +363,54 @@ impl<S> WalletImpl<S>
 where
     S: SignatureSchema,
 {
-    fn resolve_auth(&self, msg: OffchainMessage, proof: &str) -> Result<HashMap<AccountId, Proof>> {
-        // check chain_id
-        if msg.chain_id != env::chain_id() {
-            return Err(Error::InvalidChainId);
-        }
+    fn resolve_auth(
+        &self,
+        receiver_id: AccountId,
+        input: String,
+    ) -> Result<AuthorizationResolution> {
+        // TODO: check if receiver_id is self?
+        let input: WalletOffchainInput = serde_json::from_str(&input)?;
 
-        // check resolver_id
-        if msg.resolver_id != env::current_account_id() {
-            // TODO: error InvalidResolverId
-            return Err(Error::InvalidSignerId(msg.resolver_id));
-        }
+        Ok(match input {
+            WalletOffchainInput::AsSelf { msg, proof } => {
+                if !self.0.is_signature_allowed() {
+                    return Err(Error::SignatureDisabled);
+                }
 
-        let WalletOffchainProof {
-            as_extension_id,
-            proof,
-        } = serde_json::from_str(proof)?;
+                // check signer_id
+                if msg.signer_id != env::current_account_id() {
+                    return Err(Error::InvalidSignerId(msg.signer_id));
+                }
 
-        if let Some(extension_id) = as_extension_id {
-            // check whether extension is enabled
-            self.check_extension_enabled(&extension_id)?;
+                // check chain_id
+                if msg.chain_id != env::chain_id() {
+                    return Err(Error::InvalidChainId);
+                }
 
-            // forward `w_resolve_auth()` to the extension
-            return Ok([(extension_id, proof)].into());
-        }
+                if !S::verify_offchain_msg(&self.0.public_key, &msg.msg, &proof) {
+                    return Err(Error::InvalidSignature);
+                }
 
-        if !self.0.is_signature_allowed() {
-            return Err(Error::SignatureDisabled);
-        }
+                // TODO: docs: terminate
+                AuthorizationResolution::new(
+                    // TODO: do not serialize, return initial...
+                    // serde_json::to_string(value)
+                    // TODO: return msg.msg
+                    msg.msg.msg,
+                )
+            }
+            WalletOffchainInput::AsExtension {
+                account_id,
+                input,
+                output,
+            } => {
+                // check whether extension is enabled
+                self.check_extension_enabled(&account_id)?;
 
-        if !S::verify_offchain_msg(&self.0.public_key, &msg, &proof) {
-            return Err(Error::InvalidSignature);
-        }
-
-        // signature is valid, terminate our resolve branch
-        Ok(HashMap::new())
+                // forward `w_resolve_auth()` to the extension
+                AuthorizationResolution::new(output.clone()).add_pending(account_id, input, output)
+            }
+        })
     }
 }
 
@@ -544,10 +560,10 @@ macro_rules! wallet {
         impl $crate::offchain::contract::AuthResolver for $contract {
             fn w_resolve_auth(
                 &self,
-                msg: $crate::offchain::OffchainMessage,
-                proof: $crate::offchain::Proof,
-            ) -> ::std::collections::HashMap<$crate::AccountId, $crate::offchain::Proof> {
-                self.0.w_resolve_auth(msg, proof)
+                receiver_id: $crate::AccountId,
+                input: ::std::string::String,
+            ) -> $crate::offchain::AuthorizationResolution {
+                self.0.w_resolve_auth(receiver_id, input)
             }
         }
     };

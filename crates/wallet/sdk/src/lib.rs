@@ -583,7 +583,7 @@ where
         ))
     }
 
-    fn wrap_offchain_proof(&self, proof: Proof) -> WalletOffchainProof {
+    fn wrap_offchain_proof(&self, proof: Proof) -> WalletOffchainMessage {
         iter::once(self.real_account_id())
             .chain(
                 self.as_extension_chain
@@ -594,9 +594,9 @@ where
             .take(self.as_extension_chain.len())
             .cloned()
             .fold(
-                WalletOffchainProof::as_self(proof),
+                WalletOffchainMessage::as_self(proof),
                 // wrap as extension with ID of the previous account in the chain
-                WalletOffchainProof::wrap_as_extension,
+                WalletOffchainMessage::wrap_as_extension,
             )
     }
 

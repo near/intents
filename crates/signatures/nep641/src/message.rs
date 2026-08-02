@@ -45,24 +45,26 @@ pub type Proof = String;
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct OffchainMessage {
-    /// Account ID which the top-level authorization is intended to be
-    /// [resolved](crate::contract::AuthResolver::w_resolve_auth) for.
-    ///
-    /// If this authorization is top-level itself, then this field MUST match
-    /// [`resolver_id`](field@Self::resolver_id).
-    pub signer_id: AccountId,
+    // // // TODO: versioned?
+    // /// Account ID which the top-level authorization is intended to be
+    // /// [resolved](crate::contract::AuthResolver::w_resolve_auth) for.
+    // ///
+    // /// If this authorization is top-level itself, then this field MUST match
+    // /// [`resolver_id`](field@Self::resolver_id).
+    // pub signer_id: AccountId,
 
-    // TODO: versioned?
-    // TODO: docs
-    /// Resolver ID.
-    ///
-    /// MUST be equal to account ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
-    pub resolver_id: AccountId,
+    // /// Chain ID.
+    // ///
+    // /// MUST be equal to chain ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
+    // pub chain_id: ChainId,
 
-    /// Chain ID.
-    ///
-    /// MUST be equal to chain ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
-    pub chain_id: ChainId,
+    // TODO: path
+
+    // // TODO: docs
+    // /// Resolver ID.
+    // ///
+    // /// MUST be equal to account ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
+    // pub resolver_id: AccountId,
 
     // TODO: domain
     // TODO: schema?
@@ -82,13 +84,13 @@ impl OffchainMessage {
     pub const DOMAIN_SEPARATOR: &[u8] = b"NEAR_NEP641_OFFCHAIN_MESSAGE/V1";
 
     /// Replace [`resolver_id`](field@Self::resolver_id) with given account ID
-    /// on this message.
-    #[must_use]
-    #[inline]
-    pub fn with_resolver_id(mut self, resolver_id: impl Into<AccountId>) -> Self {
-        self.resolver_id = resolver_id.into();
-        self
-    }
+    // /// on this message.
+    // #[must_use]
+    // #[inline]
+    // pub fn with_resolver_id(mut self, resolver_id: impl Into<AccountId>) -> Self {
+    //     self.resolver_id = resolver_id.into();
+    //     self
+    // }
 
     /// Returns whether this message is a top-level authorization.
     ///
@@ -114,7 +116,8 @@ impl OffchainMessage {
     /// ```
     #[inline]
     pub fn is_top_level(&self) -> bool {
-        self.signer_id == self.resolver_id
+        todo!()
+        // self.signer_id == self.resolver_id
     }
 
     /// Returns canonical hash of this offchain message:

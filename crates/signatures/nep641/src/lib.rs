@@ -33,6 +33,17 @@ pub struct AuthorizationResolution {
 }
 
 impl AuthorizationResolution {
+    /// Create a leaf authorization resolution.
+    ///
+    /// See [`.add_pending()`](Self::add_pending) to add pending ones.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use defuse_nep641::AuthorizationResolution;
+    /// let auth = AuthorizationResolution::new("output");
+    /// assert!(auth.is_leaf());
+    /// ```
     #[inline]
     pub fn new(output: impl Into<String>) -> Self {
         Self {
@@ -41,8 +52,23 @@ impl AuthorizationResolution {
         }
     }
 
+    /// Add a pending downstream authorization resolution on given account ID.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use near_account_id::AccountIdRef;
+    /// # use defuse_nep641::AuthorizationResolution;
+    /// let auth = AuthorizationResolution::new("output")
+    ///     .add_pending(
+    ///         AccountIdRef::new_or_panic("pending.near"),
+    ///         "input",
+    ///         "output",
+    ///     );
+    /// assert!(!auth.is_leaf());
+    /// ```
     #[inline]
-    pub fn pending(
+    pub fn add_pending(
         mut self,
         account_id: impl Into<AccountId>,
         input: impl Into<String>,
@@ -56,8 +82,26 @@ impl AuthorizationResolution {
         self
     }
 
+    /// Returns whether this authorization resolution is a leaf, i.e. doesn't
+    /// have any pending ones.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use near_account_id::AccountIdRef;
+    /// # use defuse_nep641::AuthorizationResolution;
+    /// let leaf = AuthorizationResolution::new("output");
+    /// assert!(leaf.is_leaf());
+    ///
+    /// let intermediate = leaf.add_pending(
+    ///     AccountIdRef::new_or_panic("pending.near"),
+    ///     "input",
+    ///     "output",
+    /// );
+    /// assert!(!intermediate.is_leaf());
+    /// ```
     #[inline]
-    pub const fn is_terminate(&self) -> bool {
+    pub const fn is_leaf(&self) -> bool {
         self.pending.is_empty()
     }
 }
