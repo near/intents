@@ -12,11 +12,16 @@ use near_account_id::AccountId;
 pub trait AuthResolver {
     /// A view-method to resolve [offchain](#offchain-only) authorization according to NEP-641.
     ///
-    /// The implementation SHOULD resolve given `authorization` along with [`path`](#path) and
-    /// return an [`authorized`](field@AuthorizationResolution::authorized) payload along with
-    /// an optional list of [pending sub-authorizations](PendingAuthorization). The authorized
+    /// The implementation SHOULD resolve given `authorization` blob along with [`path`](#path)
+    /// and return an [`authorized`](field@AuthorizationResolution::authorized) payload along with
+    /// an _optional_ list of [pending sub-authorizations](PendingAuthorization). The authorized
     /// payload will be accepted if and only if **all** pending sub-authorizations resolve
     /// successfully into corresponding [expected](PendingAuthorization::expect) payloads.
+    ///
+    /// # Panics
+    ///
+    /// The implementation MUST panic if the authorization is invalid. The panic SHOULD include
+    /// informative message explaining the failure reason.
     ///
     /// # Path
     ///
@@ -25,14 +30,14 @@ pub trait AuthResolver {
     /// list is not empty, then the current resolver contract ID is _appended to the end_ of `path`
     /// and the latter gets propagated to all sub-resolvers.
     ///
-    /// Thus, the `path` argument includes the whole traversal path _starting_ from the top-level
-    /// resolver and _ending_ with the closest ancestor (i.e. parent), which triggered the current
-    /// `w_resolve_auth()`:
+    /// Thus, for any non-top-level resolver the `path` argument includes the whole traversal path
+    /// _starting_ from the top-level resolver and _ending_ with the closest ancestor (i.e. parent),
+    /// which has triggered the current `w_resolve_auth()`:
     ///
     /// <table>
     ///   <thead>
     ///     <tr>
-    ///       <th align="right">Depth</th>
+    ///       <th>Depth</th>
     ///       <th>Resolver ID</th>
     ///       <th>Args</th>
     ///       <th>Return</th>
@@ -41,7 +46,7 @@ pub trait AuthResolver {
     /// <tbody>
     /// <tr>
     /// <td align="right">0</td>
-    /// <td>resolver.near</td>
+    /// <td><code>resolver.near</code></td>
     /// <td>
     ///
     /// ```json
@@ -69,7 +74,7 @@ pub trait AuthResolver {
     /// </tr>
     /// <tr>
     /// <td align="right">1</td>
-    /// <td>sub.resolver.near</td>
+    /// <td><code>sub.resolver.near</code></td>
     /// <td>
     ///
     /// ```json
@@ -97,7 +102,7 @@ pub trait AuthResolver {
     /// </tr>
     /// <tr>
     /// <td align="right">2</td>
-    /// <td>sub.sub.resolver.near</td>
+    /// <td><code>sub.sub.resolver.near</code></td>
     /// <td>
     ///
     /// ```json
@@ -120,25 +125,9 @@ pub trait AuthResolver {
     /// </tr>
     /// </tbody>
     /// </table>
-    ///
-    /// is _appended to the end_
-    /// of `path` and it gets propagated to all sub-resolvers.
-    ///
-    ///  and _appends_ resolver contract ID _to the end_. For each pending sub-authorization and passed to the sub-resolver.
-    /// keeps track of the path. Top-level authorization is resolved with empty `path`, and each
-    /// is _appended to the end_
-    ///
-
-    /// TODO
-    ///
-    /// TODO: doc params
-    /// TODO: callback pattern: ft::w_resolve_auth("tell me how many tokens a user has and call me back with the number + this string")
-    /// TODO: doc return
-    ///
-    /// # Panics
-    ///
-    /// The implementation MUST panic if the authorization is invalid. The panic SHOULD include
-    /// informative message explaining the failure reason.
+    // TODO: doc params
+    // TODO: callback pattern: ft::w_resolve_auth("tell me how many tokens a user has and call me back with the number + this string")
+    // TODO: doc return
     ///
     /// # Cycles
     ///
@@ -149,7 +138,11 @@ pub trait AuthResolver {
     ///
     /// # Offchain Only
     ///
+    /// <div class="warning">
+    ///
     /// **DO NOT** call this view-method in on-chain transactions!
+    ///
+    /// </div>
     ///
     /// NEP-641 standard is **NOT** designed to be used for on-chain transfer "approvals"
     /// or any other actions that modify state of the blockchain. Offchain messages are
@@ -203,13 +196,13 @@ impl AuthorizationResolution {
     ///
     /// ```rust
     /// # use defuse_nep641::AuthorizationResolution;
-    /// let auth = AuthorizationResolution::new("output");
+    /// let auth = AuthorizationResolution::new("payload");
     /// assert!(auth.is_leaf());
     /// ```
     #[inline]
-    pub fn new(output: impl Into<String>) -> Self {
+    pub fn new(authorized: impl Into<String>) -> Self {
         Self {
-            authorized: output.into(),
+            authorized: authorized.into(),
             pending: Vec::new(),
         }
     }
@@ -221,11 +214,11 @@ impl AuthorizationResolution {
     /// ```rust
     /// # use near_account_id::AccountIdRef;
     /// # use defuse_nep641::AuthorizationResolution;
-    /// let auth = AuthorizationResolution::new("output")
+    /// let auth = AuthorizationResolution::new("payload")
     ///     .add_pending(
-    ///         AccountIdRef::new_or_panic("pending.near"),
-    ///         "input",
-    ///         "output",
+    ///         AccountIdRef::new_or_panic("sub.resolver.near"),
+    ///         "auth1",
+    ///         "payload1",
     ///     );
     /// assert!(!auth.is_leaf());
     /// ```
@@ -233,13 +226,13 @@ impl AuthorizationResolution {
     pub fn add_pending(
         mut self,
         account_id: impl Into<AccountId>,
-        input: impl Into<String>,
-        output: impl Into<String>,
+        authorization: impl Into<String>,
+        expect: impl Into<String>,
     ) -> Self {
         self.pending.push(PendingAuthorization {
             account_id: account_id.into(),
-            authorization: input.into(),
-            expect: output.into(),
+            authorization: authorization.into(),
+            expect: expect.into(),
         });
         self
     }
@@ -256,9 +249,9 @@ impl AuthorizationResolution {
     /// assert!(leaf.is_leaf());
     ///
     /// let intermediate = leaf.add_pending(
-    ///     AccountIdRef::new_or_panic("pending.near"),
-    ///     "input",
-    ///     "output",
+    ///     AccountIdRef::new_or_panic("sub.resolver.near"),
+    ///     "auth",
+    ///     "payload",
     /// );
     /// assert!(!intermediate.is_leaf());
     /// ```
@@ -289,7 +282,6 @@ impl Extend<PendingAuthorization> for AuthorizationResolution {
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PendingAuthorization {
-    // TODO: returning self should be not allowed?
     /// Account ID to [resolve](AuthResolver::w_resolve_auth) the
     /// [sub-authorization](field@Self::authorization) on.
     pub account_id: AccountId,
