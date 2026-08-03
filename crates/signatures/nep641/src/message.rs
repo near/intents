@@ -25,6 +25,21 @@ use near_account_id::AccountId;
 // }
 
 /// An offchain [authorization](OffchainAuthorization) message.
+///
+// TODO:
+/// The implementation MUST verify given `proof` over offchain message, including
+/// all of its fields, and return a list of "pending authorizations" that need to be
+/// [resolved](crate::resolver::OffchainResolver::resolve_auth) on other accounts.
+///
+/// TODO: returned auths fields
+///
+/// The implementation MUST panic if:
+/// * [`chain_id`](field@crate::OffchainMessage::chain_id) doesn't match
+///   `env::chain_id()`
+/// * [`resolver_id`](field@crate::OffchainMessage::resolver_id) doesn't
+///   match `env::current_account_id()`
+/// * `proof` is invalid for given [`OffchainMessage`](crate::OffchainMessage)
+///
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
@@ -95,7 +110,7 @@ impl OffchainMessage {
     ///     signer_id: "wallet.near".parse().unwrap(),
     ///     resolver_id: "wallet.near".parse().unwrap(),
     ///     chain_id: "mainnet".to_string(),
-    ///     msg: "Hello, Near!".to_string(),
+    ///     payload: "Hello, Near!".to_string(),
     /// };
     /// assert!(top_level.is_top_level());
     ///
@@ -103,7 +118,7 @@ impl OffchainMessage {
     ///     signer_id: "wallet.near".parse().unwrap(),
     ///     resolver_id: "extension.near".parse().unwrap(),
     ///     chain_id: "mainnet".to_string(),
-    ///     msg: "Hello, Near!".to_string(),
+    ///     payload: "Hello, Near!".to_string(),
     /// };
     /// assert!(!sub_auth.is_top_level());
     /// ```

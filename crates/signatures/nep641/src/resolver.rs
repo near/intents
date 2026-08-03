@@ -252,10 +252,6 @@ impl OffchainResolver {
         authorization: String,
         block: impl Into<BlockReference>,
     ) -> Result<SingleResolved, ResolveError> {
-        // if msg.chain_id != self.client.chain_id().as_str() {
-        //     return Err(ResolveError::InvalidChainId);
-        // }
-
         let res = self
             .client
             .rpc()
@@ -268,7 +264,7 @@ impl OffchainResolver {
                 })
                 .expect("JSON: serialization failed"),
                 block.into(),
-                // TODO: "pre-init" if we StateInit for this AccountId
+                // TODO: "pre-init" if we have StateInit for this AccountId
                 // self.state_inits.get(&msg.resolver_id),
             )
             // TODO: handle contract errors

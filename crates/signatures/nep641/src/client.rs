@@ -3,9 +3,10 @@ use serde::Serialize;
 
 use crate::AuthorizationResolution;
 
-/// Bindings to [`AuthResolver`](crate::AuthResolver) contract interface.
+/// Bindings for [`AuthResolver`](crate::AuthResolver) contract interface.
 #[near_kit::contract]
 pub trait AuthResolverContract {
+    /// See [`w_resolve_auth()`](crate::AuthResolver::w_resolve_auth) method.
     fn w_resolve_auth(&self, args: WResolveAuthArgs<'_>) -> AuthorizationResolution;
 }
 

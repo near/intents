@@ -15,8 +15,9 @@ pub trait AuthResolver {
     /// The implementation SHOULD resolve given `authorization` blob along with [`path`](#path)
     /// and return an authorized [`payload`](field@AuthorizationResolution::payload) along with
     /// an _optional_ list of [pending sub-authorizations](PendingAuthorization). The authorized
-    /// payload will be accepted if and only if **all** pending sub-authorizations resolve
-    /// successfully into corresponding [expected](PendingAuthorization::expect) payloads.
+    /// payload SHOULD be accepted by the offchain resolver if and only if **all** pending
+    /// sub-authorizations resolve successfully into corresponding
+    /// [expected](PendingAuthorization::expect) payloads.
     ///
     /// # Panics
     ///
@@ -61,7 +62,7 @@ pub trait AuthResolver {
     ///
     /// ```json
     /// {
-    ///   "authorized": "payload0",
+    ///   "payload": "payload0",
     ///   "pending": [{
     ///     "account_id": "sub.resolver.near",
     ///     "authorization": "auth1",
@@ -89,7 +90,7 @@ pub trait AuthResolver {
     ///
     /// ```json
     /// {
-    ///   "authorized": "payload1",
+    ///   "payload": "payload1",
     ///   "pending": [{
     ///     "account_id": "sub.sub.resolver.near",
     ///     "authorization": "auth2",
@@ -117,7 +118,7 @@ pub trait AuthResolver {
     ///
     /// ```json
     /// {
-    ///   "authorized": "payload2"
+    ///   "payload": "payload2"
     /// }
     /// ```
     ///
@@ -285,36 +286,13 @@ pub struct PendingAuthorization {
     /// method on the [sub-resolver](field@Self::account_id).
     pub authorization: String,
 
-    /// Expected authorized [`payload`](field@AuthorizationResolution::payload)
-    /// to be successfully [resolved](AuthResolver::w_resolve_auth) by
+    /// Expected authorized [`payload`](field@AuthorizationResolution::payload) to be
+    /// successfully [resolved](AuthResolver::w_resolve_auth) by the
     /// [sub-resolver](field@Self::account_id) from this
     /// [sub-authorization](field@Self::authorization).
     ///
-    /// If the pending resolution fails or returns a different payload, then
-    /// the whole verification procedure MUST fail and top-level authorization
+    /// If the pending authorization resolution fails or returns a different payload, then
+    /// the whole verification procedure MUST fail immediately and top-level authorization
     /// MUST be considered invalid.
     pub expect: String,
 }
-
-// pub trait AuthResolver {
-//     /// A view-method to resolve [offchain](#offchain-only) authorization
-//     /// according to NEP-641.
-//     ///
-//     /// The implementation MUST verify given `proof` over offchain message, including
-//     /// all of its fields, and return a list of "pending authorizations" that need to be
-//     /// [resolved](crate::resolver::OffchainResolver::resolve_auth) on other accounts.
-//     ///
-//     /// TODO: returned auths fields
-//     ///
-//     /// The implementation MUST panic if:
-//     /// * [`chain_id`](field@crate::OffchainMessage::chain_id) doesn't match
-//     ///   `env::chain_id()`
-//     /// * [`resolver_id`](field@crate::OffchainMessage::resolver_id) doesn't
-//     ///   match `env::current_account_id()`
-//     /// * `proof` is invalid for given [`OffchainMessage`](crate::OffchainMessage)
-//     ///
-
-//     // TODO: can we resolve (different?) signatures on same account id multiple
-//     // times? e.g. intents.near
-//     fn w_resolve_auth(&self, msg: OffchainMessage, proof: Proof) -> HashMap<AccountId, Proof>;
-// }
