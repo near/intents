@@ -1,12 +1,13 @@
 use defuse_nep245::TokenId;
 use defuse_serde_utils::cow::AsCow;
-use near_sdk::{AccountIdRef, near};
+use near_sdk::{AccountIdRef, near, serde::Deserialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::borrow::Cow;
 
 #[must_use = "make sure to `.emit()` this event"]
 #[serde_as]
 #[near(event_json(standard = "logger"))]
+#[derive(Debug, Clone, Deserialize)]
 pub enum Event<'a> {
     #[event_version("1.0.0")]
     MtDeposit {
