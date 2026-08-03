@@ -15,7 +15,7 @@ use rand::{rand_core::UnwrapErr, rngs::SysRng};
 use rstest::{fixture, rstest};
 use sha2::{Digest, Sha256};
 use tokio::sync::OnceCell;
-use tracing_subscriber::{EnvFilter, fmt::format::FmtSpan};
+use tracing_subscriber::EnvFilter;
 
 type Wallet = defuse_wallet_sdk::Wallet<WalletEd25519>;
 
@@ -118,7 +118,6 @@ async fn w_resolve_auth(
 
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
-        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
         .pretty()
         .init();
 
@@ -227,7 +226,7 @@ async fn wallet(
     #[default(WalletBuilder::new())] builder: WalletBuilder,
     #[future] near: Near,
 ) -> Wallet {
-    let mut w = builder
+    let w = builder
         .build(
             *WALLET_ED25519_CODE_HASH,
             WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng))),

@@ -4,11 +4,12 @@ pub mod client;
 pub use defuse_mpc_signer as mpc;
 use defuse_near_sender::{NearSender, SentTransaction};
 use defuse_wallet::{actions::NearAction, offchain::OffchainMessage};
+mod error;
 mod nonces;
 pub mod relayer;
 mod signer;
 
-pub use self::signer::*;
+pub use self::{error::*, signer::*};
 
 pub use defuse_wallet::*;
 
@@ -389,13 +390,6 @@ where
 
     // TODO: fn extension_of(&self) -> &[AccountId]
 
-    /// Returns currently [configured](Self::with_chain_id) chain ID for [signing](Self::sign)
-    /// requests.
-    #[inline]
-    pub const fn chain_id(&self) -> &ChainId {
-        &self.chain_id
-    }
-
     /// Get an _effective_ account ID which this wallet acts on behalf of.
     ///
     /// This is the last account ID from the currently configured
@@ -411,8 +405,8 @@ where
 
     /// Returns _real_ account ID of this wallet instance.
     ///
-    /// NOTE: the account on NEAR might **not** exist yet and needs to be
-    /// initialized first. See [`.deterministic_state_init()`](Self::deterministic_state_init)
+    /// **NOTE**: the account might **not** exist yet on-chain and needs to be
+    /// [initialized](Self::initialize) first.
     #[inline]
     pub const fn real_account_id(&self) -> &AccountId {
         &self.account_id
@@ -420,9 +414,12 @@ where
 
     /// Get initialization state for [real account ID](Self::real_account_id) of this wallet.
     ///
-    /// A first transaction to the wallet's [real account id](Self::real_account_id)
-    /// needs to include [`.deterministic_state_init()`](Wallet::deterministic_state_init)
-    /// action in order to initialize the contract before calling methods on it.
+    /// > A first transaction to the wallet's [real account id](Self::real_account_id) needs to
+    /// include `DeterministicStateInit` action in order to initialize the contract before
+    /// calling methods on it.
+    ///
+    /// This is handled automatically when [sending](Self::sign_and_send) signed on-chain messages.
+    /// See [`.initialize()`](Self::initialize) for manual initialization.
     #[inline]
     pub const fn deterministic_state_init(&self) -> &StateInit {
         &self.state_init
@@ -432,6 +429,13 @@ where
     #[inline]
     pub fn public_key(&self) -> S::PublicKey {
         self.signer.public_key()
+    }
+
+    /// Returns currently [configured](Self::with_chain_id) chain ID for [signing](Self::sign)
+    /// requests.
+    #[inline]
+    pub const fn chain_id(&self) -> &ChainId {
+        &self.chain_id
     }
 
     /// Get `timeout`, i.e. fixed maximum validity for each nonce in signed
@@ -484,10 +488,7 @@ where
         msg.timeout_secs,
         msg.hash
     )))]
-    pub async fn sign(
-        &self,
-        request: impl Into<Request>,
-    ) -> Result<(RequestMessage, Proof), Error> {
+    pub async fn sign(&self, request: impl Into<Request>) -> Result<(RequestMessage, Proof)> {
         let msg = self.wrap_request_msg(request);
 
         #[cfg(feature = "tracing")]
@@ -552,10 +553,7 @@ where
     ///
     /// This method panics if relayer is not [configured](Self::with_relayer)
     /// for this wallet.
-    pub async fn sign_and_send(
-        &self,
-        request: impl Into<Request>,
-    ) -> Result<SentTransaction, Error> {
+    pub async fn sign_and_send(&self, request: impl Into<Request>) -> Result<SentTransaction> {
         // check before signing if relayer is set
         let relayer = self.relayer();
 
@@ -573,7 +571,7 @@ where
     #[cfg(feature = "near-kit")]
     // TODO: docs
     // TODO: do we need it?
-    pub async fn initialize(&self) -> Result<(), Error> {
+    pub async fn initialize(&self) -> Result<()> {
         use near_kit::{ExecutionStatus, Final};
 
         assert!(
@@ -587,10 +585,13 @@ where
         }
 
         // initialize real account ID by sending an empty request
-        let sent = self.sign_and_send(Request::new()).await?;
-
-        // wait for finalization
-        let output = sent.status(&self.client()).wait_until::<Final>().await?;
+        let output = self
+            .sign_and_send(Request::new())
+            .await?
+            .status(&self.client())
+            // wait for finalization
+            .wait_until::<Final>()
+            .await?;
 
         let initialized = output
             .receipts_outcome
@@ -620,9 +621,11 @@ where
 
     #[cfg(feature = "near-kit")]
     /// TODO: docs
-    pub async fn sync_initialized(&self) -> Result<bool, Error> {
+    /// TODO: traverse extension chain?
+    pub async fn sync_initialized(&self) -> Result<bool> {
         use near_kit::{BlockReference, Finality, RpcError};
 
+        // TODO: assert as_self?
         if self.initialized.load(Relaxed) {
             return Ok(true);
         }
@@ -654,7 +657,7 @@ where
         &self,
         payload: impl Into<String>,
         path: impl IntoIterator<Item = AccountId>,
-    ) -> Result<String, Error> {
+    ) -> Result<String> {
         assert!(
             self.initialized.load(Relaxed),
             "The real wallet ID is not known to be initialized and MAY fail to resolve offchain \
@@ -850,32 +853,6 @@ impl<S: SignatureSchema> From<Wallet<S>> for AccountId {
     #[inline]
     fn from(wallet: Wallet<S>) -> Self {
         (&wallet).into()
-    }
-}
-/// An error returned from [`Wallet`] methods
-#[derive(Debug, thiserror::Error)]
-#[non_exhaustive]
-pub enum Error {
-    #[cfg(feature = "near-kit")]
-    #[error(transparent)]
-    Near(#[from] ::near_kit::Error),
-
-    /// An error occurred during [relaying](WalletRelayer::relay_wallet_msg)
-    /// signed [request](RequestMessage).
-    #[error("relayer: {0}")]
-    Relayer(Box<dyn StdError + Send + Sync>),
-
-    /// An error occurred during [signing](WalletSigner::sign_wallet_msg)
-    /// wallet [request](RequestMessage).
-    #[error("signer: {0}")]
-    Signer(Box<dyn StdError + Send + Sync>),
-}
-
-#[cfg(feature = "near-kit")]
-impl From<::near_kit::RpcError> for Error {
-    #[inline]
-    fn from(err: ::near_kit::RpcError) -> Self {
-        Self::Near(err.into())
     }
 }
 
