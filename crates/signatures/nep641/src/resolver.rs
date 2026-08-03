@@ -8,7 +8,7 @@ use crate::{AuthorizationResolution, PendingAuthorization, client::WResolveAuthA
 
 /// Offchain verifier for NEP-641 authorizations.
 #[derive(Debug, Clone)]
-pub struct OffchainVerifier {
+pub struct OffchainResolver {
     client: Near,
     at_block_hash: Option<CryptoHash>,
     max_pending: usize,
@@ -20,7 +20,7 @@ pub struct OffchainVerifier {
     // state_inits: HashMap<AccountId, StateInit>,
 }
 
-impl OffchainVerifier {
+impl OffchainResolver {
     /// Create new verifier with given Near client
     #[must_use]
     #[inline]
@@ -92,15 +92,15 @@ impl OffchainVerifier {
         self
     }
 
-    /// Verify top-level authorization according to NEP-641.
+    /// Resolve top-level authorization according to NEP-641.
     ///
-    /// This method recursively calls
-    /// [`w_resolve_auth(msg, proof)`](crate::contract::OffchainAuthorizer::w_resolve_auth)
-    /// view-method on [`msg.resolver_id`](field@OffchainMessage::resolver_id) and all returned
-    /// sub-accounts until no more pending autorizations are left.
+    /// This method recursively calls [`w_resolve_auth()`](crate::AuthResolver::w_resolve_auth)
+    /// view-method on given account and all returned sub-accounts until no more pending
+    /// autorizations are left.
     ///
     /// # Result
     ///
+    /// TODO: return
     /// If all view-calls return successfully, then `Ok(())` is returned and the top-level
     /// authorization is considered valid.
     ///
@@ -125,21 +125,18 @@ impl OffchainVerifier {
     /// offchain signature according to [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)
     /// standard.
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
-        // TODO
-        // %account_id,
-        // %msg.resolver_id,
-        // %msg.signer_id,
-        // %msg.chain_id,
-        // msg.hash = %bs58::encode(msg.hash()).into_string(),
-        at_block.hash, // will be recorded after top-level resolve
+        account_id,
+        at_block.hash = self.at_block_hash.map(field::display),
     )))]
-    // TODO: return signer_id? but this doesn't force the caller
-    // to check the actual message being signed...
     pub async fn resolve_auth(
         &self,
         account_id: impl Into<AccountId>, // TODO: is it not Send?
         authorization: String,
     ) -> Result<String, ResolveError> {
+        let account_id = account_id.into();
+        #[cfg(feature = "tracing")]
+        record_all!(Span::current(), account_id = %account_id);
+
         let SingleResolved {
             mut path,
             resolution:
@@ -150,7 +147,7 @@ impl OffchainVerifier {
             block_hash,
         } = self
             .resolve_single(
-                account_id.into(),
+                account_id,
                 // path is empty for top-level authorization
                 vec![],
                 authorization,
@@ -162,10 +159,12 @@ impl OffchainVerifier {
             .await?;
 
         #[cfg(feature = "tracing")]
-        record_all!(Span::current(), at_block.hash = %block_hash);
+        if self.at_block_hash.is_none() {
+            // update `at_block.hash` with resolved block hash
+            record_all!(Span::current(), at_block.hash = %block_hash);
+        }
 
         let mut pending_left = self.max_pending;
-        // TODO: .buffer_unordered()
         let mut in_flight = FuturesUnordered::new();
 
         loop {

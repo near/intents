@@ -1,8 +1,8 @@
 #[cfg(feature = "near-kit")]
 pub mod client;
 mod message;
-#[cfg(feature = "verifier")]
-pub mod verifier;
+#[cfg(feature = "resolver")]
+pub mod resolver;
 
 pub use self::message::*;
 
@@ -125,9 +125,6 @@ pub trait AuthResolver {
     /// </tr>
     /// </tbody>
     /// </table>
-    // TODO: doc params
-    // TODO: callback pattern: ft::w_resolve_auth("tell me how many tokens a user has and call me back with the number + this string")
-    // TODO: doc return
     ///
     /// # Cycles
     ///
@@ -170,9 +167,8 @@ pub trait AuthResolver {
 pub struct AuthorizationResolution {
     /// A payload that was successfully authorized from given authorization blob and the current
     /// contract state.
-    ///
-    /// TODO: in case of wallets/DAOs this should be Message
-    // TODO: rename to "authorized"?
+    // TODO: docs: in case of wallets/DAOs this should be Message
+    // TODO: rename?
     pub authorized: String,
 
     /// Optional list of pending sub-authorizations that MUST be successfully
