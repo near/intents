@@ -12,6 +12,7 @@ pub struct OffchainVerifier {
     client: Near,
     at_block_hash: Option<CryptoHash>,
     max_pending: usize,
+    max_depth: usize,
     // TODO
     // max_depth: usize,
     // // TODO
@@ -32,6 +33,7 @@ impl OffchainVerifier {
             // unbounded by default
             // TODO: set reasonable default
             max_pending: 0,
+            max_depth: 0,
         }
     }
 
@@ -43,16 +45,32 @@ impl OffchainVerifier {
     //     self
     // }
 
-    #[allow(clippy::doc_markdown)]
     /// Set an upper limit for maxumim number of pending sub-authorizations to resolve.
     ///
-    /// A value of zero means that only top-level authorizations are allowed.
-    ///
-    /// By default, there is _no_ limit. It's recommended to set one to prevent from DoS attacks.
+    /// By default, only top-level authorizations are allowed and this
+    /// value is set to zero to prevent from DoS attacks.
     #[must_use]
     #[inline]
     pub const fn with_max_pending(mut self, max_pending: usize) -> Self {
         self.max_pending = max_pending;
+        self
+    }
+
+    /// Set an upper limit for maximum depth of sub-authorization branches.
+    ///
+    /// This also raises the [maximum pending](Self::with_max_pending) limit
+    /// to at least `max_depth`.
+    ///
+    /// By default, only top-level authorizations are allowed and this
+    /// value is set to zero to prevent from DoS attacks.
+    #[must_use]
+    #[inline]
+    pub const fn with_max_depth(mut self, max_depth: usize) -> Self {
+        self.max_depth = max_depth;
+        // this is a const version of: `self.max_pending = self.max_pending.max(self.max_depth)`
+        if self.max_pending < self.max_depth {
+            self.max_pending = self.max_depth;
+        }
         self
     }
 
@@ -148,6 +166,10 @@ impl OffchainVerifier {
         let mut in_flight = FuturesUnordered::new();
 
         loop {
+            if !pending.is_empty() && path.len() > self.max_depth {
+                return Err(ResolveError::MaxDepthExceeded(self.max_depth));
+            }
+
             pending_left = pending_left
                 .checked_sub(pending.len())
                 .ok_or(ResolveError::TooManyAuthorizations(self.max_pending))?;
@@ -290,6 +312,9 @@ pub enum ResolveError {
     // TODO: better naming
     #[error("invalid")]
     InvalidOutput,
+
+    #[error("max depth exceeded, maximum is set to: {0}")]
+    MaxDepthExceeded(usize),
 
     #[error(transparent)]
     Near(#[from] near_kit::Error),
