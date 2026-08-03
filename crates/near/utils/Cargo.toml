@@ -13,16 +13,13 @@ near-sdk = { workspace = true, optional = true }
 
 borsh = { workspace = true, features = ["derive"], optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
-schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-abi = ["borsh-schema", "schemars-v0_8"]
+abi = ["borsh-schema"]
 borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
 borsh-schema = ["borsh", "borsh/unstable__schema"]
-near-contract = ["borsh", "dep:near-sdk"]
-schemars-v0_8 = ["dep:schemars", "serde"]
-serde = ["dep:serde"]
+near-contract = ["borsh", "dep:serde", "dep:near-sdk",]
 
 [dev-dependencies]
 defuse-test-utils.workspace = true

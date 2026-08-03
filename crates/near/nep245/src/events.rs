@@ -3,8 +3,10 @@ use super::TokenId;
 use defuse_serde_utils::cow::AsCow;
 use derive_more::derive::From;
 use near_account_id::AccountIdRef;
-use serde_with::{DisplayFromStr, serde_as};
 use std::borrow::Cow;
+
+#[cfg(feature = "serde")]
+use serde_with::{As, DisplayFromStr};
 
 #[cfg_attr(
     feature = "serde",
@@ -31,7 +33,6 @@ pub enum MtEvent<'a> {
     MtTransfer(Cow<'a, [MtTransferEvent<'a>]>),
 }
 
-#[serde_as]
 #[must_use = "make sure to `.emit()` this event"]
 #[cfg_attr(
     feature = "serde",
@@ -42,7 +43,8 @@ pub enum MtEvent<'a> {
 pub struct MtMintEvent<'a> {
     pub owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
-    #[serde_as(as = "AsCow<DisplayFromStr>")]
+    #[cfg_attr(feature = "serde", serde(with = "As::<AsCow<DisplayFromStr>>"))]
+    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "Vec<String>"))]
     pub amounts: Cow<'a, [u128]>,
     #[cfg_attr(
         feature = "serde",
@@ -51,7 +53,6 @@ pub struct MtMintEvent<'a> {
     pub memo: Option<Cow<'a, str>>,
 }
 
-#[serde_as]
 #[must_use = "make sure to `.emit()` this event"]
 #[cfg_attr(
     feature = "serde",
@@ -67,7 +68,8 @@ pub struct MtBurnEvent<'a> {
     )]
     pub authorized_id: Option<Cow<'a, AccountIdRef>>,
     pub token_ids: Cow<'a, [TokenId]>,
-    #[cfg_attr(feature = "serde", serde_as(as = "AsCow<DisplayFromStr>"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<AsCow<DisplayFromStr>>"))]
+    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "Vec<String>"))]
     pub amounts: Cow<'a, [u128]>,
     #[cfg_attr(
         feature = "serde",
@@ -76,7 +78,6 @@ pub struct MtBurnEvent<'a> {
     pub memo: Option<Cow<'a, str>>,
 }
 
-#[serde_as]
 #[must_use = "make sure to `.emit()` this event"]
 #[cfg_attr(
     feature = "serde",
@@ -93,7 +94,8 @@ pub struct MtTransferEvent<'a> {
     pub old_owner_id: Cow<'a, AccountIdRef>,
     pub new_owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
-    #[cfg_attr(feature = "serde", serde_as(as = "AsCow<DisplayFromStr>"))]
+    #[cfg_attr(feature = "serde", serde(with = "As::<AsCow<DisplayFromStr>>"))]
+    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "Vec<String>"))]
     pub amounts: Cow<'a, [u128]>,
     #[cfg_attr(
         feature = "serde",
