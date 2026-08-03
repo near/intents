@@ -15,7 +15,6 @@ defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-erc191.workspace = true
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
 defuse-map-utils.workspace = true
-defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-nep413 = { workspace = true, features = ["serde"] }
 defuse-num-utils.workspace = true
@@ -74,11 +73,7 @@ borsh-schema = [
 ]
 imt = []
 near-kit = ["defuse-nep413/near-kit", "dep:near-kit"]
-near-contract = [
-  "defuse-near-utils/near-contract",
-  "defuse-nep245/near-contract",
-  "dep:near-sdk",
-]
+near-contract = ["defuse-nep245/near-contract", "dep:near-sdk"]
 schemars-v0_8 = [
   "base64",
   "defuse-crypto/schemars-v0_8",
