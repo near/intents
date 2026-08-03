@@ -2,7 +2,7 @@ use futures::stream::{FuturesUnordered, TryStreamExt};
 use near_account_id::AccountId;
 use near_kit::{BlockReference, CryptoHash, Finality, Near};
 #[cfg(feature = "tracing")]
-use tracing::{Span, field, instrument, record_all};
+use tracing::{Span, instrument, record_all};
 
 use crate::{AuthorizationResolution, PendingAuthorization, client::WResolveAuthArgs};
 
@@ -10,7 +10,7 @@ use crate::{AuthorizationResolution, PendingAuthorization, client::WResolveAuthA
 #[derive(Debug, Clone)]
 pub struct OffchainResolver {
     client: Near,
-    at_block_hash: Option<CryptoHash>,
+    at_block: BlockReference,
     max_pending: usize,
     max_depth: usize,
     // TODO
@@ -28,13 +28,28 @@ impl OffchainResolver {
         // TODO: check client.rpc().status().await?.chain_id
         Self {
             client,
-            // fetch final block hash by default
-            at_block_hash: None,
+            // fetch final block by default
+            at_block: BlockReference::Finality(Finality::Final),
             // unbounded by default
             // TODO: set reasonable default
             max_pending: 0,
             max_depth: 0,
         }
+    }
+
+    /// Override block hash for [resolving](crate::AuthResolver::w_resolve_auth)
+    /// **all** autorizations.
+    ///
+    /// **All** authorizations are resolved against the same block hash to enforce
+    /// consistent state between async RPC view-calls. By default,
+    /// [`.resolve_auth()`](Self::resolve_auth) fetches the `Final` block
+    /// hash first and then resolves all authorizations against it. This setting overrides
+    /// it and allows to resolve authorizations against the chain state from the past.
+    #[must_use]
+    #[inline]
+    pub fn at_block(mut self, block: impl Into<BlockReference>) -> Self {
+        self.at_block = block.into();
+        self
     }
 
     // TODO: uncomment when RPC adds "pre-init" support for view-calls
@@ -77,21 +92,6 @@ impl OffchainResolver {
         self
     }
 
-    /// Override block hash for [resolving](crate::AuthResolver::w_resolve_auth)
-    /// **all** autorizations.
-    ///
-    /// **All** authorizations are resolved against the same block hash to enforce
-    /// consistent state between async RPC view-calls. By default,
-    /// [`.resolve_auth()`](Self::resolve_auth) fetches the `Final` block
-    /// hash first and then resolves all authorizations against it. This setting overrides
-    /// it and allows to resolve authorizations against the chain state from the past.
-    #[must_use]
-    #[inline]
-    pub fn at_block_hash(mut self, fixed_block_hash: impl Into<CryptoHash>) -> Self {
-        self.at_block_hash = Some(fixed_block_hash.into());
-        self
-    }
-
     /// Resolve top-level authorization according to NEP-641.
     ///
     /// This method recursively calls [`w_resolve_auth()`](crate::AuthResolver::w_resolve_auth)
@@ -126,11 +126,11 @@ impl OffchainResolver {
     /// standard.
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
         account_id,
-        at_block.hash = self.at_block_hash.map(field::display),
+        at_block.hash,
     )))]
     pub async fn resolve_auth(
         &self,
-        account_id: impl Into<AccountId>, // TODO: is it not Send?
+        account_id: impl Into<AccountId>,
         authorization: String,
     ) -> Result<String, ResolveError> {
         let account_id = account_id.into();
@@ -154,18 +154,13 @@ impl OffchainResolver {
                 // path is empty for top-level authorization
                 vec![],
                 authorization,
-                // if set, resolve top-level authorization at fixed block hash,
-                // or final otherwise
-                self.at_block_hash
-                    .map_or(BlockReference::Finality(Finality::Final), Into::into),
+                self.at_block.clone(),
             )
             .await?;
 
         #[cfg(feature = "tracing")]
-        if self.at_block_hash.is_none() {
-            // update `at_block.hash` with resolved block hash
-            record_all!(span, at_block.hash = %block_hash);
-        }
+        // update `at_block.hash` with resolved block hash
+        record_all!(span, at_block.hash = %block_hash);
 
         let mut pending_left = self.max_pending;
         let mut in_flight = FuturesUnordered::new();
@@ -212,20 +207,20 @@ impl OffchainResolver {
 
     #[cfg_attr(
         feature = "tracing",
-        // instrument(skip_all, follows_from = [&parent_span]) // TODO
-        instrument(parent = &parent_span, skip_all, fields(
+        instrument(parent = parent_span, skip_all, fields(
             account_id = %pending.account_id,
+            at_block.hash = %block_hash,
         ))
     )]
     async fn resolve_pending(
         &self,
         path: Vec<AccountId>,
         pending: PendingAuthorization,
-        block: impl Into<BlockReference>,
-        #[cfg(feature = "tracing")] parent_span: Span, // TODO: no arg
+        block_hash: CryptoHash,
+        #[cfg(feature = "tracing")] parent_span: Span,
     ) -> Result<PendingResolved, ResolveError> {
         let SingleResolved { path, res, .. } = self
-            .resolve_single(pending.account_id, path, pending.authorization, block)
+            .resolve_single(pending.account_id, path, pending.authorization, block_hash)
             .await?;
 
         if res.payload != pending.expect {
@@ -240,11 +235,6 @@ impl OffchainResolver {
         })
     }
 
-    // #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
-    //     %account_id,
-    //     // TODO
-    //     // at_block.hash = at_block_hash.map(field::display),
-    // )))]
     async fn resolve_single(
         &self,
         account_id: AccountId,
