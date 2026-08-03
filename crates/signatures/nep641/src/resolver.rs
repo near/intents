@@ -122,9 +122,10 @@ impl OffchainResolver {
     // TODO: # Not yet initialized accounts
     /// # Legacy accounts
     ///
-    /// If a contract doesn't implement NEP-641 standard, the implementation fallbacks to verifying
-    /// offchain signature according to [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)
-    /// standard.
+    // TODO
+    /// If an account doesn't have a contract deployed on it or the contract doesn't implement
+    /// NEP-641 standard, the implementation fallbacks to verifying offchain signature according
+    /// to [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md) standard.
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
         account_id,
         at_block.hash,
@@ -141,19 +142,19 @@ impl OffchainResolver {
         #[cfg(feature = "tracing")]
         record_all!(span, account_id = %account_id);
 
+        // resolve top-level authorization first
         let SingleResolved {
-            mut path,
+            mut path, // returned path already contains top-level account ID
             res:
                 AuthorizationResolution {
-                    payload,
+                    payload, // top-level authorized payload
                     mut pending,
                 },
-            block_hash,
+            block_hash, // resolved block hash
         } = self
             .resolve_single(
                 account_id,
-                // path is empty for top-level authorization
-                vec![],
+                vec![], // path is empty for top-level authorization
                 authorization,
                 self.at_block.clone(),
             )
@@ -163,42 +164,42 @@ impl OffchainResolver {
         // update `at_block.hash` with resolved block hash
         record_all!(span, at_block.hash = %block_hash);
 
+        // keep track of number of pending sub-authorizations we're resolving
         let mut pending_left = self.max_pending;
+        // a pool of futures to resolve all pending sub-authorizations concurrently
         let mut in_flight = FuturesUnordered::new();
 
         loop {
+            // check if new path exceeds max depth limit for pending sub-authorizations, if any
             if !pending.is_empty() && path.len() > self.max_depth {
                 return Err(ResolveError::MaxDepthExceeded(self.max_depth));
             }
 
+            // check if adding new pending sub-authorizations wouldn't exceed max pending limit
             pending_left = pending_left
                 .checked_sub(pending.len())
                 .ok_or(ResolveError::TooManyAuthorizations(self.max_pending))?;
 
-            in_flight.extend(
-                pending
-                    .into_iter()
-                    // TODO: inspect tracing
-                    .map(|pending| {
-                        self.resolve_pending(
-                            // propagate receiver to sub-authorization
-                            path.clone(),
-                            pending,
-                            // resolve pending authorizations at the same block hash
-                            block_hash,
-                            #[cfg(feature = "tracing")]
-                            span.clone(),
-                        )
-                    }),
-            );
+            // add pending sub-authorizations to the in-flight pool
+            in_flight.extend(pending.into_iter().map(|pending| {
+                self.resolve_pending(
+                    path.clone(), // path already contains parent resolver ID
+                    pending,
+                    block_hash, // resolve pending authorizations at the same block hash
+                    #[cfg(feature = "tracing")]
+                    span.clone(),
+                )
+            }));
 
+            // wait until the next resolved sub-authorization, if any
             let Some(resolved) = in_flight.try_next().await? else {
                 // no more authorizations left, return the top-level output
                 return Ok(payload);
             };
 
+            // overwrite `path` and `pending` from the resolved sub-authorization
             PendingResolved {
-                path,
+                path, // path already contains parent resolver ID
                 pending,
                 #[cfg(feature = "tracing")]
                 span,
@@ -206,13 +207,10 @@ impl OffchainResolver {
         }
     }
 
-    #[cfg_attr(
-        feature = "tracing",
-        instrument(parent = parent_span, skip_all, fields(
-            account_id = %pending.account_id,
-            at_block.hash = %block_hash,
-        ))
-    )]
+    #[cfg_attr(feature = "tracing", instrument(parent = parent_span, skip_all, fields(
+        account_id = %pending.account_id,
+        at_block.hash = %block_hash,
+    )))]
     async fn resolve_pending(
         &self,
         path: Vec<AccountId>,
