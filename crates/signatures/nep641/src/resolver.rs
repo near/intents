@@ -127,8 +127,10 @@ impl OffchainResolver {
     /// NEP-641 standard, the implementation fallbacks to verifying offchain signature according
     /// to [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md) standard.
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
+        chain.id = self.client.chain_id().as_str(),
         account_id,
         at_block.hash,
+        at_block.height,
     )))]
     pub async fn resolve_auth(
         &self,
@@ -150,7 +152,8 @@ impl OffchainResolver {
                     payload, // top-level authorized payload
                     mut pending,
                 },
-            block_hash, // resolved block hash
+            block_hash,   // resolved block hash
+            block_height, // resolved block height
         } = self
             .resolve_single(
                 account_id,
@@ -162,7 +165,7 @@ impl OffchainResolver {
 
         #[cfg(feature = "tracing")]
         // update `at_block.hash` with resolved block hash
-        record_all!(span, at_block.hash = %block_hash);
+        record_all!(span, at_block.hash = %block_hash, at_block.height = block_height);
 
         // keep track of number of pending sub-authorizations we're resolving
         let mut pending_left = self.max_pending;
@@ -207,10 +210,17 @@ impl OffchainResolver {
         }
     }
 
-    #[cfg_attr(feature = "tracing", instrument(parent = parent_span, skip_all, fields(
-        account_id = %pending.account_id,
-        at_block.hash = %block_hash,
-    )))]
+    /// Resolve pending sub-authorization and check that returned payload matches the expected one.
+    #[cfg_attr(feature = "tracing", instrument(
+        level = "DEBUG",
+        parent = parent_span,
+        skip_all,
+        fields(
+            chain.id = self.client.chain_id().as_str(),
+            account_id = %pending.account_id,
+            at_block.hash = %block_hash,
+        ),
+    ))]
     async fn resolve_pending(
         &self,
         path: Vec<AccountId>,
@@ -222,9 +232,13 @@ impl OffchainResolver {
             .resolve_single(pending.account_id, path, pending.authorization, block_hash)
             .await?;
 
+        // check that returned payload matches the expected one
         if res.payload != pending.expect {
             return Err(ResolveError::InvalidPayload(path));
         }
+
+        #[cfg(feature = "tracing")]
+        tracing::debug!(payload = res.payload, "resolved");
 
         Ok(PendingResolved {
             path,
@@ -234,6 +248,7 @@ impl OffchainResolver {
         })
     }
 
+    /// Resolve a single authorization
     async fn resolve_single(
         &self,
         account_id: AccountId,
@@ -282,20 +297,19 @@ impl OffchainResolver {
         // TODO: fallback to NEP-413 (for all cases above?)
         // TODO: fallback to intents.near(far?) as resolver_id?
 
-        // append the account ID to path for pending sub-authorizations
+        // append the account ID to path for pending sub-authorizations, if any
         path.push(account_id);
-
-        #[cfg(feature = "tracing")]
-        tracing::debug!("resolved!"); // TODO: remove
 
         Ok(SingleResolved {
             path,
             res: res.json()?,
             block_hash: res.block_hash,
+            block_height: res.block_height,
         })
     }
 }
 
+/// Resolved pending sub-authorization
 struct PendingResolved {
     /// Path for pending sub-authorizations, if any.
     path: Vec<AccountId>,
@@ -308,7 +322,7 @@ struct PendingResolved {
     span: Span,
 }
 
-// TODO: rename?
+/// A single resolved authorization
 struct SingleResolved {
     /// Path for pending sub-authorizations, if any.
     path: Vec<AccountId>,
@@ -318,6 +332,9 @@ struct SingleResolved {
 
     /// Resolved block hash
     block_hash: CryptoHash,
+
+    /// Resolved block height
+    block_height: u64,
 }
 
 /// An error returned by [`OffchainResolver`]
