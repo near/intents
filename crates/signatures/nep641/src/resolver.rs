@@ -313,17 +313,29 @@ impl OffchainResolver {
 }
 
 struct PendingResolved {
+    /// Path for pending sub-authorizations, if any.
     path: Vec<AccountId>,
+
+    /// Optional list of pending sub-authorizations
     pending: Vec<PendingAuthorization>,
+
+    /// Span where this authorization was resolved
     #[cfg(feature = "tracing")]
     span: Span,
 }
 
 // TODO: rename?
 struct SingleResolved {
+    /// Path for pending sub-authorizations, if any.
     path: Vec<AccountId>,
+
+    /// Authorization resolution
     res: AuthorizationResolution,
+
+    /// Resolved block hash
     block_hash: CryptoHash,
+
+    /// Span where this authorization was resolved
     #[cfg(feature = "tracing")]
     span: Span,
 }
