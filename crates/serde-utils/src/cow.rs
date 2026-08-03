@@ -1,8 +1,11 @@
 use std::{borrow::Cow, marker::PhantomData};
 
-use serde::{Deserializer, Serializer, ser::SerializeSeq};
+use serde::{Deserializer, Serializer};
 use serde_with::{DeserializeAs, SerializeAs, ser::SerializeAsWrap};
 
+/// A `serde_with` "as" marker for `Cow<'a, [T]>`.
+/// `serde_with` has a blanket `SerializeAs` for any `[T]`,
+/// but no `DeserializeAs` for `Cow<[T]>`
 pub struct AsCow<As: ?Sized>(PhantomData<As>);
 
 impl<T, As> SerializeAs<Cow<'_, [T]>> for AsCow<As>
@@ -14,13 +17,7 @@ where
     where
         S: Serializer,
     {
-        let mut seq = serializer.serialize_seq(Some(source.len()))?;
-
-        for item in source.iter() {
-            seq.serialize_element(&SerializeAsWrap::<T, As>::new(item))?;
-        }
-
-        seq.end()
+        serializer.collect_seq(source.iter().map(SerializeAsWrap::<T, As>::new))
     }
 }
 
