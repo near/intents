@@ -16,9 +16,12 @@ use defuse_sandbox::{
             nep245::{MtEvent, MtTransferEvent},
         },
         mt::MtOnTransferArgs,
-        mt::{Mt, MtBalanceOfArgs, MtExt},
+        mt::{Mt, MtBalanceOfArgs, MtBatchTransferCallArgs, MtExt},
     },
-    kit::{AccountId, Near, NearToken},
+    kit::{
+        AccountId, ActionError, ActionErrorKind, ExecutionStatus, Final, FunctionCallError, Gas,
+        Near, NearToken,
+    },
 };
 use defuse_test_utils::{
     random::{gen_random_string, random_bytes, rng},
@@ -406,6 +409,134 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
         .unwrap();
 
     assert_eq!(balance_after, balance_before,);
+}
+
+const REPRO_TOKEN_COUNT: usize = 66;
+const REPRO_FIRST_TOKEN_ID_LEN: usize = MAX_TOKEN_ID_LEN - 8;
+const REPRO_TOKEN_ID_PREFIX_LEN: usize = 2;
+
+/// `mt_resolve_transfer()` refunds by re-emitting the transfer with `memo: "refund"`, which
+/// makes the refund log exactly `,"memo":"refund"` (16 bytes) longer than the forward one.
+/// `check_refund()` must therefore reject any no-memo transfer longer than
+/// `TOTAL_LOG_LENGTH_LIMIT - 16`.
+///
+/// This pins the boundary: the shortest forward log whose refund overflows. Accepting it
+/// commits the transfer in the first receipt and then aborts `mt_resolve_transfer()` on
+/// `env::log_str()`, leaving the tokens on the receiver with no way to recover them
+/// (`mt_resolve_transfer` is `#[private]` and fires once).
+///
+/// Every account here is implicit, i.e. exactly [`AccountId::MAX_LEN`] bytes, so the log
+/// sizes are fixed rather than depending on the process-global counter that
+/// `defuse_sandbox::root` bakes into the test root's name.
+#[rstest]
+#[tokio::test]
+async fn mt_batch_transfer_call_refunds_at_exact_log_limit_boundary(#[future(awt)] env: Env) {
+    env.transaction(env.defuse.contract_id())
+        .transfer(NearToken::from_near(1000))
+        .await
+        .unwrap();
+
+    let author_account = env.create_implicit(NearToken::from_near(1000)).await;
+    let user = env.create_implicit(NearToken::from_near(1000)).await;
+    let receiver_stub = env.create_implicit(NearToken::from_near(100)).await;
+    receiver_stub
+        .deploy(MT_RECEIVER_STUB_WASM.to_vec())
+        .wait_until::<Final>()
+        .await
+        .unwrap()
+        .result()
+        .unwrap();
+
+    let token_ids: Vec<String> = std::iter::once(REPRO_FIRST_TOKEN_ID_LEN)
+        .chain(std::iter::repeat_n(MAX_TOKEN_ID_LEN, REPRO_TOKEN_COUNT - 1))
+        .enumerate()
+        .map(|(i, len)| {
+            // Index-prefixed to keep them unique; all indices fit the fixed-width prefix.
+            format!("{i:02}{}", "a".repeat(len - REPRO_TOKEN_ID_PREFIX_LEN))
+        })
+        .collect();
+    let amounts = vec![u128::MAX; REPRO_TOKEN_COUNT];
+    let defuse_token_ids: Vec<String> = token_ids
+        .iter()
+        .map(|token_id| {
+            TokenId::Nep245(Nep245TokenId::new(
+                author_account.account_id().clone(),
+                token_id.clone(),
+            ))
+            .to_string()
+        })
+        .collect();
+
+    author_account
+        .mt_on_transfer(
+            env.defuse.contract_id(),
+            MtOnTransferArgs {
+                sender_id: user.account_id(),
+                previous_owner_ids: &vec![author_account.account_id().clone(); token_ids.len()],
+                token_ids: &token_ids,
+                amounts: &amounts,
+                msg: "",
+            },
+        )
+        .await
+        .unwrap();
+
+    let balance_of = async |account_id| {
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id,
+                token_id: &defuse_token_ids[0],
+            })
+            .await
+            .unwrap()
+    };
+    let balance_before = balance_of(user.account_id()).await;
+
+    // NOTE: called as a raw transaction rather than through `MtExt::mt_batch_transfer_call`,
+    // since that helper drops the outcome when any receipt in the chain fails.
+    let execution_result = user
+        .transaction(env.defuse.contract_id())
+        .add_action(
+            Mt::mt_batch_transfer_call(MtBatchTransferCallArgs {
+                receiver_id: receiver_stub.account_id(),
+                token_ids: &defuse_token_ids,
+                amounts: &amounts,
+                approvals: None,
+                memo: None,
+                msg: &serde_json::to_string(&MTReceiverMode::RefundAll).unwrap(),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(300)),
+        )
+        .wait_until::<Final>()
+        .await
+        .unwrap();
+
+    // 1st receipt on defuse is `mt_batch_transfer_call` itself; 2nd is the `mt_resolve_transfer` callback.
+    let defuse_outcomes: Vec<_> = execution_result
+        .receipts_outcome
+        .iter()
+        .filter(|o| o.outcome.executor_id == *env.defuse.contract_id())
+        .collect();
+    assert_eq!(defuse_outcomes.len(), 2);
+    assert!(
+        matches!(
+            &defuse_outcomes[1].outcome.status,
+            ExecutionStatus::Failure(ActionError {
+                kind: ActionErrorKind::FunctionCallError(FunctionCallError::ExecutionError(msg)),
+                ..
+            }) if msg.contains("length of a log message") && msg.contains("exceeds the limit")
+        ),
+        "expected mt_resolve_transfer to fail specifically due to the refund log exceeding \
+        the total log length limit, got: {:?}",
+        defuse_outcomes[1].outcome.status
+    );
+
+    assert_eq!(
+        balance_of(user.account_id()).await,
+        balance_before,
+        "sender was not made whole"
+    );
 }
 
 /// Calculate log sizes for transfer (no memo) and refund (with "refund" memo).
