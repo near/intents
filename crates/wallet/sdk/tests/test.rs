@@ -131,7 +131,7 @@ async fn w_resolve_auth(
 
     let output = OffchainVerifier::new(near)
         // unbounded for tests
-        .with_max_pending(usize::MAX)
+        .with_max_depth(usize::MAX)
         .resolve_auth(wallet.account_id(), input)
         .await
         .expect("invalid authorization");

@@ -47,6 +47,9 @@ impl OffchainVerifier {
 
     /// Set an upper limit for maxumim number of pending sub-authorizations to resolve.
     ///
+    /// Note that this doesn't change the [maximum depth](Self::with_max_depth) and
+    /// it should be configured separately.
+    ///
     /// By default, only top-level authorizations are allowed and this
     /// value is set to zero to prevent from DoS attacks.
     #[must_use]
