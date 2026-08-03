@@ -501,7 +501,7 @@ version = "3.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6dee98b0db6a962de883bf5d20362dee4d7ca0d12fe39a7c6c73c844e1cd7c1f"
 dependencies = [
- "darling 0.23.0",
+ "darling 0.20.11",
  "ident_case",
  "prettyplease",
  "proc-macro2",
@@ -1424,7 +1424,6 @@ dependencies = [
  "defuse-erc191",
  "defuse-fees",
  "defuse-map-utils",
- "defuse-near-utils",
  "defuse-nep245",
  "defuse-nep413",
  "defuse-num-utils",
@@ -1722,12 +1721,10 @@ name = "defuse-near-utils"
 version = "0.1.0"
 dependencies = [
  "borsh",
- "defuse-borsh-utils",
  "defuse-test-utils",
  "impl-tools 0.12.0",
  "near-sdk",
  "rstest",
- "schemars 0.8.22",
  "serde",
 ]
 
