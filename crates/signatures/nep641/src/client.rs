@@ -14,5 +14,5 @@ pub trait AuthResolverContract {
 #[derive(Serialize)]
 pub struct WResolveAuthArgs<'a> {
     pub path: &'a [AccountId],
-    pub input: &'a str,
+    pub authorization: &'a str,
 }

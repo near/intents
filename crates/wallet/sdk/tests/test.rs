@@ -133,7 +133,6 @@ async fn w_resolve_auth(
     println!("input:\n{input}");
 
     let output = OffchainResolver::new(near)
-        // unbounded for tests
         .with_max_depth(usize::MAX)
         .resolve_auth(wallet.account_id(), input)
         .await

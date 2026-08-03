@@ -13,10 +13,6 @@ pub struct OffchainResolver {
     at_block: BlockReference,
     max_pending: usize,
     max_depth: usize,
-    // TODO
-    // max_depth: usize,
-    // // TODO
-    // bound_in_flight: usize,
     // state_inits: HashMap<AccountId, StateInit>,
 }
 
@@ -25,26 +21,24 @@ impl OffchainResolver {
     #[must_use]
     #[inline]
     pub const fn new(client: Near) -> Self {
-        // TODO: check client.rpc().status().await?.chain_id
         Self {
             client,
             // fetch final block by default
             at_block: BlockReference::Finality(Finality::Final),
-            // unbounded by default
-            // TODO: set reasonable default
+            // allow only top-level authorizations by default
             max_pending: 0,
             max_depth: 0,
         }
     }
 
-    /// Override block hash for [resolving](crate::AuthResolver::w_resolve_auth)
+    /// Override block reference for [resolving](crate::AuthResolver::w_resolve_auth)
     /// **all** autorizations.
     ///
-    /// **All** authorizations are resolved against the same block hash to enforce
-    /// consistent state between async RPC view-calls. By default,
-    /// [`.resolve_auth()`](Self::resolve_auth) fetches the `Final` block
-    /// hash first and then resolves all authorizations against it. This setting overrides
-    /// it and allows to resolve authorizations against the chain state from the past.
+    /// **All** authorizations are resolved against the same block hash to enforce consistent
+    /// state between async RPC view-calls. By default, [`.resolve_auth()`](Self::resolve_auth)
+    /// fetches the `Final` block hash first and then resolves all authorizations against it.
+    /// This setting overrides it and allows to resolve authorizations against the chain state
+    /// from the past.
     #[must_use]
     #[inline]
     pub fn at_block(mut self, block: impl Into<BlockReference>) -> Self {
@@ -60,13 +54,14 @@ impl OffchainResolver {
     //     self
     // }
 
-    /// Set an upper limit for maxumim number of pending sub-authorizations to resolve.
+    /// Set an upper limit for maximum number of pending sub-authorizations to resolve.
     ///
-    /// Note that this doesn't change the [maximum depth](Self::with_max_depth) and
-    /// it should be configured separately.
+    /// By default, this value is set to zero, so that only top-level authorizations are allowed
+    /// and any sub-authorizations will fail. This is too concervative for real world use-cases,
+    /// but used as a sane default to prevent from DoS attacks.
     ///
-    /// By default, only top-level authorizations are allowed and this
-    /// value is set to zero to prevent from DoS attacks.
+    /// Note that this doesn't change the [maximum depth](Self::with_max_depth) and it should be
+    /// configured separately.
     #[must_use]
     #[inline]
     pub const fn with_max_pending(mut self, max_pending: usize) -> Self {
@@ -76,11 +71,15 @@ impl OffchainResolver {
 
     /// Set an upper limit for maximum depth of sub-authorization branches.
     ///
-    /// This also raises the [maximum pending](Self::with_max_pending) limit
-    /// to at least `max_depth`.
+    /// By default, this value is set to zero, so that only top-level authorizations are allowed
+    /// and any sub-authorizations will fail. This is too concervative for real world use-cases,
+    /// but used as a sane default to prevent from DoS attacks.
     ///
-    /// By default, only top-level authorizations are allowed and this
-    /// value is set to zero to prevent from DoS attacks.
+    /// Despite the implementation itself is optimized and _does not_ create a new stack frame for
+    /// each sub-authorization, it's still recommended to limit the maximum depth, as each pending
+    /// sub-authorization implies additional allocations and may lead to long resolution timings.
+    ///
+    /// This also raises the [maximum pending](Self::with_max_pending) limit to at least `max_depth`.
     #[must_use]
     #[inline]
     pub const fn with_max_depth(mut self, max_depth: usize) -> Self {
@@ -92,31 +91,33 @@ impl OffchainResolver {
         self
     }
 
-    /// Resolve top-level authorization according to NEP-641.
+    /// Resolve a payload from top-level authorization according to NEP-641.
     ///
-    /// This method recursively calls [`w_resolve_auth()`](crate::AuthResolver::w_resolve_auth)
-    /// view-method on given account and all returned sub-accounts until no more pending
-    /// autorizations are left.
-    ///
-    /// # Result
-    ///
-    /// TODO: return
-    /// If all view-calls return successfully, then `Ok(())` is returned and the top-level
-    /// authorization is considered valid.
-    ///
-    /// If at least one view-call doesn't return successfully, then the top-level autorization
-    /// is considered invalid: all pending view-calls are immediatelly aborted and an error is
-    /// returned.
+    /// This method recursively resolves given top-level authorization and all returned pending
+    /// ones until no more authorizations are left, and returns a top-level authorized
+    /// [payload](field@AuthorizationResolution::payload). If at least one authorization resolution
+    /// fails or any [pending authorization](PendingAuthorization) resolves into a payload that
+    /// doesn't match the [expected](field@PendingAuthorization::expect) one, then the whole
+    /// resolution procedure is immediately aborted and an error is returned.
     ///
     /// # Block reference
     ///
     /// **All** authorizations are resolved against the same block hash to enforce consistent
     /// state between async RPC view-calls. By default, this method will fetch the `Final`
-    /// block hash along with top-level [`w_resolve_auth()`](crate::contract::OffchainAuthorizer::w_resolve_auth)
-    /// and resolve all pending authorizations against it.
+    /// block hash during top-level authorization resolution and resolve all pending ones
+    /// against it.
     ///
-    /// See [`.at_block_hash()`](Self::at_block_hash) to resolve authorizations against
-    /// the chain state from the past.
+    /// See [`.at_block()`](Self::at_block) to resolve authorizations against the chain state
+    /// from the past.
+    ///
+    /// # Resource limits
+    ///
+    /// By default, only top-level authorizations are allowed and any sub-authorizations will fail.
+    /// This is too concervative for real world use-cases, but used as a sane default to prevent
+    /// from DoS attacks.
+    ///
+    /// See [`.with_max_pending()`](Self::with_max_pending) and
+    /// [`.with_max_depth()`](Self::with_max_pending) to set your custom limits.
     ///
     // TODO: # Not yet initialized accounts
     /// # Legacy accounts
@@ -250,7 +251,7 @@ impl OffchainResolver {
                 "w_resolve_auth",
                 &serde_json::to_vec(&WResolveAuthArgs {
                     path: &path,
-                    input: &authorization,
+                    authorization: &authorization,
                 })
                 .expect("JSON: serialization failed"),
                 block.into(),

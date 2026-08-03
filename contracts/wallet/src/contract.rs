@@ -347,8 +347,12 @@ where
     S: SignatureSchema,
 {
     #[inline]
-    fn w_resolve_auth(&self, path: Vec<AccountId>, input: String) -> AuthorizationResolution {
-        self.resolve_auth(path, input)
+    fn w_resolve_auth(
+        &self,
+        path: Vec<AccountId>,
+        authorization: String,
+    ) -> AuthorizationResolution {
+        self.resolve_auth(path, authorization)
             .unwrap_or_else(|err| err.panic())
     }
 }
@@ -357,15 +361,21 @@ impl<S> WalletImpl<S>
 where
     S: SignatureSchema,
 {
-    fn resolve_auth(&self, path: Vec<AccountId>, input: String) -> Result<AuthorizationResolution> {
+    fn resolve_auth(
+        &self,
+        path: Vec<AccountId>,
+        authorization: String,
+    ) -> Result<AuthorizationResolution> {
         // TODO: check if receiver_id is self?
-        let input: WalletOffchainInput = serde_json::from_str(&input)?;
+        let input: WalletOffchainInput = serde_json::from_str(&authorization)?;
 
         Ok(match input {
             WalletOffchainInput::AsSelf { msg, proof } => {
                 if !self.0.is_signature_allowed() {
                     return Err(Error::SignatureDisabled);
                 }
+
+                // TODO: order of checks
 
                 // check path
                 if msg.path != path {
@@ -561,9 +571,9 @@ macro_rules! wallet {
             fn w_resolve_auth(
                 &self,
                 path: ::std::vec::Vec<$crate::AccountId>,
-                input: ::std::string::String,
+                authorization: ::std::string::String,
             ) -> $crate::offchain::AuthorizationResolution {
-                self.0.w_resolve_auth(path, input)
+                self.0.w_resolve_auth(path, authorization)
             }
         }
     };

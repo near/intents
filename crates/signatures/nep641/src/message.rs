@@ -185,7 +185,7 @@ impl OffchainMessage {
     }
 }
 
-// TODO
+// TODO: deny_unknown_fields
 pub struct Message {
     pub domain: String,
     pub action: String,
