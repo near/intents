@@ -7,6 +7,8 @@ use std::borrow::Cow;
 
 #[cfg(feature = "serde")]
 use serde_with::{As, DisplayFromStr};
+#[cfg(feature = "schemars-v0_8")]
+use serde_with::Schema;
 
 #[cfg_attr(
     feature = "serde",
@@ -44,7 +46,10 @@ pub struct MtMintEvent<'a> {
     pub owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
     #[cfg_attr(feature = "serde", serde(with = "As::<AsCow<DisplayFromStr>>"))]
-    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "Vec<String>"))]
+    #[cfg_attr(
+        feature = "schemars-v0_8",
+        schemars(with = "Schema<Cow<'a, [u128]>, AsCow<DisplayFromStr>>")
+    )]
     pub amounts: Cow<'a, [u128]>,
     #[cfg_attr(
         feature = "serde",
@@ -69,7 +74,10 @@ pub struct MtBurnEvent<'a> {
     pub authorized_id: Option<Cow<'a, AccountIdRef>>,
     pub token_ids: Cow<'a, [TokenId]>,
     #[cfg_attr(feature = "serde", serde(with = "As::<AsCow<DisplayFromStr>>"))]
-    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "Vec<String>"))]
+    #[cfg_attr(
+        feature = "schemars-v0_8",
+        schemars(with = "Schema<Cow<'a, [u128]>, AsCow<DisplayFromStr>>")
+    )]
     pub amounts: Cow<'a, [u128]>,
     #[cfg_attr(
         feature = "serde",
@@ -95,7 +103,10 @@ pub struct MtTransferEvent<'a> {
     pub new_owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
     #[cfg_attr(feature = "serde", serde(with = "As::<AsCow<DisplayFromStr>>"))]
-    #[cfg_attr(feature = "schemars-v0_8", schemars(with = "Vec<String>"))]
+    #[cfg_attr(
+        feature = "schemars-v0_8",
+        schemars(with = "Schema<Cow<'a, [u128]>, AsCow<DisplayFromStr>>")
+    )]
     pub amounts: Cow<'a, [u128]>,
     #[cfg_attr(
         feature = "serde",
