@@ -350,11 +350,11 @@ where
 
         assert!(
             account_id != *self.real_account_id() && !self.as_extension_chain.contains(&account_id),
-            "extension cycle detected",
+            "Extension cycle detected",
         );
 
         self.as_extension_chain.push(account_id);
-        debug_assert_eq!(self.account_id(), self.as_extension_chain.last().unwrap());
+        debug_assert_eq!(self.account_id(), self.as_extension_chain().last().unwrap());
         self
     }
 
@@ -397,7 +397,7 @@ where
     /// [`.real_account_id()`](Self::real_account_id) otherwise.
     #[inline]
     pub const fn account_id(&self) -> &AccountId {
-        if let Some(last_extension_id) = self.as_extension_chain.as_slice().last() {
+        if let Some(last_extension_id) = self.as_extension_chain().last() {
             return last_extension_id;
         }
         self.real_account_id()
@@ -410,6 +410,14 @@ where
     #[inline]
     pub const fn real_account_id(&self) -> &AccountId {
         &self.account_id
+    }
+
+    /// Returns currenly configured [extension chain](Self::as_extension_of).
+    ///
+    /// If not empty, then the _last_ item is the [effective account ID](Self::account_id).
+    #[inline]
+    pub const fn as_extension_chain(&self) -> &[AccountId] {
+        self.as_extension_chain.as_slice()
     }
 
     /// Get initialization state for [real account ID](Self::real_account_id) of this wallet.
@@ -529,10 +537,9 @@ where
             timeout: self.timeout(),
             // Recursively wrap request as `w_execute_extension()` FunctionCall
             // for each extension in the chain (starting from the last one)
-            request: self
-                .as_extension_chain
-                .iter()
-                .rfold(request.into(), |request, extension| {
+            request: self.as_extension_chain().iter().rfold(
+                request.into(),
+                |request, extension| {
                     NearPromise::new(extension)
                         .function_call(
                             FunctionCall::name("w_execute_extension")
@@ -541,7 +548,8 @@ where
                                 .args_json(WExecuteExtensionArgs::from(request)),
                         )
                         .into()
-                }),
+                },
+            ),
         }
     }
 
@@ -575,7 +583,7 @@ where
         use near_kit::{ExecutionStatus, Final};
 
         assert!(
-            self.as_extension_chain.is_empty(),
+            self.as_extension_chain().is_empty(),
             "Cannot initialize a wallet with non-empty extension chain. Use `.as_self()` and initialize the real account ID",
         );
 
@@ -652,7 +660,7 @@ where
         Ok(initialized)
     }
 
-    // TODO: docs
+    // TODO: docs, path order
     pub async fn sign_offchain_msg(
         &self,
         payload: impl Into<String>,
@@ -667,7 +675,7 @@ where
         let msg = OffchainMessage {
             path: {
                 let mut path: Vec<_> = self
-                    .as_extension_chain
+                    .as_extension_chain()
                     .iter()
                     .cloned()
                     .chain(path)
@@ -703,9 +711,9 @@ where
         let payload = msg.payload.clone();
 
         iter::once(self.real_account_id())
-            .chain(&self.as_extension_chain)
+            .chain(self.as_extension_chain())
             // wrap only while there is a next extension in the chain
-            .take(self.as_extension_chain.len())
+            .take(self.as_extension_chain().len())
             .cloned()
             .fold(
                 WalletOffchainInput::AsSelf { msg, proof }.to_input(),

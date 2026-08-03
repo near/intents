@@ -224,7 +224,7 @@ impl OffchainResolver {
             .await?;
 
         if res.payload != pending.expect {
-            return Err(ResolveError::InvalidOutput);
+            return Err(ResolveError::InvalidPayload(path));
         }
 
         Ok(PendingResolved {
@@ -325,9 +325,11 @@ struct SingleResolved {
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ResolveError {
-    // TODO: better naming
-    #[error("invalid")]
-    InvalidOutput,
+    #[error(
+        "invalid payload resolved at path: {}",
+        .0.iter().map(ToString::to_string).collect::<Vec<_>>().join(" -> "),
+    )]
+    InvalidPayload(Vec<AccountId>),
 
     #[error("max depth exceeded, maximum is set to: {0}")]
     MaxDepthExceeded(usize),
