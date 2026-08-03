@@ -13,7 +13,7 @@ pub trait AuthResolver {
     /// A view-method to resolve [offchain](#offchain-only) authorization according to NEP-641.
     ///
     /// The implementation SHOULD resolve given `authorization` blob along with [`path`](#path)
-    /// and return an [`authorized`](field@AuthorizationResolution::authorized) payload along with
+    /// and return an authorized [`payload`](field@AuthorizationResolution::payload) along with
     /// an _optional_ list of [pending sub-authorizations](PendingAuthorization). The authorized
     /// payload will be accepted if and only if **all** pending sub-authorizations resolve
     /// successfully into corresponding [expected](PendingAuthorization::expect) payloads.
@@ -165,15 +165,14 @@ pub trait AuthResolver {
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AuthorizationResolution {
-    /// A payload that was successfully authorized from given authorization blob and the current
-    /// contract state.
+    /// A payload that was successfully authorized from given authorization blob
+    /// at the current contract state.
     // TODO: docs: in case of wallets/DAOs this should be Message
-    // TODO: rename?
-    pub authorized: String,
+    pub payload: String,
 
     /// Optional list of pending sub-authorizations that MUST be successfully
-    /// [resolved](AuthResolver::w_resolve_auth) before accepting this
-    /// [authorized](field@Self::authorized) payload.
+    /// [resolved](AuthResolver::w_resolve_auth) before accepting the authorized
+    /// [payload](field@Self::payload).
     ///
     /// If emtpy, then this authorization is a leaf that terminates the current branch.
     #[cfg_attr(
@@ -184,7 +183,7 @@ pub struct AuthorizationResolution {
 }
 
 impl AuthorizationResolution {
-    /// Create a leaf authorization resolution.
+    /// Create a leaf authorization resolution with given payload.
     ///
     /// See [`.add_pending()`](Self::add_pending) to add pending sub-authorizations.
     ///
@@ -196,9 +195,9 @@ impl AuthorizationResolution {
     /// assert!(auth.is_leaf());
     /// ```
     #[inline]
-    pub fn new(authorized: impl Into<String>) -> Self {
+    pub fn new(payload: impl Into<String>) -> Self {
         Self {
-            authorized: authorized.into(),
+            payload: payload.into(),
             pending: Vec::new(),
         }
     }
@@ -286,8 +285,8 @@ pub struct PendingAuthorization {
     /// method on the [sub-resolver](field@Self::account_id).
     pub authorization: String,
 
-    /// Expected [`authorized`](field@AuthorizationResolution::authorized)
-    /// payload to be successfully [resolved](AuthResolver::w_resolve_auth) by
+    /// Expected authorized [`payload`](field@AuthorizationResolution::payload)
+    /// to be successfully [resolved](AuthResolver::w_resolve_auth) by
     /// [sub-resolver](field@Self::account_id) from this
     /// [sub-authorization](field@Self::authorization).
     ///

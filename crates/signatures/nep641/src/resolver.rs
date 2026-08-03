@@ -144,7 +144,7 @@ impl OffchainResolver {
             mut path,
             res:
                 AuthorizationResolution {
-                    authorized,
+                    payload,
                     mut pending,
                 },
             block_hash,
@@ -198,7 +198,7 @@ impl OffchainResolver {
 
             let Some(resolved) = in_flight.try_next().await? else {
                 // no more authorizations left, return the top-level output
-                return Ok(authorized);
+                return Ok(payload);
             };
 
             PendingResolved {
@@ -228,7 +228,7 @@ impl OffchainResolver {
             .resolve_single(pending.account_id, path, pending.authorization, block)
             .await?;
 
-        if res.authorized != pending.expect {
+        if res.payload != pending.expect {
             return Err(ResolveError::InvalidOutput);
         }
 
