@@ -5,6 +5,7 @@ use near_account_id::AccountId;
 use ::{defuse_borsh_utils::As, defuse_time::borsh::TimestampNanoSeconds};
 #[cfg(feature = "arbitrary")]
 use defuse_time::arbitrary::RangeNanos;
+
 /// An offchain [authorization](OffchainAuthorization) message.
 ///
 // TODO:

@@ -1770,7 +1770,6 @@ dependencies = [
  "arbitrary",
  "arbitrary_with",
  "borsh",
- "bs58 0.5.1",
  "defuse-borsh-utils",
  "defuse-digest",
  "defuse-nep641",

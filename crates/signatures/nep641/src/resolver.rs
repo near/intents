@@ -194,7 +194,7 @@ impl OffchainResolver {
                 )
             }));
 
-            // wait until the next resolved sub-authorization, if any
+            // wait until a pending sub-authorization resolves, if any
             let Some(resolved) = in_flight.try_next().await? else {
                 // no more authorizations left, return the top-level output
                 return Ok(payload);

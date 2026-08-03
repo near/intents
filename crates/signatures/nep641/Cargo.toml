@@ -14,7 +14,6 @@ near-account-id.workspace = true
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 arbitrary_with = { workspace = true, optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
-bs58 = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
 defuse-digest = { workspace = true, features = ["sha3"], optional = true }
 digest-io = { workspace = true, optional = true }
@@ -45,6 +44,7 @@ borsh = [
 borsh-schema = [
   "borsh",
   "borsh?/unstable__schema",
+  "defuse-borsh-utils?/schema",
   "defuse-time/borsh-schema",
   "near-account-id/abi",
 ]
@@ -58,14 +58,11 @@ schemars-v0_8 = [
   "serde",
 ]
 std = ["defuse-time/std"]
-tracing = ["borsh", "dep:bs58", "dep:tracing", "digest", "near-kit?/tracing"]
-# TODO: do we need all these features?
+tracing = ["dep:tracing", "near-kit?/tracing"]
 resolver = [
-  "borsh",
   "dep:futures",
   "dep:serde_json",
   "dep:thiserror",
-  "digest",
   "near-kit",
   "serde",
 ]
