@@ -5,7 +5,6 @@ use defuse_token_id::nep171;
 use near_account_id::{AccountId, AccountIdRef};
 use near_gas::NearGas;
 use near_global_contracts::StateInit;
-use near_sdk_core::json_types::U128;
 use near_token::NearToken;
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
@@ -136,6 +135,7 @@ impl ExecutableIntent for Transfer {
     }
 }
 
+#[serde_as]
 #[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
@@ -143,7 +143,8 @@ impl ExecutableIntent for Transfer {
 pub struct FtWithdraw {
     pub token: AccountId,
     pub receiver_id: AccountId,
-    pub amount: U128,
+    #[serde_as(as = "DisplayFromStr")]
+    pub amount: u128,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
 
@@ -328,6 +329,7 @@ impl ExecutableIntent for NftWithdraw {
     }
 }
 
+#[serde_as]
 #[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
@@ -339,7 +341,8 @@ pub struct MtWithdraw {
     pub token: AccountId,
     pub receiver_id: AccountId,
     pub token_ids: Vec<defuse_nep245::TokenId>,
-    pub amounts: Vec<U128>,
+    #[serde_as(as = "Vec<DisplayFromStr>")]
+    pub amounts: Vec<u128>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
 

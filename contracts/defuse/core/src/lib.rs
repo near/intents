@@ -10,8 +10,9 @@ pub mod payload;
 mod public_key;
 mod signature;
 pub mod tokens;
+mod utils;
 
-pub use self::{error::*, nonce::*, public_key::*, signature::*};
+pub use self::{error::*, nonce::*, public_key::*, signature::*, utils::*};
 
 pub use defuse_crypto as crypto;
 pub use defuse_erc191 as erc191;

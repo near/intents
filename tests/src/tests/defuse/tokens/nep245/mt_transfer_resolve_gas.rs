@@ -25,7 +25,7 @@ use defuse_test_utils::{
     wasms::MT_RECEIVER_STUB_WASM,
 };
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk_core::{events::AsNep297Event, json_types::U128};
+use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 use std::{borrow::Cow, sync::Arc};
 use strum::IntoEnumIterator;
@@ -98,7 +98,7 @@ fn validate_mt_batch_transfer_log_size(
         old_owner_id: Cow::Borrowed(receiver_id),
         new_owner_id: Cow::Borrowed(sender_id),
         token_ids: Cow::Owned(token_ids.to_vec()),
-        amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
+        amounts: Cow::Borrowed(amounts),
         memo: Some(Cow::Borrowed(REFUND_MEMO)),
     }]));
 
@@ -420,7 +420,7 @@ fn calculate_log_sizes(
         old_owner_id: Cow::Borrowed(sender_id),
         new_owner_id: Cow::Borrowed(receiver_id),
         token_ids: Cow::Owned(token_ids.to_vec()),
-        amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
+        amounts: Cow::Borrowed(amounts),
         memo: None, // Transfer has no memo
     }]));
 
@@ -429,7 +429,7 @@ fn calculate_log_sizes(
         old_owner_id: Cow::Borrowed(receiver_id),
         new_owner_id: Cow::Borrowed(sender_id),
         token_ids: Cow::Owned(token_ids.to_vec()),
-        amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
+        amounts: Cow::Borrowed(amounts),
         memo: Some(Cow::Borrowed(REFUND_MEMO)), // Refund has "refund" memo
     }]));
 

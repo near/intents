@@ -1,6 +1,5 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use defuse_core::{SaltRegistry, fees::FeesConfig};
-use defuse_near_utils::NestPrefix;
+use defuse_core::{NestPrefix, SaltRegistry, fees::FeesConfig};
 use near_sdk::{AccountId, IntoStorageKey, env, store::IterableMap};
 
 use crate::contract::{

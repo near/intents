@@ -12,9 +12,9 @@ defuse-near-utils = { workspace = true, optional = true }
 derive_more = { workspace = true, features = ["from"] }
 near-account-id.workspace = true
 near-sdk = { workspace = true, optional = true }
-# TODO: replace with near_json_types + near_event crate, when it is available
-near-sdk-core.workspace = true
 thiserror.workspace = true
+serde_with.workspace = true
+defuse-serde-utils.workspace = true
 
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
@@ -22,8 +22,8 @@ serde = { workspace = true, features = ["derive"], optional = true }
 [features]
 abi = ["near-account-id/abi", "near-sdk/abi", "schemars-v0_8"]
 near-contract = ["dep:near-sdk", "serde", "dep:defuse-near-utils"]
-schemars-v0_8 = ["dep:schemars", "near-account-id/schemars-v0_8", "near-sdk-core/schemars-v0_8", "serde"]
-serde = ["dep:serde", "near-account-id/serde", "near-sdk-core/serde"]
+schemars-v0_8 = ["dep:schemars", "near-account-id/schemars-v0_8", "defuse-serde-utils/schemars-v0_8", "serde"]
+serde = ["dep:serde", "near-account-id/serde"]
 
 [dev-dependencies]
 defuse-nep245 = { workspace = true, features = ["near-contract"] }

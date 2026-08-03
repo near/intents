@@ -1,5 +1,5 @@
 use defuse_core::{
-    DefuseError, Nonce, NoncePrefix, PublicKey, Result, Salt,
+    DefuseError, Lock, Nonce, NoncePrefix, PublicKey, Result, Salt,
     amounts::Amounts,
     engine::{State, StateView},
     fees::Pips,
@@ -11,7 +11,6 @@ use defuse_core::{
     },
     token_id::{TokenId, nep141::Nep141TokenId},
 };
-use defuse_near_utils::Lock;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, PromiseOrValue, env, json_types::U128};
 use std::borrow::Cow;

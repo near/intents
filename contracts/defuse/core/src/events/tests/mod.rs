@@ -7,7 +7,6 @@ use defuse_test_utils::random::{Rng, RngExt, rng};
 use defuse_token_id::TokenId;
 use near_account_id::{AccountId, AccountIdRef};
 use near_gas::NearGas;
-use near_sdk_core::json_types::U128;
 use near_token::NearToken;
 use rstest::rstest;
 
@@ -167,7 +166,7 @@ fn ft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
             account_id: account(),
             event: Cow::Owned(FtWithdraw {
                 token: "token.near".parse().unwrap(),
-                amount: 100.into(),
+                amount: 100,
                 memo: Some("test ft withdraw".to_string()),
                 receiver_id: account().into(),
                 msg: Some("test message".to_string()),
@@ -182,7 +181,7 @@ fn ft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
 fn mt_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
     let (token_ids, amounts): (Vec<_>, Vec<_>) = tokens()
         .into_iter()
-        .map(|(token_id, amount)| (token_id.to_string(), U128::from(amount)))
+        .map(|(token_id, amount)| (token_id.to_string(), amount))
         .unzip();
 
     DefuseEvent::MtWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_intent(

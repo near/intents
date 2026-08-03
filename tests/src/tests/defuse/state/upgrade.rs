@@ -270,7 +270,7 @@ async fn test_upgrade_with_persistence(
             [FtWithdraw {
                 token: ft.contract_id().clone(),
                 receiver_id: user2.account_id().clone(),
-                amount: withdraw_amount.into(),
+                amount: withdraw_amount,
                 memo: None,
                 msg: None,
                 storage_deposit: None,

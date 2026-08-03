@@ -21,7 +21,7 @@ use near_contract_standards::non_fungible_token::{
     Token,
     metadata::{NFT_METADATA_SPEC, NFTContractMetadata},
 };
-use near_sdk_core::json_types::Base64VecU8;
+use near_sdk::json_types::Base64VecU8;
 use rstest::rstest;
 use std::collections::HashMap;
 

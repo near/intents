@@ -38,8 +38,6 @@ near-gas = { workspace = true, features = ["borsh", "serde"] }
 near-global-contracts = { workspace = true, features = ["borsh", "serde"] }
 near-sdk = { workspace = true, optional = true }
 near-token = { workspace = true, features = ["borsh", "serde"] }
-# TODO: replace with near_json_types + json_event crates, when it is available
-near-sdk-core = { workspace = true, features = ["borsh", "serde"] }
 
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
@@ -72,7 +70,6 @@ borsh-schema = [
   "near-account-id/abi",
   "near-gas/abi",
   "near-global-contracts/abi",
-  "near-sdk-core/abi",
   "near-token/abi",
 ]
 imt = []

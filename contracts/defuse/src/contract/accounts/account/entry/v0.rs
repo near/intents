@@ -1,10 +1,9 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_bitmap::{U248, U256};
-use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
 use near_sdk::store::{IterableSet, LookupMap};
 
-use defuse_core::{Nonces, PublicKey};
+use defuse_core::{NestPrefix, Nonces, PublicKey};
 
 use crate::contract::accounts::{
     Account, AccountState, MaybeLegacyAccountNonces,
@@ -60,14 +59,13 @@ pub(super) mod tests {
     use super::*;
 
     use defuse_bitmap::U256;
-    use defuse_near_utils::NestPrefix;
     use near_sdk::{
         AccountIdRef,
         store::{IterableSet, LookupMap},
     };
 
     use defuse_core::{
-        Result,
+        NestPrefix, Result,
         accounts::{AccountEvent, PublicKeyEvent},
         events::DefuseEvent,
         intents::MaybeIntentEvent,

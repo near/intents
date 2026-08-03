@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
-use defuse_near_utils::{Lock, REFUND_MEMO, promise_result_checked_json_with_len};
+use defuse_core::Lock;
+use defuse_near_utils::{REFUND_MEMO, promise_result_checked_json_with_len};
 use defuse_nep245::{
     ClearedApproval, MtEvent, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };
@@ -106,7 +107,7 @@ impl MultiTokenResolver for Contract {
                     old_owner_id: Cow::Borrowed(&receiver_id),
                     new_owner_id: Cow::Borrowed(&sender_id),
                     token_ids: refunded_token_ids.into(),
-                    amounts: refunded_amounts.into(),
+                    amounts: Cow::Owned(refunded_amounts.into_iter().map(|a| a.0).collect()),
                     memo: Some(REFUND_MEMO.into()),
                 }]
                 .as_slice(),

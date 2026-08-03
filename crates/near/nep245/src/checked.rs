@@ -109,7 +109,6 @@ mod refund {
 
         use near_account_id::AccountId;
         use near_sdk::AsNep297Event;
-        use near_sdk_core::json_types::U128;
 
         use super::{
             ErrorLogTooLong, MtEvent, REFUND_EXTRA_BYTES, REFUND_STR_LEN, refund_log_delta,
@@ -157,7 +156,7 @@ mod refund {
                 old_owner_id: Cow::Owned(old_owner.clone()),
                 new_owner_id: Cow::Owned(new_owner.clone()),
                 token_ids: Cow::Owned(vec![base_token_id.to_string()]),
-                amounts: Cow::Owned(vec![U128(1)]),
+                amounts: Cow::Owned(vec![1]),
                 memo: memo.map(|m| Cow::Owned(m.to_string())),
             };
             let base_mt_event = MtEvent::MtTransfer(Cow::Owned(vec![base_event]));
@@ -172,7 +171,7 @@ mod refund {
                 old_owner_id: Cow::Owned(old_owner),
                 new_owner_id: Cow::Owned(new_owner),
                 token_ids: Cow::Owned(vec![padded_token_id]),
-                amounts: Cow::Owned(vec![U128(1)]),
+                amounts: Cow::Owned(vec![1]),
                 memo: memo.map(|m| Cow::Owned(m.to_string())),
             };
 
@@ -202,7 +201,7 @@ mod refund {
                     old_owner_id: Cow::Owned(old_owner.clone()),
                     new_owner_id: Cow::Owned(new_owner.clone()),
                     token_ids: Cow::Owned(vec![format!("{base_token_id}{i}")]),
-                    amounts: Cow::Owned(vec![U128(1)]),
+                    amounts: Cow::Owned(vec![1]),
                     memo: memo.map(|m| Cow::Owned(m.to_string())),
                 })
                 .collect();
@@ -228,7 +227,7 @@ mod refund {
                         old_owner_id: Cow::Owned(old_owner.clone()),
                         new_owner_id: Cow::Owned(new_owner.clone()),
                         token_ids: Cow::Owned(vec![token_id]),
-                        amounts: Cow::Owned(vec![U128(1)]),
+                        amounts: Cow::Owned(vec![1]),
                         memo: memo.map(|m| Cow::Owned(m.to_string())),
                     }
                 })

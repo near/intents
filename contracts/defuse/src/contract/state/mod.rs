@@ -3,8 +3,9 @@ mod v0;
 pub use v0::ContractStateV0;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use defuse_core::{Salt, SaltRegistry, amounts::Amounts, fees::FeesConfig, token_id::TokenId};
-use defuse_near_utils::NestPrefix;
+use defuse_core::{
+    NestPrefix, Salt, SaltRegistry, amounts::Amounts, fees::FeesConfig, token_id::TokenId,
+};
 use near_sdk::{
     AccountId, BorshStorageKey, IntoStorageKey, env,
     store::{IterableMap, key::Identity},

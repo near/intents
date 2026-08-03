@@ -6,11 +6,9 @@ pub mod enumeration;
 mod events;
 #[cfg(feature = "near-contract")]
 pub mod receiver;
+#[cfg(feature = "near-contract")]
 pub mod resolver;
 mod token;
-
-use near_account_id::AccountId;
-use near_sdk_core::json_types::U128;
 
 pub use self::{
     checked::{CheckedMtEvent, ErrorLogTooLong},
@@ -19,6 +17,4 @@ pub use self::{
 };
 
 #[cfg(feature = "near-contract")]
-pub use self::core::*;
-
-pub type ClearedApproval = (AccountId, u64, U128);
+pub use self::{core::*, resolver::ClearedApproval};
