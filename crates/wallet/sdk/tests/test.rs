@@ -15,6 +15,7 @@ use rand::{rand_core::UnwrapErr, rngs::SysRng};
 use rstest::{fixture, rstest};
 use sha2::{Digest, Sha256};
 use tokio::sync::OnceCell;
+use tracing_subscriber::{EnvFilter, fmt::format::FmtSpan};
 
 type Wallet = defuse_wallet_sdk::Wallet<WalletEd25519>;
 
@@ -114,6 +115,12 @@ async fn w_resolve_auth(
 ) {
     const PAYLOAD: &str = "Hello, Near!";
     // const SIGN_FOR: &AccountIdRef = AccountIdRef::new_or_panic("dao.near");
+
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+        .pretty()
+        .init();
 
     println!(
         "{} -> {}: \"{PAYLOAD}\"",

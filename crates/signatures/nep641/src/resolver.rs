@@ -134,8 +134,11 @@ impl OffchainResolver {
         authorization: String,
     ) -> Result<String, ResolveError> {
         let account_id = account_id.into();
+
         #[cfg(feature = "tracing")]
-        record_all!(Span::current(), account_id = %account_id);
+        let mut span = Span::current();
+        #[cfg(feature = "tracing")]
+        record_all!(span, account_id = %account_id);
 
         let SingleResolved {
             mut path,
@@ -145,8 +148,6 @@ impl OffchainResolver {
                     mut pending,
                 },
             block_hash,
-            #[cfg(feature = "tracing")]
-            mut span,
         } = self
             .resolve_single(
                 account_id,
@@ -163,7 +164,7 @@ impl OffchainResolver {
         #[cfg(feature = "tracing")]
         if self.at_block_hash.is_none() {
             // update `at_block.hash` with resolved block hash
-            record_all!(Span::current(), at_block.hash = %block_hash);
+            record_all!(span, at_block.hash = %block_hash);
         }
 
         let mut pending_left = self.max_pending;
@@ -187,10 +188,10 @@ impl OffchainResolver {
                             // propagate receiver to sub-authorization
                             path.clone(),
                             pending,
-                            #[cfg(feature = "tracing")]
-                            span.clone(),
                             // resolve pending authorizations at the same block hash
                             block_hash,
+                            #[cfg(feature = "tracing")]
+                            span.clone(),
                         )
                     }),
             );
@@ -211,22 +212,19 @@ impl OffchainResolver {
 
     #[cfg_attr(
         feature = "tracing",
-        instrument(skip_all, follows_from = [&parent_span])
+        // instrument(skip_all, follows_from = [&parent_span]) // TODO
+        instrument(parent = &parent_span, skip_all, fields(
+            account_id = %pending.account_id,
+        ))
     )]
     async fn resolve_pending(
         &self,
         path: Vec<AccountId>,
         pending: PendingAuthorization,
-        #[cfg(feature = "tracing")] parent_span: Span,
         block: impl Into<BlockReference>,
+        #[cfg(feature = "tracing")] parent_span: Span, // TODO: no arg
     ) -> Result<PendingResolved, ResolveError> {
-        let SingleResolved {
-            path,
-            res,
-            #[cfg(feature = "tracing")]
-            span,
-            ..
-        } = self
+        let SingleResolved { path, res, .. } = self
             .resolve_single(pending.account_id, path, pending.authorization, block)
             .await?;
 
@@ -238,15 +236,15 @@ impl OffchainResolver {
             path,
             pending: res.pending,
             #[cfg(feature = "tracing")]
-            span,
+            span: Span::current(),
         })
     }
 
-    #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
-        %account_id,
-        // TODO
-        // at_block.hash = at_block_hash.map(field::display),
-    )))]
+    // #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
+    //     %account_id,
+    //     // TODO
+    //     // at_block.hash = at_block_hash.map(field::display),
+    // )))]
     async fn resolve_single(
         &self,
         account_id: AccountId,
@@ -302,12 +300,13 @@ impl OffchainResolver {
         // append the account ID to path for pending sub-authorizations
         path.push(account_id);
 
+        #[cfg(feature = "tracing")]
+        tracing::debug!("resolved!"); // TODO: remove
+
         Ok(SingleResolved {
             path,
             res: res.json()?,
             block_hash: res.block_hash,
-            #[cfg(feature = "tracing")]
-            span: Span::current(),
         })
     }
 }
@@ -334,10 +333,6 @@ struct SingleResolved {
 
     /// Resolved block hash
     block_hash: CryptoHash,
-
-    /// Span where this authorization was resolved
-    #[cfg(feature = "tracing")]
-    span: Span,
 }
 
 /// An error returned by [`OffchainResolver`]

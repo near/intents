@@ -53,7 +53,7 @@ tracing = [
 ]
 
 [dev-dependencies]
-defuse-nep641 = { workspace = true, features = ["resolver"] }
+defuse-nep641 = { workspace = true, features = ["resolver", "tracing"] }
 defuse-wallet-ed25519 = { workspace = true, features = ["signer"] }
 futures.workspace = true
 hex-literal.workspace = true
@@ -62,3 +62,4 @@ rand = { workspace = true, features = ["sys_rng"] }
 rstest.workspace = true
 sha2.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
