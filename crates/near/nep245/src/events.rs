@@ -1,14 +1,11 @@
 use super::TokenId;
 
-use defuse_serde_utils::cow::AsCow;
 use derive_more::derive::From;
 use near_account_id::AccountIdRef;
 use std::borrow::Cow;
 
 #[cfg(feature = "serde")]
-use serde_with::{As, DisplayFromStr};
-#[cfg(feature = "schemars-v0_8")]
-use serde_with::Schema;
+use {defuse_serde_utils::cow::AsCow, serde_with::DisplayFromStr};
 
 #[cfg_attr(
     feature = "serde",
@@ -38,6 +35,8 @@ pub enum MtEvent<'a> {
 #[must_use = "make sure to `.emit()` this event"]
 #[cfg_attr(
     feature = "serde",
+    cfg_eval::cfg_eval,
+    serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
 )]
@@ -45,11 +44,7 @@ pub enum MtEvent<'a> {
 pub struct MtMintEvent<'a> {
     pub owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
-    #[cfg_attr(feature = "serde", serde(with = "As::<AsCow<DisplayFromStr>>"))]
-    #[cfg_attr(
-        feature = "schemars-v0_8",
-        schemars(with = "Schema<Cow<'a, [u128]>, AsCow<DisplayFromStr>>")
-    )]
+    #[cfg_attr(feature = "serde", serde_as(as = "AsCow<DisplayFromStr>"))]
     pub amounts: Cow<'a, [u128]>,
     #[cfg_attr(
         feature = "serde",
@@ -61,6 +56,8 @@ pub struct MtMintEvent<'a> {
 #[must_use = "make sure to `.emit()` this event"]
 #[cfg_attr(
     feature = "serde",
+    cfg_eval::cfg_eval,
+    serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
 )]
@@ -73,11 +70,7 @@ pub struct MtBurnEvent<'a> {
     )]
     pub authorized_id: Option<Cow<'a, AccountIdRef>>,
     pub token_ids: Cow<'a, [TokenId]>,
-    #[cfg_attr(feature = "serde", serde(with = "As::<AsCow<DisplayFromStr>>"))]
-    #[cfg_attr(
-        feature = "schemars-v0_8",
-        schemars(with = "Schema<Cow<'a, [u128]>, AsCow<DisplayFromStr>>")
-    )]
+    #[cfg_attr(feature = "serde", serde_as(as = "AsCow<DisplayFromStr>"))]
     pub amounts: Cow<'a, [u128]>,
     #[cfg_attr(
         feature = "serde",
@@ -89,6 +82,8 @@ pub struct MtBurnEvent<'a> {
 #[must_use = "make sure to `.emit()` this event"]
 #[cfg_attr(
     feature = "serde",
+    cfg_eval::cfg_eval,
+    serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
 )]
@@ -102,11 +97,7 @@ pub struct MtTransferEvent<'a> {
     pub old_owner_id: Cow<'a, AccountIdRef>,
     pub new_owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
-    #[cfg_attr(feature = "serde", serde(with = "As::<AsCow<DisplayFromStr>>"))]
-    #[cfg_attr(
-        feature = "schemars-v0_8",
-        schemars(with = "Schema<Cow<'a, [u128]>, AsCow<DisplayFromStr>>")
-    )]
+    #[cfg_attr(feature = "serde", serde_as(as = "AsCow<DisplayFromStr>"))]
     pub amounts: Cow<'a, [u128]>,
     #[cfg_attr(
         feature = "serde",

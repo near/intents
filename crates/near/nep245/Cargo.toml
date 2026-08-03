@@ -16,6 +16,7 @@ thiserror.workspace = true
 serde_with.workspace = true
 defuse-serde-utils.workspace = true
 
+cfg_eval = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 
@@ -23,7 +24,7 @@ serde = { workspace = true, features = ["derive"], optional = true }
 abi = ["near-account-id/abi", "near-sdk/abi", "schemars-v0_8"]
 near-contract = ["dep:near-sdk", "serde", "dep:defuse-near-utils"]
 schemars-v0_8 = ["dep:schemars", "near-account-id/schemars-v0_8", "defuse-serde-utils/schemars-v0_8", "serde"]
-serde = ["dep:serde", "near-account-id/serde"]
+serde = ["dep:cfg_eval", "dep:serde", "near-account-id/serde"]
 
 [dev-dependencies]
 defuse-nep245 = { workspace = true, features = ["near-contract"] }

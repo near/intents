@@ -1734,6 +1734,7 @@ dependencies = [
 name = "defuse-nep245"
 version = "0.1.0"
 dependencies = [
+ "cfg_eval",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-serde-utils",
