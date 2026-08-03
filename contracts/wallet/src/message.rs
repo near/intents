@@ -201,7 +201,7 @@ impl RequestMessage {
     /// reques has already expired or is from the future.
     #[cfg(feature = "std")]
     #[inline]
-    pub fn time_left(&self) -> Option<Duration> {
+    pub fn duration_left(&self) -> Option<Duration> {
         let now = Timestamp::now();
         if now < self.created_at {
             return None;

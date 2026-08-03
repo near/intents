@@ -382,6 +382,12 @@ where
                     return Err(Error::InvalidChainId);
                 }
 
+                // check timestamp
+                if Timestamp::now() < msg.timestamp {
+                    return Err(Error::FromTheFuture);
+                }
+
+                // verify proof
                 if !S::verify_offchain_msg(&self.0.public_key, &msg, &proof) {
                     return Err(Error::InvalidSignature);
                 }
@@ -391,15 +397,18 @@ where
             }
             WalletOffchainInput::AsExtension {
                 account_id,
-                input,
-                output,
+                authorization,
+                payload,
             } => {
                 // check whether extension is enabled
                 self.check_extension_enabled(&account_id)?;
 
-                AuthorizationResolution::new(output.clone())
-                    // forward `w_resolve_auth()` to the extension
-                    .add_pending(account_id, input, output)
+                // authorize the payload if and only if the extension authorizes the same one
+                AuthorizationResolution::new(payload.clone()).add_pending(
+                    account_id,
+                    authorization,
+                    payload,
+                )
             }
         })
     }

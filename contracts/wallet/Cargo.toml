@@ -33,7 +33,7 @@ near-sdk = { workspace = true, optional = true }
 [features]
 default = ["std"]
 
-std = ["defuse-time/std"]
+std = ["defuse-nep641/std", "defuse-time/std"]
 
 abi = ["borsh-schema", "near-sdk?/abi", "schemars-v0_8"]
 arbitrary = [

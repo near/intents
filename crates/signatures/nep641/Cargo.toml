@@ -8,11 +8,14 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+defuse-time.workspace = true
 near-account-id.workspace = true
 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
+arbitrary_with = { workspace = true, optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
 bs58 = { workspace = true, optional = true }
+defuse-borsh-utils = { workspace = true, optional = true }
 defuse-digest = { workspace = true, features = ["sha3"], optional = true }
 digest-io = { workspace = true, optional = true }
 futures = { workspace = true, features = ["std"], optional = true }
@@ -24,14 +27,37 @@ thiserror = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }
 
 [features]
+default = ["std"]
+
 abi = ["borsh-schema", "schemars-v0_8"]
-arbitrary = ["dep:arbitrary", "near-account-id/arbitrary"]
-borsh = ["dep:borsh", "near-account-id/borsh"]
-borsh-schema = ["borsh", "borsh?/unstable__schema", "near-account-id/abi"]
+arbitrary = [
+  "defuse-time/arbitrary",
+  "dep:arbitrary",
+  "dep:arbitrary_with",
+  "near-account-id/arbitrary",
+]
+borsh = [
+  "defuse-time/borsh",
+  "dep:borsh",
+  "dep:defuse-borsh-utils",
+  "near-account-id/borsh",
+]
+borsh-schema = [
+  "borsh",
+  "borsh?/unstable__schema",
+  "defuse-time/borsh-schema",
+  "near-account-id/abi",
+]
 digest = ["dep:defuse-digest", "dep:digest-io"]
 near-kit = ["dep:near-kit", "serde"]
-serde = ["dep:serde", "near-account-id/serde"]
-schemars-v0_8 = ["dep:schemars", "near-account-id/schemars-v0_8", "serde"]
+serde = ["defuse-time/serde", "dep:serde", "near-account-id/serde"]
+schemars-v0_8 = [
+  "defuse-time/schemars-v0_8",
+  "dep:schemars",
+  "near-account-id/schemars-v0_8",
+  "serde",
+]
+std = ["defuse-time/std"]
 tracing = ["borsh", "dep:bs58", "dep:tracing", "digest", "near-kit?/tracing"]
 # TODO: do we need all these features?
 resolver = [

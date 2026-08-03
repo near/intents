@@ -1,29 +1,10 @@
+use defuse_time::Timestamp;
 use near_account_id::AccountId;
 
-// /// An authorization to be [resolved](crate::resolver::OffchainResolver::resolve_auth)
-// /// **offchain**.
-// #[cfg_attr(
-//     feature = "serde",
-//     derive(::serde::Serialize, ::serde::Deserialize),
-//     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
-// )]
-// #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-// #[cfg_attr(
-//     feature = "borsh",
-//     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-//     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
-// )]
-// #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-// pub struct OffchainAuthorization {
-//     /// A message to verify [`proof`](field@Self::proof) over.
-//     pub msg: OffchainMessage,
-
-//     /// A proof over [`msg`](field@Self::msg).
-//     ///
-//     /// MUST account for **all** fields of [`OffchainMessage`].
-//     pub proof: Proof,
-// }
-
+#[cfg(feature = "borsh")]
+use ::{defuse_borsh_utils::As, defuse_time::borsh::TimestampNanoSeconds};
+#[cfg(feature = "arbitrary")]
+use defuse_time::arbitrary::RangeNanos;
 /// An offchain [authorization](OffchainAuthorization) message.
 ///
 // TODO:
@@ -63,20 +44,50 @@ pub struct OffchainMessage {
 
     /// Signer ID.
     ///
-    /// MUST be equal to account ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
+    /// The [resolver](crate::AuthResolver::w_resolve_auth) contract MUST panic if it doesn't
+    /// match its current account ID.
     pub signer_id: AccountId,
 
     /// Chain ID.
     ///
-    /// MUST be equal to chain ID of [verifying](crate::contract::AuthResolver::w_resolve_auth) contract.
-    // TODO: ChainId type alias?
+    /// The [resolver](crate::AuthResolver::w_resolve_auth) contract MUST panic if it doesn't
+    /// match its chain ID.
     pub chain_id: String,
+
+    /// UNIX timestamp at the time of signing.
+    ///
+    /// The [resolver](crate::AuthResolver::w_resolve_auth) contract MUST panic if the timestamp
+    /// is from the future. The contract MAY also panic if it performs some additional checks,
+    /// such as TTL.
+    ///
+    /// Clients are recommended to set it slightly (e.g. 15 seconds) before the actual time of
+    /// signing, so that it doesn't fail if the message gets resolved too fast.
+    #[cfg_attr(
+        feature = "arbitrary",
+        arbitrary(with = ::arbitrary_with::As::<RangeNanos::<0>>::arbitrary),
+    )]
+    #[cfg_attr(
+        feature = "borsh",
+        borsh(
+            serialize_with = "As::<TimestampNanoSeconds<u64>>::serialize",
+            deserialize_with = "As::<TimestampNanoSeconds<u64>>::deserialize",
+        ),
+        cfg_attr(
+            feature = "borsh-schema",
+            borsh(schema(with_funcs(
+                definitions = "As::<TimestampNanoSeconds<u64>>::add_definitions_recursively",
+                declaration = "As::<TimestampNanoSeconds<u64>>::declaration",
+            )))
+        )
+    )]
+    pub timestamp: Timestamp,
 
     // TODO: domain
     // TODO: schema?
-    // TODO: deadline like in TON Connect?
 
     // TODO: how to propagate domain and purpose/action?
+    /// The actual signed payload
+    /// TODO: docs
     pub payload: String,
 }
 
@@ -137,10 +148,10 @@ impl OffchainMessage {
         &account_id
     }
 
-    /// Returns canonical hash of this offchain message:
-    /// TODO
+    /// Returns canonical hash of this offchain message, calculated as:
+    ///
     /// ```text
-    /// SHA3_256()
+    /// SHA3_256(b"NEAR_NEP641_OFFCHAIN_MESSAGE/V1" || borsh(msg))
     /// ```
     ///
     /// # Examples
@@ -152,7 +163,7 @@ impl OffchainMessage {
     ///     signer_id: "wallet.near".parse().unwrap(),
     ///     resolver_id: "wallet.near".parse().unwrap(),
     ///     chain_id: "mainnet".to_string(),
-    ///     msg: "Hello, Near!".to_string(),
+    ///     payload: "Hello, Near!".to_string(),
     /// };
     ///
     /// assert_eq!(

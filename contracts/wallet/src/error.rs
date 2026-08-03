@@ -14,6 +14,9 @@ pub enum ContractError {
     #[error("extension '{0}' is not enabled")]
     ExtensionNotEnabled(AccountId),
 
+    #[error("message is from the future")]
+    FromTheFuture,
+
     #[error("insufficient attached deposit")]
     InsufficientDeposit,
 

@@ -51,8 +51,8 @@ pub enum WalletOffchainInput {
     },
     AsExtension {
         account_id: AccountId,
-        input: String,
-        output: String,
+        authorization: String,
+        payload: String,
     },
 }
 

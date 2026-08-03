@@ -1768,10 +1768,13 @@ name = "defuse-nep641"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "arbitrary_with",
  "borsh",
  "bs58 0.5.1",
+ "defuse-borsh-utils",
  "defuse-digest",
  "defuse-nep641",
+ "defuse-time",
  "digest-io",
  "futures",
  "hex-literal",
