@@ -97,7 +97,7 @@ strings; `nonce` starts at `"0"` for the first emitted event.
 The crate is configured for reproducible builds via `cargo near`:
 
 ```bash
-cargo near build non-reproducible-wasm --locked
+cargo near build non-reproducible-wasm --locked --abi-features=abi
 ```
 
 The build image and digest are pinned in `Cargo.toml` under
