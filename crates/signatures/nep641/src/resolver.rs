@@ -139,12 +139,14 @@ impl OffchainResolver {
 
         let SingleResolved {
             mut path,
-            resolution:
+            res:
                 AuthorizationResolution {
                     authorized,
                     mut pending,
                 },
             block_hash,
+            #[cfg(feature = "tracing")]
+            mut span,
         } = self
             .resolve_single(
                 account_id,
@@ -185,6 +187,8 @@ impl OffchainResolver {
                             // propagate receiver to sub-authorization
                             path.clone(),
                             pending,
+                            #[cfg(feature = "tracing")]
+                            span.clone(),
                             // resolve pending authorizations at the same block hash
                             block_hash,
                         )
@@ -196,40 +200,51 @@ impl OffchainResolver {
                 return Ok(authorized);
             };
 
-            PendingResolved { path, pending } = resolved;
+            PendingResolved {
+                path,
+                pending,
+                #[cfg(feature = "tracing")]
+                span,
+            } = resolved;
         }
     }
 
-    // TODO: tracing?
+    #[cfg_attr(
+        feature = "tracing",
+        instrument(skip_all, follows_from = [&parent_span])
+    )]
     async fn resolve_pending(
         &self,
         path: Vec<AccountId>,
         pending: PendingAuthorization,
+        #[cfg(feature = "tracing")] parent_span: Span,
         block: impl Into<BlockReference>,
     ) -> Result<PendingResolved, ResolveError> {
         let SingleResolved {
-            path, resolution, ..
+            path,
+            res,
+            #[cfg(feature = "tracing")]
+            span,
+            ..
         } = self
             .resolve_single(pending.account_id, path, pending.authorization, block)
             .await?;
 
-        if resolution.authorized != pending.expect {
+        if res.authorized != pending.expect {
             return Err(ResolveError::InvalidOutput);
         }
 
         Ok(PendingResolved {
             path,
-            pending: resolution.pending,
+            pending: res.pending,
+            #[cfg(feature = "tracing")]
+            span,
         })
     }
 
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
+        %account_id,
         // TODO
-        // %receiver_id,
-        // %msg.resolver_id,
-        // %msg.signer_id,
-        // %msg.chain_id,
-        // msg.hash = %bs58::encode(msg.hash()).into_string(),
         // at_block.hash = at_block_hash.map(field::display),
     )))]
     async fn resolve_single(
@@ -289,8 +304,10 @@ impl OffchainResolver {
 
         Ok(SingleResolved {
             path,
-            resolution: res.json()?,
+            res: res.json()?,
             block_hash: res.block_hash,
+            #[cfg(feature = "tracing")]
+            span: Span::current(),
         })
     }
 }
@@ -298,13 +315,17 @@ impl OffchainResolver {
 struct PendingResolved {
     path: Vec<AccountId>,
     pending: Vec<PendingAuthorization>,
+    #[cfg(feature = "tracing")]
+    span: Span,
 }
 
 // TODO: rename?
 struct SingleResolved {
     path: Vec<AccountId>,
-    resolution: AuthorizationResolution,
+    res: AuthorizationResolution,
     block_hash: CryptoHash,
+    #[cfg(feature = "tracing")]
+    span: Span,
 }
 
 /// An error returned by [`OffchainResolver`]

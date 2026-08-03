@@ -173,7 +173,7 @@ pub struct AuthorizationResolution {
 
     /// Optional list of pending sub-authorizations that MUST be successfully
     /// [resolved](AuthResolver::w_resolve_auth) before accepting this
-    /// [authorization](field@Self::authorized).
+    /// [authorized](field@Self::authorized) payload.
     ///
     /// If emtpy, then this authorization is a leaf that terminates the current branch.
     #[cfg_attr(
