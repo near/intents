@@ -223,22 +223,16 @@ impl RpcResolver {
                 return Ok(payload);
             };
 
-            // overwrite variables from resolved sub-authorization
+            // overwrite variables from the resolved sub-authorization
             ResolvedAuthorization {
-                account_id, // overwrite
-                path,       // overwrite
+                account_id,
+                path,
                 res: Resolved {
-                    res: AuthorizationResolution {
-                        pending,    // overwrite
-                        payload: _, // TODO: comment
-                    },
-                    // TODO: do not overwrite and check instead?
-                    // block_hash,
-                    // block_height,
+                    res: AuthorizationResolution { pending, .. },
                     ..
                 },
                 #[cfg(feature = "tracing")]
-                span, // overwrite
+                span,
             } = resolved;
         }
     }
@@ -246,8 +240,7 @@ impl RpcResolver {
     /// Resolve a single authorization and check that returned payload matches the expected one,
     /// if set
     #[cfg_attr(feature = "tracing", instrument(
-        level = "DEBUG", // TODO?
-        name = "resolve_auth", // TODO
+        name = "resolve_auth",
         parent = parent_span,
         skip_all,
         fields(
@@ -298,8 +291,7 @@ impl RpcResolver {
         #[cfg(feature = "tracing")]
         record_all!(span, at_block.hash = %res.block_hash, at_block.height = res.block_height);
 
-        // TODO:
-        // check if resolved payload matches the expected one, if
+        // check if resolved payload matches the one expected by the parent resolver
         if let Some(expected) = expect
             && expected != res.res.payload
         {
@@ -327,6 +319,7 @@ impl RpcResolver {
     }
 
     /// Try to resolve a single authorization via `w_resolve_auth()` view-method
+    #[cfg_attr(feature = "tracing", instrument(level = "DEBUG", skip_all))]
     async fn w_resolve_auth(
         &self,
         account_id: &AccountId,

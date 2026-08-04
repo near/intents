@@ -1,5 +1,7 @@
 use near_account_id::AccountId;
 use near_kit::{AccessKeyPermissionView, BlockReference, RpcError};
+#[cfg(feature = "tracing")]
+use tracing::instrument;
 
 use crate::{
     access_keys::{AccessKeyAuthorization, PublicKey},
@@ -11,7 +13,8 @@ impl RpcResolver {
     // TODO: full access key takes precedence over resolved by w_resolve_auth?
     // TODO: tracing
     // TODO: return optional?
-    async fn resolve_access_key(
+    #[cfg_attr(feature = "tracing", instrument(level = "DEBUG", skip_all))]
+    pub(super) async fn resolve_access_key(
         &self,
         account_id: &AccountId,
         // TODO: slice?
