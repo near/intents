@@ -566,6 +566,7 @@ macro_rules! wallet {
 
         #[$crate::near_sdk::near]
         impl $crate::offchain::AuthResolver for $contract {
+            /// Resolve offchain authorization.
             fn w_resolve_auth(
                 &self,
                 path: ::std::vec::Vec<$crate::AccountId>,

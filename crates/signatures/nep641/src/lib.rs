@@ -7,6 +7,7 @@ pub mod resolver;
 pub use self::message::*;
 
 use near_account_id::AccountId;
+pub use defuse_time::Timestamp;
 
 /// A smart-contract implementing NEP-641 interface.
 pub trait AuthResolver {

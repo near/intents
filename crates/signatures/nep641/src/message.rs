@@ -56,7 +56,7 @@ pub struct OffchainMessage {
     /// is from the future. The contract MAY also panic if it performs some additional checks,
     /// such as TTL.
     ///
-    /// Clients are recommended to set it slightly (e.g. 15 seconds) before the actual time of
+    /// Clients are recommended to set it slightly (e.g. 60 seconds) before the actual time of
     /// signing, so that it doesn't fail if the message gets resolved too fast.
     #[cfg_attr(
         feature = "arbitrary",
@@ -78,13 +78,11 @@ pub struct OffchainMessage {
     )]
     pub timestamp: Timestamp,
 
-    // TODO: domain
-    // TODO: schema?
-
     // TODO: how to propagate domain and purpose/action?
-    /// The actual payload being authorized
+    /// The actual payload to authorize
     /// TODO: docs
     /// TODO: or maybe borsh-base64?
+    /// TODO: check if empty if defaults are ok
     pub payload: String,
 }
 
@@ -99,50 +97,106 @@ impl OffchainMessage {
     // TODO: rename to PREFIX?
     pub const DOMAIN_SEPARATOR: &[u8] = b"NEAR_NEP641_OFFCHAIN_MESSAGE/V1";
 
-    /// Replace [`resolver_id`](field@Self::resolver_id) with given account ID
-    // /// on this message.
-    // #[must_use]
-    // #[inline]
-    // pub fn with_resolver_id(mut self, resolver_id: impl Into<AccountId>) -> Self {
-    //     self.resolver_id = resolver_id.into();
-    //     self
-    // }
-
     /// Returns whether this message is a top-level authorization.
     ///
     /// # Examples
     ///
     /// ```rust
-    /// # use defuse_nep641::OffchainMessage;
-    /// let top_level = OffchainMessage {
-    ///     signer_id: "wallet.near".parse().unwrap(),
-    ///     resolver_id: "wallet.near".parse().unwrap(),
+    /// # use defuse_nep641::{OffchainMessage, Timestamp};
+    /// let msg = OffchainMessage {
     ///     chain_id: "mainnet".to_string(),
+    ///     signer_id: "wallet.near".parse().unwrap(),
+    ///     path: [].into(),
+    ///     timestamp: Timestamp::now(),
     ///     payload: "Hello, Near!".to_string(),
     /// };
-    /// assert!(top_level.is_top_level());
     ///
-    /// let sub_auth = OffchainMessage {
-    ///     signer_id: "wallet.near".parse().unwrap(),
-    ///     resolver_id: "extension.near".parse().unwrap(),
+    /// assert!(msg.is_top_level());
+    ///
+    /// let msg = OffchainMessage {
     ///     chain_id: "mainnet".to_string(),
+    ///     signer_id: "wallet.near".parse().unwrap(),
+    ///     path: vec!["v1.signer".parse().unwrap()],
+    ///     timestamp: Timestamp::now(),
     ///     payload: "Hello, Near!".to_string(),
     /// };
-    /// assert!(!sub_auth.is_top_level());
+    ///
+    /// assert!(!msg.is_top_level());
     /// ```
     #[inline]
     pub const fn is_top_level(&self) -> bool {
         self.path.is_empty()
     }
 
-    // TODO: docs, naming, examples
+    /// Returns depth of this authorization, i.e. how many hops away the top-level resolver ID is.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use defuse_nep641::{OffchainMessage, Timestamp};
+    /// let msg = OffchainMessage {
+    ///     chain_id: "mainnet".to_string(),
+    ///     signer_id: "wallet.near".parse().unwrap(),
+    ///     path: [].into(),
+    ///     timestamp: Timestamp::now(),
+    ///     payload: "Hello, Near!".to_string(),
+    /// };
+    ///
+    /// assert_eq!(msg.depth(), 0);
+    ///
+    /// let msg = OffchainMessage {
+    ///     chain_id: "mainnet".to_string(),
+    ///     signer_id: "extension.near".parse().unwrap(),
+    ///     path: vec![
+    ///         "wallet.near".parse().unwrap(),
+    ///         "v1.signer".parse().unwrap(),
+    ///     ],
+    ///     timestamp: Timestamp::now(),
+    ///     payload: "Hello, Near!".to_string(),
+    /// };
+    ///
+    /// assert_eq!(msg.depth(), 2);
+    /// ```
     #[inline]
-    pub const fn effective_account_id(&self) -> &AccountId {
-        let Some(account_id) = self.path.as_slice().first() else {
-            return &self.signer_id;
-        };
+    pub const fn depth(&self) -> usize {
+        self.path.len()
+    }
 
-        &account_id
+    /// Returns a top-level resolver account ID that this message authorizes the payload for.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use defuse_nep641::{OffchainMessage, Timestamp};
+    /// let msg = OffchainMessage {
+    ///     chain_id: "mainnet".to_string(),
+    ///     signer_id: "wallet.near".parse().unwrap(),
+    ///     path: [].into(),
+    ///     timestamp: Timestamp::now(),
+    ///     payload: "Hello, Near!".to_string(),
+    /// };
+    ///
+    /// assert_eq!(msg.top_level_id(), "wallet.near");
+    ///
+    /// let msg = OffchainMessage {
+    ///     chain_id: "mainnet".to_string(),
+    ///     signer_id: "extension.near".parse().unwrap(),
+    ///     path: vec![
+    ///         "wallet.near".parse().unwrap(),
+    ///         "v1.signer".parse().unwrap(),
+    ///     ],
+    ///     timestamp: Timestamp::now(),
+    ///     payload: "Hello, Near!".to_string(),
+    /// };
+    ///
+    /// assert_eq!(msg.top_level_id(), "v1.signer");
+    /// ```
+    #[inline]
+    pub const fn top_level_id(&self) -> &AccountId {
+        if let Some(top_level) = self.path.as_slice().last() {
+            return top_level;
+        };
+        &self.signer_id
     }
 
     /// Returns canonical hash of this offchain message, calculated as:
@@ -191,8 +245,13 @@ impl OffchainMessage {
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 // TODO: borsh?
+// TODO: make all fields optional?
 pub struct Payload {
+    /// dApp domain
     pub domain: String,
+    // TODO: schema?
     pub action: String,
+
+    /// The
     pub payload: String,
 }
