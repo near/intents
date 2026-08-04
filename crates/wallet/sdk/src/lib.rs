@@ -527,8 +527,10 @@ where
     #[inline]
     fn wrap_request_msg(&self, request: impl Into<Request>) -> RequestMessage {
         RequestMessage {
+            // TODO: order
             pay_for_gas: false, // TODO: add support for External Contract Calls
             chain_id: self.chain_id.clone(),
+            // signer is the real account ID
             signer_id: self.real_account_id().clone(),
             nonce: self.nonces.lock().unwrap().next(),
             // Set `created_at` slightly before the actual time of signing,
@@ -673,19 +675,15 @@ where
         );
 
         let msg = OffchainMessage {
-            path: {
-                let mut path: Vec<_> = self
-                    .as_extension_chain()
-                    .iter()
-                    .cloned()
-                    .chain(path)
-                    .collect();
-                // reverse the path, so that it starts from top-level account,
-                // as per NEP-641
-                path.reverse();
-                path
-            },
+            // signer is the real account ID
             signer_id: self.real_account_id().clone(),
+            // path to the top-level resolver
+            path: self
+                .as_extension_chain()
+                .iter()
+                .cloned()
+                .chain(path)
+                .collect(),
             chain_id: self.chain_id().clone(),
             // Set `timestamp` slightly before the actual time of signing,
             // so it doesn't fail if gets resolved too fast.

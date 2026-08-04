@@ -181,7 +181,7 @@ impl OffchainResolver {
             // check if adding new pending sub-authorizations wouldn't exceed max pending limit
             pending_left = pending_left
                 .checked_sub(pending.len())
-                .ok_or(ResolveError::TooManyAuthorizations(self.max_pending))?;
+                .ok_or(ResolveError::TooManyPending(self.max_pending))?;
 
             // add pending sub-authorizations to the in-flight pool
             in_flight.extend(pending.into_iter().map(|pending| {
@@ -354,7 +354,7 @@ pub enum ResolveError {
     Near(#[from] near_kit::Error),
 
     #[error("too many pending authorizations, maximum is set to: {0}")]
-    TooManyAuthorizations(usize),
+    TooManyPending(usize),
 }
 
 impl From<near_kit::RpcError> for ResolveError {

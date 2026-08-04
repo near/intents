@@ -180,16 +180,16 @@ where
     S: SignatureSchema,
 {
     fn execute_signed(&mut self, msg: RequestMessage, proof: &str) -> Result<()> {
+        if !self.0.is_signature_allowed() {
+            return Err(Error::SignatureDisabled);
+        }
+
         // TODO: change to the following when External Contract Calls land:
         // if !msg.pay_for_gas && env::is_external() {
         //     return Err(Error::UnauthorizedGasPayment);
         // }
         if msg.pay_for_gas {
             env::panic_str("`pay_for_gas` is not currently supported");
-        }
-
-        if !self.0.is_signature_allowed() {
-            return Err(Error::SignatureDisabled);
         }
 
         // check chain_id
@@ -375,11 +375,9 @@ where
                     return Err(Error::SignatureDisabled);
                 }
 
-                // TODO: order of checks
-
-                // check path
-                if msg.path != path {
-                    return Err(Error::InvalidPath);
+                // check chain_id
+                if msg.chain_id != env::chain_id() {
+                    return Err(Error::InvalidChainId);
                 }
 
                 // check signer_id
@@ -387,9 +385,9 @@ where
                     return Err(Error::InvalidSignerId(msg.signer_id));
                 }
 
-                // check chain_id
-                if msg.chain_id != env::chain_id() {
-                    return Err(Error::InvalidChainId);
+                // check reversed path
+                if !msg.path.iter().eq(path.iter().rev()) {
+                    return Err(Error::InvalidPath);
                 }
 
                 // check timestamp

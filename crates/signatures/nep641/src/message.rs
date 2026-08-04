@@ -6,22 +6,10 @@ use ::{defuse_borsh_utils::As, defuse_time::borsh::TimestampNanoSeconds};
 #[cfg(feature = "arbitrary")]
 use defuse_time::arbitrary::RangeNanos;
 
-/// An offchain [authorization](OffchainAuthorization) message.
+/// Signable offchain message.
 ///
-// TODO:
-/// The implementation MUST verify given `proof` over offchain message, including
-/// all of its fields, and return a list of "pending authorizations" that need to be
-/// [resolved](crate::resolver::OffchainResolver::resolve_auth) on other accounts.
-///
-/// TODO: returned auths fields
-///
-/// The implementation MUST panic if:
-/// * [`chain_id`](field@crate::OffchainMessage::chain_id) doesn't match
-///   `env::chain_id()`
-/// * [`resolver_id`](field@crate::OffchainMessage::resolver_id) doesn't
-///   match `env::current_account_id()`
-/// * `proof` is invalid for given [`OffchainMessage`](crate::OffchainMessage)
-///
+/// The [verifying](crate::AuthResolver::w_resolve_auth) contract MUST verify a signature over
+/// this entire message, including **all** of its fields, and panic if the signature is invalid.
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
@@ -37,27 +25,34 @@ use defuse_time::arbitrary::RangeNanos;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 // TODO: versioned?
 pub struct OffchainMessage {
-    // TODO: docs: direction?
-    // TODO: is it a good fields order for HW wallets?
-    // TODO: is path alone enough?
-    /// Path starting from top-level authorizing account ID.
-    pub path: Vec<AccountId>,
-
-    /// Signer ID.
-    ///
-    /// The [resolver](crate::AuthResolver::w_resolve_auth) contract MUST panic if it doesn't
-    /// match its current account ID.
-    pub signer_id: AccountId,
-
     /// Chain ID.
     ///
-    /// The [resolver](crate::AuthResolver::w_resolve_auth) contract MUST panic if it doesn't
+    /// The [verifying](crate::AuthResolver::w_resolve_auth) contract MUST panic if it doesn't
     /// match its chain ID.
     pub chain_id: String,
 
+    /// Signer ID.
+    ///
+    /// The [verifying](crate::AuthResolver::w_resolve_auth) contract MUST panic if it doesn't
+    /// match its current account ID.
+    pub signer_id: AccountId,
+
+    /// Path to the top-level [resolver](crate::AuthResolver) ID.
+    ///
+    /// The path is oriented "bottom-top", i.e. top-level resolver ID is the _last_ element of it.
+    /// Empty path means that this message is a top-level authorization itself.
+    ///
+    /// The verifying contract MUST panic if it doesn't match the **REVERSED** `path` passed as
+    /// an argument to [`w_resolve_auth()`](crate::AuthResolver::w_resolve_auth) method.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Vec::is_empty")
+    )]
+    pub path: Vec<AccountId>,
+
     /// UNIX timestamp at the time of signing.
     ///
-    /// The [resolver](crate::AuthResolver::w_resolve_auth) contract MUST panic if the timestamp
+    /// The [verifying](crate::AuthResolver::w_resolve_auth) contract MUST panic if the timestamp
     /// is from the future. The contract MAY also panic if it performs some additional checks,
     /// such as TTL.
     ///
@@ -87,8 +82,9 @@ pub struct OffchainMessage {
     // TODO: schema?
 
     // TODO: how to propagate domain and purpose/action?
-    /// The actual signed payload
+    /// The actual payload being authorized
     /// TODO: docs
+    /// TODO: or maybe borsh-base64?
     pub payload: String,
 }
 
@@ -186,8 +182,16 @@ impl OffchainMessage {
     }
 }
 
-// TODO: deny_unknown_fields
-pub struct Message {
+// TODO versioned or string tag before?
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
+    serde(deny_unknown_fields) // TODO: are we sure?
+)]
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+// TODO: borsh?
+pub struct Payload {
     pub domain: String,
     pub action: String,
     pub payload: String,
