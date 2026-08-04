@@ -366,7 +366,6 @@ where
         path: Vec<AccountId>,
         authorization: String,
     ) -> Result<AuthorizationResolution> {
-        // TODO: check if receiver_id is self?
         let input: WalletAuthorization = serde_json::from_str(&authorization)?;
 
         Ok(match input {
@@ -395,7 +394,7 @@ where
                     return Err(Error::FromTheFuture);
                 }
 
-                // verify proof
+                // verify signature
                 if !S::verify_offchain_msg(&self.0.public_key, &msg, &proof) {
                     return Err(Error::InvalidSignature);
                 }

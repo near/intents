@@ -16,8 +16,10 @@ arbitrary_with = { workspace = true, optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
 defuse-digest = { workspace = true, features = ["sha3"], optional = true }
+defuse-nep413 = { workspace = true, optional = true }
 digest-io = { workspace = true, optional = true }
 futures = { workspace = true, features = ["std"], optional = true }
+itertools = { workspace = true, optional = true }
 near-kit = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
@@ -30,6 +32,7 @@ default = ["std"]
 
 abi = ["borsh-schema", "schemars-v0_8"]
 arbitrary = [
+  "defuse-nep413?/arbitrary",
   "defuse-time/arbitrary",
   "dep:arbitrary",
   "dep:arbitrary_with",
@@ -45,13 +48,21 @@ borsh-schema = [
   "borsh",
   "borsh?/unstable__schema",
   "defuse-borsh-utils?/schema",
+  "defuse-nep413?/borsh-schema",
   "defuse-time/borsh-schema",
   "near-account-id/abi",
 ]
 digest = ["dep:defuse-digest", "dep:digest-io"]
-near-kit = ["dep:near-kit", "serde"]
-serde = ["defuse-time/serde", "dep:serde", "near-account-id/serde"]
+near-kit = ["defuse-nep413?/near-kit", "dep:near-kit", "serde"]
+nep413 = ["borsh", "dep:defuse-nep413", "dep:itertools", "digest"]
+serde = [
+  "defuse-nep413?/serde",
+  "defuse-time/serde",
+  "dep:serde",
+  "near-account-id/serde",
+]
 schemars-v0_8 = [
+  "defuse-nep413?/schemars-v0_8",
   "defuse-time/schemars-v0_8",
   "dep:schemars",
   "near-account-id/schemars-v0_8",
@@ -64,6 +75,7 @@ resolver = [
   "dep:serde_json",
   "dep:thiserror",
   "near-kit",
+  "nep413",
   "serde",
 ]
 

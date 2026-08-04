@@ -84,6 +84,7 @@ pub struct OffchainMessage {
     /// TODO: or maybe borsh-base64?
     /// TODO: check if empty if defaults are ok
     /// TODO: how would the wallet API look like for passing de/serialized value?
+    /// TODO: or return just hash?...
     pub payload: String,
 }
 
@@ -247,12 +248,13 @@ impl OffchainMessage {
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 // TODO: borsh?
 // TODO: make all fields optional?
-pub struct Payload {
+// TODO: move timestamp here?
+pub struct Message {
     /// dApp domain
     pub domain: String,
     // TODO: schema?
     pub action: String,
 
-    /// The
+    // TODO: Or put structural typed data here in the future?
     pub payload: String,
 }

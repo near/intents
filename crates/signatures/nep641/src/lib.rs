@@ -1,13 +1,15 @@
 #[cfg(feature = "near-kit")]
 pub mod client;
 mod message;
+#[cfg(feature = "nep413")]
+mod nep413;
 #[cfg(feature = "resolver")]
 pub mod resolver;
 
 pub use self::message::*;
 
-use near_account_id::AccountId;
 pub use defuse_time::Timestamp;
+use near_account_id::AccountId;
 
 /// A smart-contract implementing NEP-641 interface.
 pub trait AuthResolver {
