@@ -35,6 +35,7 @@ impl From<OffchainMessage> for Nep413Payload {
     fn from(msg: OffchainMessage) -> Self {
         Self {
             recipient: iter::once(&msg.signer_id).chain(&msg.path).join(" -> "),
+            // TODO: comment
             nonce: msg.hash(),
             // TODO: here, borsh would be not good
             message: msg.payload,

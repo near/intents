@@ -222,12 +222,14 @@ impl RequestMessage {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum WalletAuthorization {
     Signature {
+        // TODO: docs
         msg: OffchainMessage,
         proof: String,
     },
     Extension {
         account_id: AccountId,
         authorization: String,
+        // message: Message,
         payload: String,
     },
 }

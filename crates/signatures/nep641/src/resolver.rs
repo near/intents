@@ -136,6 +136,7 @@ impl OffchainResolver {
         &self,
         account_id: impl Into<AccountId>,
         authorization: String,
+        
     ) -> Result<String, ResolveError> {
         let account_id = account_id.into();
 

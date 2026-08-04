@@ -39,8 +39,9 @@ pub struct OffchainMessage {
 
     /// Path to the top-level [resolver](crate::AuthResolver) ID.
     ///
-    /// The path is oriented "bottom-top", i.e. top-level resolver ID is the _last_ element of it.
-    /// Empty path means that this message is a top-level authorization itself.
+    /// The path is oriented "bottom-top", where the parent resolver ID is the _first_ element and
+    /// the top-level resolver ID is the _last_ one. Empty path means that this message is a
+    /// top-level authorization itself.
     ///
     /// The verifying contract MUST panic if it doesn't match the **REVERSED** `path` passed as
     /// an argument to [`w_resolve_auth()`](crate::AuthResolver::w_resolve_auth) method.
@@ -53,11 +54,14 @@ pub struct OffchainMessage {
     /// UNIX timestamp at the time of signing.
     ///
     /// The [verifying](crate::AuthResolver::w_resolve_auth) contract MUST panic if the timestamp
-    /// is from the future. The contract MAY also panic if it performs some additional checks,
-    /// such as TTL.
+    /// is later than the current block timestamp. This prevents an offchain resolver from
+    /// validating the authorization against chain state from the past, which may also happen if
+    /// the RPC is lagging behind.
     ///
-    /// Clients are recommended to set it slightly (e.g. 60 seconds) before the actual time of
-    /// signing, so that it doesn't fail if the message gets resolved too fast.
+    /// The contract MAY also panic if it performs some additional checks, such as TTL.
+    ///
+    /// Clients are recommended to set it slightly (e.g. 60 seconds) before the actual signing
+    /// time to accommodate clock skew and the normal lag of block timestamps.
     #[cfg_attr(
         feature = "arbitrary",
         arbitrary(with = ::arbitrary_with::As::<RangeNanos::<0>>::arbitrary),
@@ -78,13 +82,11 @@ pub struct OffchainMessage {
     )]
     pub timestamp: Timestamp,
 
-    // TODO: how to propagate domain and purpose/action?
     /// The actual payload to authorize
     /// TODO: docs
     /// TODO: or maybe borsh-base64?
     /// TODO: check if empty if defaults are ok
     /// TODO: how would the wallet API look like for passing de/serialized value?
-    /// TODO: or return just hash?...
     pub payload: String,
 }
 
@@ -246,9 +248,11 @@ impl OffchainMessage {
     serde(deny_unknown_fields) // TODO: are we sure?
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+// TODO: VERSIONED
 // TODO: borsh?
 // TODO: make all fields optional?
 // TODO: move timestamp here?
+// TODO: docs: no replay protection
 pub struct Message {
     /// dApp domain
     pub domain: String,
@@ -257,4 +261,10 @@ pub struct Message {
 
     // TODO: Or put structural typed data here in the future?
     pub payload: String,
+}
+
+impl Message {
+    // pub fn hash() -> [u8; 32] {
+
+    // }
 }
