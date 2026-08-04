@@ -15,7 +15,7 @@ arbitrary = { workspace = true, features = ["derive"], optional = true }
 arbitrary_with = { workspace = true, optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
-defuse-crypto = { workspace = true, features = ["ed25519", "secp256k1", "fmt"], optional = true } # TODO: enable features by other features?
+defuse-crypto = { workspace = true, features = ["ed25519", "secp256k1", "fmt"], optional = true }
 defuse-digest = { workspace = true, features = ["sha3"], optional = true }
 defuse-nep413 = { workspace = true, optional = true }
 derive_more = { workspace = true, optional = true }
@@ -44,6 +44,7 @@ arbitrary = [
   "near-account-id/arbitrary",
 ]
 borsh = [
+  "defuse-crypto?/borsh",
   "defuse-time/borsh",
   "dep:borsh",
   "dep:defuse-borsh-utils",
@@ -53,6 +54,7 @@ borsh-schema = [
   "borsh",
   "borsh?/unstable__schema",
   "defuse-borsh-utils?/schema",
+  "defuse-crypto?/borsh-schema",
   "defuse-nep413?/borsh-schema",
   "defuse-time/borsh-schema",
   "near-account-id/abi",
@@ -70,12 +72,14 @@ access-keys = [
   "digest",
 ] # TODO
 serde = [
+  "defuse-crypto?/serde",
   "defuse-nep413?/serde",
   "defuse-time/serde",
   "dep:serde",
   "near-account-id/serde",
 ]
 schemars-v0_8 = [
+  "defuse-crypto?/schemars-v0_8",
   "defuse-nep413?/schemars-v0_8",
   "defuse-time/schemars-v0_8",
   "dep:schemars",

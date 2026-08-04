@@ -1,5 +1,6 @@
 use core::{
     fmt::{self, Debug, Display},
+    iter,
     str::FromStr,
 };
 
@@ -9,6 +10,8 @@ use defuse_crypto::{
     secp256k1::{Secp256k1, Secp256k1RecoverableSignature, Secp256k1UncompressedPublicKey},
 };
 use defuse_digest::{Digest, sha3::Keccak256};
+use defuse_nep413::Nep413Payload;
+use itertools::Itertools;
 use near_account_id::AccountId;
 
 use crate::OffchainMessage;
@@ -27,6 +30,7 @@ use crate::OffchainMessage;
 )]
 pub struct AccessKeyAuthorization {
     pub msg: OffchainMessage,
+    // TODO: via: Nep413(callback_url),
     // TODO: enum of pk + sig
     pub public_key: PublicKey,
     pub signature: Signature,
@@ -38,6 +42,47 @@ impl AccessKeyAuthorization {
     pub fn verify(&self) -> bool {
         // TODO: convert to NEP-413?
         todo!()
+    }
+}
+
+impl From<OffchainMessage> for Nep413Payload {
+    /// Convert into NEP-413 payload
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use defuse_nep641::{OffchainMessage, Timestamp};
+    /// use defuse_nep413::Nep413Payload;
+    ///
+    /// let msg = OffchainMessage {
+    ///     chain_id: "mainnet".to_string(),
+    ///     signer_id: "extension.near".parse().unwrap(),
+    ///     path: vec![
+    ///         "wallet.near".parse().unwrap(),
+    ///         "v1.signer".parse().unwrap(),
+    ///     ],
+    ///     timestamp: Timestamp::now(),
+    ///     payload: "Hello, Near!".to_string(),
+    /// };
+    ///
+    /// assert_eq!(
+    ///     msg.into(),
+    ///     Nep413Payload {
+    ///         message: "Hello, Near!".to_string(),
+    ///     },
+    /// );
+    /// ```
+    #[inline]
+    fn from(msg: OffchainMessage) -> Self {
+        Self {
+            recipient: iter::once(&msg.signer_id).chain(&msg.path).join(" -> "),
+            // TODO: comment
+            nonce: msg.hash(),
+            // TODO: here, borsh would be not good
+            message: msg.payload,
+            // TODO: this will break some wallets
+            callback_url: None,
+        }
     }
 }
 

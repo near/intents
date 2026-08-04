@@ -1,8 +1,8 @@
+#[cfg(feature = "access-keys")]
+pub mod access_keys;
 #[cfg(feature = "near-kit")]
 pub mod client;
 mod message;
-#[cfg(feature = "nep413")]
-mod nep413;
 #[cfg(feature = "resolver")]
 pub mod resolver;
 
