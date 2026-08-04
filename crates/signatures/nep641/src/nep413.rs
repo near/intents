@@ -39,6 +39,7 @@ impl From<OffchainMessage> for Nep413Payload {
             nonce: msg.hash(),
             // TODO: here, borsh would be not good
             message: msg.payload,
+            // TODO: this will break some wallets
             callback_url: None,
         }
     }

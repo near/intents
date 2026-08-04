@@ -1,6 +1,12 @@
+mod access_key;
+mod error;
+
+pub use self::{access_key::*, error::*};
+
 use futures::stream::{FuturesUnordered, TryStreamExt};
+
 use near_account_id::AccountId;
-use near_kit::{BlockReference, CryptoHash, Finality, Near};
+use near_kit::{BlockReference, CryptoHash, Finality, RpcClient, RpcError};
 #[cfg(feature = "tracing")]
 use tracing::{Span, instrument, record_all};
 
@@ -8,27 +14,32 @@ use crate::{AuthorizationResolution, PendingAuthorization, client::WResolveAuthA
 
 /// Offchain verifier for NEP-641 authorizations.
 #[derive(Debug, Clone)]
-pub struct OffchainResolver {
-    client: Near,
+pub struct RpcResolver {
+    client: RpcClient,
+    chain_id: String,
+
+    // state_inits: HashMap<AccountId, StateInit>,
     at_block: BlockReference,
+
     max_pending: usize,
     max_depth: usize,
-    // state_inits: HashMap<AccountId, StateInit>,
 }
 
-impl OffchainResolver {
+impl RpcResolver {
     /// Create new verifier with given Near client
     #[must_use]
-    #[inline]
-    pub const fn new(client: Near) -> Self {
-        Self {
+    pub async fn new(client: RpcClient) -> Result<Self, RpcError> {
+        let status = client.status().await?;
+
+        Ok(Self {
             client,
+            chain_id: status.chain_id,
             // fetch final block by default
             at_block: BlockReference::Finality(Finality::Final),
             // allow only top-level authorizations by default
             max_pending: 0,
             max_depth: 0,
-        }
+        })
     }
 
     /// Override block reference for [resolving](crate::AuthResolver::w_resolve_auth)
@@ -91,6 +102,12 @@ impl OffchainResolver {
         self
     }
 
+    /// Returns chain ID of underlying RPC client
+    #[inline]
+    pub const fn chain_id(&self) -> &str {
+        self.chain_id.as_str()
+    }
+
     /// Resolve a payload from top-level authorization according to NEP-641.
     ///
     /// This method recursively resolves given top-level authorization and all returned pending
@@ -127,7 +144,7 @@ impl OffchainResolver {
     /// NEP-641 standard, the implementation fallbacks to verifying offchain signature according
     /// to [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md) standard.
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
-        chain.id = self.client.chain_id().as_str(),
+        chain.id = self.chain_id,
         account_id,
         at_block.hash,
         at_block.height,
@@ -136,7 +153,6 @@ impl OffchainResolver {
         &self,
         account_id: impl Into<AccountId>,
         authorization: String,
-        
     ) -> Result<String, ResolveError> {
         let account_id = account_id.into();
 
@@ -176,13 +192,13 @@ impl OffchainResolver {
         loop {
             // check if new path exceeds max depth limit for pending sub-authorizations, if any
             if !pending.is_empty() && path.len() > self.max_depth {
-                return Err(ResolveError::MaxDepthExceeded(self.max_depth));
+                return Err(ResolveErrorKind::MaxDepthExceeded(self.max_depth).at(path));
             }
 
             // check if adding new pending sub-authorizations wouldn't exceed max pending limit
-            pending_left = pending_left
-                .checked_sub(pending.len())
-                .ok_or(ResolveError::TooManyPending(self.max_pending))?;
+            pending_left = pending_left.checked_sub(pending.len()).ok_or_else(|| {
+                ResolveErrorKind::TooManyPending(self.max_pending).at(path.clone())
+            })?;
 
             // add pending sub-authorizations to the in-flight pool
             in_flight.extend(pending.into_iter().map(|pending| {
@@ -217,7 +233,7 @@ impl OffchainResolver {
         parent = parent_span,
         skip_all,
         fields(
-            chain.id = self.client.chain_id().as_str(),
+            chain.id = self.chain_id,
             account_id = %pending.account_id,
             at_block.hash = %block_hash,
         ),
@@ -235,7 +251,11 @@ impl OffchainResolver {
 
         // check that returned payload matches the expected one
         if res.payload != pending.expect {
-            return Err(ResolveError::InvalidPayload(path));
+            return Err(ResolveErrorKind::InvalidPayload {
+                payload: res.payload,
+                expected: pending.expect,
+            }
+            .at(path));
         }
 
         #[cfg(feature = "tracing")]
@@ -257,23 +277,24 @@ impl OffchainResolver {
         authorization: String,
         block: impl Into<BlockReference>,
     ) -> Result<SingleResolved, ResolveError> {
+        let args = serde_json::to_vec(&WResolveAuthArgs {
+            path: &path,
+            authorization: &authorization,
+        })
+        .expect("JSON: serialization failed");
+
         let res = self
             .client
-            .rpc()
-            .view_function(
-                &account_id,
-                "w_resolve_auth",
-                &serde_json::to_vec(&WResolveAuthArgs {
-                    path: &path,
-                    authorization: &authorization,
-                })
-                .expect("JSON: serialization failed"),
-                block.into(),
-                // TODO: "pre-init" if we have StateInit for this AccountId
-                // self.state_inits.get(&msg.resolver_id),
-            )
+            // TODO: "pre-init" if we have StateInit for this AccountId
+            // self.state_inits.get(&account_id),
+            .view_function(&account_id, "w_resolve_auth", &args, block.into())
             // TODO: handle contract errors
-            .await?;
+            .await;
+
+        // append the account ID to path for pending sub-authorizations, if there would be any
+        path.push(account_id);
+
+        let res = res.map_err(|err| ResolveErrorKind::from(err).at(path.clone()))?;
 
         // // if was set, make sure RPC returned same block hash
         // if let Some(at_block_hash) = at_block_hash
@@ -296,14 +317,15 @@ impl OffchainResolver {
         // FullAccessKeys on it - do we need to fallback to them, too?
         //
         // TODO: fallback to NEP-413 (for all cases above?)
+        // TODO: 0x123...abc accounts: secp256k1 recover
+
         // TODO: fallback to intents.near(far?) as resolver_id?
 
-        // append the account ID to path for pending sub-authorizations, if any
-        path.push(account_id);
-
         Ok(SingleResolved {
+            res: res
+                .json()
+                .map_err(|err| ResolveErrorKind::from(err).at(path.clone()))?,
             path,
-            res: res.json()?,
             block_hash: res.block_hash,
             block_height: res.block_height,
         })
@@ -336,38 +358,4 @@ struct SingleResolved {
 
     /// Resolved block height
     block_height: u64,
-}
-
-/// An error returned by [`OffchainResolver`]
-#[derive(Debug, thiserror::Error)]
-#[non_exhaustive]
-pub enum ResolveError {
-    #[error(
-        "invalid payload resolved at path: {}",
-        .0.iter().map(ToString::to_string).collect::<Vec<_>>().join(" -> "),
-    )]
-    InvalidPayload(Vec<AccountId>),
-
-    #[error("max depth exceeded, maximum is set to: {0}")]
-    MaxDepthExceeded(usize),
-
-    #[error(transparent)]
-    Near(#[from] near_kit::Error),
-
-    #[error("too many pending authorizations, maximum is set to: {0}")]
-    TooManyPending(usize),
-}
-
-impl From<near_kit::RpcError> for ResolveError {
-    #[inline]
-    fn from(err: near_kit::RpcError) -> Self {
-        Self::Near(err.into())
-    }
-}
-
-impl From<serde_json::Error> for ResolveError {
-    #[inline]
-    fn from(err: serde_json::Error) -> Self {
-        Self::Near(err.into())
-    }
 }

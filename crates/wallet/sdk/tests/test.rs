@@ -2,7 +2,7 @@
 
 use std::{env, fs, path::Path, sync::LazyLock};
 
-use defuse_nep641::resolver::OffchainResolver;
+use defuse_nep641::resolver::RpcResolver;
 use defuse_wallet::{NearPromise, Request, WalletOp, actions::FunctionCall};
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_sdk::{
@@ -132,7 +132,7 @@ async fn w_resolve_auth(
         .expect("failed to sign");
     println!("input:\n{input}");
 
-    let output = OffchainResolver::new(near)
+    let output = RpcResolver::new(near)
         .with_max_depth(usize::MAX)
         .resolve_auth(wallet.account_id(), input)
         .await

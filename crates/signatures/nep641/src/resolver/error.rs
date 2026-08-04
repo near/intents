@@ -1,0 +1,48 @@
+use itertools::Itertools;
+
+use near_account_id::AccountId;
+
+use crate::resolver::AccessKeyError;
+
+#[derive(Debug, thiserror::Error)]
+#[error("{}: {}", .path.iter().chain([.account_id]).join(" -> "), .kind)]
+pub struct ResolveError {
+    pub account_id: AccountId,
+    pub path: Vec<AccountId>,
+    pub kind: ResolveErrorKind,
+}
+
+// TODO: add `path` to every variant?...
+/// An error returned by [`OffchainResolver`]
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+pub enum ResolveErrorKind {
+    #[error("FullAccessKey: {0}")]
+    FullAccessKey(#[from] AccessKeyError),
+
+    #[error("invalid payload: {}, expected: {}", .payload, .expected)]
+    InvalidPayload { payload: String, expected: String },
+
+    #[error("JSON: {0}")]
+    JSON(#[from] serde_json::Error),
+
+    #[error("max depth exceeded, maximum is set to: {0}")]
+    MaxDepthExceeded(usize),
+
+    #[error("RPC: {0}")]
+    Rpc(#[from] near_kit::RpcError),
+
+    #[error("too many pending authorizations, maximum is set to: {0}")]
+    TooManyPending(usize),
+}
+
+impl ResolveErrorKind {
+    #[inline]
+    pub const fn at(self, account_id: AccountId, path: Vec<AccountId>) -> ResolveError {
+        ResolveError {
+            account_id,
+            path,
+            kind: self,
+        }
+    }
+}

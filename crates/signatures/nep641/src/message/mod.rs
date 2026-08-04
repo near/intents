@@ -1,3 +1,6 @@
+#[cfg(feature = "access-keys")]
+pub mod access_keys;
+
 use defuse_time::Timestamp;
 use near_account_id::AccountId;
 
