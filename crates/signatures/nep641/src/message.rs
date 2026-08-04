@@ -10,6 +10,8 @@ use defuse_time::arbitrary::RangeNanos;
 ///
 /// The [verifying](crate::AuthResolver::w_resolve_auth) contract MUST verify a signature over
 /// this entire message, including **all** of its fields, and panic if the signature is invalid.
+///
+/// See the documentation of each individual field for additional requirements.
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
@@ -55,8 +57,8 @@ pub struct OffchainMessage {
     ///
     /// The [verifying](crate::AuthResolver::w_resolve_auth) contract MUST panic if the timestamp
     /// is later than the current block timestamp. This prevents an offchain resolver from
-    /// validating the authorization against chain state from the past, which may also happen if
-    /// the RPC is lagging behind.
+    /// validating this authorization against chain state from the past, which may also happen
+    /// unintentionally when its RPC endpoint lags behind the tip of the network.
     ///
     /// The contract MAY also panic if it performs some additional checks, such as TTL.
     ///
