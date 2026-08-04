@@ -83,6 +83,7 @@ pub struct OffchainMessage {
     /// TODO: docs
     /// TODO: or maybe borsh-base64?
     /// TODO: check if empty if defaults are ok
+    /// TODO: how would the wallet API look like for passing de/serialized value?
     pub payload: String,
 }
 

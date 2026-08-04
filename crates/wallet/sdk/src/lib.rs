@@ -706,25 +706,18 @@ where
     }
 
     fn wrap_offchain_msg(&self, msg: OffchainMessage, proof: String) -> String {
-        let payload = msg.payload.clone();
-
         iter::once(self.real_account_id())
             .chain(self.as_extension_chain())
             // wrap only while there is a next extension in the chain
             .take(self.as_extension_chain().len())
             .cloned()
             .fold(
-                WalletOffchainInput::AsSelf { msg, proof }.to_input(),
+                // first authorization is via signature on real signer ID
+                WalletAuthorization::Signature { msg, proof },
                 // wrap as extension with ID of the previous account in the chain
-                |input, as_extension_id| {
-                    WalletOffchainInput::AsExtension {
-                        account_id: as_extension_id,
-                        authorization: input,
-                        payload: payload.clone(),
-                    }
-                    .to_input()
-                },
+                WalletAuthorization::as_extension_of,
             )
+            .to_authorization()
     }
 
     #[allow(clippy::doc_markdown)]

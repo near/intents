@@ -20,7 +20,7 @@ use near_sdk::{FunctionError, Promise, env, ext_contract};
 
 pub use crate::ContractError as Error;
 use crate::{
-    Request, RequestMessage, SignatureSchema, State, WalletOffchainInput, WalletOp,
+    Request, RequestMessage, SignatureSchema, State, WalletAuthorization, WalletOp,
     events::{Actor, WalletEvent},
 };
 
@@ -367,10 +367,10 @@ where
         authorization: String,
     ) -> Result<AuthorizationResolution> {
         // TODO: check if receiver_id is self?
-        let input: WalletOffchainInput = serde_json::from_str(&authorization)?;
+        let input: WalletAuthorization = serde_json::from_str(&authorization)?;
 
         Ok(match input {
-            WalletOffchainInput::AsSelf { msg, proof } => {
+            WalletAuthorization::Signature { msg, proof } => {
                 if !self.0.is_signature_allowed() {
                     return Err(Error::SignatureDisabled);
                 }
@@ -400,10 +400,10 @@ where
                     return Err(Error::InvalidSignature);
                 }
 
-                // TODO: docs: terminate
+                // authorize the payload
                 AuthorizationResolution::new(msg.payload)
             }
-            WalletOffchainInput::AsExtension {
+            WalletAuthorization::Extension {
                 account_id,
                 authorization,
                 payload,
