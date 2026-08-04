@@ -9,14 +9,13 @@ repository.workspace = true
 
 [dependencies]
 borsh = { workspace = true, features = ["derive"], optional = true }
-defuse-borsh-utils = { workspace = true, optional = true }
 impl-tools.workspace = true
 near-sdk = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 abi = ["borsh-schema"]
-borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
+borsh = ["dep:borsh"]
 borsh-schema = ["borsh", "borsh/unstable__schema"]
 near-contract = ["borsh", "dep:near-sdk", "dep:serde"]
 
