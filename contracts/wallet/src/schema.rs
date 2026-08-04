@@ -1,5 +1,4 @@
 use defuse_nep641::OffchainMessage;
-use near_account_id::AccountId;
 
 use crate::RequestMessage;
 
@@ -18,83 +17,21 @@ pub trait SignatureSchema {
     /// method.
     type PublicKey;
 
-    /// Verify given proof over the request message in respect to the
-    /// public key and return whether verification passed.
+    /// Verify given proof over the request message in respect to the public key
+    /// and return whether verification passed.
     ///
-    /// Used by the `w_execute_signed(msg, proof)` contract method.
+    /// Used by the [`w_execute_signed()`](crate::contract::Wallet::w_execute_signed) contract method.
     #[must_use = "check if verification passed"]
     fn verify_request_msg(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool;
 
-    // TODO: docs, naming
+    /// Verify given proof over the offchain message in respect to the public key
+    /// and return whether verification passed.
+    ///
+    /// Used by the [`w_resolve_auth()`](defuse_nep641::AuthResolver::w_resolve_auth) contract method.
     #[must_use = "check if verification passed"]
     fn verify_offchain_msg(
         public_key: &Self::PublicKey,
         msg: &OffchainMessage,
         proof: &str,
     ) -> bool;
-}
-
-/// NEP-641 authorization for [`Wallet`](crate::contract::Wallet) contract.
-#[cfg_attr(
-    feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
-    serde(rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum WalletAuthorization {
-    Signature {
-        msg: OffchainMessage,
-        proof: String,
-    },
-    Extension {
-        account_id: AccountId,
-        authorization: String,
-        payload: String,
-    },
-}
-
-impl WalletAuthorization {
-    /// Get the authorized payload
-    #[inline]
-    pub const fn payload(&self) -> &str {
-        match self {
-            Self::Signature {
-                msg: OffchainMessage { payload, .. },
-                ..
-            } => payload.as_str(),
-            Self::Extension { payload, .. } => payload.as_str(),
-        }
-    }
-
-    /// Convert into the authorized payload
-    #[inline]
-    pub fn into_payload(self) -> String {
-        match self {
-            Self::Signature {
-                msg: OffchainMessage { payload, .. },
-                ..
-            } => payload,
-            Self::Extension { payload, .. } => payload,
-        }
-    }
-
-    /// Convert to the authorization blob
-    #[cfg(feature = "json")]
-    #[inline]
-    pub fn to_authorization(&self) -> String {
-        serde_json::to_string(self).expect("JSON: failed to serialize")
-    }
-
-    /// Wrap as extension with given ID
-    #[cfg(feature = "json")]
-    #[inline]
-    pub fn as_extension_of(self, account_id: impl Into<AccountId>) -> Self {
-        Self::Extension {
-            account_id: account_id.into(),
-            authorization: self.to_authorization(),
-            payload: self.into_payload(),
-        }
-    }
 }
