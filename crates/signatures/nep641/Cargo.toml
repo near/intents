@@ -76,6 +76,7 @@ serde = [
   "defuse-nep413?/serde",
   "defuse-time/serde",
   "dep:serde",
+  "dep:serde_with",
   "near-account-id/serde",
 ]
 schemars-v0_8 = [

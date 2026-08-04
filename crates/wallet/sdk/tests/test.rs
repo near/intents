@@ -132,7 +132,11 @@ async fn w_resolve_auth(
         .expect("failed to sign");
     println!("input:\n{input}");
 
-    let output = RpcResolver::new(near)
+    let resolver = RpcResolver::new(near.rpc().clone())
+        .await
+        .expect("failed to initialize RPC resolver");
+
+    let output = resolver
         .with_max_depth(usize::MAX)
         .resolve_auth(wallet.account_id(), input)
         .await

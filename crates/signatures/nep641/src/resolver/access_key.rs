@@ -13,9 +13,9 @@ impl RpcResolver {
     // TODO: return optional?
     async fn resolve_access_key(
         &self,
-        account_id: AccountId,
+        account_id: &AccountId,
         // TODO: slice?
-        path: Vec<AccountId>,
+        path: &[AccountId],
         auth: AccessKeyAuthorization,
         block: BlockReference,
     ) -> Result<String, ResolveErrorKind> {
@@ -25,12 +25,8 @@ impl RpcResolver {
         }
 
         // check signer_id
-        if auth.msg.signer_id != account_id {
-            return Err(AccessKeyError::InvalidSignerId {
-                signer_id: auth.msg.signer_id,
-                expected: account_id,
-            }
-            .into());
+        if auth.msg.signer_id != *account_id {
+            return Err(AccessKeyError::InvalidSignerId(auth.msg.signer_id).into());
         }
 
         // check reversed path
@@ -48,7 +44,7 @@ impl RpcResolver {
         // check access key
         let is_full_access = match self
             .client
-            .view_access_key(&account_id, &auth.public_key.clone().into(), block)
+            .view_access_key(account_id, &auth.public_key.clone().into(), block)
             .await
         {
             // Access key exists -> allow only if it has FullAccess permission.
@@ -73,7 +69,7 @@ impl RpcResolver {
             Err(RpcError::AccountNotFound(_)) => {
                 // TODO: or check if we have `self.state_inits.get(&account_id)` with this public
                 // key added, since it can be just one of them
-                account_id == auth.public_key.to_implicit_account_id()
+                auth.public_key.to_implicit_account_id() == *account_id
             }
 
             // Other RPC error -> reject.
@@ -97,11 +93,8 @@ pub enum AccessKeyError {
     #[error("invalid path")]
     InvalidPath,
 
-    #[error("invalid signer_id: {}, expected: {}", .signer_id, .expected)]
-    InvalidSignerId {
-        signer_id: AccountId,
-        expected: AccountId,
-    },
+    #[error("invalid signer_id: {0}")]
+    InvalidSignerId(AccountId),
 
     #[error("invalid signature")]
     InvalidSignature,

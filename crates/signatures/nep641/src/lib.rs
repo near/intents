@@ -35,8 +35,8 @@ pub trait AuthResolver {
     /// and the latter gets propagated to all sub-resolvers.
     ///
     /// Thus, for any non-top-level resolver the `path` argument includes the whole traversal path
-    /// _starting_ from the top-level resolver and _ending_ with the closest ancestor (i.e. parent),
-    /// which has triggered the current `w_resolve_auth()`:
+    /// _starting_ from the top-level resolver and _ending_ with the closest ancestor (i.e. direct
+    /// parent), which has triggered the current `w_resolve_auth()`:
     ///
     /// <table>
     ///   <thead>

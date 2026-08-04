@@ -20,7 +20,7 @@ pub enum ResolveErrorKind {
     #[error("FullAccessKey: {0}")]
     FullAccessKey(#[from] AccessKeyError),
 
-    #[error("invalid payload: {}, expected: {}", .payload, .expected)]
+    #[error("resolved payload is invalid: exepected: {}, got: {}", .expected, .payload)]
     InvalidPayload { payload: String, expected: String },
 
     #[error("JSON: {0}")]
@@ -32,8 +32,8 @@ pub enum ResolveErrorKind {
     #[error("RPC: {0}")]
     Rpc(#[from] near_kit::RpcError),
 
-    #[error("too many pending authorizations, maximum is set to: {0}")]
-    TooManyPending(usize),
+    #[error("too many sub-authorizations, maximum is set to: {0}")]
+    TooManySubAuthorizations(usize),
 }
 
 impl ResolveErrorKind {
