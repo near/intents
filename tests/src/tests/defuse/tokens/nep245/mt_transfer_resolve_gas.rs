@@ -16,7 +16,7 @@ use defuse_sandbox::{
             nep245::{MtEvent, MtTransferEvent},
         },
         mt::MtOnTransferArgs,
-        mt::{Mt, MtBalanceOfArgs, MtBatchTransferCallArgs, MtExt},
+        mt::{Mt, MtBalanceOfArgs, MtBatchBalanceOfArgs, MtBatchTransferCallArgs, MtExt},
     },
     kit::{
         AccountId, ActionError, ActionErrorKind, ExecutionStatus, Final, FunctionCallError, Gas,
@@ -415,22 +415,9 @@ const REPRO_TOKEN_COUNT: usize = 66;
 const REPRO_FIRST_TOKEN_ID_LEN: usize = MAX_TOKEN_ID_LEN - 8;
 const REPRO_TOKEN_ID_PREFIX_LEN: usize = 2;
 
-/// `mt_resolve_transfer()` refunds by re-emitting the transfer with `memo: "refund"`, which
-/// makes the refund log exactly `,"memo":"refund"` (16 bytes) longer than the forward one.
-/// `check_refund()` must therefore reject any no-memo transfer longer than
-/// `TOTAL_LOG_LENGTH_LIMIT - 16`.
-///
-/// This pins the boundary: the shortest forward log whose refund overflows. Accepting it
-/// commits the transfer in the first receipt and then aborts `mt_resolve_transfer()` on
-/// `env::log_str()`, leaving the tokens on the receiver with no way to recover them
-/// (`mt_resolve_transfer` is `#[private]` and fires once).
-///
-/// Every account here is implicit, i.e. exactly [`AccountId::MAX_LEN`] bytes, so the log
-/// sizes are fixed rather than depending on the process-global counter that
-/// `defuse_sandbox::root` bakes into the test root's name.
 #[rstest]
 #[tokio::test]
-async fn mt_batch_transfer_call_refunds_at_exact_log_limit_boundary(#[future(awt)] env: Env) {
+async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(awt)] env: Env) {
     env.transaction(env.defuse.contract_id())
         .transfer(NearToken::from_near(1000))
         .await
@@ -481,16 +468,17 @@ async fn mt_batch_transfer_call_refunds_at_exact_log_limit_boundary(#[future(awt
         .await
         .unwrap();
 
-    let balance_of = async |account_id| {
+    let balances_of = async |account_id| {
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
+            .mt_batch_balance_of(MtBatchBalanceOfArgs {
                 account_id,
-                token_id: &defuse_token_ids[0],
+                token_ids: &defuse_token_ids,
             })
             .await
             .unwrap()
     };
-    let balance_before = balance_of(user.account_id()).await;
+    let sender_balances_before = balances_of(user.account_id()).await;
+    let receiver_balances_before = balances_of(receiver_stub.account_id()).await;
 
     // NOTE: called as a raw transaction rather than through `MtExt::mt_batch_transfer_call`,
     // since that helper drops the outcome when any receipt in the chain fails.
@@ -512,30 +500,33 @@ async fn mt_batch_transfer_call_refunds_at_exact_log_limit_boundary(#[future(awt
         .await
         .unwrap();
 
-    // 1st receipt on defuse is `mt_batch_transfer_call` itself; 2nd is the `mt_resolve_transfer` callback.
     let defuse_outcomes: Vec<_> = execution_result
         .receipts_outcome
         .iter()
         .filter(|o| o.outcome.executor_id == *env.defuse.contract_id())
         .collect();
-    assert_eq!(defuse_outcomes.len(), 2);
+    assert_eq!(defuse_outcomes.len(), 1);
     assert!(
         matches!(
-            &defuse_outcomes[1].outcome.status,
+            &defuse_outcomes[0].outcome.status,
             ExecutionStatus::Failure(ActionError {
                 kind: ActionErrorKind::FunctionCallError(FunctionCallError::ExecutionError(msg)),
                 ..
-            }) if msg.contains("length of a log message") && msg.contains("exceeds the limit")
+            }) if msg.contains("refund event log would be too long")
         ),
-        "expected mt_resolve_transfer to fail specifically due to the refund log exceeding \
-        the total log length limit, got: {:?}",
-        defuse_outcomes[1].outcome.status
+        "expected mt_batch_transfer_call to reject the oversized refund log, got: {:?}",
+        defuse_outcomes[0].outcome.status
     );
 
     assert_eq!(
-        balance_of(user.account_id()).await,
-        balance_before,
-        "sender was not made whole"
+        balances_of(user.account_id()).await,
+        sender_balances_before,
+        "failed mt_batch_transfer_call changed one or more sender balances"
+    );
+    assert_eq!(
+        balances_of(receiver_stub.account_id()).await,
+        receiver_balances_before,
+        "failed mt_batch_transfer_call changed one or more receiver balances"
     );
 }
 
