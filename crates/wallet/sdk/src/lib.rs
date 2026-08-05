@@ -134,7 +134,7 @@ impl WalletBuilder {
 
         Wallet {
             account_id: state_init.derive_account_id(),
-            state_init,
+            state_init: state_init.into(),
             initialized: Arc::new(AtomicBool::new(false)),
             as_extension_chain: Vec::new(),
             timeout: self.timeout,
@@ -182,7 +182,7 @@ pub struct Wallet<S: SignatureSchema> {
     /// Real account ID
     account_id: AccountId,
     /// Initialization state for real account ID
-    state_init: StateInit,
+    state_init: Arc<StateInit>,
     // Whether real account ID is known to be already initialized on-chain
     initialized: Arc<AtomicBool>,
     /// Currently configured extension chain
@@ -429,7 +429,7 @@ where
     /// This is handled automatically when [sending](Self::sign_and_send) signed on-chain messages.
     /// See [`.initialize()`](Self::initialize) for manual initialization.
     #[inline]
-    pub const fn deterministic_state_init(&self) -> &StateInit {
+    pub fn deterministic_state_init(&self) -> &StateInit {
         &self.state_init
     }
 
