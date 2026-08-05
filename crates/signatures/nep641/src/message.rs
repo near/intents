@@ -84,9 +84,8 @@ pub struct OffchainMessage {
 
     /// The authorized payload.
     ///
-    /// dApps and protocols are recommended to use human-readable
-    /// [`JsonPayload`] format for user-facing interactions and maximum
-    /// compatibility across wallets.
+    /// dApps and protocols are recommended to use human-readable [`JsonPayload`] top-level
+    /// structure for user-facing interactions and maximum compatibility across wallets.
     pub payload: String,
 }
 

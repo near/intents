@@ -174,7 +174,9 @@ pub trait AuthResolver {
 pub struct AuthorizationResolution {
     /// A payload that was successfully authorized from given authorization blob
     /// at the current contract state.
-    // TODO: docs: in case of wallets/DAOs this should be Message
+    ///
+    /// dApps and protocols are recommended to use human-readable [`JsonPayload`] top-level
+    /// structure for user-facing interactions and maximum compatibility across wallets.
     pub payload: String,
 
     /// Optional list of pending sub-authorizations that MUST be successfully
