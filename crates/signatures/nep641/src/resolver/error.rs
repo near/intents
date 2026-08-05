@@ -2,8 +2,9 @@ use itertools::Itertools;
 
 use near_account_id::AccountId;
 
-use crate::resolver::AccessKeyError;
+use crate::resolver::{AccessKeyError, contract::ContractError};
 
+/// An error returned by [`crate::resolver::RpcResolver`]
 #[derive(Debug, thiserror::Error)]
 #[error("{}: {}", .path.iter().chain([.account_id]).join(" -> "), .kind)]
 pub struct ResolveError {
@@ -12,13 +13,15 @@ pub struct ResolveError {
     pub kind: ResolveErrorKind,
 }
 
-// TODO: add `path` to every variant?...
-/// An error returned by [`OffchainResolver`]
+/// An resolve error [kind](field::ResolveError::kind)
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ResolveErrorKind {
     #[error("access key: {0}")]
     AccessKey(#[from] AccessKeyError),
+
+    #[error(transparent)]
+    Contract(#[from] ContractError),
 
     #[error("resolved payload is invalid: exepected: {}, got: {}", .expected, .payload)]
     InvalidPayload { payload: String, expected: String },
@@ -38,7 +41,7 @@ pub enum ResolveErrorKind {
 
 impl ResolveErrorKind {
     #[inline]
-    pub const fn at(self, account_id: AccountId, path: Vec<AccountId>) -> ResolveError {
+    pub(super) const fn at(self, account_id: AccountId, path: Vec<AccountId>) -> ResolveError {
         ResolveError {
             account_id,
             path,

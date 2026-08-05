@@ -20,7 +20,6 @@ use crate::OffchainMessage;
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
-    // TODO: deny unknown fields?
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

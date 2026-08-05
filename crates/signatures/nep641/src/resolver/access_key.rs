@@ -114,6 +114,7 @@ impl RpcResolver {
 }
 
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum AccessKeyError {
     #[error("message is from the future")]
     FromTheFuture,

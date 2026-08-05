@@ -1,4 +1,5 @@
 mod access_key;
+mod contract;
 mod error;
 
 pub use self::{access_key::*, error::*};
@@ -13,7 +14,7 @@ use near_kit::{BlockReference, CryptoHash, Finality, RpcClient, RpcError};
 #[cfg(feature = "tracing")]
 use tracing::{Span, field, instrument, record_all};
 
-use crate::{AuthorizationResolution, client::WResolveAuthArgs};
+use crate::AuthorizationResolution;
 
 /// RPC resolver for NEP-641 offchain authorizations.
 #[derive(Debug, Clone)]
@@ -271,6 +272,7 @@ impl RpcResolver {
         let (access_key, contract) = join!(
             self.resolve_access_key(&account_id, &path, &authorization, block.clone()),
             self.resolve_contract(&account_id, &path, &authorization, block.clone()),
+            // TODO: add optional support for fallback to Intents verifier contract as a resolver
         );
 
         // successfull resolution via FullAccessKey takes precedence over the contract, since it:
@@ -334,59 +336,6 @@ impl RpcResolver {
             span,
         })
     }
-
-    /// Try to resolve a single authorization via `w_resolve_auth()` view-method
-    #[cfg_attr(feature = "tracing", instrument(level = "DEBUG", skip_all))]
-    async fn resolve_contract(
-        &self,
-        account_id: &AccountId,
-        path: &[AccountId],
-        authorization: &str,
-        block: BlockReference,
-    ) -> Result<Resolved, ResolveErrorKind> {
-        let res = self
-            .client
-            .view_function(
-                account_id,
-                "w_resolve_auth",
-                &serde_json::to_vec(&WResolveAuthArgs {
-                    path,
-                    authorization,
-                })
-                .expect("JSON: serialization failed"),
-                block,
-                // TODO: "pre-init" if we have StateInit for this AccountId
-                // self.state_inits.get(&account_id),
-            )
-            // TODO: handle contract errors
-            .await?;
-
-        // // if was set, make sure RPC returned same block hash
-        // if let Some(at_block_hash) = at_block_hash
-        //     && at_block_hash != res.block_hash
-        // {
-        //     // TODO: RPCs can be behind a load-balancer, so that they can return UnknownBlock error
-        //     // TODO: maybe we need to retry with minimum-known block_height?
-        //     return Err(
-        //         near_kit::RpcError::InvalidResponse("block hash mismatch".to_string()).into(),
-        //     );
-        // }
-
-        //
-        // TODO: what if `w_resolve_auth()` failed, but the account also has
-        // FullAccessKeys on it - do we need to fallback to them, too?
-        //
-        // TODO: fallback to NEP-413 (for all cases above?)
-        // TODO: 0x123...abc accounts: secp256k1 recover
-
-        // TODO: fallback to intents.near(far?) as resolver_id?
-
-        Ok(Resolved {
-            res: res.json()?,
-            block_hash: res.block_hash,
-            block_height: res.block_height,
-        })
-    }
 }
 
 /// A single resolved authorization
@@ -405,7 +354,6 @@ struct ResolvedAuthorization {
     span: Span,
 }
 
-// TODO: rename?
 struct Resolved {
     /// Authorization resolution
     res: AuthorizationResolution,
