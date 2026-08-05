@@ -210,7 +210,7 @@ impl OffchainMessage {
     ///
     /// assert_eq!(
     ///     msg.hash(),
-    ///     hex!("d98eb326e626ad325bfc4ff7d4e487d2c8cbd820a5a29683be6b931a3dd5a280"),
+    ///     hex!("ac9fc5df2a1da51c4e0446185c8e5b58b65f37d12c544d144fa8f026239962ae"),
     /// );
     /// ```
     #[cfg(all(feature = "digest", feature = "borsh"))]
@@ -247,10 +247,10 @@ impl OffchainMessage {
     /// };
     ///
     /// assert_eq!(
-    ///     msg.into_nep413_payload("https://wallet.com/callback"),
+    ///     msg.into_nep413_payload("https://wallet.com/callback".to_string()),
     ///     Nep413Payload {
     ///         message: "Hello, Near!".to_string(),
-    ///         nonce: hex!("d98eb326e626ad325bfc4ff7d4e487d2c8cbd820a5a29683be6b931a3dd5a280"),
+    ///         nonce: hex!("039f8afb4ef2d76c621d3952f214bd2a080ce977ef351d52ff65a090eebbf72c"),
     ///         recipient: "mainnet @ extension.near -> wallet.near -> v1.signer".to_string(),
     ///         callback_url: Some("https://wallet.com/callback".to_string()),
     ///     },
