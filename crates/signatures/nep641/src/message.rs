@@ -253,7 +253,8 @@ const _: () = {
     impl From<&JsonPayload> for String {
         #[inline]
         fn from(value: &JsonPayload) -> Self {
-            serde_json::to_string(value).expect("JSON")
+            // pretty JSON for better readability
+            serde_json::to_string_pretty(value).expect("JSON")
         }
     }
 
