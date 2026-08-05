@@ -82,7 +82,10 @@ pub struct OffchainMessage {
     )]
     pub timestamp: Timestamp,
 
-    /// The actual authorized payload.
+    /// The authorized payload.
+    ///
+    /// dApps are recommended to use human-readable [`JsonPayload`] format
+    /// for user-facing interactions and maximum compatibility across wallets.
     pub payload: String,
 }
 
@@ -224,25 +227,52 @@ impl OffchainMessage {
     }
 }
 
-// TODO: docs
+/// Domain-separated JSON [payload](field@OffchainMessage::payload).
+#[cfg(feature = "json")]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+// TODO: versioned enum? or string tag before, like: "MESSAGE_V1_JSON:{ ... }"?
 // TODO: how would the wallet API look like for passing de/serialized value?
-// TODO: VERSIONED? or string tag before?
-// TODO: borsh?
-// TODO: make all fields optional?
-#[cfg_attr(
-    feature = "serde",
-    derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
-    serde(deny_unknown_fields) // TODO: are we sure?
-)]
-#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-pub struct Message {
+// TODO: should we make all or some fields optional?
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ::serde::Serialize, ::serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct JsonPayload {
     /// dApp domain, e.g. `near.com`
     pub domain: String,
 
-    // TODO: docs
-    pub action: String,
+    /// dApp action, e.g. `Login`
+    pub action: String, // TODO: optional or empty?
 
     // TODO: Or put structural typed data here in the future?
-    pub payload: String,
+    /// Message.
+    pub msg: String,
 }
+
+#[cfg(feature = "json")]
+const _: () = {
+    use core::str::FromStr;
+
+    impl JsonPayload {}
+
+    impl From<&JsonPayload> for String {
+        #[inline]
+        fn from(value: &JsonPayload) -> Self {
+            serde_json::to_string(value).expect("JSON")
+        }
+    }
+
+    impl From<JsonPayload> for String {
+        #[inline]
+        fn from(value: JsonPayload) -> Self {
+            (&value).into()
+        }
+    }
+
+    impl FromStr for JsonPayload {
+        type Err = serde_json::Error;
+
+        #[inline]
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            serde_json::from_str(s)
+        }
+    }
+};

@@ -2,7 +2,7 @@
 
 use std::{env, fs, path::Path, sync::LazyLock};
 
-use defuse_nep641::resolver::RpcResolver;
+use defuse_nep641::{JsonPayload, resolver::RpcResolver};
 use defuse_wallet::{NearPromise, Request, WalletOp, actions::FunctionCall};
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_sdk::{
@@ -113,36 +113,39 @@ async fn w_resolve_auth(
     #[future]
     wallet: Wallet,
 ) {
-    const PAYLOAD: &str = "Hello, Near!";
-
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .pretty()
         .init();
 
-    println!(
-        "{} -> {}: \"{PAYLOAD}\"",
-        wallet.real_account_id(),
-        wallet.account_id()
-    );
+    let payload = JsonPayload {
+        domain: "Near MPC".to_string(),
+        action: "sign".to_string(),
+        msg: "Hello, Near!".to_string(),
+    };
 
-    let input = wallet
-        .sign_offchain_msg(PAYLOAD, None)
+    let authorization = wallet
+        .sign_offchain_msg(&payload, None) // top-level
         .await
         .expect("failed to sign");
-    println!("input:\n{input}");
+    dbg!(&authorization);
 
     let resolver = RpcResolver::new(near.rpc().clone())
         .await
-        .expect("failed to initialize RPC resolver");
+        .expect("failed to initialize RPC resolver")
+        .with_max_depth(usize::MAX);
 
-    let output = resolver
-        .with_max_depth(usize::MAX)
-        .resolve_auth(wallet.account_id(), input)
+    let resolved = resolver
+        .resolve_auth(wallet.account_id(), authorization)
         .await
         .expect("invalid authorization");
 
-    assert_eq!(output, PAYLOAD);
+    println!("{} -> {resolved}", wallet.account_id());
+    assert_eq!(
+        payload,
+        serde_json::from_str(&resolved).unwrap(),
+        "resolved invalid payload"
+    );
 }
 
 #[rstest]

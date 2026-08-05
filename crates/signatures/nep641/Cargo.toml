@@ -60,6 +60,7 @@ borsh-schema = [
   "near-account-id/abi",
 ]
 digest = ["dep:defuse-digest", "dep:digest-io"]
+json = ["dep:serde_json", "serde"]
 near-kit = ["defuse-nep413?/near-kit", "dep:near-kit", "serde"]
 access-keys = [
   "borsh",
@@ -94,8 +95,8 @@ resolver = [
   "access-keys",
   "dep:futures",
   "dep:itertools",
-  "dep:serde_json",
   "dep:thiserror",
+  "json",
   "near-kit",
   "serde",
 ]

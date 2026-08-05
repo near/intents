@@ -227,10 +227,13 @@ pub enum WalletAuthorization {
     /// Authorize via pending sub-authorization on an **enabled** extension.
     Extension {
         /// Extension ID.
+        ///
+        /// MUST fail if the extension is not enabled.
         account_id: AccountId,
         /// Sub-authorization blob for this extension.
         authorization: String,
-        /// Authorized payload for this wallet. Extension MUST return the same.
+        /// Payload to authorize, provided the extension resolves the sub-authorization to
+        /// **exactly the same** value.
         payload: String,
     },
 }
