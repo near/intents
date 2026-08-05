@@ -246,7 +246,7 @@ impl OffchainMessage {
     ///     timestamp: "2026-08-05T07:28:00.123456789Z".parse().unwrap(),
     ///     payload: "Hello, Near!".to_string(),
     /// };
-    /// 
+    ///
     /// assert_eq!(
     ///     msg.into_nep413_payload("https://wallet.com/callback"),
     ///     Nep413Payload {
