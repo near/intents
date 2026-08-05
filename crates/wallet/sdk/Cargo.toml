@@ -11,13 +11,13 @@ repository.workspace = true
 defuse-near-sender = { workspace = true, features = ["serde"] }
 defuse-wallet = { workspace = true, features = ["borsh", "digest", "json", "serde", "std"] }
 
+anyhow.workspace = true
 async-trait.workspace = true
 borsh.workspace = true
 impl-tools.workspace = true
 rand.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
-thiserror.workspace = true
 trait-variant.workspace = true
 
 bs58 = { workspace = true, optional = true }

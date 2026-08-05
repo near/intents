@@ -29,22 +29,18 @@ impl WalletRelayer for Near {
         request: WalletRelayRequest,
     ) -> Result<SentTransaction, Self::Error> {
         if request.msg.chain_id != self.chain_id().as_str() {
-            return Err(Error::InvalidTransaction(
-                TxError::InvalidChainId.to_string(),
-            ));
+            return Err(Error::InvalidTransaction("invalid chain_id".to_string()));
         }
 
         if request.msg.request.estimate_gas() > MAX_GAS {
-            return Err(Error::InvalidTransaction(TxError::GasLimit.to_string()));
+            return Err(Error::InvalidTransaction("gas limit exceeded".to_string()));
         }
 
         let mut tx = self.transaction(&request.msg.signer_id);
 
         if let Some(state_init) = request.deterministic_state_init {
             if state_init.derive_account_id() != request.msg.signer_id {
-                return Err(Error::InvalidTransaction(
-                    TxError::InvalidStateInit.to_string(),
-                ));
+                return Err(Error::InvalidTransaction("invalid state_init".to_string()));
             }
 
             tx = tx.state_init(
@@ -64,8 +60,7 @@ impl WalletRelayer for Near {
             request
                 .msg
                 .duration_left()
-                .ok_or(TxError::ExpiredOrFuture)
-                .map_err(|e| Error::InvalidTransaction(e.to_string()))?
+                .ok_or_else(|| Error::InvalidTransaction("expired or from the future".to_string()))?
                 // add more buffer for short-living requests
                 .saturating_add(BLOCKCHAIN_LAG),
             tx.send()
@@ -74,20 +69,8 @@ impl WalletRelayer for Near {
                 .max_nonce_retries(u32::MAX),
         )
         .await
-        .map_err(|_| Error::InvalidTransaction(TxError::ExpiredOrFuture.to_string()))
+        .map_err(|_| Error::InvalidTransaction("expired or from the future".to_string()))
         .flatten()
         .map(Into::into)
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-enum TxError {
-    #[error("invalid chain_id")]
-    InvalidChainId,
-    #[error("invalid state_init")]
-    InvalidStateInit,
-    #[error("expired or from the future")]
-    ExpiredOrFuture,
-    #[error("gas limit exceeded")]
-    GasLimit,
 }

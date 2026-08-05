@@ -4,12 +4,11 @@ pub mod client;
 pub use defuse_mpc_signer as mpc;
 use defuse_near_sender::{NearSender, SentTransaction};
 use defuse_wallet::{actions::NearAction, offchain::OffchainMessage};
-mod error;
 mod nonces;
 pub mod relayer;
 mod signer;
 
-pub use self::{error::*, signer::*};
+pub use self::signer::*;
 
 pub use defuse_wallet::*;
 
@@ -25,6 +24,7 @@ use std::{
     time::Duration,
 };
 
+use anyhow::{Context, Result};
 use borsh::BorshSerialize;
 use impl_tools::autoimpl;
 use rand::{make_rng, rngs::SmallRng};
@@ -119,7 +119,7 @@ impl WalletBuilder {
         S: SignatureSchema,
         S::PublicKey: BorshSerialize,
         SS: WalletSigner<S> + 'static,
-        SS::Error: Into<Box<dyn StdError + Send + Sync>>,
+        SS::Error: StdError + Send + Sync + 'static,
     {
         let state_init = StateInit::V1(StateInitV1 {
             code: code.into(),
@@ -219,7 +219,7 @@ where
     where
         S::PublicKey: BorshSerialize,
         SS: WalletSigner<S> + 'static,
-        SS::Error: Into<Box<dyn StdError + Send + Sync>>,
+        SS::Error: StdError + Send + Sync + 'static,
     {
         WalletBuilder::new().build(code, signer)
     }
@@ -275,7 +275,7 @@ where
     pub fn with_relayer<R>(mut self, relayer: R) -> Self
     where
         R: WalletRelayer + 'static,
-        R::Error: Into<Box<dyn StdError + Send + Sync>>,
+        R::Error: StdError + Send + Sync + 'static,
     {
         self.relayer = Some(Arc::new(relayer));
         self
@@ -477,6 +477,92 @@ where
             .expect("relayer was not configured, use `with_relayer()` to set one")
     }
 
+    #[cfg(feature = "near-kit")]
+    /// Check if the [real account ID](Self::real_account_id) is initialized on-chain.
+    pub async fn check_initialized(&self) -> Result<bool> {
+        use near_kit::{BlockReference, Finality, RpcError};
+
+        // TODO: assert as_self?
+        if self.initialized.load(Relaxed) {
+            return Ok(true);
+        }
+
+        let initialized = match self
+            .client()
+            .rpc()
+            .view_account(
+                self.real_account_id(),
+                // check at final block, so that we're sure about it and
+                // offchain authorizations can be resolved, as well.
+                BlockReference::Finality(Finality::Final),
+            )
+            .await
+        {
+            Ok(account) => account.has_contract(),
+            Err(RpcError::AccountNotFound(_)) => false,
+            Err(err) => return Err(err.into()),
+        };
+
+        if initialized {
+            self.initialized.store(true, Relaxed);
+        }
+        Ok(initialized)
+    }
+
+    #[cfg(feature = "near-kit")]
+    /// Initialize [real account ID](Self::account_id) by sending empty [`Request`].
+    ///
+    /// # Panics
+    ///
+    /// This method panics when called on wallet with non-empty configured
+    /// [extension chain](Self::as_extension_of).
+    pub async fn initialize(&self) -> Result<()> {
+        use near_kit::{ExecutionStatus, Final};
+
+        assert!(
+            self.as_extension_chain().is_empty(),
+            "Cannot initialize a wallet with non-empty extension chain. Use `.as_self()` and initialize the real account ID",
+        );
+
+        // sync before sending on-chain txs
+        if self.check_initialized().await? {
+            return Ok(());
+        }
+
+        // initialize real account ID by sending an empty request
+        let output = self
+            .sign_and_send(Request::new())
+            .await?
+            .status(&self.client())
+            // wait for finalization
+            .wait_until::<Final>()
+            .await?;
+
+        let initialized = output
+            .receipts_outcome
+            .iter()
+            // look for a successfull receipt on real account ID with non-empty logs, as it
+            // should contain `signed_request` event
+            .find(|o| {
+                matches!(o.outcome.status, ExecutionStatus::SuccessValue(_))
+                    && !o.outcome.logs.is_empty()
+                    && o.outcome.executor_id == *self.real_account_id()
+            })
+            .is_some();
+
+        if !initialized {
+            return Err(anyhow::anyhow!(
+                "transaction {} did not initialize the wallet {}",
+                output.transaction_hash(),
+                self.real_account_id(),
+            ));
+        }
+
+        self.initialized.store(true, Relaxed);
+
+        Ok(())
+    }
+
     /// Sign on-chain request to be executed on behalf of
     /// [effective account ID](Self::account_id).
     ///
@@ -506,11 +592,7 @@ where
             msg.hash = %bs58::encode(msg.hash()).into_string(),
         );
 
-        let proof = self
-            .signer
-            .sign_wallet_msg(&msg)
-            .await
-            .map_err(Error::Signer)?;
+        let proof = self.signer.sign_wallet_msg(&msg).await.context("signer")?;
 
         debug_assert!(
             S::verify_request_msg(&self.signer.public_key(), &msg, &proof),
@@ -572,100 +654,13 @@ where
             req = req.deterministic_state_init(self.deterministic_state_init().clone());
         }
 
-        relayer.relay_wallet_msg(req).await.map_err(Error::Relayer)
+        relayer.relay_wallet_msg(req).await.context("relayer")
     }
 
-    #[cfg(feature = "near-kit")]
-    // TODO: docs
-    /// Initialize [real account ID](Self::account_id).
+    /// Sign offchain payload and return an authorization blob, as per NEP-641.
     ///
-    /// # Panics
-    ///
-    /// This method panics when called on wallet with non-empty configured
-    /// [extension chain](Self::as_extension_of).
-    pub async fn initialize(&self) -> Result<()> {
-        use near_kit::{ExecutionStatus, Final};
-
-        assert!(
-            self.as_extension_chain().is_empty(),
-            "Cannot initialize a wallet with non-empty extension chain. Use `.as_self()` and initialize the real account ID",
-        );
-
-        // sync before sending on-chain txs
-        if self.sync_initialized().await? {
-            return Ok(());
-        }
-
-        // initialize real account ID by sending an empty request
-        let output = self
-            .sign_and_send(Request::new())
-            .await?
-            .status(&self.client())
-            // wait for finalization
-            .wait_until::<Final>()
-            .await?;
-
-        let initialized = output
-            .receipts_outcome
-            .iter()
-            // look for a successfull receipt on real account ID with non-empty logs, as it
-            // should contain `signed_request` event
-            .find(|o| {
-                matches!(o.outcome.status, ExecutionStatus::SuccessValue(_))
-                    && !o.outcome.logs.is_empty()
-                    && o.outcome.executor_id == *self.real_account_id()
-            })
-            .is_some();
-
-        if !initialized {
-            return Err(near_kit::Error::InvalidTransaction(format!(
-                "transaction {} did not initialize the wallet {}",
-                output.transaction_hash(),
-                self.real_account_id(),
-            ))
-            .into());
-        }
-
-        self.initialized.store(true, Relaxed);
-
-        Ok(())
-    }
-
-    #[cfg(feature = "near-kit")]
-    /// Sycnrhonize 
-    /// TODO: docs
-    /// TODO: traverse extension chain?
-    pub async fn sync_initialized(&self) -> Result<bool> {
-        use near_kit::{BlockReference, Finality, RpcError};
-
-        // TODO: assert as_self?
-        if self.initialized.load(Relaxed) {
-            return Ok(true);
-        }
-
-        let initialized = match self
-            .client()
-            .rpc()
-            .view_account(
-                self.real_account_id(),
-                // check at final block, so that we're sure about it and
-                // offchain authorizations can be resolved, as well.
-                BlockReference::Finality(Finality::Final),
-            )
-            .await
-        {
-            Ok(account) => account.has_contract(),
-            Err(RpcError::AccountNotFound(_)) => false,
-            Err(err) => return Err(err.into()),
-        };
-
-        if initialized {
-            self.initialized.store(true, Relaxed);
-        }
-        Ok(initialized)
-    }
-
-    // TODO: docs, path order
+    /// Optional `path` argument allows to specify a path from [effective account ID](Self::account_id)
+    /// to top-level resolver ID. Empty path means that the returned authorization is top-level itself.
     pub async fn sign_offchain_msg(
         &self,
         payload: impl Into<String>,
@@ -698,7 +693,7 @@ where
             .signer
             .sign_offchain_msg(&msg)
             .await
-            .map_err(Error::Signer)?;
+            .context("signer")?;
 
         debug_assert!(
             S::verify_offchain_msg(&self.signer.public_key(), &msg, &proof),
@@ -862,7 +857,7 @@ impl<S> NearSender for Wallet<S>
 where
     S: SignatureSchema,
 {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     #[inline]
     fn account_id(&self) -> Cow<'_, AccountIdRef> {

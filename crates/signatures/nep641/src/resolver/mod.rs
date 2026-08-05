@@ -276,14 +276,14 @@ impl RpcResolver {
             // TODO: add optional support for fallback to Intents verifier contract as a resolver
         );
 
-        // successfull resolution via FullAccessKey takes precedence over the contract, since it:
-        // * has the same full control over the account
-        // * authorizes a payload without pending sub-authorizations
-        // * can be used as a last resort for a broken contract
         let res = match (access_key, contract) {
             // if both failed, but access key authorization at least deserialized successfully,
             // then propagate the error coming from it
             (res @ Err(ResolveErrorKind::AccessKey(_)), Err(_)) => res,
+            // successfull resolution via FullAccessKey takes precedence over the contract, since it:
+            // * has the same full control over the account
+            // * authorizes a payload without pending sub-authorizations
+            // * can be used as a last resort for a broken contract
             (access_key, contract) => access_key.or(contract),
         };
 
