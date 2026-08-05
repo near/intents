@@ -31,7 +31,7 @@ use crate::WalletEd25519;
 /// let (msg, proof) = wallet.sign(Request::new()).await?;
 ///
 /// assert!(
-///     WalletEd25519::verify(&wallet.public_key(), &msg, &proof),
+///     WalletEd25519::verify_request_msg(&wallet.public_key(), &msg, &proof),
 ///     "signer produced invalid signature",
 /// );
 /// # Ok::<_, Box<dyn core::error::Error>>(()) }).unwrap();

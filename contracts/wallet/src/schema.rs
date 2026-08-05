@@ -24,7 +24,7 @@ pub trait SignatureSchema {
     #[must_use = "check if verification passed"]
     fn verify_request_msg(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool;
 
-    /// Verify given proof over the offchain message in respect to the public key
+    /// Verify given proof over the NEP-641 offchain message in respect to the public key
     /// and return whether verification passed.
     ///
     /// Used by the [`w_resolve_auth()`](defuse_nep641::AuthResolver::w_resolve_auth) contract method.

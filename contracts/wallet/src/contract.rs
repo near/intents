@@ -422,7 +422,7 @@ impl<S: SignatureSchema> From<State<S::PublicKey>> for WalletImpl<S> {
 ///
 /// ```rust
 /// # use core::fmt::{self, Display};
-/// use defuse_wallet::{RequestMessage, SignatureSchema, wallet};
+/// use defuse_wallet::{RequestMessage, SignatureSchema, wallet, offchain::OffchainMessage};
 /// use near_sdk::near;
 ///
 /// // Define the contract struct and impl
@@ -449,7 +449,15 @@ impl<S: SignatureSchema> From<State<S::PublicKey>> for WalletImpl<S> {
 ///    /// key and return whether verification passed.
 ///    ///
 ///    /// Used by the `w_execute_signed(msg, proof)` contract method.
-///     fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
+///     fn verify_request_msg(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
+///         todo!("verify signature over `msg` in respect to the public key")
+///     }
+///
+///    /// Verify given proof over the NEP-641 offchain message in respect to the public key
+///    /// and return whether verification passed.
+///    ///
+///    /// Used by the `w_resolve_auth(path, authorization)` contract method.
+///     fn verify_offchain_msg(public_key: &Self::PublicKey, msg: &OffchainMessage, proof: &str) -> bool {
 ///         todo!("verify signature over `msg` in respect to the public key")
 ///     }
 /// }
