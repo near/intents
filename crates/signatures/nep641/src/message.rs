@@ -84,8 +84,9 @@ pub struct OffchainMessage {
 
     /// The authorized payload.
     ///
-    /// dApps are recommended to use human-readable [`JsonPayload`] format
-    /// for user-facing interactions and maximum compatibility across wallets.
+    /// dApps and protocols are recommended to use human-readable
+    /// [`JsonPayload`] format for user-facing interactions and maximum
+    /// compatibility across wallets.
     pub payload: String,
 }
 
@@ -230,28 +231,24 @@ impl OffchainMessage {
 /// Domain-separated JSON [payload](field@OffchainMessage::payload).
 #[cfg(feature = "json")]
 #[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
-// TODO: versioned enum? or string tag before, like: "MESSAGE_V1_JSON:{ ... }"?
-// TODO: how would the wallet API look like for passing de/serialized value?
-// TODO: should we make all or some fields optional?
 #[derive(Debug, Clone, PartialEq, Eq, Hash, ::serde::Serialize, ::serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct JsonPayload {
-    /// dApp domain, e.g. `near.com`
+    /// dApp or protocol domain, e.g. `near.com` or `Near MPC`.
     pub domain: String,
 
-    /// dApp action, e.g. `Login`
-    pub action: String, // TODO: optional or empty?
+    /// An action to be taken on dApp/protocol, e.g. `Login` or `Sign`.
+    pub action: String,
 
-    // TODO: Or put structural typed data here in the future?
-    /// Message.
+    /// A generic dApp/protocol-specific message in human-readable format, e.g. plain text or JSON.
+    ///
+    /// The message can contain arbitrary data, such as timestamps, deadlines, TTLs, nonces, etc...
     pub msg: String,
 }
 
 #[cfg(feature = "json")]
 const _: () = {
     use core::str::FromStr;
-
-    impl JsonPayload {}
 
     impl From<&JsonPayload> for String {
         #[inline]
