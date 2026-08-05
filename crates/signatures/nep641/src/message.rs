@@ -16,7 +16,6 @@ use defuse_time::arbitrary::RangeNanos;
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
-    // TODO: deny unknown fields?
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -86,8 +85,6 @@ pub struct OffchainMessage {
 
     /// The actual payload to authorize
     /// TODO: docs
-    /// TODO: or maybe borsh-base64?
-    /// TODO: check if empty if defaults are ok
     /// TODO: how would the wallet API look like for passing de/serialized value?
     pub payload: String,
 }

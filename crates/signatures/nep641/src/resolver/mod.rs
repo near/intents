@@ -130,8 +130,7 @@ impl RpcResolver {
     /// state between async RPC view-calls. By default, this method will fetch the `Final`
     /// block hash during top-level authorization resolution and resolve all pending ones
     /// against it.
-    ///
-    /// TODO: RPC is trusted, also in terms of final block
+    // TODO: doc RPC is trusted, also in terms of final block
     ///
     /// See [`.at_block()`](Self::at_block) to resolve authorizations against the chain state
     /// from the past.
@@ -148,7 +147,7 @@ impl RpcResolver {
     // TODO: # Not yet initialized accounts
     /// # Full Access Keys
     ///
-    // TODO
+    // TODO: fix doc
     /// If an account doesn't have a contract deployed on it or the contract doesn't implement
     /// NEP-641 standard, the implementation fallbacks to verifying offchain signature according
     /// to [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md) standard.
