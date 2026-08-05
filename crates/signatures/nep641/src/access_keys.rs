@@ -10,7 +10,7 @@ use defuse_crypto::{
     secp256k1::{Secp256k1, Secp256k1RecoverableSignature, Secp256k1UncompressedPublicKey},
 };
 use defuse_digest::{Digest, sha3::Keccak256};
-use defuse_nep413::Nep413Payload;
+use defuse_nep413::{Nep413, Nep413Payload};
 use itertools::Itertools;
 use near_account_id::AccountId;
 
@@ -37,11 +37,34 @@ pub struct AccessKeyAuthorization {
 }
 
 impl AccessKeyAuthorization {
-    #[cfg(feature = "resolver")] // TODO: or separate feature?
+    /// Verify the signature
     #[must_use = "check if verification passed"]
     pub fn verify(&self) -> bool {
-        // TODO: convert to NEP-413?
-        todo!()
+        let payload: Nep413Payload = self.msg.clone().into();
+
+        match (&self.public_key, &self.signature) {
+            // ed25519
+            (PublicKey::Ed25519(pk), Signature::Ed25519(sig)) => {
+                let Ok(pk) = pk.try_into() else {
+                    return false;
+                };
+                Nep413::verify::<Ed25519>(&pk, &payload, &sig.into())
+            }
+
+            // secp256k1
+            (PublicKey::Secp256k1(pk), Signature::Secp256k1(sig)) => {
+                let Ok(pk) = pk.try_into() else {
+                    return false;
+                };
+                let Ok(sig) = sig.try_into() else {
+                    return false;
+                };
+                Nep413::verify::<Secp256k1>(&pk, &payload, &sig)
+            }
+
+            // curve mismatch
+            _ => false,
+        }
     }
 }
 

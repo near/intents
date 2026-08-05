@@ -290,6 +290,20 @@ impl RpcResolver {
             Err(err) => return Err(err.at(account_id, path)),
         };
 
+        // check block returned by RPC, just in case
+        {
+            let mismatch = match block {
+                BlockReference::Hash(hash) => res.block_hash != hash,
+                BlockReference::Height(height) => res.block_height != height,
+                _ => false,
+            };
+            if mismatch {
+                return Err(ResolveErrorKind::from(RpcError::InvalidResponse(
+                    "returned block doesn't match the requested one".to_string(),
+                ))
+                .at(account_id, path));
+            }
+        }
         // update `at_block.hash` and `at_block.height` with resolved block
         #[cfg(feature = "tracing")]
         record_all!(span, at_block.hash = %res.block_hash, at_block.height = res.block_height);
@@ -358,11 +372,6 @@ impl RpcResolver {
         //     );
         // }
 
-        // TODO: if the contract doesn't implement NEP-641, then fallback to
-        // HARDCODED signature verification algorithms for:
-        // * each FullAccessKey currently added to EXISTING account
-        // * `public_keys` from UniversalStateInit for NON-EXISTING account
-        // * implicit public key for NON-EXISTING Near/eth implicit AccountIds
         //
         // TODO: what if `w_resolve_auth()` failed, but the account also has
         // FullAccessKeys on it - do we need to fallback to them, too?

@@ -42,23 +42,25 @@ impl RpcResolver {
             return Err(AccessKeyError::InvalidSignature.into());
         }
 
-        let rpc_pk = auth.public_key.clone().into();
-        let (block, access_key) = if let BlockReference::Hash(block_hash) = block {
-            // fetch the block concurrently with access key only if block_hash is already known
-            join!(
-                self.client.block(block_hash.into()),
-                self.client
-                    .view_access_key(account_id, &rpc_pk, block_hash.into())
-            )
-        } else {
-            // otherwise, fetch the block first
-            let block = self.client.block(block.clone()).await?;
-            // and then the access key against fetched block hash
-            let access_key = self
-                .client
-                .view_access_key(account_id, &rpc_pk, block.header.hash.into())
-                .await;
-            (Ok(block), access_key)
+        let (block, access_key) = {
+            let rpc_pk = auth.public_key.clone().into();
+            if let BlockReference::Hash(block_hash) = block {
+                // fetch the block concurrently with access key only if block_hash is already known
+                join!(
+                    self.client.block(block_hash.into()),
+                    self.client
+                        .view_access_key(account_id, &rpc_pk, block_hash.into())
+                )
+            } else {
+                // otherwise, fetch the block first
+                let block = self.client.block(block.clone()).await?;
+                // and then the access key against fetched block hash
+                let access_key = self
+                    .client
+                    .view_access_key(account_id, &rpc_pk, block.header.hash.into())
+                    .await;
+                (Ok(block), access_key)
+            }
         };
         let block = block?;
 
