@@ -120,7 +120,7 @@ impl OffchainMessage {
     /// ```
     #[inline]
     pub const fn is_top_level(&self) -> bool {
-        self.path.is_empty()
+        self.path.as_slice().is_empty()
     }
 
     /// Returns depth of this authorization, i.e. how many hops away the top-level resolver ID is.
@@ -152,7 +152,7 @@ impl OffchainMessage {
     /// ```
     #[inline]
     pub const fn depth(&self) -> usize {
-        self.path.len()
+        self.path.as_slice().len()
     }
 
     /// Returns a top-level resolver account ID that this message authorizes the payload for.

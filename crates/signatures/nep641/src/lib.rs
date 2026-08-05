@@ -181,7 +181,7 @@ pub struct AuthorizationResolution {
     /// [resolved](AuthResolver::w_resolve_auth) before accepting the authorized
     /// [payload](field@Self::payload).
     ///
-    /// If emtpy, then this authorization is a leaf that terminates the current branch.
+    /// If empty, then this authorization is a leaf that terminates the current branch.
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Vec::is_empty")
@@ -260,7 +260,7 @@ impl AuthorizationResolution {
     /// ```
     #[inline]
     pub const fn is_leaf(&self) -> bool {
-        self.pending.is_empty()
+        self.pending.as_slice().is_empty()
     }
 }
 

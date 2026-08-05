@@ -45,7 +45,7 @@ pub enum ContractError {
     #[error("self-calls are not allowed")]
     SelfCallsNotAllowed,
 
-    #[error("signature is disabled, use extensions to act on behelf of this wallet")]
+    #[error("signature is disabled, use extensions to act on behalf of this wallet")]
     SignatureDisabled,
 
     #[error("this signature mode is already set")]

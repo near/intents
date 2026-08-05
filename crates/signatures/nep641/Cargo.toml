@@ -85,6 +85,7 @@ schemars-v0_8 = [
   "defuse-nep413?/schemars-v0_8",
   "defuse-time/schemars-v0_8",
   "dep:schemars",
+  "json",
   "near-account-id/schemars-v0_8",
   "serde",
   "serde_with/schemars_0_8",

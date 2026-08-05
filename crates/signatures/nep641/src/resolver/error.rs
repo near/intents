@@ -23,7 +23,7 @@ pub enum ResolveErrorKind {
     #[error(transparent)]
     Contract(#[from] ContractError),
 
-    #[error("resolved payload is invalid: exepected: {}, got: {}", .expected, .payload)]
+    #[error("resolved payload is invalid: expected: {}, got: {}", .expected, .payload)]
     InvalidPayload { payload: String, expected: String },
 
     #[error("JSON: {0}")]

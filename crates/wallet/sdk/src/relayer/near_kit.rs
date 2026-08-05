@@ -69,7 +69,7 @@ impl WalletRelayer for Near {
                 .max_nonce_retries(u32::MAX),
         )
         .await
-        .map_err(|_| Error::InvalidTransaction("expired or from the future".to_string()))
+        .map_err(|_| Error::InvalidTransaction("expired".to_string()))
         .flatten()
         .map(Into::into)
     }
