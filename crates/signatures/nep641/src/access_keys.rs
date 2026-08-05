@@ -16,6 +16,7 @@ use near_account_id::AccountId;
 
 use crate::OffchainMessage;
 
+/// FullAccessKey authorization
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
@@ -24,13 +25,20 @@ use crate::OffchainMessage;
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AccessKeyAuthorization {
-    // TODO: docs
+    /// Signed offchain message
     pub msg: OffchainMessage,
+
+    /// Signature schema used
     pub via: AccessKeySignatureSchema,
+
+    /// Public key with FullAccess permission
     pub public_key: PublicKey,
+
+    /// Signature
     pub signature: Signature,
 }
 
+/// Signature schema for [`AccessKeyAuthorization`]
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
@@ -43,6 +51,7 @@ pub enum AccessKeySignatureSchema {
     Nep413(AccessKeyNep413Schema),
 }
 
+/// NEP-413 schema for [`AccessKeyAuthorization`]
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
@@ -52,6 +61,7 @@ pub enum AccessKeySignatureSchema {
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
 pub struct AccessKeyNep413Schema {
+    /// Callback URL
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Option::is_none")
@@ -60,12 +70,13 @@ pub struct AccessKeyNep413Schema {
 }
 
 impl AccessKeyNep413Schema {
-    // TODO: docs
+    /// Create new NEP-413 schema
     #[inline]
     pub const fn new() -> Self {
         Self { callback_url: None }
     }
 
+    /// Set a callback URL
     #[inline]
     pub fn with_callback_url(mut self, callback_url: impl Into<String>) -> Self {
         self.callback_url = Some(callback_url.into());
@@ -118,6 +129,7 @@ impl AccessKeyAuthorization {
         match self.via.clone() {
             AccessKeySignatureSchema::Nep413(schema) => {
                 let payload = schema.into_payload(self.msg.clone());
+
                 match (&self.public_key, &self.signature) {
                     // ed25519
                     (PublicKey::Ed25519(pk), Signature::Ed25519(sig)) => {
@@ -146,6 +158,7 @@ impl AccessKeyAuthorization {
     }
 }
 
+/// Public key for [`AccessKeyAuthorization`]
 #[cfg_attr(
     feature = "serde",
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
@@ -158,7 +171,7 @@ impl AccessKeyAuthorization {
     borsh(use_discriminant = true)
 )]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::From)]
-// TODO: non-exhaustive?
+#[non_exhaustive]
 #[repr(u8)]
 pub enum PublicKey {
     Ed25519(Ed25519PublicKey) = 0,
@@ -167,6 +180,7 @@ pub enum PublicKey {
 }
 
 impl PublicKey {
+    /// Derive implicit account ID from this public key
     #[inline]
     pub fn to_implicit_account_id(&self) -> AccountId {
         match self {
@@ -235,6 +249,7 @@ impl From<PublicKey> for ::near_kit::PublicKey {
     }
 }
 
+/// Signature for [`AccessKeyAuthorization`]
 #[cfg_attr(
     feature = "serde",
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr)
@@ -247,6 +262,7 @@ impl From<PublicKey> for ::near_kit::PublicKey {
     borsh(use_discriminant = true)
 )]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::From)]
+#[non_exhaustive]
 #[repr(u8)]
 pub enum Signature {
     Ed25519(Ed25519Signature) = 0,

@@ -17,7 +17,7 @@ pub struct ResolveError {
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ResolveErrorKind {
-    #[error("access key: {0}")]
+    #[error(transparent)]
     AccessKey(#[from] AccessKeyError),
 
     #[error(transparent)]
