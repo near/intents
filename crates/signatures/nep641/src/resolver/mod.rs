@@ -34,7 +34,6 @@ pub struct RpcResolver {
 
 impl RpcResolver {
     /// Create new verifier with given Near RPC client.
-    #[must_use]
     pub async fn new(client: RpcClient) -> Result<Self, RpcError> {
         let status = client.status().await?;
 
@@ -72,6 +71,7 @@ impl RpcResolver {
     //     self
     // }
 
+    #[allow(clippy::doc_markdown)]
     /// Set an upper limit for total number of sub-authorizations for a single top-level one.
     ///
     /// By default, this value is set to zero, so that only top-level authorizations are allowed
@@ -87,6 +87,7 @@ impl RpcResolver {
         self
     }
 
+    #[allow(clippy::doc_markdown)]
     /// Set an upper limit for maximum depth of sub-authorization branches.
     ///
     /// By default, this value is set to zero, so that only top-level authorizations are allowed
@@ -116,6 +117,7 @@ impl RpcResolver {
         self.chain_id.as_str()
     }
 
+    #[allow(clippy::doc_markdown)]
     /// Resolve a payload from top-level authorization according to NEP-641.
     ///
     /// This method recursively resolves given top-level authorization and all returned pending

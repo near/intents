@@ -16,7 +16,7 @@ use near_account_id::AccountId;
 
 use crate::OffchainMessage;
 
-/// FullAccessKey authorization
+/// Full-access Key authorization
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
@@ -31,7 +31,7 @@ pub struct AccessKeyAuthorization {
     /// Signature schema
     pub via: AccessKeySignatureSchema,
 
-    /// Public key with FullAccess permission
+    /// Public key with `FullAccess` permission
     pub public_key: PublicKey,
 
     /// Signature
@@ -71,12 +71,14 @@ pub struct AccessKeyNep413Schema {
 
 impl AccessKeyNep413Schema {
     /// Create new NEP-413 schema
+    #[must_use]
     #[inline]
     pub const fn new() -> Self {
         Self { callback_url: None }
     }
 
     /// Set a callback URL
+    #[must_use]
     #[inline]
     pub fn with_callback_url(mut self, callback_url: impl Into<String>) -> Self {
         self.callback_url = Some(callback_url.into());

@@ -339,7 +339,7 @@ where
         path: Vec<AccountId>,
         authorization: String,
     ) -> AuthorizationResolution {
-        self.resolve_auth(path, authorization)
+        self.resolve_auth(&path, &authorization)
             .unwrap_or_else(|err| err.panic())
     }
 }
@@ -350,10 +350,10 @@ where
 {
     fn resolve_auth(
         &self,
-        path: Vec<AccountId>,
-        authorization: String,
+        path: &[AccountId],
+        authorization: &str,
     ) -> Result<AuthorizationResolution> {
-        let input: WalletAuthorization = serde_json::from_str(&authorization)?;
+        let input: WalletAuthorization = serde_json::from_str(authorization)?;
 
         Ok(match input {
             WalletAuthorization::Signature { msg, proof } => {

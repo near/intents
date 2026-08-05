@@ -246,20 +246,20 @@ impl WalletAuthorization {
             Self::Signature {
                 msg: OffchainMessage { payload, .. },
                 ..
-            } => payload.as_str(),
-            Self::Extension { payload, .. } => payload.as_str(),
+            }
+            | Self::Extension { payload, .. } => payload.as_str(),
         }
     }
 
-    /// Convert into the authorized payload
+    /// Extract the authorized payload
     #[inline]
     pub fn into_payload(self) -> String {
         match self {
             Self::Signature {
                 msg: OffchainMessage { payload, .. },
                 ..
-            } => payload,
-            Self::Extension { payload, .. } => payload,
+            }
+            | Self::Extension { payload, .. } => payload,
         }
     }
 
@@ -272,6 +272,7 @@ impl WalletAuthorization {
 
     /// Wrap as extension with given ID
     #[cfg(feature = "json")]
+    #[must_use]
     #[inline]
     pub fn as_extension_of(self, account_id: impl Into<AccountId>) -> Self {
         Self::Extension {

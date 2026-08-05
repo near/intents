@@ -15,6 +15,7 @@ use near_account_id::AccountId;
 
 /// A smart-contract implementing NEP-641 interface.
 pub trait AuthResolver {
+    #[allow(clippy::doc_markdown)]
     /// A view-method to resolve [offchain](#offchain-only) authorization according to NEP-641.
     ///
     /// The implementation SHOULD resolve given `authorization` blob along with [`path`](#path)
@@ -223,6 +224,7 @@ impl AuthorizationResolution {
     ///     );
     /// assert!(!auth.is_leaf());
     /// ```
+    #[must_use]
     #[inline]
     pub fn add_pending(
         mut self,

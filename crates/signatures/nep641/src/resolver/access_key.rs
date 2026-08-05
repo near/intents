@@ -47,13 +47,14 @@ impl RpcResolver {
             if let BlockReference::Hash(block_hash) = block {
                 // fetch the block concurrently with access key only if block_hash is already known
                 join!(
+                    // TODO: cache resolved blocks with some TTL and other limis
                     self.client.block(block_hash.into()),
                     self.client
                         .view_access_key(account_id, &rpc_pk, block_hash.into())
                 )
             } else {
                 // otherwise, fetch the block first
-                let block = self.client.block(block.clone()).await?;
+                let block = self.client.block(block).await?;
                 // and then the access key against fetched block hash
                 let access_key = self
                     .client

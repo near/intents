@@ -423,8 +423,8 @@ where
     /// Get initialization state for [real account ID](Self::real_account_id) of this wallet.
     ///
     /// > A first transaction to the wallet's [real account id](Self::real_account_id) needs to
-    /// include `DeterministicStateInit` action in order to initialize the contract before
-    /// calling methods on it.
+    /// > include `DeterministicStateInit` action in order to initialize the contract before
+    /// > calling methods on it.
     ///
     /// This is handled automatically when [sending](Self::sign_and_send) signed on-chain messages.
     /// See [`.initialize()`](Self::initialize) for manual initialization.
@@ -544,12 +544,11 @@ where
             .iter()
             // look for a successfull receipt on real account ID with non-empty logs, as it
             // should contain `signed_request` event
-            .find(|o| {
+            .any(|o| {
                 matches!(o.outcome.status, ExecutionStatus::SuccessValue(_))
                     && !o.outcome.logs.is_empty()
                     && o.outcome.executor_id == *self.real_account_id()
-            })
-            .is_some();
+            });
 
         if !initialized {
             return Err(anyhow::anyhow!(

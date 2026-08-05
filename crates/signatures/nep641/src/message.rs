@@ -186,7 +186,7 @@ impl OffchainMessage {
     pub const fn top_level_id(&self) -> &AccountId {
         if let Some(top_level) = self.path.as_slice().last() {
             return top_level;
-        };
+        }
         &self.signer_id
     }
 
