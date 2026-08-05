@@ -226,6 +226,61 @@ impl OffchainMessage {
 
         hasher.0.finalize().into()
     }
+
+    /// Deterministically convert this message into NEP-413 payload, with optional callback URL.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use hex_literal::hex;
+    /// use defuse_nep641::OffchainMessage;
+    /// use defuse_nep413::Nep413Payload;
+    ///
+    /// let msg = OffchainMessage {
+    ///     chain_id: "mainnet".to_string(),
+    ///     signer_id: "extension.near".parse().unwrap(),
+    ///     path: vec![
+    ///         "wallet.near".parse().unwrap(),
+    ///         "v1.signer".parse().unwrap(),
+    ///     ],
+    ///     timestamp: "2026-08-05T07:28:00.123456789Z".parse().unwrap(),
+    ///     payload: "Hello, Near!".to_string(),
+    /// };
+    /// 
+    /// assert_eq!(
+    ///     msg.into_nep413_payload("https://wallet.com/callback"),
+    ///     Nep413Payload {
+    ///         message: "Hello, Near!".to_string(),
+    ///         nonce: hex!("d98eb326e626ad325bfc4ff7d4e487d2c8cbd820a5a29683be6b931a3dd5a280"),
+    ///         recipient: "mainnet @ extension.near -> wallet.near -> v1.signer".to_string(),
+    ///         callback_url: Some("https://wallet.com/callback".to_string()),
+    ///     },
+    /// );
+    /// ```
+    #[cfg(feature = "nep413")]
+    pub fn into_nep413_payload(
+        self,
+        callback_url: impl Into<Option<String>>,
+    ) -> ::defuse_nep413::Nep413Payload {
+        use defuse_nep413::Nep413Payload;
+        use itertools::Itertools;
+
+        Nep413Payload {
+            // bound full message contents via hash
+            nonce: self.hash(),
+            // `<chain_id> @ <signer_id>[ -> path]...`
+            recipient: format!(
+                "{} @ {}",
+                self.chain_id,
+                std::iter::once(&self.signer_id)
+                    .chain(&self.path)
+                    .join(" -> ")
+            ),
+            // the actual authorized payload
+            message: self.payload,
+            callback_url: callback_url.into(),
+        }
+    }
 }
 
 /// Domain-separated JSON [payload](field@OffchainMessage::payload).

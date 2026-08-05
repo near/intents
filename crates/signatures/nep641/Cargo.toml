@@ -62,15 +62,13 @@ borsh-schema = [
 digest = ["dep:defuse-digest", "dep:digest-io"]
 json = ["dep:serde_json", "serde"]
 near-kit = ["defuse-nep413?/near-kit", "dep:near-kit", "serde"]
+nep413 = ["borsh", "dep:defuse-nep413", "dep:itertools", "digest"]
 access-keys = [
-  "borsh",
   "dep:defuse-crypto",
-  "dep:defuse-nep413",
   "dep:derive_more",
   "dep:hex",
-  "dep:itertools",
   "derive_more/from",
-  "digest",
+  "nep413",
 ]
 serde = [
   "defuse-crypto?/serde",
