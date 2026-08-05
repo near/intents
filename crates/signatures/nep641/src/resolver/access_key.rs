@@ -1,3 +1,4 @@
+use futures::join;
 use near_account_id::AccountId;
 use near_kit::{AccessKeyPermissionView, BlockReference, RpcError};
 #[cfg(feature = "tracing")]
@@ -36,17 +37,35 @@ impl RpcResolver {
             return Err(AccessKeyError::InvalidPath.into());
         }
 
-        // TODO: check timestamp of a block
-
         // verify signature
         if !auth.verify() {
             return Err(AccessKeyError::InvalidSignature.into());
         }
 
-        let access_key = self
-            .client
-            .view_access_key(account_id, &auth.public_key.clone().into(), block)
-            .await;
+        let rpc_pk = auth.public_key.clone().into();
+        let (block, access_key) = if let BlockReference::Hash(block_hash) = block {
+            // fetch the block concurrently with access key only if block_hash is already known
+            join!(
+                self.client.block(block_hash.into()),
+                self.client
+                    .view_access_key(account_id, &rpc_pk, block_hash.into())
+            )
+        } else {
+            // otherwise, fetch the block first
+            let block = self.client.block(block.clone()).await?;
+            // and then the access key against fetched block hash
+            let access_key = self
+                .client
+                .view_access_key(account_id, &rpc_pk, block.header.hash.into())
+                .await;
+            (Ok(block), access_key)
+        };
+        let block = block?;
+
+        // check timestamp
+        if auth.msg.timestamp.as_nanos() > block.header.timestamp.into() {
+            return Err(AccessKeyError::FromTheFuture.into());
+        }
 
         // check access key
         let is_full_access = match access_key {
@@ -83,24 +102,20 @@ impl RpcResolver {
             return Err(AccessKeyError::NoFullAccess(auth.public_key).into());
         }
 
+        // authorize signed payload, without any pending sub-authorizations
         Ok(Resolved {
-            // authorize signed payload, without any pending sub-authorizations
             res: AuthorizationResolution::new(auth.msg.payload),
-
-            // FIXME: Propagate block returned by RPC in case of an error, too.
-            // This is not critical, though: block hash is only used for tracing
-            // and sub-authorizations, which we don't have in this case
-            block_height: access_key
-                .as_ref()
-                .map(|a| a.block_height)
-                .unwrap_or_default(),
-            block_hash: access_key.map(|a| a.block_hash).unwrap_or_default(),
+            block_hash: block.header.hash,
+            block_height: block.header.height,
         })
     }
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum AccessKeyError {
+    #[error("message is from the future")]
+    FromTheFuture,
+
     #[error("invalid chain_id")]
     InvalidChainId,
 
