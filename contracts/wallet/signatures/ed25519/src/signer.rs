@@ -61,7 +61,7 @@ where
         self.0.public_key().into()
     }
 
-    async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
+    async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
         self.sign_hash(&msg.hash()).await
     }
 
@@ -97,7 +97,7 @@ mod tests {
             request: Request::new(),
         };
 
-        let proof = WalletSigner::<WalletEd25519>::sign_wallet_msg(&signer, &msg)
+        let proof = WalletSigner::<WalletEd25519>::sign_request_msg(&signer, &msg)
             .await
             .unwrap();
 

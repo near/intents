@@ -62,7 +62,7 @@ where
         self.signer().public_key().into()
     }
 
-    async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
+    async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
         self.sign_hash(&msg.hash()).await
     }
 

@@ -60,7 +60,6 @@ pub struct RequestMessage {
     )]
     pub pay_for_gas: bool,
 
-    // TODO: change order of fields?
     /// Chain id (e.g. `mainnet`).
     ///
     /// MUST be equal to `chain_id` of the network.
@@ -221,15 +220,21 @@ impl RequestMessage {
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum WalletAuthorization {
+    /// Authorize via signature.
     Signature {
-        // TODO: docs
+        /// Offchain Message
         msg: OffchainMessage,
+        /// Proof (i.e. signature)
         proof: String,
     },
+
+    /// Authorize via pending sub-authorization on an **enabled** extension.
     Extension {
+        /// Extension ID.
         account_id: AccountId,
+        /// Sub-authorization blob for this extension.
         authorization: String,
-        // message: Message,
+        /// Authorized payload for this wallet. Extension MUST return the same.
         payload: String,
     },
 }

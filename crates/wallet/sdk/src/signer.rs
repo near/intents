@@ -27,10 +27,9 @@ pub trait WalletSigner<S: SignatureSchema>: Sync {
     /// Sign [`RequestMessage`] according to [`SignatureSchema`]
     /// and return a proof serialized to string ready to be submitted to
     /// [`w_execute_signed(msg, proof)`](defuse_wallet::contract::Wallet::w_execute_signed) contract method
-    // TODO: rename: sign_request_msg?
-    async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error>;
+    async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error>;
 
-    // TODO: remove proof?
+    /// Sign [`OffchainMessage`] according to [`SignatureSchema`] and return a [proof](field@defuse_wallet::WalletAuthorization::Signature::proof).
     async fn sign_offchain_msg(&self, msg: &OffchainMessage) -> Result<Proof, Self::Error>;
 }
 
@@ -57,7 +56,7 @@ where
     }
 
     async fn dyn_sign_request_msg(&self, msg: &RequestMessage) -> anyhow::Result<Proof> {
-        self.sign_wallet_msg(msg).await.map_err(Into::into)
+        self.sign_request_msg(msg).await.map_err(Into::into)
     }
 
     async fn dyn_sign_offchain_msg(&self, msg: &OffchainMessage) -> anyhow::Result<Proof> {
@@ -76,7 +75,7 @@ where
         self.dyn_public_key()
     }
 
-    async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
+    async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
         self.dyn_sign_request_msg(msg).await
     }
 

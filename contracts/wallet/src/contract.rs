@@ -42,11 +42,11 @@ pub trait Wallet {
     ///
     /// MUST panic in following cases:
     /// * [`msg.chain_id`](RequestMessage::chain_id) is from another network
-    /// * [`msg.resolver_id`](RequestMessage::resolver_id) doesn't match
+    /// * [`msg.signer_id`](RequestMessage::signer_id) doesn't match
     ///   [`env::current_account_id()`](near_sdk::env::current_account_id)
     /// * [`msg.nonce`](RequestMessage::nonce) is already used, expired or
     ///   from the future
-    /// * `proof` is [invalid](SignatureSchema::verify) or signature is
+    /// * `proof` is [invalid](SignatureSchema::verify_request_msg) or signature is
     ///   [currently disabled](WalletOp::SetSignatureMode)
     fn w_execute_signed(&mut self, msg: RequestMessage, proof: String);
 

@@ -478,11 +478,10 @@ where
     }
 
     #[cfg(feature = "near-kit")]
-    /// Check if the [real account ID](Self::real_account_id) is initialized on-chain.
-    pub async fn check_initialized(&self) -> Result<bool> {
+    /// Check if [real account ID](Self::real_account_id) is initialized on-chain.
+    async fn check_initialized(&self) -> Result<bool> {
         use near_kit::{BlockReference, Finality, RpcError};
 
-        // TODO: assert as_self?
         if self.initialized.load(Relaxed) {
             return Ok(true);
         }
@@ -592,7 +591,7 @@ where
             msg.hash = %bs58::encode(msg.hash()).into_string(),
         );
 
-        let proof = self.signer.sign_wallet_msg(&msg).await.context("signer")?;
+        let proof = self.signer.sign_request_msg(&msg).await.context("signer")?;
 
         debug_assert!(
             S::verify_request_msg(&self.signer.public_key(), &msg, &proof),
