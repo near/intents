@@ -109,8 +109,8 @@ impl AccessKeyNep413Schema {
     ///         .into_payload(msg),
     ///     Nep413Payload {
     ///         message: "Hello, Near!".to_string(),
-    ///         nonce: [0u8; 32],
-    ///         recipient: "extension.near -> wallet.near -> v1.signer".to_string(),
+    ///         nonce: hex!("039f8afb4ef2d76c621d3952f214bd2a080ce977ef351d52ff65a090eebbf72c"),
+    ///         recipient: "mainnet @ extension.near -> wallet.near -> v1.signer".to_string(),
     ///         callback_url: Some("https://example.com".to_string()),
     ///     },
     /// );
@@ -118,10 +118,15 @@ impl AccessKeyNep413Schema {
     #[inline]
     pub fn into_payload(self, msg: OffchainMessage) -> Nep413Payload {
         Nep413Payload {
-            // TODO: domain, action?
-            recipient: iter::once(&msg.signer_id).chain(&msg.path).join(" -> "),
-            // TODO: doc comment
+            // bound full message contents via hash
             nonce: msg.hash(),
+            // `<chain_id> @ <signer_id>[ -> path]...`
+            recipient: format!(
+                "{} @ {}",
+                msg.chain_id,
+                iter::once(&msg.signer_id).chain(&msg.path).join(" -> ")
+            ),
+            // the actual authorized payload
             message: msg.payload,
             callback_url: self.callback_url,
         }

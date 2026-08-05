@@ -82,21 +82,12 @@ pub struct OffchainMessage {
     )]
     pub timestamp: Timestamp,
 
-    /// The actual payload to authorize
-    /// TODO: docs
-    /// TODO: how would the wallet API look like for passing de/serialized value?
+    /// The actual authorized payload.
     pub payload: String,
 }
 
 impl OffchainMessage {
-    // TODO: NEP-461 compatibility?
     /// A prefix used for [canonical hash](Self::hash).
-    ///
-    /// This prefix doesn't break NEP-461 assumptions, since first four bytes
-    /// borsh-deserialize to `1380009294u32`, which is in `[1 << 30, 1 << 31)`
-    /// range for on-chain messages.
-    // TODO: "on/off chain"
-    // TODO: rename to PREFIX?
     pub const DOMAIN_SEPARATOR: &[u8] = b"NEAR_NEP641_OFFCHAIN_MESSAGE/V1";
 
     /// Returns whether this message is a top-level authorization.
@@ -208,8 +199,8 @@ impl OffchainMessage {
     /// # use hex_literal::hex;
     /// let msg = OffchainMessage {
     ///     chain_id: "mainnet".to_string(),
-    ///     signer_id: "wallet.near".parse().unwrap(),
-    ///     path: vec![],
+    ///     signer_id: "extension.near".parse().unwrap(),
+    ///     path: vec!["wallet.near".parse().unwrap()],
     ///     timestamp: "2026-08-05T07:28:00.123456789Z".parse().unwrap(),
     ///     payload: "Hello, Near!".to_string(),
     /// };
@@ -233,7 +224,11 @@ impl OffchainMessage {
     }
 }
 
-// TODO versioned
+// TODO: docs
+// TODO: how would the wallet API look like for passing de/serialized value?
+// TODO: VERSIONED? or string tag before?
+// TODO: borsh?
+// TODO: make all fields optional?
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
@@ -241,15 +236,11 @@ impl OffchainMessage {
     serde(deny_unknown_fields) // TODO: are we sure?
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-// TODO: VERSIONED? or string tag before?
-// TODO: borsh?
-// TODO: make all fields optional?
-// TODO: move timestamp here?
-// TODO: docs: no replay protection
 pub struct Message {
-    /// dApp domain
+    /// dApp domain, e.g. `near.com`
     pub domain: String,
-    // TODO: schema?
+
+    // TODO: docs
     pub action: String,
 
     // TODO: Or put structural typed data here in the future?
