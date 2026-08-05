@@ -2,3 +2,7 @@
 # https://docs.rs/cargo-audit/latest/cargo_audit/config/
 
 [advisories]
+ignore = [
+  # transitive wasmtime dependency is only currently used for `near-sdk/unit-testing` feature
+  "RUSTSEC-2026-0222", # TODO: remove
+]
