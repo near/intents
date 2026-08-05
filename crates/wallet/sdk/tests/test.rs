@@ -109,14 +109,40 @@ async fn rotate(
 async fn w_resolve_auth(
     #[future] near: Near,
 
-    #[from(extension)]
+    #[from(wallet)]
     #[future]
-    wallet: Wallet,
+    extension: Wallet,
+
+    // #[from(extension)]
+    #[future] wallet: Wallet,
 ) {
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .pretty()
         .init();
+
+    let wallet = {
+        // add extension and initialize both wallets
+        wallet
+            .sign_and_send(
+                Request::new()
+                    .internal([WalletOp::add_extension(&extension)])
+                    .external([NearPromise::new(&extension).deterministic_state_init(
+                        extension.deterministic_state_init().clone(),
+                        NearToken::ZERO,
+                    )]),
+            )
+            .await
+            .unwrap()
+            .status(&near)
+            // wait for finality, needed for w_resolve_auth()
+            .wait_until::<Final>()
+            .await
+            .unwrap();
+
+        // use: extension -> wallet
+        extension.as_initialized_unchecked().as_extension_of(wallet)
+    };
 
     let payload = JsonPayload {
         domain: "Near MPC".to_string(),
@@ -229,48 +255,13 @@ async fn wallet(
     #[default(WalletBuilder::new())] builder: WalletBuilder,
     #[future] near: Near,
 ) -> Wallet {
-    let w = builder
+    builder
         .build(
             *WALLET_ED25519_CODE_HASH,
             WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng))),
         )
         .with_client(near.clone())
-        .with_relayer(near);
-
-    // TODO: maybe remove?
-    w.initialize()
-        .await
-        .expect("failed to initialize the wallet");
-
-    w
-}
-
-#[fixture]
-#[awt]
-async fn extension(
-    #[from(wallet)]
-    #[future]
-    master: Wallet,
-
-    #[from(wallet)]
-    #[future]
-    ext: Wallet,
-
-    #[future] near: Near,
-) -> Wallet {
-    master
-        .sign_and_send(Request::new().internal([WalletOp::AddExtension {
-            account_id: ext.account_id().into(),
-        }]))
-        .await
-        .expect("failed to add an extension")
-        .status(&near)
-        .wait_until::<Final>()
-        .await
-        // TODO: check receipts
-        .unwrap();
-
-    ext.as_extension_of(master)
+        .with_relayer(near)
 }
 
 #[fixture]
