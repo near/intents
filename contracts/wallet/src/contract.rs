@@ -97,24 +97,11 @@ pub trait Wallet {
 #[autoimpl(Debug where S::PublicKey: trait)]
 #[repr(transparent)]
 pub struct WalletImpl<S: SignatureSchema>(
-    // TODO: simplify when https://github.com/near/borsh-rs/pull/373 is released
-    #[cfg_attr(
-        not(feature = "borsh-schema"),
-        borsh(bound(
-            serialize = "S::PublicKey: BorshSerialize",
-            deserialize = "S::PublicKey: BorshDeserialize",
-        ))
-    )]
-    #[cfg_attr(
-        feature = "borsh-schema",
-        borsh(
-            bound(
-                serialize = "S::PublicKey: BorshSerialize",
-                deserialize = "S::PublicKey: BorshDeserialize",
-            ),
-            schema(params = "S => S::PublicKey"),
-        )
-    )]
+    #[borsh(bound(
+        serialize = "S::PublicKey: BorshSerialize",
+        deserialize = "S::PublicKey: BorshDeserialize",
+    ))]
+    #[cfg_attr(feature = "borsh-schema", borsh(schema(params = "S => S::PublicKey"),))]
     State<S::PublicKey>,
 );
 
