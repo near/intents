@@ -94,7 +94,7 @@ impl WalletBuilder {
         self
     }
 
-    /// TODO: docs
+    /// Pre-enable extension with given account ID.
     #[inline]
     pub fn extension(mut self, account_id: impl Into<AccountId>) -> Self {
         self.extensions.insert(account_id.into());
@@ -388,8 +388,6 @@ where
         self
     }
 
-    // TODO: fn extension_of(&self) -> &[AccountId]
-
     /// Get an _effective_ account ID which this wallet acts on behalf of.
     ///
     /// This is the last account ID from the currently configured
@@ -527,7 +525,6 @@ where
     #[inline]
     fn wrap_request_msg(&self, request: impl Into<Request>) -> RequestMessage {
         RequestMessage {
-            // TODO: order
             pay_for_gas: false, // TODO: add support for External Contract Calls
             chain_id: self.chain_id.clone(),
             // signer is the real account ID
@@ -580,7 +577,12 @@ where
 
     #[cfg(feature = "near-kit")]
     // TODO: docs
-    // TODO: do we need it?
+    /// Initialize [real account ID](Self::account_id).
+    ///
+    /// # Panics
+    ///
+    /// This method panics when called on wallet with non-empty configured
+    /// [extension chain](Self::as_extension_of).
     pub async fn initialize(&self) -> Result<()> {
         use near_kit::{ExecutionStatus, Final};
 
@@ -617,9 +619,9 @@ where
 
         if !initialized {
             return Err(near_kit::Error::InvalidTransaction(format!(
-                "the wallet '{}' has not been successfully initialized by the transaction: {}",
-                self.real_account_id(),
+                "transaction {} did not initialize the wallet {}",
                 output.transaction_hash(),
+                self.real_account_id(),
             ))
             .into());
         }
@@ -630,6 +632,7 @@ where
     }
 
     #[cfg(feature = "near-kit")]
+    /// Sycnrhonize 
     /// TODO: docs
     /// TODO: traverse extension chain?
     pub async fn sync_initialized(&self) -> Result<bool> {

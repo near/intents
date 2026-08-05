@@ -70,7 +70,7 @@ access-keys = [
   "dep:itertools",
   "derive_more/from",
   "digest",
-] # TODO
+]
 serde = [
   "defuse-crypto?/serde",
   "defuse-nep413?/serde",
@@ -101,6 +101,6 @@ resolver = [
 ]
 
 [dev-dependencies]
-defuse-nep641 = { path = ".", features = ["abi", "borsh", "digest", "serde", "resolver", "near-kit", "tracing"] }
+defuse-nep641 = { path = ".", features = ["abi", "borsh", "digest", "serde", "near-kit", "resolver", "tracing"] }
 
 hex-literal.workspace = true

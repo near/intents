@@ -113,6 +113,7 @@ impl RpcResolver {
     }
 }
 
+/// Access key [`ResolveErrorKind`]
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum AccessKeyError {

@@ -28,7 +28,7 @@ pub struct AccessKeyAuthorization {
     /// Signed offchain message
     pub msg: OffchainMessage,
 
-    /// Signature schema used
+    /// Signature schema
     pub via: AccessKeySignatureSchema,
 
     /// Public key with FullAccess permission

@@ -13,7 +13,7 @@ pub struct ResolveError {
     pub kind: ResolveErrorKind,
 }
 
-/// An resolve error [kind](field::ResolveError::kind)
+/// An resolve error [kind](field@ResolveError::kind)
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ResolveErrorKind {

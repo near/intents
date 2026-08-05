@@ -24,7 +24,6 @@ use defuse_time::arbitrary::RangeNanos;
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-// TODO: versioned?
 pub struct OffchainMessage {
     /// Chain ID.
     ///
@@ -239,7 +238,7 @@ impl OffchainMessage {
     }
 }
 
-// TODO versioned or string tag before?
+// TODO versioned
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
@@ -247,7 +246,7 @@ impl OffchainMessage {
     serde(deny_unknown_fields) // TODO: are we sure?
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-// TODO: VERSIONED
+// TODO: VERSIONED? or string tag before?
 // TODO: borsh?
 // TODO: make all fields optional?
 // TODO: move timestamp here?
@@ -260,10 +259,4 @@ pub struct Message {
 
     // TODO: Or put structural typed data here in the future?
     pub payload: String,
-}
-
-impl Message {
-    // pub fn hash() -> [u8; 32] {
-
-    // }
 }

@@ -56,6 +56,7 @@ impl RpcResolver {
     }
 }
 
+/// Contract [`ResolveErrorKind`]
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ContractError {
