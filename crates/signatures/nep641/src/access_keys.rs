@@ -23,52 +23,56 @@ use crate::OffchainMessage;
     // TODO: deny unknown fields?
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
-#[cfg_attr(
-    feature = "borsh",
-    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AccessKeyAuthorization {
+    // TODO: docs
     pub msg: OffchainMessage,
-    // TODO: via: Nep413(callback_url),
-    // TODO: enum of pk + sig
+    pub via: AccessKeySignatureSchema,
     pub public_key: PublicKey,
     pub signature: Signature,
 }
 
-impl AccessKeyAuthorization {
-    /// Verify the signature
-    #[must_use = "check if verification passed"]
-    pub fn verify(&self) -> bool {
-        let payload: Nep413Payload = self.msg.clone().into();
-
-        match (&self.public_key, &self.signature) {
-            // ed25519
-            (PublicKey::Ed25519(pk), Signature::Ed25519(sig)) => {
-                let Ok(pk) = pk.try_into() else {
-                    return false;
-                };
-                Nep413::verify::<Ed25519>(&pk, &payload, &sig.into())
-            }
-
-            // secp256k1
-            (PublicKey::Secp256k1(pk), Signature::Secp256k1(sig)) => {
-                let Ok(pk) = pk.try_into() else {
-                    return false;
-                };
-                let Ok(sig) = sig.try_into() else {
-                    return false;
-                };
-                Nep413::verify::<Secp256k1>(&pk, &payload, &sig)
-            }
-
-            // curve mismatch
-            _ => false,
-        }
-    }
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
+    serde(rename_all = "snake_case")
+)]
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum AccessKeySignatureSchema {
+    Nep413(AccessKeyNep413Schema),
 }
 
-impl From<OffchainMessage> for Nep413Payload {
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
+    serde(rename_all = "camelCase")
+)]
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
+pub struct AccessKeyNep413Schema {
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
+    pub callback_url: Option<String>,
+}
+
+impl AccessKeyNep413Schema {
+    // TODO: docs
+    #[inline]
+    pub const fn new() -> Self {
+        Self { callback_url: None }
+    }
+
+    #[inline]
+    pub fn with_callback_url(mut self, callback_url: impl Into<String>) -> Self {
+        self.callback_url = Some(callback_url.into());
+        self
+    }
+
     /// Convert into NEP-413 payload
     ///
     /// # Examples
@@ -96,15 +100,49 @@ impl From<OffchainMessage> for Nep413Payload {
     /// );
     /// ```
     #[inline]
-    fn from(msg: OffchainMessage) -> Self {
-        Self {
+    pub fn into_payload(self, msg: OffchainMessage) -> Nep413Payload {
+        Nep413Payload {
+            // TODO: domain, action?
             recipient: iter::once(&msg.signer_id).chain(&msg.path).join(" -> "),
-            // TODO: comment
+            // TODO: doc comment
             nonce: msg.hash(),
-            // TODO: here, borsh would be not good
             message: msg.payload,
-            // TODO: this will break some wallets
-            callback_url: None,
+            callback_url: self.callback_url,
+        }
+    }
+}
+
+impl AccessKeyAuthorization {
+    /// Verify the signature
+    #[must_use = "check if verification passed"]
+    pub fn verify(&self) -> bool {
+        match self.via.clone() {
+            AccessKeySignatureSchema::Nep413(schema) => {
+                let payload = schema.into_payload(self.msg.clone());
+                match (&self.public_key, &self.signature) {
+                    // ed25519
+                    (PublicKey::Ed25519(pk), Signature::Ed25519(sig)) => {
+                        let Ok(pk) = pk.try_into() else {
+                            return false;
+                        };
+                        Nep413::verify::<Ed25519>(&pk, &payload, &sig.into())
+                    }
+
+                    // secp256k1
+                    (PublicKey::Secp256k1(pk), Signature::Secp256k1(sig)) => {
+                        let Ok(pk) = pk.try_into() else {
+                            return false;
+                        };
+                        let Ok(sig) = sig.try_into() else {
+                            return false;
+                        };
+                        Nep413::verify::<Secp256k1>(&pk, &payload, &sig)
+                    }
+
+                    // curve mismatch
+                    _ => false,
+                }
+            }
         }
     }
 }
