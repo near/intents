@@ -88,7 +88,8 @@ impl AccessKeyNep413Schema {
     /// # Examples
     ///
     /// ```rust
-    /// use defuse_nep641::{OffchainMessage, Timestamp};
+    /// # use hex_literal::hex;
+    /// use defuse_nep641::{OffchainMessage, access_keys::AccessKeyNep413Schema};
     /// use defuse_nep413::Nep413Payload;
     ///
     /// let msg = OffchainMessage {
@@ -98,14 +99,19 @@ impl AccessKeyNep413Schema {
     ///         "wallet.near".parse().unwrap(),
     ///         "v1.signer".parse().unwrap(),
     ///     ],
-    ///     timestamp: Timestamp::now(),
+    ///     timestamp: "2026-08-05T07:28:00.123456789Z".parse().unwrap(),
     ///     payload: "Hello, Near!".to_string(),
     /// };
     ///
     /// assert_eq!(
-    ///     msg.into(),
+    ///     AccessKeyNep413Schema::new()
+    ///         .with_callback_url("https://example.com")
+    ///         .into_payload(msg),
     ///     Nep413Payload {
     ///         message: "Hello, Near!".to_string(),
+    ///         nonce: [0u8; 32],
+    ///         recipient: "extension.near -> wallet.near -> v1.signer".to_string(),
+    ///         callback_url: Some("https://example.com".to_string()),
     ///     },
     /// );
     /// ```

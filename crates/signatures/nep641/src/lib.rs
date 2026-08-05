@@ -1,3 +1,5 @@
+//! # NEP-641: Offchain Authorizations for Smart-Contracts
+
 #[cfg(feature = "access-keys")]
 pub mod access_keys;
 #[cfg(feature = "near-kit")]

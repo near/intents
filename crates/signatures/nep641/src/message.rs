@@ -112,7 +112,6 @@ impl OffchainMessage {
     ///     timestamp: Timestamp::now(),
     ///     payload: "Hello, Near!".to_string(),
     /// };
-    ///
     /// assert!(msg.is_top_level());
     ///
     /// let msg = OffchainMessage {
@@ -122,7 +121,6 @@ impl OffchainMessage {
     ///     timestamp: Timestamp::now(),
     ///     payload: "Hello, Near!".to_string(),
     /// };
-    ///
     /// assert!(!msg.is_top_level());
     /// ```
     #[inline]
@@ -143,7 +141,6 @@ impl OffchainMessage {
     ///     timestamp: Timestamp::now(),
     ///     payload: "Hello, Near!".to_string(),
     /// };
-    ///
     /// assert_eq!(msg.depth(), 0);
     ///
     /// let msg = OffchainMessage {
@@ -156,7 +153,6 @@ impl OffchainMessage {
     ///     timestamp: Timestamp::now(),
     ///     payload: "Hello, Near!".to_string(),
     /// };
-    ///
     /// assert_eq!(msg.depth(), 2);
     /// ```
     #[inline]
@@ -177,7 +173,6 @@ impl OffchainMessage {
     ///     timestamp: Timestamp::now(),
     ///     payload: "Hello, Near!".to_string(),
     /// };
-    ///
     /// assert_eq!(msg.top_level_id(), "wallet.near");
     ///
     /// let msg = OffchainMessage {
@@ -190,7 +185,6 @@ impl OffchainMessage {
     ///     timestamp: Timestamp::now(),
     ///     payload: "Hello, Near!".to_string(),
     /// };
-    ///
     /// assert_eq!(msg.top_level_id(), "v1.signer");
     /// ```
     #[inline]
@@ -213,15 +207,16 @@ impl OffchainMessage {
     /// # use defuse_nep641::OffchainMessage;
     /// # use hex_literal::hex;
     /// let msg = OffchainMessage {
-    ///     signer_id: "wallet.near".parse().unwrap(),
-    ///     resolver_id: "wallet.near".parse().unwrap(),
     ///     chain_id: "mainnet".to_string(),
+    ///     signer_id: "wallet.near".parse().unwrap(),
+    ///     path: vec![],
+    ///     timestamp: "2026-08-05T07:28:00.123456789Z".parse().unwrap(),
     ///     payload: "Hello, Near!".to_string(),
     /// };
     ///
     /// assert_eq!(
     ///     msg.hash(),
-    ///     hex!(""),
+    ///     hex!("d98eb326e626ad325bfc4ff7d4e487d2c8cbd820a5a29683be6b931a3dd5a280"),
     /// );
     /// ```
     #[cfg(all(feature = "digest", feature = "borsh"))]

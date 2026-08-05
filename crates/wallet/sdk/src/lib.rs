@@ -1,3 +1,5 @@
+//! # Wallet Contracts SDK
+
 #[cfg(feature = "near-kit")]
 pub mod client;
 #[cfg(feature = "mpc")]
