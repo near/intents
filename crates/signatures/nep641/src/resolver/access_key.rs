@@ -4,24 +4,23 @@ use near_kit::{AccessKeyPermissionView, BlockReference, RpcError};
 use tracing::instrument;
 
 use crate::{
+    AuthorizationResolution,
     access_keys::{AccessKeyAuthorization, PublicKey},
-    resolver::{ResolveErrorKind, RpcResolver},
+    resolver::{ResolveErrorKind, Resolved, RpcResolver},
 };
 
 impl RpcResolver {
-    // TODO: add it to docs
-    // TODO: full access key takes precedence over resolved by w_resolve_auth?
-    // TODO: tracing
-    // TODO: return optional?
+    /// Try to resolve a single authorization via `FullAccessKey`
     #[cfg_attr(feature = "tracing", instrument(level = "DEBUG", skip_all))]
     pub(super) async fn resolve_access_key(
         &self,
         account_id: &AccountId,
-        // TODO: slice?
         path: &[AccountId],
-        auth: AccessKeyAuthorization,
+        auth: &str,
         block: BlockReference,
-    ) -> Result<String, ResolveErrorKind> {
+    ) -> Result<Resolved, ResolveErrorKind> {
+        let auth: AccessKeyAuthorization = serde_json::from_str(auth)?;
+
         // check chain_id
         if auth.msg.chain_id != self.chain_id {
             return Err(AccessKeyError::InvalidChainId.into());
@@ -44,14 +43,15 @@ impl RpcResolver {
             return Err(AccessKeyError::InvalidSignature.into());
         }
 
-        // check access key
-        let is_full_access = match self
+        let access_key = self
             .client
             .view_access_key(account_id, &auth.public_key.clone().into(), block)
-            .await
-        {
+            .await;
+
+        // check access key
+        let is_full_access = match access_key {
             // Access key exists -> allow only if it has FullAccess permission.
-            Ok(access_key) => matches!(
+            Ok(ref access_key) => matches!(
                 access_key.permission,
                 AccessKeyPermissionView::FullAccess
                     | AccessKeyPermissionView::GasKeyFullAccess { .. }
@@ -83,8 +83,19 @@ impl RpcResolver {
             return Err(AccessKeyError::NoFullAccess(auth.public_key).into());
         }
 
-        // authorize signed payload
-        Ok(auth.msg.payload)
+        Ok(Resolved {
+            // authorize signed payload, without any pending sub-authorizations
+            res: AuthorizationResolution::new(auth.msg.payload),
+
+            // FIXME: Propagate block returned by RPC in case of an error, too.
+            // This is not critical, though: block hash is only used for tracing
+            // and sub-authorizations, which we don't have in this case
+            block_height: access_key
+                .as_ref()
+                .map(|a| a.block_height)
+                .unwrap_or_default(),
+            block_hash: access_key.map(|a| a.block_hash).unwrap_or_default(),
+        })
     }
 }
 

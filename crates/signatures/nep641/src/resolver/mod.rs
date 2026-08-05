@@ -3,7 +3,10 @@ mod error;
 
 pub use self::{access_key::*, error::*};
 
-use futures::stream::{FuturesUnordered, TryStreamExt};
+use futures::{
+    join,
+    stream::{FuturesUnordered, TryStreamExt},
+};
 
 use near_account_id::AccountId;
 use near_kit::{BlockReference, CryptoHash, Finality, RpcClient, RpcError};
@@ -142,7 +145,7 @@ impl RpcResolver {
     /// [`.with_max_depth()`](Self::with_max_pending) to set your custom limits.
     ///
     // TODO: # Not yet initialized accounts
-    /// # Legacy accounts
+    /// # Full Access Keys
     ///
     // TODO
     /// If an account doesn't have a contract deployed on it or the contract doesn't implement
@@ -264,29 +267,29 @@ impl RpcResolver {
         #[cfg(feature = "tracing")]
         let span = Span::current();
 
-        let res = self
-            .w_resolve_auth(&account_id, &path, &authorization, block.clone())
-            .await;
+        // try to resolve via both FullAccessKey and `w_resolve_auth()` contract view-method
+        let (access_key, contract) = join!(
+            self.resolve_access_key(&account_id, &path, &authorization, block.clone()),
+            self.resolve_contract(&account_id, &path, &authorization, block.clone()),
+        );
 
+        // successfull resolution via FullAccessKey takes precedence over the contract, since it:
+        // * has the same full control over the account
+        // * authorizes a payload without pending sub-authorizations
+        // * can be used as a last resort for a broken contract
+        let res = match (access_key, contract) {
+            // if both failed, but access key authorization at least deserialized successfully,
+            // then propagate the error coming from it
+            (res @ Err(ResolveErrorKind::AccessKey(_)), Err(_)) => res,
+            (access_key, contract) => access_key.or(contract),
+        };
+
+        // same as `res.map_err(|e| e.at(...))?` but avoids cloning
         let res = match res {
             Ok(res) => res,
             Err(err) => return Err(err.at(account_id, path)),
         };
 
-        // check block returned by RPC, just in case
-        {
-            let mismatch = match block {
-                BlockReference::Hash(hash) => res.block_hash != hash,
-                BlockReference::Height(height) => res.block_height != height,
-                _ => false,
-            };
-            if mismatch {
-                return Err(ResolveErrorKind::from(RpcError::InvalidResponse(
-                    "returned block doesn't match the requested one".to_string(),
-                ))
-                .at(account_id, path));
-            }
-        }
         // update `at_block.hash` and `at_block.height` with resolved block
         #[cfg(feature = "tracing")]
         record_all!(span, at_block.hash = %res.block_hash, at_block.height = res.block_height);
@@ -320,7 +323,7 @@ impl RpcResolver {
 
     /// Try to resolve a single authorization via `w_resolve_auth()` view-method
     #[cfg_attr(feature = "tracing", instrument(level = "DEBUG", skip_all))]
-    async fn w_resolve_auth(
+    async fn resolve_contract(
         &self,
         account_id: &AccountId,
         path: &[AccountId],

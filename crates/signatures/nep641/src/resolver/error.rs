@@ -17,8 +17,8 @@ pub struct ResolveError {
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ResolveErrorKind {
-    #[error("FullAccessKey: {0}")]
-    FullAccessKey(#[from] AccessKeyError),
+    #[error("access key: {0}")]
+    AccessKey(#[from] AccessKeyError),
 
     #[error("resolved payload is invalid: exepected: {}, got: {}", .expected, .payload)]
     InvalidPayload { payload: String, expected: String },
