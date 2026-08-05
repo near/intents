@@ -97,7 +97,8 @@ impl RpcResolver {
     /// each sub-authorization, it's still recommended to limit the maximum depth, as each pending
     /// sub-authorization implies additional allocations and may lead to long resolution timings.
     ///
-    /// This also raises the [maximum pending](Self::with_max_pending) limit to at least `max_depth`.
+    /// This also raises the [maximum sub-authorizations](Self::with_max_sub_authorizations) limit
+    /// to at least `max_depth`.
     #[must_use]
     #[inline]
     pub const fn with_max_depth(mut self, max_depth: usize) -> Self {
@@ -120,17 +121,26 @@ impl RpcResolver {
     /// This method recursively resolves given top-level authorization and all returned pending
     /// ones until no more authorizations are left, and returns a top-level authorized
     /// [payload](field@AuthorizationResolution::payload). If at least one authorization resolution
-    /// fails or any [pending authorization](PendingAuthorization) resolves into a payload that
-    /// doesn't match the [expected](field@PendingAuthorization::expect) one, then the whole
-    /// resolution procedure is immediately aborted and an error is returned.
+    /// fails or any [pending sub-authorization](crate::PendingAuthorization) resolves into a
+    /// payload that doesn't match the [expected](field@crate::PendingAuthorization::expect) one,
+    /// then the whole resolution procedure is immediately aborted and an error is returned.
     ///
+    /// # Full-access keys
+    ///
+    /// For each authorization, the resolver attempts both
+    /// [`AccessKeyAuthorization`](crate::access_keys::AccessKeyAuthorization) resolution and the
+    /// [`w_resolve_auth()`](crate::AuthResolver::w_resolve_auth) view-method. A successfully
+    /// resolved access-key authorization is verified according to
+    /// [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md), authorizes the signed
+    /// payload without pending sub-authorizations, and takes precedence over contract resolution.
+    ///
+    // TODO: # Not yet initialized accounts
     /// # Block reference
     ///
     /// **All** authorizations are resolved against the same block hash to enforce consistent
-    /// state between async RPC view-calls. By default, this method will fetch the `Final`
-    /// block hash during top-level authorization resolution and resolve all pending ones
-    /// against it.
-    // TODO: doc RPC is trusted, also in terms of final block
+    /// state between async RPC view-calls. By default, this method will fetch the `Final` block
+    /// hash during top-level authorization resolution and resolve all pending ones against it.
+    /// Be aware that RPC endpoint MAY be _out-of-sync_ and lag behind the tip of the network.
     ///
     /// See [`.at_block()`](Self::at_block) to resolve authorizations against the chain state
     /// from the past.
@@ -141,16 +151,8 @@ impl RpcResolver {
     /// This is too concervative for real world use-cases, but used as a sane default to prevent
     /// from DoS attacks.
     ///
-    /// See [`.with_max_pending()`](Self::with_max_pending) and
-    /// [`.with_max_depth()`](Self::with_max_pending) to set your custom limits.
-    ///
-    // TODO: # Not yet initialized accounts
-    /// # Full Access Keys
-    ///
-    // TODO: fix doc
-    /// If an account doesn't have a contract deployed on it or the contract doesn't implement
-    /// NEP-641 standard, the implementation fallbacks to verifying offchain signature according
-    /// to [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md) standard.
+    /// See [`.with_max_sub_authorizations()`](Self::with_max_sub_authorizations) and
+    /// [`.with_max_depth()`](Self::with_max_depth) to set your custom limits.
     pub async fn resolve_auth(
         &self,
         account_id: impl Into<AccountId>,
