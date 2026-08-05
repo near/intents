@@ -40,6 +40,7 @@ impl SignatureSchema for WalletEd25519 {
         Self::verify_hash(public_key, &msg.hash(), proof)
     }
 
+    #[inline]
     fn verify_offchain_msg(
         public_key: &Self::PublicKey,
         msg: &OffchainMessage,
