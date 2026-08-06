@@ -162,7 +162,7 @@ impl RpcResolver {
     pub async fn resolve_auth(
         &self,
         account_id: impl Into<AccountId>,
-        authorization: String,
+        authorization: impl AsRef<str>,
     ) -> Result<String, ResolveError> {
         // resolve top-level authorization first
         let ResolvedAuthorization {
@@ -268,13 +268,13 @@ impl RpcResolver {
         &self,
         account_id: AccountId,
         path: Vec<AccountId>,
-        authorization: String,
+        authorization: impl AsRef<str>,
         expect: Option<String>,
         block: BlockReference,
         #[cfg(feature = "tracing")] parent_span: Span,
     ) -> Result<ResolvedAuthorization, ResolveError> {
         let res = match self
-            .do_resolve_single(&account_id, &path, &authorization, expect, block)
+            .do_resolve_single(&account_id, &path, authorization.as_ref(), expect, block)
             .await
         {
             Ok(res) => res,

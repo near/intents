@@ -9,7 +9,11 @@ use defuse_wallet_sdk::{
     Gas, NearToken, WalletBuilder,
     client::{WExecuteExtensionArgs, WExecuteSignedArgs, WalletContract},
 };
-use futures::try_join;
+use futures::{
+    StreamExt, TryStreamExt, future,
+    stream::{self, FuturesUnordered},
+    try_join,
+};
 use near_kit::{CryptoHash, Final, Near, PublishMode, sandbox::SandboxConfig};
 use rand::{rand_core::UnwrapErr, rngs::SysRng};
 use rstest::{fixture, rstest};
@@ -106,79 +110,6 @@ async fn rotate(
 #[rstest]
 #[tokio::test]
 #[awt]
-async fn w_resolve_auth(
-    #[future] near: Near,
-
-    #[from(wallet)]
-    #[future]
-    extension: Wallet,
-
-    // #[from(extension)]
-    #[future] wallet: Wallet,
-) {
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
-        .pretty()
-        .init();
-
-    let wallet = {
-        // add extension and initialize both wallets
-        wallet
-            .sign_and_send(
-                Request::new()
-                    .internal([WalletOp::add_extension(&extension)])
-                    .external([NearPromise::new(&extension).deterministic_state_init(
-                        extension.deterministic_state_init().clone(),
-                        NearToken::ZERO,
-                    )]),
-            )
-            .await
-            .unwrap()
-            .status(&near)
-            // wait for finality, needed for w_resolve_auth()
-            .wait_until::<Final>()
-            .await
-            .unwrap();
-
-        // use: extension -> wallet
-        extension.as_initialized_unchecked().as_extension_of(wallet)
-    };
-
-    let payload = JsonPayload {
-        domain: "Near MPC".to_string(),
-        action: "sign".to_string(),
-        msg: "Hello, Near!".to_string(),
-    };
-
-    let authorization = wallet
-        .sign_offchain_msg(&payload, None) // top-level
-        .await
-        .expect("failed to sign");
-    dbg!(&authorization);
-
-    let resolver = RpcResolver::new(near.rpc().clone())
-        .await
-        .expect("failed to initialize RPC resolver")
-        // we need only one sub-authorization here: wallet -> extension
-        .with_max_sub_authorizations(1)
-        .with_max_depth(1);
-
-    let resolved = resolver
-        .resolve_auth(wallet.account_id(), authorization)
-        .await
-        .expect("invalid authorization");
-
-    println!("{} -> {resolved}", wallet.account_id());
-    assert_eq!(
-        payload,
-        serde_json::from_str(&resolved).unwrap(),
-        "resolved invalid payload"
-    );
-}
-
-#[rstest]
-#[tokio::test]
-#[awt]
 async fn w_init(
     #[future] near: Near,
 
@@ -251,6 +182,42 @@ async fn w_init(
     );
 }
 
+#[rstest]
+#[case::empty("")]
+#[case::test("test")]
+#[case::json(JsonPayload {
+    domain: "Near MPC".to_string(),
+    action: "sign".to_string(),
+    msg: "Hello, Near!".to_string(),
+}.into())]
+#[tokio::test]
+#[awt]
+async fn w_resolve_auth(
+    #[case] payload: String,
+
+    #[from(extension)]
+    #[with(3)] // extensions depth
+    #[future]
+    wallet: Wallet,
+
+    #[with(3)] // sub-authorizations depth
+    #[future]
+    resolver: RpcResolver,
+) {
+    let authorization = wallet
+        .sign_offchain_msg(&payload, None) // top-level
+        .await
+        .expect("failed to sign");
+
+    let resolved = resolver
+        .resolve_auth(wallet.account_id(), &authorization)
+        .await
+        .expect("invalid authorization");
+
+    println!("{authorization}\n{} -> {resolved}", wallet.account_id());
+    assert_eq!(payload, resolved, "resolved invalid payload");
+}
+
 #[fixture]
 #[awt]
 async fn wallet(
@@ -267,6 +234,53 @@ async fn wallet(
 }
 
 #[fixture]
+#[awt]
+async fn extension(
+    #[default(1)] depth: usize,
+
+    #[from(wallet)]
+    #[future]
+    ext: Wallet,
+
+    #[future] near: Near,
+) -> Wallet {
+    // recursively create chain of extensions
+    let wallets = stream::unfold(ext, |ext| async {
+        let w = wallet(
+            WalletBuilder::new().extension(&ext),
+            future::ready(near.clone()),
+        )
+        .await;
+        Some((ext, w))
+    })
+    .take(depth + 1) // preserve original wallet
+    .collect::<Vec<_>>()
+    .await;
+
+    // initialize all wallets
+    wallets
+        .iter()
+        .map(Wallet::initialize)
+        .collect::<FuturesUnordered<_>>()
+        .try_collect::<()>()
+        .await
+        .unwrap();
+
+    // reduce as extension chain
+    wallets.into_iter().reduce(Wallet::as_extension_of).unwrap()
+}
+
+#[fixture]
+#[awt]
+async fn resolver(#[default(0)] depth: usize, #[future] near: Near) -> RpcResolver {
+    RpcResolver::new(near.rpc().clone())
+        .await
+        .expect("failed to initialize RPC resolver")
+        .with_max_sub_authorizations(depth)
+        .with_max_depth(depth)
+}
+
+#[fixture]
 async fn near() -> Near {
     static DEPLOY: OnceCell<()> = OnceCell::const_new();
 
@@ -274,6 +288,11 @@ async fn near() -> Near {
 
     DEPLOY
         .get_or_init(|| async {
+            tracing_subscriber::fmt()
+                .with_env_filter(EnvFilter::from_default_env())
+                .pretty()
+                .init();
+
             try_join!(
                 near.publish(&**WALLET_ED25519_WASM, PublishMode::Immutable)
                     .into_future(),
