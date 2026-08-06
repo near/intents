@@ -98,16 +98,20 @@ impl RpcResolver {
     /// each sub-authorization, it's still recommended to limit the maximum depth, as each pending
     /// sub-authorization implies additional allocations and may lead to long resolution timings.
     ///
-    /// This also raises the [maximum sub-authorizations](Self::with_max_sub_authorizations) limit
-    /// to at least `max_depth`.
+    /// # Panics
+    ///
+    /// This method panics if `max_depth` is greater than currently configured
+    /// [maximum sub-authorizations](Self::with_max_sub_authorizations).
     #[must_use]
     #[inline]
     pub const fn with_max_depth(mut self, max_depth: usize) -> Self {
+        assert!(
+            max_depth <= self.max_sub_auths,
+            "max_depth can't be greater than max_sub_authorizations, \
+            set `.with_max_sub_authorizations()` first.",
+        );
+
         self.max_depth = max_depth;
-        // this is a const version of: `self.max_pending = self.max_pending.max(self.max_depth)`
-        if self.max_sub_auths < self.max_depth {
-            self.max_sub_auths = self.max_depth;
-        }
         self
     }
 

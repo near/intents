@@ -159,7 +159,9 @@ async fn w_resolve_auth(
     let resolver = RpcResolver::new(near.rpc().clone())
         .await
         .expect("failed to initialize RPC resolver")
-        .with_max_depth(usize::MAX);
+        // we need only one sub-authorization here: wallet -> extension
+        .with_max_sub_authorizations(1)
+        .with_max_depth(1);
 
     let resolved = resolver
         .resolve_auth(wallet.account_id(), authorization)
