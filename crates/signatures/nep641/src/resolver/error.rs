@@ -6,11 +6,14 @@ use crate::resolver::{AccessKeyError, contract::ContractError};
 
 /// An error returned by [`crate::resolver::RpcResolver`]
 #[derive(Debug, thiserror::Error)]
-#[error("{}: {}", .path.iter().chain([.account_id]).join(" -> "), .kind)]
+#[error("{}: {}", .rev_path.iter().chain([.account_id]).join(" -> "), .kind)]
 #[non_exhaustive]
 pub struct ResolveError {
+    /// Account ID for which the resolution failed.
     pub account_id: AccountId,
-    pub path: Vec<AccountId>,
+    /// **REVERSED** path _starting_ from the top-level resolver.
+    pub rev_path: Vec<AccountId>,
+    /// The actual error occurred.
     pub kind: ResolveErrorKind,
 }
 
@@ -44,14 +47,10 @@ impl ResolveErrorKind {
     /// Annotate the error with path and current resolver ID
     #[must_use]
     #[inline]
-    pub fn at(
-        self,
-        account_id: impl Into<AccountId>,
-        path: impl Into<Vec<AccountId>>,
-    ) -> ResolveError {
+    pub const fn at(self, account_id: AccountId, rev_path: Vec<AccountId>) -> ResolveError {
         ResolveError {
-            account_id: account_id.into(),
-            path: path.into(),
+            account_id,
+            rev_path,
             kind: self,
         }
     }

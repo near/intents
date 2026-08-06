@@ -43,8 +43,8 @@ pub struct OffchainMessage {
     /// the top-level resolver ID is the _last_ one. Empty path means that this message is a
     /// top-level authorization itself.
     ///
-    /// The verifying contract MUST panic if it doesn't match the **REVERSED** `path` passed as
-    /// an argument to [`w_resolve_auth()`](crate::AuthResolver::w_resolve_auth) method.
+    /// The verifying contract MUST panic if it doesn't match the `path` passed as an argument
+    /// to [`w_resolve_auth(path, authorization)`](crate::AuthResolver::w_resolve_auth) method.
     #[cfg_attr(
         feature = "serde",
         serde(default, skip_serializing_if = "Vec::is_empty")

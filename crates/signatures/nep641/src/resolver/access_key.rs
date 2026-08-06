@@ -12,11 +12,14 @@ use crate::{
 
 impl RpcResolver {
     /// Try to resolve a single authorization via `FullAccessKey`
-    #[cfg_attr(feature = "tracing", instrument(level = "DEBUG", skip_all))]
+    #[cfg_attr(
+        feature = "tracing",
+        instrument(level = "DEBUG", skip_all, err(level = "TRACE"))
+    )]
     pub(super) async fn resolve_access_key(
         &self,
         account_id: &AccountId,
-        path: &[AccountId],
+        rev_path: &[AccountId],
         auth: &str,
         block: BlockReference,
     ) -> Result<Resolved, ResolveErrorKind> {
@@ -32,8 +35,8 @@ impl RpcResolver {
             return Err(AccessKeyError::InvalidSignerId(auth.msg.signer_id).into());
         }
 
-        // check reversed path
-        if !auth.msg.path.iter().eq(path.iter().rev()) {
+        // check REVERSED path
+        if !auth.msg.path.iter().eq(rev_path.iter().rev()) {
             return Err(AccessKeyError::InvalidPath.into());
         }
 

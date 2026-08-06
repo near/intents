@@ -1,5 +1,7 @@
+use defuse_serde_utils::Reversed;
 use near_account_id::AccountId;
 use serde::Serialize;
+use serde_with::serde_as;
 
 use crate::AuthorizationResolution;
 
@@ -11,8 +13,13 @@ pub trait AuthResolverContract {
 }
 
 /// Arguments for [`w_resolve_auth()`](AuthResolverContractClient::w_resolve_auth) view-method.
+#[serde_as]
 #[derive(Serialize)]
 pub struct WResolveAuthArgs<'a> {
-    pub path: &'a [AccountId],
+    /// **REVERSED** path (will be serialized backwards)
+    #[serde_as(as = "Reversed")]
+    #[serde(rename = "path")]
+    pub rev_path: &'a [AccountId],
+
     pub authorization: &'a str,
 }

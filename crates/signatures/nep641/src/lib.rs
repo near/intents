@@ -34,12 +34,12 @@ pub trait AuthResolver {
     ///
     /// Offchain verifier starts the verification procedure from the top-level authorization with
     /// empty `path`. If the authorization resolves successfully and the pending sub-authorizations
-    /// list is not empty, then the current resolver contract ID is _appended to the end_ of `path`
-    /// and the latter gets propagated to all sub-resolvers.
+    /// list is not empty, then the current resolver contract ID is _prepended at the start_ of
+    /// `path` and the latter gets propagated to all sub-resolvers.
     ///
     /// Thus, for any non-top-level resolver the `path` argument includes the whole traversal path
-    /// _starting_ from the top-level resolver and _ending_ with the closest ancestor (i.e. direct
-    /// parent), which has triggered the current `w_resolve_auth()`:
+    /// _starting_ from its closest ancestor, i.e. direct parent which has triggered the current
+    /// `w_resolve_auth()`, and _ending_ with the top-level resolver:
     ///
     /// <table>
     ///   <thead>
@@ -114,7 +114,7 @@ pub trait AuthResolver {
     ///
     /// ```json
     /// {
-    ///   "path": ["resolver.near", "sub.resolver.near"],
+    ///   "path": ["sub.resolver.near", "resolver.near"],
     ///   "authorization": "auth2"
     /// }
     /// ```

@@ -167,7 +167,7 @@ impl RpcResolver {
         // resolve top-level authorization first
         let ResolvedAuthorization {
             mut account_id,
-            mut path,
+            mut rev_path, // REVERSED path
             res:
                 Resolved {
                     res:
@@ -199,8 +199,10 @@ impl RpcResolver {
 
         loop {
             // check if max depth limit will be exceeded for pending sub-authorizations, if any
-            if !pending.is_empty() && path.len() >= self.max_depth {
-                return Err(ResolveErrorKind::MaxDepthExceeded(self.max_depth).at(account_id, path));
+            if !pending.is_empty() && rev_path.len() >= self.max_depth {
+                return Err(
+                    ResolveErrorKind::MaxDepthExceeded(self.max_depth).at(account_id, rev_path)
+                );
             }
 
             sub_count = sub_count.saturating_add(pending.len());
@@ -208,18 +210,18 @@ impl RpcResolver {
             if sub_count > self.max_sub_auths {
                 return Err(
                     ResolveErrorKind::TooManySubAuthorizations(self.max_sub_auths)
-                        .at(account_id, path),
+                        .at(account_id, rev_path),
                 );
             }
 
-            // append parent resolver ID to the path for pending sub-authorizations, if any
-            path.push(account_id);
+            // append parent resolver ID to the REVERSED path for pending sub-authorizations, if any
+            rev_path.push(account_id);
 
             // add pending sub-authorizations to the in-flight pool
             in_flight.extend(pending.into_iter().map(|pending| {
                 self.resolve_single(
                     pending.account_id,
-                    path.clone(), // propagate extended path to all sub-resolvers
+                    rev_path.clone(), // propagate extended path to all sub-resolvers
                     pending.authorization,
                     Some(pending.expect), // check that returned payload matches the expected one
                     block_hash.into(), // resolve pending sub-authorizations at the same block hash
@@ -237,7 +239,7 @@ impl RpcResolver {
             // overwrite variables from the resolved sub-authorization
             ResolvedAuthorization {
                 account_id,
-                path,
+                rev_path,
                 res: Resolved {
                     res: AuthorizationResolution { pending, .. },
                     ..
@@ -257,47 +259,53 @@ impl RpcResolver {
         fields(
             chain.id = self.chain_id,
             %account_id,
-            depth = path.len(),
+            depth = rev_path.len(),
             // set one of finality / hash / height fields
             at_block.finality = if let BlockReference::Finality(f) = block { Some(f.as_str()) } else { None }.map(field::display),
             at_block.hash = if let BlockReference::Hash(h) = block { Some(h) } else { None }.map(field::display),
             at_block.height = if let BlockReference::Height(h) = block { Some(h) } else { None },
         ),
+        err(level = "DEBUG"),
     ))]
     async fn resolve_single(
         &self,
         account_id: AccountId,
-        path: Vec<AccountId>,
+        rev_path: Vec<AccountId>,
         authorization: impl AsRef<str>,
         expect: Option<String>,
         block: BlockReference,
         #[cfg(feature = "tracing")] parent_span: Span,
     ) -> Result<ResolvedAuthorization, ResolveError> {
         let res = match self
-            .do_resolve_single(&account_id, &path, authorization.as_ref(), expect, block)
+            .do_resolve_single(
+                &account_id,
+                &rev_path,
+                authorization.as_ref(),
+                expect,
+                block,
+            )
             .await
         {
             Ok(res) => res,
-            Err(err) => return Err(err.at(account_id, path)),
+            Err(err) => return Err(err.at(account_id, rev_path)),
         };
 
-        #[cfg(feature = "tracing")]
-        {
-            // update `at_block.hash` and `at_block.height` with resolved block
-            record_all!(Span::current(), at_block.hash = %res.block_hash, at_block.height = res.block_height);
-            tracing::debug!(
-                payload = res.res.payload,
-                sub_authorizations = res.res.pending.len(),
-                "authorization resolved"
-            );
-        }
-
         Ok(ResolvedAuthorization {
-            account_id,
-            path,
-            res,
             #[cfg(feature = "tracing")]
-            span: Span::current(),
+            span: {
+                let span = Span::current();
+                // update `at_block.hash` and `at_block.height` with resolved block
+                record_all!(span, at_block.hash = %res.block_hash, at_block.height = res.block_height);
+                tracing::debug!(
+                    payload = res.res.payload,
+                    sub_authorizations = res.res.pending.len(),
+                    "authorization resolved"
+                );
+                span
+            },
+            account_id,
+            rev_path,
+            res,
         })
     }
 
@@ -306,15 +314,15 @@ impl RpcResolver {
     async fn do_resolve_single(
         &self,
         account_id: &AccountId,
-        path: &[AccountId],
+        rev_path: &[AccountId],
         authorization: &str,
         expect: Option<String>,
         block: BlockReference,
     ) -> Result<Resolved, ResolveErrorKind> {
         // try to resolve via both FullAccessKey and `w_resolve_auth()` contract view-method
         let res = match join!(
-            self.resolve_access_key(account_id, path, authorization, block.clone()),
-            self.resolve_contract(account_id, path, authorization, block.clone()),
+            self.resolve_access_key(account_id, rev_path, authorization, block.clone()),
+            self.resolve_contract(account_id, rev_path, authorization, block.clone()),
             // TODO: add optional support for fallback to Intents verifier contract as a resolver
         ) {
             // if both failed, but access key authorization at least deserialized successfully,
@@ -357,8 +365,9 @@ struct ResolvedAuthorization {
     /// Account ID which resolved this authorization
     account_id: AccountId,
 
-    /// Path at the time of resolution. Empty path means it was a top-level authorization.
-    path: Vec<AccountId>,
+    /// **REVERSED** path at the time of resolution.
+    /// Empty path means it was a top-level authorization.
+    rev_path: Vec<AccountId>,
 
     /// Resolved authorization
     res: Resolved,

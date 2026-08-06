@@ -1775,6 +1775,7 @@ dependencies = [
  "defuse-digest",
  "defuse-nep413",
  "defuse-nep641",
+ "defuse-serde-utils",
  "defuse-time",
  "derive_more",
  "digest-io",

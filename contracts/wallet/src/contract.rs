@@ -371,8 +371,8 @@ where
                     return Err(Error::InvalidSignerId(msg.signer_id));
                 }
 
-                // check reversed path
-                if !msg.path.iter().eq(path.iter().rev()) {
+                // check path
+                if msg.path != path {
                     return Err(Error::InvalidPath);
                 }
 

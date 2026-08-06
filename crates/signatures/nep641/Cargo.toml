@@ -18,6 +18,7 @@ defuse-borsh-utils = { workspace = true, optional = true }
 defuse-crypto = { workspace = true, features = ["ed25519", "secp256k1", "fmt"], optional = true }
 defuse-digest = { workspace = true, features = ["sha3"], optional = true }
 defuse-nep413 = { workspace = true, optional = true }
+defuse-serde-utils = { workspace = true, optional = true }
 derive_more = { workspace = true, optional = true }
 digest-io = { workspace = true, optional = true }
 futures = { workspace = true, features = ["std"], optional = true }
@@ -61,7 +62,12 @@ borsh-schema = [
 ]
 digest = ["dep:defuse-digest", "dep:digest-io"]
 json = ["dep:serde_json", "serde"]
-near-kit = ["defuse-nep413?/near-kit", "dep:near-kit", "serde"]
+near-kit = [
+  "defuse-nep413?/near-kit",
+  "dep:defuse-serde-utils",
+  "dep:near-kit",
+  "serde",
+]
 nep413 = ["borsh", "dep:defuse-nep413", "dep:itertools", "digest"]
 access-keys = [
   "dep:defuse-crypto",

@@ -10,11 +10,14 @@ use crate::{
 
 impl RpcResolver {
     /// Try to resolve a single authorization via `w_resolve_auth()` view-method
-    #[cfg_attr(feature = "tracing", instrument(level = "DEBUG", skip_all))]
+    #[cfg_attr(
+        feature = "tracing",
+        instrument(level = "DEBUG", skip_all, err(level = "TRACE"))
+    )]
     pub(super) async fn resolve_contract(
         &self,
         account_id: &AccountId,
-        path: &[AccountId],
+        rev_path: &[AccountId],
         authorization: &str,
         block: BlockReference,
     ) -> Result<Resolved, ResolveErrorKind> {
@@ -24,7 +27,7 @@ impl RpcResolver {
                 account_id,
                 "w_resolve_auth",
                 &serde_json::to_vec(&WResolveAuthArgs {
-                    path,
+                    rev_path,
                     authorization,
                 })
                 .expect("JSON: serialization failed"),
