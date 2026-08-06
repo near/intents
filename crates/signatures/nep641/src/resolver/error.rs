@@ -7,6 +7,7 @@ use crate::resolver::{AccessKeyError, contract::ContractError};
 /// An error returned by [`crate::resolver::RpcResolver`]
 #[derive(Debug, thiserror::Error)]
 #[error("{}: {}", .path.iter().chain([.account_id]).join(" -> "), .kind)]
+#[non_exhaustive]
 pub struct ResolveError {
     pub account_id: AccountId,
     pub path: Vec<AccountId>,
@@ -40,11 +41,17 @@ pub enum ResolveErrorKind {
 }
 
 impl ResolveErrorKind {
+    /// Annotate the error with path and current resolver ID
+    #[must_use]
     #[inline]
-    pub(super) const fn at(self, account_id: AccountId, path: Vec<AccountId>) -> ResolveError {
+    pub fn at(
+        self,
+        account_id: impl Into<AccountId>,
+        path: impl Into<Vec<AccountId>>,
+    ) -> ResolveError {
         ResolveError {
-            account_id,
-            path,
+            account_id: account_id.into(),
+            path: path.into(),
             kind: self,
         }
     }

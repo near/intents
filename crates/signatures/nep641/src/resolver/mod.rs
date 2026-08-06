@@ -177,7 +177,7 @@ impl RpcResolver {
             #[cfg(feature = "tracing")]
             mut span,
         } = self
-            .resolve(
+            .resolve_single(
                 account_id.into(),
                 vec![], // path is empty for top-level authorization
                 authorization,
@@ -213,7 +213,7 @@ impl RpcResolver {
 
             // add pending sub-authorizations to the in-flight pool
             in_flight.extend(pending.into_iter().map(|pending| {
-                self.resolve(
+                self.resolve_single(
                     pending.account_id,
                     path.clone(), // propagate extended path to all sub-resolvers
                     pending.authorization,
@@ -248,18 +248,19 @@ impl RpcResolver {
     /// if set
     #[cfg_attr(feature = "tracing", instrument(
         name = "resolve_auth",
-        parent = parent_span,
+        parent = parent_span, // build `resolve_auth` span tree
         skip_all,
         fields(
             chain.id = self.chain_id,
             %account_id,
             depth = path.len(),
+            // set one of finality / hash / height fields
             at_block.finality = if let BlockReference::Finality(f) = block { Some(f.as_str()) } else { None }.map(field::display),
             at_block.hash = if let BlockReference::Hash(h) = block { Some(h) } else { None }.map(field::display),
             at_block.height = if let BlockReference::Height(h) = block { Some(h) } else { None },
         ),
     ))]
-    async fn resolve(
+    async fn resolve_single(
         &self,
         account_id: AccountId,
         path: Vec<AccountId>,
@@ -268,17 +269,50 @@ impl RpcResolver {
         block: BlockReference,
         #[cfg(feature = "tracing")] parent_span: Span,
     ) -> Result<ResolvedAuthorization, ResolveError> {
+        let res = match self
+            .do_resolve_single(&account_id, &path, &authorization, expect, block)
+            .await
+        {
+            Ok(res) => res,
+            Err(err) => return Err(err.at(account_id, path)),
+        };
+
         #[cfg(feature = "tracing")]
-        let span = Span::current();
+        {
+            // update `at_block.hash` and `at_block.height` with resolved block
+            record_all!(Span::current(), at_block.hash = %res.block_hash, at_block.height = res.block_height);
+            tracing::debug!(
+                payload = res.res.payload,
+                sub_authorizations = res.res.pending.len(),
+                "authorization resolved"
+            );
+        }
 
+        Ok(ResolvedAuthorization {
+            account_id,
+            path,
+            res,
+            #[cfg(feature = "tracing")]
+            span: Span::current(),
+        })
+    }
+
+    /// Resolve a single authorization and check that returned payload matches the expected one,
+    /// if set
+    async fn do_resolve_single(
+        &self,
+        account_id: &AccountId,
+        path: &[AccountId],
+        authorization: &str,
+        expect: Option<String>,
+        block: BlockReference,
+    ) -> Result<Resolved, ResolveErrorKind> {
         // try to resolve via both FullAccessKey and `w_resolve_auth()` contract view-method
-        let (access_key, contract) = join!(
-            self.resolve_access_key(&account_id, &path, &authorization, block.clone()),
-            self.resolve_contract(&account_id, &path, &authorization, block.clone()),
+        let res = match join!(
+            self.resolve_access_key(account_id, path, authorization, block.clone()),
+            self.resolve_contract(account_id, path, authorization, block.clone()),
             // TODO: add optional support for fallback to Intents verifier contract as a resolver
-        );
-
-        let res = match (access_key, contract) {
+        ) {
             // if both failed, but access key authorization at least deserialized successfully,
             // then propagate the error coming from it
             (res @ Err(ResolveErrorKind::AccessKey(_)), Err(_)) => res,
@@ -287,31 +321,18 @@ impl RpcResolver {
             // * authorizes a payload without pending sub-authorizations
             // * can be used as a last resort for a broken contract
             (access_key, contract) => access_key.or(contract),
-        };
+        }?;
 
-        // same as `res.map_err(|e| e.at(...))?` but avoids cloning
-        let res = match res {
-            Ok(res) => res,
-            Err(err) => return Err(err.at(account_id, path)),
-        };
-
-        // check block returned by RPC, just in case
-        {
-            let mismatch = match block {
-                BlockReference::Hash(hash) => res.block_hash != hash,
-                BlockReference::Height(height) => res.block_height != height,
-                _ => false,
-            };
-            if mismatch {
-                return Err(ResolveErrorKind::from(RpcError::InvalidResponse(
-                    "returned block doesn't match the requested one".to_string(),
-                ))
-                .at(account_id, path));
-            }
+        // check block returned by RPC first, just in case
+        if match block {
+            BlockReference::Hash(hash) => res.block_hash != hash,
+            BlockReference::Height(height) => res.block_height != height,
+            _ => false,
+        } {
+            return Err(ResolveErrorKind::from(RpcError::InvalidResponse(
+                "returned block doesn't match the requested one".to_string(),
+            )));
         }
-        // update `at_block.hash` and `at_block.height` with resolved block
-        #[cfg(feature = "tracing")]
-        record_all!(span, at_block.hash = %res.block_hash, at_block.height = res.block_height);
 
         // check if resolved payload matches the one expected by the parent resolver
         if let Some(expected) = expect
@@ -320,24 +341,10 @@ impl RpcResolver {
             return Err(ResolveErrorKind::InvalidPayload {
                 payload: res.res.payload,
                 expected,
-            }
-            .at(account_id, path));
+            });
         }
 
-        #[cfg(feature = "tracing")]
-        tracing::debug!(
-            payload = res.res.payload,
-            sub_authorizations = res.res.pending.len(),
-            "authorization resolved"
-        );
-
-        Ok(ResolvedAuthorization {
-            account_id,
-            path,
-            res,
-            #[cfg(feature = "tracing")]
-            span,
-        })
+        Ok(res)
     }
 }
 
