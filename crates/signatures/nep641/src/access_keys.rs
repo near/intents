@@ -1,3 +1,5 @@
+//! Authorization via full-access keys
+
 use core::{
     fmt::{self, Debug, Display},
     str::FromStr,

@@ -16,9 +16,6 @@ use defuse_time::arbitrary::RangeNanos;
 #[cfg(feature = "serde")]
 use serde_with::DurationSeconds;
 
-/// Domain prefix for signing [`RequestMessage`].
-pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
-
 /// Chain id (e.g. `mainnet`)
 pub type ChainId = String;
 
@@ -148,6 +145,9 @@ pub struct RequestMessage {
 }
 
 impl RequestMessage {
+    /// A prefix used for [canonical hash](Self::hash).
+    pub const DOMAIN_SEPARATOR: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
+
     /// Returns canonical hash of the request message:
     ///
     /// ```text
@@ -180,7 +180,7 @@ impl RequestMessage {
         use defuse_digest::{Digest, sha3::Sha3_256};
         use digest_io::IoWrapper;
 
-        let mut hasher = IoWrapper(Sha3_256::new_with_prefix(WALLET_DOMAIN));
+        let mut hasher = IoWrapper(Sha3_256::new_with_prefix(Self::DOMAIN_SEPARATOR));
         // serialize directly to hasher
         ::borsh::to_writer(&mut hasher, self).expect("borsh: failed to serialize");
 

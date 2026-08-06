@@ -1,3 +1,5 @@
+//! Bindings to [`AuthResolver`](crate::AuthResolver) contract.
+
 use defuse_serde_utils::Reversed;
 use near_account_id::AccountId;
 use serde::Serialize;

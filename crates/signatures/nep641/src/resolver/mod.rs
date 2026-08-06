@@ -1,3 +1,5 @@
+//! Offchain RPC resolver
+
 mod access_key;
 mod contract;
 mod error;

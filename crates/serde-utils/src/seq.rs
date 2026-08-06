@@ -15,12 +15,13 @@ use serde_with::SerializeAs;
 /// #[derive(Serialize)]
 /// struct A {
 ///     #[serde_as(as = "Reversed")]
-///     reversed: Vec<u32>,
+///     #[serde(rename = "list")]
+///     rev_list: Vec<u32>,
 /// }
 ///
 /// assert_eq!(
-///     serde_json::to_value(&A { reversed: vec![3, 2, 1] }).unwrap(),
-///     json!({ "reversed": [1, 2, 3] }),
+///     serde_json::to_value(&A { rev_list: vec![3, 2, 1] }).unwrap(),
+///     json!({ "list": [1, 2, 3] }),
 /// );
 /// ```
 pub struct Reversed;
