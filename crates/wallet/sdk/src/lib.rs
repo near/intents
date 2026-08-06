@@ -715,7 +715,7 @@ where
                 // wrap as extension with ID of the previous account in the chain
                 WalletAuthorization::as_extension_of,
             )
-            .to_authorization()
+            .into()
     }
 
     #[allow(clippy::doc_markdown)]

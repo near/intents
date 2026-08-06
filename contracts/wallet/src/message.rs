@@ -263,13 +263,6 @@ impl WalletAuthorization {
         }
     }
 
-    /// Convert to the authorization blob
-    #[cfg(feature = "json")]
-    #[inline]
-    pub fn to_authorization(&self) -> String {
-        serde_json::to_string(self).expect("JSON: failed to serialize")
-    }
-
     /// Wrap as extension with given ID
     #[cfg(feature = "json")]
     #[must_use]
@@ -277,11 +270,30 @@ impl WalletAuthorization {
     pub fn as_extension_of(self, account_id: impl Into<AccountId>) -> Self {
         Self::Extension {
             account_id: account_id.into(),
-            authorization: self.to_authorization(),
+            authorization: (&self).into(),
             payload: self.into_payload(),
         }
     }
 }
+
+#[cfg(feature = "json")]
+const _: () = {
+    impl From<&WalletAuthorization> for String {
+        /// Convert to the authorization blob
+        #[inline]
+        fn from(auth: &WalletAuthorization) -> Self {
+            serde_json::to_string(auth).expect("JSON: failed to serialize")
+        }
+    }
+
+    impl From<WalletAuthorization> for String {
+        /// Convert to the authorization blob
+        #[inline]
+        fn from(auth: WalletAuthorization) -> Self {
+            (&auth).into()
+        }
+    }
+};
 
 #[cfg(test)]
 mod tests {
