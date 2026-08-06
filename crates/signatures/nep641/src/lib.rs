@@ -10,7 +10,6 @@ pub mod resolver;
 
 pub use self::message::*;
 
-pub use defuse_time::Timestamp;
 use near_account_id::AccountId;
 
 /// A smart-contract implementing NEP-641 interface.

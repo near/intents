@@ -4,13 +4,12 @@ mod access_key;
 mod contract;
 mod error;
 
-pub use self::{access_key::*, error::*};
+pub use self::{access_key::*, contract::*, error::*};
 
 use futures::{
     join,
     stream::{FuturesUnordered, TryStreamExt},
 };
-
 use near_account_id::AccountId;
 use near_kit::{BlockReference, CryptoHash, Finality, RpcClient, RpcError};
 #[cfg(feature = "tracing")]

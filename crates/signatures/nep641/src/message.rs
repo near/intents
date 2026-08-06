@@ -1,4 +1,4 @@
-use defuse_time::Timestamp;
+pub use defuse_time::Timestamp;
 use near_account_id::AccountId;
 
 #[cfg(feature = "borsh")]

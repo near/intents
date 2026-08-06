@@ -1,5 +1,4 @@
 use itertools::Itertools;
-
 use near_account_id::AccountId;
 
 use crate::resolver::{AccessKeyError, contract::ContractError};
