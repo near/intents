@@ -29,8 +29,8 @@ pub struct AccessKeyAuthorization {
     /// Signature schema and additional metadata used during signing process
     pub via: AccessKeySchema,
 
-    /// Public key with `FullAccess` permission
-    pub public_key: PublicKey,
+    /// Access key with `FullAccess` permission
+    pub access_key: PublicKey,
 
     /// Signature
     pub signature: Signature,
@@ -47,7 +47,7 @@ impl AccessKeyAuthorization {
         let payload = self.msg.clone().into_nep413_payload(callback_url.clone());
 
         // verify
-        match (&self.public_key, &self.signature) {
+        match (&self.access_key, &self.signature) {
             // ed25519
             (PublicKey::Ed25519(pk), Signature::Ed25519(sig)) => {
                 let Ok(pk) = pk.try_into() else {

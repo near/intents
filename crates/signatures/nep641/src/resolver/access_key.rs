@@ -43,7 +43,7 @@ impl RpcResolver {
         }
 
         let (block, access_key) = {
-            let rpc_pk = auth.public_key.clone().into();
+            let rpc_pk = auth.access_key.clone().into();
             if let BlockReference::Hash(block_hash) = block {
                 // fetch the block concurrently with access key only if block_hash is already known
                 join!(
@@ -94,7 +94,7 @@ impl RpcResolver {
             Err(RpcError::AccountNotFound(_)) => {
                 // TODO: or check if we have `self.state_inits.get(&account_id)` with this public
                 // key added, since it can be just one of them
-                auth.public_key.to_implicit_account_id() == *account_id
+                auth.access_key.to_implicit_account_id() == *account_id
             }
 
             // Other RPC error -> reject.
@@ -102,7 +102,7 @@ impl RpcResolver {
         };
 
         if !is_full_access {
-            return Err(AccessKeyError::NoFullAccess(auth.public_key).into());
+            return Err(AccessKeyError::NoFullAccess(auth.access_key).into());
         }
 
         // authorize signed payload, without any pending sub-authorizations
