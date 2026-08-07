@@ -9,7 +9,7 @@ repository.workspace = true
 
 [dependencies]
 defuse-cli-utils = { workspace = true, features = ["hash"] }
-defuse-outlayer-app-core = { workspace = true, features = ["serde", "borsh", "digest"] }
+defuse-outlayer-app-core = { workspace = true, features = ["serde", "borsh"] }
 
 anyhow.workspace = true
 clap = { workspace = true, features = ["wrap_help"] }

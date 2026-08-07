@@ -21,10 +21,10 @@ One admin account manages the instance: it approves the expected code hash and s
 The deterministic address is derived from the Borsh-serialized `State`. All parameters must be provided at init time:
 
 - **`admin_id`** *(required)* — account that controls code approval and configuration
-- **`code_hash`** *(required)* — SHA-256 hash of the approved code binary (`[0u8; 32]` if no code is pre-approved)
+- **`code_hash`** *(required)* — SHA-256 hash of the approved code binary. If no code is pre-approved, pass all-zero bytes explicitly: `--code-hash 0x0000000000000000000000000000000000000000000000000000000000000000`
 - **`code_url`** *(required)* — URL pointing to the code binary (`https://...` or `data:application/wasm;base64,...`)
 
-Use the [`near-oa`](#near-oa-cli-tool) tool to compute the `StateInit` JSON for a given set of parameters.
+Use the [`near-oa`](#near-oa-extension) tool to compute the `StateInit` JSON for a given set of parameters.
 
 ## Public API
 
@@ -61,7 +61,7 @@ cargo install --path ./crates/outlayer-app/near-oa
 ### Running
 
 ```sh
-near oa [OPTIONS] --admin-id <AccountId> --code-url <URL> --code-hash <HASH>
+near oa [OPTIONS] --admin-id <AccountId> --code-url <URL> --code-hash <HASH | @FILE | @->
 ```
 
 ### Usage
@@ -121,7 +121,7 @@ near transaction construct-transaction <admin-id> \
   data-from-json "$(near-oa \
     --admin-id <admin-id> \
     --code-url <url> \
-    --code-hash <code-sha256-hex> \
+    --code-hash 0x<code-sha256-hex> \
     --quiet)" \
   deposit 0NEAR \
   skip \

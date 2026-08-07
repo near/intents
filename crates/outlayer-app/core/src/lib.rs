@@ -31,9 +31,10 @@ impl<'a> State<'a> {
 
     /// Create new state with given `admin_id`.
     ///
-    /// [`field@Self::code_hash`] defaults to all-zero bytes and
-    /// [`field@Self::code_url`] to an empty string, until set via
-    /// [`Self::with_code_hash`]/[`Self::with_code_url`].
+    /// [`field@Self::code_hash`] starts as all-zero bytes and
+    /// [`field@Self::code_url`] as an empty string; both are expected to be
+    /// set via [`Self::with_code_hash`]/[`Self::with_code_url`] before
+    /// deriving an address.
     #[inline]
     pub fn new(admin_id: impl Into<Cow<'a, AccountIdRef>>) -> Self {
         Self {
