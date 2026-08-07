@@ -5,14 +5,14 @@ mod error;
 pub mod events;
 pub mod fees;
 pub mod intents;
+mod lock;
 mod nonce;
 pub mod payload;
 mod public_key;
 mod signature;
 pub mod tokens;
-mod utils;
 
-pub use self::{error::*, nonce::*, public_key::*, signature::*, utils::*};
+pub use self::{error::*, lock::*, nonce::*, public_key::*, signature::*};
 
 pub use defuse_crypto as crypto;
 pub use defuse_erc191 as erc191;
