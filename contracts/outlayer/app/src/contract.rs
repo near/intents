@@ -6,12 +6,14 @@ use near_sdk::ext_contract;
 
 use crate::State;
 
-/// Per-app code configuration, deployed as a global contract instance per app.
+/// Outlayer application
 #[ext_contract(ext_outlayer_app)]
 pub trait OutlayerApp {
-    /// Approves a new code hash and sets the code URL atomically.
-    /// Admin-only. Must attach at least 1yN.
-    /// Emits [`SetCode`](crate::OutlayerAppEvent::SetCode) event.
+    /// Approve a new SHA-256 [code hash](Self::oa_code_hash) instead of the current one
+    /// and set the new [URL](Self::oa_code_url) where the code binary can be fetched from.
+    ///
+    /// Allowed only for [admin](Self::oa_admin_id). MUST attach at least 1yN.
+    /// Emits [`set_code`](crate::OutlayerAppEvent::SetCode) event.
     fn oa_set_code(
         &mut self,
         old_code_hash: AsHex<[u8; 32]>,
@@ -19,18 +21,19 @@ pub trait OutlayerApp {
         new_code_url: String,
     );
 
-    /// Sets a new admin.
-    /// Admin-only. Requires 1 yoctoNEAR. No self-transfer.
-    /// Emits [`TransferAdmin`](crate::OutlayerAppEvent::TransferAdmin) event.
+    /// Transfer ownership to a new admin.
+    ///
+    /// Allowed only for [admin](Self::oa_admin_id). MUST attach exactly 1yN.
+    /// Emits [`transfer_admin`](crate::OutlayerAppEvent::TransferAdmin) event.
     fn oa_transfer_admin(&mut self, new_admin_id: AccountId);
 
     /// Returns the current admin's account ID.
     fn oa_admin_id(&self) -> AccountId;
 
-    /// Returns the approved code hash
+    /// Returns the approved SHA-256 code hash.
     fn oa_code_hash(&self) -> AsHex<[u8; 32]>;
 
-    /// Returns where the code binary can be found.
+    /// Returns the URL where the code binary can be fetched from.
     fn oa_code_url(&self) -> String;
 }
 
@@ -44,6 +47,7 @@ const _: () = {
 
     type Result<T, E = Error> = ::core::result::Result<T, E>;
 
+    /// Outlayer application
     #[near(
         contract_state(key = State::STATE_KEY),
         contract_metadata(
@@ -56,6 +60,10 @@ const _: () = {
 
     #[near]
     impl OutlayerApp for Contract {
+        /// Approve a new SHA-256 code hash instead of the current one and set the new
+        /// URL where the code binary can be fetched from.
+        ///
+        /// Allowed only for admin. MUST attach at least 1yN.
         #[payable]
         fn oa_set_code(
             &mut self,
@@ -71,20 +79,26 @@ const _: () = {
             .unwrap_or_else(|err| err.panic());
         }
 
+        /// Transfer ownership to a new admin.
+        ///
+        /// Allowed only for admin. MUST attach exactly 1yN.
         #[payable]
         fn oa_transfer_admin(&mut self, new_admin_id: AccountId) {
             self.transfer_admin(new_admin_id)
                 .unwrap_or_else(|err| err.panic());
         }
 
+        /// Returns the current admin's account ID.
         fn oa_admin_id(&self) -> AccountId {
             self.0.admin_id.as_ref().to_owned()
         }
 
+        /// Returns the approved SHA-256 code hash.
         fn oa_code_hash(&self) -> AsHex<[u8; 32]> {
             self.0.code_hash.into()
         }
 
+        /// Returns the URL where the code binary can be fetched from.
         fn oa_code_url(&self) -> String {
             self.0.code_url.as_ref().to_owned()
         }
