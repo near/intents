@@ -1802,6 +1802,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-outlayer"
+version = "0.1.0"
+dependencies = [
+ "cfg_eval",
+ "defuse-digest",
+ "defuse-outlayer",
+ "schemars 0.8.22",
+ "serde",
+ "serde_with",
+]
+
+[[package]]
 name = "defuse-outlayer-app"
 version = "0.1.0"
 dependencies = [

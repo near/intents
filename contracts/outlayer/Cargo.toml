@@ -1,0 +1,24 @@
+lints.workspace = true
+
+[package]
+name = "defuse-outlayer"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+# TODO: use sha3 instead?
+cfg_eval = { workspace = true, optional = true }
+defuse-digest = { workspace = true, features = ["sha2"], optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_with = { workspace = true, features = ["base58", "base64"], optional = true }
+
+[features]
+digest = ["dep:defuse-digest"]
+serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with"]
+schemars-v0_8 = ["dep:schemars", "serde", "serde_with?/schemars_0_8"]
+
+[dev-dependencies]
+defuse-outlayer = { path = ".", features = ["digest", "serde"] }

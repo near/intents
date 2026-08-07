@@ -3,6 +3,7 @@ members = [
   "contracts/defuse",
   "contracts/defuse/core",
   "contracts/global-deployer",
+  "contracts/outlayer",
   "contracts/outlayer-app",
   "contracts/outlayer-app/core",
   "contracts/escrow-swap",
@@ -79,6 +80,7 @@ defuse.path = "contracts/defuse"
 defuse-core.path = "contracts/defuse/core"
 defuse-escrow-swap.path = "contracts/escrow-swap"
 defuse-global-deployer.path = "contracts/global-deployer"
+defuse-outlayer.path = "contracts/outlayer"
 defuse-outlayer-app.path = "contracts/outlayer-app"
 defuse-outlayer-app-core = { path = "contracts/outlayer-app/core", default-features = false }
 defuse-poa-factory.path = "contracts/poa/factory"
