@@ -17,6 +17,7 @@ pub use defuse_crypto as crypto;
 pub use defuse_erc191 as erc191;
 pub use defuse_nep413 as nep413;
 pub use defuse_sep53 as sep53;
+pub use defuse_time as time;
 pub use defuse_time::Timestamp;
 pub use defuse_tip191 as tip191;
 pub use defuse_token_id as token_id;
