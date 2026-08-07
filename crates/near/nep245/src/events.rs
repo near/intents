@@ -13,7 +13,6 @@ use near_sdk::events::AsNep297Event;
 
 #[cfg_attr(
     not(feature = "near-contract"),
-    must_use,
     derive(::serde::Serialize),
     serde(tag = "event", content = "data", rename_all = "snake_case")
 )]

@@ -50,7 +50,6 @@ schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 abi = [
-  "base64",
   "borsh/unstable__schema",
   "defuse-bitmap/abi",
   "defuse-crypto/abi",
@@ -60,6 +59,7 @@ abi = [
   "defuse-token-id/abi",
   "defuse-ton-connect/abi",
   "defuse-webauthn/abi",
+  "dep:base64",
   "dep:schemars",
   "near-sdk/abi",
   "serde_with/schemars_0_8",

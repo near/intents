@@ -23,7 +23,7 @@ pub use defuse_tip191 as tip191;
 pub use defuse_token_id as token_id;
 pub use defuse_ton_connect as ton_connect;
 
-pub use near_account_id;
-pub use near_gas;
-pub use near_global_contracts;
-pub use near_token;
+pub use near_account_id::{AccountId, AccountIdRef};
+pub use near_gas::NearGas;
+pub use near_global_contracts::{GlobalContractId, StateInit, StateInitV1};
+pub use near_token::NearToken;

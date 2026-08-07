@@ -6,7 +6,7 @@ use defuse_sandbox::{
             core::{
                 amounts::Amounts,
                 intents::tokens::{NftWithdraw, NotifyOnTransfer, Transfer},
-                token_id::{TokenId as DefuseTokenId, nep171::Nep171TokenId},
+                token_id::{TokenId, nep171::Nep171TokenId},
             },
             tokens::{DepositAction, DepositMessage, ExecuteIntents},
         },
@@ -65,7 +65,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
         .await;
 
     // Create the token id, expected inside the verifier contract
-    let nft1_mt_token_id = DefuseTokenId::from(Nep171TokenId::new(
+    let nft1_mt_token_id = TokenId::from(Nep171TokenId::new(
         nft_issuer_contract.contract_id().to_owned(),
         DUMMY_NFT1_ID.to_string(),
     ));
@@ -83,7 +83,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
     assert_eq!(nft1.owner_id, *user2.account_id());
 
     // Create the token id, expected inside the verifier contract
-    let nft2_mt_token_id = DefuseTokenId::from(Nep171TokenId::new(
+    let nft2_mt_token_id = TokenId::from(Nep171TokenId::new(
         nft_issuer_contract.contract_id().to_owned(),
         DUMMY_NFT2_ID.to_string(),
     ));
@@ -449,7 +449,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
 
     assert_eq!(nft.owner_id, *user.account_id());
 
-    let nft_token_id = DefuseTokenId::from(Nep171TokenId::new(
+    let nft_token_id = TokenId::from(Nep171TokenId::new(
         nft_issuer_contract.contract_id().clone(),
         DUMMY_NFT1_ID.to_string(),
     ));
