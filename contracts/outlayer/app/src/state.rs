@@ -52,6 +52,7 @@ impl<'a> State<'a> {
     /// assert_eq!(state.code_hash, [0u8; 32]);
     /// assert_eq!(state.code_url, "");
     /// ```
+    #[must_use]
     #[inline]
     pub fn new(admin_id: impl Into<Cow<'a, AccountIdRef>>) -> Self {
         Self {
@@ -61,7 +62,6 @@ impl<'a> State<'a> {
         }
     }
 
-    #[cfg(feature = "digest")]
     /// Set [`field@Self::code_hash`] to the SHA-256 digest of given code.
     ///
     /// # Examples
@@ -79,6 +79,7 @@ impl<'a> State<'a> {
     ///     hex!("337e547a950fc8a98592f10d964c1e79a304961790a8da0ce449a1f000cefabb"),
     /// )
     /// ```
+    #[cfg(feature = "digest")]
     #[must_use]
     #[inline]
     pub fn with_code(self, code: impl AsRef<[u8]>) -> Self {
