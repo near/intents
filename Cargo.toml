@@ -3,7 +3,7 @@ members = [
   "contracts/defuse",
   "contracts/defuse/core",
   "contracts/global-deployer",
-  "contracts/outlayer-app",
+  "contracts/outlayer/app",
   "contracts/escrow-swap",
   "contracts/poa/factory",
   "contracts/poa/token",
@@ -43,8 +43,8 @@ members = [
   "crates/near/utils",
   "crates/near/wnear",
 
-  "crates/outlayer-app/core",
-  "crates/outlayer-app/near-oa",
+  "crates/outlayer/app/core",
+  "crates/outlayer/app/near-oa",
 
   "crates/primitives/decimal",
   "crates/primitives/fees",
@@ -81,7 +81,7 @@ defuse.path = "contracts/defuse"
 defuse-core.path = "contracts/defuse/core"
 defuse-escrow-swap.path = "contracts/escrow-swap"
 defuse-global-deployer.path = "contracts/global-deployer"
-defuse-outlayer-app.path = "contracts/outlayer-app"
+defuse-outlayer-app.path = "contracts/outlayer/app"
 defuse-poa-factory.path = "contracts/poa/factory"
 defuse-poa-token.path = "contracts/poa/token"
 defuse-wallet.path = "contracts/wallet"
@@ -119,7 +119,7 @@ defuse-near-utils.path = "crates/near/utils"
 defuse-nep245.path = "crates/near/nep245"
 defuse-wnear.path = "crates/near/wnear"
 
-defuse-outlayer-app-core = { path = "crates/outlayer-app/core", default-features = false }
+defuse-outlayer-app-core = { path = "crates/outlayer/app/core", default-features = false }
 
 defuse-decimal.path = "crates/primitives/decimal"
 defuse-fees.path = "crates/primitives/fees"
