@@ -21,20 +21,23 @@ One admin account manages the instance: it approves the expected code hash and s
 The deterministic address is derived from the Borsh-serialized `State`. All parameters must be provided at init time:
 
 - **`admin_id`** *(required)* — account that controls code approval and configuration
-- **`code_hash`** *(required)* — SHA-256 hash of the approved code binary (`[0u8; 32]` if no code is pre-approved)
+- **`code_hash`** *(required)* — SHA-256 hash of the approved code binary. If no code is pre-approved, pass all-zero bytes explicitly: `--code-hash 0x0000000000000000000000000000000000000000000000000000000000000000`
 - **`code_url`** *(required)* — URL pointing to the code binary (`https://...` or `data:application/wasm;base64,...`)
 
-Use the [`near-oa`](#near-oa-cli-tool) tool to compute the `StateInit` JSON for a given set of parameters.
+Use the [`near-oa`](#near-oa-extension) tool to compute the `StateInit` JSON for a given set of parameters.
 
 ## Public API
 
 ### `oa_set_code(code_hash, code_url)`
+
 Atomically sets the approved SHA-256 hash and the code URL. Admin-only, requires at least 1 yoctoNEAR. Emits `SetCode`.
 
 ### `oa_transfer_admin(new_admin_id)`
+
 Transfers control to a new admin. Admin-only, requires 1 yoctoNEAR. Emits `TransferAdmin`.
 
 ### View methods
+
 - `oa_admin_id()` — current admin
 - `oa_code_hash()` — approved hash (hex)
 - `oa_code_url()` — current code URL
@@ -43,11 +46,10 @@ Transfers control to a new admin. Admin-only, requires 1 yoctoNEAR. Emits `Trans
 
 All events follow [NEP-297](https://github.com/near/NEPs/blob/master/neps/nep-0297.md) with standard `"near-outlayer-app"` version `"1.0.0"`.
 
-| Event           | Fields                         | Description                       |
-|-----------------|--------------------------------|-----------------------------------|
+| Event           | Fields                         | Description                        |
+|-----------------|--------------------------------|------------------------------------|
 | `SetCode`       | `hash`, `url`                  | Code URL and approved hash updated |
-| `TransferAdmin` | `old_admin_id`, `new_admin_id` | Admin transferred                 |
-
+| `TransferAdmin` | `old_admin_id`, `new_admin_id` | Admin transferred                  |
 
 ## `near oa` extension
 
@@ -56,28 +58,42 @@ The `near-oa` command is an extension for [near-cli-rs](https://github.com/near/
 ### Install
 
 ```sh
-cargo install --path contracts/outlayer-app --example near-oa
+cargo install --path ./contracts/outlayer/app/near-oa
 ```
 
 ### Running
 
 ```sh
-near oa [OPTIONS] --admin-id <AccountId> --code-url <URL>
+near oa [OPTIONS] --admin-id <AccountId> --code-url <URL> --code-hash <HASH | @FILE | @->
 ```
 
 ### Usage
 
-```
-Compute StateInit for a near-oa contract instance
+```sh
+$ near oa --help
+Print JSON storage key-value pairs (as base64) for `StateInit` of a Outlayer App contract
 
-Usage: near-oa [OPTIONS] --admin-id <AccountId> --code-url <URL>
+Usage: near-oa [OPTIONS] --admin-id <AccountId> --code-url <URL> --code-hash <HASH | @FILE | @->
 
 Options:
-      --admin-id <AccountId>  Admin account ID (controls code approval)
-      --code-url <URL>        URL where the code binary can be fetched
-      --code-hash <HASH>      SHA-256 hash of the approved code (hex, with or without 0x prefix)
-  -q, --quiet                 Output single-line JSON only (no human-readable annotations)
-  -h, --help                  Print help
+      --admin-id <AccountId>
+          Admin account ID (controls code approval and configuration)
+
+      --code-url <URL>
+          URL where the code binary can be fetched from (e.g. `https://...` or
+          `data:application/wasm;base64,...`)
+
+      --code-hash <HASH | @FILE | @->
+          SHA-256 hash of the approved code.
+
+          `HASH` can be encoded as base58 or hex with `0x` prefix. `@FILE` will calculate SHA-256
+          hash of the `FILE` contents. `@-` will calculate SHA-256 hash of the stdin contents.
+
+  -q, --quiet
+          Output single-line JSON only (no human-readable annotations)
+
+  -h, --help
+          Print help (see a summary with '-h')
 ```
 
 ### Example
@@ -85,13 +101,19 @@ Options:
 ```bash
 near oa \
   --admin-id alice.near \
-  --code-hash faf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc86 \
+  --code-hash 0xfaf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc80 \
   --code-url https://example.com/contract.wasm
 ```
-```
-admin_id:            alice.near
-code_hash:           faf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc86
-code_url:            https://example.com/contract.wasm
+
+```text
+// State:
+{
+  "admin_id": "alice.near",
+  "code_hash": "faf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc80",
+  "code_url": "https://example.com/contract.wasm"
+}
+
+// Storage key-value pairs (as base64):
 {"":"..."}
 ```
 
@@ -103,7 +125,7 @@ near transaction construct-transaction <admin-id> \
   data-from-json "$(near-oa \
     --admin-id <admin-id> \
     --code-url <url> \
-    --code-hash <code-sha256-hex> \
+    --code-hash 0x<code-sha256-hex> \
     --quiet)" \
   deposit 0NEAR \
   skip \

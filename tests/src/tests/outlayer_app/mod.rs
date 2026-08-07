@@ -3,7 +3,7 @@ use defuse_sandbox::{
     account::Account,
     extensions::outlayer_app::{
         OutlayerAppDeployerExt, OutlayerAppExt,
-        contract::{Event, State as OutlayerState},
+        contract::{OutlayerAppEvent, State as OutlayerState},
     },
     kit::{Final, GlobalContractId, Near, NearToken, PublishMode},
     root,
@@ -42,11 +42,7 @@ async fn test_deploy(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
         .create_subaccount("alice", NearToken::from_near(100))
         .await;
 
-    let state = OutlayerState::new(
-        alice.account_id().clone(),
-        [0u8; 32],
-        EXAMPLE_URL.to_string(),
-    );
+    let state = OutlayerState::new(alice.account_id().clone()).with_code_url(EXAMPLE_URL);
     let instance = root
         .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
         .await;
@@ -64,11 +60,9 @@ async fn test_deploy(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
 async fn test_deploy_with_pre_approved_hash(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     let root = outlayer_app_env.root;
     let code_hash = Sha256::digest(b"some-wasm-bytes");
-    let state = OutlayerState::new(
-        root.account_id().clone(),
-        code_hash,
-        EXAMPLE_URL.to_string(),
-    );
+    let state = OutlayerState::new(root.account_id().clone())
+        .with_code_hash(code_hash)
+        .with_code_url(EXAMPLE_URL);
     let instance = root
         .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
         .await;
@@ -84,11 +78,7 @@ async fn test_non_admin_cannot_set_code(#[future(awt)] outlayer_app_env: Outlaye
         .create_subaccount("alice", NearToken::from_near(100))
         .await;
 
-    let state = OutlayerState::new(
-        alice.account_id().clone(),
-        [0u8; 32],
-        EXAMPLE_URL.to_string(),
-    );
+    let state = OutlayerState::new(alice.account_id().clone()).with_code_url(EXAMPLE_URL);
     let instance = root
         .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
         .await;
@@ -108,11 +98,7 @@ async fn test_non_admin_cannot_set_code(#[future(awt)] outlayer_app_env: Outlaye
 #[tokio::test]
 async fn test_event_set_code(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     let root = outlayer_app_env.root;
-    let state = OutlayerState::new(
-        root.account_id().clone(),
-        [0u8; 32],
-        EXAMPLE_URL.to_string(),
-    );
+    let state = OutlayerState::new(root.account_id().clone()).with_code_url(EXAMPLE_URL);
     let instance = root
         .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
         .await;
@@ -127,7 +113,7 @@ async fn test_event_set_code(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     assert_eq!(
         result.logs(),
         vec![
-            Event::SetCode {
+            OutlayerAppEvent::SetCode {
                 hash: new_hash,
                 url: new_url.into(),
             }
@@ -145,11 +131,7 @@ async fn test_event_transfer_admin(#[future(awt)] outlayer_app_env: OutlayerAppE
         .create_subaccount("alice", NearToken::from_near(100))
         .await;
 
-    let state = OutlayerState::new(
-        root.account_id().clone(),
-        [0u8; 32],
-        EXAMPLE_URL.to_string(),
-    );
+    let state = OutlayerState::new(root.account_id().clone()).with_code_url(EXAMPLE_URL);
     let instance = root
         .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
         .await;
@@ -162,7 +144,7 @@ async fn test_event_transfer_admin(#[future(awt)] outlayer_app_env: OutlayerAppE
     assert_eq!(
         result.logs(),
         vec![
-            Event::TransferAdmin {
+            OutlayerAppEvent::TransferAdmin {
                 old_admin_id: root.account_id().into(),
                 new_admin_id: alice.account_id().into(),
             }

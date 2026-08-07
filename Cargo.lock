@@ -1805,25 +1805,20 @@ dependencies = [
 name = "defuse-outlayer-app"
 version = "0.1.0"
 dependencies = [
- "clap",
- "defuse-outlayer-app",
- "defuse-outlayer-app-core",
- "defuse-serde-utils",
- "hex",
- "near-sdk",
- "url",
-]
-
-[[package]]
-name = "defuse-outlayer-app-core"
-version = "0.1.0"
-dependencies = [
+ "arbitrary",
  "borsh",
  "cfg_eval",
+ "defuse-digest",
+ "defuse-outlayer-app",
+ "defuse-serde-utils",
+ "hex-literal",
  "near-account-id",
+ "near-kit",
+ "near-sdk",
  "schemars 0.8.22",
  "serde",
  "serde_with",
+ "thiserror 2.0.19",
 ]
 
 [[package]]
@@ -3981,6 +3976,21 @@ dependencies = [
  "tracing-appender",
  "tracing-opentelemetry",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "near-oa"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "defuse-cli-utils",
+ "defuse-outlayer-app",
+ "near-account-id",
+ "serde_json",
+ "serde_with",
+ "sha2 0.11.0",
+ "url",
 ]
 
 [[package]]
