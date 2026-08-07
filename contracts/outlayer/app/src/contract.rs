@@ -1,103 +1,154 @@
-#![cfg_attr(not(near), allow(dead_code))]
+//! Near smart-contract interface
 
 use defuse_serde_utils::hex::AsHex;
-use near_sdk::{AccountId, AccountIdRef, NearToken, PanicOnDefault, env, near, require};
+use near_account_id::AccountId;
+use near_sdk::ext_contract;
 
-use crate::{
-    Event, OutlayerApp, State,
-    error::{
-        ERR_INSUFFICIENT_DEPOSIT, ERR_REQUIRE_ONE_YOCTO, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED,
-        ERR_WRONG_CODE_HASH,
-    },
-};
+use crate::State;
 
-#[near(
-    contract_state(key = State::STATE_KEY),
-    contract_metadata(
-        standard(standard = "outlayer-app", version = "1.0.0")
-    )
-)]
-#[derive(PanicOnDefault)]
-#[repr(transparent)]
-pub struct Contract(State<'static>);
-
-#[near]
-impl OutlayerApp for Contract {
-    #[payable]
+/// Per-app code configuration, deployed as a global contract instance per app.
+#[ext_contract(ext_outlayer_app)]
+pub trait OutlayerApp {
+    /// Approves a new code hash and sets the code URL atomically.
+    /// Admin-only. Must attach at least 1yN.
+    /// Emits [`SetCode`](crate::OutlayerAppEvent::SetCode) event.
     fn oa_set_code(
         &mut self,
         old_code_hash: AsHex<[u8; 32]>,
         new_code_hash: AsHex<[u8; 32]>,
         new_code_url: String,
-    ) {
-        require!(
-            env::attached_deposit() >= NearToken::from_yoctonear(1),
-            ERR_INSUFFICIENT_DEPOSIT
-        );
-        require!(
-            self.is_admin(&env::predecessor_account_id()),
-            ERR_UNAUTHORIZED
-        );
-        require!(
-            self.is_current_code_hash(&old_code_hash.into_inner()),
-            ERR_WRONG_CODE_HASH
-        );
-        self.set_code(new_code_hash.into_inner(), new_code_url);
-    }
+    );
 
-    #[payable]
-    fn oa_transfer_admin(&mut self, new_admin_id: AccountId) {
-        require!(
-            env::attached_deposit() == NearToken::from_yoctonear(1),
-            ERR_REQUIRE_ONE_YOCTO
-        );
+    /// Sets a new admin.
+    /// Admin-only. Requires 1 yoctoNEAR. No self-transfer.
+    /// Emits [`TransferAdmin`](crate::OutlayerAppEvent::TransferAdmin) event.
+    fn oa_transfer_admin(&mut self, new_admin_id: AccountId);
 
-        require!(
-            self.is_admin(&env::predecessor_account_id()),
-            ERR_UNAUTHORIZED
-        );
-        require!(!self.is_admin(&new_admin_id), ERR_SELF_TRANSFER);
-        self.transfer_admin(new_admin_id);
-    }
+    /// Returns the current admin's account ID.
+    fn oa_admin_id(&self) -> AccountId;
 
-    fn oa_admin_id(&self) -> AccountId {
-        self.0.admin_id.as_ref().to_owned()
-    }
+    /// Returns the approved code hash
+    fn oa_code_hash(&self) -> AsHex<[u8; 32]>;
 
-    fn oa_code_hash(&self) -> AsHex<[u8; 32]> {
-        self.0.code_hash.into()
-    }
-
-    fn oa_code_url(&self) -> String {
-        self.0.code_url.as_ref().to_owned()
-    }
+    /// Returns where the code binary can be found.
+    fn oa_code_url(&self) -> String;
 }
 
-impl Contract {
-    fn set_code(&mut self, code_hash: [u8; 32], url: String) {
-        self.0.code_hash = code_hash;
-        self.0.code_url = url.into();
-        Event::SetCode {
-            hash: code_hash,
-            url: self.0.code_url.as_ref().into(),
+#[cfg(feature = "_contract")]
+#[cfg_attr(not(near), allow(dead_code))]
+const _: () = {
+    use near_account_id::AccountIdRef;
+    use near_sdk::{FunctionError, PanicOnDefault, env, near};
+
+    use crate::{Error, OutlayerAppEvent};
+
+    type Result<T, E = Error> = ::core::result::Result<T, E>;
+
+    #[near(
+        contract_state(key = State::STATE_KEY),
+        contract_metadata(
+            standard(standard = "outlayer-app", version = "1.0.0")
+        )
+    )]
+    #[derive(PanicOnDefault)]
+    #[repr(transparent)]
+    pub struct Contract(State<'static>);
+
+    #[near]
+    impl OutlayerApp for Contract {
+        #[payable]
+        fn oa_set_code(
+            &mut self,
+            old_code_hash: AsHex<[u8; 32]>,
+            new_code_hash: AsHex<[u8; 32]>,
+            new_code_url: String,
+        ) {
+            self.set_code(
+                old_code_hash.into_inner(),
+                new_code_hash.into_inner(),
+                new_code_url,
+            )
+            .unwrap_or_else(|err| err.panic());
         }
-        .emit();
-    }
 
-    fn transfer_admin(&mut self, new_admin_id: AccountId) {
-        Event::TransferAdmin {
-            old_admin_id: self.0.admin_id.as_ref().into(),
-            new_admin_id: (&new_admin_id).into(),
+        #[payable]
+        fn oa_transfer_admin(&mut self, new_admin_id: AccountId) {
+            self.transfer_admin(new_admin_id)
+                .unwrap_or_else(|err| err.panic());
         }
-        .emit();
-        self.0.admin_id = new_admin_id.into();
+
+        fn oa_admin_id(&self) -> AccountId {
+            self.0.admin_id.as_ref().to_owned()
+        }
+
+        fn oa_code_hash(&self) -> AsHex<[u8; 32]> {
+            self.0.code_hash.into()
+        }
+
+        fn oa_code_url(&self) -> String {
+            self.0.code_url.as_ref().to_owned()
+        }
     }
 
-    fn is_current_code_hash(&self, hash: &[u8; 32]) -> bool {
-        self.0.code_hash == *hash
-    }
+    impl Contract {
+        fn set_code(
+            &mut self,
+            old_code_hash: [u8; 32],
+            new_code_hash: [u8; 32],
+            new_code_url: String,
+        ) -> Result<()> {
+            if env::attached_deposit().is_zero() {
+                return Err(Error::InsufficientDeposit);
+            }
 
-    fn is_admin(&self, account_id: &AccountIdRef) -> bool {
-        *self.0.admin_id == *account_id
+            if !self.is_admin(&env::predecessor_account_id()) {
+                return Err(Error::Unauthorized);
+            }
+
+            if !self.is_current_code_hash(&old_code_hash) {
+                return Err(Error::WrongCodeHash);
+            }
+
+            self.0.code_hash = new_code_hash;
+            self.0.code_url = new_code_url.into();
+            OutlayerAppEvent::SetCode {
+                hash: new_code_hash,
+                url: self.0.code_url.as_ref().into(),
+            }
+            .emit();
+
+            Ok(())
+        }
+
+        fn transfer_admin(&mut self, new_admin_id: AccountId) -> Result<()> {
+            if env::attached_deposit().is_zero() {
+                return Err(Error::RequireOneYocto);
+            }
+
+            if !self.is_admin(&env::predecessor_account_id()) {
+                return Err(Error::Unauthorized);
+            }
+
+            if self.is_admin(&new_admin_id) {
+                return Err(Error::SelfTransfer);
+            }
+
+            OutlayerAppEvent::TransferAdmin {
+                old_admin_id: self.0.admin_id.as_ref().into(),
+                new_admin_id: (&new_admin_id).into(),
+            }
+            .emit();
+            self.0.admin_id = new_admin_id.into();
+
+            Ok(())
+        }
+
+        fn is_current_code_hash(&self, hash: &[u8; 32]) -> bool {
+            self.0.code_hash == *hash
+        }
+
+        fn is_admin(&self, account_id: &AccountIdRef) -> bool {
+            *self.0.admin_id == *account_id
+        }
     }
-}
+};

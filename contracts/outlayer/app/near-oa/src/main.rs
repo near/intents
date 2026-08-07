@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, io};
 use anyhow::Context;
 use clap::Parser;
 use defuse_cli_utils::hash::HashSource;
-use defuse_outlayer_app_core::State;
+use defuse_outlayer_app::State;
 use near_account_id::AccountId;
 use serde_with::{base64::Base64, ser::SerializeAsWrap};
 use sha2::Sha256;
@@ -42,7 +42,7 @@ fn main() -> anyhow::Result<()> {
 
     let state = State::new(args.admin_id)
         .with_code_hash(code_hash)
-        .with_code_url(args.code_url.to_string());
+        .with_code_url(args.code_url.as_str());
 
     if !args.quiet {
         eprintln!("// State:");

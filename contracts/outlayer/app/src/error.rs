@@ -1,5 +1,15 @@
-pub const ERR_SELF_TRANSFER: &str = "self-transfer";
-pub const ERR_UNAUTHORIZED: &str = "unauthorized";
-pub const ERR_WRONG_CODE_HASH: &str = "old_hash mismatch";
-pub const ERR_INSUFFICIENT_DEPOSIT: &str = "insufficient deposit";
-pub const ERR_REQUIRE_ONE_YOCTO: &str = "require exactly 1 yoctoNEAR";
+/// An error for [`OutlayerApp`](crate::contract::OutlayerApp) contract.
+#[cfg_attr(feature = "near-contract", derive(::near_sdk::FunctionError))]
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("self-transfer")]
+    SelfTransfer,
+    #[error("unauthorized")]
+    Unauthorized,
+    #[error("old_hash mismatch")]
+    WrongCodeHash,
+    #[error("insufficient attached deposit")]
+    InsufficientDeposit,
+    #[error("requires exactly 1 yoctoNEAR attached")]
+    RequireOneYocto,
+}
