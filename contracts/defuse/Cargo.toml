@@ -46,7 +46,6 @@ abi = [
   "defuse-nep245/abi",
   "defuse-serde-utils/abi",
   "dep:schemars",
-  "near-sdk/abi",
 ]
 arbitrary = ["defuse-core/arbitrary", "dep:arbitrary"]
 contract = [

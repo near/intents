@@ -18,7 +18,7 @@ defuse-wallet-webauthn = { workspace = true, features = ["borsh", "p256"] }
 near-sdk.workspace = true
 
 [features]
-abi = ["defuse-wallet-webauthn/abi", "defuse-wallet/abi", "near-sdk/abi"]
+abi = ["defuse-wallet-webauthn/abi", "defuse-wallet/abi"]
 
 [dev-dependencies]
 defuse-wallet-webauthn-p256 = { path = ".", features = ["abi"] }

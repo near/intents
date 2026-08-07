@@ -16,7 +16,7 @@ defuse-serde-utils = { workspace = true, features = ["hex"] }
 near-sdk.workspace = true
 
 [features]
-abi = ["defuse-outlayer-app-core/abi", "defuse-serde-utils/abi", "near-sdk/abi"]
+abi = ["defuse-outlayer-app-core/abi", "defuse-serde-utils/abi"]
 contract = []
 
 [dev-dependencies]

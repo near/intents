@@ -27,7 +27,6 @@ abi = [
   "defuse-global-deployer-core/abi",
   "defuse-serde-utils/abi",
   "dep:schemars",
-  "near-sdk/abi",
   "serde_with/schemars_0_8",
 ]
 contract = ["dep:defuse-digest", "near-sdk/deterministic-account-ids"]

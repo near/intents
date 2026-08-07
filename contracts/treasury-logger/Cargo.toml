@@ -28,7 +28,6 @@ abi = [
   "defuse-near-utils/abi",
   "defuse-nep245/abi",
   "defuse-serde-utils/schemars-v0_8",
-  "near-sdk/abi",
   "serde_with/schemars_0_8",
 ]
 

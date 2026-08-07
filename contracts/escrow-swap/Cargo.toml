@@ -49,7 +49,6 @@ abi = [
   "defuse-time/abi",
   "defuse-token-id/abi",
   "dep:schemars",
-  "near-sdk/abi",
   "serde_with/schemars_0_8",
 ]
 contract = ["defuse-nep245/near-contract", "dep:defuse-near-utils"]

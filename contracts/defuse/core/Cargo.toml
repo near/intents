@@ -61,7 +61,6 @@ abi = [
   "defuse-webauthn/abi",
   "dep:base64",
   "dep:schemars",
-  "near-sdk/abi",
   "serde_with/schemars_0_8",
 ]
 arbitrary = [
@@ -76,7 +75,7 @@ near-kit = ["defuse-nep413/near-kit", "dep:near-kit"]
 near-contract = ["defuse-nep245/near-contract", "dep:near-sdk"]
 
 [dev-dependencies]
-defuse-core = { workspace = true, features = ["arbitrary", "near-contract"] }
+defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-test-utils.workspace = true
 
 bs58.workspace = true
