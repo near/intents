@@ -5,13 +5,10 @@ use std::borrow::Cow;
 use defuse_fees::Pips;
 use defuse_test_utils::random::{Rng, RngExt, rng};
 use defuse_token_id::TokenId;
-use near_account_id::{AccountId, AccountIdRef};
-use near_gas::NearGas;
-use near_token::NearToken;
 use rstest::rstest;
 
 use crate::{
-    Salt,
+    AccountId, AccountIdRef, NearGas, NearToken, Salt,
     accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
     amounts::Amounts,
     events::{DefuseEvent, tests::v0_4_1::DefuseEventV0_4_1},

@@ -11,8 +11,9 @@ use defuse_crypto::{
     secp256k1::{Secp256k1, Secp256k1UncompressedPublicKey},
 };
 use defuse_digest::{Digest, sha3::Keccak256};
-use near_account_id::{AccountId, AccountIdRef};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
+
+use crate::{AccountId, AccountIdRef};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
@@ -216,7 +217,6 @@ const _: () = {
 
 #[cfg(test)]
 mod tests {
-    use near_account_id::AccountIdRef;
     use rstest::rstest;
 
     use super::*;

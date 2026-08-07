@@ -1,5 +1,5 @@
 use crate::{
-    DefuseError, Lock, Nonce, NoncePrefix, Nonces, Result, Salt,
+    AccountId, AccountIdRef, DefuseError, Lock, Nonce, NoncePrefix, Nonces, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -12,7 +12,6 @@ use crate::{
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
 };
 use defuse_bitmap::{U248, U256};
-use near_account_id::{AccountId, AccountIdRef};
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},

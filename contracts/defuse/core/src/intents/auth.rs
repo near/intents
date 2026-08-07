@@ -1,12 +1,8 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use near_account_id::{AccountId, AccountIdRef};
-use near_gas::NearGas;
-use near_global_contracts::StateInit;
-use near_token::NearToken;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Result,
+    AccountId, AccountIdRef, NearGas, NearToken, Result, StateInit,
     engine::{Engine, Inspector, State},
     intents::ExecutableIntent,
 };

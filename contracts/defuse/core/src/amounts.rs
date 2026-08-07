@@ -253,9 +253,7 @@ const _: () = {
 #[cfg(test)]
 mod tests {
 
-    use near_account_id::AccountId;
-
-    use crate::token_id::nep141::Nep141TokenId;
+    use crate::{AccountId, token_id::nep141::Nep141TokenId};
 
     use super::*;
 

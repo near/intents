@@ -2,15 +2,11 @@ use std::{borrow::Cow, collections::BTreeMap};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_token_id::nep171;
-use near_account_id::{AccountId, AccountIdRef};
-use near_gas::NearGas;
-use near_global_contracts::StateInit;
-use near_token::NearToken;
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
-    DefuseError, Result,
+    AccountId, AccountIdRef, DefuseError, NearGas, NearToken, Result, StateInit,
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State},

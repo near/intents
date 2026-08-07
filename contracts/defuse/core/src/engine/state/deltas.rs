@@ -1,5 +1,5 @@
 use crate::{
-    DefuseError, Nonce, NoncePrefix, Result, Salt,
+    AccountId, AccountIdRef, DefuseError, Nonce, NoncePrefix, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -14,7 +14,6 @@ use crate::{
 };
 use defuse_map_utils::cleanup::DefaultMap;
 use defuse_nep245::{MtEvent, MtTransferEvent};
-use near_account_id::{AccountId, AccountIdRef};
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::{

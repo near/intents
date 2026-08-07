@@ -79,9 +79,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use near_account_id::AccountIdRef;
-
-    use crate::intents::DefuseIntents;
+    use crate::{AccountIdRef, intents::DefuseIntents};
 
     use super::*;
 

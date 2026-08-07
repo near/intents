@@ -2,8 +2,9 @@ use std::borrow::Cow;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 pub use defuse_fees::{Pips, PipsOutOfRange};
-use near_account_id::{AccountId, AccountIdRef};
 use serde::{Deserialize, Serialize};
+
+use crate::{AccountId, AccountIdRef};
 
 #[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
