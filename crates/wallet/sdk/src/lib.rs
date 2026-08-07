@@ -717,7 +717,7 @@ where
             .context("signer")?;
 
         #[cfg(feature = "tracing")]
-        tracing::info!("offchain message signed");
+        tracing::info!(msg.payload, "offchain message signed");
 
         debug_assert!(
             S::verify_offchain_msg(&self.signer.public_key(), &msg, &proof),
