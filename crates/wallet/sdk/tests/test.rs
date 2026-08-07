@@ -2,18 +2,24 @@
 
 use std::{env, fs, path::Path, sync::LazyLock};
 
+use defuse_nep641::{JsonPayload, resolver::RpcResolver};
 use defuse_wallet::{NearPromise, Request, WalletOp, actions::FunctionCall};
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_sdk::{
-    Gas, NearToken,
+    Gas, NearToken, WalletBuilder,
     client::{WExecuteExtensionArgs, WExecuteSignedArgs, WalletContract},
 };
-use futures::try_join;
+use futures::{
+    StreamExt, TryStreamExt, future,
+    stream::{self, FuturesUnordered},
+    try_join,
+};
 use near_kit::{CryptoHash, Final, Near, PublishMode, sandbox::SandboxConfig};
 use rand::{rand_core::UnwrapErr, rngs::SysRng};
 use rstest::{fixture, rstest};
 use sha2::{Digest, Sha256};
 use tokio::sync::OnceCell;
+use tracing_subscriber::EnvFilter;
 
 type Wallet = defuse_wallet_sdk::Wallet<WalletEd25519>;
 
@@ -22,9 +28,11 @@ type Wallet = defuse_wallet_sdk::Wallet<WalletEd25519>;
 #[awt]
 async fn rotate(
     #[future] near: Near,
+
     #[from(wallet)]
     #[future]
     master: Wallet,
+
     #[from(wallet)]
     #[future]
     extension: Wallet,
@@ -104,6 +112,7 @@ async fn rotate(
 #[awt]
 async fn w_init(
     #[future] near: Near,
+
     #[from(wallet)]
     #[future]
     extension: Wallet,
@@ -173,15 +182,102 @@ async fn w_init(
     );
 }
 
+#[rstest]
+#[case::empty("")]
+#[case::test("test")]
+#[case::json(JsonPayload {
+    domain: "Near MPC".to_string(),
+    action: "sign".to_string(),
+    msg: "Hello, Near!".to_string(),
+}.into())]
+#[tokio::test]
+#[awt]
+async fn w_resolve_auth(
+    #[case] payload: String,
+
+    #[from(extension)]
+    #[with(3)] // extensions depth
+    #[future]
+    wallet: Wallet,
+
+    #[with(3)] // sub-authorizations depth
+    #[future]
+    resolver: RpcResolver,
+) {
+    let authorization = wallet
+        .sign_offchain_msg(&payload, None) // top-level
+        .await
+        .expect("failed to sign");
+
+    let resolved = resolver
+        .resolve_auth(wallet.account_id(), &authorization)
+        .await
+        .expect("invalid authorization");
+
+    println!("{authorization}\n{} -> {resolved}", wallet.account_id());
+    assert_eq!(payload, resolved, "resolved invalid payload");
+}
+
 #[fixture]
 #[awt]
-async fn wallet(#[future] near: Near) -> Wallet {
-    Wallet::new(
-        *WALLET_ED25519_CODE_HASH,
-        WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng))),
-    )
-    .with_client(near.clone())
-    .with_relayer(near)
+async fn wallet(
+    #[default(WalletBuilder::new())] builder: WalletBuilder,
+    #[future] near: Near,
+) -> Wallet {
+    builder
+        .build(
+            *WALLET_ED25519_CODE_HASH,
+            WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng))),
+        )
+        .with_client(near.clone())
+        .with_relayer(near)
+}
+
+#[fixture]
+#[awt]
+async fn extension(
+    #[default(1)] depth: usize,
+
+    #[from(wallet)]
+    #[future]
+    ext: Wallet,
+
+    #[future] near: Near,
+) -> Wallet {
+    // recursively create chain of extensions
+    let wallets = stream::unfold(ext, |ext| async {
+        let w = wallet(
+            WalletBuilder::new().extension(&ext),
+            future::ready(near.clone()),
+        )
+        .await;
+        Some((ext, w))
+    })
+    .take(depth + 1) // preserve original wallet
+    .collect::<Vec<_>>()
+    .await;
+
+    // initialize all wallets
+    wallets
+        .iter()
+        .map(Wallet::initialize)
+        .collect::<FuturesUnordered<_>>()
+        .try_collect::<()>()
+        .await
+        .unwrap();
+
+    // reduce as extension chain
+    wallets.into_iter().reduce(Wallet::as_extension_of).unwrap()
+}
+
+#[fixture]
+#[awt]
+async fn resolver(#[default(0)] depth: usize, #[future] near: Near) -> RpcResolver {
+    RpcResolver::new(near.rpc().clone())
+        .await
+        .expect("failed to initialize RPC resolver")
+        .with_max_sub_authorizations(depth)
+        .with_max_depth(depth)
 }
 
 #[fixture]
@@ -192,6 +288,11 @@ async fn near() -> Near {
 
     DEPLOY
         .get_or_init(|| async {
+            tracing_subscriber::fmt()
+                .with_env_filter(EnvFilter::from_default_env())
+                .pretty()
+                .init();
+
             try_join!(
                 near.publish(&**WALLET_ED25519_WASM, PublishMode::Immutable)
                     .into_future(),

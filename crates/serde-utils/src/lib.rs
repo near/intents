@@ -6,3 +6,6 @@ pub mod hex;
 
 #[cfg(feature = "tlb")]
 pub mod tlb;
+
+mod seq;
+pub use self::seq::*;

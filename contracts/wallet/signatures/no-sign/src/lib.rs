@@ -6,7 +6,7 @@ use core::{
     str::FromStr,
 };
 
-use defuse_wallet::{RequestMessage, SignatureSchema};
+use defuse_wallet::{RequestMessage, SignatureSchema, offchain::OffchainMessage};
 
 /// [`SignatureSchema`] which always rejects the signature.
 ///
@@ -19,7 +19,20 @@ impl SignatureSchema for NoSign {
     type PublicKey = NoPublicKey;
 
     #[inline]
-    fn verify(_public_key: &Self::PublicKey, _msg: &RequestMessage, _proof: &str) -> bool {
+    fn verify_request_msg(
+        _public_key: &Self::PublicKey,
+        _msg: &RequestMessage,
+        _proof: &str,
+    ) -> bool {
+        false
+    }
+
+    #[inline]
+    fn verify_offchain_msg(
+        _public_key: &Self::PublicKey,
+        _msg: &OffchainMessage,
+        _proof: &str,
+    ) -> bool {
         false
     }
 }

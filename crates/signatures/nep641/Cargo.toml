@@ -1,0 +1,114 @@
+lints.workspace = true
+
+[package]
+name = "defuse-nep641"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+defuse-time.workspace = true
+near-account-id.workspace = true
+
+arbitrary = { workspace = true, features = ["derive"], optional = true }
+arbitrary_with = { workspace = true, optional = true }
+borsh = { workspace = true, features = ["derive"], optional = true }
+defuse-borsh-utils = { workspace = true, optional = true }
+defuse-crypto = { workspace = true, features = ["ed25519", "secp256k1", "fmt"], optional = true }
+defuse-digest = { workspace = true, features = ["sha3"], optional = true }
+defuse-nep413 = { workspace = true, optional = true }
+defuse-serde-utils = { workspace = true, optional = true }
+derive_more = { workspace = true, optional = true }
+digest-io = { workspace = true, optional = true }
+futures = { workspace = true, features = ["std"], optional = true }
+hex = { workspace = true, optional = true }
+itertools = { workspace = true, optional = true }
+near-kit = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_json = { workspace = true, optional = true }
+serde_with = { workspace = true, optional = true }
+thiserror = { workspace = true, optional = true }
+tracing = { workspace = true, optional = true }
+
+[features]
+default = ["std"]
+
+abi = ["borsh-schema", "schemars-v0_8"]
+arbitrary = [
+  "defuse-crypto?/arbitrary",
+  "defuse-nep413?/arbitrary",
+  "defuse-time/arbitrary",
+  "dep:arbitrary",
+  "dep:arbitrary_with",
+  "near-account-id/arbitrary",
+]
+borsh = [
+  "defuse-crypto?/borsh",
+  "defuse-time/borsh",
+  "dep:borsh",
+  "dep:defuse-borsh-utils",
+  "near-account-id/borsh",
+]
+borsh-schema = [
+  "borsh",
+  "borsh?/unstable__schema",
+  "defuse-borsh-utils?/schema",
+  "defuse-crypto?/borsh-schema",
+  "defuse-nep413?/borsh-schema",
+  "defuse-time/borsh-schema",
+  "near-account-id/abi",
+]
+digest = ["dep:defuse-digest", "dep:digest-io"]
+json = ["dep:serde_json", "serde"]
+near-kit = [
+  "defuse-nep413?/near-kit",
+  "dep:defuse-serde-utils",
+  "dep:near-kit",
+  "serde",
+]
+nep413 = ["borsh", "dep:defuse-nep413", "dep:itertools", "digest"]
+access-keys = [
+  "dep:defuse-crypto",
+  "dep:derive_more",
+  "dep:hex",
+  "derive_more/from",
+  "nep413",
+]
+serde = [
+  "defuse-crypto?/serde",
+  "defuse-nep413?/serde",
+  "defuse-time/serde",
+  "dep:serde",
+  "dep:serde_with",
+  "near-account-id/serde",
+]
+schemars-v0_8 = [
+  "defuse-crypto?/schemars-v0_8",
+  "defuse-nep413?/schemars-v0_8",
+  "defuse-time/schemars-v0_8",
+  "dep:schemars",
+  "json",
+  "near-account-id/schemars-v0_8",
+  "serde",
+  "serde_with/schemars_0_8",
+]
+std = ["defuse-time/std"]
+tracing = ["dep:tracing", "near-kit?/tracing"]
+resolver = [
+  "access-keys",
+  "dep:futures",
+  "dep:itertools",
+  "dep:thiserror",
+  "json",
+  "near-kit",
+  "serde",
+]
+
+[dev-dependencies]
+defuse-nep641 = { path = ".", features = ["abi", "borsh", "digest", "serde", "near-kit", "resolver", "tracing"] }
+
+hex-literal.workspace = true
+near-kit = { workspace = true, features = ["sandbox"] }
+tokio = { workspace = true, features = ["macros", "rt"] }
