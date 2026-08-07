@@ -7,7 +7,7 @@ use near_sdk::FunctionError;
 pub struct ErrorLogTooLong;
 
 const REFUND_STR_LEN: usize = REFUND_MEMO.len();
-pub const REFUND_EXTRA_BYTES: usize = r#","memo":""#.len() + REFUND_STR_LEN;
+pub const REFUND_EXTRA_BYTES: usize = r#","memo":"""#.len() + REFUND_STR_LEN;
 
 #[derive(Default, Clone, Copy)]
 #[must_use]

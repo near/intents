@@ -11,7 +11,7 @@ pub use defuse_webauthn as webauthn;
 use core::marker::PhantomData;
 
 use defuse_crypto::Curve;
-use defuse_wallet::{RequestMessage, SignatureSchema};
+use defuse_wallet::{RequestMessage, SignatureSchema, offchain::OffchainMessage};
 use defuse_webauthn::{Algorithm, UserVerification, Webauthn, WebauthnAssertion};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
@@ -20,16 +20,14 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 /// See [`Webauthn`] for more.
 pub struct WalletWebauthn<A: Algorithm, UV: UserVerification>(PhantomData<Webauthn<A, UV>>);
 
-impl<A, UV> SignatureSchema for WalletWebauthn<A, UV>
+impl<A, UV> WalletWebauthn<A, UV>
 where
     A: WalletWebauthnAlgorithm,
     UV: UserVerification,
     <A::Curve as Curve>::Signature: TryFrom<A::Signature>,
     for<'a> <A::Curve as Curve>::PublicKey: TryFrom<&'a A::PublicKey>,
 {
-    type PublicKey = A::PublicKey;
-
-    fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
+    fn verify_hash(public_key: &A::PublicKey, hash: &[u8; 32], proof: &str) -> bool {
         // try to convert public key
         let Ok(public_key) = <A::Curve as Curve>::PublicKey::try_from(public_key) else {
             return false;
@@ -51,7 +49,31 @@ where
         // * Authenticators are general-purpose signers and they usually
         //   implement blind singing.
         // * This reduces length of the `proof` submitted on-chain.
-        Webauthn::<A, UV>::verify(&public_key, msg.hash(), &proof.assertion, &signature)
+        Webauthn::<A, UV>::verify(&public_key, hash, &proof.assertion, &signature)
+    }
+}
+
+impl<A, UV> SignatureSchema for WalletWebauthn<A, UV>
+where
+    A: WalletWebauthnAlgorithm,
+    UV: UserVerification,
+    <A::Curve as Curve>::Signature: TryFrom<A::Signature>,
+    for<'a> <A::Curve as Curve>::PublicKey: TryFrom<&'a A::PublicKey>,
+{
+    type PublicKey = A::PublicKey;
+
+    #[inline]
+    fn verify_request_msg(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
+        Self::verify_hash(public_key, &msg.hash(), proof)
+    }
+
+    #[inline]
+    fn verify_offchain_msg(
+        public_key: &Self::PublicKey,
+        msg: &OffchainMessage,
+        proof: &str,
+    ) -> bool {
+        Self::verify_hash(public_key, &msg.hash(), proof)
     }
 }
 

@@ -11,12 +11,12 @@ repository.workspace = true
 defuse-near-sender = { workspace = true, features = ["serde"] }
 defuse-wallet = { workspace = true, features = ["borsh", "digest", "json", "serde", "std"] }
 
+anyhow.workspace = true
 async-trait.workspace = true
 borsh.workspace = true
 impl-tools.workspace = true
 rand.workspace = true
 serde = { workspace = true, features = ["derive"] }
-thiserror.workspace = true
 trait-variant.workspace = true
 
 bs58 = { workspace = true, optional = true }
@@ -52,11 +52,14 @@ tracing = [
 ]
 
 [dev-dependencies]
+defuse-nep641 = { workspace = true, features = ["resolver", "tracing"] }
 defuse-wallet-ed25519 = { workspace = true, features = ["signer"] }
 futures.workspace = true
 hex-literal.workspace = true
 near-kit = { workspace = true, features = ["sandbox"] }
 rand = { workspace = true, features = ["sys_rng"] }
 rstest.workspace = true
+serde_json.workspace = true
 sha2.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
