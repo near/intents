@@ -29,12 +29,15 @@ Use the [`near-oa`](#near-oa-extension) tool to compute the `StateInit` JSON for
 ## Public API
 
 ### `oa_set_code(code_hash, code_url)`
+
 Atomically sets the approved SHA-256 hash and the code URL. Admin-only, requires at least 1 yoctoNEAR. Emits `SetCode`.
 
 ### `oa_transfer_admin(new_admin_id)`
+
 Transfers control to a new admin. Admin-only, requires 1 yoctoNEAR. Emits `TransferAdmin`.
 
 ### View methods
+
 - `oa_admin_id()` — current admin
 - `oa_code_hash()` — approved hash (hex)
 - `oa_code_url()` — current code URL
@@ -55,7 +58,7 @@ The `near-oa` command is an extension for [near-cli-rs](https://github.com/near/
 ### Install
 
 ```sh
-cargo install --path ./crates/outlayer-app/near-oa
+cargo install --path ./contracts/outlayer/app/near-oa
 ```
 
 ### Running
@@ -101,6 +104,7 @@ near oa \
   --code-hash 0xfaf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc80 \
   --code-url https://example.com/contract.wasm
 ```
+
 ```text
 // State:
 {
