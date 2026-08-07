@@ -282,6 +282,28 @@ impl OffchainMessage {
     }
 }
 
+#[cfg(feature = "nep413")]
+const _: () = {
+    use defuse_nep413::Nep413Payload;
+
+    impl From<OffchainMessage> for Nep413Payload {
+        /// Convert into NEP-413 message **without** callback URL
+        #[inline]
+        fn from(msg: OffchainMessage) -> Self {
+            msg.into_nep413_payload(None)
+        }
+    }
+
+    #[cfg(feature = "near-kit")]
+    impl From<OffchainMessage> for ::near_kit::nep413::SignMessageParams {
+        /// Convert into NEP-413 message **without** callback URL
+        #[inline]
+        fn from(msg: OffchainMessage) -> Self {
+            Nep413Payload::from(msg).into()
+        }
+    }
+};
+
 /// Domain-separated JSON [payload](field@OffchainMessage::payload).
 #[cfg(feature = "json")]
 #[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]

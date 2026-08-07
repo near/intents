@@ -139,3 +139,80 @@ pub enum AccessKeyError {
     #[error("access key without FullAccess permission: {0}")]
     NoFullAccess(PublicKey),
 }
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use defuse_time::Timestamp;
+    use near_kit::{Final, InMemorySigner, Signer, sandbox::SandboxConfig};
+
+    use crate::{
+        OffchainMessage,
+        access_keys::{AccessKeySchema, Signature},
+    };
+
+    use super::*;
+
+    #[tokio::test]
+    async fn full_access_key() {
+        const PAYLOAD: &str = "Hello, Near!";
+
+        let sandbox = SandboxConfig::fresh().await;
+        let mut near = sandbox.client();
+
+        let msg = OffchainMessage {
+            chain_id: near.chain_id().as_str().to_string(),
+            signer_id: near.account_id().clone(),
+            path: vec![],
+            timestamp: Timestamp::now() - Duration::from_mins(1),
+            payload: PAYLOAD.to_string(),
+        };
+
+        let signed = near.sign_message(msg.clone().into()).await.unwrap();
+        let authorization: String = AccessKeyAuthorization {
+            msg,
+            via: AccessKeySchema::Nep413 { callback_url: None },
+            access_key: PublicKey::from_kit(signed.public_key).unwrap(),
+            signature: Signature::from_kit(signed.signature).unwrap(),
+        }
+        .into();
+
+        let resolver = RpcResolver::new(near.rpc().clone())
+            .await
+            .expect("failed to initialize RPC resolver")
+            // set explicitly, we're testing a top-level auth via FullAccessKey
+            .with_max_sub_authorizations(0)
+            .with_max_depth(0);
+
+        let resolved = resolver
+            .resolve_auth(near.account_id(), &authorization)
+            .await
+            .expect("invalid authorization");
+
+        println!("{authorization}\n{} -> {resolved}", near.account_id());
+        assert_eq!(PAYLOAD, resolved, "resolved invalid payload");
+
+        let new_signer = InMemorySigner::generate_implicit();
+        // check on other account
+        resolver
+            .resolve_auth(new_signer.account_id(), &authorization)
+            .await
+            .expect_err("authorization must be invalid only for non-signer accounts");
+
+        // rotate key
+        near.add_full_access_key(new_signer.public_key().clone())
+            .delete_key(near.public_key().unwrap())
+            .wait_until::<Final>() // wait for finalization
+            .await
+            .unwrap()
+            .result()
+            .unwrap();
+        near = near.with_signer(new_signer);
+
+        resolver
+            .resolve_auth(near.account_id(), &authorization)
+            .await
+            .expect_err("old authorization must be invalid after key rotation");
+    }
+}

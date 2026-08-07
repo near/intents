@@ -1,10 +1,10 @@
 //! Offchain RPC resolver
 
-mod access_key;
+mod access_keys;
 mod contract;
 mod error;
 
-pub use self::{access_key::*, contract::*, error::*};
+pub use self::{access_keys::*, contract::*, error::*};
 
 use futures::{
     join,
@@ -163,7 +163,7 @@ impl RpcResolver {
     pub async fn resolve_auth(
         &self,
         account_id: impl Into<AccountId>,
-        authorization: impl AsRef<str>,
+        authorization: impl Into<String>,
     ) -> Result<String, ResolveError> {
         // resolve top-level authorization first
         let ResolvedAuthorization {
@@ -185,7 +185,7 @@ impl RpcResolver {
             .resolve_single(
                 account_id.into(),
                 vec![], // path is empty for top-level authorization
-                authorization,
+                authorization.into(),
                 None, // no expected payload for top-level authorization
                 self.at_block.clone(),
                 #[cfg(feature = "tracing")]
@@ -272,7 +272,7 @@ impl RpcResolver {
         &self,
         account_id: AccountId,
         rev_path: Vec<AccountId>,
-        authorization: impl AsRef<str>,
+        authorization: String,
         expect: Option<String>,
         block: BlockReference,
         #[cfg(feature = "tracing")] parent_span: Span,

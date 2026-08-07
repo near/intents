@@ -110,3 +110,5 @@ resolver = [
 defuse-nep641 = { path = ".", features = ["abi", "borsh", "digest", "serde", "near-kit", "resolver", "tracing"] }
 
 hex-literal.workspace = true
+near-kit = { workspace = true, features = ["sandbox"] }
+tokio = { workspace = true, features = ["macros", "rt"] }

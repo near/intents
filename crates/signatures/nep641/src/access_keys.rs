@@ -50,6 +50,25 @@ impl AccessKeyAuthorization {
     }
 }
 
+#[cfg(feature = "json")]
+const _: () = {
+    impl From<&AccessKeyAuthorization> for String {
+        /// Convert to the authorization blob
+        #[inline]
+        fn from(auth: &AccessKeyAuthorization) -> Self {
+            serde_json::to_string(auth).expect("JSON: failed to serialize")
+        }
+    }
+
+    impl From<AccessKeyAuthorization> for String {
+        /// Convert to the authorization blob
+        #[inline]
+        fn from(auth: AccessKeyAuthorization) -> Self {
+            (&auth).into()
+        }
+    }
+};
+
 /// Signature schema and additional metadata used during signing of [`AccessKeyAuthorization`].
 #[cfg_attr(
     feature = "serde",
@@ -59,6 +78,7 @@ impl AccessKeyAuthorization {
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum AccessKeySchema {
     /// [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md) signing schema.
     Nep413 {
@@ -189,17 +209,6 @@ impl FromStr for PublicKey {
     }
 }
 
-#[cfg(feature = "near-kit")]
-impl From<PublicKey> for ::near_kit::PublicKey {
-    #[inline]
-    fn from(pk: PublicKey) -> Self {
-        match pk {
-            PublicKey::Ed25519(pk) => Self::Ed25519(pk.0),
-            PublicKey::Secp256k1(pk) => Self::Secp256k1(pk.0),
-        }
-    }
-}
-
 /// Signature for [`AccessKeyAuthorization`]
 #[cfg_attr(
     feature = "serde",
@@ -259,6 +268,56 @@ impl FromStr for Signature {
         }
     }
 }
+
+#[cfg(feature = "near-kit")]
+const _: () = {
+    impl PublicKey {
+        #[allow(clippy::needless_pass_by_value)]
+        #[must_use]
+        #[inline]
+        pub fn from_kit(pk: near_kit::PublicKey) -> Option<Self> {
+            match pk {
+                near_kit::PublicKey::Ed25519(pk) => Some(Self::Ed25519(pk.into())),
+                near_kit::PublicKey::Secp256k1(pk) => Some(Self::Secp256k1(pk.into())),
+                _ => None,
+            }
+        }
+    }
+
+    impl From<PublicKey> for ::near_kit::PublicKey {
+        #[inline]
+        fn from(pk: PublicKey) -> Self {
+            match pk {
+                PublicKey::Ed25519(pk) => Self::Ed25519(pk.0),
+                PublicKey::Secp256k1(pk) => Self::Secp256k1(pk.0),
+            }
+        }
+    }
+
+    impl Signature {
+        #[allow(clippy::needless_pass_by_value)]
+        #[must_use]
+        #[inline]
+        pub fn from_kit(sig: near_kit::Signature) -> Option<Self> {
+            #[allow(clippy::match_wildcard_for_single_variants)]
+            match sig {
+                near_kit::Signature::Ed25519(sig) => Some(Self::Ed25519(sig.into())),
+                near_kit::Signature::Secp256k1(sig) => Some(Self::Secp256k1(sig.into())),
+                _ => None,
+            }
+        }
+    }
+
+    impl From<Signature> for near_kit::Signature {
+        #[inline]
+        fn from(sig: Signature) -> Self {
+            match sig {
+                Signature::Ed25519(sig) => Self::Ed25519(sig.0),
+                Signature::Secp256k1(sig) => Self::Secp256k1(sig.0),
+            }
+        }
+    }
+};
 
 #[cfg(feature = "schemars-v0_8")]
 const _: () = {
