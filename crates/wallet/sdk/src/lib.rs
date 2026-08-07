@@ -579,7 +579,7 @@ where
         msg.nonce,
         msg.created_at,
         msg.timeout_secs,
-        msg.hash
+        msg.hash,
     )))]
     pub async fn sign(&self, request: impl Into<Request>) -> Result<(RequestMessage, Proof)> {
         let msg = self.wrap_request_msg(request);
@@ -596,7 +596,11 @@ where
         let proof = self.signer.sign_request_msg(&msg).await.context("signer")?;
 
         #[cfg(feature = "tracing")]
-        tracing::info!("signed request");
+        tracing::info!(
+            msg.request.internal.count = msg.request.internal.len(),
+            msg.request.external.count = msg.request.external.len(),
+            "on-chain message signed",
+        );
 
         debug_assert!(
             S::verify_request_msg(&self.signer.public_key(), &msg, &proof),
@@ -717,7 +721,7 @@ where
             .context("signer")?;
 
         #[cfg(feature = "tracing")]
-        tracing::info!(msg.payload, "offchain message signed");
+        tracing::info!(msg.payload, "off-chain message signed");
 
         debug_assert!(
             S::verify_offchain_msg(&self.signer.public_key(), &msg, &proof),
