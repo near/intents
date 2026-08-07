@@ -4,7 +4,7 @@ pub mod error;
 
 use std::borrow::Cow;
 
-pub use defuse_outlayer_app_core::{AdminPublicKey, State};
+pub use defuse_outlayer_app_core::State;
 pub use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
     AccountId, AccountIdRef, near,
@@ -29,16 +29,8 @@ pub trait OutlayerApp {
     /// Emits [`Event::TransferAdmin`].
     fn oa_transfer_admin(&mut self, new_admin_id: AccountId);
 
-    /// Sets a new admin public key.
-    /// Admin-only. Requires exactly 1 yoctoNEAR.
-    /// Emits [`Event::SetAdminPublicKey`].
-    fn oa_set_admin_public_key(&mut self, new_admin_public_key: AdminPublicKey);
-
     /// Returns the current admin's account ID.
     fn oa_admin_id(&self) -> AccountId;
-
-    /// Returns the current admin's public key.
-    fn oa_admin_public_key(&self) -> AdminPublicKey;
 
     /// Returns the approved code hash
     fn oa_code_hash(&self) -> AsHex<[u8; 32]>;
@@ -64,10 +56,5 @@ pub enum Event<'a> {
     TransferAdmin {
         old_admin_id: Cow<'a, AccountIdRef>,
         new_admin_id: Cow<'a, AccountIdRef>,
-    },
-
-    #[event_version("1.0.0")]
-    SetAdminPublicKey {
-        new_admin_public_key: AdminPublicKey,
     },
 }

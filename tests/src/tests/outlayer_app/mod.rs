@@ -1,25 +1,18 @@
-use defuse_crypto::ed25519::Ed25519PublicKey;
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_sandbox::{
     account::Account,
     extensions::outlayer_app::{
         OutlayerAppDeployerExt, OutlayerAppExt,
-        contract::{AdminPublicKey, Event, State as OutlayerState},
+        contract::{Event, State as OutlayerState},
     },
     kit::{Final, GlobalContractId, Near, NearToken, PublishMode},
     root,
 };
 use defuse_test_utils::wasms::OUTLAYER_APP_WASM;
-use hex_literal::hex;
 use near_sdk_core::events::AsNep297Event;
 use rstest::{fixture, rstest};
 
 const EXAMPLE_URL: &str = "https://example.com/contract.wasm";
-
-/// `ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJugxm`
-const DUMMY_ADMIN_PK: AdminPublicKey = AdminPublicKey::Ed25519(Ed25519PublicKey(hex!(
-    "423df0a6640e9467769c55a573f15b9ee999dc8970048959c72890abf5cc3a8e"
-)));
 
 pub struct OutlayerAppEnv {
     pub root: Near,
@@ -49,17 +42,12 @@ async fn test_deploy(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
         .create_subaccount("alice", NearToken::from_near(100))
         .await;
 
-    let state =
-        OutlayerState::new(alice.account_id().clone(), DUMMY_ADMIN_PK).with_code_url(EXAMPLE_URL);
+    let state = OutlayerState::new(alice.account_id().clone()).with_code_url(EXAMPLE_URL);
     let instance = root
         .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
         .await;
 
     assert_eq!(instance.oa_admin_id().await.unwrap(), *alice.account_id());
-    assert_eq!(
-        instance.oa_admin_public_key().await.unwrap(),
-        DUMMY_ADMIN_PK
-    );
     assert_eq!(instance.oa_code_hash().await.unwrap().0, [0u8; 32]);
     assert_eq!(
         instance.oa_code_url().await.unwrap(),
@@ -72,7 +60,7 @@ async fn test_deploy(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
 async fn test_deploy_with_pre_approved_hash(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     let root = outlayer_app_env.root;
     let code_hash = Sha256::digest(b"some-wasm-bytes");
-    let state = OutlayerState::new(root.account_id().clone(), DUMMY_ADMIN_PK)
+    let state = OutlayerState::new(root.account_id().clone())
         .with_code_hash(code_hash)
         .with_code_url(EXAMPLE_URL);
     let instance = root
@@ -90,8 +78,7 @@ async fn test_non_admin_cannot_set_code(#[future(awt)] outlayer_app_env: Outlaye
         .create_subaccount("alice", NearToken::from_near(100))
         .await;
 
-    let state =
-        OutlayerState::new(alice.account_id().clone(), DUMMY_ADMIN_PK).with_code_url(EXAMPLE_URL);
+    let state = OutlayerState::new(alice.account_id().clone()).with_code_url(EXAMPLE_URL);
     let instance = root
         .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
         .await;
@@ -111,8 +98,7 @@ async fn test_non_admin_cannot_set_code(#[future(awt)] outlayer_app_env: Outlaye
 #[tokio::test]
 async fn test_event_set_code(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     let root = outlayer_app_env.root;
-    let state =
-        OutlayerState::new(root.account_id().clone(), DUMMY_ADMIN_PK).with_code_url(EXAMPLE_URL);
+    let state = OutlayerState::new(root.account_id().clone()).with_code_url(EXAMPLE_URL);
     let instance = root
         .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
         .await;
@@ -145,8 +131,7 @@ async fn test_event_transfer_admin(#[future(awt)] outlayer_app_env: OutlayerAppE
         .create_subaccount("alice", NearToken::from_near(100))
         .await;
 
-    let state =
-        OutlayerState::new(root.account_id().clone(), DUMMY_ADMIN_PK).with_code_url(EXAMPLE_URL);
+    let state = OutlayerState::new(root.account_id().clone()).with_code_url(EXAMPLE_URL);
     let instance = root
         .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
         .await;
@@ -162,41 +147,6 @@ async fn test_event_transfer_admin(#[future(awt)] outlayer_app_env: OutlayerAppE
             Event::TransferAdmin {
                 old_admin_id: root.account_id().into(),
                 new_admin_id: alice.account_id().into(),
-            }
-            .to_nep297_event()
-            .to_event_log(),
-        ]
-    );
-}
-
-#[rstest]
-#[tokio::test]
-async fn test_event_set_admin_public_key(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
-    let root = outlayer_app_env.root;
-    let state =
-        OutlayerState::new(root.account_id().clone(), DUMMY_ADMIN_PK).with_code_url(EXAMPLE_URL);
-    let instance = root
-        .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
-        .await;
-
-    let new_admin_public_key: AdminPublicKey =
-        "ed25519:4vJ9JU1bJJE96FWSJKvHsmmFADCg4gpZQff4P3bkLKi"
-            .parse()
-            .unwrap();
-    let result = root
-        .oa_set_admin_public_key(instance.contract_id(), new_admin_public_key)
-        .await
-        .unwrap();
-
-    assert_eq!(
-        instance.oa_admin_public_key().await.unwrap(),
-        new_admin_public_key
-    );
-    assert_eq!(
-        result.logs(),
-        vec![
-            Event::SetAdminPublicKey {
-                new_admin_public_key,
             }
             .to_nep297_event()
             .to_event_log(),

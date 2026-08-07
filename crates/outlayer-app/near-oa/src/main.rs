@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, io};
 use anyhow::Context;
 use clap::Parser;
 use defuse_cli_utils::hash::HashSource;
-use defuse_outlayer_app_core::{AdminPublicKey, State};
+use defuse_outlayer_app_core::State;
 use near_account_id::AccountId;
 use serde_with::{base64::Base64, ser::SerializeAsWrap};
 use sha2::Sha256;
@@ -30,10 +30,6 @@ struct Args {
     #[arg(long, value_name = "HASH | @FILE | @-")]
     code_hash: HashSource<Sha256>,
 
-    /// Admin's public key (e.g. `ed25519:...`)
-    #[arg(long, value_name = "PublicKey")]
-    admin_public_key: AdminPublicKey,
-
     /// Output single-line JSON only (no human-readable annotations)
     #[arg(short, long)]
     quiet: bool,
@@ -44,7 +40,7 @@ fn main() -> anyhow::Result<()> {
 
     let code_hash = args.code_hash.hash().context("code_hash")?;
 
-    let state = State::new(args.admin_id, args.admin_public_key)
+    let state = State::new(args.admin_id)
         .with_code_hash(code_hash)
         .with_code_url(args.code_url.to_string());
 

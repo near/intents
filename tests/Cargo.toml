@@ -12,7 +12,6 @@ anyhow.workspace = true
 arbitrary.workspace = true
 borsh.workspace = true
 defuse-core = { workspace = true, features = ["near-kit"] }
-defuse-crypto = { workspace = true, features = ["ed25519"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-fees.workspace = true
 defuse-near-utils.workspace = true
@@ -21,7 +20,6 @@ defuse-sandbox = { workspace = true }
 defuse-test-utils = { workspace = true, features = ["near-contract"] }
 derive_more.workspace = true
 futures = "0.3"
-hex-literal.workspace = true
 impl-tools.workspace = true
 itertools.workspace = true
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }

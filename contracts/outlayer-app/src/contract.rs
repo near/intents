@@ -4,7 +4,7 @@ use defuse_serde_utils::hex::AsHex;
 use near_sdk::{AccountId, AccountIdRef, NearToken, PanicOnDefault, env, near, require};
 
 use crate::{
-    AdminPublicKey, Event, OutlayerApp, State,
+    Event, OutlayerApp, State,
     error::{
         ERR_INSUFFICIENT_DEPOSIT, ERR_REQUIRE_ONE_YOCTO, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED,
         ERR_WRONG_CODE_HASH,
@@ -60,25 +60,8 @@ impl OutlayerApp for Contract {
         self.transfer_admin(new_admin_id);
     }
 
-    #[payable]
-    fn oa_set_admin_public_key(&mut self, new_admin_public_key: AdminPublicKey) {
-        require!(
-            env::attached_deposit() == NearToken::from_yoctonear(1),
-            ERR_REQUIRE_ONE_YOCTO
-        );
-        require!(
-            self.is_admin(&env::predecessor_account_id()),
-            ERR_UNAUTHORIZED
-        );
-        self.set_admin_public_key(new_admin_public_key);
-    }
-
     fn oa_admin_id(&self) -> AccountId {
         self.0.admin_id.as_ref().to_owned()
-    }
-
-    fn oa_admin_public_key(&self) -> AdminPublicKey {
-        self.0.admin_public_key
     }
 
     fn oa_code_hash(&self) -> AsHex<[u8; 32]> {
@@ -108,14 +91,6 @@ impl Contract {
         }
         .emit();
         self.0.admin_id = new_admin_id.into();
-    }
-
-    fn set_admin_public_key(&mut self, new_admin_public_key: AdminPublicKey) {
-        self.0.admin_public_key = new_admin_public_key;
-        Event::SetAdminPublicKey {
-            new_admin_public_key,
-        }
-        .emit();
     }
 
     fn is_current_code_hash(&self, hash: &[u8; 32]) -> bool {
