@@ -31,7 +31,7 @@ use borsh::BorshSerialize;
 use impl_tools::autoimpl;
 use rand::{make_rng, rngs::SmallRng};
 #[cfg(feature = "tracing")]
-use tracing::{Level, instrument, record_all};
+use tracing::{Span, instrument, record_all};
 
 use crate::{
     actions::FunctionCall,
@@ -572,9 +572,10 @@ where
     ///
     /// NOTE: The wallet account itself might **not** be initialized yet. See
     /// [`.deterministic_state_init()`](Wallet::deterministic_state_init).
-    #[cfg_attr(feature = "tracing", instrument(level = Level::DEBUG, skip_all, fields(
-        msg.chain_id = &self.chain_id,
-        msg.signer_id = %self.account_id(),
+    #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
+        account_id = %self.account_id(),
+        msg.chain_id = self.chain_id(),
+        msg.signer_id = %self.real_account_id(),
         msg.nonce,
         msg.created_at,
         msg.timeout_secs,
@@ -585,7 +586,7 @@ where
 
         #[cfg(feature = "tracing")]
         record_all!(
-            tracing::Span::current(),
+            Span::current(),
             msg.nonce,
             %msg.created_at,
             msg.timeout_secs = msg.timeout.as_secs(),
@@ -593,6 +594,9 @@ where
         );
 
         let proof = self.signer.sign_request_msg(&msg).await.context("signer")?;
+
+        #[cfg(feature = "tracing")]
+        tracing::info!("signed request");
 
         debug_assert!(
             S::verify_request_msg(&self.signer.public_key(), &msg, &proof),
@@ -661,6 +665,15 @@ where
     ///
     /// Optional `path` argument allows to specify a path from [effective account ID](Self::account_id)
     /// to top-level resolver ID. Empty path means that the returned authorization is top-level itself.
+    #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
+        account_id = %self.account_id(),
+        msg.chain_id = self.chain_id(),
+        msg.signer_id = %self.real_account_id(),
+        msg.top_level_id,
+        msg.depth,
+        msg.timestamp,
+        msg.hash,
+    )))]
     pub async fn sign_offchain_msg(
         &self,
         payload: impl Into<String>,
@@ -673,6 +686,7 @@ where
         );
 
         let msg = OffchainMessage {
+            chain_id: self.chain_id().clone(),
             // signer is the real account ID
             signer_id: self.real_account_id().clone(),
             // path to the top-level resolver
@@ -682,18 +696,28 @@ where
                 .cloned()
                 .chain(path)
                 .collect(),
-            chain_id: self.chain_id().clone(),
             // Set `timestamp` slightly before the actual time of signing,
             // so it doesn't fail if gets resolved too fast.
             timestamp: Timestamp::now() - BLOCKCHAIN_LAG,
             payload: payload.into(),
         };
+        #[cfg(feature = "tracing")]
+        record_all!(
+            Span::current(),
+            msg.top_level_id = %msg.top_level_id(),
+            msg.depth = msg.depth(),
+            %msg.timestamp,
+            msg.hash = %bs58::encode(msg.hash()).into_string(),
+        );
 
         let proof = self
             .signer
             .sign_offchain_msg(&msg)
             .await
             .context("signer")?;
+
+        #[cfg(feature = "tracing")]
+        tracing::info!("offchain message signed");
 
         debug_assert!(
             S::verify_offchain_msg(&self.signer.public_key(), &msg, &proof),
