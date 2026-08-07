@@ -17,4 +17,4 @@ pub use self::{
 };
 
 #[cfg(feature = "near-contract")]
-pub use self::{core::*, resolver::ClearedApproval};
+pub use self::core::*;

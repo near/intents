@@ -12,6 +12,7 @@ doctest = true
 
 [dependencies]
 impl-tools.workspace = true
+
 near-sdk = { workspace = true, optional = true }
 
 [features]

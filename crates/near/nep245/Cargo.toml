@@ -13,11 +13,11 @@ defuse-near-utils.workspace = true
 defuse-serde-utils.workspace = true
 derive_more = { workspace = true, features = ["from"] }
 near-account-id = { workspace = true, features = ["borsh", "serde"] }
-near-sdk = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_with.workspace = true
 thiserror.workspace = true
 
+near-sdk = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
@@ -25,7 +25,6 @@ abi = [
   "borsh/unstable__schema",
   "defuse-serde-utils/schemars-v0_8",
   "dep:schemars",
-  "near-sdk/abi",
 ]
 near-contract = ["dep:near-sdk"]
 

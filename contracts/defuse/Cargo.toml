@@ -16,7 +16,7 @@ defuse-admin-utils.workspace = true
 defuse-auth-call.workspace = true
 defuse-controller.workspace = true
 defuse-core = { workspace = true, features = ["near-contract"] }
-defuse-near-utils = { workspace = true, features = ["near-contract"] }
+defuse-near-utils = { workspace = true }
 defuse-nep245 = { workspace = true, features = ["near-contract"] }
 defuse-serde-utils = { workspace = true, features = ["base64"] }
 

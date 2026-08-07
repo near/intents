@@ -12,6 +12,7 @@ pub trait NestPrefix: Sized + IntoStorageKey {
         }
     }
 }
+
 impl<T> NestPrefix for T where T: IntoStorageKey {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, BorshSerialize, BorshStorageKey)]
