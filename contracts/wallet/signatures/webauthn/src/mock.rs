@@ -1,5 +1,5 @@
 use defuse_crypto::{Curve, Signer};
-use defuse_wallet::RequestMessage;
+use defuse_wallet::{RequestMessage, offchain::OffchainMessage};
 use defuse_wallet_sdk::{Proof, WalletSigner};
 use defuse_webauthn::{UserVerification, mock::MockWebauthnSigner};
 use impl_tools::autoimpl;
@@ -30,6 +30,19 @@ where
     pub const fn signer(&self) -> &S {
         self.0.signer()
     }
+
+    async fn sign_hash(&self, hash: &[u8; 32]) -> Result<Proof, S::Error>
+    where
+        A::Signature: Serialize + From<<A::Curve as Curve>::Signature>,
+    {
+        let (assertion, signature) = self.0.sign(hash).await?;
+
+        Ok(serde_json::to_string(&WalletWebauthnProof::<A::Signature> {
+            signature: signature.into(),
+            assertion,
+        })
+        .expect("JSON: failed to serialize"))
+    }
 }
 
 impl<A, UV, S> WalletSigner<WalletWebauthn<A, UV>> for MockWalletWebauthnSigner<A, UV, S>
@@ -49,13 +62,11 @@ where
         self.signer().public_key().into()
     }
 
-    async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
-        let (assertion, signature) = self.0.sign(msg.hash()).await?;
+    async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
+        self.sign_hash(&msg.hash()).await
+    }
 
-        Ok(serde_json::to_string(&WalletWebauthnProof::<A::Signature> {
-            signature: signature.into(),
-            assertion,
-        })
-        .expect("JSON: failed to serialize"))
+    async fn sign_offchain_msg(&self, msg: &OffchainMessage) -> Result<Proof, Self::Error> {
+        self.sign_hash(&msg.hash()).await
     }
 }
