@@ -251,7 +251,7 @@ impl OffchainMessage {
     ///     Nep413Payload {
     ///         message: "Hello, Near!".to_string(),
     ///         nonce: hex!("039f8afb4ef2d76c621d3952f214bd2a080ce977ef351d52ff65a090eebbf72c"),
-    ///         recipient: "mainnet @ extension.near -> wallet.near -> v1.signer".to_string(),
+    ///         recipient: "mainnet: extension.near -> wallet.near -> v1.signer @ 2026-08-05T07:28:00.123456789Z".to_string(),
     ///         callback_url: Some("https://wallet.com/callback".to_string()),
     ///     },
     /// );
