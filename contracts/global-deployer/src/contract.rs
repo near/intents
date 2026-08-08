@@ -50,6 +50,7 @@ const _: () = {
 
     type Result<T, E = Error> = ::core::result::Result<T, E>;
 
+    /// Global Deployer
     #[near(
         contract_state(key = State::STATE_KEY),
         contract_metadata(
