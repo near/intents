@@ -3,7 +3,7 @@ use defuse_sandbox::{
     account::Account,
     extensions::outlayer_app::{
         OutlayerAppDeployerExt, OutlayerAppExt,
-        contract::{OutlayerAppEvent, State as OutlayerState},
+        contract::{OaEvent, State as OutlayerState},
     },
     kit::{Final, GlobalContractId, Near, NearToken, PublishMode},
     root,
@@ -113,7 +113,7 @@ async fn test_event_set_code(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     assert_eq!(
         result.logs(),
         vec![
-            OutlayerAppEvent::SetCode {
+            OaEvent::SetCode {
                 hash: new_hash,
                 url: new_url.into(),
             }
@@ -144,7 +144,7 @@ async fn test_event_transfer_admin(#[future(awt)] outlayer_app_env: OutlayerAppE
     assert_eq!(
         result.logs(),
         vec![
-            OutlayerAppEvent::TransferAdmin {
+            OaEvent::TransferAdmin {
                 old_admin_id: root.account_id().into(),
                 new_admin_id: alice.account_id().into(),
             }

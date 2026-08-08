@@ -85,6 +85,8 @@ where
     }
 }
 
+/// An adaptor to convert from [`BorshSerializeAs`] and [`BorshDeserializeAs`]
+/// to the corresponding [`borsh`] traits.
 #[autoimpl(Deref using self.value)]
 #[autoimpl(DerefMut using self.value)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
