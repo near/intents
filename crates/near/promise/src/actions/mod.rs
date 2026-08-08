@@ -7,6 +7,7 @@ mod transfer;
 pub use self::{function_call::*, state_init::*, transfer::*};
 
 use near_gas::NearGas as Gas;
+use near_global_contracts::{StateInit, StateInitV1};
 use near_token::NearToken;
 
 use derive_more::From;
@@ -60,6 +61,20 @@ impl NearAction {
             // estimated for state_init that fits in ZBA limits
             Self::DeterministicStateInit(a) => a.estimate_gas(),
         }
+    }
+}
+
+impl From<StateInit> for NearAction {
+    #[inline]
+    fn from(state_init: StateInit) -> Self {
+        DeterministicStateInit::from(state_init).into()
+    }
+}
+
+impl From<StateInitV1> for NearAction {
+    #[inline]
+    fn from(state_init: StateInitV1) -> Self {
+        StateInit::from(state_init).into()
     }
 }
 

@@ -226,6 +226,13 @@ impl Extend<NearAction> for NearPromise {
     }
 }
 
+impl From<StateInit> for NearPromise {
+    #[inline]
+    fn from(state_init: StateInit) -> Self {
+        Self::new(state_init.derive_account_id()).add_action(state_init)
+    }
+}
+
 #[cfg(all(test, feature = "borsh"))]
 mod tests {
     use hex_literal::hex;
