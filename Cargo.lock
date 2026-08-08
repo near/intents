@@ -1566,6 +1566,7 @@ dependencies = [
  "defuse-digest",
  "defuse-global-deployer",
  "defuse-serde-utils",
+ "hex-literal",
  "near-account-id",
  "near-kit",
  "near-sdk",

@@ -167,7 +167,7 @@ The Global Deployer WASM is built from the [global-deployer/v0.2.0](https://gith
 **Code hash:** `8JK2g3kr7qCbRDBmoLx7c9Zrz9TxPdANP7ocbQGE2fqP`
 
 | Network | Type | Account / Hash | Tx |
-|---------|------|----------------|-----|
+| --------- | ------ | ---------------- | ----- |
 | Mainnet | Immutable (by hash) | `8JK2g3kr7qCbRDBmoLx7c9Zrz9TxPdANP7ocbQGE2fqP` | [4RB52Rr...](https://nearblocks.io/txns/4RB52RrkSd8BVaAAUAV1okHWmDe2BRFm6tzva4HhY9Uy) |
 | Mainnet | Mutable (by account ID) | [0s384bfa53f1718c7f53eaaa1b43c55e2aea3ef309](https://nearblocks.io/address/0s384bfa53f1718c7f53eaaa1b43c55e2aea3ef309) | [6o1ffgK...](https://nearblocks.io/txns/6o1ffgKv1fe6mLR2vtRDzMAdYJdunQRfzaLH5oZ8dwcz) |
 | Testnet | Immutable (by hash) | `8JK2g3kr7qCbRDBmoLx7c9Zrz9TxPdANP7ocbQGE2fqP` | [HJrtRP1...](https://testnet.nearblocks.io/txns/HJrtRP1o3Hfv9Y42xUtECr2RqFafS1L3BM4J9Lgw4jTr) |
@@ -216,19 +216,25 @@ Options:
 
 ### Example
 
-```bash
+```sh
 near gds --owner-id test.near --index 1
 ```
-```
-owner_id:       test.near
-code_hash:      0000000000000000000000000000000000000000000000000000000000000001
-approved_hash:  0000000000000000000000000000000000000000000000000000000000000000
+
+```text
+// State:
+{
+  "owner_id": "test.near",
+  "code_hash": "0000000000000000000000000000000000000000000000000000000000000001",
+  "approved_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+}
+
+// Storage key-value pairs (as base64):
 {"":"CQAAAHRlc3QubmVhcgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}
 ```
 
-Use `-q` / `--quiet` to suppress stderr and emit only JSON, useful for piping into other tools like `near-cli` (supported after [near-cli-rs#560](https://github.com/near/near-cli-rs/pull/560) is released):
+Use `-q` / `--quiet` to suppress stderr and emit only JSON, useful for piping into other tools like [`near-cli`](https://github.com/near/near-cli-rs):
 
-```bash
+```sh
 near contract state-init \
   use-global-account-id 0s384bfa53f1718c7f53eaaa1b43c55e2aea3ef309 \
   data-from-json "$(near gds \

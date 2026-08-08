@@ -66,6 +66,7 @@ _contract = ["digest", "near-contract"]
 [dev-dependencies]
 defuse-global-deployer = { path = ".", features = ["abi", "arbitrary", "borsh", "digest", "near-contract", "serde", "_contract", "near-kit"] }
 
+hex-literal.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
 
 [package.metadata.near.reproducible_build]
