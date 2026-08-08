@@ -41,7 +41,7 @@ pub trait OutlayerApp {
 #[cfg_attr(not(near), allow(dead_code))]
 const _: () = {
     use near_account_id::AccountIdRef;
-    use near_sdk::{FunctionError, PanicOnDefault, env, near};
+    use near_sdk::{FunctionError, NearToken, PanicOnDefault, env, near};
 
     use crate::{Error, OutlayerAppEvent};
 
@@ -135,7 +135,7 @@ const _: () = {
         }
 
         fn transfer_admin(&mut self, new_admin_id: AccountId) -> Result<()> {
-            if env::attached_deposit().is_zero() {
+            if env::attached_deposit() != NearToken::from_yoctonear(1) {
                 return Err(Error::RequireOneYocto);
             }
 
