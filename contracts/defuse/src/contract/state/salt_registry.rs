@@ -1,0 +1,186 @@
+use borsh::{BorshDeserialize, BorshSerialize};
+use core::mem;
+use defuse_core::{DefuseError, Result, Salt};
+use near_sdk::{
+    IntoStorageKey,
+    env::{self, sha256_array},
+    store::{IterableMap, key::Identity},
+};
+use std::fmt::Debug;
+
+trait DeriveSalt {
+    fn derive(num: u8) -> Salt;
+}
+
+impl DeriveSalt for Salt {
+    fn derive(num: u8) -> Self {
+        const SIZE: usize = size_of::<Salt>();
+
+        let seed = env::random_seed_array();
+        let mut input = [0u8; 33];
+        input[..32].copy_from_slice(&seed);
+        input[32] = num;
+
+        Self(
+            sha256_array(input)[..SIZE]
+                .try_into()
+                .unwrap_or_else(|_| unreachable!()),
+        )
+    }
+}
+/// Contains current valid salt and set of previous
+/// salts that can be valid or invalid.
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
+pub struct SaltRegistry {
+    previous: IterableMap<Salt, bool, Identity>,
+    current: Salt,
+}
+
+impl SaltRegistry {
+    /// There can be only one valid salt at the beginning
+    #[inline]
+    pub fn new<S>(prefix: S) -> Self
+    where
+        S: IntoStorageKey,
+    {
+        Self {
+            previous: IterableMap::with_hasher(prefix),
+            current: Salt::derive(0),
+        }
+    }
+
+    fn derive_next_salt(&self) -> Result<Salt> {
+        (0..=u8::MAX)
+            .map(Salt::derive)
+            .find(|s| !self.is_used(*s))
+            .ok_or(DefuseError::SaltGenerationFailed)
+    }
+
+    /// Rotates the current salt, making it previous and keeping it valid.
+    #[inline]
+    pub fn set_new(&mut self) -> Result<Salt> {
+        let salt = self.derive_next_salt()?;
+
+        let previous = mem::replace(&mut self.current, salt);
+        self.previous.insert(previous, true);
+
+        Ok(previous)
+    }
+
+    /// Deactivates the previous salt, making it invalid.
+    #[inline]
+    pub fn invalidate(&mut self, salt: Salt) -> Result<()> {
+        if salt == self.current {
+            self.set_new()?;
+        }
+
+        self.previous
+            .get_mut(&salt)
+            .map(|v| *v = false)
+            .ok_or(DefuseError::InvalidSalt)
+    }
+
+    #[inline]
+    pub fn is_valid(&self, salt: Salt) -> bool {
+        salt == self.current || self.previous.get(&salt).is_some_and(|v| *v)
+    }
+
+    #[inline]
+    fn is_used(&self, salt: Salt) -> bool {
+        salt == self.current || self.previous.contains_key(&salt)
+    }
+
+    #[inline]
+    pub const fn current(&self) -> Salt {
+        self.current
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use arbitrary::Unstructured;
+    use defuse_tests::utils::random::{Rng, RngExt, random_bytes, rng};
+    use near_sdk::{test_utils::VMContextBuilder, testing_env};
+    use rstest::rstest;
+
+    fn seed_to_salt(seed: &[u8; 32], attempts: u8) -> Salt {
+        let seed = [seed, attempts.to_be_bytes().as_ref()].concat();
+        let hash = sha256_array(&seed);
+
+        let mut result = [0u8; 4];
+        result.copy_from_slice(&hash[..4]);
+        Salt(result)
+    }
+
+    fn set_random_seed(rng: &mut impl Rng) -> [u8; 32] {
+        let seed = rng.random();
+        let context = VMContextBuilder::new().random_seed(seed).build();
+        testing_env!(context);
+
+        seed
+    }
+
+    #[rstest]
+    fn contains_salt_test(random_bytes: Vec<u8>) {
+        let random_salt: Salt = Unstructured::new(&random_bytes).arbitrary().unwrap();
+        let salts = SaltRegistry::new(random_bytes);
+
+        assert!(salts.is_valid(salts.current));
+        assert!(!salts.is_valid(random_salt));
+    }
+
+    #[rstest]
+    fn update_current_salt_test(random_bytes: Vec<u8>, mut rng: impl Rng) {
+        let mut salts = SaltRegistry::new(random_bytes);
+
+        let seed = set_random_seed(&mut rng);
+        let previous_salt = salts.set_new().expect("should set new salt");
+
+        assert!(salts.is_valid(seed_to_salt(&seed, 0)));
+        assert!(salts.is_valid(previous_salt));
+
+        let previous_salt = salts.set_new().expect("should set new salt");
+        assert!(salts.is_valid(seed_to_salt(&seed, 1)));
+        assert!(salts.is_valid(previous_salt));
+    }
+
+    #[rstest]
+    fn reset_salt_test(random_bytes: Vec<u8>, mut rng: impl Rng) {
+        let mut salts = SaltRegistry::new(random_bytes);
+        let random_salt = Salt(rng.random::<[u8; 4]>());
+
+        let seed = set_random_seed(&mut rng);
+        let current = seed_to_salt(&seed, 0);
+        let previous_salt = salts.set_new().expect("should set new salt");
+
+        assert!(salts.invalidate(previous_salt).is_ok());
+        assert!(!salts.is_valid(previous_salt));
+        assert!(matches!(
+            salts.invalidate(random_salt).unwrap_err(),
+            DefuseError::InvalidSalt
+        ));
+
+        let seed = set_random_seed(&mut rng);
+        let new_salt = seed_to_salt(&seed, 0);
+
+        assert!(salts.invalidate(current).is_ok());
+        assert!(!salts.is_valid(current));
+        assert_eq!(salts.current(), new_salt);
+    }
+
+    #[rstest]
+    fn derive_next_test(random_bytes: Vec<u8>) {
+        let mut salt_registry = SaltRegistry::new(random_bytes);
+
+        let prev = salt_registry.set_new().unwrap();
+
+        salt_registry.invalidate(prev).unwrap();
+        salt_registry.set_new().unwrap();
+
+        assert!(!salt_registry.is_valid(prev));
+        assert!(salt_registry.is_used(prev));
+    }
+}

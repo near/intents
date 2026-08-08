@@ -1,11 +1,11 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use defuse_core::{SaltRegistry, fees::FeesConfig};
-use near_sdk::{AccountId, IntoStorageKey, env, store::IterableMap};
+use defuse_core::fees::FeesConfig;
+use near_sdk::{AccountId, IntoStorageKey};
 
 use crate::contract::{
     MigrateStorageWithPrefix,
     prefix::NestPrefix,
-    state::{ContractState, Prefix, TokenBalances},
+    state::{ContractState, Prefix, TokenBalances, salt_registry::SaltRegistry},
 };
 
 #[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
@@ -34,10 +34,7 @@ impl MigrateStorageWithPrefix<ContractStateV0> for ContractState {
             total_supplies,
             wnear_id,
             fees,
-            salts: SaltRegistry::new(
-                IterableMap::with_hasher(prefix.into_storage_key().nest(Prefix::Salts)),
-                env::random_seed_array(),
-            ),
+            salts: SaltRegistry::new(prefix.into_storage_key().nest(Prefix::Salts)),
         }
     }
 }

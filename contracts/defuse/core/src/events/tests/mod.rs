@@ -325,13 +325,10 @@ fn set_auth_by_predecessor_id_direct_event<'a>() -> DefuseEvent<'a> {
 
 fn salt_rotation_event<'a>(mut rng: impl Rng) -> DefuseEvent<'a> {
     DefuseEvent::SaltRotation(SaltRotationEvent {
-        current: Salt::derive(3, rng.random::<[u8; 32]>()),
-        invalidated: [
-            Salt::derive(2, rng.random::<[u8; 32]>()),
-            Salt::derive(1, rng.random::<[u8; 32]>()),
-        ]
-        .into_iter()
-        .collect(),
+        current: Salt(rng.random::<[u8; 4]>()),
+        invalidated: [Salt(rng.random::<[u8; 4]>()), Salt(rng.random::<[u8; 4]>())]
+            .into_iter()
+            .collect(),
     })
 }
 
