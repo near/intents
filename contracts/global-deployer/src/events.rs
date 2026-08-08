@@ -13,7 +13,7 @@ use near_account_id::AccountIdRef;
         // `#[near(event_json(...)))]` does it for us
         not(feature = "near-contract"),
         derive(::serde::Serialize),
-        serde(tag = "event", content = "data")
+        serde(tag = "event", content = "data", rename_all = "snake_case"),
     ),
     cfg_attr(feature = "near-contract", ::near_sdk::near(event_json(standard = "global-deployer")))
 )]
