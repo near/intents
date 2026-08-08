@@ -267,13 +267,14 @@ impl OffchainMessage {
         Nep413Payload {
             // bound full message contents via hash
             nonce: self.hash(),
-            // `<chain_id> @ <signer_id>[ -> path]...`
+            // `<chain_id>: <signer_id>[ -> path]... @ <timestamp>`
             recipient: format!(
-                "{} @ {}",
+                "{}: {} @ {}",
                 self.chain_id,
                 std::iter::once(&self.signer_id)
                     .chain(&self.path)
-                    .join(" -> ")
+                    .join(" -> "),
+                self.timestamp,
             ),
             // the actual authorized payload
             message: self.payload,
