@@ -1,4 +1,13 @@
-pub const ERR_SELF_TRANSFER: &str = "self-transfer";
-pub const ERR_UNAUTHORIZED: &str = "unauthorized";
-pub const ERR_WRONG_CODE_HASH: &str = "old_hash mismatch";
-pub const ERR_NEW_CODE_HASH_MISMATCH: &str = "new_code hash does not match approved_hash";
+/// An error for [`GlobalDeployer`](crate::contract::GlobalDeployer) contract.
+#[cfg_attr(feature = "near-contract", derive(::near_sdk::FunctionError))]
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("unauthorized")]
+    Unauthorized,
+    #[error("invalid code hash")]
+    InvalidCodeHash,
+    #[error("requires exactly 1 yoctoNEAR attached")]
+    RequireOneYocto,
+    #[error("self-transfer")]
+    SelfTransfer,
+}

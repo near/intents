@@ -1,4 +1,4 @@
-//! Near smart-contract interface
+//! [`OutlayerApp`] contract interface
 
 use defuse_serde_utils::hex::AsHex;
 use near_account_id::AccountId;
@@ -13,7 +13,7 @@ pub trait OutlayerApp {
     /// and set the new [URL](Self::oa_code_url) where the code binary can be fetched from.
     ///
     /// Allowed only for [admin](Self::oa_admin_id). MUST attach at least 1yN.
-    /// Emits [`set_code`](crate::OutlayerAppEvent::SetCode) event.
+    /// Emits [`set_code`](crate::OaEvent::SetCode) event.
     fn oa_set_code(
         &mut self,
         old_code_hash: AsHex<[u8; 32]>,
@@ -24,7 +24,7 @@ pub trait OutlayerApp {
     /// Transfer ownership to a new admin.
     ///
     /// Allowed only for [admin](Self::oa_admin_id). MUST attach exactly 1yN.
-    /// Emits [`transfer_admin`](crate::OutlayerAppEvent::TransferAdmin) event.
+    /// Emits [`transfer_admin`](crate::OaEvent::TransferAdmin) event.
     fn oa_transfer_admin(&mut self, new_admin_id: AccountId);
 
     /// Returns the current admin's account ID.
@@ -43,7 +43,7 @@ const _: () = {
     use near_account_id::AccountIdRef;
     use near_sdk::{FunctionError, PanicOnDefault, env, near};
 
-    use crate::{Error, OutlayerAppEvent};
+    use crate::{Error, OaEvent};
 
     type Result<T, E = Error> = ::core::result::Result<T, E>;
 
@@ -125,7 +125,7 @@ const _: () = {
 
             self.0.code_hash = new_code_hash;
             self.0.code_url = new_code_url.into();
-            OutlayerAppEvent::SetCode {
+            OaEvent::SetCode {
                 hash: new_code_hash,
                 url: self.0.code_url.as_ref().into(),
             }
@@ -147,7 +147,7 @@ const _: () = {
                 return Err(Error::SelfTransfer);
             }
 
-            OutlayerAppEvent::TransferAdmin {
+            OaEvent::TransferAdmin {
                 old_admin_id: self.0.admin_id.as_ref().into(),
                 new_admin_id: (&new_admin_id).into(),
             }

@@ -7,10 +7,10 @@ use defuse_sandbox::{
     extensions::{
         FnCallTransaction,
         global_deployer::{
-            GDApproveArgs, GDDeployerExt, GlobalDeployer, GlobalDeployerExt,
+            GDDeployerExt, GlobalDeployerExt,
             contract::{
-                AsWrap, Event, Reason, State as DeployerState,
-                error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_UNAUTHORIZED},
+                ApprovalReason, AsWrap, Error, GdEvent, State as DeployerState,
+                client::{GdApproveArgs, GlobalDeployerContract},
             },
         },
     },
@@ -193,7 +193,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
     owner
         .fn_call(
             controller_instance.contract_id(),
-            GlobalDeployer::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
+            GlobalDeployerContract::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
                 .deposit(storage_deposit)
                 .gas(Gas::from_tgas(300)),
         )
@@ -242,12 +242,12 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         Sha256::digest(&*DEPLOYER_WASM),
     )
     .await
-    .assert_err_contains(ERR_UNAUTHORIZED);
+    .assert_err_contains(Error::Unauthorized.to_string());
 
     // Non-owner cannot transfer ownership
     bob.gd_transfer_ownership(controller_instance.contract_id(), bob.account_id())
         .await
-        .assert_err_contains(ERR_UNAUTHORIZED);
+        .assert_err_contains(Error::Unauthorized.to_string());
 
     // Owner transfers ownership
     let result = alice
@@ -258,15 +258,15 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
     assert_eq!(
         result.logs(),
         vec![
-            Event::Transfer {
+            GdEvent::Transfer {
                 old_owner_id: alice.account_id().into(),
                 new_owner_id: bob.account_id().into(),
             }
             .to_nep297_event()
             .to_event_log(),
-            Event::Approve {
+            GdEvent::Approve {
                 code_hash: DeployerState::DEFAULT_HASH,
-                reason: Reason::By(bob.account_id().into()),
+                reason: ApprovalReason::By(bob.account_id().into()),
             }
             .to_nep297_event()
             .to_event_log(),
@@ -312,14 +312,14 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
     assert_eq!(
         result.logs(),
         vec![
-            Event::Deploy {
+            GdEvent::Deploy {
                 code_hash: deployed_hash.into(),
             }
             .to_nep297_event()
             .to_event_log(),
-            Event::Approve {
+            GdEvent::Approve {
                 code_hash: DeployerState::DEFAULT_HASH,
-                reason: Reason::Deploy(deployed_hash.into()),
+                reason: ApprovalReason::Deploy(deployed_hash.into()),
             }
             .to_nep297_event()
             .to_event_log(),
@@ -375,20 +375,20 @@ async fn test_deploy_event_old_hash_after_upgrade(
     assert_eq!(
         result.logs(),
         vec![
-            Event::Approve {
+            GdEvent::Approve {
                 code_hash: mt_stub_hash.into(),
-                reason: Reason::By(root.account_id().into()),
+                reason: ApprovalReason::By(root.account_id().into()),
             }
             .to_nep297_event()
             .to_event_log(),
-            Event::Deploy {
+            GdEvent::Deploy {
                 code_hash: mt_stub_hash.into(),
             }
             .to_nep297_event()
             .to_event_log(),
-            Event::Approve {
+            GdEvent::Approve {
                 code_hash: DeployerState::DEFAULT_HASH,
-                reason: Reason::Deploy(mt_stub_hash.into()),
+                reason: ApprovalReason::Deploy(mt_stub_hash.into()),
             }
             .to_nep297_event()
             .to_event_log(),
@@ -455,7 +455,7 @@ async fn test_concurrent_upgrades_only_one_succeeds(
         .iter()
         .filter(|r| {
             r.as_ref()
-                .is_err_and(|e| e.to_string().contains(ERR_NEW_CODE_HASH_MISMATCH))
+                .is_err_and(|e| e.to_string().contains(&Error::InvalidCodeHash.to_string()))
         })
         .count();
 
@@ -625,7 +625,7 @@ async fn test_permissionless_deploy_with_approval(
         NearToken::from_near(50),
     )
     .await
-    .assert_err_contains(ERR_NEW_CODE_HASH_MISMATCH);
+    .assert_err_contains(Error::InvalidCodeHash.to_string());
 }
 
 #[rstest]
@@ -671,7 +671,7 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
     owner
         .fn_call(
             controller_instance.contract_id(),
-            GlobalDeployer::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
+            GlobalDeployerContract::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
                 // attach more than enough to cover storage
                 .deposit(NearToken::from_near(100))
                 .gas(Gas::from_tgas(300)),
@@ -877,7 +877,7 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
     owner
         .transaction(controller_instance.contract_id())
         .add_action(
-            GlobalDeployer::gd_approve(GDApproveArgs {
+            GlobalDeployerContract::gd_approve(GdApproveArgs {
                 old_hash: storage.code_hash,
                 new_hash: new_hash.into(),
             })
@@ -885,7 +885,7 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
             .gas(Gas::from_tgas(10)),
         )
         .add_action(
-            GlobalDeployer::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
+            GlobalDeployerContract::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
                 .deposit(NearToken::from_near(1))
                 .gas(Gas::from_tgas(290)),
         )
@@ -967,12 +967,12 @@ async fn test_post_deploy_fails_when_approval_changed(
     let result = root
         .transaction(controller_instance.contract_id())
         .add_action(
-            GlobalDeployer::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
+            GlobalDeployerContract::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
                 .deposit(NearToken::from_near(50))
                 .gas(Gas::from_tgas(140)),
         )
         .add_action(
-            GlobalDeployer::gd_approve(GDApproveArgs {
+            GlobalDeployerContract::gd_approve(GdApproveArgs {
                 old_hash: deployer_hash.into(),
                 new_hash: mt_stub_hash.into(),
             })

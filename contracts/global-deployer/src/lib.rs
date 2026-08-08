@@ -1,81 +1,17 @@
-#[cfg(feature = "contract")]
-mod contract;
-pub mod error;
+#![doc = include_str!("../README.md")]
 
-use std::borrow::Cow;
+#[cfg(feature = "near-kit")]
+pub mod client;
+#[cfg(feature = "near-contract")]
+pub mod contract;
+mod error;
+mod events;
+mod state;
 
-pub use defuse_borsh_utils::{AsWrap, Remainder};
-pub use defuse_global_deployer_core::State;
-pub use defuse_serde_utils::hex::AsHex;
-use near_sdk::{AccountId, AccountIdRef, Promise, ext_contract, near};
-use serde::{Deserialize, Serialize};
-use serde_with::{hex::Hex, serde_as};
+pub use self::{error::*, events::*, state::*};
 
-/// Manages global contract code and ownership for deterministic (NEP-616) accounts.
-#[ext_contract(ext_global_deployer)]
-pub trait GlobalDeployer {
-    /// Approves a future deployment by setting the expected new code hash.
-    /// If an approved hash was already set, it will be replaced.
-    /// Owner-only. Requires 1 yoctoNEAR. Verifies `old_hash` matches current `code_hash`.
-    /// Emits [`Event::Approve`] with [`Reason::By`].
-    fn gd_approve(&mut self, old_hash: AsHex<[u8; 32]>, new_hash: AsHex<[u8; 32]>);
-
-    /// Deploys WASM code as a global contract on this account.
-    /// Permissionless: anyone can call if `sha256(code)` matches `approved_hash`.
-    /// Requires attached deposit for storage.
-    /// Emits [`Event::Deploy`] and [`Event::Approve`] with [`Reason::Deploy`].
-    ///
-    /// The `code` argument accepts raw `.wasm` bytes directly — just pass the
-    /// binary contents of the file as the function call input. There is no need
-    /// to prepend a borsh length prefix; the [`AsWrap`]`<`[`Vec<u8>`]`,
-    /// `[`Remainder`]`>` adapter consumes all input bytes as-is.
-    fn gd_deploy(&mut self, #[serializer(borsh)] code: AsWrap<Vec<u8>, Remainder>) -> Promise;
-
-    /// Transfers contract ownership to `receiver_id`.
-    /// Resets `approved_hash` to `DEFAULT_HASH`.
-    /// Requires 1 yoctoNEAR, owner-only, no self-transfer.
-    /// Emits [`Event::Transfer`] and [`Event::Approve`] with [`Reason::By`].
-    fn gd_transfer_ownership(&mut self, receiver_id: AccountId);
-
-    /// Returns the current owner's account ID.
-    fn gd_owner_id(&self) -> AccountId;
-
-    /// Returns the SHA-256 hash of the currently deployed code, or `0000..000` if none.
-    fn gd_code_hash(&self) -> AsHex<[u8; 32]>;
-
-    /// Returns the currently approved hash, or `0000..000` if none.
-    fn gd_approved_hash(&self) -> AsHex<[u8; 32]>;
-}
-
-#[serde_as]
-#[near(event_json(standard = "global-deployer"))]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Event<'a> {
-    #[event_version("1.0.0")]
-    Approve {
-        #[serde_as(as = "Hex")]
-        code_hash: [u8; 32],
-        reason: Reason<'a>,
-    },
-
-    #[event_version("1.0.0")]
-    Deploy {
-        #[serde_as(as = "Hex")]
-        code_hash: [u8; 32],
-    },
-
-    #[event_version("1.0.0")]
-    Transfer {
-        old_owner_id: Cow<'a, AccountIdRef>,
-        new_owner_id: Cow<'a, AccountIdRef>,
-    },
-}
-
-#[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Reason<'a> {
-    Deploy(#[serde_as(as = "Hex")] [u8; 32]),
-    By(Cow<'a, AccountIdRef>),
-}
+#[cfg(any(feature = "near-kit", feature = "near-contract"))]
+pub use ::{
+    defuse_borsh_utils::{AsWrap, Remainder},
+    defuse_serde_utils::hex::AsHex,
+};

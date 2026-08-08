@@ -18,7 +18,7 @@ use near_account_id::AccountIdRef;
     cfg_attr(feature = "near-contract", ::near_sdk::near(event_json(standard = "outlayer-app")))
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum OutlayerAppEvent<'a> {
+pub enum OaEvent<'a> {
     #[cfg_attr(feature = "near-contract", event_version("1.0.0"))]
     SetCode {
         #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::hex::Hex"))]
