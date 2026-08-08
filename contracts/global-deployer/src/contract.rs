@@ -61,6 +61,29 @@ const _: () = {
     pub struct Contract(State<'static>);
 
     #[near]
+    impl Contract {
+        /// Initialize a global deployer on the existing account and set admin to current account ID.
+        ///
+        /// It's recommended to call this method in the same receipt right after `UseGlobalContract` action.
+        /// Requires exactly 1yN attached.
+        #[allow(clippy::use_self)]
+        #[private]
+        #[init]
+        pub fn gd_init() -> Self {
+            if env::attached_deposit() != NearToken::from_yoctonear(1) {
+                // reject FunctionCall access keys
+                Error::RequireOneYocto.panic();
+            }
+
+            Self(State {
+                owner_id: env::current_account_id().into(),
+                code_hash: State::DEFAULT_HASH,
+                approved_hash: State::DEFAULT_HASH,
+            })
+        }
+    }
+
+    #[near]
     impl GlobalDeployer for Contract {
         /// Approve a future deployment of a new SHA-256 code hash. Replaces previous approval, if any.
         /// `old_hash` MUST match current `.gd_code_hash()`.
@@ -129,7 +152,7 @@ const _: () = {
 
     impl Contract {
         fn gd_approve_internal(&mut self, old_hash: [u8; 32], new_hash: [u8; 32]) -> Result<()> {
-            if env::attached_deposit().is_zero() {
+            if env::attached_deposit() != NearToken::from_yoctonear(1) {
                 return Err(Error::RequireOneYocto);
             }
             if !self.is_owner(&env::predecessor_account_id()) {
@@ -212,7 +235,7 @@ const _: () = {
         }
 
         fn transfer_ownership(&mut self, new_owner_id: AccountId) -> Result<()> {
-            if env::attached_deposit().is_zero() {
+            if env::attached_deposit() != NearToken::from_yoctonear(1) {
                 return Err(Error::RequireOneYocto);
             }
             if !self.is_owner(&env::predecessor_account_id()) {
