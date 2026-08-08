@@ -10,6 +10,7 @@ repository.workspace = true
 [dependencies]
 defuse-bitmap.workspace = true
 defuse-near-promise.workspace = true
+defuse-nep413 = { workspace = true, optional = true }
 defuse-nep641.workspace = true
 defuse-time.workspace = true
 near-account-id.workspace = true
@@ -28,6 +29,7 @@ serde = { workspace = true, features = ["derive"], optional = true }
 serde_json = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true }
 
+near-kit = { workspace = true, optional = true }
 near-sdk = { workspace = true, optional = true }
 
 [features]
@@ -35,10 +37,11 @@ default = ["std"]
 
 std = ["defuse-nep641/std", "defuse-time/std"]
 
-abi = ["borsh-schema", "near-sdk?/abi", "schemars-v0_8"]
+abi = ["borsh-schema", "defuse-nep413?/abi", "near-sdk?/abi", "schemars-v0_8"]
 arbitrary = [
   "defuse-bitmap/arbitrary",
   "defuse-near-promise/arbitrary",
+  "defuse-nep413?/arbitrary",
   "defuse-nep641/arbitrary",
   "defuse-time/arbitrary",
   "dep:arbitrary",
@@ -60,6 +63,7 @@ borsh-schema = [
   "defuse-bitmap/borsh-schema",
   "defuse-borsh-utils?/schema",
   "defuse-near-promise/borsh-schema",
+  "defuse-nep413?/borsh-schema",
   "defuse-nep641/borsh-schema",
   "defuse-time/borsh-schema",
   "near-account-id/abi",
@@ -71,9 +75,22 @@ json = [
   "dep:serde_json",
   "serde",
 ]
-near-kit = ["defuse-near-promise/near-kit", "defuse-nep641/near-kit"]
+near-kit = [
+  "defuse-near-promise/near-kit",
+  "defuse-nep413?/near-kit",
+  "defuse-nep641/near-kit",
+  "dep:near-kit",
+]
+nep413 = [
+  "borsh",
+  "defuse-nep641/nep413",
+  "dep:defuse-nep413",
+  "digest",
+  "json",
+]
 schemars-v0_8 = [
   "defuse-near-promise/schemars-v0_8",
+  "defuse-nep413?/schemars-v0_8",
   "defuse-nep641/schemars-v0_8",
   "defuse-time/schemars-v0_8",
   "dep:schemars",
@@ -82,6 +99,7 @@ schemars-v0_8 = [
 ]
 serde = [
   "defuse-near-promise/serde",
+  "defuse-nep413?/serde",
   "defuse-nep641/serde",
   "defuse-time/serde",
   "dep:cfg_eval",

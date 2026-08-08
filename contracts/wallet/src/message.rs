@@ -187,6 +187,59 @@ impl RequestMessage {
         hasher.0.finalize().into()
     }
 
+    /// Deterministically convert this message into a NEP-413 payload, with an
+    /// optional callback URL.
+    ///
+    /// The canonical hash binds every field of this message through the
+    /// NEP-413 nonce, while the inner request is exposed as compact JSON for
+    /// display by the signer.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use core::time::Duration;
+    /// # use defuse_wallet::{Request, RequestMessage, Timestamp, WalletOp};
+    /// # use hex_literal::hex;
+    /// use defuse_nep413::Nep413Payload;
+    ///
+    /// let msg = RequestMessage {
+    ///     pay_for_gas: false,
+    ///     chain_id: "mainnet".to_string(),
+    ///     signer_id: "0s0000000000000000000000000000000000000000".parse().unwrap(),
+    ///     nonce: 0,
+    ///     created_at: Timestamp::UNIX_EPOCH,
+    ///     timeout: Duration::from_secs(3600),
+    ///     request: Request::from(WalletOp::disable_signature()),
+    /// };
+    ///
+    /// assert_eq!(
+    ///     msg.into_nep413_payload("https://wallet.com/callback".to_string()),
+    ///     Nep413Payload {
+    ///         message: r#"{"internal":[{"op":"set_signature_mode","payload":{"enable":false}}]}"#
+    ///             .to_string(),
+    ///         nonce: hex!("95d1b136c6ff60cf02b5d6cff43aedf3448125ff386377980bd98196d9cc88cf"),
+    ///         recipient: "mainnet @ 0s0000000000000000000000000000000000000000".to_string(),
+    ///         callback_url: Some("https://wallet.com/callback".to_string()),
+    ///     },
+    /// );
+    /// ```
+    #[cfg(feature = "nep413")]
+    pub fn into_nep413_payload(
+        self,
+        callback_url: impl Into<Option<String>>,
+    ) -> ::defuse_nep413::Nep413Payload {
+        let nonce = self.hash();
+        let recipient = format!("{} @ {}", self.chain_id, self.signer_id);
+        let message = serde_json::to_string(&self.request).expect("JSON: failed to serialize");
+
+        ::defuse_nep413::Nep413Payload {
+            message,
+            nonce,
+            recipient,
+            callback_url: callback_url.into(),
+        }
+    }
+
     /// Get a deadline for delivering this message to the wallet contract.
     #[inline]
     pub fn deadline(&self) -> Timestamp {
@@ -205,6 +258,28 @@ impl RequestMessage {
         self.deadline().duration_since(now).ok()
     }
 }
+
+#[cfg(feature = "nep413")]
+const _: () = {
+    use defuse_nep413::Nep413Payload;
+
+    impl From<RequestMessage> for Nep413Payload {
+        /// Convert into a NEP-413 payload **without** a callback URL.
+        #[inline]
+        fn from(msg: RequestMessage) -> Self {
+            msg.into_nep413_payload(None)
+        }
+    }
+
+    #[cfg(feature = "near-kit")]
+    impl From<RequestMessage> for ::near_kit::nep413::SignMessageParams {
+        /// Convert into NEP-413 sign-message parameters **without** a callback URL.
+        #[inline]
+        fn from(msg: RequestMessage) -> Self {
+            Nep413Payload::from(msg).into()
+        }
+    }
+};
 
 /// NEP-641 authorization for [`Wallet`](crate::contract::Wallet) contract.
 #[cfg_attr(

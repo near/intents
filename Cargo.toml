@@ -11,10 +11,14 @@ members = [
   "contracts/treasury-logger",
   "contracts/wallet",
   "contracts/wallet/signatures/ed25519",
+  "contracts/wallet/signatures/nep413",
+  "contracts/wallet/signatures/nep413/ed25519",
   "contracts/wallet/signatures/no-sign",
   "contracts/wallet/signatures/webauthn",
   "contracts/wallet/signatures/webauthn/ed25519",
   "contracts/wallet/signatures/webauthn/p256",
+
+  "extensions/near-wallet",
 
   "crates/bitmap",
   "crates/borsh-utils",
@@ -84,6 +88,8 @@ defuse-poa-factory.path = "contracts/poa/factory"
 defuse-poa-token.path = "contracts/poa/token"
 defuse-wallet.path = "contracts/wallet"
 defuse-wallet-ed25519.path = "contracts/wallet/signatures/ed25519"
+defuse-wallet-nep413.path = "contracts/wallet/signatures/nep413"
+defuse-wallet-nep413-ed25519.path = "contracts/wallet/signatures/nep413/ed25519"
 defuse-wallet-no-sign.path = "contracts/wallet/signatures/no-sign"
 defuse-wallet-webauthn.path = "contracts/wallet/signatures/webauthn"
 defuse-wallet-webauthn-ed25519.path = "contracts/wallet/signatures/webauthn/ed25519"

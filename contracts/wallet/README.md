@@ -15,7 +15,8 @@ A generic minimalistic wallet smart-contract that enables for true *sharded* and
   added/removed by the signer or other installed extensions. Enables 2FA, social
   recovery and more.
 * Can support *any* [**signing standards**](#signing-standards). As of now, we
-  have support for **passkeys** (both `p256` and `ed25519`). Additional variants
+  have support for raw `ed25519`, [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)
+  (`ed25519`), and **passkeys** (both `p256` and `ed25519`). Additional variants
   can be implemented by *anyone* in the future.
 * **Non-sequential** timeout-based [nonces](#nonces) enable *concurrent* request
   and avoid head-of-line blocking.
@@ -58,6 +59,14 @@ is fixed at the time of a deployment. Each variant is deployed as a
 A public key of the wallet contract instance is also fixed at the time of first
 initialization and **cannot** be changed later. However, signature can still be
 disabled by signer/extension (see [key rotation](#key-rotation)).
+
+The `wallet-nep413-ed25519` variant maps each signed request to a callback-free
+NEP-413 payload. Its `message` is the compact JSON representation of the inner
+request, its `nonce` is the canonical hash of the complete request message, and
+its `recipient` is `<chain_id> @ <signer_id>`. The proof passed to
+`w_execute_signed` is the typed base58 Ed25519 signature (`ed25519:...`).
+The [`near wallet`](../../extensions/near-wallet/README.md) extension prepares
+and signs these payloads through near-cli-rs.
 
 ### Extensions
 

@@ -1,0 +1,34 @@
+lints.workspace = true
+
+[package]
+name = "defuse-wallet-nep413"
+edition.workspace = true
+version = "0.1.0"
+rust-version.workspace = true
+repository.workspace = true
+readme = "../../README.md"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+defuse-crypto.workspace = true
+defuse-nep413.workspace = true
+defuse-wallet = { workspace = true, features = ["nep413"] }
+
+defuse-wallet-sdk = { workspace = true, optional = true }
+derive_more = { workspace = true, features = ["as_ref", "from"], optional = true }
+
+[features]
+ed25519 = ["defuse-crypto/ed25519", "defuse-crypto/fmt"]
+
+abi = ["borsh-schema", "defuse-crypto/abi"]
+borsh = ["defuse-crypto/borsh"]
+borsh-schema = ["borsh", "defuse-crypto/borsh-schema"]
+signer = ["defuse-crypto/signing", "dep:defuse-wallet-sdk", "dep:derive_more"]
+
+[dev-dependencies]
+defuse-wallet-ed25519 = { workspace = true }
+defuse-wallet-nep413 = { path = ".", features = ["abi", "ed25519", "signer"] }
+
+tokio = { workspace = true, features = ["macros", "rt"] }
