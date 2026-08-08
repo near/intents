@@ -242,6 +242,7 @@ impl OffchainMessage {
     ///         "wallet.near".parse().unwrap(),
     ///         "v1.signer".parse().unwrap(),
     ///     ],
+    ///     // in `recipient` it will be truncated down to seconds, see below
     ///     timestamp: "2026-08-05T07:28:00.123456789Z".parse().unwrap(),
     ///     payload: "Hello, Near!".to_string(),
     /// };
@@ -249,9 +250,10 @@ impl OffchainMessage {
     /// assert_eq!(
     ///     msg.into_nep413_payload("https://wallet.com/callback".to_string()),
     ///     Nep413Payload {
-    ///         message: "Hello, Near!".to_string(),
-    ///         nonce: hex!("039f8afb4ef2d76c621d3952f214bd2a080ce977ef351d52ff65a090eebbf72c"),
-    ///         recipient: "mainnet @ extension.near -> wallet.near -> v1.signer".to_string(),
+    ///         message: "Hello, Near!".to_string(), // msg.payload
+    ///         nonce: hex!("039f8afb4ef2d76c621d3952f214bd2a080ce977ef351d52ff65a090eebbf72c"), // msg.hash()
+    ///         // <chain_id>: <signer_id>[ -> path]... @ <timestamp>
+    ///         recipient: "mainnet: extension.near -> wallet.near -> v1.signer @ 2026-08-05T07:28:00Z".to_string(),
     ///         callback_url: Some("https://wallet.com/callback".to_string()),
     ///     },
     /// );
@@ -267,13 +269,15 @@ impl OffchainMessage {
         Nep413Payload {
             // bound full message contents via hash
             nonce: self.hash(),
-            // `<chain_id> @ <signer_id>[ -> path]...`
+            // `<chain_id>: <signer_id>[ -> path]... @ <timestamp>`
             recipient: format!(
-                "{} @ {}",
+                "{}: {} @ {}",
                 self.chain_id,
                 std::iter::once(&self.signer_id)
                     .chain(&self.path)
-                    .join(" -> ")
+                    .join(" -> "),
+                // truncate down to seconds to reduce UI cluttering
+                self.timestamp.truncate_subsecs(),
             ),
             // the actual authorized payload
             message: self.payload,
