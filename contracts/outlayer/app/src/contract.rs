@@ -4,8 +4,6 @@ use defuse_serde_utils::hex::AsHex;
 use near_account_id::AccountId;
 use near_sdk::ext_contract;
 
-use crate::State;
-
 /// Outlayer application
 #[ext_contract(ext_outlayer_app)]
 pub trait OutlayerApp {
@@ -43,7 +41,7 @@ const _: () = {
     use near_account_id::AccountIdRef;
     use near_sdk::{FunctionError, PanicOnDefault, env, near};
 
-    use crate::{Error, OaEvent};
+    use crate::{Error, OaEvent, State};
 
     type Result<T, E = Error> = ::core::result::Result<T, E>;
 

@@ -15,7 +15,10 @@ use defuse_sandbox::{
         },
     },
     global_contract::GlobalContract,
-    kit::{ExecutionStatus, Final, Gas, GlobalContractId, Near, NearToken},
+    kit::{
+        Action, ExecutionStatus, Final, FunctionCall, Gas, GlobalContractId, Near, NearToken,
+        UseGlobalContractAction,
+    },
     root,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::MT_RECEIVER_STUB_WASM};
@@ -145,6 +148,80 @@ async fn test_deploy_controller_instance(
             .global_contract_account_id
             .unwrap(),
         controller_instance.contract_id()
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_gd_init(#[future(awt)] deployer_env: DeployerEnv) {
+    let DeployerEnv {
+        root,
+        deployer_global_id,
+    } = deployer_env;
+    assert!(matches!(&deployer_global_id, GlobalContractId::CodeHash(_)));
+
+    let implicit = root.create_implicit(NearToken::from_near(100)).await;
+
+    implicit
+        .transaction(implicit.account_id())
+        .add_action(Action::UseGlobalContract(UseGlobalContractAction {
+            contract_identifier: deployer_global_id,
+        }))
+        .add_action(
+            FunctionCall::new("gd_init")
+                .gas(Gas::from_tgas(5))
+                .deposit(NearToken::from_yoctonear(1)),
+        )
+        .add_action(
+            GlobalDeployerContract::gd_transfer_ownership(root.account_id().into())
+                .gas(Gas::from_tgas(30))
+                .deposit(NearToken::from_yoctonear(1)),
+        )
+        .delete_key(
+            implicit
+                .public_key()
+                .expect("implicit account must have a key"),
+        )
+        .wait_until::<Final>()
+        .await
+        .unwrap()
+        .result()
+        .unwrap();
+
+    let controller = root.contract::<GlobalDeployerContract>(implicit.account_id().clone());
+
+    assert_eq!(controller.gd_owner_id().await.unwrap(), *root.account_id());
+    assert!(
+        root.access_keys(implicit.account_id())
+            .await
+            .unwrap()
+            .keys
+            .is_empty()
+    );
+
+    root.gd_approve_and_deploy(
+        implicit.account_id(),
+        DeployerState::DEFAULT_HASH,
+        &DEPLOYER_WASM,
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(
+        controller.gd_code_hash().await.unwrap().0,
+        Sha256::digest(&*DEPLOYER_WASM),
+    );
+    assert_eq!(
+        controller.gd_approved_hash().await.unwrap().0,
+        DeployerState::DEFAULT_HASH,
+    );
+
+    assert_eq!(
+        root.global_contract(implicit.account_id())
+            .await
+            .unwrap()
+            .code,
+        *DEPLOYER_WASM
     );
 }
 

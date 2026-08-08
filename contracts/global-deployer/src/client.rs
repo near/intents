@@ -4,8 +4,7 @@ use std::borrow::Cow;
 
 use defuse_borsh_utils::{AsWrap, Remainder};
 use defuse_serde_utils::hex::AsHex;
-use near_account_id::AccountId;
-use near_sdk::AccountIdRef;
+use near_account_id::{AccountId, AccountIdRef};
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
 

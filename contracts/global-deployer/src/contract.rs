@@ -69,6 +69,7 @@ const _: () = {
         /// Requires exactly 1yN attached.
         #[allow(clippy::use_self)]
         #[private]
+        #[payable]
         #[init]
         pub fn gd_init() -> Self {
             if env::attached_deposit() != NearToken::from_yoctonear(1) {

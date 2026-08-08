@@ -38,12 +38,14 @@ borsh-schema = [
 ]
 digest = ["dep:defuse-digest"]
 near-contract = [
+  "borsh",
   "dep:defuse-borsh-utils",
   "dep:defuse-serde-utils",
   "dep:near-sdk",
   "serde",
 ]
 near-kit = [
+  "borsh",
   "dep:defuse-borsh-utils",
   "dep:defuse-serde-utils",
   "dep:near-kit",
@@ -59,7 +61,7 @@ schemars-v0_8 = [
 ]
 
 # Enable building actual smart-contract exported functions
-_contract = ["borsh", "digest", "near-contract"]
+_contract = ["digest", "near-contract"]
 
 [dev-dependencies]
 defuse-global-deployer = { path = ".", features = ["abi", "arbitrary", "borsh", "digest", "near-contract", "serde", "_contract", "near-kit"] }
