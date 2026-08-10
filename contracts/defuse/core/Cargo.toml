@@ -61,6 +61,10 @@ abi = [
   "defuse-webauthn/abi",
   "dep:base64",
   "dep:schemars",
+  "near-account-id/abi",
+  "near-gas/abi",
+  "near-global-contracts/abi",
+  "near-token/abi",
   "serde_with/schemars_0_8",
 ]
 arbitrary = [
@@ -68,6 +72,10 @@ arbitrary = [
   "defuse-crypto/arbitrary",
   "defuse-token-id/arbitrary",
   "defuse-ton-connect/arbitrary",
+  "near-account-id/arbitrary",
+  "near-gas/arbitrary",
+  "near-global-contracts/arbitrary",
+  "near-token/arbitrary",
   "dep:arbitrary",
 ]
 imt = []

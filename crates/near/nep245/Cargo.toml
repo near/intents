@@ -23,8 +23,11 @@ schemars = { workspace = true, features = ["derive"], optional = true }
 [features]
 abi = [
   "borsh/unstable__schema",
+  "serde_with/schemars_0_8",
   "defuse-serde-utils/schemars-v0_8",
   "dep:schemars",
+  "near-account-id/abi",
+  "near-sdk?/abi",
 ]
 near-contract = ["dep:near-sdk"]
 

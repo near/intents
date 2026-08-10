@@ -40,6 +40,6 @@ tokio.workspace = true
 [features]
 default = ["auth-call"]
 
-abi = ["defuse-nep245/abi", "defuse/abi", "dep:schemars"]
+abi = ["defuse-nep245/abi", "defuse/abi", "dep:schemars", "near-sdk/abi"]
 
 auth-call = ["dep:defuse-auth-call"]
