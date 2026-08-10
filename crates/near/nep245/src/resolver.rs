@@ -3,7 +3,7 @@ use near_sdk::json_types::U128;
 
 use super::TokenId;
 
-pub type ClearedApproval = (AccountId, u64, near_sdk::json_types::U128);
+pub type ClearedApproval = (AccountId, u64, U128);
 
 pub trait MultiTokenResolver {
     fn mt_resolve_transfer(

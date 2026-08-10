@@ -108,7 +108,7 @@ impl MultiTokenResolver for Contract {
                     old_owner_id: Cow::Borrowed(&receiver_id),
                     new_owner_id: Cow::Borrowed(&sender_id),
                     token_ids: refunded_token_ids.into(),
-                    amounts: Cow::Owned(refunded_amounts.into_iter().map(|a| a.0).collect()),
+                    amounts: Cow::Owned(refunded_amounts.into_iter().map(Into::into).collect()),
                     memo: Some(REFUND_MEMO.into()),
                 }]
                 .as_slice(),
