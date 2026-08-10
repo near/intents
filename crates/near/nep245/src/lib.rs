@@ -4,7 +4,7 @@ mod checked;
 mod core;
 #[cfg(feature = "near-contract")]
 pub mod enumeration;
-mod error;
+mod errors;
 mod events;
 #[cfg(feature = "near-contract")]
 pub mod receiver;
@@ -12,7 +12,7 @@ pub mod receiver;
 pub mod resolver;
 mod token;
 
-pub use self::{error::ErrorLogTooLong, events::*, token::*};
+pub use self::{errors::ErrorLogTooLong, events::*, token::*};
 
 #[cfg(feature = "near-contract")]
 pub use self::core::*;
