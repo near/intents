@@ -17,6 +17,7 @@ use crate::{
 #[cfg(feature = "imt")]
 use crate::{intents::imt::ImtBurn, tokens::imt::ImtMintEvent};
 
+#[derive(Debug, Clone, Deserialize, From)]
 #[cfg_attr(
     not(feature = "near-contract"),
     derive(::serde::Serialize),
@@ -27,7 +28,6 @@ use crate::{intents::imt::ImtBurn, tokens::imt::ImtMintEvent};
     must_use = "make sure to `.emit()` this event",
     ::near_sdk::near(event_json(standard = "dip4"))
 )]
-#[derive(Debug, Clone, Deserialize, From)]
 pub enum DefuseEvent<'a> {
     #[cfg_attr(feature = "near-contract", event_version("0.4.3"))]
     #[from(skip)]
