@@ -1,5 +1,5 @@
 use defuse_nep245::TokenId;
-use defuse_serde_utils::cow::AsCowSlice;
+use defuse_serde_utils::AsCowSlice;
 use near_sdk::{AccountIdRef, near, serde::Deserialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::borrow::Cow;

@@ -72,11 +72,11 @@ arbitrary = [
   "defuse-crypto/arbitrary",
   "defuse-token-id/arbitrary",
   "defuse-ton-connect/arbitrary",
+  "dep:arbitrary",
   "near-account-id/arbitrary",
   "near-gas/arbitrary",
   "near-global-contracts/arbitrary",
   "near-token/arbitrary",
-  "dep:arbitrary",
 ]
 imt = []
 near-kit = ["defuse-nep413/near-kit", "dep:near-kit"]

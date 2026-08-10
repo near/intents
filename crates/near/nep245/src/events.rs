@@ -1,5 +1,5 @@
 use super::TokenId;
-use defuse_serde_utils::cow::AsCowSlice;
+use defuse_serde_utils::AsCowSlice;
 use derive_more::derive::From;
 use near_account_id::AccountIdRef;
 use serde::{Deserialize, Serialize};

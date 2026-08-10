@@ -27,7 +27,6 @@ abi = [
   "defuse-serde-utils/schemars-v0_8",
   "dep:schemars",
   "near-account-id/abi",
-  "near-sdk?/abi",
 ]
 near-contract = ["dep:near-sdk"]
 

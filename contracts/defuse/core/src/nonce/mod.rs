@@ -2,7 +2,9 @@ mod expirable;
 mod salted;
 mod versioned;
 
-pub use {expirable::ExpirableNonce, salted::Salt, salted::SaltedNonce, versioned::VersionedNonce};
+pub use self::{
+    expirable::ExpirableNonce, salted::Salt, salted::SaltedNonce, versioned::VersionedNonce,
+};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_bitmap::{BitMap256, U248, U256};
