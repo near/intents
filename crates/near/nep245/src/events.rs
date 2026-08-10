@@ -1,5 +1,5 @@
 use super::TokenId;
-use defuse_serde_utils::cow::AsCow;
+use defuse_serde_utils::cow::AsCowSlice;
 use derive_more::derive::From;
 use near_account_id::AccountIdRef;
 use serde::{Deserialize, Serialize};
@@ -33,7 +33,7 @@ pub enum MtEvent<'a> {
 pub struct MtMintEvent<'a> {
     pub owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
-    #[serde_as(as = "AsCow<DisplayFromStr>")]
+    #[serde_as(as = "AsCowSlice<DisplayFromStr>")]
     pub amounts: Cow<'a, [u128]>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<Cow<'a, str>>,
@@ -48,7 +48,7 @@ pub struct MtBurnEvent<'a> {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub authorized_id: Option<Cow<'a, AccountIdRef>>,
     pub token_ids: Cow<'a, [TokenId]>,
-    #[serde_as(as = "AsCow<DisplayFromStr>")]
+    #[serde_as(as = "AsCowSlice<DisplayFromStr>")]
     pub amounts: Cow<'a, [u128]>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<Cow<'a, str>>,
@@ -64,7 +64,7 @@ pub struct MtTransferEvent<'a> {
     pub old_owner_id: Cow<'a, AccountIdRef>,
     pub new_owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
-    #[serde_as(as = "AsCow<DisplayFromStr>")]
+    #[serde_as(as = "AsCowSlice<DisplayFromStr>")]
     pub amounts: Cow<'a, [u128]>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<Cow<'a, str>>,

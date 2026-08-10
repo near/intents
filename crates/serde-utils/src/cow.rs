@@ -6,9 +6,9 @@ use serde_with::{DeserializeAs, SerializeAs, ser::SerializeAsWrap};
 /// A `serde_with` "as" marker for `Cow<'a, [T]>`.
 /// `serde_with` has a blanket `SerializeAs` for any `[T]`,
 /// but no `DeserializeAs` for `Cow<[T]>`
-pub struct AsCow<As: ?Sized>(PhantomData<As>);
+pub struct AsCowSlice<As: ?Sized>(PhantomData<As>);
 
-impl<T, As> SerializeAs<Cow<'_, [T]>> for AsCow<As>
+impl<T, As> SerializeAs<Cow<'_, [T]>> for AsCowSlice<As>
 where
     T: Clone,
     As: SerializeAs<T>,
@@ -21,12 +21,12 @@ where
     }
 }
 
-impl<'de, T, As> DeserializeAs<'de, Cow<'static, [T]>> for AsCow<As>
+impl<'de, 'a, T, As> DeserializeAs<'de, Cow<'a, [T]>> for AsCowSlice<As>
 where
     T: Clone,
     As: DeserializeAs<'de, T>,
 {
-    fn deserialize_as<D>(deserializer: D) -> Result<Cow<'static, [T]>, D::Error>
+    fn deserialize_as<D>(deserializer: D) -> Result<Cow<'a, [T]>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -39,7 +39,7 @@ const _: () = {
     use schemars::{SchemaGenerator, schema::Schema};
     use serde_with::schemars_0_8::JsonSchemaAs;
 
-    impl<T, As> JsonSchemaAs<Cow<'_, [T]>> for AsCow<As>
+    impl<T, As> JsonSchemaAs<Cow<'_, [T]>> for AsCowSlice<As>
     where
         T: Clone,
         As: JsonSchemaAs<T>,
@@ -67,7 +67,7 @@ mod tests {
     #[serde_as]
     #[derive(Debug, Serialize, Deserialize)]
     struct S<'a> {
-        #[serde_as(as = "AsCow<DisplayFromStr>")]
+        #[serde_as(as = "AsCowSlice<DisplayFromStr>")]
         amounts: Cow<'a, [u128]>,
     }
 
