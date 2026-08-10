@@ -54,7 +54,11 @@ mod tests {
         #[case] proof: &str,
     ) {
         assert!(
-            WalletWebauthn::<P256, IgnoreUserVerification>::verify(&public_key.into(), &msg, proof),
+            WalletWebauthn::<P256, IgnoreUserVerification>::verify_request_msg(
+                &public_key.into(),
+                &msg,
+                proof
+            ),
             "signature is invalid"
         );
     }
@@ -75,12 +79,12 @@ mod tests {
             request: Request::new(),
         };
 
-        let proof = WalletSigner::<SS>::sign_wallet_msg(&signer, &msg)
+        let proof = WalletSigner::<SS>::sign_request_msg(&signer, &msg)
             .await
             .unwrap();
 
         assert!(
-            SS::verify(&WalletSigner::<SS>::public_key(&signer), &msg, &proof),
+            SS::verify_request_msg(&WalletSigner::<SS>::public_key(&signer), &msg, &proof),
             "signer produced invalid signature"
         );
     }

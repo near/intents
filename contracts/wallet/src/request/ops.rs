@@ -32,3 +32,34 @@ pub enum WalletOp {
     /// If this extension is not currently enabled, the contract MUST panic.
     RemoveExtension { account_id: AccountId } = 2,
 }
+
+impl WalletOp {
+    #[inline]
+    pub const fn set_signature_mode(enable: bool) -> Self {
+        Self::SetSignatureMode { enable }
+    }
+
+    #[inline]
+    pub const fn enable_signature() -> Self {
+        Self::set_signature_mode(true)
+    }
+
+    #[inline]
+    pub const fn disable_signature() -> Self {
+        Self::set_signature_mode(false)
+    }
+
+    #[inline]
+    pub fn add_extension(account_id: impl Into<AccountId>) -> Self {
+        Self::AddExtension {
+            account_id: account_id.into(),
+        }
+    }
+
+    #[inline]
+    pub fn remove_extension(account_id: impl Into<AccountId>) -> Self {
+        Self::RemoveExtension {
+            account_id: account_id.into(),
+        }
+    }
+}

@@ -5,7 +5,7 @@ use std::{
 };
 
 use async_trait::async_trait;
-use defuse_wallet::{RequestMessage, SignatureSchema};
+use defuse_wallet::{RequestMessage, SignatureSchema, offchain::OffchainMessage};
 use impl_tools::autoimpl;
 
 /// A proof for [`w_execute_signed(msg, proof)`](defuse_wallet::contract::Wallet::w_execute_signed)
@@ -27,7 +27,10 @@ pub trait WalletSigner<S: SignatureSchema>: Sync {
     /// Sign [`RequestMessage`] according to [`SignatureSchema`]
     /// and return a proof serialized to string ready to be submitted to
     /// [`w_execute_signed(msg, proof)`](defuse_wallet::contract::Wallet::w_execute_signed) contract method
-    async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error>;
+    async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error>;
+
+    /// Sign [`OffchainMessage`] according to [`SignatureSchema`] and return a [proof](field@defuse_wallet::WalletAuthorization::Signature::proof).
+    async fn sign_offchain_msg(&self, msg: &OffchainMessage) -> Result<Proof, Self::Error>;
 }
 
 #[allow(clippy::redundant_pub_crate)]
@@ -35,10 +38,9 @@ pub trait WalletSigner<S: SignatureSchema>: Sync {
 pub(crate) trait DynWalletSigner<S: SignatureSchema>: Send + Sync {
     fn dyn_public_key(&self) -> S::PublicKey;
 
-    async fn dyn_sign_request_msg(
-        &self,
-        msg: &RequestMessage,
-    ) -> Result<Proof, Box<dyn StdError + Send + Sync>>;
+    async fn dyn_sign_request_msg(&self, msg: &RequestMessage) -> anyhow::Result<Proof>;
+
+    async fn dyn_sign_offchain_msg(&self, msg: &OffchainMessage) -> anyhow::Result<Proof>;
 }
 
 #[async_trait]
@@ -46,18 +48,19 @@ impl<SS, S> DynWalletSigner<SS> for S
 where
     SS: SignatureSchema,
     S: WalletSigner<SS>,
-    S::Error: Into<Box<dyn StdError + Send + Sync>>,
+    S::Error: StdError + Send + Sync + 'static,
 {
     #[inline]
     fn dyn_public_key(&self) -> SS::PublicKey {
         self.public_key()
     }
 
-    async fn dyn_sign_request_msg(
-        &self,
-        msg: &RequestMessage,
-    ) -> Result<Proof, Box<dyn StdError + Send + Sync>> {
-        self.sign_wallet_msg(msg).await.map_err(Into::into)
+    async fn dyn_sign_request_msg(&self, msg: &RequestMessage) -> anyhow::Result<Proof> {
+        self.sign_request_msg(msg).await.map_err(Into::into)
+    }
+
+    async fn dyn_sign_offchain_msg(&self, msg: &OffchainMessage) -> anyhow::Result<Proof> {
+        self.sign_offchain_msg(msg).await.map_err(Into::into)
     }
 }
 
@@ -65,14 +68,18 @@ impl<S> WalletSigner<S> for dyn DynWalletSigner<S> + '_
 where
     S: SignatureSchema,
 {
-    type Error = Box<dyn StdError + Send + Sync>;
+    type Error = anyhow::Error;
 
     #[inline]
     fn public_key(&self) -> S::PublicKey {
         self.dyn_public_key()
     }
 
-    async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
+    async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
         self.dyn_sign_request_msg(msg).await
+    }
+
+    async fn sign_offchain_msg(&self, msg: &OffchainMessage) -> Result<Proof, Self::Error> {
+        self.dyn_sign_offchain_msg(msg).await
     }
 }

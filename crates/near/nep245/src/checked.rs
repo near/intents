@@ -3,7 +3,7 @@ use crate::MtEvent;
 use defuse_near_utils::REFUND_MEMO;
 
 const REFUND_STR_LEN: usize = REFUND_MEMO.len();
-const REFUND_EXTRA_BYTES: usize = r#","memo":""#.len() + REFUND_STR_LEN;
+pub const REFUND_EXTRA_BYTES: usize = r#","memo":"""#.len() + REFUND_STR_LEN;
 
 /// A validated event log that has been checked for refund overhead.
 /// Use [`CheckedMtEvent::emit`] to emit the event.

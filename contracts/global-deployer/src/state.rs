@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use near_account_id::AccountIdRef;
 
+/// State of a [`GlobalDeployer`](crate::contract::GlobalDeployer) contract
 #[cfg_attr(
     feature = "serde",
     ::cfg_eval::cfg_eval,
@@ -15,14 +16,16 @@ use near_account_id::AccountIdRef;
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
-/// State of a Global Deployer contract
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State<'a> {
+    /// Owner account ID.
     pub owner_id: Cow<'a, AccountIdRef>,
 
+    /// SHA-256 hash of currently deployed code.
     #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::hex::Hex"))]
     pub code_hash: [u8; 32],
 
+    /// SHA-256 hash of next approved code to deploy.
     #[cfg_attr(feature = "serde", serde_as(as = "::serde_with::hex::Hex"))]
     pub approved_hash: [u8; 32],
 }
@@ -32,6 +35,7 @@ impl<'a> State<'a> {
     pub const DEFAULT_HASH: [u8; 32] = [0; 32];
 
     /// Create new state with given `owner_id`.
+    #[must_use]
     #[inline]
     pub fn owner(owner_id: impl Into<Cow<'a, AccountIdRef>>) -> Self {
         Self {
@@ -61,13 +65,12 @@ impl<'a> State<'a> {
         self
     }
 
-    #[cfg(feature = "digest")]
     /// Pre-approve given code
     ///
     /// # Examples
     ///
     /// ```rust
-    /// # use defuse_global_deployer_core::State;
+    /// # use defuse_global_deployer::State;
     /// # use hex_literal::hex;
     /// # use near_account_id::AccountIdRef;
     /// # const OWNER_ID: &AccountIdRef = AccountIdRef::new_or_panic("owner.near");
@@ -79,6 +82,7 @@ impl<'a> State<'a> {
     ///     hex!("337e547a950fc8a98592f10d964c1e79a304961790a8da0ce449a1f000cefabb"),
     /// )
     /// ```
+    #[cfg(feature = "digest")]
     #[must_use]
     #[inline]
     pub fn pre_approve_code(self, code: impl AsRef<[u8]>) -> Self {
@@ -87,9 +91,9 @@ impl<'a> State<'a> {
         self.pre_approve(Sha256::digest(code))
     }
 
-    #[cfg(feature = "borsh")]
     /// Construct storage key-value pairs for `StateInit`
     /// of Global Deployer contract.
+    #[cfg(feature = "borsh")]
     pub fn as_storage(&self) -> std::collections::BTreeMap<Vec<u8>, Vec<u8>> {
         [(
             Self::STATE_KEY.to_vec(),

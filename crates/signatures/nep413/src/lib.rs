@@ -4,7 +4,7 @@
 use core::fmt::Display;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use defuse_crypto::{Curve, ed25519::Ed25519};
+use defuse_crypto::Curve;
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_nep461::{OffchainMessage, SignedMessageNep};
 use digest_io::IoWrapper;
@@ -18,12 +18,12 @@ impl Nep413 {
     /// [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md).
     #[must_use = "check if verification passed"]
     #[inline]
-    pub fn verify(
-        public_key: &<Ed25519 as Curve>::PublicKey,
+    pub fn verify<C: Curve>(
+        public_key: &C::PublicKey,
         payload: &Nep413Payload,
-        signature: &<Ed25519 as Curve>::Signature,
+        signature: &C::Signature,
     ) -> bool {
-        Ed25519::verify(public_key, &Self::prehash(payload), signature)
+        C::verify(public_key, &Self::prehash(payload), signature)
     }
 
     /// Derive prehash for signing.
@@ -133,7 +133,7 @@ const _: () = {
 
 #[cfg(test)]
 mod tests {
-    use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
+    use defuse_crypto::ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature};
     use hex_literal::hex;
     use rstest::rstest;
 
@@ -155,7 +155,7 @@ mod tests {
         #[case] payload: Nep413Payload,
         #[case] signature: impl Into<Ed25519Signature>,
     ) {
-        assert!(Nep413::verify(
+        assert!(Nep413::verify::<Ed25519>(
             &public_key.into().try_into().unwrap(),
             &payload,
             &signature.into().into()

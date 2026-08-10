@@ -12,6 +12,7 @@ use std::{collections::BTreeSet, fmt::Display};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_near_promise::{NearPromise, actions::NearAction};
+use defuse_nep641::{AuthResolver, AuthorizationResolution};
 use defuse_time::Timestamp;
 use impl_tools::autoimpl;
 use near_account_id::{AccountId, AccountIdRef};
@@ -19,7 +20,7 @@ use near_sdk::{FunctionError, Promise, env, ext_contract};
 
 pub use crate::ContractError as Error;
 use crate::{
-    Request, RequestMessage, SignatureSchema, State, WalletOp,
+    Request, RequestMessage, SignatureSchema, State, WalletAuthorization, WalletOp,
     events::{Actor, WalletEvent},
 };
 
@@ -45,7 +46,7 @@ pub trait Wallet {
     ///   [`env::current_account_id()`](near_sdk::env::current_account_id)
     /// * [`msg.nonce`](RequestMessage::nonce) is already used, expired or
     ///   from the future
-    /// * `proof` is [invalid](SignatureSchema::verify) or signature is
+    /// * `proof` is [invalid](SignatureSchema::verify_request_msg) or signature is
     ///   [currently disabled](WalletOp::SetSignatureMode)
     fn w_execute_signed(&mut self, msg: RequestMessage, proof: String);
 
@@ -96,24 +97,11 @@ pub trait Wallet {
 #[autoimpl(Debug where S::PublicKey: trait)]
 #[repr(transparent)]
 pub struct WalletImpl<S: SignatureSchema>(
-    // TODO: simplify when https://github.com/near/borsh-rs/pull/373 is released
-    #[cfg_attr(
-        not(feature = "borsh-schema"),
-        borsh(bound(
-            serialize = "S::PublicKey: BorshSerialize",
-            deserialize = "S::PublicKey: BorshDeserialize",
-        ))
-    )]
-    #[cfg_attr(
-        feature = "borsh-schema",
-        borsh(
-            bound(
-                serialize = "S::PublicKey: BorshSerialize",
-                deserialize = "S::PublicKey: BorshDeserialize",
-            ),
-            schema(params = "S => S::PublicKey"),
-        )
-    )]
+    #[borsh(bound(
+        serialize = "S::PublicKey: BorshSerialize",
+        deserialize = "S::PublicKey: BorshDeserialize",
+    ))]
+    #[cfg_attr(feature = "borsh-schema", borsh(schema(params = "S => S::PublicKey"),))]
     State<S::PublicKey>,
 );
 
@@ -179,16 +167,16 @@ where
     S: SignatureSchema,
 {
     fn execute_signed(&mut self, msg: RequestMessage, proof: &str) -> Result<()> {
+        if !self.0.is_signature_allowed() {
+            return Err(Error::SignatureDisabled);
+        }
+
         // TODO: change to the following when External Contract Calls land:
         // if !msg.pay_for_gas && env::is_external() {
         //     return Err(Error::UnauthorizedGasPayment);
         // }
         if msg.pay_for_gas {
             env::panic_str("`pay_for_gas` is not currently supported");
-        }
-
-        if !self.0.is_signature_allowed() {
-            return Err(Error::SignatureDisabled);
         }
 
         // check chain_id
@@ -207,7 +195,7 @@ where
             .commit(msg.nonce, msg.created_at, msg.timeout)?;
 
         // verify signature
-        if !S::verify(&self.0.public_key, &msg, proof) {
+        if !S::verify_request_msg(&self.0.public_key, &msg, proof) {
             return Err(Error::InvalidSignature);
         }
 
@@ -341,6 +329,85 @@ where
     }
 }
 
+impl<S> AuthResolver for WalletImpl<S>
+where
+    S: SignatureSchema,
+{
+    #[inline]
+    fn w_resolve_auth(
+        &self,
+        path: Vec<AccountId>,
+        authorization: String,
+    ) -> AuthorizationResolution {
+        self.resolve_auth(&path, &authorization)
+            .unwrap_or_else(|err| err.panic())
+    }
+}
+
+impl<S> WalletImpl<S>
+where
+    S: SignatureSchema,
+{
+    fn resolve_auth(
+        &self,
+        path: &[AccountId],
+        authorization: &str,
+    ) -> Result<AuthorizationResolution> {
+        let input: WalletAuthorization = serde_json::from_str(authorization)?;
+
+        Ok(match input {
+            WalletAuthorization::Signature { msg, proof } => {
+                if !self.0.is_signature_allowed() {
+                    return Err(Error::SignatureDisabled);
+                }
+
+                // check chain_id
+                if msg.chain_id != env::chain_id() {
+                    return Err(Error::InvalidChainId);
+                }
+
+                // check signer_id
+                if msg.signer_id != env::current_account_id() {
+                    return Err(Error::InvalidSignerId(msg.signer_id));
+                }
+
+                // check path
+                if msg.path != path {
+                    return Err(Error::InvalidPath);
+                }
+
+                // check timestamp
+                if Timestamp::now() < msg.timestamp {
+                    return Err(Error::FromTheFuture);
+                }
+
+                // verify signature
+                if !S::verify_offchain_msg(&self.0.public_key, &msg, &proof) {
+                    return Err(Error::InvalidSignature);
+                }
+
+                // authorize the payload
+                AuthorizationResolution::new(msg.payload)
+            }
+            WalletAuthorization::Extension {
+                account_id,
+                authorization,
+                payload,
+            } => {
+                // check whether extension is enabled
+                self.check_extension_enabled(&account_id)?;
+
+                // authorize the payload if and only if the extension authorizes the same one
+                AuthorizationResolution::new(payload.clone()).add_pending(
+                    account_id,
+                    authorization,
+                    payload,
+                )
+            }
+        })
+    }
+}
+
 impl<S: SignatureSchema> From<State<S::PublicKey>> for WalletImpl<S> {
     #[inline]
     fn from(state: State<S::PublicKey>) -> Self {
@@ -355,7 +422,7 @@ impl<S: SignatureSchema> From<State<S::PublicKey>> for WalletImpl<S> {
 ///
 /// ```rust
 /// # use core::fmt::{self, Display};
-/// use defuse_wallet::{RequestMessage, SignatureSchema, wallet};
+/// use defuse_wallet::{RequestMessage, SignatureSchema, wallet, offchain::OffchainMessage};
 /// use near_sdk::near;
 ///
 /// // Define the contract struct and impl
@@ -382,7 +449,15 @@ impl<S: SignatureSchema> From<State<S::PublicKey>> for WalletImpl<S> {
 ///    /// key and return whether verification passed.
 ///    ///
 ///    /// Used by the `w_execute_signed(msg, proof)` contract method.
-///     fn verify(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
+///     fn verify_request_msg(public_key: &Self::PublicKey, msg: &RequestMessage, proof: &str) -> bool {
+///         todo!("verify signature over `msg` in respect to the public key")
+///     }
+///
+///    /// Verify given proof over the NEP-641 offchain message in respect to the public key
+///    /// and return whether verification passed.
+///    ///
+///    /// Used by the `w_resolve_auth(path, authorization)` contract method.
+///     fn verify_offchain_msg(public_key: &Self::PublicKey, msg: &OffchainMessage, proof: &str) -> bool {
 ///         todo!("verify signature over `msg` in respect to the public key")
 ///     }
 /// }
@@ -480,6 +555,18 @@ macro_rules! wallet {
             /// Returns a timestamp when nonces were last cleaned up.
             fn w_last_cleaned_at(&self) -> $crate::Timestamp {
                 self.0.w_last_cleaned_at()
+            }
+        }
+
+        #[$crate::near_sdk::near]
+        impl $crate::offchain::AuthResolver for $contract {
+            /// Resolve offchain authorization.
+            fn w_resolve_auth(
+                &self,
+                path: ::std::vec::Vec<$crate::AccountId>,
+                authorization: ::std::string::String,
+            ) -> $crate::offchain::AuthorizationResolution {
+                self.0.w_resolve_auth(path, authorization)
             }
         }
     };

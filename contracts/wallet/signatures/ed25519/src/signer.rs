@@ -31,13 +31,24 @@ use crate::WalletEd25519;
 /// let (msg, proof) = wallet.sign(Request::new()).await?;
 ///
 /// assert!(
-///     WalletEd25519::verify(&wallet.public_key(), &msg, &proof),
+///     WalletEd25519::verify_request_msg(&wallet.public_key(), &msg, &proof),
 ///     "signer produced invalid signature",
 /// );
 /// # Ok::<_, Box<dyn core::error::Error>>(()) }).unwrap();
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::From, derive_more::AsRef)]
 pub struct WalletEd25519Signer<S>(pub S);
+
+impl<S> WalletEd25519Signer<S>
+where
+    S: Signer<Ed25519>,
+{
+    async fn sign_hash(&self, hash: &[u8; 32]) -> Result<Proof, S::Error> {
+        let sig = self.0.sign(hash).await?;
+
+        Ok(Ed25519Signature::from(sig).to_string())
+    }
+}
 
 impl<S> WalletSigner<WalletEd25519> for WalletEd25519Signer<S>
 where
@@ -50,10 +61,15 @@ where
         self.0.public_key().into()
     }
 
-    async fn sign_wallet_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
-        let sig = self.0.sign(&msg.hash()).await?;
+    async fn sign_request_msg(&self, msg: &RequestMessage) -> Result<Proof, Self::Error> {
+        self.sign_hash(&msg.hash()).await
+    }
 
-        Ok(Ed25519Signature::from(sig).to_string())
+    async fn sign_offchain_msg(
+        &self,
+        msg: &defuse_wallet::offchain::OffchainMessage,
+    ) -> Result<Proof, Self::Error> {
+        self.sign_hash(&msg.hash()).await
     }
 }
 
@@ -81,12 +97,12 @@ mod tests {
             request: Request::new(),
         };
 
-        let proof = WalletSigner::<WalletEd25519>::sign_wallet_msg(&signer, &msg)
+        let proof = WalletSigner::<WalletEd25519>::sign_request_msg(&signer, &msg)
             .await
             .unwrap();
 
         assert!(
-            WalletEd25519::verify(
+            WalletEd25519::verify_request_msg(
                 &WalletSigner::<WalletEd25519>::public_key(&signer),
                 &msg,
                 &proof
