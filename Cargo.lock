@@ -1329,6 +1329,7 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-controller",
  "defuse-core",
+ "defuse-digest",
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",

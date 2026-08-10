@@ -1,33 +1,13 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use core::mem;
 use defuse_core::{DefuseError, Result, Salt};
+use defuse_digest::{Digest, sha2::Sha256};
 use near_sdk::{
-    IntoStorageKey,
-    env::{self, sha256_array},
+    IntoStorageKey, env,
     store::{IterableMap, key::Identity},
 };
 use std::fmt::Debug;
 
-trait DeriveSalt {
-    fn derive(num: u8) -> Salt;
-}
-
-impl DeriveSalt for Salt {
-    fn derive(num: u8) -> Self {
-        const SIZE: usize = size_of::<Salt>();
-
-        let seed = env::random_seed_array();
-        let mut input = [0u8; 33];
-        input[..32].copy_from_slice(&seed);
-        input[32] = num;
-
-        Self(
-            sha256_array(input)[..SIZE]
-                .try_into()
-                .unwrap_or_else(|_| unreachable!()),
-        )
-    }
-}
 /// Contains current valid salt and set of previous
 /// salts that can be valid or invalid.
 #[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
@@ -46,13 +26,28 @@ impl SaltRegistry {
     {
         Self {
             previous: IterableMap::with_hasher(prefix),
-            current: Salt::derive(0),
+            current: SaltRegistry::derive_salt(0),
         }
+    }
+
+    fn derive_salt(num: u8) -> Salt {
+        const SIZE: usize = size_of::<Salt>();
+
+        let seed = env::random_seed_array();
+        let mut input = [0u8; 33];
+        input[..32].copy_from_slice(&seed);
+        input[32] = num;
+
+        Salt(
+            Sha256::digest(input)[..SIZE]
+                .try_into()
+                .unwrap_or_else(|_| unreachable!()),
+        )
     }
 
     fn derive_next_salt(&self) -> Result<Salt> {
         (0..=u8::MAX)
-            .map(Salt::derive)
+            .map(SaltRegistry::derive_salt)
             .find(|s| !self.is_used(*s))
             .ok_or(DefuseError::SaltGenerationFailed)
     }
