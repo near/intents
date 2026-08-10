@@ -4,8 +4,8 @@ use serde::{Deserializer, Serializer};
 use serde_with::{DeserializeAs, SerializeAs, ser::SerializeAsWrap};
 
 /// A `serde_with` "as" marker for `Cow<'a, [T]>`.
-/// `serde_with` has a blanket `SerializeAs` for any `[T]`,
-/// but no `DeserializeAs` for `Cow<[T]>`
+/// `serde_with` has a blanket `SerializeAs`/`DeserializeAs` for `[T]`/`Vec<T>`,
+/// but neither for `Cow<'a, [T]>` with a generic `T`
 pub struct AsCowSlice<As: ?Sized>(PhantomData<As>);
 
 impl<T, As> SerializeAs<Cow<'_, [T]>> for AsCowSlice<As>
