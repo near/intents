@@ -74,7 +74,7 @@ const _: () = {
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
-    serde(rename_all = "snake_case")
+    serde(tag = "schema", content = "extra", rename_all = "snake_case")
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
