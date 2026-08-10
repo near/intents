@@ -8,7 +8,7 @@ use defuse_token_id::TokenId;
 use rstest::rstest;
 
 use crate::{
-    AccountId, AccountIdRef, NearGas, NearToken, Salt,
+    AccountId, AccountIdRef, Gas, NearToken, Salt,
     accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
     amounts::Amounts,
     events::{DefuseEvent, tests::v0_4_1::DefuseEventV0_4_1},
@@ -168,7 +168,7 @@ fn ft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
                 receiver_id: account().into(),
                 msg: Some("test message".to_string()),
                 storage_deposit: Some(NearToken::from_yoctonear(100)),
-                min_gas: Some(NearGas::from_tgas(10)),
+                min_gas: Some(Gas::from_tgas(10)),
             }),
         },
         [0; 32],
@@ -192,7 +192,7 @@ fn mt_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
                 receiver_id: account().into(),
                 msg: Some("test message".to_string()),
                 storage_deposit: Some(NearToken::from_yoctonear(100)),
-                min_gas: Some(NearGas::from_tgas(10)),
+                min_gas: Some(Gas::from_tgas(10)),
             }),
         },
         [0; 32],
@@ -210,7 +210,7 @@ fn nft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
                 receiver_id: account().into(),
                 msg: Some("test message".to_string()),
                 storage_deposit: Some(NearToken::from_yoctonear(100)),
-                min_gas: Some(NearGas::from_tgas(10)),
+                min_gas: Some(Gas::from_tgas(10)),
             }),
         },
         [0; 32],

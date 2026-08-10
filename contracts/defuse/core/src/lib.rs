@@ -24,6 +24,6 @@ pub use defuse_token_id as token_id;
 pub use defuse_ton_connect as ton_connect;
 
 pub use near_account_id::{AccountId, AccountIdRef};
-pub use near_gas::NearGas;
+pub use near_gas::NearGas as Gas;
 pub use near_global_contracts::{GlobalContractId, StateInit, StateInitV1};
 pub use near_token::NearToken;
