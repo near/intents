@@ -26,7 +26,7 @@ impl SaltRegistry {
     {
         Self {
             previous: IterableMap::with_hasher(prefix),
-            current: SaltRegistry::derive_salt(0),
+            current: Self::derive_salt(0),
         }
     }
 
@@ -47,7 +47,7 @@ impl SaltRegistry {
 
     fn derive_next_salt(&self) -> Result<Salt> {
         (0..=u8::MAX)
-            .map(SaltRegistry::derive_salt)
+            .map(Self::derive_salt)
             .find(|s| !self.is_used(*s))
             .ok_or(DefuseError::SaltGenerationFailed)
     }
@@ -103,7 +103,7 @@ mod tests {
 
     fn seed_to_salt(seed: &[u8; 32], attempts: u8) -> Salt {
         let seed = [seed, attempts.to_be_bytes().as_ref()].concat();
-        let hash = sha256_array(&seed);
+        let hash = Sha256::digest(seed);
 
         let mut result = [0u8; 4];
         result.copy_from_slice(&hash[..4]);

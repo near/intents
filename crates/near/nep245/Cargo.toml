@@ -16,9 +16,9 @@ serde = { workspace = true, features = ["derive"] }
 serde_with.workspace = true
 thiserror.workspace = true
 
+defuse-near-utils = { workspace = true, optional = true }
 near-sdk = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
-defuse-near-utils = {workspace = true, optional = true}
 
 [features]
 abi = [
@@ -28,7 +28,7 @@ abi = [
   "near-account-id/abi",
   "serde_with/schemars_0_8",
 ]
-near-contract = ["dep:near-sdk", "dep:defuse-near-utils"]
+near-contract = ["dep:defuse-near-utils", "dep:near-sdk"]
 
 [dev-dependencies]
 defuse-nep245 = { workspace = true, features = ["near-contract"] }
