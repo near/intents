@@ -6,7 +6,7 @@ use crate::payload::{Payload, SignedPayload};
 
 use super::{DefusePayload, ExtractDefusePayload};
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignedTip191Payload {
     pub payload: String,

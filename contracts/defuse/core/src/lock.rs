@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 /// A persistent lock, which stores its state (whether it's locked or unlocked)
 /// on-chain, so that the inner value can be accessed depending on
 /// the current state of the lock.
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[derive(
     Debug, Default, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
 )]

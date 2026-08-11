@@ -9,7 +9,7 @@ use std::{
 use crate::Result;
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[derive(
     Clone,
     Copy,
@@ -45,7 +45,7 @@ impl FromStr for Salt {
     }
 }
 
-#[cfg(feature = "abi")]
+#[cfg(feature = "schemars-v0_8")]
 const _: () = {
     use schemars::{
         JsonSchema,

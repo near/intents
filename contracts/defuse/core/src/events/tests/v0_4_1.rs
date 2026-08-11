@@ -17,7 +17,7 @@ use crate::{
 
 #[must_use = "make sure to `.emit()` this event"]
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IntentEvent<T> {
     #[serde_as(as = "Base58")]

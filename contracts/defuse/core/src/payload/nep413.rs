@@ -17,7 +17,7 @@ use super::{DefusePayload, ExtractDefusePayload};
 #[autoimpl(Deref using self.message)]
 #[autoimpl(DerefMut using self.message)]
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Nep413DefuseMessage<T> {
     pub signer_id: AccountId,
@@ -55,7 +55,7 @@ where
 
 #[autoimpl(Deref using self.payload)]
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignedNep413Payload {
     pub payload: Nep413Payload,

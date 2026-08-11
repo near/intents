@@ -7,11 +7,6 @@ version.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
-[features]
-abi = ["borsh?/unstable__schema", "dep:schemars"]
-borsh = ["dep:borsh"]
-serde = ["dep:serde"]
-
 [dependencies]
 defuse-num-utils.workspace = true
 thiserror.workspace = true
@@ -19,3 +14,10 @@ thiserror.workspace = true
 borsh = { workspace = true, features = ["derive"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
+
+[features]
+abi = ["borsh-schema", "schemars-v0_8"]
+borsh = ["dep:borsh"]
+borsh-schema = ["borsh", "borsh/unstable__schema"]
+schemars-v0_8 = ["dep:schemars"]
+serde = ["dep:serde"]

@@ -8,4 +8,5 @@ ignore = [
   # dev/test-only feature, restricted to cfg(not(target_arch = "wasm32"))),
   # never linked into the on-chain contract wasm.
   "RUSTSEC-2026-0222",
+  "RUSTSEC-2026-0253",
 ]

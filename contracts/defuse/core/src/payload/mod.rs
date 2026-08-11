@@ -19,14 +19,14 @@ use crate::{AccountId, Nonce, Timestamp};
 #[serde_as]
 #[autoimpl(Deref using self.message)]
 #[autoimpl(DerefMut using self.message)]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefusePayload<T> {
     pub signer_id: AccountId,
     pub verifying_contract: AccountId,
     pub deadline: Timestamp,
     #[serde_as(as = "Base64")]
-    #[cfg_attr(feature = "abi", schemars(example = "self::examples::nonce"))]
+    #[cfg_attr(feature = "schemars-v0_8", schemars(example = "self::examples::nonce"))]
     pub nonce: Nonce,
 
     #[serde(flatten)]
@@ -68,7 +68,7 @@ pub trait SignedPayload: Payload {
     fn verify(&self) -> Option<Self::PublicKey>;
 }
 
-#[cfg(feature = "abi")]
+#[cfg(feature = "schemars-v0_8")]
 mod examples {
     use super::Nonce;
 

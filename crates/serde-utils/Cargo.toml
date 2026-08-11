@@ -12,9 +12,8 @@ derive_more = { workspace = true, features = ["from"] }
 serde = { workspace = true, features = ["derive"] }
 serde_with.workspace = true
 
-schemars = { workspace = true, optional = true, features = ["derive"] }
+schemars = { workspace = true, features = ["derive"], optional = true }
 tlb-ton = { workspace = true, optional = true }
-
 
 [features]
 abi = ["schemars-v0_8"]

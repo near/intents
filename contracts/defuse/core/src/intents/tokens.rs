@@ -1,6 +1,5 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
-use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_token_id::nep171;
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
@@ -18,8 +17,8 @@ use crate::{
 use super::ExecutableIntent;
 
 #[must_use]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NotifyOnTransfer {
     /// Optionally initialize the receiver's contract (Deterministic `AccountId`)
     /// via [`state_init`](https://github.com/near/NEPs/blob/master/neps/nep-0616.md#stateinit-action)
@@ -59,8 +58,8 @@ impl NotifyOnTransfer {
 }
 
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Transfer a set of tokens from the signer to a specified account id, within the intents contract.
 pub struct Transfer {
     pub receiver_id: AccountId,
@@ -130,8 +129,8 @@ impl ExecutableIntent for Transfer {
 }
 
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Withdraw given FT tokens from the intents contract to a given external account id (external being outside of intents).
 pub struct FtWithdraw {
     pub token: AccountId,
@@ -226,8 +225,8 @@ impl ExecutableIntent for FtWithdraw {
     }
 }
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Withdraw given NFT tokens from the intents contract to a given external account id (external being outside of intents).
 pub struct NftWithdraw {
     pub token: AccountId,
@@ -322,8 +321,8 @@ impl ExecutableIntent for NftWithdraw {
 }
 
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Withdraw given MT tokens (i.e. [NEP-245](https://github.com/near/NEPs/blob/master/neps/nep-0245.md)) from the intents contract
 /// to a given to an external account id (external being outside of intents).
 ///
@@ -424,8 +423,8 @@ impl ExecutableIntent for MtWithdraw {
     }
 }
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Withdraw native tokens (NEAR) from the intents contract to a given external account id (external being outside of intents).
 /// This will subtract from the account's wNEAR balance, and will be sent to the account specified as native NEAR.
 /// NOTE: the `wNEAR` will not be refunded in case of fail (e.g. `receiver_id`
@@ -472,8 +471,8 @@ impl ExecutableIntent for NativeWithdraw {
 /// `StorageDeposit` intent. This is due to the fact that intents that fire `Promise`s
 /// are not guaranteed to be executed sequentially, in the order of the provided intents in
 /// `DefuseIntents`.
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StorageDeposit {
     pub contract_id: AccountId,
     #[serde(

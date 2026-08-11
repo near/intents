@@ -1,4 +1,3 @@
-use borsh::{BorshDeserialize, BorshSerialize};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -9,8 +8,8 @@ use crate::{
 
 /// Call `contract_id::on_auth(signer_id, msg)` with `signer_id`
 /// of intent.
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuthCall {
     /// Callee for `on_auth()`
     pub contract_id: AccountId,

@@ -6,6 +6,7 @@ use std::borrow::Cow;
 
 #[must_use = "make sure to `.emit()` this event"]
 #[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[near(event_json(standard = "logger"))]
 #[derive(Debug, Clone, Deserialize)]
 pub enum Event<'a> {

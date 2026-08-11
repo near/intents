@@ -10,7 +10,7 @@ use crate::{TokenIdError, TokenIdType};
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Nep171TokenId {

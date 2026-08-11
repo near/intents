@@ -49,24 +49,7 @@ near-sdk = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-abi = [
-  "borsh/unstable__schema",
-  "defuse-bitmap/abi",
-  "defuse-crypto/abi",
-  "defuse-fees/abi",
-  "defuse-nep413/abi",
-  "defuse-time/abi",
-  "defuse-token-id/abi",
-  "defuse-ton-connect/abi",
-  "defuse-webauthn/abi",
-  "dep:base64",
-  "dep:schemars",
-  "near-account-id/abi",
-  "near-gas/abi",
-  "near-global-contracts/abi",
-  "near-token/abi",
-  "serde_with/schemars_0_8",
-]
+abi = ["borsh-schema", "schemars-v0_8"]
 arbitrary = [
   "defuse-bitmap/arbitrary",
   "defuse-crypto/arbitrary",
@@ -78,12 +61,43 @@ arbitrary = [
   "near-global-contracts/arbitrary",
   "near-token/arbitrary",
 ]
+borsh-schema = [
+  "borsh/unstable__schema",
+  "defuse-bitmap/borsh-schema",
+  "defuse-crypto/borsh-schema",
+  "defuse-fees/borsh-schema",
+  "defuse-nep413/borsh-schema",
+  "defuse-time/borsh-schema",
+  "defuse-token-id/borsh-schema",
+  "defuse-webauthn/borsh-schema",
+  "near-account-id/abi",
+  "near-gas/abi",
+  "near-global-contracts/abi",
+  "near-token/abi",
+]
 imt = []
 near-kit = ["defuse-nep413/near-kit", "dep:near-kit"]
 near-contract = [
   "defuse-map-utils/near",
   "defuse-nep245/near-contract",
   "dep:near-sdk",
+]
+schemars-v0_8 = [
+  "defuse-crypto/schemars-v0_8",
+  "defuse-fees/schemars-v0_8",
+  "defuse-nep245/schemars-v0_8",
+  "defuse-nep413/schemars-v0_8",
+  "defuse-time/schemars-v0_8",
+  "defuse-token-id/schemars-v0_8",
+  "defuse-ton-connect/schemars-v0_8",
+  "defuse-webauthn/schemars-v0_8",
+  "dep:base64",
+  "dep:schemars",
+  "near-account-id/schemars-v0_8",
+  "near-gas/schemars-v0_8",
+  "near-global-contracts/schemars-v0_8",
+  "near-token/schemars-v0_8",
+  "serde_with/schemars_0_8",
 ]
 
 [dev-dependencies]

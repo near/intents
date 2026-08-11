@@ -1717,13 +1717,13 @@ dependencies = [
  "impl-tools 0.12.0",
  "near-sdk",
  "rstest",
- "serde",
 ]
 
 [[package]]
 name = "defuse-nep245"
 version = "0.1.0"
 dependencies = [
+ "cfg_eval",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-serde-utils",
@@ -2028,6 +2028,7 @@ dependencies = [
  "impl-tools 0.12.0",
  "near-sdk",
  "rstest",
+ "schemars 0.8.22",
  "serde_with",
 ]
 

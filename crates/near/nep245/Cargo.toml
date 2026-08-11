@@ -8,25 +8,35 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-serde-utils.workspace = true
 derive_more = { workspace = true, features = ["from"] }
-near-account-id = { workspace = true, features = ["serde"] }
-serde = { workspace = true, features = ["derive"] }
-serde_with.workspace = true
+near-account-id.workspace = true
 thiserror.workspace = true
 
+cfg_eval = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true, optional = true }
+defuse-serde-utils = { workspace = true, optional = true }
 near-sdk = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_with = { workspace = true, optional = true }
 
 [features]
-abi = [
+abi = ["near-sdk?/abi", "schemars-v0_8"]
+near-contract = ["dep:defuse-near-utils", "dep:near-sdk", "serde"]
+schemars-v0_8 = [
   "defuse-serde-utils/schemars-v0_8",
   "dep:schemars",
-  "near-account-id/abi",
+  "near-account-id/schemars-v0_8",
+  "serde",
   "serde_with/schemars_0_8",
 ]
-near-contract = ["dep:defuse-near-utils", "dep:near-sdk"]
+serde = [
+  "dep:cfg_eval",
+  "dep:defuse-serde-utils",
+  "dep:serde",
+  "dep:serde_with",
+  "near-account-id/serde",
+]
 
 [dev-dependencies]
 defuse-nep245 = { workspace = true, features = ["near-contract"] }

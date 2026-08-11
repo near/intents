@@ -12,7 +12,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 defuse-borsh-utils.workspace = true
-defuse-near-utils = { workspace = true }
+defuse-near-utils = { workspace = true, features = ["borsh"] }
 defuse-nep245 = { workspace = true, features = ["near-contract"] }
 defuse-serde-utils.workspace = true
 
@@ -21,6 +21,8 @@ impl-tools.workspace = true
 near-sdk.workspace = true
 serde_with.workspace = true
 
+schemars = { workspace = true, features = ["derive"], optional = true }
+
 [features]
 abi = [
   "borsh/unstable__schema",
@@ -28,6 +30,7 @@ abi = [
   "defuse-near-utils/abi",
   "defuse-nep245/abi",
   "defuse-serde-utils/schemars-v0_8",
+  "dep:schemars",
   "near-sdk/abi",
   "serde_with/schemars_0_8",
 ]

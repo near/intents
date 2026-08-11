@@ -17,7 +17,7 @@ use super::{
 };
 
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize, From)]
 #[serde(tag = "standard", rename_all = "snake_case")]
 /// Assuming wallets want to interact with Intents protocol, besides preparing the data in a certain

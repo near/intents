@@ -8,13 +8,15 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-borsh = { workspace = true, features = ["derive"] }
 impl-tools.workspace = true
 near-sdk.workspace = true
-serde = { workspace = true, features = ["derive"] }
+
+borsh = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-abi = ["borsh/unstable__schema"]
+abi = ["borsh-schema"]
+borsh = ["dep:borsh"]
+borsh-schema = ["borsh", "borsh/unstable__schema"]
 
 [dev-dependencies]
 defuse-test-utils.workspace = true

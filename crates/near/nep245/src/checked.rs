@@ -1,6 +1,7 @@
 use super::ErrorLogTooLong;
 use crate::MtEvent;
 use defuse_near_utils::REFUND_MEMO;
+use near_sdk::events::AsNep297Event;
 
 const REFUND_STR_LEN: usize = REFUND_MEMO.len();
 pub const REFUND_EXTRA_BYTES: usize = r#","memo":"""#.len() + REFUND_STR_LEN;
@@ -62,8 +63,6 @@ impl MtEvent<'_> {
     /// Validates that the event log (including potential refund overhead) fits within limits.
     /// Returns a [`CheckedMtEvent`] that can be emitted.
     pub fn check_refund(self) -> Result<CheckedMtEvent, ErrorLogTooLong> {
-        use near_sdk::AsNep297Event;
-
         let log = self.to_nep297_event().to_event_log();
         let delta = self.compute_refund_delta();
         let refund_len = log

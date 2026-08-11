@@ -25,7 +25,7 @@ use self::{
     tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
 };
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefuseIntents {
     /// Sequence of intents to execute in given order. Empty list is also
@@ -36,7 +36,7 @@ pub struct DefuseIntents {
     pub intents: Vec<Intent>,
 }
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize, From)]
 #[serde(tag = "intent", rename_all = "snake_case")]
 pub enum Intent {
@@ -149,7 +149,7 @@ impl ExecutableIntent for Intent {
 /// function call or after intent execution
 #[must_use = "make sure to `.emit()` this event"]
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaybeIntentEvent<T> {
     #[serde_as(as = "Option<Base58>")]
