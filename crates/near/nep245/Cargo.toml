@@ -14,9 +14,9 @@ near-account-id.workspace = true
 serde_with.workspace = true
 thiserror.workspace = true
 
+cfg_eval = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true, optional = true }
 near-sdk = { workspace = true, optional = true }
-cfg_eval = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 
@@ -27,8 +27,8 @@ schemars-v0_8 = [
   "defuse-serde-utils/schemars-v0_8",
   "dep:schemars",
   "near-account-id/schemars-v0_8",
-  "serde_with/schemars_0_8",
   "serde",
+  "serde_with/schemars_0_8",
 ]
 serde = ["dep:cfg_eval", "dep:serde", "near-account-id/serde"]
 

@@ -68,7 +68,7 @@ borsh-schema = [
   "defuse-fees/borsh-schema",
   "defuse-nep413/borsh-schema",
   "defuse-time/borsh-schema",
-  "defuse-token-id/abi",
+  "defuse-token-id/borsh-schema",
   "defuse-webauthn/borsh-schema",
   "near-account-id/abi",
   "near-gas/abi",
@@ -77,7 +77,11 @@ borsh-schema = [
 ]
 imt = []
 near-kit = ["defuse-nep413/near-kit", "dep:near-kit"]
-near-contract = ["defuse-map-utils/near", "defuse-nep245/near-contract", "dep:near-sdk"]
+near-contract = [
+  "defuse-map-utils/near",
+  "defuse-nep245/near-contract",
+  "dep:near-sdk",
+]
 schemars-v0_8 = [
   "base64",
   "defuse-crypto/schemars-v0_8",
@@ -85,15 +89,15 @@ schemars-v0_8 = [
   "defuse-nep245/schemars-v0_8",
   "defuse-nep413/schemars-v0_8",
   "defuse-time/schemars-v0_8",
-  "defuse-token-id/abi",
+  "defuse-token-id/schemars-v0_8",
   "defuse-ton-connect/schemars-v0_8",
   "defuse-webauthn/schemars-v0_8",
   "dep:schemars",
+  "near-account-id/schemars-v0_8",
   "near-gas/schemars",
   "near-global-contracts/schemars-v0_8",
   "near-token/schemars",
   "serde_with/schemars_0_8",
-  "near-account-id/schemars-v0_8"
 ]
 
 [dev-dependencies]

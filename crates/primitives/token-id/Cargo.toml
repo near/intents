@@ -19,9 +19,11 @@ schemars = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
 
 [features]
-abi = ["borsh?/unstable__schema", "dep:schemars", "near-account-id/abi"]
+abi = ["borsh-schema", "schemars-v0_8"]
 arbitrary = ["dep:arbitrary", "near-account-id/arbitrary"]
 borsh = ["dep:borsh", "near-account-id/borsh"]
+borsh-schema = ["borsh", "borsh/unstable__schema", "near-account-id/abi"]
+schemars-v0_8 = ["dep:schemars", "near-account-id/schemars-v0_8", "serde"]
 serde = ["dep:serde_with"]
 
 [dev-dependencies]
