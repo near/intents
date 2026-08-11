@@ -1,3 +1,4 @@
+use borsh::{BorshDeserialize, BorshSerialize};
 use impl_tools::autoimpl;
 use near_sdk::env;
 
@@ -9,12 +10,8 @@ use near_sdk::env;
 #[autoimpl(DerefMut using self.0)]
 #[autoimpl(AsRef using self.0)]
 #[autoimpl(AsMut using self.0)]
-#[cfg_attr(
-    feature = "borsh",
-    derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
-)]
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, BorshDeserialize, BorshSerialize)]
+#[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[repr(transparent)] // needed for `transmute()` below
 pub struct PanicOnClone<T: ?Sized>(T);
 

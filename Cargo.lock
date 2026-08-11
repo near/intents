@@ -1717,7 +1717,6 @@ dependencies = [
  "impl-tools 0.12.0",
  "near-sdk",
  "rstest",
- "serde",
 ]
 
 [[package]]
