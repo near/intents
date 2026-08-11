@@ -10,13 +10,13 @@ pub use self::str::*;
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[cfg_attr(
     feature = "serde",
     derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
     cfg_attr(
-        feature = "abi",
+        feature = "schemars-v0_8",
         derive(::schemars::JsonSchema),
         schemars(with = "String")
     )
