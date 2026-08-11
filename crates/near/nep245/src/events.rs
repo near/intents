@@ -27,8 +27,8 @@ pub enum MtEvent<'a> {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MtMintEvent<'a> {
     pub owner_id: Cow<'a, AccountIdRef>,
@@ -40,8 +40,8 @@ pub struct MtMintEvent<'a> {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MtBurnEvent<'a> {
     pub owner_id: Cow<'a, AccountIdRef>,
@@ -55,8 +55,8 @@ pub struct MtBurnEvent<'a> {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[serde_as]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MtTransferEvent<'a> {
     #[serde(default, skip_serializing_if = "Option::is_none")]

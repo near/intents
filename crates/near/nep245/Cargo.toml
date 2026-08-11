@@ -8,10 +8,9 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-borsh = { workspace = true, features = ["derive"] }
 defuse-serde-utils.workspace = true
 derive_more = { workspace = true, features = ["from"] }
-near-account-id = { workspace = true, features = ["borsh", "serde"] }
+near-account-id = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
 serde_with.workspace = true
 thiserror.workspace = true
@@ -22,7 +21,6 @@ schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 abi = [
-  "borsh/unstable__schema",
   "defuse-serde-utils/schemars-v0_8",
   "dep:schemars",
   "near-account-id/abi",
