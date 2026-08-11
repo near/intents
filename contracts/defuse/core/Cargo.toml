@@ -83,7 +83,6 @@ near-contract = [
   "dep:near-sdk",
 ]
 schemars-v0_8 = [
-  "base64",
   "defuse-crypto/schemars-v0_8",
   "defuse-fees/schemars-v0_8",
   "defuse-nep245/schemars-v0_8",
@@ -92,11 +91,12 @@ schemars-v0_8 = [
   "defuse-token-id/schemars-v0_8",
   "defuse-ton-connect/schemars-v0_8",
   "defuse-webauthn/schemars-v0_8",
+  "dep:base64",
   "dep:schemars",
   "near-account-id/schemars-v0_8",
-  "near-gas/schemars",
+  "near-gas/schemars-v0_8",
   "near-global-contracts/schemars-v0_8",
-  "near-token/schemars",
+  "near-token/schemars-v0_8",
   "serde_with/schemars_0_8",
 ]
 

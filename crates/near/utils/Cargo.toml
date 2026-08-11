@@ -8,9 +8,10 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-borsh = { workspace = true, features = ["derive"], optional = true }
 impl-tools.workspace = true
 near-sdk.workspace = true
+
+borsh = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 abi = ["borsh-schema"]

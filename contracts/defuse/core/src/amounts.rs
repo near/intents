@@ -17,6 +17,7 @@ use crate::token_id::TokenId;
     Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
 )]
 #[autoimpl(Deref using self.0)]
+#[repr(transparent)]
 pub struct Amounts<T = BTreeMap<TokenId, u128>>(T);
 
 impl<T> Amounts<T> {

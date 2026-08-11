@@ -21,7 +21,7 @@ abi = ["borsh-schema", "schemars-v0_8"]
 arbitrary = ["dep:arbitrary"]
 borsh = ["dep:borsh"]
 borsh-schema = ["borsh", "borsh/unstable__schema"]
-schemars-v0_8 = ["dep:schemars", "serde"]
+schemars-v0_8 = ["dep:schemars", "serde", "serde_with/schemars_0_8"]
 serde = ["dep:serde_with"]
 
 [dev-dependencies]
