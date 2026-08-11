@@ -28,7 +28,6 @@ pub struct IntentEvent<T> {
 }
 
 // Defuse events according to defuse v0.4.1,
-#[derive(Debug, Clone, Deserialize, From)]
 #[cfg_attr(
     not(feature = "near-contract"),
     derive(::serde::Serialize),
@@ -39,6 +38,7 @@ pub struct IntentEvent<T> {
     must_use = "make sure to `.emit()` this event",
     ::near_sdk::near(event_json(standard = "dip4"))
 )]
+#[derive(Debug, Clone, Deserialize, From)]
 pub enum DefuseEventV0_4_1<'a> {
     #[cfg_attr(feature = "near-contract", event_version("0.3.0"))]
     #[from(skip)]

@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::borrow::Cow;
 
-#[derive(Debug, Clone, Deserialize, From)]
 #[cfg_attr(
     not(feature = "near-contract"),
     derive(::serde::Serialize),
@@ -17,6 +16,7 @@ use std::borrow::Cow;
     must_use = "make sure to `.emit()` this event",
     ::near_sdk::near(event_json(standard = "nep245"))
 )]
+#[derive(Debug, Clone, Deserialize, From)]
 pub enum MtEvent<'a> {
     #[cfg_attr(feature = "near-contract", event_version("1.0.0"))]
     MtMint(Cow<'a, [MtMintEvent<'a>]>),
