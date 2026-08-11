@@ -9,7 +9,6 @@ use crate::{
     intents::MaybeIntentEvent,
     token_id::{TokenId, TokenIdType},
 };
-use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_num_utils::CheckedMulDiv;
 use impl_tools::autoimpl;
 use serde::{Deserialize, Serialize};
@@ -21,11 +20,8 @@ pub type TokenDeltas = Amounts<BTreeMap<TokenId, i128>>;
 #[autoimpl(Deref using self.diff)]
 #[autoimpl(DerefMut using self.diff)]
 #[serde_as]
-#[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
-#[derive(
-    Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
-)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 /// The user declares the will to have a set of changes done to set of tokens. For example,
 /// a simple trade of 100 of token A for 200 of token B, can be represented by `TokenDiff`
 /// of {"A": -100, "B": 200} (this format is just for demonstration purposes).
