@@ -7,7 +7,6 @@ pub mod tokens;
 pub mod imt;
 
 use derive_more::derive::From;
-use near_account_id::AccountIdRef;
 use serde::{Deserialize, Serialize};
 use serde_with::{base58::Base58, serde_as};
 
@@ -15,7 +14,7 @@ use serde_with::{base58::Base58, serde_as};
 use crate::intents::imt::{ImtBurn, ImtMint};
 
 use crate::{
-    Result,
+    AccountIdRef, Result,
     engine::{Engine, Inspector, State},
     intents::{account::SetAuthByPredecessorId, auth::AuthCall},
 };

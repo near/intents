@@ -1,7 +1,6 @@
-use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
+use defuse_crypto::ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature};
 pub use defuse_nep413::{Nep413, Nep413Payload};
 use impl_tools::autoimpl;
-use near_account_id::AccountId;
 use serde::{
     Deserialize, Serialize,
     de::{self, DeserializeOwned},
@@ -9,7 +8,7 @@ use serde::{
 use serde_with::serde_as;
 
 use crate::{
-    Timestamp,
+    AccountId, Timestamp,
     payload::{Payload, SignedPayload},
 };
 
@@ -75,7 +74,7 @@ impl SignedPayload for SignedNep413Payload {
     type PublicKey = Ed25519PublicKey;
 
     fn verify(&self) -> Option<Self::PublicKey> {
-        Nep413::verify(
+        Nep413::verify::<Ed25519>(
             &self.public_key.try_into().ok()?,
             &self.payload,
             &self.signature.into(),

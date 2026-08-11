@@ -5,14 +5,14 @@ mod error;
 pub mod events;
 pub mod fees;
 pub mod intents;
+mod lock;
 mod nonce;
 pub mod payload;
 mod public_key;
 mod signature;
 pub mod tokens;
-mod utils;
 
-pub use self::{error::*, nonce::*, public_key::*, signature::*, utils::*};
+pub use self::{error::*, lock::*, nonce::*, public_key::*, signature::*};
 
 pub use defuse_crypto as crypto;
 pub use defuse_erc191 as erc191;
@@ -23,7 +23,7 @@ pub use defuse_tip191 as tip191;
 pub use defuse_token_id as token_id;
 pub use defuse_ton_connect as ton_connect;
 
-pub use near_account_id;
-pub use near_gas;
-pub use near_global_contracts;
-pub use near_token;
+pub use near_account_id::{AccountId, AccountIdRef};
+pub use near_gas::NearGas as Gas;
+pub use near_global_contracts::{GlobalContractId, StateInit, StateInitV1};
+pub use near_token::NearToken;

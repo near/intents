@@ -1,6 +1,8 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use defuse_core::{NestPrefix, amounts::Amounts, token_id::TokenId};
+use defuse_core::{amounts::Amounts, token_id::TokenId};
 use near_sdk::{BorshStorageKey, IntoStorageKey, store::IterableMap};
+
+use crate::contract::prefix::NestPrefix;
 
 #[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
 #[derive(Debug, BorshSerialize, BorshDeserialize)]

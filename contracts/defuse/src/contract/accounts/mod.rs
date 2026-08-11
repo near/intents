@@ -8,7 +8,7 @@ use std::{borrow::Cow, collections::HashSet};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_core::{
-    DefuseError, Lock, NestPrefix, Nonce, PublicKey, Result,
+    DefuseError, Lock, Nonce, PublicKey, Result,
     accounts::{AccountEvent, PublicKeyEvent},
     engine::{State, StateView},
     events::DefuseEvent,
@@ -24,7 +24,7 @@ use near_sdk::{
 
 use crate::{
     accounts::AccountManager,
-    contract::{Contract, ContractExt, accounts::AccountEntry},
+    contract::{Contract, ContractExt, accounts::AccountEntry, prefix::NestPrefix},
 };
 
 #[near]

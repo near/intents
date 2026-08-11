@@ -16,7 +16,7 @@ defuse-admin-utils.workspace = true
 defuse-auth-call.workspace = true
 defuse-controller.workspace = true
 defuse-core = { workspace = true, features = ["near-contract"] }
-defuse-near-utils = { workspace = true, features = ["near-contract"] }
+defuse-near-utils = { workspace = true }
 defuse-nep245 = { workspace = true, features = ["near-contract"] }
 defuse-serde-utils = { workspace = true, features = ["base64"] }
 
@@ -34,6 +34,7 @@ arbitrary = { workspace = true, features = ["derive"], optional = true }
 bitflags = { workspace = true, optional = true }
 defuse-bitmap = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
+defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-map-utils = { workspace = true, features = ["near"], optional = true }
 defuse-wnear = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }

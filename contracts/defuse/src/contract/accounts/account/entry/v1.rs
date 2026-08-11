@@ -1,14 +1,16 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_bitmap::{U248, U256};
-use defuse_core::NestPrefix;
 use impl_tools::autoimpl;
 use near_sdk::store::{IterableSet, LookupMap};
 
 use defuse_core::{Nonces, PublicKey};
 
-use crate::contract::accounts::{
-    Account, AccountState, MaybeLegacyAccountNonces,
-    account::{AccountFlags, AccountPrefix},
+use crate::contract::{
+    accounts::{
+        Account, AccountState, MaybeLegacyAccountNonces,
+        account::{AccountFlags, AccountPrefix},
+    },
+    prefix::NestPrefix,
 };
 
 /// Legacy: V1 of [`Account`]

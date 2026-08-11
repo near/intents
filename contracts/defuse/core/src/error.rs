@@ -1,11 +1,11 @@
 use crate::{
+    AccountId,
     engine::deltas::InvariantViolated,
     public_key::PublicKey,
     token_id::{TokenId, TokenIdError, nep171::Nep171TokenId},
     tokens::MAX_TOKEN_ID_LEN,
 };
 use defuse_nep245::ErrorLogTooLong;
-use near_account_id::AccountId;
 
 pub type Result<T, E = DefuseError> = ::core::result::Result<T, E>;
 

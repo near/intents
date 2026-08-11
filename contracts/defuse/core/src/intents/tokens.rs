@@ -2,15 +2,11 @@ use std::{borrow::Cow, collections::BTreeMap};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_token_id::nep171;
-use near_account_id::{AccountId, AccountIdRef};
-use near_gas::NearGas;
-use near_global_contracts::StateInit;
-use near_token::NearToken;
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
-    DefuseError, Result,
+    AccountId, AccountIdRef, DefuseError, Gas, NearToken, Result, StateInit,
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State},
@@ -40,7 +36,7 @@ pub struct NotifyOnTransfer {
     /// Remaining gas will be distributed evenly across all Function Call
     /// Promises created during execution of current receipt.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub min_gas: Option<NearGas>,
+    pub min_gas: Option<Gas>,
 }
 
 impl NotifyOnTransfer {
@@ -57,7 +53,7 @@ impl NotifyOnTransfer {
         self
     }
 
-    pub const fn with_min_gas(mut self, min_gas: NearGas) -> Self {
+    pub const fn with_min_gas(mut self, min_gas: Gas) -> Self {
         self.min_gas = Some(min_gas);
         self
     }
@@ -167,16 +163,16 @@ pub struct FtWithdraw {
     /// Remaining gas will be distributed evenly across all Function Call
     /// Promises created during execution of current receipt.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub min_gas: Option<NearGas>,
+    pub min_gas: Option<Gas>,
 }
 
 impl FtWithdraw {
-    const FT_TRANSFER_GAS_MIN: NearGas = NearGas::from_tgas(15);
-    const FT_TRANSFER_GAS_DEFAULT: NearGas = NearGas::from_tgas(15);
+    const FT_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(15);
+    const FT_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(15);
 
     /// Taken from [near-contract-standards](https://github.com/near/near-sdk-rs/blob/985c16b8fffc623096d0b7e60b26746842a2d712/near-contract-standards/src/fungible_token/core_impl.rs#L137)
-    const FT_TRANSFER_CALL_GAS_MIN: NearGas = NearGas::from_tgas(30);
-    const FT_TRANSFER_CALL_GAS_DEFAULT: NearGas = NearGas::from_tgas(50);
+    const FT_TRANSFER_CALL_GAS_MIN: Gas = Gas::from_tgas(30);
+    const FT_TRANSFER_CALL_GAS_DEFAULT: Gas = Gas::from_tgas(50);
 
     /// Returns whether it's `ft_transfer_call()`
     #[inline]
@@ -186,7 +182,7 @@ impl FtWithdraw {
 
     /// Returns minimum required gas
     #[inline]
-    pub fn min_gas(&self) -> NearGas {
+    pub fn min_gas(&self) -> Gas {
         let (min, default) = if self.is_call() {
             (
                 Self::FT_TRANSFER_CALL_GAS_MIN,
@@ -263,16 +259,16 @@ pub struct NftWithdraw {
     /// Remaining gas will be distributed evenly across all Function Call
     /// Promises created during execution of current receipt.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub min_gas: Option<NearGas>,
+    pub min_gas: Option<Gas>,
 }
 
 impl NftWithdraw {
-    const NFT_TRANSFER_GAS_MIN: NearGas = NearGas::from_tgas(15);
-    const NFT_TRANSFER_GAS_DEFAULT: NearGas = NearGas::from_tgas(15);
+    const NFT_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(15);
+    const NFT_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(15);
 
     /// Taken from [near-contract-standards](https://github.com/near/near-sdk-rs/blob/985c16b8fffc623096d0b7e60b26746842a2d712/near-contract-standards/src/non_fungible_token/core/core_impl.rs#L396)
-    const NFT_TRANSFER_CALL_GAS_MIN: NearGas = NearGas::from_tgas(30);
-    const NFT_TRANSFER_CALL_GAS_DEFAULT: NearGas = NearGas::from_tgas(50);
+    const NFT_TRANSFER_CALL_GAS_MIN: Gas = Gas::from_tgas(30);
+    const NFT_TRANSFER_CALL_GAS_DEFAULT: Gas = Gas::from_tgas(50);
 
     /// Returns whether it's `nft_transfer_call()`
     #[inline]
@@ -282,7 +278,7 @@ impl NftWithdraw {
 
     /// Returns minimum required gas
     #[inline]
-    pub fn min_gas(&self) -> NearGas {
+    pub fn min_gas(&self) -> Gas {
         let (min, default) = if self.is_call() {
             (
                 Self::NFT_TRANSFER_CALL_GAS_MIN,
@@ -365,15 +361,15 @@ pub struct MtWithdraw {
     /// Remaining gas will be distributed evenly across all Function Call
     /// Promises created during execution of current receipt.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub min_gas: Option<NearGas>,
+    pub min_gas: Option<Gas>,
 }
 
 impl MtWithdraw {
-    const MT_BATCH_TRANSFER_GAS_MIN: NearGas = NearGas::from_tgas(20);
-    const MT_BATCH_TRANSFER_GAS_DEFAULT: NearGas = NearGas::from_tgas(20);
+    const MT_BATCH_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(20);
+    const MT_BATCH_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(20);
 
-    const MT_BATCH_TRANSFER_CALL_GAS_MIN: NearGas = NearGas::from_tgas(35);
-    const MT_BATCH_TRANSFER_CALL_GAS_DEFAULT: NearGas = NearGas::from_tgas(50);
+    const MT_BATCH_TRANSFER_CALL_GAS_MIN: Gas = Gas::from_tgas(35);
+    const MT_BATCH_TRANSFER_CALL_GAS_DEFAULT: Gas = Gas::from_tgas(50);
 
     /// Returns whether it's `mt_batch_transfer_call()`
     #[inline]
@@ -383,7 +379,7 @@ impl MtWithdraw {
 
     /// Returns minimum required gas
     #[inline]
-    pub fn min_gas(&self) -> NearGas {
+    pub fn min_gas(&self) -> Gas {
         let (min, default) = if self.is_call() {
             (
                 Self::MT_BATCH_TRANSFER_CALL_GAS_MIN,

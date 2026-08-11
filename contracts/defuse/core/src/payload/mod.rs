@@ -10,11 +10,10 @@ pub mod webauthn;
 use core::convert::Infallible;
 
 use impl_tools::autoimpl;
-use near_account_id::AccountId;
 use serde::{Deserialize, Serialize};
 use serde_with::{base64::Base64, serde_as};
 
-use crate::{Nonce, Timestamp};
+use crate::{AccountId, Nonce, Timestamp};
 
 // TODO: add version
 #[serde_as]

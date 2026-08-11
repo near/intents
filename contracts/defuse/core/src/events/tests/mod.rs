@@ -5,13 +5,10 @@ use std::borrow::Cow;
 use defuse_fees::Pips;
 use defuse_test_utils::random::{Rng, RngExt, rng};
 use defuse_token_id::TokenId;
-use near_account_id::{AccountId, AccountIdRef};
-use near_gas::NearGas;
-use near_token::NearToken;
 use rstest::rstest;
 
 use crate::{
-    Salt,
+    AccountId, AccountIdRef, Gas, NearToken, Salt,
     accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
     amounts::Amounts,
     events::{DefuseEvent, tests::v0_4_1::DefuseEventV0_4_1},
@@ -171,7 +168,7 @@ fn ft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
                 receiver_id: account().into(),
                 msg: Some("test message".to_string()),
                 storage_deposit: Some(NearToken::from_yoctonear(100)),
-                min_gas: Some(NearGas::from_tgas(10)),
+                min_gas: Some(Gas::from_tgas(10)),
             }),
         },
         [0; 32],
@@ -195,7 +192,7 @@ fn mt_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
                 receiver_id: account().into(),
                 msg: Some("test message".to_string()),
                 storage_deposit: Some(NearToken::from_yoctonear(100)),
-                min_gas: Some(NearGas::from_tgas(10)),
+                min_gas: Some(Gas::from_tgas(10)),
             }),
         },
         [0; 32],
@@ -213,7 +210,7 @@ fn nft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
                 receiver_id: account().into(),
                 msg: Some("test message".to_string()),
                 storage_deposit: Some(NearToken::from_yoctonear(100)),
-                min_gas: Some(NearGas::from_tgas(10)),
+                min_gas: Some(Gas::from_tgas(10)),
             }),
         },
         [0; 32],
@@ -328,13 +325,10 @@ fn set_auth_by_predecessor_id_direct_event<'a>() -> DefuseEvent<'a> {
 
 fn salt_rotation_event<'a>(mut rng: impl Rng) -> DefuseEvent<'a> {
     DefuseEvent::SaltRotation(SaltRotationEvent {
-        current: Salt::derive(3, rng.random::<[u8; 32]>()),
-        invalidated: [
-            Salt::derive(2, rng.random::<[u8; 32]>()),
-            Salt::derive(1, rng.random::<[u8; 32]>()),
-        ]
-        .into_iter()
-        .collect(),
+        current: Salt(rng.random::<[u8; 4]>()),
+        invalidated: [Salt(rng.random::<[u8; 4]>()), Salt(rng.random::<[u8; 4]>())]
+            .into_iter()
+            .collect(),
     })
 }
 

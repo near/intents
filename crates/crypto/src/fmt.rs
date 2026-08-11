@@ -55,6 +55,7 @@ pub enum ParseCurveError {
 /// checked_base58_decode_array::<9>("he11owor1d").expect_err("buffer too large");
 /// # Ok::<(), ParseCurveError>(())
 /// ```
+#[inline]
 pub fn checked_base58_decode_array<const N: usize>(
     input: impl AsRef<[u8]>,
 ) -> Result<[u8; N], ParseCurveError> {

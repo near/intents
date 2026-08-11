@@ -1,6 +1,5 @@
-use crate::{Nonce, Timestamp, events::DefuseEvent};
+use crate::{AccountIdRef, Nonce, Timestamp, events::DefuseEvent};
 use impl_tools::autoimpl;
-use near_account_id::AccountIdRef;
 
 #[autoimpl(for <T: trait + ?Sized> &mut T, Box<T>)]
 pub trait Inspector {

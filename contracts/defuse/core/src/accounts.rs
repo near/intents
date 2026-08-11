@@ -1,10 +1,9 @@
 use std::{borrow::Cow, collections::BTreeSet};
 
-use near_account_id::AccountIdRef;
 use serde::{Deserialize, Serialize};
 use serde_with::{base64::Base64, serde_as};
 
-use crate::{Nonce, Salt, public_key::PublicKey};
+use crate::{AccountIdRef, Nonce, Salt, public_key::PublicKey};
 
 #[must_use = "make sure to `.emit()` this event"]
 #[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]

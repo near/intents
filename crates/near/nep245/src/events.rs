@@ -1,18 +1,16 @@
 use super::TokenId;
-
 use derive_more::derive::From;
 use near_account_id::AccountIdRef;
 use std::borrow::Cow;
 
 #[cfg(feature = "serde")]
-use {defuse_serde_utils::cow::AsCow, serde_with::DisplayFromStr};
+use {defuse_serde_utils::AsCowSlice, serde_with::DisplayFromStr};
 
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Deserialize),
     cfg_attr(
         not(feature = "near-contract"),
-        must_use,
         derive(::serde::Serialize),
         serde(tag = "event", content = "data", rename_all = "snake_case")
     ),
@@ -44,7 +42,7 @@ pub enum MtEvent<'a> {
 pub struct MtMintEvent<'a> {
     pub owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
-    #[cfg_attr(feature = "serde", serde_as(as = "AsCow<DisplayFromStr>"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "AsCowSlice<DisplayFromStr>"))]
     pub amounts: Cow<'a, [u128]>,
     #[cfg_attr(
         feature = "serde",
@@ -70,7 +68,7 @@ pub struct MtBurnEvent<'a> {
     )]
     pub authorized_id: Option<Cow<'a, AccountIdRef>>,
     pub token_ids: Cow<'a, [TokenId]>,
-    #[cfg_attr(feature = "serde", serde_as(as = "AsCow<DisplayFromStr>"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "AsCowSlice<DisplayFromStr>"))]
     pub amounts: Cow<'a, [u128]>,
     #[cfg_attr(
         feature = "serde",
@@ -97,7 +95,7 @@ pub struct MtTransferEvent<'a> {
     pub old_owner_id: Cow<'a, AccountIdRef>,
     pub new_owner_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [TokenId]>,
-    #[cfg_attr(feature = "serde", serde_as(as = "AsCow<DisplayFromStr>"))]
+    #[cfg_attr(feature = "serde", serde_as(as = "AsCowSlice<DisplayFromStr>"))]
     pub amounts: Cow<'a, [u128]>,
     #[cfg_attr(
         feature = "serde",

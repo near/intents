@@ -2,6 +2,8 @@ use derive_more::From;
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
 
+/// An helper wrapper for [`Hex`] adaptor needed for `#[near]`-annotated impl blocks,
+/// since `#[near_bindgen]` doesn't support `#[serde(...)]` attributes on method arguments
 #[serde_as]
 #[cfg_attr(
     feature = "schemars-v0_8",
@@ -11,8 +13,6 @@ use serde_with::{hex::Hex, serde_as};
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, From)]
 #[serde(bound(serialize = "T: AsRef<[u8]>", deserialize = "T: TryFrom<Vec<u8>>"))]
 #[repr(transparent)]
-/// Helper type to implement `#[derive(Serialize, Deserialize)]`,
-/// as `#[near_bindgen]` doesn't support `#[serde(...)]` attributes on method arguments
 pub struct AsHex<T>(#[serde_as(as = "Hex")] pub T);
 
 impl<T> AsHex<T> {

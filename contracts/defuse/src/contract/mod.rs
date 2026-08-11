@@ -7,6 +7,7 @@ mod events;
 mod fees;
 mod garbage_collector;
 mod intents;
+mod prefix;
 mod salts;
 mod state;
 mod tokens;

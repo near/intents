@@ -2,11 +2,8 @@ mod expirable;
 mod salted;
 mod versioned;
 
-pub use {
-    expirable::ExpirableNonce,
-    salted::SaltedNonce,
-    salted::{Salt, SaltRegistry},
-    versioned::VersionedNonce,
+pub use self::{
+    expirable::ExpirableNonce, salted::Salt, salted::SaltedNonce, versioned::VersionedNonce,
 };
 
 use borsh::{BorshDeserialize, BorshSerialize};

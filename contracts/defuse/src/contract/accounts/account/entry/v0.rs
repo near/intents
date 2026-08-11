@@ -3,11 +3,14 @@ use defuse_bitmap::{U248, U256};
 use impl_tools::autoimpl;
 use near_sdk::store::{IterableSet, LookupMap};
 
-use defuse_core::{NestPrefix, Nonces, PublicKey};
+use defuse_core::{Nonces, PublicKey};
 
-use crate::contract::accounts::{
-    Account, AccountState, MaybeLegacyAccountNonces,
-    account::{AccountFlags, AccountPrefix},
+use crate::contract::{
+    accounts::{
+        Account, AccountState, MaybeLegacyAccountNonces,
+        account::{AccountFlags, AccountPrefix},
+    },
+    prefix::NestPrefix,
 };
 
 /// Legacy: V0 of [`Account`]
@@ -65,7 +68,7 @@ pub(super) mod tests {
     };
 
     use defuse_core::{
-        NestPrefix, Result,
+        Result,
         accounts::{AccountEvent, PublicKeyEvent},
         events::DefuseEvent,
         intents::MaybeIntentEvent,

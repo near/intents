@@ -14,6 +14,7 @@ defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-nep245.workspace = true
 near-contract-standards.workspace = true
 near-kit = { workspace = true, features = ["sandbox"] }
+near-sdk = { workspace = true, features = ["non-contract-usage"] }
 rstest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -21,13 +22,11 @@ serde_with.workspace = true
 
 defuse = { workspace = true, optional = true, features = ["contract", "near-kit"] }
 defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }
-defuse-global-deployer = { workspace = true, optional = true }
-defuse-outlayer-app = { workspace = true, optional = true }
+defuse-global-deployer = { workspace = true, features = ["near-kit", "near-contract"], optional = true }
+defuse-outlayer-app = { workspace = true, features = ["near-kit", "borsh", "near-contract"], optional = true }
 defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
 defuse-test-utils = { workspace = true, optional = true }
 defuse-wallet-sdk = { workspace = true, optional = true, features = ["near-kit"] }
-
-near-sdk = { workspace = true, features = ["unit-testing"] }
 
 [package.metadata.cargo-machete]
 ignored = ["near-sdk"] # needed only for unit-tesing

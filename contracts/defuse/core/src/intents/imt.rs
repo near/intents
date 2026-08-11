@@ -1,11 +1,10 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use near_account_id::{AccountId, AccountIdRef};
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::{borrow::Cow, collections::BTreeMap};
 
 use crate::{
-    Result,
+    AccountId, AccountIdRef, Result,
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State},
