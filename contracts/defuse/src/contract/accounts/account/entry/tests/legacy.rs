@@ -7,8 +7,8 @@ use std::{
 use arbitrary::Arbitrary;
 use defuse_bitmap::U256;
 use defuse_borsh_utils::to_vec_as;
-use defuse_core::{PublicKey, Result, token_id::TokenId};
-use defuse_near_utils::{Lock, PanicOnClone};
+use defuse_core::{Lock, PublicKey, Result, token_id::TokenId};
+use defuse_near_utils::PanicOnClone;
 use defuse_tests::utils::random::make_arbitrary;
 use near_sdk::{
     AccountId,

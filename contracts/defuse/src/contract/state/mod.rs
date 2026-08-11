@@ -1,11 +1,13 @@
+mod salt_registry;
 mod v0;
 
 pub use v0::ContractStateV0;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use defuse_core::{SaltRegistry, amounts::Amounts, fees::FeesConfig, token_id::TokenId};
-use defuse_near_utils::NestPrefix;
+use defuse_core::{amounts::Amounts, fees::FeesConfig, token_id::TokenId};
 use near_sdk::{AccountId, BorshStorageKey, IntoStorageKey, store::IterableMap};
+
+use crate::contract::{prefix::NestPrefix, state::salt_registry::SaltRegistry};
 
 pub type TokenBalances = Amounts<IterableMap<TokenId, u128>>;
 

@@ -1,6 +1,6 @@
 use super::ExecutableIntent;
 use crate::{
-    DefuseError, Result,
+    AccountId, AccountIdRef, DefuseError, Result,
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State, StateView},
@@ -12,7 +12,6 @@ use crate::{
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_num_utils::CheckedMulDiv;
 use impl_tools::autoimpl;
-use near_sdk::{AccountId, AccountIdRef, CryptoHash};
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::{borrow::Cow, collections::BTreeMap};
@@ -47,7 +46,7 @@ impl ExecutableIntent for TokenDiff {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,

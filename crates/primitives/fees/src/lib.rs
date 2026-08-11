@@ -4,7 +4,6 @@ use core::{
 };
 
 use defuse_num_utils::{CheckedAdd, CheckedMulDiv, CheckedSub};
-use thiserror::Error as ThisError;
 
 /// 1 pip == 1/100th of bip == 0.0001%
 #[cfg_attr(
@@ -196,7 +195,7 @@ impl TryFrom<u32> for Pips {
     }
 }
 
-#[derive(Debug, ThisError)]
+#[derive(Debug, thiserror::Error)]
 #[error("out of range: 0..={}", Pips::MAX.as_pips())]
 pub struct PipsOutOfRange;
 

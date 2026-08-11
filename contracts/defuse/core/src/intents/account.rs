@@ -1,11 +1,10 @@
 use std::borrow::Cow;
 
 use borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::{AccountIdRef, CryptoHash};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Result,
+    AccountIdRef, Result,
     accounts::{AccountEvent, PublicKeyEvent},
     engine::{Engine, Inspector, State},
     events::DefuseEvent,
@@ -32,7 +31,7 @@ impl ExecutableIntent for AddPublicKey {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -70,7 +69,7 @@ impl ExecutableIntent for RemovePublicKey {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> crate::Result<()>
     where
         S: State,
@@ -105,7 +104,7 @@ impl ExecutableIntent for SetAuthByPredecessorId {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,

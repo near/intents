@@ -1,6 +1,5 @@
 use derive_more::derive::From;
-use near_sdk::{CryptoHash, serde::de::DeserializeOwned, serde_json};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_with::serde_as;
 
 use crate::{
@@ -65,7 +64,7 @@ impl Payload for MultiPayload {
     /// even if they include the same application-specific message in the envelope.
     /// For example, NEP-413, uses SHA-256, while ERC-191 uses Keccak256.
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> [u8; 32] {
         match self {
             Self::Nep413(payload) => payload.hash(),
             Self::Erc191(payload) => payload.hash(),
@@ -117,8 +116,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use near_sdk::bs58;
-
     use super::*;
 
     #[test]

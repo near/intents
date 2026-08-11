@@ -1,9 +1,8 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, state_init::StateInit};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Result,
+    AccountId, AccountIdRef, Gas, NearToken, Result, StateInit,
     engine::{Engine, Inspector, State},
     intents::ExecutableIntent,
 };
@@ -57,7 +56,7 @@ impl ExecutableIntent for AuthCall {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        _intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,

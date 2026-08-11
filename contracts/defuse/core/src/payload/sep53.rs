@@ -1,7 +1,6 @@
 use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use defuse_sep53::Sep53;
-use near_sdk::{CryptoHash, serde::de::DeserializeOwned, serde_json};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::payload::{DefusePayload, ExtractDefusePayload, Payload, SignedPayload};
 
@@ -17,7 +16,7 @@ pub struct SignedSep53Payload {
 
 impl Payload for SignedSep53Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> [u8; 32] {
         Sep53::prehash(&self.payload)
     }
 }

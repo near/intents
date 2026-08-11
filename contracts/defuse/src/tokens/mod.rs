@@ -12,7 +12,6 @@ use core::{
 use defuse_core::{intents::tokens::NotifyOnTransfer, payload::multi::MultiPayload};
 use near_sdk::{AccountId, account_id::ParseAccountError};
 use serde::{Deserialize, Serialize};
-use thiserror::Error as ThisError;
 
 #[must_use]
 #[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
@@ -85,7 +84,7 @@ pub struct ExecuteIntents {
     pub refund_if_fails: bool,
 }
 
-#[derive(Debug, ThisError)]
+#[derive(Debug, thiserror::Error)]
 pub enum ParseDepositMessageError {
     #[error(transparent)]
     Account(#[from] ParseAccountError),

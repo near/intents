@@ -1,11 +1,10 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::{AccountId, AccountIdRef, CryptoHash};
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::{borrow::Cow, collections::BTreeMap};
 
 use crate::{
-    Result,
+    AccountId, AccountIdRef, Result,
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State},
@@ -47,7 +46,7 @@ impl ExecutableIntent for ImtMint {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -98,7 +97,7 @@ impl ExecutableIntent for ImtBurn {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,

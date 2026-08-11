@@ -3,12 +3,12 @@ mod v0_4_1;
 use std::borrow::Cow;
 
 use defuse_fees::Pips;
+use defuse_test_utils::random::{Rng, RngExt, rng};
 use defuse_token_id::TokenId;
-use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, json_types::U128, serde_json};
 use rstest::rstest;
 
 use crate::{
-    Salt,
+    AccountId, AccountIdRef, Gas, NearToken, Salt,
     accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
     amounts::Amounts,
     events::{DefuseEvent, tests::v0_4_1::DefuseEventV0_4_1},
@@ -163,7 +163,7 @@ fn ft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
             account_id: account(),
             event: Cow::Owned(FtWithdraw {
                 token: "token.near".parse().unwrap(),
-                amount: 100.into(),
+                amount: 100,
                 memo: Some("test ft withdraw".to_string()),
                 receiver_id: account().into(),
                 msg: Some("test message".to_string()),
@@ -178,7 +178,7 @@ fn ft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
 fn mt_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
     let (token_ids, amounts): (Vec<_>, Vec<_>) = tokens()
         .into_iter()
-        .map(|(token_id, amount)| (token_id.to_string(), U128::from(amount)))
+        .map(|(token_id, amount)| (token_id.to_string(), amount))
         .unzip();
 
     DefuseEvent::MtWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_intent(
@@ -323,14 +323,16 @@ fn set_auth_by_predecessor_id_direct_event<'a>() -> DefuseEvent<'a> {
     }))
 }
 
-fn salt_rotation_event<'a>() -> DefuseEvent<'a> {
+fn salt_rotation_event<'a>(mut rng: impl Rng) -> DefuseEvent<'a> {
     DefuseEvent::SaltRotation(SaltRotationEvent {
-        current: Salt::derive(3),
-        invalidated: [Salt::derive(2), Salt::derive(1)].into_iter().collect(),
+        current: Salt(rng.random::<[u8; 4]>()),
+        invalidated: [Salt(rng.random::<[u8; 4]>()), Salt(rng.random::<[u8; 4]>())]
+            .into_iter()
+            .collect(),
     })
 }
 
-fn get_all_events<'a>() -> Vec<DefuseEvent<'a>> {
+fn get_all_events<'a>(rng: impl Rng) -> Vec<DefuseEvent<'a>> {
     #[allow(unused_mut)]
     let mut all_events = vec![
         pk_added_direct_event(),
@@ -349,7 +351,7 @@ fn get_all_events<'a>() -> Vec<DefuseEvent<'a>> {
         account_unlocked_event(),
         set_auth_by_predecessor_id_intent_event(),
         set_auth_by_predecessor_id_direct_event(),
-        salt_rotation_event(),
+        salt_rotation_event(rng),
     ];
 
     #[cfg(feature = "imt")]
@@ -362,8 +364,18 @@ fn get_all_events<'a>() -> Vec<DefuseEvent<'a>> {
 
 #[rstest]
 #[case(DefuseEventVersion::V0_4_1)]
-fn event_backward_compatibility_test(#[case] event_version: DefuseEventVersion) {
-    for event in get_all_events() {
+fn event_backward_compatibility_test(#[case] event_version: DefuseEventVersion, rng: impl Rng) {
+    for event in get_all_events(rng) {
         event_version.assert_compatible(&event);
+    }
+}
+
+#[cfg(feature = "near-contract")]
+#[rstest]
+fn event_json_deserializes_under_near_contract(rng: impl Rng) {
+    for event in get_all_events(rng) {
+        let json = serde_json::to_string(&event).expect("serialize event");
+        let _: DefuseEvent = serde_json::from_str(&json)
+            .unwrap_or_else(|e| panic!("failed to deserialize event: {e}\njson: {json}"));
     }
 }

@@ -1,16 +1,16 @@
 use crate::{
+    AccountId,
     engine::deltas::InvariantViolated,
     public_key::PublicKey,
     token_id::{TokenId, TokenIdError, nep171::Nep171TokenId},
     tokens::MAX_TOKEN_ID_LEN,
 };
 use defuse_nep245::ErrorLogTooLong;
-use near_sdk::{AccountId, FunctionError, serde_json};
-use thiserror::Error as ThisError;
 
 pub type Result<T, E = DefuseError> = ::core::result::Result<T, E>;
 
-#[derive(Debug, ThisError, FunctionError)]
+#[cfg_attr(feature = "near-contract", derive(::near_sdk::FunctionError))]
+#[derive(Debug, thiserror::Error)]
 pub enum DefuseError {
     #[error("account '{0}' not found")]
     AccountNotFound(AccountId),

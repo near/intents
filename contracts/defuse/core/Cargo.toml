@@ -14,8 +14,7 @@ defuse-crypto = { workspace = true, features = ["borsh", "ed25519", "secp256k1",
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-erc191.workspace = true
 defuse-fees = { workspace = true, features = ["borsh", "serde"] }
-defuse-map-utils = { workspace = true, features = ["near"] }
-defuse-near-utils.workspace = true
+defuse-map-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-nep413 = { workspace = true, features = ["serde"] }
 defuse-num-utils.workspace = true
@@ -33,15 +32,20 @@ derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
 hex-literal.workspace = true
 impl-tools.workspace = true
-near-contract-standards.workspace = true
-near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
+near-account-id = { workspace = true, features = ["borsh", "serde"] }
+near-gas = { workspace = true, features = ["borsh", "serde"] }
+near-global-contracts = { workspace = true, features = ["borsh", "serde"] }
+near-token = { workspace = true, features = ["borsh", "serde"] }
+
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 serde_with = { workspace = true, features = ["base58", "base64"] }
 thiserror.workspace = true
 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
+base64 = { workspace = true, optional = true }
 near-kit = { workspace = true, optional = true }
+near-sdk = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [features]
@@ -55,8 +59,12 @@ abi = [
   "defuse-token-id/abi",
   "defuse-ton-connect/abi",
   "defuse-webauthn/abi",
+  "dep:base64",
   "dep:schemars",
-  "near-sdk/abi",
+  "near-account-id/abi",
+  "near-gas/abi",
+  "near-global-contracts/abi",
+  "near-token/abi",
   "serde_with/schemars_0_8",
 ]
 arbitrary = [
@@ -65,14 +73,24 @@ arbitrary = [
   "defuse-token-id/arbitrary",
   "defuse-ton-connect/arbitrary",
   "dep:arbitrary",
+  "near-account-id/arbitrary",
+  "near-gas/arbitrary",
+  "near-global-contracts/arbitrary",
+  "near-token/arbitrary",
 ]
 imt = []
 near-kit = ["defuse-nep413/near-kit", "dep:near-kit"]
+near-contract = [
+  "defuse-map-utils/near",
+  "defuse-nep245/near-contract",
+  "dep:near-sdk",
+]
 
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-test-utils.workspace = true
 
+bs58.workspace = true
 hex-literal.workspace = true
 itertools.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }

@@ -23,13 +23,13 @@ container_build_command = [
 
 [dependencies]
 defuse.workspace = true
-defuse-auth-call = { workspace = true, optional = true }
 defuse-borsh-utils.workspace = true
 defuse-nep245.workspace = true
 near-sdk.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 
+defuse-auth-call = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 
 [dev-dependencies]
@@ -40,6 +40,12 @@ tokio.workspace = true
 [features]
 default = ["auth-call"]
 
-abi = ["defuse-nep245/abi", "defuse/abi", "dep:schemars", "near-sdk/abi"]
+abi = [
+  "defuse-borsh-utils/schema",
+  "defuse-nep245/abi",
+  "defuse/abi",
+  "dep:schemars",
+  "near-sdk/abi",
+]
 
 auth-call = ["dep:defuse-auth-call"]

@@ -1,7 +1,6 @@
 use defuse_crypto::ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature};
 pub use defuse_nep413::{Nep413, Nep413Payload};
 use impl_tools::autoimpl;
-use near_sdk::AccountId;
 use serde::{
     Deserialize, Serialize,
     de::{self, DeserializeOwned},
@@ -9,7 +8,7 @@ use serde::{
 use serde_with::serde_as;
 
 use crate::{
-    Timestamp,
+    AccountId, Timestamp,
     payload::{Payload, SignedPayload},
 };
 
@@ -66,7 +65,7 @@ pub struct SignedNep413Payload {
 }
 
 impl Payload for SignedNep413Payload {
-    fn hash(&self) -> near_sdk::CryptoHash {
+    fn hash(&self) -> [u8; 32] {
         Nep413::prehash(&self.payload)
     }
 }

@@ -1,11 +1,10 @@
 use near_account_id::AccountId;
-use thiserror::Error as ThisError;
 
 use crate::NonceError;
 
 /// An error that can occur in [`Wallet`](crate::contract::Wallet) contract.
 #[cfg_attr(feature = "near-contract", derive(::near_sdk::FunctionError))]
-#[derive(Debug, ThisError)]
+#[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ContractError {
     #[error("extension '{0}' is already enabled")]

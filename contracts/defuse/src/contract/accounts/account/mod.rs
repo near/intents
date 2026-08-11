@@ -1,6 +1,8 @@
 mod entry;
 mod nonces;
 
+use crate::contract::prefix::NestPrefix;
+
 pub use self::{entry::*, nonces::MaybeLegacyAccountNonces};
 
 use bitflags::bitflags;
@@ -8,7 +10,6 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_bitmap::U256;
 use defuse_core::{NoncePrefix, PublicKey, Result};
 
-use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
 use near_sdk::{
     AccountIdRef, BorshStorageKey, IntoStorageKey,

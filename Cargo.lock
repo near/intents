@@ -501,7 +501,7 @@ version = "3.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6dee98b0db6a962de883bf5d20362dee4d7ca0d12fe39a7c6c73c844e1cd7c1f"
 dependencies = [
- "darling 0.23.0",
+ "darling 0.20.11",
  "ident_case",
  "prettyplease",
  "proc-macro2",
@@ -1329,6 +1329,7 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-controller",
  "defuse-core",
+ "defuse-digest",
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
@@ -1413,7 +1414,9 @@ name = "defuse-core"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "base64 0.22.1",
  "borsh",
+ "bs58 0.5.1",
  "defuse-bitmap",
  "defuse-borsh-utils",
  "defuse-core",
@@ -1422,7 +1425,6 @@ dependencies = [
  "defuse-erc191",
  "defuse-fees",
  "defuse-map-utils",
- "defuse-near-utils",
  "defuse-nep245",
  "defuse-nep413",
  "defuse-num-utils",
@@ -1438,9 +1440,12 @@ dependencies = [
  "hex-literal",
  "impl-tools 0.12.0",
  "itertools",
- "near-contract-standards",
+ "near-account-id",
+ "near-gas",
+ "near-global-contracts",
  "near-kit",
  "near-sdk",
+ "near-token",
  "rstest",
  "schemars 0.8.22",
  "serde",
@@ -1708,12 +1713,10 @@ name = "defuse-near-utils"
 version = "0.1.0"
 dependencies = [
  "borsh",
- "defuse-borsh-utils",
  "defuse-test-utils",
  "impl-tools 0.12.0",
  "near-sdk",
  "rstest",
- "schemars 0.8.22",
  "serde",
 ]
 
@@ -1721,12 +1724,15 @@ dependencies = [
 name = "defuse-nep245"
 version = "0.1.0"
 dependencies = [
- "borsh",
  "defuse-near-utils",
+ "defuse-nep245",
+ "defuse-serde-utils",
  "derive_more",
+ "near-account-id",
  "near-sdk",
  "schemars 0.8.22",
  "serde",
+ "serde_with",
  "thiserror 2.0.19",
 ]
 
@@ -1818,7 +1824,6 @@ version = "0.1.0"
 dependencies = [
  "cargo-near-build",
  "defuse-admin-utils",
- "defuse-near-utils",
  "defuse-poa-token",
  "defuse-sandbox",
  "futures",
@@ -1875,7 +1880,6 @@ dependencies = [
  "near-contract-standards",
  "near-kit",
  "near-sdk",
- "near-sdk-core",
  "rstest",
  "serde",
  "serde_json",
@@ -1936,7 +1940,7 @@ dependencies = [
  "itertools",
  "multi-token-receiver-stub",
  "near-contract-standards",
- "near-sdk-core",
+ "near-sdk",
  "rstest",
  "serde_json",
  "strum 0.28.0",
@@ -2019,6 +2023,7 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-near-utils",
  "defuse-nep245",
+ "defuse-serde-utils",
  "defuse-treasury-logger",
  "impl-tools 0.12.0",
  "near-sdk",
