@@ -19,6 +19,7 @@ defuse-serde-utils.workspace = true
 borsh = { workspace = true, features = ["derive"] }
 impl-tools.workspace = true
 near-sdk.workspace = true
+schemars = { workspace = true, optional = true, features = ["derive"] }
 serde_with.workspace = true
 
 [features]
@@ -28,6 +29,7 @@ abi = [
   "defuse-near-utils/abi",
   "defuse-nep245/abi",
   "defuse-serde-utils/schemars-v0_8",
+  "dep:schemars",
   "near-sdk/abi",
   "serde_with/schemars_0_8",
 ]

@@ -1,8 +1,9 @@
 use std::borrow::Cow;
 
-use crate::{AccountId, AccountIdRef};
 use borsh::{BorshDeserialize, BorshSerialize};
 use serde::{Deserialize, Serialize};
+
+use crate::{AccountId, AccountIdRef};
 
 pub use defuse_fees::{Pips, PipsOutOfRange};
 

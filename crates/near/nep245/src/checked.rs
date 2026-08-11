@@ -99,7 +99,7 @@ mod test {
     use std::borrow::Cow;
 
     use near_account_id::AccountId;
-    use near_sdk::events::AsNep297Event;
+    use near_sdk::AsNep297Event;
 
     use super::refund_log_delta;
     use crate::MtTransferEvent;

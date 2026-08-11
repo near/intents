@@ -8,6 +8,7 @@ use serde_with::{DisplayFromStr, serde_as};
 use crate::{Params, decimal::UD128, token_id::TokenId};
 
 #[near(event_json(standard = "escrow-swap"))]
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, From)]
 pub enum Event<'a> {
     #[event_version("0.1.0")]

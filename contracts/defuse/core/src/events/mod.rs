@@ -17,6 +17,7 @@ use crate::{
 #[cfg(feature = "imt")]
 use crate::{intents::imt::ImtBurn, tokens::imt::ImtMintEvent};
 
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[cfg_attr(
     not(feature = "near-contract"),
     derive(::serde::Serialize),

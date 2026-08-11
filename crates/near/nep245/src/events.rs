@@ -9,6 +9,7 @@ use {defuse_serde_utils::AsCowSlice, serde_with::DisplayFromStr};
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
     cfg_attr(
         not(feature = "near-contract"),
         derive(::serde::Serialize),
