@@ -1509,6 +1509,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-eip712"
+version = "0.1.0"
+dependencies = [
+ "defuse-crypto",
+ "defuse-digest",
+ "hex-literal",
+ "k256 0.14.0",
+ "rstest",
+ "tokio",
+]
+
+[[package]]
 name = "defuse-erc191"
 version = "0.1.0"
 dependencies = [
@@ -2074,6 +2086,31 @@ dependencies = [
  "rand 0.10.2",
  "rstest",
  "tokio",
+ "tokio-test",
+]
+
+[[package]]
+name = "defuse-wallet-eip712"
+version = "0.1.0"
+dependencies = [
+ "borsh",
+ "defuse-crypto",
+ "defuse-digest",
+ "defuse-eip712",
+ "defuse-wallet",
+ "defuse-wallet-eip712",
+ "defuse-wallet-sdk",
+ "derive_more",
+ "hex",
+ "hex-literal",
+ "k256 0.14.0",
+ "near-sdk",
+ "rstest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "thiserror 2.0.19",
  "tokio-test",
 ]
 
