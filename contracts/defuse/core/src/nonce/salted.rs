@@ -22,6 +22,7 @@ use crate::Result;
     BorshSerialize,
     BorshDeserialize,
 )]
+#[repr(transparent)]
 pub struct Salt(pub [u8; 4]);
 
 impl fmt::Debug for Salt {

@@ -77,7 +77,7 @@ borsh-schema = [
 ]
 imt = []
 near-kit = ["defuse-nep413/near-kit", "dep:near-kit"]
-near-contract = ["defuse-nep245/near-contract", "dep:near-sdk"]
+near-contract = ["defuse-map-utils/near", "defuse-nep245/near-contract", "dep:near-sdk"]
 schemars-v0_8 = [
   "base64",
   "defuse-crypto/schemars-v0_8",
