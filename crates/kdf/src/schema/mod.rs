@@ -30,7 +30,7 @@ pub trait DeriveExt {
     /// Derive with given inner sub-[schema](Schema).
     ///
     /// ```rust
-    /// use defuse_kdf::{Schema, SchemaFn};
+    /// use defuse_kdf::{DeriveExt, Schema, SchemaFn};
     ///
     /// let schema_a = SchemaFn::new(|v| v + 1);
     /// let schema_b = SchemaFn::new(|v| v * 2);
