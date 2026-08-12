@@ -10,8 +10,7 @@ pub use defuse_mpc_kdf as kdf;
 use std::{borrow::Cow, cell::LazyCell, error::Error as StdError, fmt::Debug};
 
 use defuse_mpc_kdf::{
-    Additive, Derive, DeriveExt, DeriveSigner, RecoverableDeriveSigner, Schema, TweakSchema,
-    crypto::Curve,
+    Additive, Derive, DeriveExt, DeriveSigner, RecoverableDeriveSigner, TweakSchema, crypto::Curve,
 };
 use defuse_near_promise::{AccountId, AccountIdRef, Gas, NearToken, actions::FunctionCall};
 use defuse_near_sender::{ArcNearSender, NearSender, SentTransaction};
