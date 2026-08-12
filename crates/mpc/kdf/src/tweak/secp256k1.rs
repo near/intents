@@ -16,7 +16,7 @@ impl Sealed for Secp256k1 {}
 #[cfg(test)]
 mod tests {
     use defuse_kdf::{
-        Additive, Schema,
+        Additive, DeriveExt, Schema,
         crypto::secp256k1::{Secp256k1UncompressedPublicKey, k256::ecdsa::VerifyingKey},
     };
     use hex_literal::hex;

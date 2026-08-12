@@ -23,7 +23,10 @@ pub trait Schema<P> {
 
     /// Derive output for given `path`.
     fn derive(&self, path: P) -> Self::Output;
+}
 
+/// An extension trait for [`Schema`]s and [`DeriveSigner`](crate::DeriveSigner)s
+pub trait DeriveExt {
     /// Derive with given inner sub-[schema](Schema).
     ///
     /// ```rust
@@ -44,6 +47,7 @@ pub trait Schema<P> {
         Derive::new(self, inner)
     }
 }
+impl<T> DeriveExt for T {}
 
 /// No-op identity adator for [`Schema`].
 ///
