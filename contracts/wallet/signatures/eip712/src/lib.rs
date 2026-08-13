@@ -57,15 +57,20 @@ pub const DOMAIN: Eip712Domain<'static> = Eip712Domain {
 /// [`w_resolve_auth()`](defuse_wallet::offchain::AuthResolver::w_resolve_auth)),
 /// so the wallet displays what is actually going to be executed or authorized.
 ///
+/// The request contents are *unpacked* into the typed data: each
+/// [wallet operation](Eip712WalletOp) and [promise](Eip712NearPromise) (with
+/// its [actions](Eip712NearAction)) is a typed structure of its own, so the
+/// wallet renders them structurally instead of one opaque JSON blob. Only the
+/// leaf `payload`s remain JSON.
+///
 /// The contract does not trust that display: it checks every member of the
 /// signed typed data against the message it is about to act upon (see
 /// [`Eip712RequestMessage::matches()`] and [`Eip712AuthMessage::matches()`]),
 /// so a proof whose typed data says anything other than the message is
-/// rejected. Members carrying nested structures
-/// ([`internal`](Eip712RequestMessage::internal) and
-/// [`external`](Eip712RequestMessage::external)) are compared *semantically*,
-/// i.e. by parsing them and comparing the values, so clients are free to
-/// format that JSON as they like (e.g. pretty-print it for display).
+/// rejected. Leaf `payload`s are compared *semantically*: JSON whitespace and
+/// key order are free (e.g. pretty-print them for display), but any extra
+/// field the contract would ignore invalidates the proof, so the wallet can
+/// never display more than what gets executed.
 ///
 /// # Proof
 ///
@@ -227,6 +232,12 @@ mod tests {
             NearPromise::new("eve.near".parse::<AccountId>().unwrap())
                 .transfer(NearToken::from_near(1)),
         ];
+    })]
+    #[case::external_receiver(|msg: &mut RequestMessage| {
+        msg.request.external[0].receiver_id = "eve.near".parse().unwrap();
+    })]
+    #[case::external_refund_to(|msg: &mut RequestMessage| {
+        msg.request.external[0].refund_to = Some("eve.near".parse().unwrap());
     })]
     fn verify_request_tampered(#[case] tamper: fn(&mut RequestMessage)) {
         let signed = request_msg();

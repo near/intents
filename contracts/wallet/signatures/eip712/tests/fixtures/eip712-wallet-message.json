@@ -1,5 +1,5 @@
 {
-  "comment": "Shared EIP-712 wallet-contract test vectors. Consumed by this crate's tests AND meant to be consumed by any client implementing the `eth_signTypedData_v4` flow — keep the copies in sync. Any change here is a breaking change to the wire format of the `wallet-eip712` contract variant. `typed_message` is the `message` of the `eth_signTypedData_v4` request (primary type `WalletRequest`/`WalletAuth`), `prehash` is keccak256(0x1901 || domainSeparator || hashStruct(typed_message)), i.e. what the Ethereum wallet signs, and `proof` is what gets submitted on-chain (`signature` is the 65-byte r||s||v signature with v normalized from 27/28 to 0/1). The contract stores the signer's Ethereum `address` (not its public key), which it derives from the public key recovered from the proof. All vectors are signed by the test key 0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318 and cross-checked against `ethers.TypedDataEncoder.hash()` / `ethers.Wallet.signTypedData()`.",
+  "comment": "Shared EIP-712 wallet-contract test vectors. Consumed by this crate's tests AND meant to be consumed by any client implementing the `eth_signTypedData_v4` flow \u2014 keep the copies in sync. Any change here is a breaking change to the wire format of the `wallet-eip712` contract variant. `typed_message` is the `message` of the `eth_signTypedData_v4` request (primary type `WalletRequest`/`WalletAuth`), `prehash` is keccak256(0x1901 || domainSeparator || hashStruct(typed_message)), i.e. what the Ethereum wallet signs, and `proof` is what gets submitted on-chain (`signature` is the 65-byte r||s||v signature with v normalized from 27/28 to 0/1). Request contents are unpacked into typed structures (WalletOp[]/NearPromise[]/NearAction[]); only leaf `payload`s remain JSON strings, compared semantically on-chain (whitespace/key order free, extra fields rejected). `payForGas` MAY be omitted from the JSON (defaults to false), but is always part of the signed type. The contract stores the signer's Ethereum `address` (not its public key), which it derives from the public key recovered from the proof. All vectors are signed by the test key 0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318 and cross-checked against `ethers.TypedDataEncoder.hash()` / `ethers.Wallet.signTypedData()`.",
   "domain": {
     "name": "NEAR Wallet Contract",
     "version": "1"
@@ -17,10 +17,6 @@
       }
     ],
     "WalletRequest": [
-      {
-        "name": "payForGas",
-        "type": "bool"
-      },
       {
         "name": "chainId",
         "type": "string"
@@ -43,11 +39,15 @@
       },
       {
         "name": "internal",
-        "type": "string"
+        "type": "WalletOp[]"
       },
       {
         "name": "external",
-        "type": "string"
+        "type": "NearPromise[]"
+      },
+      {
+        "name": "payForGas",
+        "type": "bool"
       }
     ],
     "WalletAuth": [
@@ -71,6 +71,40 @@
         "name": "payload",
         "type": "string"
       }
+    ],
+    "WalletOp": [
+      {
+        "name": "op",
+        "type": "string"
+      },
+      {
+        "name": "payload",
+        "type": "string"
+      }
+    ],
+    "NearPromise": [
+      {
+        "name": "receiverId",
+        "type": "string"
+      },
+      {
+        "name": "refundTo",
+        "type": "string"
+      },
+      {
+        "name": "actions",
+        "type": "NearAction[]"
+      }
+    ],
+    "NearAction": [
+      {
+        "name": "action",
+        "type": "string"
+      },
+      {
+        "name": "payload",
+        "type": "string"
+      }
     ]
   },
   "address": "0x2c7536e3605d9c16a7a3d7b1898e529396a65c23",
@@ -86,28 +120,28 @@
         "request": {}
       },
       "typed_message": {
-        "payForGas": false,
         "chainId": "mainnet",
         "signerId": "0s0000000000000000000000000000000000000000",
         "nonce": 0,
         "createdAt": "1970-01-01T00:00:00Z",
         "timeoutSecs": 3600,
-        "internal": "[]",
-        "external": "[]"
+        "internal": [],
+        "external": [],
+        "payForGas": false
       },
-      "prehash": "8ccffe6835c7b5250eb7f468d94ec249125b14b1242932b3ff223d6154789ed5",
+      "prehash": "6224b1d68b462c40466309e477e631168b6bbb2b2f0b19d57f3552a83eec9f8e",
       "proof": {
         "message": {
-          "payForGas": false,
           "chainId": "mainnet",
           "signerId": "0s0000000000000000000000000000000000000000",
           "nonce": 0,
           "createdAt": "1970-01-01T00:00:00Z",
           "timeoutSecs": 3600,
-          "internal": "[]",
-          "external": "[]"
+          "internal": [],
+          "external": [],
+          "payForGas": false
         },
-        "signature": "secp256k1:4pzrgEmzg3H8G9mARPQd9vfoVv8n71jCYHUMGCiasxFReQCEax9kiFKp4xe32k2kFWjghps3jqUxznCSYbmZfsjkj"
+        "signature": "secp256k1:JxeyKEAHxW8pPas5JU3kSRRN6GXU2xVjCUXbrELgNZhtcPGbJi9Fnm3khCT3qteMzbUEGnXutFq84c8AsnaKDZag"
       }
     },
     {
@@ -130,28 +164,38 @@
         }
       },
       "typed_message": {
-        "payForGas": false,
         "chainId": "mainnet",
         "signerId": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
         "nonce": 42,
         "createdAt": "2026-07-16T12:34:56.789Z",
         "timeoutSecs": 300,
-        "internal": "[{\"op\":\"add_extension\",\"payload\":{\"account_id\":\"extension.near\"}}]",
-        "external": "[]"
+        "internal": [
+          {
+            "op": "add_extension",
+            "payload": "{\"account_id\":\"extension.near\"}"
+          }
+        ],
+        "external": [],
+        "payForGas": false
       },
-      "prehash": "61136939ea1a1a2423876a51b2ed141e1e9fcd1b7757d3d8a800721971c22195",
+      "prehash": "dedc874daf7e7c52e8b3a48c1b1113eeeb9a3501f77bf880c316b45d4228fe70",
       "proof": {
         "message": {
-          "payForGas": false,
           "chainId": "mainnet",
           "signerId": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
           "nonce": 42,
           "createdAt": "2026-07-16T12:34:56.789Z",
           "timeoutSecs": 300,
-          "internal": "[{\"op\":\"add_extension\",\"payload\":{\"account_id\":\"extension.near\"}}]",
-          "external": "[]"
+          "internal": [
+            {
+              "op": "add_extension",
+              "payload": "{\"account_id\":\"extension.near\"}"
+            }
+          ],
+          "external": [],
+          "payForGas": false
         },
-        "signature": "secp256k1:Lw6tXt7E2zw8pEmVb6ANoNHFa4cJaJsCq5D7XcQ1KKvchQvNYQDpUnRjmUxCWsFiXktngrFyjEKd3U5pRymnSi5V2"
+        "signature": "secp256k1:AzmTJjs5DpGm13uQcTp6buT8nuHApVHBovUCAA1YbpmdmPMrdi4GnrMmzWtD938Vokw3yrQNANocyfCbydgfWy5LL"
       }
     },
     {
@@ -166,28 +210,134 @@
         "request": {}
       },
       "typed_message": {
-        "payForGas": true,
         "chainId": "mainnet",
         "signerId": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
         "nonce": 43,
         "createdAt": "2026-07-16T12:34:56.789Z",
         "timeoutSecs": 300,
-        "internal": "[]",
-        "external": "[]"
+        "internal": [],
+        "external": [],
+        "payForGas": true
       },
-      "prehash": "eab9b1201cc52ed3ff3296676cfb5679c36fd39cc4fdc4479c4d8efbc64f91e6",
+      "prehash": "1ca4ad72c5012ce31cab931b5ec2792fd5220e0064ebce98a85be2be3fb0e3d5",
       "proof": {
         "message": {
-          "payForGas": true,
           "chainId": "mainnet",
           "signerId": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
           "nonce": 43,
           "createdAt": "2026-07-16T12:34:56.789Z",
           "timeoutSecs": 300,
-          "internal": "[]",
-          "external": "[]"
+          "internal": [],
+          "external": [],
+          "payForGas": true
         },
-        "signature": "secp256k1:FvUUZi8PepvBNcjKxZbdqWBtEWh4ueM2Vb2SmLCQFASNwpgDFmVhqYak8e87ZKWKJEY6pUgc33bGjCvLCyNLtJidW"
+        "signature": "secp256k1:3Pt5uLs3YNC8wTJ8r8wCQT6bGE3CpEm9XVRL3ZaD2Lg2Xpz1cNZoTfBejoqGziGCddp4pPhk94RdCNXtDJ6PEWiBZ"
+      }
+    },
+    {
+      "name": "promises",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
+        "nonce": 44,
+        "created_at": "2026-07-16T12:34:56.789Z",
+        "timeout_secs": 300,
+        "request": {
+          "external": [
+            {
+              "receiver_id": "v1.signer",
+              "actions": [
+                {
+                  "action": "function_call",
+                  "payload": {
+                    "function_name": "sign",
+                    "args": "eyJyZXF1ZXN0Ijp7ImRvbWFpbl9pZCI6MCwicGF0aCI6IiJ9fQ==",
+                    "deposit": "1",
+                    "gas": "30000000000000"
+                  }
+                }
+              ]
+            },
+            {
+              "receiver_id": "bob.near",
+              "refund_to": "alice.near",
+              "actions": [
+                {
+                  "action": "transfer",
+                  "payload": {
+                    "amount": "1000000000000000000000000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "typed_message": {
+        "chainId": "mainnet",
+        "signerId": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
+        "nonce": 44,
+        "createdAt": "2026-07-16T12:34:56.789Z",
+        "timeoutSecs": 300,
+        "internal": [],
+        "external": [
+          {
+            "receiverId": "v1.signer",
+            "refundTo": "",
+            "actions": [
+              {
+                "action": "function_call",
+                "payload": "{\"function_name\":\"sign\",\"args\":\"eyJyZXF1ZXN0Ijp7ImRvbWFpbl9pZCI6MCwicGF0aCI6IiJ9fQ==\",\"deposit\":\"1\",\"gas\":\"30000000000000\"}"
+              }
+            ]
+          },
+          {
+            "receiverId": "bob.near",
+            "refundTo": "alice.near",
+            "actions": [
+              {
+                "action": "transfer",
+                "payload": "{\"amount\":\"1000000000000000000000000\"}"
+              }
+            ]
+          }
+        ],
+        "payForGas": false
+      },
+      "prehash": "b5f469deb3e63c6d251679be7c78dfb7112c57f049c90e5ca6a695d3e30bc09f",
+      "proof": {
+        "message": {
+          "chainId": "mainnet",
+          "signerId": "0se5eba21e8f191e1880e453794bc551dfa50a3419",
+          "nonce": 44,
+          "createdAt": "2026-07-16T12:34:56.789Z",
+          "timeoutSecs": 300,
+          "internal": [],
+          "external": [
+            {
+              "receiverId": "v1.signer",
+              "refundTo": "",
+              "actions": [
+                {
+                  "action": "function_call",
+                  "payload": "{\"function_name\":\"sign\",\"args\":\"eyJyZXF1ZXN0Ijp7ImRvbWFpbl9pZCI6MCwicGF0aCI6IiJ9fQ==\",\"deposit\":\"1\",\"gas\":\"30000000000000\"}"
+                }
+              ]
+            },
+            {
+              "receiverId": "bob.near",
+              "refundTo": "alice.near",
+              "actions": [
+                {
+                  "action": "transfer",
+                  "payload": "{\"amount\":\"1000000000000000000000000\"}"
+                }
+              ]
+            }
+          ],
+          "payForGas": false
+        },
+        "signature": "secp256k1:7UCi7NAYaeSSyoE5KL5LeZP9DenJ6WEodw6CCZKJj3TeDnmLZgbiX3Y4ZLBHWrh68YS4DvviG3H1DAU1dmN4F47S8"
       }
     }
   ],
