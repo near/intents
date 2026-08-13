@@ -6,7 +6,7 @@ mod secp256k1;
 use core::marker::PhantomData;
 
 use defuse_digest::{Digest as _, sha3::Sha3_256};
-use defuse_kdf::{CurveArithmetic, Derive, Schema, digest::Digest};
+use defuse_kdf::{CurveArithmetic, Derive, DeriveExt, Schema, digest::Digest};
 use impl_tools::autoimpl;
 use near_account_id::AccountIdRef;
 

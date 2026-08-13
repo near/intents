@@ -6,7 +6,7 @@ use std::{
 use defuse_crypto::{Curve, RecoverableCurve, RecoverableSigner, Signer};
 use impl_tools::autoimpl;
 
-use crate::{Derive, Schema, Value};
+use crate::{Derive, DeriveExt, Schema, Value};
 
 /// A signer that can sign messages by **internally** deriving signing keys
 /// according to its public key derivation [schema](DeriveSigner::schema).
@@ -54,15 +54,6 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
     #[inline]
     fn derive_public_key(&self, path: P) -> C::PublicKey {
         self.schema().derive(path)
-    }
-
-    /// Derive a signer with inner sub-[schema](Schema).
-    #[inline]
-    fn derive_with<D>(self, inner: D) -> Derive<Self, D>
-    where
-        Self: Sized,
-    {
-        Derive::new(self, inner)
     }
 
     /// Derive a signer with a given value for [current](Self::schema) schema,
