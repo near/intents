@@ -139,7 +139,7 @@ mod tests {
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::signer::assert_signer_roundtrip;
+    use crate::{DeriveExt, signer::assert_signer_roundtrip};
 
     use super::*;
 

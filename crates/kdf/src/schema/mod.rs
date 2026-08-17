@@ -23,11 +23,14 @@ pub trait Schema<P> {
 
     /// Derive output for given `path`.
     fn derive(&self, path: P) -> Self::Output;
+}
 
+/// An extension trait for [`Schema`]s and [`DeriveSigner`](crate::DeriveSigner)s
+pub trait DeriveExt {
     /// Derive with given inner sub-[schema](Schema).
     ///
     /// ```rust
-    /// use defuse_kdf::{Schema, SchemaFn};
+    /// use defuse_kdf::{DeriveExt, Schema, SchemaFn};
     ///
     /// let schema_a = SchemaFn::new(|v| v + 1);
     /// let schema_b = SchemaFn::new(|v| v * 2);
@@ -44,6 +47,7 @@ pub trait Schema<P> {
         Derive::new(self, inner)
     }
 }
+impl<T> DeriveExt for T {}
 
 /// No-op identity adator for [`Schema`].
 ///
