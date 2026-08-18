@@ -157,6 +157,7 @@ pub trait PoAFactoryExt {
         metadata: impl Into<Option<FungibleTokenMetadata>>,
     ) -> Result<FungibleToken>;
 
+    #[allow(clippy::too_many_arguments)]
     async fn poa_factory_ft_deposit(
         &self,
         factory: impl AsRef<AccountIdRef>,
