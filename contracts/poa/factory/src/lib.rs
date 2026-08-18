@@ -56,7 +56,7 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     /// Requires to attach enough Ⓝ to cover storage costs.
     fn ft_deposit(
         &mut self,
-        deposit_id: String,
+        deposit_id: Option<String>,
         token: String,
         owner_id: AccountId,
         amount: U128,
@@ -87,4 +87,11 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
 
     /// Removes the given deposit ids from storage, allowing them to be reused.
     fn remove_deposits(&mut self, deposits: Vec<String>);
+
+    /// Adds the given tokens to the list of omni layer tokens.
+    fn add_omni_tokens(&mut self, tokens: Vec<String>);
+    /// Removes the given tokens from the list of omni layer tokens.
+    fn remove_omni_tokens(&mut self, tokens: Vec<String>);
+    /// Returns the list of omni layer tokens.
+    fn get_omni_tokens(&self) -> Vec<String>;
 }

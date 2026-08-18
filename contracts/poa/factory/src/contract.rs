@@ -55,6 +55,7 @@ pub enum Role {
     PauseManager,
     UnpauseManager,
     TokenWithdrawer,
+    OmniDepositer,
 }
 
 #[near(contract_state, contract_metadata())]
@@ -69,6 +70,7 @@ pub struct Contract {
     bridge_token_storage_deposit_required: NearToken,
     deposits: LookupSet<String>,
     withdrawals: LookupMap<String, Withdrawal>,
+    omni_tokens: IterableSet<String>,
 }
 
 #[near]
@@ -90,6 +92,7 @@ impl Contract {
             ),
             deposits: LookupSet::new(Prefix::Deposits),
             withdrawals: LookupMap::new(Prefix::Withdrawals),
+            omni_tokens: IterableSet::new(Prefix::OmniTokens),
         };
 
         let mut acl = contract.acl_get_or_init();
@@ -120,6 +123,7 @@ impl Contract {
             bridge_token_storage_deposit_required: old.bridge_token_storage_deposit_required,
             deposits: LookupSet::new(Prefix::Deposits),
             withdrawals: LookupMap::new(Prefix::Withdrawals),
+            omni_tokens: IterableSet::new(Prefix::OmniTokens),
         }
     }
 }
@@ -181,11 +185,11 @@ impl PoaFactory for Contract {
     }
 
     #[pause]
-    #[access_control_any(roles(Role::DAO, Role::TokenDepositer))]
+    #[access_control_any(roles(Role::DAO, Role::TokenDepositer, Role::OmniDepositer))]
     #[payable]
     fn ft_deposit(
         &mut self,
-        deposit_id: String,
+        deposit_id: Option<String>,
         token: String,
         owner_id: AccountId,
         amount: U128,
@@ -193,12 +197,23 @@ impl PoaFactory for Contract {
         memo: Option<String>,
     ) -> Promise {
         require!(
+            !self.omni_tokens.contains(&token)
+                || self.acl_has_any_role(
+                    vec![Role::OmniDepositer.into(), Role::DAO.into()],
+                    env::predecessor_account_id()
+                ),
+            "omni token deposit requires OmniDepositer role"
+        );
+
+        if let Some(deposit_id) = deposit_id {
+            require!(self.deposits.insert(deposit_id), "deposit already exists");
+        }
+
+        require!(
             env::attached_deposit() >= self.bridge_token_storage_deposit_required,
             "not enough deposit attached for token storage_deposit"
         );
         require!(self.tokens.contains(&token), "token does not exist");
-
-        require!(self.deposits.insert(deposit_id), "deposit already exists");
 
         let token_id = Self::token_id(token);
 
@@ -302,6 +317,26 @@ impl PoaFactory for Contract {
             })
             .collect()
     }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO))]
+    fn add_omni_tokens(&mut self, tokens: Vec<String>) {
+        for token in tokens {
+            self.omni_tokens.insert(token);
+        }
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO))]
+    fn remove_omni_tokens(&mut self, tokens: Vec<String>) {
+        for token in tokens {
+            self.omni_tokens.remove(&token);
+        }
+    }
+
+    fn get_omni_tokens(&self) -> Vec<String> {
+        self.omni_tokens.iter().cloned().collect()
+    }
 }
 
 impl Contract {
@@ -339,4 +374,5 @@ enum Prefix {
     Tokens,
     Deposits,
     Withdrawals,
+    OmniTokens,
 }
