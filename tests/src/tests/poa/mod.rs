@@ -9,7 +9,7 @@ use defuse_sandbox::{
 };
 use defuse_test_utils::wasms::POA_FACTORY_WASM;
 use futures::try_join;
-use near_sdk_core::json_types::Base64VecU8;
+use near_sdk::json_types::Base64VecU8;
 use rstest::rstest;
 
 #[rstest]
