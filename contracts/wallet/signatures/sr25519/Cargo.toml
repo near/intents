@@ -1,0 +1,61 @@
+lints.workspace = true
+
+[package]
+name = "defuse-wallet-sr25519"
+edition.workspace = true
+version = "0.1.0"
+rust-version.workspace = true
+repository.workspace = true
+readme = "../README.md"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+defuse-crypto = { workspace = true, features = ["borsh", "fmt", "sr25519"] }
+defuse-wallet = { workspace = true, features = ["borsh", "digest"] }
+
+defuse-wallet-sdk = { workspace = true, optional = true }
+derive_more = { workspace = true, features = ["as_ref", "from"], optional = true }
+near-sdk = { workspace = true, optional = true }
+
+[features]
+abi = ["defuse-crypto/abi", "defuse-wallet/abi", "near-sdk?/abi"]
+
+signer = ["defuse-crypto/signing", "dep:defuse-wallet-sdk", "dep:derive_more"]
+
+contract = [
+  "defuse-crypto/borsh",
+  "defuse-wallet/near-contract",
+  "dep:near-sdk",
+]
+
+[dev-dependencies]
+defuse-wallet-sr25519 = { path = ".", features = ["abi", "signer", "contract"] }
+
+hex-literal.workspace = true
+rstest.workspace = true
+schnorrkel = { workspace = true, features = ["getrandom", "std"] }
+tokio = { workspace = true, features = ["macros", "rt"] }
+tokio-test.workspace = true
+
+near-sdk = { workspace = true, features = ["unit-testing"] }
+
+[package.metadata.near.reproducible_build]
+image = "sourcescan/cargo-near:0.21.1-rust-1.96.0"
+image_digest = "sha256:ccb22bb4e677ed022d8b9d1aa1b32f0af52dd0471ef1c32e48dedbf68ee6ee17"
+passed_env = []
+container_build_command = [
+  "cargo",
+  "near",
+  "build",
+  "non-reproducible-wasm",
+  "--locked",
+  "--no-default-features",
+  "--features=contract",
+  "--abi-features=abi,contract",
+]
+
+[package.metadata.cargo-machete]
+# needed for `wallet!` macro, since `#[near(...)]` doesn't support re-exports
+ignored = ["near-sdk"]
