@@ -63,7 +63,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
             [FtWithdraw {
                 token: ft.contract_id().clone(),
                 receiver_id: other_user_id.clone(),
-                amount: 1000.into(),
+                amount: 1000,
                 memo: None,
                 msg: None,
                 storage_deposit: None,
@@ -108,7 +108,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
             [FtWithdraw {
                 token: ft.contract_id().clone(),
                 receiver_id: other_user_id.clone(),
-                amount: 1000.into(),
+                amount: 1000,
                 memo: None,
                 msg: None,
                 // user has no wnear yet
@@ -156,7 +156,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
             [FtWithdraw {
                 token: ft.contract_id().clone(),
                 receiver_id: other_user_id.clone(),
-                amount: 1000.into(),
+                amount: 1000,
                 memo: None,
                 msg: None,
                 storage_deposit: Some(STORAGE_DEPOSIT),
@@ -176,7 +176,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
             [FtWithdraw {
                 token: ft.contract_id().clone(),
                 receiver_id: other_user_id.clone(),
-                amount: 1000.into(),
+                amount: 1000,
                 memo: None,
                 msg: None,
                 storage_deposit: Some(STORAGE_DEPOSIT),
@@ -276,7 +276,7 @@ async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
                 [FtWithdraw {
                     token: ft.contract_id().clone(),
                     receiver_id: defuse2.account_id().clone(),
-                    amount: 400.into(),
+                    amount: 400,
                     memo: Some("defuse-to-defuse".to_string()),
                     msg: Some(other_user_id.to_string()),
                     storage_deposit: None,
@@ -346,7 +346,7 @@ async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
             [FtWithdraw {
                 token: ft.contract_id().clone(),
                 receiver_id: defuse2.account_id().clone(),
-                amount: 600.into(),
+                amount: 600,
                 memo: Some("defuse-to-defuse".to_string()),
                 msg: Some(other_user_id.to_string()),
                 storage_deposit: None,

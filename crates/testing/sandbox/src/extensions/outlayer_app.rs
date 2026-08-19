@@ -1,40 +1,13 @@
 use anyhow::Result;
-use defuse_outlayer_app::{AsHex, State as OutlayerState};
-use near_kit::{AccountId, AccountIdRef, Final, Gas, GlobalContractId, Near, NearToken};
-use serde::{Deserialize, Serialize};
-use serde_with::{hex::Hex, serde_as};
+use defuse_outlayer_app::{
+    State as OutlayerState,
+    client::{OaSetCodeArgs, OutlayerAppContract, OutlayerAppContractClient},
+};
+use near_kit::{AccountIdRef, Final, Gas, GlobalContractId, Near, NearToken};
 
 use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
 
 pub use defuse_outlayer_app as contract;
-
-#[serde_as]
-#[derive(Serialize, Deserialize)]
-pub struct OaSetCodeArgs {
-    #[serde_as(as = "Hex")]
-    pub old_code_hash: [u8; 32],
-    #[serde_as(as = "Hex")]
-    pub new_code_hash: [u8; 32],
-    pub new_code_url: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct OaTransferAdminArgs {
-    pub new_admin_id: AccountId,
-}
-
-#[near_kit::contract]
-pub trait OutlayerApp {
-    #[call]
-    fn oa_set_code(&mut self, args: OaSetCodeArgs);
-
-    #[call]
-    fn oa_transfer_admin(&mut self, args: OaTransferAdminArgs);
-
-    fn oa_admin_id(&self) -> AccountId;
-    fn oa_code_hash(&self) -> AsHex<[u8; 32]>;
-    fn oa_code_url(&self) -> String;
-}
 
 pub trait OutlayerAppDeployerExt {
     /// Deploy a new `outlayer-app` instance via `StateInit`.
@@ -42,7 +15,7 @@ pub trait OutlayerAppDeployerExt {
         &self,
         global_contract_id: GlobalContractId,
         state: OutlayerState<'static>,
-    ) -> OutlayerAppClient;
+    ) -> OutlayerAppContractClient;
 }
 
 impl OutlayerAppDeployerExt for Near {
@@ -50,11 +23,11 @@ impl OutlayerAppDeployerExt for Near {
         &self,
         global_contract_id: GlobalContractId,
         state: OutlayerState<'static>,
-    ) -> OutlayerAppClient {
-        self.contract::<OutlayerApp>(
+    ) -> OutlayerAppContractClient {
+        self.contract::<OutlayerAppContract>(
             self.deploy_deterministic_account(
                 global_contract_id,
-                state.state_init(),
+                state.as_storage(),
                 NearToken::ZERO,
             )
             .await
@@ -69,13 +42,13 @@ pub trait OutlayerAppExt {
         target: impl AsRef<AccountIdRef>,
         old_code_hash: [u8; 32],
         new_code_hash: [u8; 32],
-        new_code_url: String,
+        new_code_url: impl AsRef<str>,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn oa_transfer_admin(
         &self,
         target: impl AsRef<AccountIdRef>,
-        new_admin_id: impl Into<AccountId>,
+        new_admin_id: impl AsRef<AccountIdRef>,
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
@@ -85,14 +58,14 @@ impl OutlayerAppExt for Near {
         target: impl AsRef<AccountIdRef>,
         old_code_hash: [u8; 32],
         new_code_hash: [u8; 32],
-        new_code_url: String,
+        new_code_url: impl AsRef<str>,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(target.as_ref())
             .add_action(
-                OutlayerApp::oa_set_code(OaSetCodeArgs {
+                OutlayerAppContract::oa_set_code(OaSetCodeArgs {
                     old_code_hash,
                     new_code_hash,
-                    new_code_url,
+                    new_code_url: new_code_url.as_ref().into(),
                 })
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(10)),
@@ -105,15 +78,13 @@ impl OutlayerAppExt for Near {
     async fn oa_transfer_admin(
         &self,
         target: impl AsRef<AccountIdRef>,
-        new_admin_id: impl Into<AccountId>,
+        new_admin_id: impl AsRef<AccountIdRef>,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(target.as_ref())
             .add_action(
-                OutlayerApp::oa_transfer_admin(OaTransferAdminArgs {
-                    new_admin_id: new_admin_id.into(),
-                })
-                .deposit(NearToken::from_yoctonear(1))
-                .gas(Gas::from_tgas(30)),
+                OutlayerAppContract::oa_transfer_admin(new_admin_id.as_ref().into())
+                    .deposit(NearToken::from_yoctonear(1))
+                    .gas(Gas::from_tgas(30)),
             )
             .wait_until::<Final>()
             .await?

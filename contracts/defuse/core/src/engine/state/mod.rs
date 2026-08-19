@@ -2,7 +2,7 @@ pub mod cached;
 pub mod deltas;
 
 use crate::{
-    Nonce, NoncePrefix, Result, Salt,
+    AccountId, AccountIdRef, Nonce, NoncePrefix, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -16,7 +16,6 @@ use crate::{
 };
 use cached::CachedState;
 use impl_tools::autoimpl;
-use near_sdk::{AccountId, AccountIdRef};
 use std::borrow::Cow;
 
 #[cfg(feature = "imt")]

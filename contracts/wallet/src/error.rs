@@ -1,11 +1,10 @@
 use near_account_id::AccountId;
-use thiserror::Error as ThisError;
 
 use crate::NonceError;
 
 /// An error that can occur in [`Wallet`](crate::contract::Wallet) contract.
 #[cfg_attr(feature = "near-contract", derive(::near_sdk::FunctionError))]
-#[derive(Debug, ThisError)]
+#[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ContractError {
     #[error("extension '{0}' is already enabled")]
@@ -14,8 +13,17 @@ pub enum ContractError {
     #[error("extension '{0}' is not enabled")]
     ExtensionNotEnabled(AccountId),
 
+    #[error("message is from the future")]
+    FromTheFuture,
+
+    #[error("insufficient attached deposit")]
+    InsufficientDeposit,
+
     #[error("invalid chain_id")]
     InvalidChainId,
+
+    #[error("invalid path")]
+    InvalidPath,
 
     #[error("invalid signature")]
     InvalidSignature,
@@ -23,8 +31,9 @@ pub enum ContractError {
     #[error("invalid signer_id: {0}")]
     InvalidSignerId(AccountId),
 
-    #[error("insufficient attached deposit")]
-    InsufficientDeposit,
+    #[cfg(feature = "json")]
+    #[error("JSON: {0}")]
+    JSON(#[from] serde_json::Error),
 
     #[error("lockout: signature is disabled and extensions are empty")]
     Lockout,
@@ -35,7 +44,7 @@ pub enum ContractError {
     #[error("self-calls are not allowed")]
     SelfCallsNotAllowed,
 
-    #[error("signature is disabled")]
+    #[error("signature is disabled, use extensions to act on behalf of this wallet")]
     SignatureDisabled,
 
     #[error("this signature mode is already set")]

@@ -10,24 +10,23 @@ pub mod webauthn;
 use core::convert::Infallible;
 
 use impl_tools::autoimpl;
-use near_sdk::{AccountId, CryptoHash};
 use serde::{Deserialize, Serialize};
 use serde_with::{base64::Base64, serde_as};
 
-use crate::{Nonce, Timestamp};
+use crate::{AccountId, Nonce, Timestamp};
 
 // TODO: add version
 #[serde_as]
 #[autoimpl(Deref using self.message)]
 #[autoimpl(DerefMut using self.message)]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefusePayload<T> {
     pub signer_id: AccountId,
     pub verifying_contract: AccountId,
     pub deadline: Timestamp,
     #[serde_as(as = "Base64")]
-    #[cfg_attr(feature = "abi", schemars(example = "self::examples::nonce"))]
+    #[cfg_attr(feature = "schemars-v0_8", schemars(example = "self::examples::nonce"))]
     pub nonce: Nonce,
 
     #[serde(flatten)]
@@ -55,7 +54,7 @@ impl<T> ExtractDefusePayload<T> for DefusePayload<T> {
 /// according to an external signing standard. The [`.hash()`](Self::hash)
 /// method returns the digest that should be signed or used for verification.
 pub trait Payload {
-    fn hash(&self) -> CryptoHash;
+    fn hash(&self) -> [u8; 32];
 }
 
 /// Extension of [`Payload`] for types that include a signature.
@@ -69,11 +68,11 @@ pub trait SignedPayload: Payload {
     fn verify(&self) -> Option<Self::PublicKey>;
 }
 
-#[cfg(feature = "abi")]
+#[cfg(feature = "schemars-v0_8")]
 mod examples {
     use super::Nonce;
 
-    use near_sdk::base64::{self, Engine};
+    use base64::Engine;
 
     pub fn nonce() -> String {
         base64::engine::general_purpose::STANDARD.encode(Nonce::default())

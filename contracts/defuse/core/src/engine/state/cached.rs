@@ -1,5 +1,5 @@
 use crate::{
-    DefuseError, Nonce, NoncePrefix, Nonces, Result, Salt,
+    AccountId, AccountIdRef, DefuseError, Lock, Nonce, NoncePrefix, Nonces, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -12,8 +12,6 @@ use crate::{
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
 };
 use defuse_bitmap::{U248, U256};
-use defuse_near_utils::Lock;
-use near_sdk::{AccountId, AccountIdRef};
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
@@ -261,7 +259,7 @@ where
             owner_id,
             std::iter::once((
                 Nep141TokenId::new(withdraw.token.clone()).into(),
-                withdraw.amount.0,
+                withdraw.amount,
             ))
             .chain(withdraw.storage_deposit.map(|amount| {
                 (
@@ -301,7 +299,7 @@ where
                 .cloned()
                 .map(|token_id| Nep245TokenId::new(withdraw.token.clone(), token_id))
                 .map(Into::into)
-                .zip(withdraw.amounts.iter().map(|a| a.0))
+                .zip(withdraw.amounts.iter().copied())
                 .chain(
                     withdraw
                         .storage_deposit

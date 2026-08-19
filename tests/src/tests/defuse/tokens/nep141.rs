@@ -19,7 +19,7 @@ use defuse_sandbox::{
 };
 use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
-use near_sdk_core::json_types::U128;
+use near_sdk::json_types::U128;
 use rstest::rstest;
 
 use crate::tests::defuse::env::{Env, env};
@@ -157,7 +157,7 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
             [FtWithdraw {
                 token: ft.contract_id().clone(),
                 receiver_id: other_user.account_id().clone(),
-                amount: U128(600),
+                amount: 600,
                 memo: None,
                 msg: None,
                 storage_deposit: None,
@@ -257,7 +257,7 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
             [FtWithdraw {
                 token: ft.contract_id().clone(),
                 receiver_id: user.account_id().clone(),
-                amount: U128(1001),
+                amount: 1001,
                 memo: None,
                 msg: None,
                 storage_deposit: None,

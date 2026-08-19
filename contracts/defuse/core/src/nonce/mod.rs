@@ -2,11 +2,8 @@ mod expirable;
 mod salted;
 mod versioned;
 
-pub use {
-    expirable::ExpirableNonce,
-    salted::SaltedNonce,
-    salted::{Salt, SaltRegistry},
-    versioned::VersionedNonce,
+pub use self::{
+    expirable::ExpirableNonce, salted::Salt, salted::SaltedNonce, versioned::VersionedNonce,
 };
 
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -20,7 +17,7 @@ pub type NoncePrefix = U248;
 
 /// See [permit2 nonce schema](https://docs.uniswap.org/contracts/permit2/reference/signature-transfer#nonce-schema)
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[derive(Debug, Clone, Default, BorshSerialize, BorshDeserialize)]
 pub struct Nonces<T: Map<K = U248, V = U256>>(BitMap256<T>);
 

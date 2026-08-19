@@ -1,11 +1,9 @@
 use std::borrow::Cow;
 
-use borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::{AccountIdRef, CryptoHash};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Result,
+    AccountIdRef, Result,
     accounts::{AccountEvent, PublicKeyEvent},
     engine::{Engine, Inspector, State},
     events::DefuseEvent,
@@ -15,8 +13,8 @@ use crate::{
 
 use super::ExecutableIntent;
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Given an account id, the user can add public keys. The added public keys can sign
 /// intents on behalf of these accounts, even to add new ones.
 /// Warning: Implicit account ids, by default, have their corresponding public keys added.
@@ -32,7 +30,7 @@ impl ExecutableIntent for AddPublicKey {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -57,8 +55,8 @@ impl ExecutableIntent for AddPublicKey {
     }
 }
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Remove the public key associated with a given account. See `AddPublicKey`.
 pub struct RemovePublicKey {
     pub public_key: PublicKey,
@@ -70,7 +68,7 @@ impl ExecutableIntent for RemovePublicKey {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> crate::Result<()>
     where
         S: State,
@@ -94,8 +92,8 @@ impl ExecutableIntent for RemovePublicKey {
     }
 }
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetAuthByPredecessorId {
     pub enabled: bool,
 }
@@ -105,7 +103,7 @@ impl ExecutableIntent for SetAuthByPredecessorId {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,

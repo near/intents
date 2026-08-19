@@ -12,7 +12,6 @@ use defuse_core::{
     token_id::{nep141::Nep141TokenId, nep171::Nep171TokenId},
 };
 use defuse_near_utils::{REFUND_MEMO, promise_result_checked_json, promise_result_checked_void};
-
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{
     non_fungible_token::{self, core::ext_nft_core},

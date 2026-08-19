@@ -2,3 +2,11 @@
 # https://docs.rs/cargo-audit/latest/cargo_audit/config/
 
 [advisories]
+ignore = [
+  # wasmtime: type indices can be mixed up between engines.
+  # Pulled in transitively via near-vm-runner (near-sdk's `unit-testing`
+  # dev/test-only feature, restricted to cfg(not(target_arch = "wasm32"))),
+  # never linked into the on-chain contract wasm.
+  "RUSTSEC-2026-0222",
+  "RUSTSEC-2026-0253",
+]

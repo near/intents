@@ -3,8 +3,9 @@ members = [
   "contracts/defuse",
   "contracts/defuse/core",
   "contracts/global-deployer",
-  "contracts/outlayer-app",
-  "contracts/outlayer-app/core",
+  "contracts/global-deployer/near-gds",
+  "contracts/outlayer/app",
+  "contracts/outlayer/app/near-oa",
   "contracts/escrow-swap",
   "contracts/poa/factory",
   "contracts/poa/token",
@@ -28,9 +29,6 @@ members = [
   "crates/rand-compat",
   "crates/serde-utils",
 
-  "crates/global-deployer/core",
-  "crates/global-deployer/near-gds",
-
   "crates/mpc/ckd",
   "crates/mpc/kdf",
   "crates/mpc/signer",
@@ -52,6 +50,7 @@ members = [
   "crates/signatures/erc191",
   "crates/signatures/nep413",
   "crates/signatures/nep461",
+  "crates/signatures/nep641",
   "crates/signatures/webauthn",
   "crates/signatures/sep53",
   "crates/signatures/tip191",
@@ -78,8 +77,7 @@ defuse.path = "contracts/defuse"
 defuse-core.path = "contracts/defuse/core"
 defuse-escrow-swap.path = "contracts/escrow-swap"
 defuse-global-deployer.path = "contracts/global-deployer"
-defuse-outlayer-app.path = "contracts/outlayer-app"
-defuse-outlayer-app-core = { path = "contracts/outlayer-app/core", default-features = false }
+defuse-outlayer-app.path = "contracts/outlayer/app"
 defuse-poa-factory.path = "contracts/poa/factory"
 defuse-poa-token.path = "contracts/poa/token"
 defuse-wallet.path = "contracts/wallet"
@@ -102,8 +100,6 @@ defuse-num-utils.path = "crates/num-utils"
 defuse-rand-compat.path = "crates/rand-compat"
 defuse-serde-utils.path = "crates/serde-utils"
 
-defuse-global-deployer-core = { path = "crates/global-deployer/core", default-features = false }
-
 defuse-mpc-ckd = { path = "crates/mpc/ckd", default-features = false }
 defuse-mpc-kdf = { path = "crates/mpc/kdf", default-features = false }
 defuse-mpc-signer = { path = "crates/mpc/signer", default-features = false }
@@ -125,6 +121,7 @@ defuse-token-id = { path = "crates/primitives/token-id", default-features = fals
 defuse-erc191.path = "crates/signatures/erc191"
 defuse-nep413.path = "crates/signatures/nep413"
 defuse-nep461.path = "crates/signatures/nep461"
+defuse-nep641.path = "crates/signatures/nep641"
 defuse-sep53.path = "crates/signatures/sep53"
 defuse-tip191.path = "crates/signatures/tip191"
 defuse-ton-connect = { path = "crates/signatures/ton-connect", default-features = false }
@@ -146,7 +143,6 @@ near-global-contracts = "0.2.5"
 near-kit = { version = "0.13", default-features = false }
 near-plugins = "0.5.3"
 near-sdk = "5.29.0"
-near-sdk-core = "4.2.2"
 near-sdk-env = "0.1.5"
 near-token = "0.3.4"
 

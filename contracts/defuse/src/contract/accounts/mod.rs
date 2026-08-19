@@ -8,14 +8,13 @@ use std::{borrow::Cow, collections::HashSet};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_core::{
-    DefuseError, Nonce, PublicKey, Result,
+    DefuseError, Lock, Nonce, PublicKey, Result,
     accounts::{AccountEvent, PublicKeyEvent},
     engine::{State, StateView},
     events::DefuseEvent,
     intents::{MaybeIntentEvent, account::SetAuthByPredecessorId},
 };
 
-use defuse_near_utils::{Lock, NestPrefix};
 use defuse_serde_utils::base64::AsBase64;
 
 use near_sdk::{
@@ -25,7 +24,7 @@ use near_sdk::{
 
 use crate::{
     accounts::AccountManager,
-    contract::{Contract, ContractExt, accounts::AccountEntry},
+    contract::{Contract, ContractExt, accounts::AccountEntry, prefix::NestPrefix},
 };
 
 #[near]

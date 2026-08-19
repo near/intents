@@ -5,18 +5,19 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_map_utils::{IterableMap, cleanup::DefaultMap};
 use defuse_num_utils::{CheckedAdd, CheckedSub};
 use impl_tools::autoimpl;
-use near_sdk::serde::{Deserializer, Serializer};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::{DeserializeAs, SerializeAs};
 
 use crate::token_id::TokenId;
 
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
+#[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(
     Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
 )]
 #[autoimpl(Deref using self.0)]
+#[repr(transparent)]
 pub struct Amounts<T = BTreeMap<TokenId, u128>>(T);
 
 impl<T> Amounts<T> {
@@ -228,9 +229,9 @@ where
     }
 }
 
-#[cfg(feature = "abi")]
+#[cfg(feature = "schemars-v0_8")]
 const _: () = {
-    use near_sdk::schemars::{r#gen::SchemaGenerator, schema::Schema};
+    use schemars::{r#gen::SchemaGenerator, schema::Schema};
     use serde_with::schemars_0_8::JsonSchemaAs;
 
     impl<T, As> JsonSchemaAs<Amounts<T>> for Amounts<As>
@@ -254,9 +255,7 @@ const _: () = {
 #[cfg(test)]
 mod tests {
 
-    use near_sdk::AccountId;
-
-    use crate::token_id::nep141::Nep141TokenId;
+    use crate::{AccountId, token_id::nep141::Nep141TokenId};
 
     use super::*;
 

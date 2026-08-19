@@ -4,18 +4,17 @@ use core::{
 };
 
 use defuse_num_utils::{CheckedAdd, CheckedMulDiv, CheckedSub};
-use thiserror::Error as ThisError;
 
 /// 1 pip == 1/100th of bip == 0.0001%
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema))
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "abi", derive(::schemars::JsonSchema)),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
     serde(try_from = "u32")
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
@@ -196,7 +195,7 @@ impl TryFrom<u32> for Pips {
     }
 }
 
-#[derive(Debug, ThisError)]
+#[derive(Debug, thiserror::Error)]
 #[error("out of range: 0..={}", Pips::MAX.as_pips())]
 pub struct PipsOutOfRange;
 

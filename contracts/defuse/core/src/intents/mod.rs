@@ -7,7 +7,6 @@ pub mod tokens;
 pub mod imt;
 
 use derive_more::derive::From;
-use near_sdk::{AccountIdRef, CryptoHash};
 use serde::{Deserialize, Serialize};
 use serde_with::{base58::Base58, serde_as};
 
@@ -15,7 +14,7 @@ use serde_with::{base58::Base58, serde_as};
 use crate::intents::imt::{ImtBurn, ImtMint};
 
 use crate::{
-    Result,
+    AccountIdRef, Result,
     engine::{Engine, Inspector, State},
     intents::{account::SetAuthByPredecessorId, auth::AuthCall},
 };
@@ -26,7 +25,7 @@ use self::{
     tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
 };
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefuseIntents {
     /// Sequence of intents to execute in given order. Empty list is also
@@ -37,7 +36,7 @@ pub struct DefuseIntents {
     pub intents: Vec<Intent>,
 }
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize, From)]
 #[serde(tag = "intent", rename_all = "snake_case")]
 pub enum Intent {
@@ -88,7 +87,7 @@ pub trait ExecutableIntent {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -100,7 +99,7 @@ impl ExecutableIntent for DefuseIntents {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -118,7 +117,7 @@ impl ExecutableIntent for Intent {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -150,12 +149,12 @@ impl ExecutableIntent for Intent {
 /// function call or after intent execution
 #[must_use = "make sure to `.emit()` this event"]
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaybeIntentEvent<T> {
     #[serde_as(as = "Option<Base58>")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub intent_hash: Option<CryptoHash>,
+    pub intent_hash: Option<[u8; 32]>,
 
     #[serde(flatten)]
     pub event: T,
@@ -171,7 +170,7 @@ impl<T> MaybeIntentEvent<T> {
     }
 
     #[inline]
-    pub const fn new_intent(event: T, intent_hash: CryptoHash) -> Self {
+    pub const fn new_intent(event: T, intent_hash: [u8; 32]) -> Self {
         Self {
             intent_hash: Some(intent_hash),
             event,

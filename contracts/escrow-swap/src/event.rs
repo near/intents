@@ -7,6 +7,7 @@ use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{Params, decimal::UD128, token_id::TokenId};
 
+#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
 #[near(event_json(standard = "escrow-swap"))]
 #[derive(Debug, Clone, From)]
 pub enum Event<'a> {

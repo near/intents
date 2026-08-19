@@ -3,7 +3,6 @@ use core::{
     str::FromStr,
 };
 
-use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_crypto::{
     ed25519::{Ed25519, Ed25519Signature},
     fmt::{ParseCurveError, TypedCurve, checked_base58_decode_array},
@@ -12,7 +11,6 @@ use defuse_crypto::{
 };
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
-#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
 #[derive(
     Clone,
     Copy,
@@ -23,11 +21,8 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
     Ord,
     SerializeDisplay,
     DeserializeFromStr,
-    BorshSerialize,
-    BorshDeserialize,
     derive_more::From,
 )]
-#[borsh(use_discriminant = true)]
 #[repr(u8)]
 pub enum Signature {
     Ed25519(Ed25519Signature) = 0,
@@ -81,7 +76,7 @@ impl FromStr for Signature {
     }
 }
 
-#[cfg(feature = "abi")]
+#[cfg(feature = "schemars-v0_8")]
 const _: () = {
     use schemars::{
         JsonSchema,

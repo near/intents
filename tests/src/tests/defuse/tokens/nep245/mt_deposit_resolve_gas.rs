@@ -23,7 +23,7 @@ use defuse_test_utils::{
     wasms::MT_RECEIVER_STUB_WASM,
 };
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk_core::{events::AsNep297Event, json_types::U128};
+use near_sdk::{events::AsNep297Event, json_types::U128};
 use rstest::rstest;
 use std::{borrow::Cow, sync::Arc};
 
@@ -142,7 +142,7 @@ fn validate_mt_event_log_size(
     let mt_mint_event = MtEvent::MtMint(Cow::Owned(vec![MtMintEvent {
         owner_id: Cow::Borrowed(owner_id),
         token_ids: Cow::Owned(token_ids.to_vec()),
-        amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
+        amounts: Cow::Borrowed(amounts),
         memo: None,
     }]));
 
@@ -150,7 +150,7 @@ fn validate_mt_event_log_size(
         owner_id: Cow::Borrowed(owner_id),
         authorized_id: None,
         token_ids: Cow::Owned(token_ids.to_vec()),
-        amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
+        amounts: Cow::Borrowed(amounts),
         memo: Some(Cow::Borrowed(REFUND_MEMO)),
     }]));
 

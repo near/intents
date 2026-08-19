@@ -6,7 +6,7 @@ use std::{
 use defuse_crypto::{Curve, RecoverableCurve, RecoverableSigner, Signer};
 use impl_tools::autoimpl;
 
-use crate::{Derive, Schema, Value};
+use crate::{Derive, DeriveExt, Schema, Value};
 
 /// A signer that can sign messages by **internally** deriving signing keys
 /// according to its public key derivation [schema](DeriveSigner::schema).
@@ -56,14 +56,9 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
         self.schema().derive(path)
     }
 
-    #[inline]
-    fn derive_with<D>(self, with: D) -> Derive<Self, D>
-    where
-        Self: Sized,
-    {
-        Derive(self, with)
-    }
-
+    /// Derive a signer with a given value for [current](Self::schema) schema,
+    /// so that returned signer implements [`Signer`] and doesn't take any
+    /// derivation path.
     #[inline]
     fn derive(self, value: P) -> Derive<Self, Value<P>>
     where
@@ -76,6 +71,7 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
 /// A [signer](DeriveSigner) that can recoverably sign messages by
 /// **internally** deriving signing keys.
 #[trait_variant::make(Send)]
+#[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
 pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
     /// Recoveryably [sign](DeriveSigner::derive_sign) given message with a
     /// secret key **internally** derived for given `path` according to
@@ -113,14 +109,14 @@ where
 
     #[inline]
     fn schema(&self) -> Self::Schema<'_> {
-        self.0.schema().derive_with(&self.1)
+        self.outer.schema().derive_with(&self.inner)
     }
 
     async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
     where
         P: Send,
     {
-        self.0.derive_sign(self.1.derive(path), msg).await
+        self.outer.derive_sign(self.inner.derive(path), msg).await
     }
 }
 
@@ -138,8 +134,8 @@ where
     where
         P: Send,
     {
-        self.0
-            .derive_sign_recoverable(self.1.derive(path), msg)
+        self.outer
+            .derive_sign_recoverable(self.inner.derive(path), msg)
             .await
     }
 }

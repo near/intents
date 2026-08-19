@@ -10,7 +10,8 @@ use std::{
 use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_borsh_utils::{As, BorshDeserializeAs, BorshSerializeAs};
 
-use defuse_near_utils::{Lock, PanicOnClone};
+use defuse_core::Lock;
+use defuse_near_utils::PanicOnClone;
 use impl_tools::autoimpl;
 
 use crate::contract::accounts::account::entry::{v0::AccountV0, v1::AccountV1};

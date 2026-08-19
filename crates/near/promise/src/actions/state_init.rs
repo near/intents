@@ -1,5 +1,5 @@
 use near_gas::NearGas as Gas;
-use near_global_contracts::StateInit;
+use near_global_contracts::{StateInit, StateInitV1};
 use near_token::NearToken;
 
 /// `DeterministicStateInit` [action](crate::actions::NearAction)
@@ -67,6 +67,20 @@ impl DeterministicStateInit {
                         .unwrap_or(u64::MAX),
                 ),
             )
+    }
+}
+
+impl From<StateInit> for DeterministicStateInit {
+    #[inline]
+    fn from(state_init: StateInit) -> Self {
+        Self::new(state_init)
+    }
+}
+
+impl From<StateInitV1> for DeterministicStateInit {
+    #[inline]
+    fn from(state_init: StateInitV1) -> Self {
+        StateInit::from(state_init).into()
     }
 }
 

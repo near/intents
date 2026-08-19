@@ -1,5 +1,6 @@
 use core::time::Duration;
 
+use defuse_nep641::OffchainMessage;
 use defuse_time::Timestamp;
 use near_account_id::AccountId;
 
@@ -14,13 +15,6 @@ use ::{
 use defuse_time::arbitrary::RangeNanos;
 #[cfg(feature = "serde")]
 use serde_with::DurationSeconds;
-
-/// Domain prefix for signing [`RequestMessage`].
-///
-/// This prefix doesn't break NEP-461 assumptions, since first four bytes
-/// borsh-deserialize to `1380009294u32`, which is in `[1 << 30, 1 << 31)`
-/// range for on-chain messages.
-pub const WALLET_DOMAIN: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
 
 /// Chain id (e.g. `mainnet`)
 pub type ChainId = String;
@@ -151,6 +145,9 @@ pub struct RequestMessage {
 }
 
 impl RequestMessage {
+    /// A prefix used for [canonical hash](Self::hash).
+    pub const DOMAIN_SEPARATOR: &[u8] = b"NEAR_WALLET_CONTRACT/V1";
+
     /// Returns canonical hash of the request message:
     ///
     /// ```text
@@ -183,7 +180,7 @@ impl RequestMessage {
         use defuse_digest::{Digest, sha3::Sha3_256};
         use digest_io::IoWrapper;
 
-        let mut hasher = IoWrapper(Sha3_256::new_with_prefix(WALLET_DOMAIN));
+        let mut hasher = IoWrapper(Sha3_256::new_with_prefix(Self::DOMAIN_SEPARATOR));
         // serialize directly to hasher
         ::borsh::to_writer(&mut hasher, self).expect("borsh: failed to serialize");
 
@@ -200,7 +197,7 @@ impl RequestMessage {
     /// reques has already expired or is from the future.
     #[cfg(feature = "std")]
     #[inline]
-    pub fn time_left(&self) -> Option<Duration> {
+    pub fn duration_left(&self) -> Option<Duration> {
         let now = Timestamp::now();
         if now < self.created_at {
             return None;
@@ -208,6 +205,95 @@ impl RequestMessage {
         self.deadline().duration_since(now).ok()
     }
 }
+
+/// NEP-641 authorization for [`Wallet`](crate::contract::Wallet) contract.
+#[cfg_attr(
+    feature = "serde",
+    derive(::serde::Serialize, ::serde::Deserialize),
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
+    serde(rename_all = "snake_case")
+)]
+#[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum WalletAuthorization {
+    /// Authorize via signature.
+    Signature {
+        /// Offchain Message
+        msg: OffchainMessage,
+        /// Proof (i.e. signature)
+        proof: String,
+    },
+
+    /// Authorize via pending sub-authorization on an **enabled** extension.
+    Extension {
+        /// Extension ID.
+        ///
+        /// MUST fail if the extension is not enabled.
+        account_id: AccountId,
+        /// Sub-authorization blob for this extension.
+        authorization: String,
+        /// Payload to authorize, provided the extension resolves the sub-authorization to
+        /// **exactly the same** value.
+        payload: String,
+    },
+}
+
+impl WalletAuthorization {
+    /// Get the authorized payload
+    #[inline]
+    pub const fn payload(&self) -> &str {
+        match self {
+            Self::Signature {
+                msg: OffchainMessage { payload, .. },
+                ..
+            }
+            | Self::Extension { payload, .. } => payload.as_str(),
+        }
+    }
+
+    /// Extract the authorized payload
+    #[inline]
+    pub fn into_payload(self) -> String {
+        match self {
+            Self::Signature {
+                msg: OffchainMessage { payload, .. },
+                ..
+            }
+            | Self::Extension { payload, .. } => payload,
+        }
+    }
+
+    /// Wrap as extension with given ID
+    #[cfg(feature = "json")]
+    #[must_use]
+    #[inline]
+    pub fn as_extension_of(self, account_id: impl Into<AccountId>) -> Self {
+        Self::Extension {
+            account_id: account_id.into(),
+            authorization: (&self).into(),
+            payload: self.into_payload(),
+        }
+    }
+}
+
+#[cfg(feature = "json")]
+const _: () = {
+    impl From<&WalletAuthorization> for String {
+        /// Convert to the authorization blob
+        #[inline]
+        fn from(auth: &WalletAuthorization) -> Self {
+            serde_json::to_string(auth).expect("JSON: failed to serialize")
+        }
+    }
+
+    impl From<WalletAuthorization> for String {
+        /// Convert to the authorization blob
+        #[inline]
+        fn from(auth: WalletAuthorization) -> Self {
+            (&auth).into()
+        }
+    }
+};
 
 #[cfg(test)]
 mod tests {

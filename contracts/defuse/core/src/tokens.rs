@@ -1,9 +1,8 @@
-use near_sdk::{AccountIdRef, Gas};
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::{borrow::Cow, collections::BTreeMap};
 
-use crate::{amounts::Amounts, intents::tokens::Transfer};
+use crate::{AccountIdRef, Gas, amounts::Amounts, intents::tokens::Transfer};
 
 pub const MAX_TOKEN_ID_LEN: usize = 127;
 
@@ -13,13 +12,13 @@ pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
 #[cfg(feature = "imt")]
 pub mod imt {
     use defuse_token_id::{TokenId, imt::ImtTokenId};
-    use near_sdk::AccountIdRef;
     use serde::{Deserialize, Serialize};
     use serde_with::{DisplayFromStr, serde_as};
     use std::{borrow::Cow, collections::BTreeMap};
 
     use crate::{
-        DefuseError, Result, amounts::Amounts, intents::imt::ImtMint, tokens::MAX_TOKEN_ID_LEN,
+        AccountIdRef, DefuseError, Result, amounts::Amounts, intents::imt::ImtMint,
+        tokens::MAX_TOKEN_ID_LEN,
     };
 
     pub type ImtTokens = Amounts<BTreeMap<defuse_nep245::TokenId, u128>>;
@@ -48,7 +47,7 @@ pub mod imt {
     }
 
     #[serde_as]
-    #[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+    #[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct ImtMintEvent<'a> {
         pub receiver_id: Cow<'a, AccountIdRef>,
@@ -73,7 +72,7 @@ pub mod imt {
 }
 
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransferEvent<'a> {
     pub receiver_id: Cow<'a, AccountIdRef>,

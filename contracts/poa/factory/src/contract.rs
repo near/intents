@@ -6,7 +6,6 @@ use near_sdk::{
 use std::collections::{HashMap, HashSet};
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
-use defuse_near_utils::gas_left;
 use defuse_poa_token::ext_poa_fungible_token;
 use near_contract_standards::fungible_token::{core::ext_ft_core, metadata::FungibleTokenMetadata};
 use near_plugins::{
@@ -219,7 +218,7 @@ impl PoaFactory for Contract {
 
         if let Some(msg) = msg {
             require!(
-                gas_left()
+                env::prepaid_gas().saturating_sub(env::used_gas())
                     > POA_TOKEN_FT_DEPOSIT_GAS.saturating_add(POA_TOKEN_FT_TRANSFER_CALL_MIN_GAS),
                 "insufficient gas"
             );

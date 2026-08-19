@@ -1,6 +1,6 @@
 use super::ExecutableIntent;
 use crate::{
-    DefuseError, Result,
+    AccountId, AccountIdRef, DefuseError, Result,
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State, StateView},
@@ -9,10 +9,8 @@ use crate::{
     intents::MaybeIntentEvent,
     token_id::{TokenId, TokenIdType},
 };
-use borsh::{BorshDeserialize, BorshSerialize};
 use defuse_num_utils::CheckedMulDiv;
 use impl_tools::autoimpl;
-use near_sdk::{AccountId, AccountIdRef, CryptoHash};
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::{borrow::Cow, collections::BTreeMap};
@@ -22,10 +20,8 @@ pub type TokenDeltas = Amounts<BTreeMap<TokenId, i128>>;
 #[autoimpl(Deref using self.diff)]
 #[autoimpl(DerefMut using self.diff)]
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(
-    Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, BorshSerialize, BorshDeserialize,
-)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 /// The user declares the will to have a set of changes done to set of tokens. For example,
 /// a simple trade of 100 of token A for 200 of token B, can be represented by `TokenDiff`
 /// of {"A": -100, "B": 200} (this format is just for demonstration purposes).
@@ -47,7 +43,7 @@ impl ExecutableIntent for TokenDiff {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -109,7 +105,7 @@ impl ExecutableIntent for TokenDiff {
 }
 
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// An event emitted when a `TokenDiff` intent is executed.
 pub struct TokenDiffEvent<'a> {

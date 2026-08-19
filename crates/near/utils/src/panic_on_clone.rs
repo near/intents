@@ -10,8 +10,8 @@ use near_sdk::env;
 #[autoimpl(DerefMut using self.0)]
 #[autoimpl(AsRef using self.0)]
 #[autoimpl(AsMut using self.0)]
-#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, BorshSerialize, BorshDeserialize)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, BorshDeserialize, BorshSerialize)]
+#[cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))]
 #[repr(transparent)] // needed for `transmute()` below
 pub struct PanicOnClone<T: ?Sized>(T);
 

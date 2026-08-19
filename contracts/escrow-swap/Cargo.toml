@@ -52,7 +52,7 @@ abi = [
   "near-sdk/abi",
   "serde_with/schemars_0_8",
 ]
-contract = ["dep:defuse-near-utils"]
+contract = ["defuse-nep245/near-contract", "dep:defuse-near-utils"]
 
 [dev-dependencies]
 defuse-escrow-swap = { path = ".", features = ["abi"] }

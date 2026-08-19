@@ -23,11 +23,14 @@ pub trait Schema<P> {
 
     /// Derive output for given `path`.
     fn derive(&self, path: P) -> Self::Output;
+}
 
-    /// Derive with given [schema](Schema).
+/// An extension trait for [`Schema`]s and [`DeriveSigner`](crate::DeriveSigner)s
+pub trait DeriveExt {
+    /// Derive with given inner sub-[schema](Schema).
     ///
     /// ```rust
-    /// use defuse_kdf::{Schema, SchemaFn};
+    /// use defuse_kdf::{DeriveExt, Schema, SchemaFn};
     ///
     /// let schema_a = SchemaFn::new(|v| v + 1);
     /// let schema_b = SchemaFn::new(|v| v * 2);
@@ -37,13 +40,14 @@ pub trait Schema<P> {
     /// assert_eq!(schema_ab.derive(3), 7);
     /// ```
     #[inline]
-    fn derive_with<D>(self, with: D) -> Derive<Self, D>
+    fn derive_with<D>(self, inner: D) -> Derive<Self, D>
     where
         Self: Sized,
     {
-        Derive(self, with)
+        Derive::new(self, inner)
     }
 }
+impl<T> DeriveExt for T {}
 
 /// No-op identity adator for [`Schema`].
 ///
@@ -67,7 +71,18 @@ impl<T> Schema<T> for Identity {
 /// Derive adaptor for [`Schema`] and [`crate::DeriveSigner`].
 /// See [`.derive()`](Derive::derive).
 #[derive(Debug, Clone, Copy, Default)]
-pub struct Derive<S, D>(pub(crate) S, pub(crate) D);
+pub struct Derive<S, D> {
+    pub(crate) outer: S,
+    pub(crate) inner: D,
+}
+
+impl<S, D> Derive<S, D> {
+    #[must_use]
+    #[inline]
+    pub const fn new(outer: S, inner: D) -> Self {
+        Self { outer, inner }
+    }
+}
 
 impl<P, S, D> Schema<P> for Derive<S, D>
 where
@@ -78,7 +93,7 @@ where
 
     #[inline]
     fn derive(&self, path: P) -> Self::Output {
-        self.0.derive(self.1.derive(path))
+        self.outer.derive(self.inner.derive(path))
     }
 }
 

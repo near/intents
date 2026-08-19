@@ -1,17 +1,15 @@
-use borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, state_init::StateInit};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Result,
+    AccountId, AccountIdRef, Gas, NearToken, Result, StateInit,
     engine::{Engine, Inspector, State},
     intents::ExecutableIntent,
 };
 
 /// Call `contract_id::on_auth(signer_id, msg)` with `signer_id`
 /// of intent.
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuthCall {
     /// Callee for `on_auth()`
     pub contract_id: AccountId,
@@ -57,7 +55,7 @@ impl ExecutableIntent for AuthCall {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        _intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,

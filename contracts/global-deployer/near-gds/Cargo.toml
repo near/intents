@@ -9,7 +9,7 @@ repository.workspace = true
 
 [dependencies]
 defuse-cli-utils = { workspace = true, features = ["hash"] }
-defuse-global-deployer-core = { workspace = true, features = ["serde", "borsh", "digest"] }
+defuse-global-deployer = { workspace = true, features = ["serde", "borsh", "digest"] }
 
 anyhow.workspace = true
 clap = { workspace = true, features = ["wrap_help"] }

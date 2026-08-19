@@ -1,11 +1,11 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use defuse_core::{SaltRegistry, fees::FeesConfig};
-use defuse_near_utils::NestPrefix;
+use defuse_core::fees::FeesConfig;
 use near_sdk::{AccountId, IntoStorageKey};
 
 use crate::contract::{
     MigrateStorageWithPrefix,
-    state::{ContractState, Prefix, TokenBalances},
+    prefix::NestPrefix,
+    state::{ContractState, Prefix, TokenBalances, salt_registry::SaltRegistry},
 };
 
 #[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]

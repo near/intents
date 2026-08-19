@@ -36,25 +36,25 @@ pub(crate) trait DynWalletRelayer: Send + Sync {
     async fn dyn_relay_signed_msg(
         &self,
         request: WalletRelayRequest,
-    ) -> Result<SentTransaction, Box<dyn StdError + Send + Sync>>;
+    ) -> anyhow::Result<SentTransaction>;
 }
 
 #[async_trait]
 impl<R> DynWalletRelayer for R
 where
     R: WalletRelayer,
-    R::Error: Into<Box<dyn StdError + Send + Sync>>,
+    R::Error: StdError + Send + Sync + 'static,
 {
     async fn dyn_relay_signed_msg(
         &self,
         request: WalletRelayRequest,
-    ) -> Result<SentTransaction, Box<dyn StdError + Send + Sync>> {
+    ) -> anyhow::Result<SentTransaction> {
         self.relay_wallet_msg(request).await.map_err(Into::into)
     }
 }
 
 impl WalletRelayer for dyn DynWalletRelayer + '_ {
-    type Error = Box<dyn StdError + Send + Sync>;
+    type Error = anyhow::Error;
 
     async fn relay_wallet_msg(
         &self,

@@ -1,5 +1,5 @@
+use borsh::{BorshDeserialize, BorshSerialize};
 use hex_literal::hex;
-use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 
 use crate::{
     Nonce,
@@ -13,7 +13,6 @@ use crate::{
 /// Currently supported versions:
 ///     - V1: `SALT (4 bytes) || DEADLINE (8 bytes) || NONCE (15 random bytes)`
 #[derive(Clone, Debug, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
-#[borsh(crate = "::near_sdk::borsh")]
 pub enum VersionedNonce {
     V1(SaltedNonce<ExpirableNonce<[u8; 15]>>),
 }

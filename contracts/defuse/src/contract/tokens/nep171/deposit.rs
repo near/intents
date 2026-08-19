@@ -1,6 +1,9 @@
 use defuse_core::{
     DefuseError,
-    token_id::{TokenId, nep171::Nep171TokenId},
+    token_id::{
+        TokenId,
+        nep171::{self, Nep171TokenId},
+    },
     tokens::MAX_TOKEN_ID_LEN,
 };
 use near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver;
@@ -24,7 +27,7 @@ impl NonFungibleTokenReceiver for Contract {
         &mut self,
         sender_id: AccountId,
         previous_owner_id: AccountId,
-        token_id: near_contract_standards::non_fungible_token::TokenId,
+        token_id: nep171::TokenId,
         msg: String,
     ) -> PromiseOrValue<bool> {
         if token_id.len() > MAX_TOKEN_ID_LEN {
@@ -95,7 +98,7 @@ impl Contract {
         &mut self,
         receiver_id: AccountId,
         contract_id: AccountId,
-        nft_token_id: near_contract_standards::non_fungible_token::TokenId,
+        nft_token_id: nep171::TokenId,
     ) -> PromiseOrValue<bool> {
         let mut amount = 1u128;
 

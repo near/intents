@@ -1,12 +1,14 @@
 mod event;
 pub use event::{REFUND_MEMO, TOTAL_LOG_LENGTH_LIMIT};
-mod gas;
-mod lock;
-mod panic_on_clone;
-mod prefix;
 mod promise;
 
-pub use self::{gas::*, lock::*, panic_on_clone::*, prefix::*, promise::*};
+#[cfg(feature = "borsh")]
+mod panic_on_clone;
+
+#[cfg(feature = "borsh")]
+pub use self::panic_on_clone::*;
+
+pub use self::promise::*;
 
 #[macro_export]
 macro_rules! method_name {

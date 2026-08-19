@@ -15,9 +15,9 @@ crate-type = ["cdylib", "rlib"]
 defuse-admin-utils.workspace = true
 defuse-auth-call.workspace = true
 defuse-controller.workspace = true
-defuse-core.workspace = true
-defuse-near-utils.workspace = true
-defuse-nep245.workspace = true
+defuse-core = { workspace = true, features = ["near-contract"] }
+defuse-near-utils = { workspace = true, features = ["borsh"] }
+defuse-nep245 = { workspace = true, features = ["near-contract"] }
 defuse-serde-utils = { workspace = true, features = ["base64"] }
 
 borsh = { workspace = true, features = ["derive"] }
@@ -25,7 +25,7 @@ impl-tools.workspace = true
 itertools.workspace = true
 near-contract-standards.workspace = true
 near-plugins.workspace = true
-near-sdk.workspace = true
+near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 thiserror.workspace = true
@@ -34,6 +34,7 @@ arbitrary = { workspace = true, features = ["derive"], optional = true }
 bitflags = { workspace = true, optional = true }
 defuse-bitmap = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
+defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-map-utils = { workspace = true, features = ["near"], optional = true }
 defuse-wnear = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }

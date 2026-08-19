@@ -10,7 +10,6 @@ use defuse_core::{
     token_id::nep141::Nep141TokenId,
 };
 use defuse_near_utils::{REFUND_MEMO, promise_result_checked_json, promise_result_checked_void};
-
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{
     fungible_token::core::ext_ft_core, storage_management::ext_storage_management,
@@ -39,7 +38,7 @@ impl FungibleTokenWithdrawer for Contract {
             FtWithdraw {
                 token,
                 receiver_id,
-                amount,
+                amount: amount.into(),
                 memo,
                 msg,
                 storage_deposit: None,
@@ -62,7 +61,7 @@ impl Contract {
             &owner_id,
             iter::once((
                 Nep141TokenId::new(withdraw.token.clone()).into(),
-                withdraw.amount.0,
+                withdraw.amount,
             ))
             .chain(withdraw.storage_deposit.map(|amount| {
                 (
@@ -101,7 +100,7 @@ impl Contract {
                 .with_static_gas(Self::FT_RESOLVE_WITHDRAW_GAS)
                 // do not distribute remaining gas here
                 .with_unused_gas_weight(0)
-                .ft_resolve_withdraw(withdraw.token, owner_id, withdraw.amount, is_call),
+                .ft_resolve_withdraw(withdraw.token, owner_id, withdraw.amount.into(), is_call),
         )
         .into())
     }
@@ -140,9 +139,14 @@ impl Contract {
             // distribute remaining gas here
             .with_unused_gas_weight(1);
         if let Some(msg) = withdraw.msg {
-            p.ft_transfer_call(withdraw.receiver_id, withdraw.amount, withdraw.memo, msg)
+            p.ft_transfer_call(
+                withdraw.receiver_id,
+                withdraw.amount.into(),
+                withdraw.memo,
+                msg,
+            )
         } else {
-            p.ft_transfer(withdraw.receiver_id, withdraw.amount, withdraw.memo)
+            p.ft_transfer(withdraw.receiver_id, withdraw.amount.into(), withdraw.memo)
         }
     }
 }
@@ -209,7 +213,7 @@ impl FungibleTokenForceWithdrawer for Contract {
             FtWithdraw {
                 token,
                 receiver_id,
-                amount,
+                amount: amount.into(),
                 memo,
                 msg,
                 storage_deposit: None,

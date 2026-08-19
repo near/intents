@@ -1,7 +1,6 @@
-use defuse_crypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
+use defuse_crypto::ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature};
 pub use defuse_nep413::{Nep413, Nep413Payload};
 use impl_tools::autoimpl;
-use near_sdk::AccountId;
 use serde::{
     Deserialize, Serialize,
     de::{self, DeserializeOwned},
@@ -9,7 +8,7 @@ use serde::{
 use serde_with::serde_as;
 
 use crate::{
-    Timestamp,
+    AccountId, Timestamp,
     payload::{Payload, SignedPayload},
 };
 
@@ -18,7 +17,7 @@ use super::{DefusePayload, ExtractDefusePayload};
 #[autoimpl(Deref using self.message)]
 #[autoimpl(DerefMut using self.message)]
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Nep413DefuseMessage<T> {
     pub signer_id: AccountId,
@@ -56,7 +55,7 @@ where
 
 #[autoimpl(Deref using self.payload)]
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignedNep413Payload {
     pub payload: Nep413Payload,
@@ -66,7 +65,7 @@ pub struct SignedNep413Payload {
 }
 
 impl Payload for SignedNep413Payload {
-    fn hash(&self) -> near_sdk::CryptoHash {
+    fn hash(&self) -> [u8; 32] {
         Nep413::prehash(&self.payload)
     }
 }
@@ -75,7 +74,7 @@ impl SignedPayload for SignedNep413Payload {
     type PublicKey = Ed25519PublicKey;
 
     fn verify(&self) -> Option<Self::PublicKey> {
-        Nep413::verify(
+        Nep413::verify::<Ed25519>(
             &self.public_key.try_into().ok()?,
             &self.payload,
             &self.signature.into(),

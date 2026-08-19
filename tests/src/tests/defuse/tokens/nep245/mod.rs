@@ -55,7 +55,7 @@ use defuse_sandbox::{
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
-use near_sdk_core::{events::AsNep297Event, json_types::U128};
+use near_sdk::{events::AsNep297Event, json_types::U128};
 
 use crate::{
     sandbox::extensions::mt::MtExt,
@@ -1676,7 +1676,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
     .await;
 
     let transfer_amounts = [1000, 2000, 3000].map(U128::from).to_vec();
-    let refund_amounts = [1000, 2000, 1000].map(U128::from).to_vec();
+    let refund_amounts = vec![1000, 2000, 1000];
 
     let ft1_id = TokenId::from(Nep141TokenId::new(ft1.contract_id().clone()));
     let ft2_id = TokenId::from(Nep141TokenId::new(ft2.contract_id().clone()));
@@ -1710,7 +1710,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
             )
             .await
             .unwrap(),
-        refund_amounts: refund_amounts.clone(),
+        refund_amounts: refund_amounts.iter().copied().map(U128).collect(),
     };
 
     let deposit_message = DepositMessage {

@@ -150,7 +150,7 @@ without waiting on previous ones to complete
 Supported actions within promises are:
 
 | Action | Description |
-|--------|-------------|
+| -------- | ------------- |
 | `FunctionCall` | Call a contract method |
 | `Transfer` | Send NEAR tokens |
 | `StateInit` | Deploy a new contract at a [deterministic AccountId](https://github.com/near/NEPs/blob/master/neps/nep-0616.md) |

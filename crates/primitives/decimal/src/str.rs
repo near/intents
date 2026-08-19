@@ -4,8 +4,6 @@ use core::{
     str::FromStr,
 };
 
-use thiserror::Error as ThisError;
-
 use crate::UD128;
 
 impl Debug for UD128 {
@@ -81,7 +79,7 @@ impl FromStr for UD128 {
     }
 }
 
-#[derive(Debug, ThisError)]
+#[derive(Debug, thiserror::Error)]
 pub enum ParseDecimalError {
     #[error(transparent)]
     ParseIntError(#[from] ParseIntError),

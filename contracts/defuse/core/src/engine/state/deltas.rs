@@ -1,5 +1,5 @@
 use crate::{
-    DefuseError, Nonce, NoncePrefix, Result, Salt,
+    AccountId, AccountIdRef, DefuseError, Nonce, NoncePrefix, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -14,7 +14,6 @@ use crate::{
 };
 use defuse_map_utils::cleanup::DefaultMap;
 use defuse_nep245::{MtEvent, MtTransferEvent};
-use near_sdk::{AccountId, AccountIdRef, json_types::U128};
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::{
@@ -436,8 +435,9 @@ impl Transfers {
                 .map(|(sender_id, (receiver_id, transfers))| {
                     let (token_ids, amounts) = transfers
                         .iter()
-                        .map(|(token_id, amount)| (token_id.to_string(), U128(*amount)))
+                        .map(|(token_id, amount)| (token_id.to_string(), *amount))
                         .unzip();
+
                     MtTransferEvent {
                         authorized_id: None,
                         old_owner_id: Cow::Borrowed(sender_id),
@@ -454,7 +454,7 @@ impl Transfers {
 }
 
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "error", rename_all = "snake_case")]
 pub enum InvariantViolated {

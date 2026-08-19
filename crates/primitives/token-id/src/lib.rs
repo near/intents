@@ -19,7 +19,7 @@ pub use self::error::TokenIdError;
 #[cfg_attr(
     feature = "borsh",
     derive(::borsh::BorshSerialize, ::borsh::BorshDeserialize),
-    cfg_attr(feature = "abi", derive(::borsh::BorshSchema)),
+    cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema)),
     borsh(use_discriminant = true)
 )]
 #[cfg_attr(
@@ -33,7 +33,7 @@ pub use self::error::TokenIdError;
         feature = "serde",
         derive(::serde_with::SerializeDisplay, ::serde_with::DeserializeFromStr),
         cfg_attr(
-            feature = "abi",
+            feature = "schemars-v0_8",
             derive(::schemars::JsonSchema),
             schemars(with = "String"),
         )
@@ -95,7 +95,7 @@ impl FromStr for TokenId {
     }
 }
 
-#[cfg(feature = "abi")]
+#[cfg(feature = "schemars-v0_8")]
 const _: () = {
     use schemars::{
         JsonSchema,

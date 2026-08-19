@@ -5,8 +5,8 @@ mod nep171;
 mod nep245;
 
 use super::Contract;
-use defuse_core::{DefuseError, Result, token_id::TokenId};
-use defuse_near_utils::{Lock, REFUND_MEMO, promise_result_checked_json_with_len};
+use defuse_core::{DefuseError, Lock, Result, token_id::TokenId};
+use defuse_near_utils::{REFUND_MEMO, promise_result_checked_json_with_len};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
 use near_sdk::{AccountId, AccountIdRef, FunctionError, Gas, env, json_types::U128};
@@ -41,7 +41,7 @@ impl Contract {
             }
 
             mint_event.token_ids.to_mut().push(token_id.to_string());
-            mint_event.amounts.to_mut().push(U128(amount));
+            mint_event.amounts.to_mut().push(amount);
 
             let total_supply = self
                 .storage
@@ -102,7 +102,7 @@ impl Contract {
             }
 
             burn_event.token_ids.to_mut().push(token_id.to_string());
-            burn_event.amounts.to_mut().push(U128(amount));
+            burn_event.amounts.to_mut().push(amount);
 
             owner
                 .token_balances
@@ -196,7 +196,7 @@ impl Contract {
             }
 
             burn_event.token_ids.to_mut().push(token_id.to_string());
-            burn_event.amounts.to_mut().push(U128(refund_amount));
+            burn_event.amounts.to_mut().push(refund_amount);
 
             receiver
                 .token_balances

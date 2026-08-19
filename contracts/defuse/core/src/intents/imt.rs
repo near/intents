@@ -1,11 +1,9 @@
-use borsh::{BorshDeserialize, BorshSerialize};
-use near_sdk::{AccountId, AccountIdRef, CryptoHash};
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use std::{borrow::Cow, collections::BTreeMap};
 
 use crate::{
-    Result,
+    AccountId, AccountIdRef, Result,
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State},
@@ -15,8 +13,8 @@ use crate::{
 };
 
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Mint a set of tokens from the signer to a specified account id, within the intents contract.
 pub struct ImtMint {
     /// Receiver of the minted tokens
@@ -47,7 +45,7 @@ impl ExecutableIntent for ImtMint {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -74,8 +72,8 @@ impl ExecutableIntent for ImtMint {
 }
 
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Burn a set of imt tokens, within the intents contract.
 pub struct ImtBurn {
     // The minter authority of the imt tokens
@@ -98,7 +96,7 @@ impl ExecutableIntent for ImtBurn {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,

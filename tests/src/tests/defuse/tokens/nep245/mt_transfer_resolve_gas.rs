@@ -16,16 +16,19 @@ use defuse_sandbox::{
             nep245::{MtEvent, MtTransferEvent},
         },
         mt::MtOnTransferArgs,
-        mt::{Mt, MtBalanceOfArgs, MtExt},
+        mt::{Mt, MtBalanceOfArgs, MtBatchBalanceOfArgs, MtBatchTransferCallArgs, MtExt},
     },
-    kit::{AccountId, Near, NearToken},
+    kit::{
+        AccountId, ActionError, ActionErrorKind, ExecutionStatus, Final, FunctionCallError, Gas,
+        Near, NearToken,
+    },
 };
 use defuse_test_utils::{
     random::{gen_random_string, random_bytes, rng},
     wasms::MT_RECEIVER_STUB_WASM,
 };
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk_core::{events::AsNep297Event, json_types::U128};
+use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 use std::{borrow::Cow, sync::Arc};
 use strum::IntoEnumIterator;
@@ -98,7 +101,7 @@ fn validate_mt_batch_transfer_log_size(
         old_owner_id: Cow::Borrowed(receiver_id),
         new_owner_id: Cow::Borrowed(sender_id),
         token_ids: Cow::Owned(token_ids.to_vec()),
-        amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
+        amounts: Cow::Borrowed(amounts),
         memo: Some(Cow::Borrowed(REFUND_MEMO)),
     }]));
 
@@ -408,6 +411,125 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
     assert_eq!(balance_after, balance_before,);
 }
 
+const REPRO_TOKEN_COUNT: usize = 66;
+const REPRO_FIRST_TOKEN_ID_LEN: usize = MAX_TOKEN_ID_LEN - 8;
+const REPRO_TOKEN_ID_PREFIX_LEN: usize = 2;
+
+#[rstest]
+#[tokio::test]
+async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(awt)] env: Env) {
+    env.transaction(env.defuse.contract_id())
+        .transfer(NearToken::from_near(1000))
+        .await
+        .unwrap();
+
+    let author_account = env.create_implicit(NearToken::from_near(1000)).await;
+    let user = env.create_implicit(NearToken::from_near(1000)).await;
+    let receiver_stub = env.create_implicit(NearToken::from_near(100)).await;
+    receiver_stub
+        .deploy(MT_RECEIVER_STUB_WASM.to_vec())
+        .wait_until::<Final>()
+        .await
+        .unwrap()
+        .result()
+        .unwrap();
+
+    let token_ids: Vec<String> = std::iter::once(REPRO_FIRST_TOKEN_ID_LEN)
+        .chain(std::iter::repeat_n(MAX_TOKEN_ID_LEN, REPRO_TOKEN_COUNT - 1))
+        .enumerate()
+        .map(|(i, len)| {
+            // Index-prefixed to keep them unique; all indices fit the fixed-width prefix.
+            format!("{i:02}{}", "a".repeat(len - REPRO_TOKEN_ID_PREFIX_LEN))
+        })
+        .collect();
+    let amounts = vec![u128::MAX; REPRO_TOKEN_COUNT];
+    let defuse_token_ids: Vec<String> = token_ids
+        .iter()
+        .map(|token_id| {
+            TokenId::Nep245(Nep245TokenId::new(
+                author_account.account_id().clone(),
+                token_id.clone(),
+            ))
+            .to_string()
+        })
+        .collect();
+
+    author_account
+        .mt_on_transfer(
+            env.defuse.contract_id(),
+            MtOnTransferArgs {
+                sender_id: user.account_id(),
+                previous_owner_ids: &vec![author_account.account_id().clone(); token_ids.len()],
+                token_ids: &token_ids,
+                amounts: &amounts,
+                msg: "",
+            },
+        )
+        .await
+        .unwrap();
+
+    let balances_of = async |account_id| {
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_batch_balance_of(MtBatchBalanceOfArgs {
+                account_id,
+                token_ids: &defuse_token_ids,
+            })
+            .await
+            .unwrap()
+    };
+    let sender_balances_before = balances_of(user.account_id()).await;
+    let receiver_balances_before = balances_of(receiver_stub.account_id()).await;
+
+    // NOTE: called as a raw transaction rather than through `MtExt::mt_batch_transfer_call`,
+    // since that helper drops the outcome when any receipt in the chain fails.
+    let execution_result = user
+        .transaction(env.defuse.contract_id())
+        .add_action(
+            Mt::mt_batch_transfer_call(MtBatchTransferCallArgs {
+                receiver_id: receiver_stub.account_id(),
+                token_ids: &defuse_token_ids,
+                amounts: &amounts,
+                approvals: None,
+                memo: None,
+                msg: &serde_json::to_string(&MTReceiverMode::RefundAll).unwrap(),
+            })
+            .deposit(NearToken::from_yoctonear(1))
+            .gas(Gas::from_tgas(300)),
+        )
+        .wait_until::<Final>()
+        .await
+        .unwrap();
+
+    let defuse_outcomes: Vec<_> = execution_result
+        .receipts_outcome
+        .iter()
+        .filter(|o| o.outcome.executor_id == *env.defuse.contract_id())
+        .collect();
+    assert_eq!(defuse_outcomes.len(), 1);
+    assert!(
+        matches!(
+            &defuse_outcomes[0].outcome.status,
+            ExecutionStatus::Failure(ActionError {
+                kind: ActionErrorKind::FunctionCallError(FunctionCallError::ExecutionError(msg)),
+                ..
+            }) if msg.contains("refund event log would be too long")
+        ),
+        "expected mt_batch_transfer_call to reject the oversized refund log, got: {:?}",
+        defuse_outcomes[0].outcome.status
+    );
+
+    assert_eq!(
+        balances_of(user.account_id()).await,
+        sender_balances_before,
+        "failed mt_batch_transfer_call changed one or more sender balances"
+    );
+    assert_eq!(
+        balances_of(receiver_stub.account_id()).await,
+        receiver_balances_before,
+        "failed mt_batch_transfer_call changed one or more receiver balances"
+    );
+}
+
 /// Calculate log sizes for transfer (no memo) and refund (with "refund" memo).
 fn calculate_log_sizes(
     sender_id: &AccountId,
@@ -420,7 +542,7 @@ fn calculate_log_sizes(
         old_owner_id: Cow::Borrowed(sender_id),
         new_owner_id: Cow::Borrowed(receiver_id),
         token_ids: Cow::Owned(token_ids.to_vec()),
-        amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
+        amounts: Cow::Borrowed(amounts),
         memo: None, // Transfer has no memo
     }]));
 
@@ -429,7 +551,7 @@ fn calculate_log_sizes(
         old_owner_id: Cow::Borrowed(receiver_id),
         new_owner_id: Cow::Borrowed(sender_id),
         token_ids: Cow::Owned(token_ids.to_vec()),
-        amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
+        amounts: Cow::Borrowed(amounts),
         memo: Some(Cow::Borrowed(REFUND_MEMO)), // Refund has "refund" memo
     }]));
 

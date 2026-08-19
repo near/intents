@@ -1,4 +1,4 @@
-use core::{mem, time::Duration};
+use core::time::Duration;
 use std::collections::BTreeMap;
 
 use defuse_bitmap::BitMap;
@@ -141,7 +141,7 @@ impl Nonces {
         // check if it's time to rotate
         if self.last_cleaned_at < last_valid_nonce_at {
             // rotate current -> old
-            self.old = mem::take(&mut self.current);
+            self.old = std::mem::take(&mut self.current);
             // check if `2 * timeout` has passed since last rotation
             if self.last_cleaned_at < last_valid_nonce_at - self.timeout {
                 // cleanup old nonces

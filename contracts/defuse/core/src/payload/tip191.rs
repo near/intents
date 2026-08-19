@@ -1,13 +1,12 @@
 use defuse_crypto::secp256k1::{Secp256k1RecoverableSignature, Secp256k1UncompressedPublicKey};
 use defuse_tip191::Tip191;
-use near_sdk::{CryptoHash, serde_json};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use crate::payload::{Payload, SignedPayload};
 
 use super::{DefusePayload, ExtractDefusePayload};
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema))]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignedTip191Payload {
     pub payload: String,
@@ -19,7 +18,7 @@ pub struct SignedTip191Payload {
 
 impl Payload for SignedTip191Payload {
     #[inline]
-    fn hash(&self) -> CryptoHash {
+    fn hash(&self) -> [u8; 32] {
         Tip191::prehash(&self.payload)
     }
 }

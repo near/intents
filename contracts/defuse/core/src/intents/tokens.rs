@@ -1,15 +1,11 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
-use borsh::{BorshDeserialize, BorshSerialize};
-use near_contract_standards::non_fungible_token;
-use near_sdk::{
-    AccountId, AccountIdRef, CryptoHash, Gas, NearToken, json_types::U128, state_init::StateInit,
-};
+use defuse_token_id::nep171;
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
-    DefuseError, Result,
+    AccountId, AccountIdRef, DefuseError, Gas, NearToken, Result, StateInit,
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State},
@@ -21,8 +17,8 @@ use crate::{
 use super::ExecutableIntent;
 
 #[must_use]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NotifyOnTransfer {
     /// Optionally initialize the receiver's contract (Deterministic `AccountId`)
     /// via [`state_init`](https://github.com/near/NEPs/blob/master/neps/nep-0616.md#stateinit-action)
@@ -62,8 +58,8 @@ impl NotifyOnTransfer {
 }
 
 #[serde_as]
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Transfer a set of tokens from the signer to a specified account id, within the intents contract.
 pub struct Transfer {
     pub receiver_id: AccountId,
@@ -88,7 +84,7 @@ impl ExecutableIntent for Transfer {
         self,
         sender_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -132,13 +128,15 @@ impl ExecutableIntent for Transfer {
     }
 }
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[serde_as]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Withdraw given FT tokens from the intents contract to a given external account id (external being outside of intents).
 pub struct FtWithdraw {
     pub token: AccountId,
     pub receiver_id: AccountId,
-    pub amount: U128,
+    #[serde_as(as = "DisplayFromStr")]
+    pub amount: u128,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
 
@@ -207,7 +205,7 @@ impl ExecutableIntent for FtWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -227,13 +225,13 @@ impl ExecutableIntent for FtWithdraw {
     }
 }
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Withdraw given NFT tokens from the intents contract to a given external account id (external being outside of intents).
 pub struct NftWithdraw {
     pub token: AccountId,
     pub receiver_id: AccountId,
-    pub token_id: non_fungible_token::TokenId,
+    pub token_id: nep171::TokenId,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
 
@@ -302,7 +300,7 @@ impl ExecutableIntent for NftWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -322,8 +320,9 @@ impl ExecutableIntent for NftWithdraw {
     }
 }
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[serde_as]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Withdraw given MT tokens (i.e. [NEP-245](https://github.com/near/NEPs/blob/master/neps/nep-0245.md)) from the intents contract
 /// to a given to an external account id (external being outside of intents).
 ///
@@ -332,7 +331,8 @@ pub struct MtWithdraw {
     pub token: AccountId,
     pub receiver_id: AccountId,
     pub token_ids: Vec<defuse_nep245::TokenId>,
-    pub amounts: Vec<U128>,
+    #[serde_as(as = "Vec<DisplayFromStr>")]
+    pub amounts: Vec<u128>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
 
@@ -403,7 +403,7 @@ impl ExecutableIntent for MtWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -423,8 +423,8 @@ impl ExecutableIntent for MtWithdraw {
     }
 }
 
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Withdraw native tokens (NEAR) from the intents contract to a given external account id (external being outside of intents).
 /// This will subtract from the account's wNEAR balance, and will be sent to the account specified as native NEAR.
 /// NOTE: the `wNEAR` will not be refunded in case of fail (e.g. `receiver_id`
@@ -440,7 +440,7 @@ impl ExecutableIntent for NativeWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
@@ -471,8 +471,8 @@ impl ExecutableIntent for NativeWithdraw {
 /// `StorageDeposit` intent. This is due to the fact that intents that fire `Promise`s
 /// are not guaranteed to be executed sequentially, in the order of the provided intents in
 /// `DefuseIntents`.
-#[cfg_attr(feature = "abi", derive(::schemars::JsonSchema, ::borsh::BorshSchema))]
-#[derive(Debug, Clone, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StorageDeposit {
     pub contract_id: AccountId,
     #[serde(
@@ -490,7 +490,7 @@ impl ExecutableIntent for StorageDeposit {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        intent_hash: [u8; 32],
     ) -> Result<()>
     where
         S: State,
