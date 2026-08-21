@@ -63,6 +63,13 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
         memo: Option<String>,
     ) -> Promise;
 
+    /// Same as [`PoaFactory::ft_deposit`], but deduplicates deposits by
+    /// `deposit_id`: the id is recorded on-chain and the call fails if it was
+    /// already used. Required for omni layer tokens, which [`PoaFactory::ft_deposit`]
+    /// rejects.
+    ///
+    /// NOTE: the `deposit_id` entry is not covered by the attached deposit,
+    /// so its storage MUST be subsidised separately by the contract owner.
     fn ft_omni_deposit(
         &mut self,
         deposit_id: String,
@@ -77,6 +84,9 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     fn tokens(&self) -> HashMap<String, AccountId>;
 
     /// Records a new withdrawal under `withdrawal_id`. Fails if the id is already used.
+    ///
+    /// NOTE: as with [`PoaFactory::ft_omni_deposit`], this storage MUST be
+    /// subsidised separately by the contract owner.
     fn ft_withdraw(&mut self, withdrawal_id: String, withdrawal: Withdrawal);
 
     /// Replaces the payload hash of an existing withdrawal, guarded by the previous hash.
