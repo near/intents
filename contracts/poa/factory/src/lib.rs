@@ -92,7 +92,7 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     /// Replaces the payload hash of an existing withdrawal, guarded by the previous hash.
     fn ft_update_withdraw(
         &mut self,
-        transfer_id: String,
+        withdrawal_id: String,
         prev_payload_hash: Base64VecU8,
         new_payload_hash: Base64VecU8,
         metadata: String,

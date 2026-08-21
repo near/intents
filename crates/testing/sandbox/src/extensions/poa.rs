@@ -44,7 +44,7 @@ pub struct PoaFtWithdrawArgs {
 
 #[derive(Serialize, Deserialize)]
 pub struct PoaFtUpdateWithdrawArgs {
-    pub transfer_id: String,
+    pub withdrawal_id: String,
     pub prev_payload_hash: Base64VecU8,
     pub new_payload_hash: Base64VecU8,
     pub metadata: String,
@@ -176,7 +176,7 @@ pub trait PoAFactoryExt {
     async fn poa_factory_ft_update_withdraw(
         &self,
         factory: impl AsRef<AccountIdRef>,
-        transfer_id: impl Into<String>,
+        withdrawal_id: impl Into<String>,
         prev_payload_hash: Base64VecU8,
         new_payload_hash: Base64VecU8,
         metadata: impl Into<String>,
@@ -267,7 +267,7 @@ impl PoAFactoryExt for Near {
     async fn poa_factory_ft_update_withdraw(
         &self,
         factory: impl AsRef<AccountIdRef>,
-        transfer_id: impl Into<String>,
+        withdrawal_id: impl Into<String>,
         prev_payload_hash: Base64VecU8,
         new_payload_hash: Base64VecU8,
         metadata: impl Into<String>,
@@ -275,7 +275,7 @@ impl PoAFactoryExt for Near {
         self.transaction(factory.as_ref())
             .add_action(
                 PoaFactory::ft_update_withdraw(PoaFtUpdateWithdrawArgs {
-                    transfer_id: transfer_id.into(),
+                    withdrawal_id: withdrawal_id.into(),
                     prev_payload_hash,
                     new_payload_hash,
                     metadata: metadata.into(),
