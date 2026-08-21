@@ -237,14 +237,14 @@ impl PoaFactory for Contract {
     #[access_control_any(roles(Role::DAO, Role::OmniProver))]
     fn ft_update_withdraw(
         &mut self,
-        transfer_id: String,
+        withdrawal_id: String,
         prev_payload_hash: Base64VecU8,
         new_payload_hash: Base64VecU8,
         metadata: String,
     ) {
         let withdrawal = self
             .withdrawals
-            .get_mut(&transfer_id)
+            .get_mut(&withdrawal_id)
             .unwrap_or_else(|| panic!("withdrawal not found"));
 
         require!(
@@ -256,7 +256,7 @@ impl PoaFactory for Contract {
         withdrawal.metadata = metadata;
 
         FactoryEvent::FtUpdateWithdraw {
-            transfer_id: &transfer_id,
+            withdrawal_id: &withdrawal_id,
             prev_payload_hash: &prev_payload_hash,
             new_payload_hash: &withdrawal.payload_hash,
             metadata: &withdrawal.metadata,

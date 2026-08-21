@@ -33,7 +33,7 @@ pub enum FactoryEvent<'a> {
     },
     #[event_version("0.1.0")]
     FtUpdateWithdraw {
-        transfer_id: &'a str,
+        withdrawal_id: &'a str,
         prev_payload_hash: &'a Base64VecU8,
         new_payload_hash: &'a Base64VecU8,
         metadata: &'a String,
