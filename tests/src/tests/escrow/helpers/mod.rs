@@ -89,7 +89,6 @@ impl Env {
             .map(|(token, owner_id)| {
                 root.poa_factory_ft_deposit(
                     poa_factory.contract_id().clone(),
-                    format!("escrow-{token}-{owner_id}"),
                     token,
                     owner_id,
                     1_000_000,

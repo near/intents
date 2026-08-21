@@ -53,8 +53,7 @@ pub enum Role {
     TokenDepositer,
     PauseManager,
     UnpauseManager,
-    TokenWithdrawer,
-    OmniDepositer,
+    OmniProver,
 }
 
 #[near(contract_state, contract_metadata())]
@@ -184,11 +183,10 @@ impl PoaFactory for Contract {
     }
 
     #[pause]
-    #[access_control_any(roles(Role::DAO, Role::TokenDepositer, Role::OmniDepositer))]
+    #[access_control_any(roles(Role::DAO, Role::TokenDepositer))]
     #[payable]
     fn ft_deposit(
         &mut self,
-        deposit_id: Option<String>,
         token: String,
         owner_id: AccountId,
         amount: U128,
@@ -196,51 +194,31 @@ impl PoaFactory for Contract {
         memo: Option<String>,
     ) -> Promise {
         require!(
-            !self.omni_tokens.contains(&token)
-                || self.acl_has_any_role(
-                    vec![Role::OmniDepositer.into(), Role::DAO.into()],
-                    env::predecessor_account_id()
-                ),
-            "omni token deposit requires OmniDepositer role"
+            !self.omni_tokens.contains(&token),
+            "omni token deposit requires omni_deposit method"
         );
 
-        if let Some(deposit_id) = deposit_id {
-            require!(self.deposits.insert(deposit_id), "deposit already exists");
-        }
-
-        require!(
-            env::attached_deposit() >= self.bridge_token_storage_deposit_required,
-            "not enough deposit attached for token storage_deposit"
-        );
-        require!(self.tokens.contains(&token), "token does not exist");
-
-        let token_id = Self::token_id(token);
-
-        if let Some(msg) = msg {
-            require!(
-                env::prepaid_gas().saturating_sub(env::used_gas())
-                    > POA_TOKEN_FT_DEPOSIT_GAS.saturating_add(POA_TOKEN_FT_TRANSFER_CALL_MIN_GAS),
-                "insufficient gas"
-            );
-            ext_poa_fungible_token::ext(token_id.clone())
-                .with_attached_deposit(env::attached_deposit())
-                .with_static_gas(POA_TOKEN_FT_DEPOSIT_GAS)
-                .ft_deposit(env::current_account_id(), amount, None)
-                .then(
-                    ext_ft_core::ext(token_id)
-                        .with_attached_deposit(NearToken::from_yoctonear(1))
-                        .ft_transfer_call(owner_id, amount, memo, msg),
-                )
-        } else {
-            ext_poa_fungible_token::ext(token_id)
-                .with_attached_deposit(env::attached_deposit())
-                .with_static_gas(POA_TOKEN_FT_DEPOSIT_GAS)
-                .ft_deposit(owner_id, amount, memo)
-        }
+        self.ft_deposit_internal(token, owner_id, amount, msg, memo)
     }
 
     #[pause]
-    #[access_control_any(roles(Role::DAO, Role::TokenWithdrawer))]
+    #[access_control_any(roles(Role::DAO, Role::OmniProver))]
+    #[payable]
+    fn ft_omni_deposit(
+        &mut self,
+        deposit_id: String,
+        token: String,
+        owner_id: AccountId,
+        amount: U128,
+        msg: Option<String>,
+        memo: Option<String>,
+    ) -> Promise {
+        require!(self.deposits.insert(deposit_id), "deposit already exists");
+        self.ft_deposit_internal(token, owner_id, amount, msg, memo)
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO, Role::OmniProver))]
     fn ft_withdraw(&mut self, withdrawal_id: String, withdrawal: Withdrawal) {
         require!(
             self.withdrawals
@@ -256,7 +234,7 @@ impl PoaFactory for Contract {
     }
 
     #[pause]
-    #[access_control_any(roles(Role::DAO, Role::TokenWithdrawer))]
+    #[access_control_any(roles(Role::DAO, Role::OmniProver))]
     fn ft_update_withdraw(
         &mut self,
         transfer_id: String,
@@ -347,6 +325,45 @@ impl Contract {
         format!("{token}.{}", env::current_account_id())
             .parse()
             .unwrap_or_else(|e| panic!("{e}"))
+    }
+
+    fn ft_deposit_internal(
+        &self,
+        token: String,
+        owner_id: AccountId,
+        amount: U128,
+        msg: Option<String>,
+        memo: Option<String>,
+    ) -> Promise {
+        require!(
+            env::attached_deposit() >= self.bridge_token_storage_deposit_required,
+            "not enough deposit attached for token storage_deposit"
+        );
+        require!(self.tokens.contains(&token), "token does not exist");
+
+        let token_id = Self::token_id(token);
+
+        if let Some(msg) = msg {
+            require!(
+                env::prepaid_gas().saturating_sub(env::used_gas())
+                    > POA_TOKEN_FT_DEPOSIT_GAS.saturating_add(POA_TOKEN_FT_TRANSFER_CALL_MIN_GAS),
+                "insufficient gas"
+            );
+            ext_poa_fungible_token::ext(token_id.clone())
+                .with_attached_deposit(env::attached_deposit())
+                .with_static_gas(POA_TOKEN_FT_DEPOSIT_GAS)
+                .ft_deposit(env::current_account_id(), amount, None)
+                .then(
+                    ext_ft_core::ext(token_id)
+                        .with_attached_deposit(NearToken::from_yoctonear(1))
+                        .ft_transfer_call(owner_id, amount, memo, msg),
+                )
+        } else {
+            ext_poa_fungible_token::ext(token_id)
+                .with_attached_deposit(env::attached_deposit())
+                .with_static_gas(POA_TOKEN_FT_DEPOSIT_GAS)
+                .ft_deposit(owner_id, amount, memo)
+        }
     }
 }
 

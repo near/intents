@@ -97,7 +97,6 @@ async fn poa_deposit(#[future(awt)] env: Env) {
 
     env.poa_factory_ft_deposit(
         env.poa_factory.contract_id(),
-        "poa-deposit-1",
         &env.poa_factory.ft_name(ft.contract_id()),
         user.account_id(),
         1000,
@@ -141,7 +140,6 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
 
     env.poa_factory_ft_deposit(
         env.poa_factory.contract_id(),
-        "deposit-withdraw-intent-1",
         &env.poa_factory.ft_name(ft.contract_id()),
         user.account_id(),
         1000,
@@ -241,7 +239,6 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
 
     env.poa_factory_ft_deposit(
         env.poa_factory.contract_id(),
-        "deposit-withdraw-intent-refund-1",
         &env.poa_factory.ft_name(ft.contract_id()),
         user.account_id(),
         1000,

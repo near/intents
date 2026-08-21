@@ -64,7 +64,6 @@ async fn deploy_mint(#[future(awt)] root: Near) {
 
     user.poa_factory_ft_deposit(
         poa_factory.contract_id(),
-        "deposit-unauthorized",
         "ft1",
         user.account_id(),
         1000,
@@ -76,7 +75,6 @@ async fn deploy_mint(#[future(awt)] root: Near) {
 
     root.poa_factory_ft_deposit(
         poa_factory.contract_id(),
-        "deposit-1",
         "ft1",
         user.account_id(),
         1000,
@@ -99,13 +97,13 @@ async fn deploy_factory_with_all_roles(root: &Near) -> PoaFactoryClient {
             (Role::DAO, [root.account_id().clone()]),
             (Role::TokenDeployer, [root.account_id().clone()]),
             (Role::TokenDepositer, [root.account_id().clone()]),
-            (Role::TokenWithdrawer, [root.account_id().clone()]),
+            (Role::OmniProver, [root.account_id().clone()]),
         ],
         [
             (Role::DAO, [root.account_id().clone()]),
             (Role::TokenDeployer, [root.account_id().clone()]),
             (Role::TokenDepositer, [root.account_id().clone()]),
-            (Role::TokenWithdrawer, [root.account_id().clone()]),
+            (Role::OmniProver, [root.account_id().clone()]),
         ],
         POA_FACTORY_WASM.clone(),
     )
@@ -119,83 +117,6 @@ fn sample_withdrawal(payload_hash: Vec<u8>, metadata: &str) -> Withdrawal {
         timestamp: 1_700_000_000,
         metadata: metadata.to_string(),
     }
-}
-
-#[rstest]
-#[tokio::test]
-async fn ft_deposit_duplicate_id_fails(#[future(awt)] root: Near) {
-    let user = root
-        .create_subaccount("user2", NearToken::from_near(10))
-        .await;
-
-    let poa_factory = deploy_factory_with_all_roles(&root).await;
-
-    let ft = root
-        .poa_factory_deploy_token(poa_factory.contract_id(), "ft1", None)
-        .await
-        .unwrap();
-
-    try_join!(
-        ft.storage_deposit(root.account_id(), NearToken::from_near(1))
-            .into_future(),
-        ft.storage_deposit(user.account_id(), NearToken::from_near(1))
-            .into_future()
-    )
-    .unwrap();
-
-    root.poa_factory_ft_deposit(
-        poa_factory.contract_id(),
-        "same-deposit",
-        "ft1",
-        user.account_id(),
-        1000,
-        None,
-        None,
-    )
-    .await
-    .unwrap();
-
-    let err = root
-        .poa_factory_ft_deposit(
-            poa_factory.contract_id(),
-            "same-deposit",
-            "ft1",
-            user.account_id(),
-            500,
-            None,
-            None,
-        )
-        .await
-        .unwrap_err();
-    assert!(
-        format!("{err:?}").contains("deposit already exists"),
-        "unexpected error: {err:?}"
-    );
-
-    let balance: u128 = ft.balance_of(user.account_id()).await.unwrap().into();
-    assert_eq!(
-        balance, 1000,
-        "second deposit must not have credited tokens"
-    );
-
-    root.poa_factory_remove_deposits(poa_factory.contract_id(), vec!["same-deposit".to_string()])
-        .await
-        .unwrap();
-
-    root.poa_factory_ft_deposit(
-        poa_factory.contract_id(),
-        "same-deposit",
-        "ft1",
-        user.account_id(),
-        500,
-        None,
-        None,
-    )
-    .await
-    .unwrap();
-
-    let balance: u128 = ft.balance_of(user.account_id()).await.unwrap().into();
-    assert_eq!(balance, 1500);
 }
 
 #[rstest]

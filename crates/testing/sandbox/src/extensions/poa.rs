@@ -29,7 +29,6 @@ pub struct PoaSetMetadataArgs {
 
 #[derive(Serialize, Deserialize)]
 pub struct PoaFtDepositArgs {
-    pub deposit_id: String,
     pub token: String,
     pub owner_id: AccountId,
     pub amount: U128,
@@ -157,11 +156,9 @@ pub trait PoAFactoryExt {
         metadata: impl Into<Option<FungibleTokenMetadata>>,
     ) -> Result<FungibleToken>;
 
-    #[allow(clippy::too_many_arguments)]
     async fn poa_factory_ft_deposit(
         &self,
         factory: impl AsRef<AccountIdRef>,
-        deposit_id: impl Into<String>,
         token: impl AsRef<str>,
         owner_id: impl AsRef<AccountIdRef>,
         amount: u128,
@@ -225,7 +222,6 @@ impl PoAFactoryExt for Near {
     async fn poa_factory_ft_deposit(
         &self,
         factory: impl AsRef<AccountIdRef>,
-        deposit_id: impl Into<String>,
         token: impl AsRef<str>,
         owner_id: impl AsRef<AccountIdRef>,
         amount: u128,
@@ -235,7 +231,6 @@ impl PoAFactoryExt for Near {
         self.transaction(factory.as_ref())
             .add_action(
                 PoaFactory::ft_deposit(PoaFtDepositArgs {
-                    deposit_id: deposit_id.into(),
                     token: token.as_ref().to_string(),
                     owner_id: owner_id.as_ref().into(),
                     amount: amount.into(),

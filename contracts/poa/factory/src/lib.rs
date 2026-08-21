@@ -56,7 +56,16 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     /// Requires to attach enough Ⓝ to cover storage costs.
     fn ft_deposit(
         &mut self,
-        deposit_id: Option<String>,
+        token: String,
+        owner_id: AccountId,
+        amount: U128,
+        msg: Option<String>,
+        memo: Option<String>,
+    ) -> Promise;
+
+    fn ft_omni_deposit(
+        &mut self,
+        deposit_id: String,
         token: String,
         owner_id: AccountId,
         amount: U128,
