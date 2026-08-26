@@ -354,3 +354,48 @@ const _: () = {
         }
     }
 };
+
+#[cfg(all(test, feature = "borsh", feature = "digest", feature = "json"))]
+mod tests {
+    use super::*;
+
+    /// Canonical test vectors, published for implementations in other languages.
+    const VECTORS: &str = include_str!("../vectors/offchain_message.json");
+
+    #[derive(::serde::Deserialize)]
+    struct TestVectors {
+        domain_separator: String,
+        vectors: Vec<TestVector>,
+    }
+
+    #[derive(::serde::Deserialize)]
+    struct TestVector {
+        name: String,
+        message: OffchainMessage,
+        hash: String,
+    }
+
+    #[test]
+    fn offchain_message_hash_vectors() {
+        let TestVectors {
+            domain_separator,
+            vectors,
+        } = serde_json::from_str(VECTORS).expect("invalid test vectors");
+
+        assert_eq!(
+            domain_separator.as_bytes(),
+            OffchainMessage::DOMAIN_SEPARATOR,
+            "domain separator drifted from the test vectors",
+        );
+        assert!(!vectors.is_empty(), "no test vectors");
+
+        for TestVector {
+            name,
+            message,
+            hash,
+        } in vectors
+        {
+            assert_eq!(hex::encode(message.hash()), hash, "vector '{name}'");
+        }
+    }
+}
