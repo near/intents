@@ -18,6 +18,8 @@ pub enum MTReceiverMode {
     ReturnValues(Vec<U128>),
     Panic,
     LargeReturn,
+    /// Return `count` copies of `u128::MAX` (~42 bytes each as JSON).
+    OversizedReturn { count: usize },
     ExecuteAndRefund {
         multipayload: MultiPayload,
         refund_amounts: Vec<U128>,
@@ -46,6 +48,9 @@ impl MultiTokenReceiver for Contract {
             MTReceiverMode::Panic => env::panic_str("MTReceiverMode::Panic"),
             // 16 * 250_000 = 4 MB, which is the limit for a contract return value
             MTReceiverMode::LargeReturn => PromiseOrValue::Value(vec![U128(u128::MAX); 250_000]),
+            MTReceiverMode::OversizedReturn { count } => {
+                PromiseOrValue::Value(vec![U128(u128::MAX); count])
+            }
             MTReceiverMode::ExecuteAndRefund {
                 multipayload,
                 refund_amounts,
