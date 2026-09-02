@@ -93,6 +93,26 @@ async fn poc_deposit_resolver_oog_mints_unbacked_credit() -> anyhow::Result<()> 
         .transact()
         .await?;
 
+    // ---- per-receipt trace: proves WHICH receipts committed state and which
+    // one died. NEAR has no cross-receipt revert — each receipt commits
+    // independently, and a failed receipt only rolls back its own writes
+    // (the resolver dies inside its very first host call, before writing).
+    // Printed BEFORE any assertion so the full trace is visible even on a
+    // fixed node, where the resolver no longer runs out of gas and the first
+    // assertion below is the one that trips.
+    println!("--- ATTACK TX: per-receipt trace ---");
+    for (i, r) in tx.receipt_outcomes().iter().enumerate() {
+        println!(
+            "receipt[{i}] executor={} success={} gas_burnt={:?}",
+            r.executor_id,
+            r.is_success(),
+            r.gas_burnt
+        );
+        for l in &r.logs {
+            println!("          log: {l}");
+        }
+    }
+
     // mechanism evidence: the deposit resolver receipt must have died of gas
     // exhaustion while everything else (incl. the token's own resolver)
     // executed normally
@@ -112,23 +132,6 @@ async fn poc_deposit_resolver_oog_mints_unbacked_credit() -> anyhow::Result<()> 
         tx.is_success(),
         "transaction as a whole should succeed (final receipt is the token resolver)"
     );
-
-    // ---- per-receipt trace: proves WHICH receipts committed state and which
-    // one died. NEAR has no cross-receipt revert — each receipt commits
-    // independently, and a failed receipt only rolls back its own writes
-    // (the resolver dies inside its very first host call, before writing).
-    println!("--- ATTACK TX: per-receipt trace ---");
-    for (i, r) in tx.receipt_outcomes().iter().enumerate() {
-        println!(
-            "receipt[{i}] executor={} success={} gas_burnt={:?}",
-            r.executor_id,
-            r.is_success(),
-            r.gas_burnt
-        );
-        for l in &r.logs {
-            println!("          log: {l}");
-        }
-    }
 
     // (a) the hook's internal credit was minted by a SUCCESSFUL receipt
     // (`ft_on_transfer` emitted mt_mint crediting the hook) — i.e. the mint

@@ -17,6 +17,7 @@ defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
 
 futures = "0.3"
+sha2 = "0.10"
 anyhow.workspace = true
 arbitrary.workspace = true
 arbitrary_with = { workspace = true }

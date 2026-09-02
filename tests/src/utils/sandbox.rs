@@ -23,6 +23,16 @@ impl Sandbox {
         let worker = near_workspaces::sandbox().await?;
         let root_account = worker.root_account()?;
 
+        if let Ok(status) = worker.status().await {
+            println!(
+                "[nearcore] version={} (build {}) protocol_version={} latest_protocol_version={}",
+                status.version.version,
+                status.version.build,
+                status.protocol_version,
+                status.latest_protocol_version,
+            );
+        }
+
         Ok(Self {
             worker,
             root_account,
