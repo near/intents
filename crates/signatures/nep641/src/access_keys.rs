@@ -422,3 +422,302 @@ const _: () = {
         }
     }
 };
+
+#[cfg(all(test, feature = "json"))]
+mod tests {
+    use super::*;
+
+    /// Canonical test vectors, published for implementations in other languages.
+    const VECTORS: &str = include_str!("../vectors/access_key_authorization.json");
+
+    #[derive(::serde::Deserialize)]
+    struct TestVectors {
+        nep413_prefix_tag: u32,
+        nep413_payloads: Vec<PayloadVector>,
+        signed: Vec<SignedVector>,
+        verify_cases: Vec<VerifyCase>,
+        parse_cases: Vec<ParseCase>,
+        account_id_cases: AccountIdCases,
+        implicit_accounts: Vec<ImplicitAccount>,
+    }
+
+    #[derive(::serde::Deserialize)]
+    struct PayloadVector {
+        name: String,
+        message: OffchainMessage,
+        callback_url: Option<String>,
+        recipient: String,
+        nonce: String,
+        payload_json: String,
+        prehash_preimage: String,
+        prehash: String,
+        offchain_message_hash: String,
+    }
+
+    #[derive(::serde::Deserialize)]
+    struct SignedVector {
+        name: String,
+        curve: String,
+        message: OffchainMessage,
+        callback_url: Option<String>,
+        access_key: String,
+        signature: String,
+        prehash: String,
+        implicit_account_id: String,
+        authorization: String,
+        verifies: bool,
+    }
+
+    #[derive(::serde::Deserialize)]
+    struct VerifyCase {
+        name: String,
+        authorization: String,
+        verifies: bool,
+    }
+
+    #[derive(::serde::Deserialize)]
+    struct ParseCase {
+        name: String,
+        blob: String,
+        parses: bool,
+    }
+
+    #[derive(::serde::Deserialize)]
+    struct AccountIdCases {
+        template: String,
+        cases: Vec<AccountIdCase>,
+    }
+
+    #[derive(::serde::Deserialize)]
+    struct AccountIdCase {
+        account_id: String,
+        field: String,
+        parses: bool,
+    }
+
+    #[derive(::serde::Deserialize)]
+    struct ImplicitAccount {
+        name: String,
+        curve: String,
+        public_key: String,
+        #[serde(rename = "implicit_account_id")]
+        account_id: String,
+    }
+
+    fn vectors() -> TestVectors {
+        serde_json::from_str(VECTORS).expect("invalid test vectors")
+    }
+
+    fn assert_curve(name: &str, curve: &str, public_key: &PublicKey) {
+        match (curve, public_key) {
+            ("ed25519", PublicKey::Ed25519(_)) | ("secp256k1", PublicKey::Secp256k1(_)) => {}
+            _ => panic!("vector '{name}': curve is not {curve}"),
+        }
+    }
+
+    /// [`OffchainMessage::into_nep413_payload`] and the NEP-413 prehash it is signed under.
+    #[test]
+    fn nep413_payload_vectors() {
+        let TestVectors {
+            nep413_prefix_tag,
+            nep413_payloads,
+            ..
+        } = vectors();
+        assert!(!nep413_payloads.is_empty(), "no test vectors");
+
+        for PayloadVector {
+            name,
+            message,
+            callback_url,
+            recipient,
+            nonce,
+            payload_json,
+            prehash_preimage,
+            prehash,
+            offchain_message_hash,
+        } in nep413_payloads
+        {
+            let payload = message.clone().into_nep413_payload(callback_url);
+
+            assert_eq!(payload.recipient, recipient, "vector '{name}'");
+            assert_eq!(payload.message, message.payload, "vector '{name}'");
+            assert_eq!(
+                serde_json::to_string(&payload).expect("JSON"),
+                payload_json,
+                "vector '{name}'",
+            );
+
+            // the prehash preimage is the prefix tag followed by the borsh-encoded payload
+            let preimage = hex::decode(&prehash_preimage).expect("hex");
+            let (tag, encoded) = preimage.split_at(size_of::<u32>());
+            assert_eq!(tag, nep413_prefix_tag.to_le_bytes(), "vector '{name}'");
+            assert_eq!(
+                encoded,
+                ::borsh::to_vec(&payload).expect("borsh"),
+                "vector '{name}'",
+            );
+            assert_eq!(
+                hex::encode(Nep413::prehash(&payload)),
+                prehash,
+                "vector '{name}'"
+            );
+
+            // the nonce binds the whole message via its canonical hash, which is a
+            // *different* hash function over a different preimage than the prehash
+            assert_eq!(hex::encode(payload.nonce), nonce, "vector '{name}'");
+            assert_eq!(
+                hex::encode(message.hash()),
+                offchain_message_hash,
+                "vector '{name}'"
+            );
+            assert_eq!(nonce, offchain_message_hash, "vector '{name}'");
+            assert_ne!(prehash, offchain_message_hash, "vector '{name}'");
+        }
+    }
+
+    /// Complete authorization blobs that MUST verify.
+    #[test]
+    fn signed_vectors() {
+        let TestVectors { signed, .. } = vectors();
+        assert!(!signed.is_empty(), "no test vectors");
+
+        for SignedVector {
+            name,
+            curve,
+            message,
+            callback_url,
+            access_key,
+            signature,
+            prehash,
+            implicit_account_id,
+            authorization,
+            verifies,
+        } in signed
+        {
+            let auth: AccessKeyAuthorization =
+                serde_json::from_str(&authorization).unwrap_or_else(|_| panic!("vector '{name}'"));
+
+            assert_eq!(auth.msg, message, "vector '{name}'");
+            assert_eq!(
+                auth.via,
+                AccessKeySchema::Nep413 {
+                    callback_url: callback_url.clone()
+                },
+                "vector '{name}'",
+            );
+            assert_eq!(auth.access_key.to_string(), access_key, "vector '{name}'");
+            assert_eq!(auth.signature.to_string(), signature, "vector '{name}'");
+            assert_curve(&name, &curve, &auth.access_key);
+
+            // the blob round-trips byte-for-byte
+            assert_eq!(String::from(&auth), authorization, "vector '{name}'");
+
+            assert_eq!(
+                hex::encode(Nep413::prehash(&message.into_nep413_payload(callback_url))),
+                prehash,
+                "vector '{name}'",
+            );
+            assert_eq!(
+                auth.access_key.to_implicit_account_id().as_str(),
+                implicit_account_id,
+                "vector '{name}'",
+            );
+
+            assert!(verifies, "vector '{name}': must be a positive case");
+            assert_eq!(auth.verify(), verifies, "vector '{name}'");
+        }
+    }
+
+    /// Blobs that parse, but MUST NOT verify.
+    #[test]
+    fn verify_case_vectors() {
+        let TestVectors { verify_cases, .. } = vectors();
+        assert!(!verify_cases.is_empty(), "no test vectors");
+
+        for VerifyCase {
+            name,
+            authorization,
+            verifies,
+        } in verify_cases
+        {
+            let auth: AccessKeyAuthorization = serde_json::from_str(&authorization)
+                .unwrap_or_else(|_| panic!("vector '{name}': must parse"));
+
+            assert!(!verifies, "vector '{name}': must be a negative case");
+            assert_eq!(auth.verify(), verifies, "vector '{name}'");
+        }
+    }
+
+    /// The JSON accept/reject boundary of [`AccessKeyAuthorization`].
+    #[test]
+    fn parse_case_vectors() {
+        let TestVectors { parse_cases, .. } = vectors();
+        assert!(!parse_cases.is_empty(), "no test vectors");
+
+        for ParseCase { name, blob, parses } in parse_cases {
+            assert_eq!(
+                serde_json::from_str::<AccessKeyAuthorization>(&blob).is_ok(),
+                parses,
+                "vector '{name}'",
+            );
+        }
+    }
+
+    /// Account IDs are validated on deserialization, in `signer_id` and in `path` alike.
+    #[test]
+    fn account_id_vectors() {
+        let TestVectors {
+            account_id_cases: AccountIdCases { template, cases },
+            ..
+        } = vectors();
+        assert!(!cases.is_empty(), "no test vectors");
+
+        for AccountIdCase {
+            account_id,
+            field,
+            parses,
+        } in cases
+        {
+            let mut blob: serde_json::Value =
+                serde_json::from_str(&template).expect("invalid template");
+            blob["msg"][&field] = match field.as_str() {
+                "signer_id" => account_id.as_str().into(),
+                "path" => serde_json::Value::from(vec![account_id.as_str()]),
+                _ => panic!("unknown field '{field}'"),
+            };
+
+            assert_eq!(
+                serde_json::from_value::<AccessKeyAuthorization>(blob).is_ok(),
+                parses,
+                "account ID '{account_id}' in '{field}'",
+            );
+        }
+    }
+
+    /// [`PublicKey::to_implicit_account_id`] on both curves.
+    #[test]
+    fn implicit_account_vectors() {
+        let TestVectors {
+            implicit_accounts, ..
+        } = vectors();
+        assert!(!implicit_accounts.is_empty(), "no test vectors");
+
+        for ImplicitAccount {
+            name,
+            curve,
+            public_key,
+            account_id,
+        } in implicit_accounts
+        {
+            let public_key: PublicKey = public_key
+                .parse()
+                .unwrap_or_else(|_| panic!("vector '{name}'"));
+            assert_curve(&name, &curve, &public_key);
+            assert_eq!(
+                public_key.to_implicit_account_id().as_str(),
+                account_id,
+                "vector '{name}'",
+            );
+        }
+    }
+}
