@@ -188,6 +188,8 @@ The implicit account ID derived from that key, `f9a9b8dfb0f2fa5033c761f6cae5fdae
 
 All four follow the same [Bootstrap Process](#bootstrap-process) as above, with the MPC-derived implicit account as owner throughout.
 
+The contracts above were built deterministically from repository revision [`32a7836f825e8c984c26149f4456793ec7e3d49a`](https://github.com/near/intents/commit/32a7836f825e8c984c26149f4456793ec7e3d49a). The build artifact is available from [this GitHub Actions run](https://github.com/near/intents/actions/runs/32236966092), and can be reproduced locally with `cargo near build reproducible-wasm`.
+
 ### Multi-Stage Deployment
 
 If consecutive upgrades are needed (e.g. H1 → H2 → H3), they can be prepared upfront. Since `gd_approve` takes the current `code_hash` as `old_hash`, each approval call simply references the code hash of the previously approved WASM binary. As long as you know the hashes of all consecutive binaries in advance, the full chain of `gd_approve` + `gd_deploy` calls can be queued and executed sequentially.
