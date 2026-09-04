@@ -43,7 +43,11 @@ The name defuse is an old name for the smart contract that we use to execute int
 
 You can obtain a working copy of the smart contract and the ABI from [the releases page](https://github.com/near/intents/releases/).
 
-Alternatively, you can build this smart contract yourself.
+Alternatively, enter the pinned development environment and build the smart contract yourself:
+
+```shell
+nix develop
+```
 
 Build smart contract separately:
 
@@ -82,6 +86,27 @@ make clippy
 ```
 
 After building, the artifacts of the build will be in the `res` directory.
+
+### Release process
+
+This repository uses [Release Please](https://github.com/googleapis/release-please) and Conventional Commits to maintain independent release lines for `defuse`, `global-deployer`, `poa-factory`, `poa-token`, and `wallet`. Their tags use the `<component>/v<version>` format, for example `defuse/v0.4.3`.
+
+Every push to `main` creates or updates separate release PRs for affected components. Squash-merged PR titles should therefore follow the Conventional Commits format, such as `feat(defuse): add delegated authentication`. Merging a PR carrying the `autorelease: pending` label creates its tag and GitHub release, reproducibly builds the component artifacts, and uploads the signed assets.
+
+Release Please evaluates commits within each component directory. A change confined to shared `crates/` must therefore include a corresponding change in every affected contract directory when those contracts need a release. Repository Actions settings must grant workflows read/write access and allow GitHub Actions to create pull requests; branch protection must allow the Release Please PR workflow to operate while retaining the normal required CI checks.
+
+Each release includes the component's WASM files, optional ABI files, `SHA256SUMS`, and `SHA256SUMS.sigstore.json`. After downloading all assets, verify their GitHub Actions identity and checksums with:
+
+```shell
+cosign verify-blob \
+  --bundle SHA256SUMS.sigstore.json \
+  --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp='^https://github.com/near/intents/.github/workflows/' \
+  SHA256SUMS
+sha256sum --check SHA256SUMS
+```
+
+The keyless Sigstore certificate and transparency-log proof bind the checksum manifest to this repository's GitHub Actions workflows. The checksum manifest then binds every uploaded contract artifact.
 
 ### Contracts in this repository
 

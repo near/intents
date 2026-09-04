@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "separate-pull-requests": true,
+  "pull-request-title-pattern": "chore: release `${component}/v${version}`",
+  "packages": {
+    "contracts/defuse": {
+      "release-type": "rust",
+      "component": "defuse",
+      "tag-separator": "/",
+      "include-component-in-tag": true
+    },
+    "contracts/global-deployer": {
+      "release-type": "rust",
+      "component": "global-deployer",
+      "tag-separator": "/",
+      "include-component-in-tag": true
+    },
+    "contracts/poa/factory": {
+      "release-type": "rust",
+      "component": "poa-factory",
+      "tag-separator": "/",
+      "include-component-in-tag": true
+    },
+    "contracts/poa/token": {
+      "release-type": "rust",
+      "component": "poa-token",
+      "tag-separator": "/",
+      "include-component-in-tag": true
+    },
+    "contracts/wallet": {
+      "release-type": "rust",
+      "component": "wallet",
+      "tag-separator": "/",
+      "include-component-in-tag": true
+    }
+  }
+}

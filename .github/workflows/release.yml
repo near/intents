@@ -1,32 +1,52 @@
-name: Release
+name: Build, sign, and publish contract release
 
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      component:
+        description: Release component name
+        type: string
+        required: true
+      version:
+        description: Release version without the v prefix
+        type: string
+        required: true
+      tag_name:
+        description: Full release tag, such as defuse/v0.4.3
+        type: string
+        required: true
 
 jobs:
-  build_and_upload_reproducible:
-    name: Build and Upload Reproducible Contract
+  publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required to upload assets to release
+      contents: write
+      id-token: write
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
+      - name: Checkout release tag
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          ref: ${{ github.event.release.tag_name }}
-
-      - name: Install cargo-near
-        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.22.0/cargo-near-installer.sh | sh
-        
-      - name: Build Reproducible WASM
-        run: make REPRODUCIBLE=1
-
-      - name: Upload WASM to Release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.event.release.tag_name }}
-          file: res/*
-          file_glob: true
-          overwrite: true
+          ref: refs/tags/${{ inputs.tag_name }}
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@908b263ff629f4cc17666315b7fd3ec127c6244d # v14
+      - name: Build reproducible contracts
+        run: nix develop --command make REPRODUCIBLE=1
+      - name: Prepare component artifacts
+        env:
+          COMPONENT: ${{ inputs.component }}
+        run: nix develop --command scripts/prepare-release-artifacts.sh "$COMPONENT" res release-artifacts
+      - name: Sign checksums with Sigstore
+        working-directory: release-artifacts
+        run: nix develop .. --command cosign sign-blob --yes --bundle SHA256SUMS.sigstore.json SHA256SUMS
+      - name: Upload signed release artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag_name }}
+        run: nix develop --command gh release upload "$TAG" release-artifacts/* --clobber
+      - name: Add verification instructions to release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag_name }}
+        run: nix develop --command .github/scripts/update-release-verification.sh
