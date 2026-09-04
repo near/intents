@@ -203,7 +203,7 @@ Only the base Global Deployer instances are deployed on testnet so far:
 | Immutable Global Deployer (by hash) | `37osLHRQ8KsJx1YwXJbPcd2wfKHP5KjtKawnrfjjaD3J` |
 | Mutable Global Deployer (by account ID) | [`0s7876eb5ba4f1d97eb53a53903a86bd211c71b3b1`](https://testnet.nearblocks.io/address/0s7876eb5ba4f1d97eb53a53903a86bd211c71b3b1) |
 
-These are the same addresses as on mainnet. The immutable deployer is addressed by the WASM's hash, which doesn't depend on the network. The mutable deployer's address is derived from the referenced global contract code plus the full `StateInit` storage (`owner_id`, `code_hash`, and `approved_hash`) — for this base deployer, `code_hash` and `approved_hash` are left at their default all-zero value (`0000…0000`), and only `owner_id` is set. The deterministic AccountId is identical on every chain only because all of these — the referenced GD code, `owner_id`, and the zeroed `code_hash`/`approved_hash` — are the same on both networks, including the owner being the same MPC-derived implicit account.
+These are the same addresses as on mainnet. The immutable deployer is addressed by the WASM's hash, which doesn't depend on the network. The mutable deployer's address is derived from the referenced global contract code plus the full `StateInit` storage (`owner_id`, `code_hash`, and `approved_hash`) — for this base deployer, `code_hash` and `approved_hash` are left at their default all-zero value (`0000…0000`), and only `owner_id` is set. The deterministic `AccountId` is identical on every chain only because all of these — the referenced GD code, `owner_id`, and the zeroed `code_hash`/`approved_hash` — are the same on both networks, including the owner being the same MPC-derived implicit account.
 
 #### Deprecated
 
