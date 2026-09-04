@@ -190,7 +190,7 @@ The implicit account ID derived from that key, [`f9a9b8dfb0f2fa5033c761f6cae5fda
 | Wallet (webauthn ed25519) controller | [`0sa7ed6ace79f0fd97313c465fd72a774990048501`](https://nearblocks.io/address/0sa7ed6ace79f0fd97313c465fd72a774990048501) |
 | Outlayer App controller | [`0sc0ec4b3e260f1bf2da6072ce6fa4493b072222dd`](https://nearblocks.io/address/0sc0ec4b3e260f1bf2da6072ce6fa4493b072222dd) |
 
-All six follow the same [Bootstrap Process](#bootstrap-process) as above, with the MPC-derived implicit account as owner throughout.
+The immutable Global Deployer (by hash) is not a `StateInit`'d account — it's just the WASM referenced by its own code hash, so it has no `owner_id`. The other five entries are deterministic accounts that follow the same [Bootstrap Process](#bootstrap-process) as above, with the MPC-derived implicit account as owner throughout.
 
 The contracts above were built deterministically from repository revision [`32a7836f825e8c984c26149f4456793ec7e3d49a`](https://github.com/near/intents/commit/32a7836f825e8c984c26149f4456793ec7e3d49a). The build artifact is available from [this GitHub Actions run](https://github.com/near/intents/actions/runs/32236966092), and can be reproduced locally with `cargo near build reproducible-wasm`.
 
@@ -203,7 +203,7 @@ Only the base Global Deployer instances are deployed on testnet so far:
 | Immutable Global Deployer (by hash) | `37osLHRQ8KsJx1YwXJbPcd2wfKHP5KjtKawnrfjjaD3J` |
 | Mutable Global Deployer (by account ID) | [`0s7876eb5ba4f1d97eb53a53903a86bd211c71b3b1`](https://testnet.nearblocks.io/address/0s7876eb5ba4f1d97eb53a53903a86bd211c71b3b1) |
 
-These are the same addresses as on mainnet. The immutable deployer is addressed by the WASM's hash, which doesn't depend on the network. The mutable deployer's address is derived from `StateInit` (owner + code hash), and since the owner is the same MPC-derived implicit account on every chain, the derived deterministic AccountId is also identical.
+These are the same addresses as on mainnet. The immutable deployer is addressed by the WASM's hash, which doesn't depend on the network. The mutable deployer's address is derived from the referenced global contract code plus the full `StateInit` storage (`owner_id`, `code_hash`, and `approved_hash`) — for this base deployer, `code_hash` and `approved_hash` are left at their default all-zero value (`0000…0000`), and only `owner_id` is set. The deterministic AccountId is identical on every chain only because all of these — the referenced GD code, `owner_id`, and the zeroed `code_hash`/`approved_hash` — are the same on both networks, including the owner being the same MPC-derived implicit account.
 
 #### Deprecated
 
