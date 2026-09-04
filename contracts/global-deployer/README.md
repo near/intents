@@ -162,18 +162,64 @@ flowchart TD
 
 ### Deployed Instances
 
-The Global Deployer WASM is built from the [global-deployer/v0.2.0](https://github.com/near/intents/releases/tag/global-deployer%2Fv0.2.0) release. The code hash is the same on both networks:
+The Outlayer hierarchy is bootstrapped on mainnet under an admin identity controlled by a DAO, `gdpl.near`, rather than a plain NEAR account.
 
-**Code hash:** `8JK2g3kr7qCbRDBmoLx7c9Zrz9TxPdANP7ocbQGE2fqP`
+`gdpl.near` derives an ed25519 key via the [Chain Signatures](https://github.com/near/mpc) signer contract (`v1.signer`):
 
-| Network | Type | Account / Hash | Tx |
-| --------- | ------ | ---------------- | ----- |
-| Mainnet | Immutable (by hash) | `8JK2g3kr7qCbRDBmoLx7c9Zrz9TxPdANP7ocbQGE2fqP` | [4RB52Rr...](https://nearblocks.io/txns/4RB52RrkSd8BVaAAUAV1okHWmDe2BRFm6tzva4HhY9Uy) |
-| Mainnet | Mutable (by account ID) | [0s384bfa53f1718c7f53eaaa1b43c55e2aea3ef309](https://nearblocks.io/address/0s384bfa53f1718c7f53eaaa1b43c55e2aea3ef309) | [6o1ffgK...](https://nearblocks.io/txns/6o1ffgKv1fe6mLR2vtRDzMAdYJdunQRfzaLH5oZ8dwcz) |
-| Testnet | Immutable (by hash) | `8JK2g3kr7qCbRDBmoLx7c9Zrz9TxPdANP7ocbQGE2fqP` | [HJrtRP1...](https://testnet.nearblocks.io/txns/HJrtRP1o3Hfv9Y42xUtECr2RqFafS1L3BM4J9Lgw4jTr) |
-| Testnet | Mutable (by account ID) | [0s29e346108955b88c2d180a4ba17662b1f2cc1028](https://testnet.nearblocks.io/address/0s29e346108955b88c2d180a4ba17662b1f2cc1028) | [Bx2LLQV...](https://testnet.nearblocks.io/txns/Bx2LLQVrVyyGFc4natbJUGtotxSn1iJHe1GWNE5JnXCk) |
+```sh
+near contract call-function as-read-only v1.signer derived_public_key json-args '{
+  "path": "global deployer admin",
+  "predecessor": "gdpl.near",
+  "domain_id": 1
+}' network-config mainnet-fastnear now
+# "ed25519:HoacxHqBSbTVTKnokozyy4K6HrVz7thDRdneiBXVB3it"
+```
 
-The mutable instances were created and deployed in a single transaction — `StateInit` pre-sets `approved_hash` to the GD code hash, so `gd_deploy` can be called immediately without owner action.
+The implicit account ID derived from that key, [`f9a9b8dfb0f2fa5033c761f6cae5fdae5ffc8c77b2463428a297cce11fc7f3d5`](https://nearblocks.io/address/f9a9b8dfb0f2fa5033c761f6cae5fdae5ffc8c77b2463428a297cce11fc7f3d5), is used as the owner/admin for every mutable contract in this hierarchy.
+
+**Why**: NEAR's MPC network ([near/mpc](https://github.com/near/mpc)) derives keys via threshold signing, so no single party — including the DAO — ever holds the private key, and the same derivation yields an identical implicit account on every chain that supports it. This gives the DAO one cross-chain admin identity with no exposed private key.
+
+#### Mainnet
+
+| Type | Address |
+|---|---|
+| Immutable Global Deployer (by hash) | `37osLHRQ8KsJx1YwXJbPcd2wfKHP5KjtKawnrfjjaD3J` |
+| Mutable Global Deployer (by account ID) | [`0s7876eb5ba4f1d97eb53a53903a86bd211c71b3b1`](https://nearblocks.io/address/0s7876eb5ba4f1d97eb53a53903a86bd211c71b3b1) |
+| Wallet (no-sign) controller | [`0sfa7a4d20c9b28a23fcd85930593ed3974c3fb38e`](https://nearblocks.io/address/0sfa7a4d20c9b28a23fcd85930593ed3974c3fb38e) |
+| Wallet (webauthn p256) controller | [`0saf343be226341c0eca7dba6d0b29d49bdff3ad03`](https://nearblocks.io/address/0saf343be226341c0eca7dba6d0b29d49bdff3ad03) |
+| Wallet (webauthn ed25519) controller | [`0sa7ed6ace79f0fd97313c465fd72a774990048501`](https://nearblocks.io/address/0sa7ed6ace79f0fd97313c465fd72a774990048501) |
+| Outlayer App controller | [`0sc0ec4b3e260f1bf2da6072ce6fa4493b072222dd`](https://nearblocks.io/address/0sc0ec4b3e260f1bf2da6072ce6fa4493b072222dd) |
+
+The immutable Global Deployer (by hash) is not a `StateInit`'d account — it's just the WASM referenced by its own code hash, so it has no `owner_id`. The other five entries are deterministic accounts that follow the same [Bootstrap Process](#bootstrap-process) as above, with the MPC-derived implicit account as owner throughout.
+
+The contracts above were built deterministically from repository revision [`32a7836f825e8c984c26149f4456793ec7e3d49a`](https://github.com/near/intents/commit/32a7836f825e8c984c26149f4456793ec7e3d49a). The build artifact is available from [this GitHub Actions run](https://github.com/near/intents/actions/runs/32236966092), and can be reproduced locally with `cargo near build reproducible-wasm`.
+
+#### Testnet
+
+Only the base Global Deployer instances are deployed on testnet so far:
+
+| Type | Address |
+|---|---|
+| Immutable Global Deployer (by hash) | `37osLHRQ8KsJx1YwXJbPcd2wfKHP5KjtKawnrfjjaD3J` |
+| Mutable Global Deployer (by account ID) | [`0s7876eb5ba4f1d97eb53a53903a86bd211c71b3b1`](https://testnet.nearblocks.io/address/0s7876eb5ba4f1d97eb53a53903a86bd211c71b3b1) |
+
+These are the same addresses as on mainnet. The immutable deployer is addressed by the WASM's hash, which doesn't depend on the network. The mutable deployer's address is derived from the referenced global contract code plus the full `StateInit` storage (`owner_id`, `code_hash`, and `approved_hash`) — for this base deployer, `code_hash` and `approved_hash` are left at their default all-zero value (`0000…0000`), and only `owner_id` is set. The deterministic `AccountId` is identical on every chain only because all of these — the referenced GD code, `owner_id`, and the zeroed `code_hash`/`approved_hash` — are the same on both networks, including the owner being the same MPC-derived implicit account.
+
+#### Deprecated
+
+These earlier deployments have been superseded by the ones above. As far as we know, they were never used by anyone.
+
+<details>
+<summary>Show deprecated addresses</summary>
+
+| Network | Type | Account / Hash |
+| --------- | ------ | ---------------- |
+| Mainnet | Immutable (by hash) | `8JK2g3kr7qCbRDBmoLx7c9Zrz9TxPdANP7ocbQGE2fqP` |
+| Mainnet | Mutable (by account ID) | [`0s384bfa53f1718c7f53eaaa1b43c55e2aea3ef309`](https://nearblocks.io/address/0s384bfa53f1718c7f53eaaa1b43c55e2aea3ef309) |
+| Testnet | Immutable (by hash) | `8JK2g3kr7qCbRDBmoLx7c9Zrz9TxPdANP7ocbQGE2fqP` |
+| Testnet | Mutable (by account ID) | [`0s29e346108955b88c2d180a4ba17662b1f2cc1028`](https://testnet.nearblocks.io/address/0s29e346108955b88c2d180a4ba17662b1f2cc1028) |
+
+</details>
 
 ### Multi-Stage Deployment
 
