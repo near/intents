@@ -1,0 +1,65 @@
+name: Release Please (GitHub release)
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  EXEC: nix develop --command
+
+jobs:
+  github-release:
+    if: "github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'autorelease: pending')"
+    runs-on: ubuntu-latest
+    outputs:
+      component: ${{ steps.parse-tag.outputs.component }}
+      version: ${{ steps.parse-tag.outputs.version }}
+      tag_name: ${{ steps.parse-tag.outputs.tag_name }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: main
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@33c9ab3ef95cd57c164d9d6eb1f9a46338538d41
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@908b263ff629f4cc17666315b7fd3ec127c6244d # v14
+      - name: Create GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $EXEC npx --yes release-please github-release \
+            --token="$GITHUB_TOKEN" \
+            --repo-url="${{ github.repository }}" \
+            --target-branch=main \
+            --config-file=release-please-config.json \
+            --manifest-file=.release-please-manifest.json
+      - name: Parse component and version
+        id: parse-tag
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          TAG_NAME="$(printf '%s\n' "$PR_TITLE" | grep -oP '(?<=`)[^`]+(?=`)' | xargs)"
+          COMPONENT="${TAG_NAME%%/v*}"
+          VERSION="${TAG_NAME##*/v}"
+          test -n "$COMPONENT"
+          test -n "$VERSION"
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "component=$COMPONENT" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  publish-contract:
+    needs: github-release
+    permissions:
+      contents: write
+      id-token: write
+    uses: ./.github/workflows/release.yml
+    with:
+      component: ${{ needs.github-release.outputs.component }}
+      version: ${{ needs.github-release.outputs.version }}
+      tag_name: ${{ needs.github-release.outputs.tag_name }}

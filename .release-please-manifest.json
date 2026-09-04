@@ -1,0 +1,7 @@
+{
+  "contracts/defuse": "0.4.2",
+  "contracts/global-deployer": "0.2.0",
+  "contracts/poa/factory": "0.1.0",
+  "contracts/poa/token": "0.1.0",
+  "contracts/wallet": "0.2.0"
+}
