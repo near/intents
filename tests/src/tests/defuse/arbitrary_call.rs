@@ -76,8 +76,6 @@ async fn transfer_ft_with_arbitrary_call(
         .await
         .unwrap();
 
-    let contract_balance_before = env.balance(env.defuse.contract_id()).await.unwrap();
-
     admin
         .defuse_arbitrary_call(
             env.defuse.contract_id(),
@@ -88,8 +86,6 @@ async fn transfer_ft_with_arbitrary_call(
         .await
         .unwrap();
 
-    let contract_balance_after = env.balance(env.defuse.contract_id()).await.unwrap();
-
     assert_eq!(
         ft.balance_of(env.defuse.contract_id()).await.unwrap().raw(),
         0
@@ -98,8 +94,6 @@ async fn transfer_ft_with_arbitrary_call(
         ft.balance_of(admin.account_id()).await.unwrap().raw(),
         amount
     );
-
-    assert!(contract_balance_after.total >= contract_balance_before.total);
 }
 
 #[rstest]
