@@ -6,7 +6,6 @@ mod signer;
 
 use std::collections::{HashMap, HashSet};
 
-use crate::{account::Account, extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};
 use anyhow::Result;
 use defuse::{contract::config::DefuseConfig, simulation_output::SimulationOutput};
 use defuse_core::{
@@ -20,6 +19,8 @@ use near_sdk::json_types::U128;
 use serde::Serialize;
 use serde_json::json;
 use serde_with::{DisplayFromStr, base64::Base64, serde_as};
+
+use crate::{account::Account, extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};
 
 pub use event::*;
 #[cfg(feature = "imt")]
@@ -187,7 +188,7 @@ pub trait Defuse {
     fn invalidate_salts(&mut self, args: InvalidateSaltArgs) -> Salt;
 
     #[call]
-    fn arbitrary_call(&mut self, args: ArbitraryCallArgs) -> Promise;
+    fn arbitrary_call(&mut self, args: ArbitraryCallArgs);
 
     fn simulate_intents(&self, args: MultiPayloadArgs) -> SimulationOutput;
 

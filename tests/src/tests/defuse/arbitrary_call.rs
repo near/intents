@@ -41,7 +41,7 @@ async fn transfer_ft_with_arbitrary_call(
     assert_eq!(ft.balance_of(admin.account_id()).await.unwrap().raw(), 0);
 
     let deposit = NearToken::from_yoctonear(1);
-    let actions = NearAction::FunctionCall(FunctionCall {
+    let action = NearAction::FunctionCall(FunctionCall {
         function_name: "ft_transfer".to_string(),
         args: json!({
             "receiver_id": admin.account_id(),
@@ -59,7 +59,7 @@ async fn transfer_ft_with_arbitrary_call(
         .defuse_arbitrary_call(
             env.defuse.contract_id(),
             ft.contract_id(),
-            &actions,
+            &action,
             &deposit,
         )
         .await
@@ -76,7 +76,7 @@ async fn transfer_ft_with_arbitrary_call(
         .defuse_arbitrary_call(
             env.defuse.contract_id(),
             ft.contract_id(),
-            &actions,
+            &action,
             &deposit,
         )
         .await
@@ -92,6 +92,7 @@ async fn transfer_ft_with_arbitrary_call(
         ft.balance_of(admin.account_id()).await.unwrap().raw(),
         amount
     );
+
     assert!(contract_balance_after.total >= contract_balance_before.total);
 }
 

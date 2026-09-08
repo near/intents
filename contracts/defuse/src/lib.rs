@@ -3,7 +3,7 @@
 pub mod contract;
 
 pub mod accounts;
-pub mod arbitrary;
+pub mod arbitrary_call;
 #[cfg(feature = "far")]
 pub mod far;
 pub mod fees;
@@ -27,7 +27,10 @@ use near_contract_standards::{
 };
 use near_plugins::{AccessControllable, Pausable};
 
-use crate::{accounts::ForceAccountManager, tokens::nep245::MultiTokenForcedCore};
+use crate::{
+    accounts::ForceAccountManager, arbitrary_call::ArbitraryManager,
+    tokens::nep245::MultiTokenForcedCore,
+};
 
 use self::{
     accounts::AccountManager,
