@@ -1331,6 +1331,7 @@ dependencies = [
  "defuse-core",
  "defuse-digest",
  "defuse-map-utils",
+ "defuse-near-promise",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-randomness",
