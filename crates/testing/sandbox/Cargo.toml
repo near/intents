@@ -27,12 +27,13 @@ defuse-outlayer-app = { workspace = true, features = ["near-kit", "borsh", "near
 defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
 defuse-test-utils = { workspace = true, optional = true }
 defuse-wallet-sdk = { workspace = true, optional = true, features = ["near-kit"] }
+defuse-near-promise = { workspace = true, optional = true }
 
 [package.metadata.cargo-machete]
 ignored = ["near-sdk"] # needed only for unit-tesing
 
 [features]
-defuse = ["dep:defuse", "dep:defuse-test-utils"]
+defuse = ["dep:defuse", "dep:defuse-test-utils", "dep:defuse-near-promise"]
 deployer = ["dep:defuse-global-deployer"]
 escrow = ["dep:defuse-escrow-swap"]
 imt = ["defuse", "defuse-test-utils?/imt", "defuse/imt"]

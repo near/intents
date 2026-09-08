@@ -16,10 +16,10 @@ defuse-admin-utils.workspace = true
 defuse-auth-call.workspace = true
 defuse-controller.workspace = true
 defuse-core = { workspace = true, features = ["near-contract"] }
+defuse-near-promise = { workspace = true, features = ["serde"] }
 defuse-near-utils = { workspace = true, features = ["borsh"] }
 defuse-nep245 = { workspace = true, features = ["near-contract"] }
 defuse-serde-utils = { workspace = true, features = ["base64"] }
-defuse-near-promise.workspace = true
 
 borsh = { workspace = true, features = ["derive"] }
 impl-tools.workspace = true
@@ -46,19 +46,19 @@ abi = [
   "defuse-core/abi",
   "defuse-near-utils/abi",
   "defuse-nep245/abi",
+  "defuse-near-promise/abi",
   "defuse-serde-utils/abi",
   "dep:schemars",
   "near-sdk/abi",
-  "defuse-near-promise/abi"
 ]
-arbitrary = ["defuse-core/arbitrary", "dep:arbitrary", "defuse-near-promise/arbitrary"]
+arbitrary = ["defuse-core/arbitrary", "defuse-near-promise/arbitrary", "dep:arbitrary"]
 contract = [
   "dep:bitflags",
   "dep:defuse-bitmap",
   "dep:defuse-borsh-utils",
   "dep:defuse-map-utils",
   "dep:defuse-wnear",
-  "defuse-near-promise/near-contract"
+  "defuse-near-promise/near-contract",
 ]
 imt = ["defuse-core/imt"]
 far = ["imt"]

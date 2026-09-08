@@ -1,4 +1,5 @@
 mod accounts;
+mod arbitrary;
 mod global_deployment;
 mod intents;
 mod state;

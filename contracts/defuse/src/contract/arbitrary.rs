@@ -1,7 +1,8 @@
 use defuse_near_promise::{NearPromise, actions::NearAction};
 use near_plugins::AccessControllable;
 use near_plugins::access_control_any;
-use near_sdk::{AccountId, Promise, env, near};
+use near_sdk::require;
+use near_sdk::{AccountId, Promise, near};
 
 use super::{Contract, ContractExt, Role};
 use crate::arbitrary::ArbitraryManager;
@@ -11,7 +12,7 @@ impl ArbitraryManager for Contract {
     #[access_control_any(roles(Role::DAO))]
     #[payable]
     fn arbitrary_call(&mut self, receiver_id: AccountId, action: NearAction) -> Promise {
-        assert!(
+        require!(
             matches!(
                 action,
                 NearAction::FunctionCall(_) | NearAction::Transfer(_)
@@ -19,13 +20,8 @@ impl ArbitraryManager for Contract {
             "Unsupported action"
         );
 
-        let promise = NearPromise::new(receiver_id).add_action(action);
-
-        assert!(
-            env::attached_deposit() >= promise.total_deposit(),
-            "Attached deposit is not enough to cover actions"
-        );
-
-        promise.build()
+        // NOTE: Given that it is allowed tto spend contract balance by arbitrary call,
+        // the refund in case of failure should also go to the intents contract
+        NearPromise::new(receiver_id).add_action(action).build()
     }
 }

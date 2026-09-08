@@ -11,6 +11,7 @@ repository.workspace = true
 anyhow.workspace = true
 arbitrary.workspace = true
 borsh.workspace = true
+near-gas.workspace = true
 defuse-core = { workspace = true, features = ["near-kit"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-fees.workspace = true
@@ -30,6 +31,7 @@ serde_json.workspace = true
 strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
+defuse-near-promise = { workspace = true, optional = true }
 
 [features]
 default = [
@@ -47,6 +49,7 @@ defuse = [
   "defuse-sandbox/poa",
   "defuse-test-utils/defuse",
   "defuse-test-utils/poa",
+  "defuse-near-promise",
 ]
 deployer = ["defuse-sandbox/deployer"]
 escrow-swap = [
