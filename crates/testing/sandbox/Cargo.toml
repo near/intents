@@ -23,17 +23,17 @@ serde_with.workspace = true
 defuse = { workspace = true, optional = true, features = ["contract", "near-kit"] }
 defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }
 defuse-global-deployer = { workspace = true, features = ["near-kit", "near-contract"], optional = true }
+defuse-near-promise = { workspace = true, optional = true, features = ["serde"] }
 defuse-outlayer-app = { workspace = true, features = ["near-kit", "borsh", "near-contract"], optional = true }
 defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
 defuse-test-utils = { workspace = true, optional = true }
 defuse-wallet-sdk = { workspace = true, optional = true, features = ["near-kit"] }
-defuse-near-promise = { workspace = true, optional = true }
 
 [package.metadata.cargo-machete]
 ignored = ["near-sdk"] # needed only for unit-tesing
 
 [features]
-defuse = ["dep:defuse", "dep:defuse-test-utils", "dep:defuse-near-promise"]
+defuse = ["dep:defuse", "dep:defuse-near-promise", "dep:defuse-test-utils"]
 deployer = ["dep:defuse-global-deployer"]
 escrow = ["dep:defuse-escrow-swap"]
 imt = ["defuse", "defuse-test-utils?/imt", "defuse/imt"]

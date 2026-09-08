@@ -11,7 +11,6 @@ repository.workspace = true
 anyhow.workspace = true
 arbitrary.workspace = true
 borsh.workspace = true
-near-gas.workspace = true
 defuse-core = { workspace = true, features = ["near-kit"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-fees.workspace = true
@@ -25,6 +24,7 @@ impl-tools.workspace = true
 itertools.workspace = true
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 near-contract-standards.workspace = true
+near-gas.workspace = true
 near-sdk.workspace = true
 rstest.workspace = true
 serde_json.workspace = true
