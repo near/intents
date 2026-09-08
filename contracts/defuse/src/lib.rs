@@ -27,10 +27,7 @@ use near_contract_standards::{
 };
 use near_plugins::{AccessControllable, Pausable};
 
-use crate::{
-    accounts::ForceAccountManager, arbitrary_call::ArbitraryManager,
-    tokens::nep245::MultiTokenForcedCore,
-};
+use crate::{accounts::ForceAccountManager, tokens::nep245::MultiTokenForcedCore};
 
 use self::{
     accounts::AccountManager,

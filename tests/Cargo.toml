@@ -49,7 +49,7 @@ defuse = [
   "defuse-sandbox/poa",
   "defuse-test-utils/defuse",
   "defuse-test-utils/poa",
-  "dev:defuse-near-promise",
+  "dep:defuse-near-promise",
 ]
 deployer = ["defuse-sandbox/deployer"]
 escrow-swap = [

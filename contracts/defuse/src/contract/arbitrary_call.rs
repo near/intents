@@ -1,6 +1,10 @@
 use defuse_near_promise::{NearPromise, actions::NearAction};
 use near_plugins::{AccessControllable, access_control_any};
-use near_sdk::{AccountId, Promise, env, near, require};
+use near_sdk::{
+    AccountId, Promise,
+    env::{self, refund_to_account_id},
+    near, require,
+};
 
 use super::{Contract, ContractExt, Role};
 use crate::arbitrary_call::ArbitraryManager;
@@ -20,11 +24,11 @@ impl ArbitraryManager for Contract {
                 action,
                 NearAction::FunctionCall(_) | NearAction::Transfer(_)
             ),
-            "Unsupported action"
+            "unsupported action"
         );
 
-        // NOTE: Given that it is allowed to spend contract balance by arbitrary call,
-        // the refund in case of failure should also go to the intents contract
+        // TODO: Given that it is allowed to spend contract balance by arbitrary call,
+        // should refund go to the intents contract in case of failure?
         NearPromise::new(receiver_id).add_action(action).build()
     }
 }
