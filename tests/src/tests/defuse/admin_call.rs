@@ -21,7 +21,7 @@ use rstest::rstest;
 
 #[rstest]
 #[tokio::test]
-async fn transfer_ft_with_arbitrary_call(
+async fn transfer_ft_with_admin_call(
     #[with(Env::builder().deployer_as_super_admin())]
     #[future(awt)]
     env: Env,
@@ -62,7 +62,7 @@ async fn transfer_ft_with_arbitrary_call(
     });
 
     admin
-        .defuse_arbitrary_call(
+        .defuse_admin_call(
             env.defuse.contract_id(),
             ft.contract_id(),
             &action,
@@ -77,7 +77,7 @@ async fn transfer_ft_with_arbitrary_call(
         .unwrap();
 
     admin
-        .defuse_arbitrary_call(
+        .defuse_admin_call(
             env.defuse.contract_id(),
             ft.contract_id(),
             &action,
@@ -98,7 +98,7 @@ async fn transfer_ft_with_arbitrary_call(
 
 #[rstest]
 #[tokio::test]
-async fn transfer_near_with_arbitrary_call(
+async fn transfer_near_with_admin_call(
     #[with(Env::builder().deployer_as_super_admin())]
     #[future(awt)]
     env: Env,
@@ -111,7 +111,7 @@ async fn transfer_near_with_arbitrary_call(
     let action = NearAction::Transfer(Transfer { amount });
 
     admin
-        .defuse_arbitrary_call(
+        .defuse_admin_call(
             env.defuse.contract_id(),
             receiver.account_id(),
             &action,
@@ -128,7 +128,7 @@ async fn transfer_near_with_arbitrary_call(
         .unwrap();
 
     admin
-        .defuse_arbitrary_call(
+        .defuse_admin_call(
             env.defuse.contract_id(),
             receiver.account_id(),
             &action,
@@ -147,7 +147,7 @@ async fn transfer_near_with_arbitrary_call(
 
 #[rstest]
 #[tokio::test]
-async fn arbitrary_call_with_gas_exceeding_action(
+async fn admin_call_with_gas_exceeding_action(
     #[with(Env::builder().deployer_as_super_admin())]
     #[future(awt)]
     env: Env,
@@ -185,7 +185,7 @@ async fn arbitrary_call_with_gas_exceeding_action(
     });
 
     admin
-        .defuse_arbitrary_call(
+        .defuse_admin_call(
             env.defuse.contract_id(),
             ft.contract_id(),
             &action,
@@ -204,7 +204,7 @@ async fn arbitrary_call_with_gas_exceeding_action(
 
 #[rstest]
 #[tokio::test]
-async fn arbitrary_call_accepts_only_allowed_actions(
+async fn admin_call_accepts_only_allowed_actions(
     #[with(Env::builder().deployer_as_super_admin())]
     #[future(awt)]
     env: Env,
@@ -221,7 +221,7 @@ async fn arbitrary_call_accepts_only_allowed_actions(
     });
 
     admin
-        .defuse_arbitrary_call(
+        .defuse_admin_call(
             env.defuse.contract_id(),
             receiver.account_id(),
             &action,
@@ -233,7 +233,7 @@ async fn arbitrary_call_accepts_only_allowed_actions(
 
 #[rstest]
 #[tokio::test]
-async fn arbitrary_call_refunds_failed_deposit_to_contract(
+async fn admin_call_refunds_failed_deposit_to_contract(
     #[with(Env::builder().deployer_as_super_admin())]
     #[future(awt)]
     env: Env,
@@ -258,7 +258,7 @@ async fn arbitrary_call_refunds_failed_deposit_to_contract(
     let admin_before = env.balance(admin.account_id()).await.unwrap().total;
 
     admin
-        .defuse_arbitrary_call(
+        .defuse_admin_call(
             env.defuse.contract_id(),
             ft.contract_id(),
             &action,

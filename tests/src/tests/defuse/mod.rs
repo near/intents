@@ -1,5 +1,5 @@
 mod accounts;
-mod arbitrary_call;
+mod admin_call;
 mod global_deployment;
 mod intents;
 mod state;

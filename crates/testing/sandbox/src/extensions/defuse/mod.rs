@@ -63,7 +63,7 @@ pub struct InvalidateSaltArgs<'a> {
 }
 
 #[derive(Serialize)]
-pub struct ArbitraryCallArgs<'a> {
+pub struct AdminCallArgs<'a> {
     pub receiver_id: &'a AccountIdRef,
     pub action: &'a NearAction,
 }
@@ -188,7 +188,7 @@ pub trait Defuse {
     fn invalidate_salts(&mut self, args: InvalidateSaltArgs) -> Salt;
 
     #[call]
-    fn arbitrary_call(&mut self, args: ArbitraryCallArgs);
+    fn admin_call(&mut self, args: AdminCallArgs);
 
     fn simulate_intents(&self, args: MultiPayloadArgs) -> SimulationOutput;
 
@@ -276,7 +276,7 @@ pub trait DefuseExt {
         salts: impl IntoIterator<Item = Salt>,
     ) -> Result<(SuccessfulExecutionOutcome, Salt)>;
 
-    async fn defuse_arbitrary_call(
+    async fn defuse_admin_call(
         &self,
         defuse: impl Into<AccountId>,
         receiver_id: &AccountIdRef,
@@ -547,7 +547,7 @@ impl DefuseExt for Near {
         Ok((outcome.try_into()?, salt))
     }
 
-    async fn defuse_arbitrary_call(
+    async fn defuse_admin_call(
         &self,
         defuse: impl Into<AccountId>,
         receiver_id: &AccountIdRef,
@@ -556,7 +556,7 @@ impl DefuseExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.fn_call(
             defuse,
-            Defuse::arbitrary_call(ArbitraryCallArgs {
+            Defuse::admin_call(AdminCallArgs {
                 receiver_id,
                 action,
             })

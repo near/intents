@@ -2,7 +2,7 @@
 mod abi;
 mod accounts;
 mod admin;
-mod arbitrary_call;
+mod admin_call;
 pub mod config;
 mod events;
 mod fees;
