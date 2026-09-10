@@ -11,6 +11,7 @@ use defuse::{contract::config::DefuseConfig, simulation_output::SimulationOutput
 use defuse_core::{
     Nonce, PublicKey, Salt, fees::Pips, intents::auth::AuthCall, payload::multi::MultiPayload,
 };
+use defuse_near_promise::actions::NearAction;
 use near_kit::{
     AccountId, AccountIdRef, Final, FinalExecutionOutcome, FunctionCallAction, Gas, Near, NearToken,
 };
@@ -59,6 +60,12 @@ pub struct SaltArgs {
 #[derive(Serialize)]
 pub struct InvalidateSaltArgs<'a> {
     pub salts: &'a [Salt],
+}
+
+#[derive(Serialize)]
+pub struct AdminCallArgs<'a> {
+    pub receiver_id: &'a AccountIdRef,
+    pub action: &'a NearAction,
 }
 
 #[derive(Serialize)]
@@ -180,6 +187,9 @@ pub trait Defuse {
     #[call]
     fn invalidate_salts(&mut self, args: InvalidateSaltArgs) -> Salt;
 
+    #[call]
+    fn admin_call(&mut self, args: AdminCallArgs);
+
     fn simulate_intents(&self, args: MultiPayloadArgs) -> SimulationOutput;
 
     #[call]
@@ -265,6 +275,14 @@ pub trait DefuseExt {
         defuse: impl Into<AccountId>,
         salts: impl IntoIterator<Item = Salt>,
     ) -> Result<(SuccessfulExecutionOutcome, Salt)>;
+
+    async fn defuse_admin_call(
+        &self,
+        defuse: impl Into<AccountId>,
+        receiver_id: &AccountIdRef,
+        action: &NearAction,
+        deposit: &NearToken,
+    ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn defuse_execute_intents(
         &self,
@@ -527,6 +545,25 @@ impl DefuseExt for Near {
             .await?;
         let salt = outcome.json::<Salt>()?;
         Ok((outcome.try_into()?, salt))
+    }
+
+    async fn defuse_admin_call(
+        &self,
+        defuse: impl Into<AccountId>,
+        receiver_id: &AccountIdRef,
+        action: &NearAction,
+        deposit: &NearToken,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.fn_call(
+            defuse,
+            Defuse::admin_call(AdminCallArgs {
+                receiver_id,
+                action,
+            })
+            .deposit(*deposit)
+            .gas(Gas::from_tgas(300)),
+        )
+        .await
     }
 
     async fn defuse_execute_intents(

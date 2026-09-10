@@ -16,6 +16,7 @@ defuse-admin-utils.workspace = true
 defuse-auth-call.workspace = true
 defuse-controller.workspace = true
 defuse-core = { workspace = true, features = ["near-contract"] }
+defuse-near-promise = { workspace = true, features = ["serde"] }
 defuse-near-utils = { workspace = true, features = ["borsh"] }
 defuse-nep245 = { workspace = true, features = ["near-contract"] }
 defuse-serde-utils = { workspace = true, features = ["base64"] }
@@ -43,14 +44,20 @@ schemars = { workspace = true, features = ["derive"], optional = true }
 abi = [
   "borsh/unstable__schema",
   "defuse-core/abi",
+  "defuse-near-promise/abi",
   "defuse-near-utils/abi",
   "defuse-nep245/abi",
   "defuse-serde-utils/abi",
   "dep:schemars",
   "near-sdk/abi",
 ]
-arbitrary = ["defuse-core/arbitrary", "dep:arbitrary"]
+arbitrary = [
+  "defuse-core/arbitrary",
+  "defuse-near-promise/arbitrary",
+  "dep:arbitrary",
+]
 contract = [
+  "defuse-near-promise/near-contract",
   "dep:bitflags",
   "dep:defuse-bitmap",
   "dep:defuse-borsh-utils",

@@ -24,12 +24,14 @@ impl-tools.workspace = true
 itertools.workspace = true
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 near-contract-standards.workspace = true
+near-gas.workspace = true
 near-sdk.workspace = true
 rstest.workspace = true
 serde_json.workspace = true
 strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
+defuse-near-promise = { workspace = true, optional = true, features = ["serde"] }
 
 [features]
 default = [
@@ -47,6 +49,7 @@ defuse = [
   "defuse-sandbox/poa",
   "defuse-test-utils/defuse",
   "defuse-test-utils/poa",
+  "dep:defuse-near-promise",
 ]
 deployer = ["defuse-sandbox/deployer"]
 escrow-swap = [

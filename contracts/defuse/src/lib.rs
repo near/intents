@@ -3,6 +3,7 @@
 pub mod contract;
 
 pub mod accounts;
+pub mod admin_call;
 #[cfg(feature = "far")]
 pub mod far;
 pub mod fees;
