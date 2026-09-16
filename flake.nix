@@ -40,12 +40,20 @@
             nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.pkg-config ];
             buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.openssl pkgs.udev ];
           };
+          releasePleaseDeps = pkgs.importNpmLock.buildNodeModules {
+            npmRoot = ./tools/release-please;
+            nodejs = pkgs.nodejs_22;
+          };
+          releasePlease = pkgs.writeShellScriptBin "release-please" ''
+            exec ${pkgs.nodejs_22}/bin/node ${releasePleaseDeps}/node_modules/release-please/build/src/bin/release-please.js "$@"
+          '';
         in
         {
           default = pkgs.mkShellNoCC {
             packages = with pkgs; [
               rustToolchain
               cargo-near
+              releasePlease
               taplo
               cargo-machete
               cargo-audit

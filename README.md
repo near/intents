@@ -101,7 +101,7 @@ Each release includes the component's WASM files, optional ABI files, `SHA256SUM
 cosign verify-blob \
   --bundle SHA256SUMS.sigstore.json \
   --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp='^https://github.com/near/intents/.github/workflows/' \
+  --certificate-identity-regexp='^https://github\.com/near/intents/\.github/workflows/release-please-gh\.yml@refs/heads/main$' \
   SHA256SUMS
 sha256sum --check SHA256SUMS
 ```

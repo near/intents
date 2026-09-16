@@ -1,5 +1,8 @@
 name: Build, sign, and publish contract release
 
+env:
+  EXEC: nix develop --command
+
 on:
   workflow_call:
     inputs:
@@ -32,21 +35,20 @@ jobs:
       - name: Cache Nix store
         uses: DeterminateSystems/magic-nix-cache-action@908b263ff629f4cc17666315b7fd3ec127c6244d # v14
       - name: Build reproducible contracts
-        run: nix develop --command make REPRODUCIBLE=1
+        run: $EXEC make REPRODUCIBLE=1
       - name: Prepare component artifacts
         env:
           COMPONENT: ${{ inputs.component }}
-        run: nix develop --command scripts/prepare-release-artifacts.sh "$COMPONENT" res release-artifacts
+        run: $EXEC scripts/prepare-release-artifacts.sh "$COMPONENT" res release-artifacts
       - name: Sign checksums with Sigstore
-        working-directory: release-artifacts
-        run: nix develop .. --command cosign sign-blob --yes --bundle SHA256SUMS.sigstore.json SHA256SUMS
+        run: $EXEC bash -c 'cd release-artifacts && cosign sign-blob --yes --bundle SHA256SUMS.sigstore.json SHA256SUMS'
       - name: Upload signed release artifacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag_name }}
-        run: nix develop --command gh release upload "$TAG" release-artifacts/* --clobber
+        run: $EXEC gh release upload "$TAG" release-artifacts/* --clobber
       - name: Add verification instructions to release notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag_name }}
-        run: nix develop --command .github/scripts/update-release-verification.sh
+        run: $EXEC .github/scripts/update-release-verification.sh

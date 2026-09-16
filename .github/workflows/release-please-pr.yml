@@ -7,6 +7,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 env:
   EXEC: nix develop --command
@@ -25,7 +26,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $EXEC npx --yes release-please release-pr \
+          $EXEC release-please release-pr \
             --token="$GITHUB_TOKEN" \
             --repo-url="${{ github.repository }}" \
             --target-branch=main \

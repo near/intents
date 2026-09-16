@@ -6,7 +6,9 @@ set -euo pipefail
 : "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY must be set}"
 
 issuer=https://token.actions.githubusercontent.com
-identity_regexp="^https://github.com/${GITHUB_REPOSITORY}/.github/workflows/"
+# Reusable jobs inherit the calling workflow's ref in the GitHub OIDC identity.
+repository_regexp=${GITHUB_REPOSITORY//./\\.}
+identity_regexp="^https://github\\.com/${repository_regexp}/\\.github/workflows/release-please-gh\\.yml@refs/heads/main$"
 marker='<!-- sigstore-verification -->'
 notes=$(gh release view "$TAG" --json body -q .body)
 notes=${notes%%$marker*}

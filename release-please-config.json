@@ -28,10 +28,11 @@
       "include-component-in-tag": true
     },
     "contracts/wallet": {
-      "release-type": "rust",
+      "release-type": "simple",
       "component": "wallet",
       "tag-separator": "/",
-      "include-component-in-tag": true
+      "include-component-in-tag": true,
+      "skip-changelog": true
     }
   }
 }
