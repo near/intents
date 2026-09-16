@@ -51,4 +51,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag_name }}
-        run: $EXEC .github/scripts/update-release-verification.sh
+        run: $EXEC .github/scripts/update-release-notes.sh
