@@ -30,14 +30,18 @@
         let
           pkgs = pkgsFor system;
           rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain;
-          cargo-near = pkgs.rustPlatform.buildRustPackage {
+          rustPlatform = pkgs.makeRustPlatform {
+            cargo = rustToolchain;
+            rustc = rustToolchain;
+          };
+          cargo-near = rustPlatform.buildRustPackage {
             pname = "cargo-near";
             version = "0.22.0";
             src = cargo-near-src;
             cargoLock = {
               lockFile = "${cargo-near-src}/Cargo.lock";
             };
-            nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.pkg-config ];
+            nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.perl pkgs.pkg-config ];
             buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.openssl pkgs.udev ];
           };
           releasePleaseDeps = pkgs.importNpmLock.buildNodeModules {
