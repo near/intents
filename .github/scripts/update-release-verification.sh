@@ -9,13 +9,10 @@ issuer=https://token.actions.githubusercontent.com
 # Reusable jobs inherit the calling workflow's ref in the GitHub OIDC identity.
 repository_regexp=${GITHUB_REPOSITORY//./\\.}
 identity_regexp="^https://github\\.com/${repository_regexp}/\\.github/workflows/release-please-gh\\.yml@refs/heads/main$"
-marker='<!-- sigstore-verification -->'
 notes=$(gh release view "$TAG" --json body -q .body)
-notes=${notes%%$marker*}
 
 {
   printf '%s\n\n' "$notes"
-  echo "$marker"
   echo '### Verify release artifacts'
   echo
   echo 'Download all assets from this release, then run:'
