@@ -39,7 +39,7 @@ jobs:
       - name: Prepare component artifacts
         env:
           COMPONENT: ${{ inputs.component }}
-        run: $EXEC scripts/prepare-release-artifacts.sh "$COMPONENT" res release-artifacts
+        run: $EXEC .github/scripts/prepare-release-artifacts.sh "$COMPONENT" res release-artifacts
       - name: Sign checksums with Sigstore
         run: $EXEC bash -c 'cd release-artifacts && cosign sign-blob --yes --bundle SHA256SUMS.sigstore.json SHA256SUMS'
       - name: Upload signed release artifacts
