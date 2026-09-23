@@ -10,4 +10,12 @@ ignore = [
   "RUSTSEC-2026-0222",
   "RUSTSEC-2026-0253",
   "RUSTSEC-2026-0269",
+
+  # rustls <0.23.45: Reached only via near-kit's test harness. 
+  # Never linked into the contract wasm.
+  #
+  # BLOCKED: rustls >=0.23.45 requires aws-lc-rs ^1.18, but near-crypto 0.37.3
+  # (latest stable, via near-sdk) pins aws-lc-rs "=1.16.2". Remove this entry
+  # once nearcore relaxes that pin.
+  "RUSTSEC-2026-0285",
 ]
