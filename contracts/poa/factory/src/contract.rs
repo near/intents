@@ -217,14 +217,14 @@ impl PoaFactory for Contract {
 
     #[pause]
     #[access_control_any(roles(Role::DAO, Role::OmniProver))]
-    fn ft_withdraw(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal) {
+    fn record_withdraw(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal) {
         require!(
             self.withdrawals
                 .insert(withdrawal_id, withdrawal.clone())
                 .is_none(),
             "withdrawal already exists"
         );
-        FactoryEvent::FtWithdraw {
+        FactoryEvent::WithdrawRecorded {
             withdrawal_id,
             withdrawal: &withdrawal,
         }
@@ -233,7 +233,7 @@ impl PoaFactory for Contract {
 
     #[pause]
     #[access_control_any(roles(Role::DAO, Role::OmniProver))]
-    fn ft_update_withdraw(
+    fn update_withdraw_record(
         &mut self,
         withdrawal_id: IdDigest,
         prev_payload_hash: PayloadHash,
@@ -253,7 +253,7 @@ impl PoaFactory for Contract {
         withdrawal.payload_hash = new_payload_hash;
         withdrawal.metadata = metadata;
 
-        FactoryEvent::FtUpdateWithdraw {
+        FactoryEvent::WithdrawRecordUpdated {
             withdrawal_id,
             prev_payload_hash,
             new_payload_hash: withdrawal.payload_hash,

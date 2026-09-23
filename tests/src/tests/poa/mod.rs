@@ -123,7 +123,7 @@ fn id(byte: u8) -> IdDigest {
 
 #[rstest]
 #[tokio::test]
-async fn ft_withdraw_records_and_rejects_duplicate(#[future(awt)] root: Near) {
+async fn record_withdraw_and_reject_duplicate(#[future(awt)] root: Near) {
     let unauthorized = root
         .create_subaccount("unauth", NearToken::from_near(10))
         .await;
@@ -133,11 +133,11 @@ async fn ft_withdraw_records_and_rejects_duplicate(#[future(awt)] root: Near) {
     let w1 = id(1);
 
     unauthorized
-        .poa_factory_ft_withdraw(poa_factory.contract_id(), w1, withdrawal.clone())
+        .poa_factory_record_withdraw(poa_factory.contract_id(), w1, withdrawal.clone())
         .await
         .unwrap_err();
 
-    root.poa_factory_ft_withdraw(poa_factory.contract_id(), w1, withdrawal.clone())
+    root.poa_factory_record_withdraw(poa_factory.contract_id(), w1, withdrawal.clone())
         .await
         .unwrap();
 
@@ -150,7 +150,7 @@ async fn ft_withdraw_records_and_rejects_duplicate(#[future(awt)] root: Near) {
     assert_eq!(stored.metadata, withdrawal.metadata);
 
     let err = root
-        .poa_factory_ft_withdraw(poa_factory.contract_id(), w1, withdrawal.clone())
+        .poa_factory_record_withdraw(poa_factory.contract_id(), w1, withdrawal.clone())
         .await
         .unwrap_err();
     assert!(
@@ -172,7 +172,7 @@ async fn ft_withdraw_records_and_rejects_duplicate(#[future(awt)] root: Near) {
 
 #[rstest]
 #[tokio::test]
-async fn ft_update_withdraw(#[future(awt)] root: Near) {
+async fn update_withdraw_record(#[future(awt)] root: Near) {
     let unauthorized = root
         .create_subaccount("unauth-upd", NearToken::from_near(10))
         .await;
@@ -180,7 +180,7 @@ async fn ft_update_withdraw(#[future(awt)] root: Near) {
 
     let w_upd = id(2);
     let original = sample_withdrawal([9u8; 32], "meta-orig");
-    root.poa_factory_ft_withdraw(poa_factory.contract_id(), w_upd, original.clone())
+    root.poa_factory_record_withdraw(poa_factory.contract_id(), w_upd, original.clone())
         .await
         .unwrap();
 
@@ -189,7 +189,7 @@ async fn ft_update_withdraw(#[future(awt)] root: Near) {
     let updated_metadata = "meta-updated".to_string();
 
     unauthorized
-        .poa_factory_ft_update_withdraw(
+        .poa_factory_update_withdraw_record(
             poa_factory.contract_id(),
             w_upd,
             prev_hash,
@@ -201,7 +201,7 @@ async fn ft_update_withdraw(#[future(awt)] root: Near) {
 
     let wrong_prev = PayloadHash([0u8; 32]);
     let err = root
-        .poa_factory_ft_update_withdraw(
+        .poa_factory_update_withdraw_record(
             poa_factory.contract_id(),
             w_upd,
             wrong_prev,
@@ -216,7 +216,7 @@ async fn ft_update_withdraw(#[future(awt)] root: Near) {
     );
 
     let err = root
-        .poa_factory_ft_update_withdraw(
+        .poa_factory_update_withdraw_record(
             poa_factory.contract_id(),
             id(0xEE),
             prev_hash,
@@ -230,7 +230,7 @@ async fn ft_update_withdraw(#[future(awt)] root: Near) {
         "unexpected error: {err:?}"
     );
 
-    root.poa_factory_ft_update_withdraw(
+    root.poa_factory_update_withdraw_record(
         poa_factory.contract_id(),
         w_upd,
         prev_hash,

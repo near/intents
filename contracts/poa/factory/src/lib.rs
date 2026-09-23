@@ -25,12 +25,12 @@ pub struct Withdrawal {
 #[derive(Debug, Clone)]
 pub enum FactoryEvent<'a> {
     #[event_version("0.1.0")]
-    FtWithdraw {
+    WithdrawRecorded {
         withdrawal_id: IdDigest,
         withdrawal: &'a Withdrawal,
     },
     #[event_version("0.1.0")]
-    FtUpdateWithdraw {
+    WithdrawRecordUpdated {
         withdrawal_id: IdDigest,
         prev_payload_hash: PayloadHash,
         new_payload_hash: PayloadHash,
@@ -81,14 +81,16 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     /// Returns a mapping of token names to their account ids.
     fn tokens(&self) -> HashMap<String, AccountId>;
 
-    /// Records a new withdrawal under `withdrawal_id`. Fails if the id is already used.
+    /// Records a withdrawal made on another chain under `withdrawal_id`. Fails if
+    /// the id is already used.
     ///
     /// NOTE: as with [`PoaFactory::ft_omni_deposit`], this storage MUST be
     /// subsidised separately by the contract owner.
-    fn ft_withdraw(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal);
+    fn record_withdraw(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal);
 
-    /// Replaces the payload hash of an existing withdrawal, guarded by the previous hash.
-    fn ft_update_withdraw(
+    /// Replaces the payload hash of an existing withdrawal record, guarded by the
+    /// previous hash. Fails if no record is stored under `withdrawal_id`.
+    fn update_withdraw_record(
         &mut self,
         withdrawal_id: IdDigest,
         prev_payload_hash: PayloadHash,
@@ -96,10 +98,10 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
         metadata: String,
     );
 
-    /// Returns the withdrawal stored under `withdrawal_id`, if any.
+    /// Returns the withdrawal record stored under `withdrawal_id`, if any.
     fn get_withdrawal(&self, withdrawal_id: IdDigest) -> Option<&Withdrawal>;
 
-    /// Removes the given withdrawal ids from storage.
+    /// Removes the given withdrawal records from storage.
     ///
     /// Ids with nothing stored under them are ignored, so the call succeeds
     /// whether or not every id was present and is safe to retry.
