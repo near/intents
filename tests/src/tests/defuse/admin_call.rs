@@ -1,5 +1,5 @@
 use defuse_near_promise::{
-    StateInitV1,
+    NearPromise, StateInitV1,
     actions::{DeterministicStateInit, FunctionCall, NearAction, Transfer},
 };
 use defuse_sandbox::{
@@ -11,7 +11,6 @@ use defuse_sandbox::{
 };
 use near_gas::NearGas;
 use near_sdk::json_types::U128;
-use serde_json::json;
 
 use crate::{
     tests::defuse::env::{Env, env},
@@ -21,52 +20,95 @@ use rstest::rstest;
 
 #[rstest]
 #[tokio::test]
-async fn transfer_ft_with_admin_call(
+async fn multiple_actions_with_admin_call(
     #[with(Env::builder().deployer_as_super_admin())]
     #[future(awt)]
     env: Env,
 ) {
     let amount = 1000;
 
-    let (admin, ft) = futures::join!(env.create_user(), env.create_token());
+    let (admin, ft1, ft2) =
+        futures::join!(env.create_user(), env.create_token(), env.create_token());
 
     env.initial_ft_storage_deposit(
-        vec![env.defuse.contract_id(), admin.account_id()],
-        vec![ft.contract_id()],
+        vec![env.defuse.contract_id()],
+        vec![ft1.contract_id(), ft2.contract_id()],
     )
     .await;
 
-    ft.transfer(env.defuse.contract_id(), amount)
+    ft1.transfer(env.defuse.contract_id(), amount)
+        .await
+        .expect("Failed to transfer tokens to defuse");
+    ft2.transfer(env.defuse.contract_id(), amount)
         .await
         .expect("Failed to transfer tokens to defuse");
 
     assert_eq!(
-        ft.balance_of(env.defuse.contract_id()).await.unwrap().raw(),
+        ft1.balance_of(env.defuse.contract_id())
+            .await
+            .unwrap()
+            .raw(),
         amount
     );
-    assert_eq!(ft.balance_of(admin.account_id()).await.unwrap().raw(), 0);
+    assert_eq!(ft1.balance_of(admin.account_id()).await.unwrap().raw(), 0);
+    assert_eq!(
+        ft2.balance_of(env.defuse.contract_id())
+            .await
+            .unwrap()
+            .raw(),
+        amount
+    );
+    assert_eq!(ft2.balance_of(admin.account_id()).await.unwrap().raw(), 0);
 
     let deposit = NearToken::from_yoctonear(1);
-    let action = NearAction::FunctionCall(FunctionCall {
-        function_name: "ft_transfer".to_string(),
-        args: json!({
-            "receiver_id": admin.account_id(),
-            "amount": U128(amount),
-            "memo": "arbitrary call transfer".to_string(),
-        })
-        .to_string()
-        .into_bytes(),
-        deposit: NearToken::from_yoctonear(1),
-        gas: NearGas::from_tgas(100),
-        gas_weight: 1,
-    });
+    let storage = NearToken::from_near(1);
+
+    let first_promise = [NearPromise::new(ft1.contract_id())
+        .add_action(
+            NearAction::try_from(
+                ft1.storage_deposit(admin.account_id(), storage)
+                    .gas(NearGas::from_tgas(100))
+                    .into_action(),
+            )
+            .unwrap(),
+        )
+        .add_action(
+            NearAction::try_from(
+                ft1.transfer(admin.account_id(), U128(amount))
+                    .gas(NearGas::from_tgas(100))
+                    .deposit(NearToken::from_yoctonear(1))
+                    .into_action(),
+            )
+            .unwrap(),
+        )];
+
+    let second_promise = [NearPromise::new(ft2.contract_id())
+        .add_action(
+            NearAction::try_from(
+                ft2.storage_deposit(admin.account_id(), storage)
+                    .gas(NearGas::from_tgas(100))
+                    .into_action(),
+            )
+            .unwrap(),
+        )
+        .add_action(
+            NearAction::try_from(
+                ft2.transfer(admin.account_id(), U128(amount))
+                    .gas(NearGas::from_tgas(100))
+                    .deposit(NearToken::from_yoctonear(1))
+                    .into_action(),
+            )
+            .unwrap(),
+        )];
+
+    let promises = [first_promise, second_promise].concat();
 
     admin
         .defuse_admin_call(
             env.defuse.contract_id(),
-            ft.contract_id(),
-            &action,
+            &promises,
             &deposit,
+            NearGas::from_tgas(500),
         )
         .await
         .assert_err_contains("Insufficient permissions for method");
@@ -76,22 +118,44 @@ async fn transfer_ft_with_admin_call(
         .await
         .unwrap();
 
+    let defuse_balance_before = env.balance(env.defuse.contract_id()).await.unwrap().total;
+
     admin
         .defuse_admin_call(
             env.defuse.contract_id(),
-            ft.contract_id(),
-            &action,
+            &promises,
             &deposit,
+            NearGas::from_tgas(500),
         )
         .await
         .unwrap();
 
+    let defuse_balance_after = env.balance(env.defuse.contract_id()).await.unwrap().total;
+
+    // Both `storage_deposit`s are paid out of the contract's own balance.
+    assert!(defuse_balance_after < defuse_balance_before);
+
     assert_eq!(
-        ft.balance_of(env.defuse.contract_id()).await.unwrap().raw(),
+        ft1.balance_of(env.defuse.contract_id())
+            .await
+            .unwrap()
+            .raw(),
         0
     );
     assert_eq!(
-        ft.balance_of(admin.account_id()).await.unwrap().raw(),
+        ft1.balance_of(admin.account_id()).await.unwrap().raw(),
+        amount
+    );
+
+    assert_eq!(
+        ft2.balance_of(env.defuse.contract_id())
+            .await
+            .unwrap()
+            .raw(),
+        0
+    );
+    assert_eq!(
+        ft2.balance_of(admin.account_id()).await.unwrap().raw(),
         amount
     );
 }
@@ -108,14 +172,15 @@ async fn transfer_near_with_admin_call(
 
     let (admin, receiver) = futures::join!(env.create_user(), env.create_user());
 
-    let action = NearAction::Transfer(Transfer { amount });
+    let promise = [NearPromise::new(receiver.account_id())
+        .add_action(NearAction::Transfer(Transfer { amount }))];
 
     admin
         .defuse_admin_call(
             env.defuse.contract_id(),
-            receiver.account_id(),
-            &action,
+            &promise,
             &deposit,
+            NearGas::from_tgas(100),
         )
         .await
         .assert_err_contains("Insufficient permissions for method");
@@ -130,9 +195,9 @@ async fn transfer_near_with_admin_call(
     admin
         .defuse_admin_call(
             env.defuse.contract_id(),
-            receiver.account_id(),
-            &action,
+            &promise,
             &deposit,
+            NearGas::from_tgas(100),
         )
         .await
         .unwrap();
@@ -170,26 +235,22 @@ async fn admin_call_with_gas_exceeding_action(
         .await
         .unwrap();
 
-    let action = NearAction::FunctionCall(FunctionCall {
-        function_name: "ft_transfer".to_string(),
-        args: json!({
-            "receiver_id": admin.account_id(),
-            "amount": U128(amount),
-            "memo": "arbitrary call transfer".to_string(),
-        })
-        .to_string()
-        .into_bytes(),
-        deposit: NearToken::from_yoctonear(1),
-        gas: NearGas::from_tgas(500),
-        gas_weight: 1,
-    });
+    let promise = [NearPromise::new(ft.contract_id()).add_action(
+        NearAction::try_from(
+            ft.transfer(admin.account_id(), U128(amount))
+                .gas(NearGas::from_tgas(500))
+                .deposit(NearToken::from_yoctonear(1))
+                .into_action(),
+        )
+        .unwrap(),
+    )];
 
     admin
         .defuse_admin_call(
             env.defuse.contract_id(),
-            ft.contract_id(),
-            &action,
+            &promise,
             &NearToken::from_yoctonear(1),
+            NearGas::from_tgas(100),
         )
         .await
         .assert_err_contains("Exceeded the prepaid gas");
@@ -215,17 +276,22 @@ async fn admin_call_accepts_only_allowed_actions(
         .await
         .unwrap();
 
-    let action = NearAction::DeterministicStateInit(DeterministicStateInit {
-        state_init: StateInitV1::code(env.defuse.contract_id().to_owned()).into(),
-        deposit: NearToken::from_yoctonear(0),
-    });
+    let promise =
+        [
+            NearPromise::new(receiver.account_id()).add_action(NearAction::DeterministicStateInit(
+                DeterministicStateInit {
+                    state_init: StateInitV1::code(env.defuse.contract_id().to_owned()).into(),
+                    deposit: NearToken::from_yoctonear(0),
+                },
+            )),
+        ];
 
     admin
         .defuse_admin_call(
             env.defuse.contract_id(),
-            receiver.account_id(),
-            &action,
+            &promise,
             &NearToken::from_yoctonear(1),
+            NearGas::from_tgas(100),
         )
         .await
         .assert_err_contains("unsupported action");
@@ -246,26 +312,29 @@ async fn admin_call_refunds_failed_deposit_to_contract(
 
     let deposit = NearToken::from_near(1);
 
-    let action = NearAction::FunctionCall(FunctionCall {
-        function_name: "no_such_method".to_string(),
-        args: b"{}".to_vec(),
-        deposit,
-        gas: NearGas::from_tgas(10),
-        gas_weight: 0,
-    });
+    let promise = [
+        NearPromise::new(ft.contract_id()).add_action(NearAction::FunctionCall(FunctionCall {
+            function_name: "no_such_method".to_string(),
+            args: b"{}".to_vec(),
+            deposit,
+            gas: NearGas::from_tgas(10),
+            gas_weight: 0,
+        })),
+    ];
 
     let defuse_before = env.balance(env.defuse.contract_id()).await.unwrap().total;
     let admin_before = env.balance(admin.account_id()).await.unwrap().total;
 
+    // Promises are detached
     admin
         .defuse_admin_call(
             env.defuse.contract_id(),
-            ft.contract_id(),
-            &action,
+            &promise,
             &deposit,
+            NearGas::from_tgas(100),
         )
         .await
-        .assert_err_contains("method not found in contract");
+        .unwrap();
 
     let defuse_after = env.balance(env.defuse.contract_id()).await.unwrap().total;
     let admin_after = env.balance(admin.account_id()).await.unwrap().total;

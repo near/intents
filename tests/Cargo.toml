@@ -31,7 +31,7 @@ serde_json.workspace = true
 strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
-defuse-near-promise = { workspace = true, optional = true, features = ["serde"] }
+defuse-near-promise = { workspace = true, optional = true, features = ["serde", "near-kit"] }
 
 [features]
 default = [

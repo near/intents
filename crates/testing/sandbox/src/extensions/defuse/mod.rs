@@ -11,7 +11,7 @@ use defuse::{contract::config::DefuseConfig, simulation_output::SimulationOutput
 use defuse_core::{
     Nonce, PublicKey, Salt, fees::Pips, intents::auth::AuthCall, payload::multi::MultiPayload,
 };
-use defuse_near_promise::actions::NearAction;
+use defuse_near_promise::NearPromise;
 use near_kit::{
     AccountId, AccountIdRef, Final, FinalExecutionOutcome, FunctionCallAction, Gas, Near, NearToken,
 };
@@ -64,8 +64,7 @@ pub struct InvalidateSaltArgs<'a> {
 
 #[derive(Serialize)]
 pub struct AdminCallArgs<'a> {
-    pub receiver_id: &'a AccountIdRef,
-    pub action: &'a NearAction,
+    pub promises: &'a [NearPromise],
 }
 
 #[derive(Serialize)]
@@ -279,9 +278,9 @@ pub trait DefuseExt {
     async fn defuse_admin_call(
         &self,
         defuse: impl Into<AccountId>,
-        receiver_id: &AccountIdRef,
-        action: &NearAction,
+        promises: &[NearPromise],
         deposit: &NearToken,
+        gas: Gas,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn defuse_execute_intents(
@@ -550,18 +549,15 @@ impl DefuseExt for Near {
     async fn defuse_admin_call(
         &self,
         defuse: impl Into<AccountId>,
-        receiver_id: &AccountIdRef,
-        action: &NearAction,
+        promises: &[NearPromise],
         deposit: &NearToken,
+        gas: Gas,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.fn_call(
             defuse,
-            Defuse::admin_call(AdminCallArgs {
-                receiver_id,
-                action,
-            })
-            .deposit(*deposit)
-            .gas(Gas::from_tgas(300)),
+            Defuse::admin_call(AdminCallArgs { promises })
+                .deposit(*deposit)
+                .gas(gas),
         )
         .await
     }
