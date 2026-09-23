@@ -4,14 +4,14 @@ use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_kit::{
     AccountId, AccountIdRef, Final, FunctionCallAction, FungibleToken, Gas, Near, NearToken,
 };
-use near_sdk::json_types::{Base64VecU8, U128};
+use near_sdk::json_types::U128;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
 
 use crate::{account::Account, outcome::SuccessfulExecutionOutcome};
 
-pub use defuse_poa_factory::{Withdrawal, contract};
+pub use defuse_poa_factory::{IdDigest, PayloadHash, Withdrawal, contract};
 
 pub const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
 
@@ -38,31 +38,31 @@ pub struct PoaFtDepositArgs {
 
 #[derive(Serialize, Deserialize)]
 pub struct PoaFtWithdrawArgs {
-    pub withdrawal_id: String,
+    pub withdrawal_id: IdDigest,
     pub withdrawal: Withdrawal,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct PoaFtUpdateWithdrawArgs {
-    pub withdrawal_id: String,
-    pub prev_payload_hash: Base64VecU8,
-    pub new_payload_hash: Base64VecU8,
+    pub withdrawal_id: IdDigest,
+    pub prev_payload_hash: PayloadHash,
+    pub new_payload_hash: PayloadHash,
     pub metadata: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct PoaGetWithdrawArgs {
-    pub withdrawal_id: String,
+    pub withdrawal_id: IdDigest,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct PoaRemoveWithdrawsArgs {
-    pub withdrawals: Vec<String>,
+    pub withdrawals: Vec<IdDigest>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct PoaRemoveDepositsArgs {
-    pub deposits: Vec<String>,
+    pub deposits: Vec<IdDigest>,
 }
 
 #[near_kit::contract]
@@ -169,29 +169,29 @@ pub trait PoAFactoryExt {
     async fn poa_factory_ft_withdraw(
         &self,
         factory: impl AsRef<AccountIdRef>,
-        withdrawal_id: impl Into<String>,
+        withdrawal_id: IdDigest,
         withdrawal: Withdrawal,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn poa_factory_ft_update_withdraw(
         &self,
         factory: impl AsRef<AccountIdRef>,
-        withdrawal_id: impl Into<String>,
-        prev_payload_hash: Base64VecU8,
-        new_payload_hash: Base64VecU8,
+        withdrawal_id: IdDigest,
+        prev_payload_hash: PayloadHash,
+        new_payload_hash: PayloadHash,
         metadata: impl Into<String>,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn poa_factory_remove_withdraws(
         &self,
         factory: impl AsRef<AccountIdRef>,
-        withdrawals: Vec<String>,
+        withdrawals: Vec<IdDigest>,
     ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn poa_factory_remove_deposits(
         &self,
         factory: impl AsRef<AccountIdRef>,
-        deposits: Vec<String>,
+        deposits: Vec<IdDigest>,
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
@@ -248,13 +248,13 @@ impl PoAFactoryExt for Near {
     async fn poa_factory_ft_withdraw(
         &self,
         factory: impl AsRef<AccountIdRef>,
-        withdrawal_id: impl Into<String>,
+        withdrawal_id: IdDigest,
         withdrawal: Withdrawal,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(factory.as_ref())
             .add_action(
                 PoaFactory::ft_withdraw(PoaFtWithdrawArgs {
-                    withdrawal_id: withdrawal_id.into(),
+                    withdrawal_id,
                     withdrawal,
                 })
                 .gas(Gas::from_tgas(30)),
@@ -267,15 +267,15 @@ impl PoAFactoryExt for Near {
     async fn poa_factory_ft_update_withdraw(
         &self,
         factory: impl AsRef<AccountIdRef>,
-        withdrawal_id: impl Into<String>,
-        prev_payload_hash: Base64VecU8,
-        new_payload_hash: Base64VecU8,
+        withdrawal_id: IdDigest,
+        prev_payload_hash: PayloadHash,
+        new_payload_hash: PayloadHash,
         metadata: impl Into<String>,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(factory.as_ref())
             .add_action(
                 PoaFactory::ft_update_withdraw(PoaFtUpdateWithdrawArgs {
-                    withdrawal_id: withdrawal_id.into(),
+                    withdrawal_id,
                     prev_payload_hash,
                     new_payload_hash,
                     metadata: metadata.into(),
@@ -290,7 +290,7 @@ impl PoAFactoryExt for Near {
     async fn poa_factory_remove_withdraws(
         &self,
         factory: impl AsRef<AccountIdRef>,
-        withdrawals: Vec<String>,
+        withdrawals: Vec<IdDigest>,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(factory.as_ref())
             .add_action(
@@ -305,7 +305,7 @@ impl PoAFactoryExt for Near {
     async fn poa_factory_remove_deposits(
         &self,
         factory: impl AsRef<AccountIdRef>,
-        deposits: Vec<String>,
+        deposits: Vec<IdDigest>,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(factory.as_ref())
             .add_action(

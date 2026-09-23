@@ -1,8 +1,5 @@
 use core::iter;
-use near_sdk::{
-    json_types::Base64VecU8,
-    store::{LookupMap, LookupSet},
-};
+use near_sdk::store::{LookupMap, LookupSet};
 use std::collections::{HashMap, HashSet};
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
@@ -23,7 +20,7 @@ use near_sdk::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{FactoryEvent, PoaFactory, Withdrawal};
+use crate::{FactoryEvent, IdDigest, PayloadHash, PoaFactory, Withdrawal};
 
 const POA_TOKEN_WASM: &[u8] = include_bytes!(std::env!("POA_TOKEN_WASM"));
 
@@ -66,8 +63,8 @@ pub enum Role {
 pub struct Contract {
     tokens: IterableSet<String>,
     bridge_token_storage_deposit_required: NearToken,
-    deposits: LookupSet<String>,
-    withdrawals: LookupMap<String, Withdrawal>,
+    deposits: LookupSet<IdDigest>,
+    withdrawals: LookupMap<IdDigest, Withdrawal>,
     omni_tokens: IterableSet<String>,
 }
 
@@ -206,7 +203,7 @@ impl PoaFactory for Contract {
     #[payable]
     fn ft_omni_deposit(
         &mut self,
-        deposit_id: String,
+        deposit_id: IdDigest,
         token: String,
         owner_id: AccountId,
         amount: U128,
@@ -219,15 +216,15 @@ impl PoaFactory for Contract {
 
     #[pause]
     #[access_control_any(roles(Role::DAO, Role::OmniProver))]
-    fn ft_withdraw(&mut self, withdrawal_id: String, withdrawal: Withdrawal) {
+    fn ft_withdraw(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal) {
         require!(
             self.withdrawals
-                .insert(withdrawal_id.clone(), withdrawal.clone())
+                .insert(withdrawal_id, withdrawal.clone())
                 .is_none(),
             "withdrawal already exists"
         );
         FactoryEvent::FtWithdraw {
-            withdrawal_id: &withdrawal_id,
+            withdrawal_id,
             withdrawal: &withdrawal,
         }
         .emit();
@@ -237,9 +234,9 @@ impl PoaFactory for Contract {
     #[access_control_any(roles(Role::DAO, Role::OmniProver))]
     fn ft_update_withdraw(
         &mut self,
-        withdrawal_id: String,
-        prev_payload_hash: Base64VecU8,
-        new_payload_hash: Base64VecU8,
+        withdrawal_id: IdDigest,
+        prev_payload_hash: PayloadHash,
+        new_payload_hash: PayloadHash,
         metadata: String,
     ) {
         let withdrawal = self
@@ -256,9 +253,9 @@ impl PoaFactory for Contract {
         withdrawal.metadata = metadata;
 
         FactoryEvent::FtUpdateWithdraw {
-            withdrawal_id: &withdrawal_id,
-            prev_payload_hash: &prev_payload_hash,
-            new_payload_hash: &withdrawal.payload_hash,
+            withdrawal_id,
+            prev_payload_hash,
+            new_payload_hash: withdrawal.payload_hash,
             metadata: &withdrawal.metadata,
         }
         .emit();
@@ -266,7 +263,7 @@ impl PoaFactory for Contract {
 
     #[pause]
     #[access_control_any(roles(Role::DAO))]
-    fn remove_withdraws(&mut self, withdrawals: Vec<String>) {
+    fn remove_withdraws(&mut self, withdrawals: Vec<IdDigest>) {
         for id in withdrawals {
             self.withdrawals.remove(&id);
         }
@@ -274,13 +271,13 @@ impl PoaFactory for Contract {
 
     #[pause]
     #[access_control_any(roles(Role::DAO))]
-    fn remove_deposits(&mut self, deposits: Vec<String>) {
+    fn remove_deposits(&mut self, deposits: Vec<IdDigest>) {
         for id in deposits {
             self.deposits.remove(&id);
         }
     }
 
-    fn get_withdraw(&self, withdrawal_id: String) -> Option<&Withdrawal> {
+    fn get_withdraw(&self, withdrawal_id: IdDigest) -> Option<&Withdrawal> {
         self.withdrawals.get(&withdrawal_id)
     }
 

@@ -1833,6 +1833,7 @@ dependencies = [
  "rstest",
  "schemars 0.8.22",
  "serde",
+ "serde_with",
  "tokio",
 ]
 

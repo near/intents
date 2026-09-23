@@ -1,24 +1,22 @@
 #[cfg(feature = "contract")]
 pub mod contract;
+mod types;
 
 use std::collections::HashMap;
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_plugins::AccessControllable;
-use near_sdk::{
-    AccountId, Promise, ext_contract,
-    json_types::{Base64VecU8, U128},
-    near,
-};
+use near_sdk::{AccountId, Promise, ext_contract, json_types::U128, near};
+
+pub use self::types::{IdDigest, PayloadHash};
 
 /// Metadata about a cross-chain withdrawal tracked by the factory.
 #[near(serializers=[borsh, json])]
 #[derive(Debug, Clone)]
 pub struct Withdrawal {
-    pub chain_id: String,
-    pub payload_hash: Base64VecU8,
-    pub timestamp: u64,
+    pub payload_hash: PayloadHash,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub metadata: String,
 }
 
@@ -28,15 +26,15 @@ pub struct Withdrawal {
 pub enum FactoryEvent<'a> {
     #[event_version("0.1.0")]
     FtWithdraw {
-        withdrawal_id: &'a str,
+        withdrawal_id: IdDigest,
         withdrawal: &'a Withdrawal,
     },
     #[event_version("0.1.0")]
     FtUpdateWithdraw {
-        withdrawal_id: &'a str,
-        prev_payload_hash: &'a Base64VecU8,
-        new_payload_hash: &'a Base64VecU8,
-        metadata: &'a String,
+        withdrawal_id: IdDigest,
+        prev_payload_hash: PayloadHash,
+        new_payload_hash: PayloadHash,
+        metadata: &'a str,
     },
 }
 
@@ -72,7 +70,7 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     /// so its storage MUST be subsidised separately by the contract owner.
     fn ft_omni_deposit(
         &mut self,
-        deposit_id: String,
+        deposit_id: IdDigest,
         token: String,
         owner_id: AccountId,
         amount: U128,
@@ -87,25 +85,25 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     ///
     /// NOTE: as with [`PoaFactory::ft_omni_deposit`], this storage MUST be
     /// subsidised separately by the contract owner.
-    fn ft_withdraw(&mut self, withdrawal_id: String, withdrawal: Withdrawal);
+    fn ft_withdraw(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal);
 
     /// Replaces the payload hash of an existing withdrawal, guarded by the previous hash.
     fn ft_update_withdraw(
         &mut self,
-        withdrawal_id: String,
-        prev_payload_hash: Base64VecU8,
-        new_payload_hash: Base64VecU8,
+        withdrawal_id: IdDigest,
+        prev_payload_hash: PayloadHash,
+        new_payload_hash: PayloadHash,
         metadata: String,
     );
 
     /// Returns the withdrawal stored under `withdrawal_id`, if any.
-    fn get_withdraw(&self, withdrawal_id: String) -> Option<&Withdrawal>;
+    fn get_withdraw(&self, withdrawal_id: IdDigest) -> Option<&Withdrawal>;
 
     /// Removes the given withdrawal ids from storage.
-    fn remove_withdraws(&mut self, withdrawals: Vec<String>);
+    fn remove_withdraws(&mut self, withdrawals: Vec<IdDigest>);
 
     /// Removes the given deposit ids from storage, allowing them to be reused.
-    fn remove_deposits(&mut self, deposits: Vec<String>);
+    fn remove_deposits(&mut self, deposits: Vec<IdDigest>);
 
     /// Adds the given tokens to the list of omni layer tokens.
     fn add_omni_tokens(&mut self, tokens: Vec<String>);
