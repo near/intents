@@ -210,6 +210,7 @@ impl PoaFactory for Contract {
         msg: Option<String>,
         memo: Option<String>,
     ) -> Promise {
+        require!(self.omni_tokens.contains(&token));
         require!(self.deposits.insert(deposit_id), "deposit already exists");
         self.ft_deposit_internal(token, owner_id, amount, msg, memo)
     }
