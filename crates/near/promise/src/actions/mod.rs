@@ -100,27 +100,8 @@ const _: () = {
 };
 
 #[cfg(feature = "near-kit")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
-#[error("unexpected action")]
-pub struct UnexpectedActionError;
-
-#[cfg(feature = "near-kit")]
 const _: () = {
     use near_kit::Action;
-
-    impl TryFrom<Action> for NearAction {
-        type Error = UnexpectedActionError;
-
-        #[inline]
-        fn try_from(value: Action) -> Result<Self, Self::Error> {
-            match value {
-                Action::FunctionCall(a) => Ok(Self::FunctionCall(a.into())),
-                Action::Transfer(a) => Ok(Self::Transfer(a.into())),
-                Action::DeterministicStateInit(a) => Ok(Self::DeterministicStateInit(a.into())),
-                _ => Err(UnexpectedActionError),
-            }
-        }
-    }
 
     impl From<NearAction> for Action {
         #[inline]

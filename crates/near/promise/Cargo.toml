@@ -23,7 +23,6 @@ schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_json = { workspace = true, optional = true }
 serde_with = { workspace = true, features = ["base64"], optional = true }
-thiserror = { workspace = true, optional = true }
 
 [features]
 abi = ["borsh-schema", "schemars-v0_8"]
@@ -50,7 +49,7 @@ borsh-schema = [
   "near-token/abi",
 ]
 json = ["dep:serde_json", "serde"]
-near-kit = ["dep:near-kit", "dep:thiserror"]
+near-kit = ["dep:near-kit"]
 schemars-v0_8 = [
   "dep:schemars",
   "near-account-id/schemars-v0_8",
