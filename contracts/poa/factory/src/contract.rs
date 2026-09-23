@@ -6,7 +6,9 @@ use near_sdk::{
 use std::collections::{HashMap, HashSet};
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
+use defuse_borsh_utils::As;
 use defuse_poa_token::ext_poa_fungible_token;
+use impl_tools::autoimpl;
 use near_contract_standards::fungible_token::{core::ext_ft_core, metadata::FungibleTokenMetadata};
 use near_plugins::{
     AccessControlRole, AccessControllable, Pausable, access_control, access_control_any, pause,
@@ -24,6 +26,10 @@ use near_sdk::{
 use serde::{Deserialize, Serialize};
 
 use crate::{FactoryEvent, PoaFactory, Withdrawal};
+
+use self::versioned::MaybeVersionedContractStorage;
+
+mod versioned;
 
 const POA_TOKEN_WASM: &[u8] = include_bytes!(std::env!("POA_TOKEN_WASM"));
 
@@ -56,14 +62,33 @@ pub enum Role {
     OmniProver,
 }
 
-#[near(contract_state, contract_metadata())]
-#[derive(Pausable, PanicOnDefault)]
 #[access_control(role_type(Role))]
+#[derive(Pausable, PanicOnDefault)]
 #[pausable(
     pause_roles(Role::DAO, Role::PauseManager),
     unpause_roles(Role::DAO, Role::UnpauseManager)
 )]
+#[near(contract_state, contract_metadata())]
+#[autoimpl(Deref using self.storage)]
+#[autoimpl(DerefMut using self.storage)]
 pub struct Contract {
+    #[borsh(
+        deserialize_with = "As::<MaybeVersionedContractStorage>::deserialize",
+        serialize_with = "As::<MaybeVersionedContractStorage>::serialize"
+    )]
+    storage: ContractStorage,
+}
+
+/// Actual persisted contract data.
+///
+/// Versioned lazily: see [`versioned`] - old and new records may coexist
+/// in storage, and legacy records get upgraded to the latest shape one at
+/// a time, on their first read, instead of all at once via a dedicated
+/// `migrate()` call.
+#[cfg_attr(feature = "abi", derive(::borsh::BorshSchema))]
+#[derive(Debug, BorshSerialize, BorshDeserialize)]
+#[borsh(crate = "::near_sdk::borsh")]
+pub struct ContractStorage {
     tokens: IterableSet<String>,
     bridge_token_storage_deposit_required: NearToken,
     deposits: LookupSet<String>,
@@ -82,15 +107,17 @@ impl Contract {
         grantees: HashMap<Role, HashSet<AccountId>>,
     ) -> Self {
         let mut contract = Self {
-            tokens: IterableSet::new(Prefix::Tokens),
-            bridge_token_storage_deposit_required: env::storage_byte_cost().saturating_mul(
-                near_contract_standards::fungible_token::FungibleToken::new(b"t")
-                    .account_storage_usage
-                    .into(),
-            ),
-            deposits: LookupSet::new(Prefix::Deposits),
-            withdrawals: LookupMap::new(Prefix::Withdrawals),
-            omni_tokens: IterableSet::new(Prefix::OmniTokens),
+            storage: ContractStorage {
+                tokens: IterableSet::new(Prefix::Tokens),
+                bridge_token_storage_deposit_required: env::storage_byte_cost().saturating_mul(
+                    near_contract_standards::fungible_token::FungibleToken::new(b"t")
+                        .account_storage_usage
+                        .into(),
+                ),
+                deposits: LookupSet::new(Prefix::Deposits),
+                withdrawals: LookupMap::new(Prefix::Withdrawals),
+                omni_tokens: IterableSet::new(Prefix::OmniTokens),
+            },
         };
 
         let mut acl = contract.acl_get_or_init();
@@ -110,27 +137,6 @@ impl Contract {
         );
         contract
     }
-
-    #[init(ignore_state)]
-    #[must_use]
-    #[allow(clippy::use_self)]
-    pub fn migrate() -> Self {
-        let old: OldContract = env::state_read().expect("failed to read old state");
-        Self {
-            tokens: old.tokens,
-            bridge_token_storage_deposit_required: old.bridge_token_storage_deposit_required,
-            deposits: LookupSet::new(Prefix::Deposits),
-            withdrawals: LookupMap::new(Prefix::Withdrawals),
-            omni_tokens: IterableSet::new(Prefix::OmniTokens),
-        }
-    }
-}
-
-#[derive(BorshDeserialize)]
-#[borsh(crate = "::near_sdk::borsh")]
-struct OldContract {
-    tokens: IterableSet<String>,
-    bridge_token_storage_deposit_required: NearToken,
 }
 
 #[near]
