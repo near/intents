@@ -192,7 +192,7 @@ impl PoaFactory for Contract {
     ) -> Promise {
         require!(
             !self.omni_tokens.contains(&token),
-            "omni token deposit requires omni_deposit method"
+            "omni token deposit requires `ft_omni_deposit()` method"
         );
 
         self.ft_deposit_internal(token, owner_id, amount, msg, memo)
