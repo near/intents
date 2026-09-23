@@ -100,12 +100,13 @@ const _: () = {
 };
 
 #[cfg(feature = "near-kit")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+#[error("unexpected action")]
+pub struct UnexpectedActionError;
+
+#[cfg(feature = "near-kit")]
 const _: () = {
     use near_kit::Action;
-
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
-    #[error("invalid point encoding")]
-    pub struct UnexpectedActionError;
 
     impl TryFrom<Action> for NearAction {
         type Error = UnexpectedActionError;

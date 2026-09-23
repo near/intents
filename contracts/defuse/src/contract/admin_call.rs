@@ -26,7 +26,7 @@ impl AdminCallManager for Contract {
                 "unsupported action"
             );
 
-            // TODO: Given that it is allowed to spend contract balance by arbitrary call,
+            // NOTE: Given that it is allowed to spend contract balance by arbitrary call,
             // refund goes to the intents contract in case of failure
             p.build().detach();
         }
