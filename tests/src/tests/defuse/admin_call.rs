@@ -9,8 +9,7 @@ use defuse_sandbox::{
     },
     kit::NearToken,
 };
-use near_gas::NearGas;
-use near_sdk::json_types::U128;
+use near_sdk::{Gas as NearGas, json_types::U128};
 
 use crate::{
     tests::defuse::env::{Env, env},
