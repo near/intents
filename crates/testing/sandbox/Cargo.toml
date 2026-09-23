@@ -11,7 +11,7 @@ repository.workspace = true
 anyhow.workspace = true
 defuse-core = { workspace = true, features = ["near-kit"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
-defuse-nep245.workspace = true
+defuse-nep245 = { workspace = true, features = ["serde"] }
 near-contract-standards.workspace = true
 near-kit = { workspace = true, features = ["sandbox"] }
 near-sdk = { workspace = true, features = ["non-contract-usage"] }

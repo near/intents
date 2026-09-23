@@ -26,8 +26,12 @@ container_build_command = [
 
 [dependencies]
 defuse-admin-utils.workspace = true
+defuse-borsh-utils.workspace = true
+defuse-near-utils = { workspace = true, features = ["borsh"] }
 defuse-poa-token.workspace = true
 
+borsh = { workspace = true, features = ["derive"] }
+impl-tools.workspace = true
 near-contract-standards.workspace = true
 near-plugins.workspace = true
 near-sdk.workspace = true
@@ -38,11 +42,12 @@ schemars = { workspace = true, features = ["derive"], optional = true }
 [dev-dependencies]
 defuse-sandbox.workspace = true
 futures.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
 [features]
-abi = ["dep:schemars"]
+abi = ["borsh/unstable__schema", "dep:schemars", "near-sdk/abi"]
 
 contract = []
 
