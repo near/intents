@@ -103,6 +103,24 @@ const _: () = {
 const _: () = {
     use near_kit::Action;
 
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+    #[error("invalid point encoding")]
+    pub struct UnexpectedActionError;
+
+    impl TryFrom<Action> for NearAction {
+        type Error = UnexpectedActionError;
+
+        #[inline]
+        fn try_from(value: Action) -> Result<Self, Self::Error> {
+            match value {
+                Action::FunctionCall(a) => Ok(Self::FunctionCall(a.into())),
+                Action::Transfer(a) => Ok(Self::Transfer(a.into())),
+                Action::DeterministicStateInit(a) => Ok(Self::DeterministicStateInit(a.into())),
+                _ => Err(UnexpectedActionError),
+            }
+        }
+    }
+
     impl From<NearAction> for Action {
         #[inline]
         fn from(value: NearAction) -> Self {
