@@ -264,21 +264,21 @@ impl PoaFactory for Contract {
 
     #[pause]
     #[access_control_any(roles(Role::DAO))]
-    fn remove_withdraws(&mut self, withdrawals: Vec<IdDigest>) {
-        for id in withdrawals {
+    fn remove_withdrawals(&mut self, withdrawal_ids: Vec<IdDigest>) {
+        for id in withdrawal_ids {
             self.withdrawals.remove(&id);
         }
     }
 
     #[pause]
     #[access_control_any(roles(Role::DAO))]
-    fn remove_deposits(&mut self, deposits: Vec<IdDigest>) {
-        for id in deposits {
+    fn remove_deposits(&mut self, deposit_ids: Vec<IdDigest>) {
+        for id in deposit_ids {
             self.deposits.remove(&id);
         }
     }
 
-    fn get_withdraw(&self, withdrawal_id: IdDigest) -> Option<&Withdrawal> {
+    fn get_withdrawal(&self, withdrawal_id: IdDigest) -> Option<&Withdrawal> {
         self.withdrawals.get(&withdrawal_id)
     }
 

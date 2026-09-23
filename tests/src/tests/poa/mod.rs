@@ -2,7 +2,7 @@ use defuse_sandbox::{
     account::Account,
     extensions::poa::{
         IdDigest, PayloadHash, PoAFactoryExt, PoaFactoryClient, PoaFactoryDeployerExt,
-        PoaGetWithdrawArgs, Withdrawal, contract::Role,
+        PoaGetWithdrawalArgs, Withdrawal, contract::Role,
     },
     kit::{Near, NearToken},
     root,
@@ -142,7 +142,7 @@ async fn ft_withdraw_records_and_rejects_duplicate(#[future(awt)] root: Near) {
         .unwrap();
 
     let stored = poa_factory
-        .get_withdraw(PoaGetWithdrawArgs { withdrawal_id: w1 })
+        .get_withdrawal(PoaGetWithdrawalArgs { withdrawal_id: w1 })
         .await
         .unwrap()
         .expect("withdrawal must be stored");
@@ -158,12 +158,12 @@ async fn ft_withdraw_records_and_rejects_duplicate(#[future(awt)] root: Near) {
         "unexpected error: {err:?}"
     );
 
-    root.poa_factory_remove_withdraws(poa_factory.contract_id(), vec![w1])
+    root.poa_factory_remove_withdrawals(poa_factory.contract_id(), vec![w1])
         .await
         .unwrap();
     assert!(
         poa_factory
-            .get_withdraw(PoaGetWithdrawArgs { withdrawal_id: w1 })
+            .get_withdrawal(PoaGetWithdrawalArgs { withdrawal_id: w1 })
             .await
             .unwrap()
             .is_none()
@@ -241,7 +241,7 @@ async fn ft_update_withdraw(#[future(awt)] root: Near) {
     .unwrap();
 
     let stored = poa_factory
-        .get_withdraw(PoaGetWithdrawArgs {
+        .get_withdrawal(PoaGetWithdrawalArgs {
             withdrawal_id: w_upd,
         })
         .await

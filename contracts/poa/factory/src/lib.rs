@@ -97,13 +97,18 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     );
 
     /// Returns the withdrawal stored under `withdrawal_id`, if any.
-    fn get_withdraw(&self, withdrawal_id: IdDigest) -> Option<&Withdrawal>;
+    fn get_withdrawal(&self, withdrawal_id: IdDigest) -> Option<&Withdrawal>;
 
     /// Removes the given withdrawal ids from storage.
-    fn remove_withdraws(&mut self, withdrawals: Vec<IdDigest>);
+    ///
+    /// Ids with nothing stored under them are ignored, so the call succeeds
+    /// whether or not every id was present and is safe to retry.
+    fn remove_withdrawals(&mut self, withdrawal_ids: Vec<IdDigest>);
 
     /// Removes the given deposit ids from storage, allowing them to be reused.
-    fn remove_deposits(&mut self, deposits: Vec<IdDigest>);
+    ///
+    /// As with [`PoaFactory::remove_withdrawals`], unknown ids are ignored.
+    fn remove_deposits(&mut self, deposit_ids: Vec<IdDigest>);
 
     /// Adds the given tokens to the list of omni layer tokens.
     fn add_omni_tokens(&mut self, tokens: Vec<String>);
