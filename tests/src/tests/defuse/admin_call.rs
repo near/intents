@@ -17,6 +17,7 @@ use crate::{
 };
 use rstest::rstest;
 
+// TODO: remove when into_fn_call_action is added to CallBuilder
 pub fn into_fn_call_action(action: Action) -> NearAction {
     let Action::FunctionCall(action) = action else {
         panic!("Expected Action::FunctionCall, got {:?}", action);
