@@ -7,7 +7,9 @@ mod signer;
 use std::collections::{HashMap, HashSet};
 
 use anyhow::Result;
-use defuse::{contract::config::DefuseConfig, simulation_output::SimulationOutput};
+use defuse::{
+    contract::config::DefuseConfig, near_promise::NearPromise, simulation_output::SimulationOutput,
+};
 use defuse_core::{
     Nonce, PublicKey, Salt, fees::Pips, intents::auth::AuthCall, payload::multi::MultiPayload,
 };
@@ -27,9 +29,7 @@ pub use imt::*;
 pub use nonce::*;
 pub use signer::*;
 
-pub use defuse::contract;
-pub use defuse::core;
-pub use defuse::tokens;
+pub use defuse::{contract, core, near_promise, tokens};
 pub use defuse_nep245 as nep245;
 
 #[derive(Serialize)]
@@ -59,6 +59,11 @@ pub struct SaltArgs {
 #[derive(Serialize)]
 pub struct InvalidateSaltArgs<'a> {
     pub salts: &'a [Salt],
+}
+
+#[derive(Serialize)]
+pub struct AdminCallArgs<'a> {
+    pub promises: &'a [NearPromise],
 }
 
 #[derive(Serialize)]
@@ -180,6 +185,9 @@ pub trait Defuse {
     #[call]
     fn invalidate_salts(&mut self, args: InvalidateSaltArgs) -> Salt;
 
+    #[call]
+    fn admin_call(&mut self, args: AdminCallArgs);
+
     fn simulate_intents(&self, args: MultiPayloadArgs) -> SimulationOutput;
 
     #[call]
@@ -265,6 +273,14 @@ pub trait DefuseExt {
         defuse: impl Into<AccountId>,
         salts: impl IntoIterator<Item = Salt>,
     ) -> Result<(SuccessfulExecutionOutcome, Salt)>;
+
+    async fn defuse_admin_call(
+        &self,
+        defuse: impl Into<AccountId>,
+        promises: &[NearPromise],
+        deposit: &NearToken,
+        gas: Gas,
+    ) -> Result<SuccessfulExecutionOutcome>;
 
     async fn defuse_execute_intents(
         &self,
@@ -527,6 +543,22 @@ impl DefuseExt for Near {
             .await?;
         let salt = outcome.json::<Salt>()?;
         Ok((outcome.try_into()?, salt))
+    }
+
+    async fn defuse_admin_call(
+        &self,
+        defuse: impl Into<AccountId>,
+        promises: &[NearPromise],
+        deposit: &NearToken,
+        gas: Gas,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.fn_call(
+            defuse,
+            Defuse::admin_call(AdminCallArgs { promises })
+                .deposit(*deposit)
+                .gas(gas),
+        )
+        .await
     }
 
     async fn defuse_execute_intents(
