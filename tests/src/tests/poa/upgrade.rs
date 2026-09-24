@@ -4,12 +4,16 @@ use defuse_sandbox::{
     account::Account,
     extensions::{
         acl::AccessControllableExt,
-        poa::{PoAFactoryExt, PoaFactoryClient, PoaFactoryDeployerExt, contract::Role},
+        poa::{
+            PoAFactoryExt, PoaFactoryClient, PoaFactoryDeployerExt, PoaGetWithdrawArgs, Withdrawal,
+            contract::Role,
+        },
     },
     kit::{AccountId, Final, Near, NearToken},
     root,
 };
 use defuse_test_utils::wasms::{POA_FACTORY_LEGACY_WASM, POA_FACTORY_WASM};
+use near_sdk::json_types::Base64VecU8;
 use rstest::rstest;
 
 /// Deploys `poa-factory` with the *legacy* (pre-omni-layer) wasm, using only
@@ -183,4 +187,53 @@ async fn test_poa_factory_upgrade_from_legacy(#[future(awt)] root: Near) {
     let balance_final: u128 = ft1.balance_of(user.account_id()).await.unwrap().into();
     println!("FINAL ft1 balance after omni deposit: {balance_final}");
     assert_eq!(balance_final, balance_before + 500);
+
+    // `withdrawals` is the third new field migrated in alongside `deposits`
+    // and `omni_tokens` - it never existed on the legacy contract either, so
+    // it must also be usable right after the upgrade, with no separate
+    // migration step.
+    let withdrawal = Withdrawal {
+        chain_id: "eth:1".to_string(),
+        payload_hash: Base64VecU8::from(vec![1, 2, 3, 4]),
+        timestamp: 1_700_000_000,
+        metadata: "meta-1".to_string(),
+    };
+
+    root.poa_factory_ft_withdraw(poa_factory.contract_id(), "w-1", withdrawal.clone())
+        .await
+        .unwrap();
+
+    let stored = poa_factory
+        .get_withdraw(PoaGetWithdrawArgs {
+            withdrawal_id: "w-1".to_string(),
+        })
+        .await
+        .unwrap()
+        .expect("withdrawal must be stored on the upgraded contract");
+    println!("withdrawal stored after upgrade: {stored:?}");
+    assert_eq!(stored.chain_id, withdrawal.chain_id);
+    assert_eq!(stored.payload_hash.0, withdrawal.payload_hash.0);
+    assert_eq!(stored.metadata, withdrawal.metadata);
+
+    // duplicates by `withdrawal_id` must still be rejected
+    let err = root
+        .poa_factory_ft_withdraw(poa_factory.contract_id(), "w-1", withdrawal.clone())
+        .await
+        .unwrap_err();
+    assert!(
+        format!("{err:?}").contains("withdrawal already exists"),
+        "unexpected error: {err:?}"
+    );
+
+    root.poa_factory_remove_withdraws(poa_factory.contract_id(), vec!["w-1".to_string()])
+        .await
+        .unwrap();
+    let removed = poa_factory
+        .get_withdraw(PoaGetWithdrawArgs {
+            withdrawal_id: "w-1".to_string(),
+        })
+        .await
+        .unwrap();
+    println!("withdrawal after remove_withdraws: {removed:?}");
+    assert!(removed.is_none());
 }
