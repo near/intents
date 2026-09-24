@@ -5,7 +5,7 @@ use std::{
 
 use impl_tools::autoimpl;
 
-use crate::{Curve, RecoverableCurve, RecoverableSigner, Signer, SignerPublicKey};
+use crate::{CachePublicKey, Curve, RecoverableCurve, RecoverableSigner, Signer, SignerPublicKey};
 
 /// An asynchronous counterpart of [`Signer`], for signers that need to await
 /// in order to sign, e.g. ones backed by a remote MPC network.
@@ -17,11 +17,7 @@ pub trait AsyncSigner<C: Curve>: SignerPublicKey<C> + Sync {
     /// An error that can occur during [signing](Self::sign).
     type Error: Debug + Display;
 
-    /// Sign a given message and return a signature.
-    ///
-    /// NOTE: implementations MAY require `msg` to be prehash (i.e. output
-    /// of cryptographic hash function) of a fixed length and return
-    /// an error otherwise. Check corresponding docs before using.
+    /// Asynchronous [`Signer::sign`].
     async fn sign_async(&self, msg: &[u8]) -> Result<C::Signature, Self::Error>;
 }
 
@@ -30,11 +26,7 @@ pub trait AsyncSigner<C: Curve>: SignerPublicKey<C> + Sync {
 #[trait_variant::make(Send)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
 pub trait AsyncRecoverableSigner<C: RecoverableCurve>: AsyncSigner<C> {
-    /// Sign a given message and return a signature along with recovery id.
-    ///
-    /// NOTE: implementations MAY require `msg` to be prehash (i.e. output
-    /// of cryptographic hash function) of a fixed length and return
-    /// an error otherwise. Check corresponding docs before using.
+    /// Asynchronous [`RecoverableSigner::sign_recoverable`].
     async fn sign_recoverable_async(
         &self,
         msg: &[u8],
@@ -95,3 +87,32 @@ pub trait IntoAsync: Sized {
 }
 
 impl<T> IntoAsync for T {}
+
+impl<C, S> AsyncSigner<C> for CachePublicKey<C, S>
+where
+    C: Curve,
+    C::PublicKey: Clone + Send + Sync,
+    S: AsyncSigner<C>,
+{
+    type Error = S::Error;
+
+    #[inline]
+    async fn sign_async(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
+        self.signer.sign_async(msg).await
+    }
+}
+
+impl<C, S> AsyncRecoverableSigner<C> for CachePublicKey<C, S>
+where
+    C: RecoverableCurve,
+    C::PublicKey: Clone + Send + Sync,
+    S: AsyncRecoverableSigner<C>,
+{
+    #[inline]
+    async fn sign_recoverable_async(
+        &self,
+        msg: &[u8],
+    ) -> Result<(C::Signature, C::RecoveryId), Self::Error> {
+        self.signer.sign_recoverable_async(msg).await
+    }
+}

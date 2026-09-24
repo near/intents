@@ -99,7 +99,7 @@ impl<C, P, S, D> AsyncRecoverableDeriveSigner<C, P> for Derive<S, D>
 where
     C: RecoverableCurve,
     S: AsyncRecoverableDeriveSigner<C, D::Output>,
-    D: Schema<P, Output: Send + Sync> + Send + Sync,
+    D: Schema<P, Output: Send> + Send + Sync,
 {
     async fn derive_sign_recoverable_async(
         &self,
@@ -131,7 +131,7 @@ impl<C, S, D> AsyncRecoverableSigner<C> for Derive<S, D>
 where
     C: RecoverableCurve,
     S: AsyncRecoverableDeriveSigner<C, D::Output>,
-    D: Schema<(), Output: Send + Sync> + Send + Sync,
+    D: Schema<(), Output: Send> + Send + Sync,
     Self: SignerPublicKey<C>,
 {
     #[inline]
