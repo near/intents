@@ -1285,7 +1285,6 @@ dependencies = [
  "schemars 0.8.22",
  "serde_with",
  "thiserror 2.0.19",
- "tokio",
  "trait-variant",
 ]
 
@@ -1414,7 +1413,6 @@ dependencies = [
  "k256 0.14.0",
  "near-sdk",
  "rstest",
- "tokio",
  "trait-variant",
 ]
 

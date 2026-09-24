@@ -122,8 +122,7 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[tokio::test]
-    async fn roundtrip(
+    fn roundtrip(
         #[values(
             hex!("bd635d1f79748034dcb9654b5915b1ca94dfd66f6b78c2067f78110a0106af10"),
         )]
@@ -153,8 +152,7 @@ mod tests {
         hex!("108a8530b779de5245e65e92c3590bc8e87034afa8774e8c7365be3732f4b19e"),
         hex!("ff0a1347d1aa363e71c1c33c06e10050d3278b0f308b190bdf22bcfce9821344f596012c92bc2adba6f3fa4f98874d70bb2eb1a1bc0441674c14f77ae4c8d214"),
     )]
-    #[tokio::test]
-    async fn derived_pk_has_not_changed(
+    fn derived_pk_has_not_changed(
         #[case] root_sk: [u8; 32],
         #[case] tweak: [u8; 32],
         #[case] expected_derived_pk: impl Into<Secp256k1UncompressedPublicKey>,
