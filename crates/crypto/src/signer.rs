@@ -7,23 +7,15 @@ use impl_tools::autoimpl;
 
 use crate::{Curve, RecoverableCurve};
 
-/// A signer capable of producing signatures for a specific [`Curve`].
-#[trait_variant::make(Send)]
+/// A type that knows the [public key](Curve::PublicKey) its signatures
+/// verify against.
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
-pub trait Signer<C: Curve>: Sync {
-    /// An error that can occur during [signing](Self::sign).
-    type Error: Debug + Display;
-
-    /// Public key of the signer
+pub trait SignerPublicKey<C: Curve> {
+    /// Public key of the signer.
     fn public_key(&self) -> C::PublicKey;
 
-    /// Sign a given message and return a signature.
-    ///
-    /// NOTE: implementations MAY require `msg` to be prehash (i.e. output
-    /// of cryptographic hash function) of a fixed length and return
-    /// an error otherwise. Check corresponding docs before using.
-    async fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error>;
-
+    /// Wrap `self` into [`CachePublicKey`], so that
+    /// [`public_key()`](Self::public_key) is computed at most once.
     #[inline]
     fn cache_public_key(self) -> CachePublicKey<C, Self>
     where
@@ -33,9 +25,25 @@ pub trait Signer<C: Curve>: Sync {
     }
 }
 
+/// A signer capable of producing signatures for a specific [`Curve`].
+///
+/// See [`AsyncSigner`](crate::AsyncSigner) for signers that need to await,
+/// e.g. remote ones.
+#[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
+pub trait Signer<C: Curve>: SignerPublicKey<C> {
+    /// An error that can occur during [signing](Self::sign).
+    type Error: Debug + Display;
+
+    /// Sign a given message and return a signature.
+    ///
+    /// NOTE: implementations MAY require `msg` to be prehash (i.e. output
+    /// of cryptographic hash function) of a fixed length and return
+    /// an error otherwise. Check corresponding docs before using.
+    fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error>;
+}
+
 /// A [`Signer`] that can produce [recoverable](RecoverableCurve::recover)
 /// signatures.
-#[trait_variant::make(Send)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
 pub trait RecoverableSigner<C: RecoverableCurve>: Signer<C> {
     /// Sign a given message and return a signature along with recovery id.
@@ -43,10 +51,7 @@ pub trait RecoverableSigner<C: RecoverableCurve>: Signer<C> {
     /// NOTE: implementations MAY require `msg` to be prehash (i.e. output
     /// of cryptographic hash function) of a fixed length and return
     /// an error otherwise. Check corresponding docs before using.
-    async fn sign_recoverable(
-        &self,
-        msg: &[u8],
-    ) -> Result<(C::Signature, C::RecoveryId), Self::Error>;
+    fn sign_recoverable(&self, msg: &[u8]) -> Result<(C::Signature, C::RecoveryId), Self::Error>;
 }
 
 /// TODO: docs
@@ -67,37 +72,43 @@ impl<C: Curve, S> CachePublicKey<C, S> {
     }
 }
 
-impl<C, S> Signer<C> for CachePublicKey<C, S>
+impl<C, S> SignerPublicKey<C> for CachePublicKey<C, S>
 where
     C: Curve,
-    C::PublicKey: Clone + Send + Sync,
-    S: Signer<C>,
+    C::PublicKey: Clone,
+    S: SignerPublicKey<C>,
 {
-    type Error = S::Error;
-
-    #[inline]
     fn public_key(&self) -> C::PublicKey {
         self.public_key
             .get_or_init(|| self.signer.public_key())
             .clone()
     }
+}
 
-    async fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
-        self.signer.sign(msg).await
+impl<C, S> Signer<C> for CachePublicKey<C, S>
+where
+    C: Curve,
+    C::PublicKey: Clone,
+    S: Signer<C>,
+{
+    type Error = S::Error;
+
+    fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
+        self.signer.sign(msg)
     }
 }
 
 impl<C, S> RecoverableSigner<C> for CachePublicKey<C, S>
 where
     C: RecoverableCurve,
-    C::PublicKey: Clone + Send + Sync,
+    C::PublicKey: Clone,
     S: RecoverableSigner<C>,
 {
-    async fn sign_recoverable(
+    fn sign_recoverable(
         &self,
         msg: &[u8],
     ) -> Result<(<C>::Signature, <C as RecoverableCurve>::RecoveryId), Self::Error> {
-        self.signer.sign_recoverable(msg).await
+        self.signer.sign_recoverable(msg)
     }
 }
 
@@ -109,22 +120,22 @@ pub(crate) mod tests {
 
     use super::*;
 
-    pub async fn test_sign_verify<C: Curve, S: Signer<C>>(signer: S, msg: impl AsRef<[u8]>) {
+    pub fn test_sign_verify<C: Curve, S: Signer<C>>(signer: S, msg: impl AsRef<[u8]>) {
         let msg = msg.as_ref();
-        let signature = signer.sign(msg).await.unwrap();
+        let signature = signer.sign(msg).unwrap();
         assert!(
             C::verify(&signer.public_key(), msg, &signature),
             "signer produced invalid signature"
         );
     }
 
-    pub async fn test_sign_recover<C, S>(signer: S, msg: impl AsRef<[u8]>)
+    pub fn test_sign_recover<C, S>(signer: S, msg: impl AsRef<[u8]>)
     where
         C: RecoverableCurve<PublicKey: PartialEq + Debug>,
         S: RecoverableSigner<C>,
     {
         let msg = msg.as_ref();
-        let (signature, recovery_id) = signer.sign_recoverable(msg).await.unwrap();
+        let (signature, recovery_id) = signer.sign_recoverable(msg).unwrap();
 
         assert_eq!(
             C::recover(msg, &signature, recovery_id),

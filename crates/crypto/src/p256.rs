@@ -50,21 +50,23 @@ impl Curve for P256 {
 const _: () = {
     use p256::ecdsa::{self, SigningKey};
 
-    use crate::Signer;
+    use crate::{Signer, SignerPublicKey};
 
-    impl Signer<P256> for SigningKey {
-        type Error = ecdsa::Error;
-
+    impl SignerPublicKey<P256> for SigningKey {
         #[inline]
         fn public_key(&self) -> <P256 as Curve>::PublicKey {
             *self.verifying_key()
         }
+    }
+
+    impl Signer<P256> for SigningKey {
+        type Error = ecdsa::Error;
 
         /// Sign **32-byte prehash** (i.e. output of cryptographic hash
         /// function).
         ///
         /// If given prehash is of different length, an error will be returned.
-        async fn sign(&self, prehash: &[u8]) -> Result<<P256 as Curve>::Signature, Self::Error> {
+        fn sign(&self, prehash: &[u8]) -> Result<<P256 as Curve>::Signature, Self::Error> {
             let prehash: &[u8; 32] = prehash
                 .try_into()
                 .map_err(|_| ecdsa::Error::from_source("prehash must be 32-bytes long"))?;
@@ -507,8 +509,7 @@ mod tests {
     #[case(
         hex!("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"),
     )]
-    #[tokio::test]
-    async fn sign_verify(#[case] prehash: [u8; 32]) {
-        test_sign_verify(SigningKey::generate(), prehash).await;
+    fn sign_verify(#[case] prehash: [u8; 32]) {
+        test_sign_verify(SigningKey::generate(), prehash);
     }
 }

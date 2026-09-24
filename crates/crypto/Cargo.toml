@@ -61,7 +61,6 @@ k256 = { workspace = true, features = ["getrandom"] }
 p256 = { workspace = true, features = ["getrandom"] }
 rand.workspace = true
 rstest.workspace = true
-tokio = { workspace = true, features = ["macros", "rt"] }
 
 [target.'cfg(near)'.dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }

@@ -1,3 +1,5 @@
+#[cfg(feature = "signing")]
+mod async_signer;
 mod curve;
 #[cfg(feature = "ed25519")]
 pub mod ed25519;
@@ -12,4 +14,4 @@ mod signer;
 
 pub use self::curve::*;
 #[cfg(feature = "signing")]
-pub use self::signer::*;
+pub use self::{async_signer::*, signer::*};

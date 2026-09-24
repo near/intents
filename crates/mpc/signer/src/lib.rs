@@ -10,7 +10,8 @@ pub use defuse_mpc_kdf as kdf;
 use std::{borrow::Cow, cell::LazyCell, error::Error as StdError, fmt::Debug};
 
 use defuse_mpc_kdf::{
-    Additive, Derive, DeriveExt, DeriveSigner, RecoverableDeriveSigner, TweakSchema, crypto::Curve,
+    Additive, AsyncDeriveSigner, AsyncRecoverableDeriveSigner, Derive, DeriveExt,
+    DeriveSignerSchema, TweakSchema, crypto::Curve,
 };
 use defuse_near_promise::{AccountId, AccountIdRef, Gas, NearToken, actions::FunctionCall};
 use defuse_near_sender::{ArcNearSender, NearSender, SentTransaction};
@@ -142,13 +143,11 @@ where
     }
 }
 
-impl<C, P> DeriveSigner<C, P> for MpcOnChainSigner<C>
+impl<C, P> DeriveSignerSchema<C, P> for MpcOnChainSigner<C>
 where
-    C: OnChainNearMpcCurve<PublicKey: Clone + Send + Sync>,
+    C: OnChainNearMpcCurve<PublicKey: Clone>,
     P: AsRef<str> + AsRef<[u8]>,
 {
-    type Error = Error;
-
     type Schema<'a>
         = Derive<Additive<C>, TweakSchema<C>>
     where
@@ -158,15 +157,20 @@ where
         Additive::new(self.mpc_public_key.clone())
             .derive_with(defuse_mpc_kdf::tweak(self.predecessor_id()))
     }
+}
+
+impl<C, P> AsyncDeriveSigner<C, P> for MpcOnChainSigner<C>
+where
+    C: OnChainNearMpcCurve<PublicKey: Clone + Send + Sync>,
+    P: AsRef<str> + AsRef<[u8]> + Send,
+{
+    type Error = Error;
 
     #[cfg_attr(feature = "tracing", tracing::instrument(skip_all, fields(
         mpc_contract_id = %self.mpc_contract_id,
         domain_id = self.domain_id,
     )))]
-    async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
-    where
-        P: Send,
-    {
+    async fn derive_sign_async(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error> {
         let path: &str = path.as_ref();
         self.sign_extract(
             path,
@@ -187,23 +191,20 @@ where
     }
 }
 
-impl<C, P> RecoverableDeriveSigner<C, P> for MpcOnChainSigner<C>
+impl<C, P> AsyncRecoverableDeriveSigner<C, P> for MpcOnChainSigner<C>
 where
     C: RecoverableOnChainNearMpcCurve<PublicKey: Clone + PartialEq + Send + Sync, RecoveryId: Copy>,
-    P: AsRef<str> + AsRef<[u8]>,
+    P: AsRef<str> + AsRef<[u8]> + Send,
 {
     #[cfg_attr(feature = "tracing", tracing::instrument(skip_all, fields(
         mpc_contract_id = %self.mpc_contract_id,
         domain_id = self.domain_id,
     )))]
-    async fn derive_sign_recoverable(
+    async fn derive_sign_recoverable_async(
         &self,
         path: P,
         msg: &[u8],
-    ) -> Result<(C::Signature, C::RecoveryId), Self::Error>
-    where
-        P: Send,
-    {
+    ) -> Result<(C::Signature, C::RecoveryId), Self::Error> {
         let path: &str = path.as_ref();
         self.sign_extract(
             path,

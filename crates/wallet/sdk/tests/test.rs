@@ -4,7 +4,10 @@ use std::{env, fs, path::Path, sync::LazyLock};
 
 use defuse_nep641::{JsonPayload, resolver::RpcResolver};
 use defuse_wallet::{NearPromise, Request, WalletOp, actions::FunctionCall};
-use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
+use defuse_wallet_ed25519::{
+    WalletEd25519, WalletEd25519Signer,
+    crypto::{AsAsync, ed25519::ed25519_dalek},
+};
 use defuse_wallet_sdk::{
     Gas, NearToken, WalletBuilder,
     client::{WExecuteExtensionArgs, WExecuteSignedArgs, WalletContract},
@@ -227,7 +230,9 @@ async fn wallet(
     builder
         .build(
             *WALLET_ED25519_CODE_HASH,
-            WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng))),
+            WalletEd25519Signer(AsAsync(ed25519_dalek::SigningKey::generate(
+                &mut UnwrapErr(SysRng),
+            ))),
         )
         .with_client(near.clone())
         .with_relayer(near)

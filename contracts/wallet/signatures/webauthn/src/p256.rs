@@ -12,7 +12,10 @@ impl WalletWebauthnAlgorithm for P256 {
 mod tests {
     use std::time::Duration;
 
-    use defuse_crypto::p256::p256::{ecdsa::SigningKey, elliptic_curve::Generate};
+    use defuse_crypto::{
+        AsAsync,
+        p256::p256::{ecdsa::SigningKey, elliptic_curve::Generate},
+    };
     use defuse_wallet::{
         AccountId, DEFAULT_TIMEOUT, Gas, NearPromise, NearToken, Request, RequestMessage,
         SignatureSchema, Timestamp, actions::FunctionCall,
@@ -67,7 +70,8 @@ mod tests {
     async fn sign_verify_ok() {
         type SS = WalletWebauthn<P256, IgnoreUserVerification>;
 
-        let signer = MockWalletWebauthnSigner::new(SigningKey::generate_from_rng(&mut rng()));
+        let signer =
+            MockWalletWebauthnSigner::new(AsAsync(SigningKey::generate_from_rng(&mut rng())));
 
         let msg = RequestMessage {
             pay_for_gas: false,

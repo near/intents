@@ -8,7 +8,7 @@ use ed25519_dalek::{
     hazmat::{ExpandedSecretKey, raw_sign},
 };
 
-use crate::{Additive, CurveArithmetic, DeriveSigner, ReduceScalar, Schema};
+use crate::{Additive, CurveArithmetic, DeriveSigner, DeriveSignerSchema, ReduceScalar, Schema};
 
 impl CurveArithmetic for Ed25519 {
     type Scalar = Scalar;
@@ -49,9 +49,7 @@ impl Schema<[u8; 64]> for ReduceScalar<Ed25519> {
     }
 }
 
-impl DeriveSigner<Ed25519, Scalar> for SigningKey {
-    type Error = Infallible;
-
+impl DeriveSignerSchema<Ed25519, Scalar> for SigningKey {
     type Schema<'a>
         = Additive<Ed25519>
     where
@@ -61,8 +59,12 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
     fn schema(&self) -> Self::Schema<'_> {
         Additive::new(self.verifying_key())
     }
+}
 
-    async fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
+impl DeriveSigner<Ed25519, Scalar> for SigningKey {
+    type Error = Infallible;
+
+    fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
         let esk = ExpandedSecretKey::from(self.as_bytes());
 
         debug_assert_eq!(
@@ -72,13 +74,11 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
         );
 
         // delegate signing to expanded secret key
-        esk.derive_sign(tweak, msg).await
+        esk.derive_sign(tweak, msg)
     }
 }
 
-impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
-    type Error = Infallible;
-
+impl DeriveSignerSchema<Ed25519, Scalar> for ExpandedSecretKey {
     type Schema<'a>
         = Additive<Ed25519>
     where
@@ -88,8 +88,12 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
     fn schema(&self) -> Self::Schema<'_> {
         Additive::new(VerifyingKey::from(self))
     }
+}
 
-    async fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
+impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
+    type Error = Infallible;
+
+    fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
         let derived_esk = Self {
             // sk' = sk + tweak
             scalar: self.scalar + tweak,
@@ -144,8 +148,7 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[tokio::test]
-    async fn roundtrip(
+    fn roundtrip(
         #[values(
             hex!("c9997b51c4eeb50681a52ae87d30daa6cfafc56fddade04ddeb3e1a670f04987"),
         )]
@@ -160,8 +163,7 @@ mod tests {
             &SigningKey::from_bytes(&root_sk).derive_with(ReduceScalar::<Ed25519>::new()),
             tweak,
             msg,
-        )
-        .await;
+        );
     }
 
     #[rstest]
@@ -170,8 +172,7 @@ mod tests {
         hex!("108a8530b779de5245e65e92c3590bc8e87034afa8774e8c7365be3732f4b19e"),
         hex!("abb9efe579ee145410090ec74eb15165e9d8ff708cbef75ac99106d5535362ed"),
     )]
-    #[tokio::test]
-    async fn derived_pk_has_not_changed(
+    fn derived_pk_has_not_changed(
         #[case] root_sk: SecretKey,
         #[case] tweak: [u8; 32],
         #[case] expected_derived_pk: impl Into<Ed25519PublicKey>,
@@ -180,8 +181,7 @@ mod tests {
             &SigningKey::from_bytes(&root_sk).derive_with(ReduceScalar::<Ed25519>::new()),
             tweak,
             b"message",
-        )
-        .await;
+        );
         assert_eq!(
             Ed25519PublicKey::from(derived_pk),
             expected_derived_pk.into(),

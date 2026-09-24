@@ -1,4 +1,4 @@
-use defuse_crypto::{Curve, Signer};
+use defuse_crypto::{AsyncSigner, Curve};
 use defuse_wallet::{RequestMessage, offchain::OffchainMessage};
 use defuse_wallet_sdk::{Proof, WalletSigner};
 use defuse_webauthn::{UserVerification, mock::MockWebauthnSigner};
@@ -12,14 +12,14 @@ use crate::{WalletWebauthn, WalletWebauthnAlgorithm, WalletWebauthnProof};
 pub struct MockWalletWebauthnSigner<
     A: WalletWebauthnAlgorithm,
     UV: UserVerification,
-    S: Signer<A::Curve>,
+    S: AsyncSigner<A::Curve>,
 >(MockWebauthnSigner<A, UV, S>);
 
 impl<A, UV, S> MockWalletWebauthnSigner<A, UV, S>
 where
     A: WalletWebauthnAlgorithm,
     UV: UserVerification,
-    S: Signer<A::Curve>,
+    S: AsyncSigner<A::Curve>,
 {
     #[inline]
     pub fn new(signer: S) -> Self {
@@ -53,7 +53,7 @@ where
     A::Signature: Serialize + From<<A::Curve as Curve>::Signature>,
     <A::Curve as Curve>::Signature: TryFrom<A::Signature>,
     for<'a> <A::Curve as Curve>::PublicKey: TryFrom<&'a A::PublicKey>,
-    S: Signer<A::Curve>,
+    S: AsyncSigner<A::Curve>,
 {
     type Error = S::Error;
 

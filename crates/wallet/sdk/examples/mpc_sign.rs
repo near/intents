@@ -1,8 +1,11 @@
-use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
+use defuse_wallet_ed25519::{
+    WalletEd25519, WalletEd25519Signer,
+    crypto::{AsAsync, ed25519::ed25519_dalek},
+};
 use defuse_wallet_sdk::{
     AccountIdRef, Wallet,
     mpc::kdf::{
-        DeriveSigner, RecoverableDeriveSigner,
+        AsyncRecoverableDeriveSigner, DeriveSignerSchema,
         crypto::{
             RecoverableCurve,
             secp256k1::{Secp256k1, Secp256k1RecoverableSignature, Secp256k1UncompressedPublicKey},
@@ -23,7 +26,7 @@ async fn main() {
     let near = Near::from_env().unwrap();
 
     // 0. Generate a keypair and Build a wallet
-    let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
+    let signer = AsAsync(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng)));
     let wallet = Wallet::<WalletEd25519>::new(
         WALLET_GLOBAL_CONTRACT_ID.to_owned(),
         WalletEd25519Signer(signer),
@@ -48,7 +51,7 @@ async fn main() {
     let started_at = tokio::time::Instant::now();
     let (signature, recovery_id) = mpc_signer
         // secp256k1 needs 32 byte prehash
-        .derive_sign_recoverable(PATH, &prehash)
+        .derive_sign_recoverable_async(PATH, &prehash)
         .await
         .unwrap();
     println!(

@@ -16,7 +16,7 @@ impl Algorithm for Ed25519 {
 #[cfg(test)]
 mod tests {
     use defuse_crypto::{
-        Signer,
+        AsAsync, SignerPublicKey,
         ed25519::{Ed25519PublicKey, Ed25519Signature, ed25519_dalek},
     };
     use hex_literal::hex;
@@ -65,7 +65,7 @@ mod tests {
     async fn sign_verify_ok(#[case] challenge: impl AsRef<[u8]>) {
         let challenge = challenge.as_ref();
 
-        let signer = ed25519_dalek::SigningKey::generate(&mut rng());
+        let signer = AsAsync(ed25519_dalek::SigningKey::generate(&mut rng()));
         let mock = MockWebauthnSigner::<Ed25519, IgnoreUserVerification, _>::new(signer);
         let (assertion, signature) = mock.sign(challenge).await.unwrap();
 

@@ -14,7 +14,7 @@ use std::{rc::Rc, sync::Arc};
 use impl_tools::autoimpl;
 
 /// A generic closure that can used for public key
-/// [derivation](crate::DeriveSigner::derive_public_key) and its intermediary
+/// [derivation](crate::DeriveSignerSchema::derive_public_key) and its intermediary
 /// steps.
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
 pub trait Schema<P> {
