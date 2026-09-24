@@ -159,14 +159,14 @@ impl WalletBuilder {
 /// # use defuse_wallet_sdk::GlobalContractId;
 /// use defuse_wallet_ed25519::{
 ///     WalletEd25519, WalletEd25519Signer,
-///     crypto::ed25519::ed25519_dalek,
+///     crypto::{IntoAsync, ed25519::ed25519_dalek},
 /// };
 /// use rand::{rngs::SysRng, rand_core::UnwrapErr};
 /// # const WALLET_ED25519_GLOBAL_CONTRACT_ID: GlobalContractId =
 /// #     GlobalContractId::CodeHash([0u8; 32]);
 ///
 /// // 1. Generate keypair
-/// let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
+/// let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng)).into_async();
 ///
 /// // 2. Build wallet for a specific signature schema
 /// let wallet = Wallet::<WalletEd25519>::new(
@@ -328,13 +328,13 @@ where
     /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
     /// # use defuse_wallet_ed25519::{
     /// #   WalletEd25519, WalletEd25519Signer,
-    /// #   crypto::ed25519::ed25519_dalek::SigningKey,
+    /// #   crypto::{IntoAsync, ed25519::ed25519_dalek::SigningKey},
     /// # };
     /// # const SUBMASTER_WALLET_ID: &AccountIdRef = AccountIdRef::new_or_panic("sub.master");
     /// # const MASTER_WALLET_ID: &AccountIdRef = AccountIdRef::new_or_panic("master");
     /// # let wallet = Wallet::<WalletEd25519>::new(
     /// #     [0u8; 32],
-    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32])),
+    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32]).into_async()),
     /// # );
     /// // wallet -> submaster
     /// let as_sub_master = wallet.as_extension_of(SUBMASTER_WALLET_ID);
@@ -369,12 +369,12 @@ where
     /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
     /// # use defuse_wallet_ed25519::{
     /// #   WalletEd25519, WalletEd25519Signer,
-    /// #   crypto::ed25519::ed25519_dalek::SigningKey,
+    /// #   crypto::{IntoAsync, ed25519::ed25519_dalek::SigningKey},
     /// # };
     /// # const MASTER_WALLET_ID: &AccountIdRef = AccountIdRef::new_or_panic("master");
     /// # let wallet = Wallet::<WalletEd25519>::new(
     /// #     [0u8; 32],
-    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32])),
+    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32]).into_async()),
     /// # );
     /// let as_master = wallet.as_extension_of(MASTER_WALLET_ID);
     /// assert_eq!(as_master.account_id(), MASTER_WALLET_ID);
@@ -764,18 +764,19 @@ where
     ///
     /// ```rust,no_run
     /// use defuse_wallet_sdk::mpc::kdf::{
-    ///     DeriveSigner, crypto::{Curve, ed25519::Ed25519},
+    ///     AsyncDeriveSigner, DeriveSignerSchema,
+    ///     crypto::{Curve, ed25519::Ed25519},
     /// };
     /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
     /// # use defuse_wallet_ed25519::{
     /// #   WalletEd25519, WalletEd25519Signer,
-    /// #   crypto::ed25519::ed25519_dalek::SigningKey,
+    /// #   crypto::{IntoAsync, ed25519::ed25519_dalek::SigningKey},
     /// # };
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let wallet = Wallet::<WalletEd25519>::new(
     /// #     [0u8; 32],
-    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32])),
+    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32]).into_async()),
     /// # );
     ///
     /// // prepare signer for Ed25519 curve
@@ -787,7 +788,7 @@ where
     ///
     /// // sign arbitrary message
     /// let msg = b"some message";
-    /// let signature = signer.derive_sign(path, msg).await?;
+    /// let signature = signer.derive_sign_async(path, msg).await?;
     ///
     /// assert!(Ed25519::verify(&public_key, msg, &signature));
     /// # Ok(()) }
@@ -797,20 +798,20 @@ where
     ///
     /// ```rust,no_run
     /// use defuse_wallet_sdk::mpc::kdf::{
-    ///     DeriveSigner, RecoverableDeriveSigner,
+    ///     AsyncRecoverableDeriveSigner, DeriveSignerSchema,
     ///     crypto::{RecoverableCurve, secp256k1::Secp256k1},
     /// };
     /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
     /// # use defuse_wallet_ed25519::{
     /// #   WalletEd25519, WalletEd25519Signer,
-    /// #   crypto::ed25519::ed25519_dalek::SigningKey,
+    /// #   crypto::{IntoAsync, ed25519::ed25519_dalek::SigningKey},
     /// # };
     /// # use hex_literal::hex;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let wallet = Wallet::<WalletEd25519>::new(
     /// #     [0u8; 32],
-    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32])),
+    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32]).into_async()),
     /// # );
     ///
     /// // prepare signer for secp256k1 curve
@@ -822,7 +823,8 @@ where
     ///
     /// // sign **32-byte prehash** (recoverable)
     /// let prehash = hex!("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08");
-    /// let (signature, recovery_id) = signer.derive_sign_recoverable(path, &prehash).await?;
+    /// let (signature, recovery_id) =
+    ///     signer.derive_sign_recoverable_async(path, &prehash).await?;
     ///
     /// assert_eq!(
     ///     Secp256k1::recover(&prehash, &signature, recovery_id),

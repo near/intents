@@ -12,7 +12,7 @@ use crate::WalletEd25519;
 ///
 /// ```rust
 /// # use defuse_wallet_ed25519::crypto::ed25519::ed25519_dalek;
-/// use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer};
+/// use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::IntoAsync};
 /// use defuse_wallet_sdk::{Request, SignatureSchema, Wallet};
 /// # use defuse_wallet_sdk::GlobalContractId;
 /// # use hex_literal::hex;
@@ -22,7 +22,7 @@ use crate::WalletEd25519;
 /// # );
 ///
 /// # tokio_test::block_on(async {
-/// let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
+/// let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng)).into_async();
 /// let wallet = Wallet::<WalletEd25519>::new(
 ///     GLOBAL_CONTRACT_ID,
 ///     WalletEd25519Signer(signer),

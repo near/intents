@@ -21,7 +21,9 @@ pub trait AsyncDeriveSigner<C: Curve, P: Send>: DeriveSignerSchema<C, P> + Sync 
 /// An asynchronous [`RecoverableDeriveSigner`].
 #[trait_variant::make(Send)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
-pub trait AsyncRecoverableDeriveSigner<C: RecoverableCurve, P: Send>: AsyncDeriveSigner<C, P> {
+pub trait AsyncRecoverableDeriveSigner<C: RecoverableCurve, P: Send>:
+    AsyncDeriveSigner<C, P>
+{
     /// Asynchronous [`RecoverableDeriveSigner::derive_sign_recoverable`].
     async fn derive_sign_recoverable_async(
         &self,
