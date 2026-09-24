@@ -22,7 +22,7 @@ pub trait AsyncSigner<C: Curve>: SignerPublicKey<C> + Sync {
     /// NOTE: implementations MAY require `msg` to be prehash (i.e. output
     /// of cryptographic hash function) of a fixed length and return
     /// an error otherwise. Check corresponding docs before using.
-    async fn async_sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error>;
+    async fn sign_async(&self, msg: &[u8]) -> Result<C::Signature, Self::Error>;
 }
 
 /// An [`AsyncSigner`] that can produce
@@ -35,7 +35,7 @@ pub trait AsyncRecoverableSigner<C: RecoverableCurve>: AsyncSigner<C> {
     /// NOTE: implementations MAY require `msg` to be prehash (i.e. output
     /// of cryptographic hash function) of a fixed length and return
     /// an error otherwise. Check corresponding docs before using.
-    async fn async_sign_recoverable(
+    async fn sign_recoverable_async(
         &self,
         msg: &[u8],
     ) -> Result<(C::Signature, C::RecoveryId), Self::Error>;
@@ -66,7 +66,7 @@ where
     type Error = S::Error;
 
     #[inline]
-    async fn async_sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
+    async fn sign_async(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
         self.0.sign(msg)
     }
 }
@@ -77,10 +77,21 @@ where
     S: RecoverableSigner<C> + Send + Sync,
 {
     #[inline]
-    async fn async_sign_recoverable(
+    async fn sign_recoverable_async(
         &self,
         msg: &[u8],
     ) -> Result<(C::Signature, C::RecoveryId), Self::Error> {
         self.0.sign_recoverable(msg)
     }
 }
+
+/// Wrap `self` into [`AsAsync`]
+pub trait IntoAsync: Sized {
+    #[inline]
+    #[must_use]
+    fn into_async(self) -> AsAsync<Self> {
+        AsAsync(self)
+    }
+}
+
+impl<T> IntoAsync for T {}

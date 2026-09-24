@@ -1,5 +1,5 @@
 use defuse_crypto::{
-    Signer,
+    AsyncSigner,
     ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
 };
 use defuse_wallet_sdk::{Proof, RequestMessage, WalletSigner};
@@ -41,10 +41,10 @@ pub struct WalletEd25519Signer<S>(pub S);
 
 impl<S> WalletEd25519Signer<S>
 where
-    S: Signer<Ed25519>,
+    S: AsyncSigner<Ed25519>,
 {
     async fn sign_hash(&self, hash: &[u8; 32]) -> Result<Proof, S::Error> {
-        let sig = self.0.sign(hash).await?;
+        let sig = self.0.sign_async(hash).await?;
 
         Ok(Ed25519Signature::from(sig).to_string())
     }
@@ -52,7 +52,7 @@ where
 
 impl<S> WalletSigner<WalletEd25519> for WalletEd25519Signer<S>
 where
-    S: Signer<Ed25519>,
+    S: AsyncSigner<Ed25519>,
 {
     type Error = S::Error;
 
@@ -75,7 +75,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use defuse_crypto::ed25519::ed25519_dalek;
+    use defuse_crypto::{IntoAsync, ed25519::ed25519_dalek};
     use defuse_wallet::{DEFAULT_TIMEOUT, Request, SignatureSchema, Timestamp};
     use defuse_wallet_sdk::MAINNET;
     use rand::{rand_core::UnwrapErr, rngs::SysRng};
@@ -84,8 +84,9 @@ mod tests {
 
     #[tokio::test]
     async fn sign_verify_ok() {
-        let signer =
-            WalletEd25519Signer(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng)));
+        let signer = WalletEd25519Signer(
+            ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng)).into_async(),
+        );
 
         let msg = RequestMessage {
             pay_for_gas: false,

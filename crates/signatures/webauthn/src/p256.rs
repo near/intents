@@ -18,7 +18,7 @@ impl Algorithm for P256 {
 #[cfg(test)]
 mod tests {
     use defuse_crypto::{
-        Signer,
+        IntoAsync, SignerPublicKey,
         p256::{P256CompressedPublicKey, P256Signature, p256::ecdsa::SigningKey},
     };
     use defuse_digest::common::Generate;
@@ -68,7 +68,7 @@ mod tests {
     async fn sign_verify_ok(#[case] challenge: impl AsRef<[u8]>) {
         let challenge = challenge.as_ref();
 
-        let signer = SigningKey::generate_from_rng(&mut rng());
+        let signer = SigningKey::generate_from_rng(&mut rng()).into_async();
         let mock = MockWebauthnSigner::<P256, IgnoreUserVerification, _>::new(signer);
         let (assertion, signature) = mock.sign(challenge).await.unwrap();
 

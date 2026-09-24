@@ -6,7 +6,7 @@ use std::{
     },
 };
 
-use defuse_crypto::{Curve, Signer};
+use defuse_crypto::{AsyncSigner, Curve};
 use hex_literal::hex;
 use impl_tools::autoimpl;
 
@@ -23,7 +23,7 @@ const RP_ID_HASH: [u8; 32] =
 
 /// Mock signer for [`Webauthn`](crate::Webauthn) signature schema
 #[autoimpl(Debug, Clone where S: trait)]
-pub struct MockWebauthnSigner<A: Algorithm, UV: UserVerification, S: Signer<A::Curve>> {
+pub struct MockWebauthnSigner<A: Algorithm, UV: UserVerification, S: AsyncSigner<A::Curve>> {
     sign_count: Arc<AtomicU32>,
     signer: S,
     _algorithm: PhantomData<fn() -> A>,
@@ -34,7 +34,7 @@ impl<A, UV, S> MockWebauthnSigner<A, UV, S>
 where
     A: Algorithm,
     UV: UserVerification,
-    S: Signer<A::Curve>,
+    S: AsyncSigner<A::Curve>,
 {
     #[inline]
     pub fn new(signer: S) -> Self {
@@ -86,7 +86,7 @@ where
             .as_ref()
             .to_vec();
 
-        let signature = self.signer.sign(&data).await?;
+        let signature = self.signer.sign_async(&data).await?;
 
         Ok((assertion, signature))
     }

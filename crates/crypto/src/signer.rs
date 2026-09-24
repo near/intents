@@ -5,7 +5,7 @@ use std::{
 
 use impl_tools::autoimpl;
 
-use crate::{Curve, RecoverableCurve};
+use crate::{AsyncRecoverableSigner, AsyncSigner, Curve, RecoverableCurve};
 
 /// A type that knows the [public key](Curve::PublicKey) its signatures
 /// verify against.
@@ -108,6 +108,35 @@ where
         msg: &[u8],
     ) -> Result<(<C>::Signature, <C as RecoverableCurve>::RecoveryId), Self::Error> {
         self.signer.sign_recoverable(msg)
+    }
+}
+
+impl<C, S> AsyncSigner<C> for CachePublicKey<C, S>
+where
+    C: Curve,
+    C::PublicKey: Clone + Send + Sync,
+    S: AsyncSigner<C>,
+{
+    type Error = S::Error;
+
+    #[inline]
+    async fn sign_async(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
+        self.signer.sign_async(msg).await
+    }
+}
+
+impl<C, S> AsyncRecoverableSigner<C> for CachePublicKey<C, S>
+where
+    C: RecoverableCurve,
+    C::PublicKey: Clone + Send + Sync,
+    S: AsyncRecoverableSigner<C>,
+{
+    #[inline]
+    async fn sign_recoverable_async(
+        &self,
+        msg: &[u8],
+    ) -> Result<(C::Signature, C::RecoveryId), Self::Error> {
+        self.signer.sign_recoverable_async(msg).await
     }
 }
 

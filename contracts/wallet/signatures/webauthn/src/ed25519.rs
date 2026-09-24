@@ -10,7 +10,7 @@ impl WalletWebauthnAlgorithm for Ed25519 {
 
 #[cfg(test)]
 mod tests {
-    use defuse_crypto::ed25519::ed25519_dalek;
+    use defuse_crypto::{IntoAsync, ed25519::ed25519_dalek};
     use defuse_wallet::{DEFAULT_TIMEOUT, Request, RequestMessage, SignatureSchema, Timestamp};
     use defuse_wallet_sdk::{MAINNET, WalletSigner};
     use defuse_webauthn::IgnoreUserVerification;
@@ -24,7 +24,9 @@ mod tests {
     async fn sign_verify_ok() {
         type SS = WalletWebauthn<Ed25519, IgnoreUserVerification>;
 
-        let signer = MockWalletWebauthnSigner::new(ed25519_dalek::SigningKey::generate(&mut rng()));
+        let signer = MockWalletWebauthnSigner::new(
+            ed25519_dalek::SigningKey::generate(&mut rng()).into_async(),
+        );
 
         let msg = RequestMessage {
             pay_for_gas: false,
