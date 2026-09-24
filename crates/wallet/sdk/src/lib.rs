@@ -159,14 +159,14 @@ impl WalletBuilder {
 /// # use defuse_wallet_sdk::GlobalContractId;
 /// use defuse_wallet_ed25519::{
 ///     WalletEd25519, WalletEd25519Signer,
-///     crypto::{IntoAsync, ed25519::ed25519_dalek},
+///     crypto::{AsAsync, ed25519::ed25519_dalek},
 /// };
 /// use rand::{rngs::SysRng, rand_core::UnwrapErr};
 /// # const WALLET_ED25519_GLOBAL_CONTRACT_ID: GlobalContractId =
 /// #     GlobalContractId::CodeHash([0u8; 32]);
 ///
 /// // 1. Generate keypair
-/// let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng)).into_async();
+/// let signer = AsAsync(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng)));
 ///
 /// // 2. Build wallet for a specific signature schema
 /// let wallet = Wallet::<WalletEd25519>::new(
@@ -328,13 +328,13 @@ where
     /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
     /// # use defuse_wallet_ed25519::{
     /// #   WalletEd25519, WalletEd25519Signer,
-    /// #   crypto::{IntoAsync, ed25519::ed25519_dalek::SigningKey},
+    /// #   crypto::{AsAsync, ed25519::ed25519_dalek::SigningKey},
     /// # };
     /// # const SUBMASTER_WALLET_ID: &AccountIdRef = AccountIdRef::new_or_panic("sub.master");
     /// # const MASTER_WALLET_ID: &AccountIdRef = AccountIdRef::new_or_panic("master");
     /// # let wallet = Wallet::<WalletEd25519>::new(
     /// #     [0u8; 32],
-    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32]).into_async()),
+    /// #     WalletEd25519Signer(AsAsync(SigningKey::from_bytes(&[0u8; 32]))),
     /// # );
     /// // wallet -> submaster
     /// let as_sub_master = wallet.as_extension_of(SUBMASTER_WALLET_ID);
@@ -369,12 +369,12 @@ where
     /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
     /// # use defuse_wallet_ed25519::{
     /// #   WalletEd25519, WalletEd25519Signer,
-    /// #   crypto::{IntoAsync, ed25519::ed25519_dalek::SigningKey},
+    /// #   crypto::{AsAsync, ed25519::ed25519_dalek::SigningKey},
     /// # };
     /// # const MASTER_WALLET_ID: &AccountIdRef = AccountIdRef::new_or_panic("master");
     /// # let wallet = Wallet::<WalletEd25519>::new(
     /// #     [0u8; 32],
-    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32]).into_async()),
+    /// #     WalletEd25519Signer(AsAsync(SigningKey::from_bytes(&[0u8; 32]))),
     /// # );
     /// let as_master = wallet.as_extension_of(MASTER_WALLET_ID);
     /// assert_eq!(as_master.account_id(), MASTER_WALLET_ID);
@@ -770,13 +770,13 @@ where
     /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
     /// # use defuse_wallet_ed25519::{
     /// #   WalletEd25519, WalletEd25519Signer,
-    /// #   crypto::{IntoAsync, ed25519::ed25519_dalek::SigningKey},
+    /// #   crypto::{AsAsync, ed25519::ed25519_dalek::SigningKey},
     /// # };
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let wallet = Wallet::<WalletEd25519>::new(
     /// #     [0u8; 32],
-    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32]).into_async()),
+    /// #     WalletEd25519Signer(AsAsync(SigningKey::from_bytes(&[0u8; 32]))),
     /// # );
     ///
     /// // prepare signer for Ed25519 curve
@@ -804,14 +804,14 @@ where
     /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
     /// # use defuse_wallet_ed25519::{
     /// #   WalletEd25519, WalletEd25519Signer,
-    /// #   crypto::{IntoAsync, ed25519::ed25519_dalek::SigningKey},
+    /// #   crypto::{AsAsync, ed25519::ed25519_dalek::SigningKey},
     /// # };
     /// # use hex_literal::hex;
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let wallet = Wallet::<WalletEd25519>::new(
     /// #     [0u8; 32],
-    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32]).into_async()),
+    /// #     WalletEd25519Signer(AsAsync(SigningKey::from_bytes(&[0u8; 32]))),
     /// # );
     ///
     /// // prepare signer for secp256k1 curve

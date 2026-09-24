@@ -13,7 +13,7 @@ mod tests {
     use std::time::Duration;
 
     use defuse_crypto::{
-        IntoAsync,
+        AsAsync,
         p256::p256::{ecdsa::SigningKey, elliptic_curve::Generate},
     };
     use defuse_wallet::{
@@ -71,7 +71,7 @@ mod tests {
         type SS = WalletWebauthn<P256, IgnoreUserVerification>;
 
         let signer =
-            MockWalletWebauthnSigner::new(SigningKey::generate_from_rng(&mut rng()).into_async());
+            MockWalletWebauthnSigner::new(AsAsync(SigningKey::generate_from_rng(&mut rng())));
 
         let msg = RequestMessage {
             pay_for_gas: false,

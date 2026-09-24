@@ -12,7 +12,7 @@ use crate::WalletEd25519;
 ///
 /// ```rust
 /// # use defuse_wallet_ed25519::crypto::ed25519::ed25519_dalek;
-/// use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::IntoAsync};
+/// use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::AsAsync};
 /// use defuse_wallet_sdk::{Request, SignatureSchema, Wallet};
 /// # use defuse_wallet_sdk::GlobalContractId;
 /// # use hex_literal::hex;
@@ -22,7 +22,7 @@ use crate::WalletEd25519;
 /// # );
 ///
 /// # tokio_test::block_on(async {
-/// let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng)).into_async();
+/// let signer = AsAsync(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng)));
 /// let wallet = Wallet::<WalletEd25519>::new(
 ///     GLOBAL_CONTRACT_ID,
 ///     WalletEd25519Signer(signer),
@@ -75,7 +75,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use defuse_crypto::{IntoAsync, ed25519::ed25519_dalek};
+    use defuse_crypto::{AsAsync, ed25519::ed25519_dalek};
     use defuse_wallet::{DEFAULT_TIMEOUT, Request, SignatureSchema, Timestamp};
     use defuse_wallet_sdk::MAINNET;
     use rand::{rand_core::UnwrapErr, rngs::SysRng};
@@ -84,9 +84,9 @@ mod tests {
 
     #[tokio::test]
     async fn sign_verify_ok() {
-        let signer = WalletEd25519Signer(
-            ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng)).into_async(),
-        );
+        let signer = WalletEd25519Signer(AsAsync(ed25519_dalek::SigningKey::generate(
+            &mut UnwrapErr(SysRng),
+        )));
 
         let msg = RequestMessage {
             pay_for_gas: false,

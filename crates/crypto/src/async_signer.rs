@@ -77,17 +77,6 @@ where
     }
 }
 
-/// Wrap `self` into [`AsAsync`]
-pub trait IntoAsync: Sized {
-    #[inline]
-    #[must_use]
-    fn into_async(self) -> AsAsync<Self> {
-        AsAsync(self)
-    }
-}
-
-impl<T> IntoAsync for T {}
-
 impl<C, S> AsyncSigner<C> for CachePublicKey<C, S>
 where
     C: Curve,

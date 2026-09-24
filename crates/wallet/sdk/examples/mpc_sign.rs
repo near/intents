@@ -1,6 +1,6 @@
 use defuse_wallet_ed25519::{
     WalletEd25519, WalletEd25519Signer,
-    crypto::{IntoAsync, ed25519::ed25519_dalek},
+    crypto::{AsAsync, ed25519::ed25519_dalek},
 };
 use defuse_wallet_sdk::{
     AccountIdRef, Wallet,
@@ -26,7 +26,7 @@ async fn main() {
     let near = Near::from_env().unwrap();
 
     // 0. Generate a keypair and Build a wallet
-    let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng)).into_async();
+    let signer = AsAsync(ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng)));
     let wallet = Wallet::<WalletEd25519>::new(
         WALLET_GLOBAL_CONTRACT_ID.to_owned(),
         WalletEd25519Signer(signer),
