@@ -47,7 +47,7 @@ rstest.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
 [features]
-abi = ["borsh/unstable__schema", "dep:schemars", "near-sdk/abi"]
+abi = ["borsh/unstable__schema", "defuse-near-utils/abi", "dep:schemars", "near-sdk/abi"]
 
 contract = []
 

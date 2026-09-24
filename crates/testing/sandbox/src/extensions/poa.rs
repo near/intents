@@ -65,6 +65,26 @@ pub struct PoaRemoveDepositsArgs {
     pub deposits: Vec<String>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct PoaFtOmniDepositArgs {
+    pub deposit_id: String,
+    pub token: String,
+    pub owner_id: AccountId,
+    pub amount: U128,
+    pub msg: Option<String>,
+    pub memo: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PoaAddOmniTokensArgs {
+    pub tokens: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PoaRemoveOmniTokensArgs {
+    pub tokens: Vec<String>,
+}
+
 #[near_kit::contract]
 pub trait PoaFactory {
     #[call]
@@ -75,6 +95,9 @@ pub trait PoaFactory {
 
     #[call]
     fn ft_deposit(&mut self, args: PoaFtDepositArgs);
+
+    #[call]
+    fn ft_omni_deposit(&mut self, args: PoaFtOmniDepositArgs);
 
     #[call]
     fn ft_withdraw(&mut self, args: PoaFtWithdrawArgs);
@@ -88,9 +111,17 @@ pub trait PoaFactory {
     #[call]
     fn remove_deposits(&mut self, args: PoaRemoveDepositsArgs);
 
+    #[call]
+    fn add_omni_tokens(&mut self, args: PoaAddOmniTokensArgs);
+
+    #[call]
+    fn remove_omni_tokens(&mut self, args: PoaRemoveOmniTokensArgs);
+
     fn get_withdraw(&self, args: PoaGetWithdrawArgs) -> Option<Withdrawal>;
 
     fn tokens(&self) -> HashMap<String, AccountId>;
+
+    fn get_omni_tokens(&self) -> Vec<String>;
 }
 
 impl PoaFactoryClient {
@@ -110,6 +141,19 @@ pub trait PoaFactoryDeployerExt {
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         wasm: impl Into<Vec<u8>>,
     ) -> PoaFactoryClient;
+
+    /// Same as [`PoaFactoryDeployerExt::deploy_poa_factory`], but also returns
+    /// the raw [`Near`] account handle (with its own full access key), so the
+    /// caller can later redeploy new code onto the same account to simulate
+    /// an in-place upgrade.
+    async fn deploy_poa_factory_with_account(
+        &self,
+        name: impl AsRef<str>,
+        super_admins: impl IntoIterator<Item = AccountId>,
+        admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
+        grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
+        wasm: impl Into<Vec<u8>>,
+    ) -> (Near, PoaFactoryClient);
 }
 
 impl PoaFactoryDeployerExt for Near {
@@ -121,6 +165,20 @@ impl PoaFactoryDeployerExt for Near {
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         wasm: impl Into<Vec<u8>>,
     ) -> PoaFactoryClient {
+        let (_account, client) = self
+            .deploy_poa_factory_with_account(name, super_admins, admins, grantees, wasm)
+            .await;
+        client
+    }
+
+    async fn deploy_poa_factory_with_account(
+        &self,
+        name: impl AsRef<str>,
+        super_admins: impl IntoIterator<Item = AccountId>,
+        admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
+        grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
+        wasm: impl Into<Vec<u8>>,
+    ) -> (Self, PoaFactoryClient) {
         let action = FunctionCallAction {
             method_name: "new".to_string(),
             args: serde_json::to_vec(&json!({
@@ -144,7 +202,8 @@ impl PoaFactoryDeployerExt for Near {
             .await
             .unwrap();
 
-        self.contract::<PoaFactory>(account.account_id())
+        let client = self.contract::<PoaFactory>(account.account_id());
+        (account, client)
     }
 }
 
@@ -192,6 +251,30 @@ pub trait PoAFactoryExt {
         &self,
         factory: impl AsRef<AccountIdRef>,
         deposits: Vec<String>,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    #[allow(clippy::too_many_arguments)]
+    async fn poa_factory_ft_omni_deposit(
+        &self,
+        factory: impl AsRef<AccountIdRef>,
+        deposit_id: impl Into<String>,
+        token: impl AsRef<str>,
+        owner_id: impl AsRef<AccountIdRef>,
+        amount: u128,
+        msg: Option<String>,
+        memo: Option<String>,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn poa_factory_add_omni_tokens(
+        &self,
+        factory: impl AsRef<AccountIdRef>,
+        tokens: Vec<String>,
+    ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn poa_factory_remove_omni_tokens(
+        &self,
+        factory: impl AsRef<AccountIdRef>,
+        tokens: Vec<String>,
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
@@ -310,6 +393,65 @@ impl PoAFactoryExt for Near {
         self.transaction(factory.as_ref())
             .add_action(
                 PoaFactory::remove_deposits(PoaRemoveDepositsArgs { deposits })
+                    .gas(Gas::from_tgas(30)),
+            )
+            .wait_until::<Final>()
+            .await?
+            .try_into()
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn poa_factory_ft_omni_deposit(
+        &self,
+        factory: impl AsRef<AccountIdRef>,
+        deposit_id: impl Into<String>,
+        token: impl AsRef<str>,
+        owner_id: impl AsRef<AccountIdRef>,
+        amount: u128,
+        msg: Option<String>,
+        memo: Option<String>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(factory.as_ref())
+            .add_action(
+                PoaFactory::ft_omni_deposit(PoaFtOmniDepositArgs {
+                    deposit_id: deposit_id.into(),
+                    token: token.as_ref().to_string(),
+                    owner_id: owner_id.as_ref().into(),
+                    amount: amount.into(),
+                    msg,
+                    memo,
+                })
+                .deposit(NearToken::from_millinear(4))
+                .gas(Gas::from_tgas(300)),
+            )
+            .wait_until::<Final>()
+            .await?
+            .try_into()
+    }
+
+    async fn poa_factory_add_omni_tokens(
+        &self,
+        factory: impl AsRef<AccountIdRef>,
+        tokens: Vec<String>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(factory.as_ref())
+            .add_action(
+                PoaFactory::add_omni_tokens(PoaAddOmniTokensArgs { tokens })
+                    .gas(Gas::from_tgas(30)),
+            )
+            .wait_until::<Final>()
+            .await?
+            .try_into()
+    }
+
+    async fn poa_factory_remove_omni_tokens(
+        &self,
+        factory: impl AsRef<AccountIdRef>,
+        tokens: Vec<String>,
+    ) -> Result<SuccessfulExecutionOutcome> {
+        self.transaction(factory.as_ref())
+            .add_action(
+                PoaFactory::remove_omni_tokens(PoaRemoveOmniTokensArgs { tokens })
                     .gas(Gas::from_tgas(30)),
             )
             .wait_until::<Final>()

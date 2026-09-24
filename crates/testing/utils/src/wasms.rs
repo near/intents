@@ -59,6 +59,16 @@ pub static WALLET_NO_SIGN_WASM: LazyLock<Vec<u8>> =
 #[cfg(feature = "poa")]
 pub static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse-poa-factory.wasm"));
+/// Pre-omni-layer `poa-factory` build, matching what is currently deployed
+/// on-chain (no `deposits`/`withdrawals`/`omni_tokens`, no lazy migration).
+/// Used to test upgrading a real legacy contract in place.
+#[cfg(feature = "poa")]
+pub static POA_FACTORY_LEGACY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
+    read_wasm(
+        &ReadWasmMode::WorkspaceRoot,
+        "releases/defuse_poa_factory.wasm",
+    )
+});
 
 pub static NON_FUNGIBLE_TOKEN_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
     read_wasm(

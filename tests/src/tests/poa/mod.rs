@@ -1,3 +1,5 @@
+mod upgrade;
+
 use defuse_sandbox::{
     account::Account,
     extensions::poa::{
