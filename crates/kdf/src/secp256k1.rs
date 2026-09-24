@@ -6,7 +6,8 @@ use k256::{
 };
 
 use crate::{
-    Additive, CurveArithmetic, DeriveSigner, RecoverableDeriveSigner, ReduceScalar, Schema,
+    Additive, CurveArithmetic, DeriveSigner, DeriveSignerSchema, RecoverableDeriveSigner,
+    ReduceScalar, Schema,
 };
 
 impl CurveArithmetic for Secp256k1 {
@@ -31,9 +32,7 @@ impl CurveArithmetic for Secp256k1 {
     }
 }
 
-impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
-    type Error = ecdsa::Error;
-
+impl DeriveSignerSchema<Secp256k1, NonZeroScalar> for SigningKey {
     type Schema<'a>
         = Additive<Secp256k1>
     where
@@ -43,6 +42,10 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     fn schema(&self) -> Self::Schema<'_> {
         Additive::new(*self.verifying_key())
     }
+}
+
+impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
+    type Error = ecdsa::Error;
 
     /// Sign given **32-bytes prehash** with _internally_ derived secret key
     fn derive_sign(&self, tweak: NonZeroScalar, prehash: &[u8]) -> Result<Signature, Self::Error> {

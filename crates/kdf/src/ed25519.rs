@@ -8,7 +8,7 @@ use ed25519_dalek::{
     hazmat::{ExpandedSecretKey, raw_sign},
 };
 
-use crate::{Additive, CurveArithmetic, DeriveSigner, ReduceScalar, Schema};
+use crate::{Additive, CurveArithmetic, DeriveSigner, DeriveSignerSchema, ReduceScalar, Schema};
 
 impl CurveArithmetic for Ed25519 {
     type Scalar = Scalar;
@@ -49,9 +49,7 @@ impl Schema<[u8; 64]> for ReduceScalar<Ed25519> {
     }
 }
 
-impl DeriveSigner<Ed25519, Scalar> for SigningKey {
-    type Error = Infallible;
-
+impl DeriveSignerSchema<Ed25519, Scalar> for SigningKey {
     type Schema<'a>
         = Additive<Ed25519>
     where
@@ -61,6 +59,10 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
     fn schema(&self) -> Self::Schema<'_> {
         Additive::new(self.verifying_key())
     }
+}
+
+impl DeriveSigner<Ed25519, Scalar> for SigningKey {
+    type Error = Infallible;
 
     fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
         let esk = ExpandedSecretKey::from(self.as_bytes());
@@ -76,9 +78,7 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
     }
 }
 
-impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
-    type Error = Infallible;
-
+impl DeriveSignerSchema<Ed25519, Scalar> for ExpandedSecretKey {
     type Schema<'a>
         = Additive<Ed25519>
     where
@@ -88,6 +88,10 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
     fn schema(&self) -> Self::Schema<'_> {
         Additive::new(VerifyingKey::from(self))
     }
+}
+
+impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
+    type Error = Infallible;
 
     fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
         let derived_esk = Self {
