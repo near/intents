@@ -67,7 +67,7 @@ contract = [
 imt = ["defuse-core/imt"]
 far = ["imt"]
 
-near-kit = ["defuse-core/near-kit"]
+near-kit = ["defuse-core/near-kit", "defuse-near-promise/near-kit"]
 
 [dev-dependencies]
 defuse = { path = ".", features = ["abi"] }

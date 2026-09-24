@@ -1741,7 +1741,6 @@ dependencies = [
  "defuse-core",
  "defuse-digest",
  "defuse-fees",
- "defuse-near-promise",
  "defuse-near-utils",
  "defuse-randomness",
  "defuse-sandbox",

@@ -29,9 +29,7 @@ pub use imt::*;
 pub use nonce::*;
 pub use signer::*;
 
-pub use defuse::contract;
-pub use defuse::core;
-pub use defuse::tokens;
+pub use defuse::{contract, core, near_promise, tokens};
 pub use defuse_nep245 as nep245;
 
 #[derive(Serialize)]

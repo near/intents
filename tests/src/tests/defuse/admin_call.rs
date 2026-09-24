@@ -1,11 +1,14 @@
-use defuse_near_promise::{
-    NearPromise, StateInitV1,
-    actions::{DeterministicStateInit, FunctionCall, NearAction, Transfer},
-};
 use defuse_sandbox::{
     extensions::{
         acl::AccessControllableExt,
-        defuse::{DefuseExt, contract::Role},
+        defuse::{
+            DefuseExt,
+            contract::Role,
+            near_promise::{
+                NearPromise, StateInitV1,
+                actions::{DeterministicStateInit, FunctionCall, NearAction, Transfer},
+            },
+        },
     },
     kit::{Action, NearToken},
 };
