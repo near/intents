@@ -1683,7 +1683,6 @@ dependencies = [
  "defuse-digest",
  "defuse-escrow-swap",
  "defuse-global-deployer",
- "defuse-near-promise",
  "defuse-nep245",
  "defuse-outlayer-app",
  "defuse-poa-factory",

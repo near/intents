@@ -14,6 +14,7 @@ pub mod simulation_output;
 pub mod tokens;
 
 pub use defuse_core as core;
+pub use defuse_near_promise as near_promise;
 pub use defuse_nep245 as nep245;
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;

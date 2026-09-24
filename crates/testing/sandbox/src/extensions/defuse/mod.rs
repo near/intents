@@ -7,11 +7,12 @@ mod signer;
 use std::collections::{HashMap, HashSet};
 
 use anyhow::Result;
-use defuse::{contract::config::DefuseConfig, simulation_output::SimulationOutput};
+use defuse::{
+    contract::config::DefuseConfig, near_promise::NearPromise, simulation_output::SimulationOutput,
+};
 use defuse_core::{
     Nonce, PublicKey, Salt, fees::Pips, intents::auth::AuthCall, payload::multi::MultiPayload,
 };
-use defuse_near_promise::NearPromise;
 use near_kit::{
     AccountId, AccountIdRef, Final, FinalExecutionOutcome, FunctionCallAction, Gas, Near, NearToken,
 };
