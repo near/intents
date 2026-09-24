@@ -45,21 +45,15 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     }
 
     /// Sign given **32-bytes prehash** with _internally_ derived secret key
-    async fn derive_sign(
-        &self,
-        tweak: NonZeroScalar,
-        prehash: &[u8],
-    ) -> Result<Signature, Self::Error> {
-        self.derive_sign_recoverable(tweak, prehash)
-            .await
-            .map(|s| s.0)
+    fn derive_sign(&self, tweak: NonZeroScalar, prehash: &[u8]) -> Result<Signature, Self::Error> {
+        self.derive_sign_recoverable(tweak, prehash).map(|s| s.0)
     }
 }
 
 impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     /// Sign given **32-bytes prehash** with _internally_ derived secret key
     /// and return signature along with recovery id.
-    async fn derive_sign_recoverable(
+    fn derive_sign_recoverable(
         &self,
         tweak: NonZeroScalar,
         prehash: &[u8],
@@ -147,8 +141,7 @@ mod tests {
                 .derive_with(ReduceScalar::<Secp256k1>::new()),
             tweak,
             &prehash,
-        )
-        .await;
+        );
     }
 
     #[rstest]
@@ -169,8 +162,7 @@ mod tests {
                 .derive_with(ReduceScalar::<Secp256k1>::new()),
             tweak,
             &hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
-        )
-        .await;
+        );
         assert_eq!(
             // compress and skip tag byte
             Secp256k1UncompressedPublicKey::from(derived_pk),

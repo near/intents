@@ -44,17 +44,19 @@ const _: () = {
 
     use ed25519_dalek::SigningKey;
 
-    use crate::Signer;
+    use crate::{Signer, SignerPublicKey};
 
-    impl Signer<Ed25519> for SigningKey {
-        type Error = Infallible;
-
+    impl SignerPublicKey<Ed25519> for SigningKey {
         #[inline]
         fn public_key(&self) -> <Ed25519 as Curve>::PublicKey {
             self.verifying_key()
         }
+    }
 
-        async fn sign(&self, msg: &[u8]) -> Result<<Ed25519 as Curve>::Signature, Self::Error> {
+    impl Signer<Ed25519> for SigningKey {
+        type Error = Infallible;
+
+        fn sign(&self, msg: &[u8]) -> Result<<Ed25519 as Curve>::Signature, Self::Error> {
             Ok(ed25519_dalek::Signer::sign(self, msg))
         }
     }
@@ -334,6 +336,6 @@ mod tests {
     )]
     #[tokio::test]
     async fn sign_verify(#[case] msg: impl AsRef<[u8]>) {
-        test_sign_verify(SigningKey::generate(&mut UnwrapErr(SysRng)), msg).await;
+        test_sign_verify(SigningKey::generate(&mut UnwrapErr(SysRng)), msg);
     }
 }

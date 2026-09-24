@@ -62,7 +62,7 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
         Additive::new(self.verifying_key())
     }
 
-    async fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
+    fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
         let esk = ExpandedSecretKey::from(self.as_bytes());
 
         debug_assert_eq!(
@@ -72,7 +72,7 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
         );
 
         // delegate signing to expanded secret key
-        esk.derive_sign(tweak, msg).await
+        esk.derive_sign(tweak, msg)
     }
 }
 
@@ -89,7 +89,7 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
         Additive::new(VerifyingKey::from(self))
     }
 
-    async fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
+    fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
         let derived_esk = Self {
             // sk' = sk + tweak
             scalar: self.scalar + tweak,
@@ -160,8 +160,7 @@ mod tests {
             &SigningKey::from_bytes(&root_sk).derive_with(ReduceScalar::<Ed25519>::new()),
             tweak,
             msg,
-        )
-        .await;
+        );
     }
 
     #[rstest]
@@ -180,8 +179,7 @@ mod tests {
             &SigningKey::from_bytes(&root_sk).derive_with(ReduceScalar::<Ed25519>::new()),
             tweak,
             b"message",
-        )
-        .await;
+        );
         assert_eq!(
             Ed25519PublicKey::from(derived_pk),
             expected_derived_pk.into(),

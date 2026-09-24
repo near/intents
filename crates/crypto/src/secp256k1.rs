@@ -103,27 +103,24 @@ impl RecoverableCurve for Secp256k1 {
 const _: () = {
     use k256::ecdsa::{Error, SigningKey};
 
-    use crate::{RecoverableSigner, Signer};
+    use crate::{RecoverableSigner, Signer, SignerPublicKey};
 
-    impl Signer<Secp256k1> for SigningKey {
-        type Error = Error;
-
+    impl SignerPublicKey<Secp256k1> for SigningKey {
         #[inline]
         fn public_key(&self) -> <Secp256k1 as Curve>::PublicKey {
             *self.verifying_key()
         }
+    }
+
+    impl Signer<Secp256k1> for SigningKey {
+        type Error = Error;
 
         /// Sign **32-byte prehash** (i.e. output of cryptographic hash
         /// function).
         ///
         /// If given prehash is of different length, an error will be returned.
-        async fn sign(
-            &self,
-            prehash: &[u8],
-        ) -> Result<<Secp256k1 as Curve>::Signature, Self::Error> {
-            RecoverableSigner::sign_recoverable(self, prehash)
-                .await
-                .map(|s| s.0)
+        fn sign(&self, prehash: &[u8]) -> Result<<Secp256k1 as Curve>::Signature, Self::Error> {
+            RecoverableSigner::sign_recoverable(self, prehash).map(|s| s.0)
         }
     }
 
@@ -132,7 +129,7 @@ const _: () = {
         /// function) and return a signature along with recovery id.
         ///
         /// If given prehash is of different length, an error will be returned.
-        async fn sign_recoverable(
+        fn sign_recoverable(
             &self,
             prehash: &[u8],
         ) -> Result<
@@ -483,6 +480,6 @@ mod tests {
     )]
     #[tokio::test]
     async fn sign_recover(#[case] prehash: [u8; 32]) {
-        test_sign_recover(SigningKey::generate(), prehash).await;
+        test_sign_recover(SigningKey::generate(), prehash);
     }
 }

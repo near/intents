@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use defuse_crypto::{Curve, RecoverableCurve, RecoverableSigner, Signer};
+use defuse_crypto::{Curve, RecoverableCurve, RecoverableSigner, Signer, SignerPublicKey};
 use impl_tools::autoimpl;
 
 use crate::{Derive, DeriveExt, Schema, Value};
@@ -45,7 +45,7 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
     /// * The returned signatures MIGHT be non-deterministic, i.e.
     ///   implementations MAY return different signatures for the same
     ///   `path` and `msg`.
-    async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
+    fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
     where
         P: Send;
 
@@ -85,7 +85,7 @@ pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
     /// * The returned signatures MIGHT be non-deterministic, i.e.
     ///   implementations MAY return different signatures for the same
     ///   `path` and `msg`.
-    async fn derive_sign_recoverable(
+    fn derive_sign_recoverable(
         &self,
         path: P,
         msg: &[u8],
@@ -112,11 +112,11 @@ where
         self.outer.schema().derive_with(&self.inner)
     }
 
-    async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
+    fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
     where
         P: Send,
     {
-        self.outer.derive_sign(self.inner.derive(path), msg).await
+        self.outer.derive_sign(self.inner.derive(path), msg)
     }
 }
 
@@ -126,7 +126,7 @@ where
     S: RecoverableDeriveSigner<C, D::Output>,
     D: Schema<P, Output: Send> + Send + Sync,
 {
-    async fn derive_sign_recoverable(
+    fn derive_sign_recoverable(
         &self,
         path: P,
         msg: &[u8],
@@ -136,7 +136,18 @@ where
     {
         self.outer
             .derive_sign_recoverable(self.inner.derive(path), msg)
-            .await
+    }
+}
+
+impl<C, S, D> SignerPublicKey<C> for Derive<S, D>
+where
+    C: Curve,
+    S: DeriveSigner<C, D::Output>,
+    D: Schema<(), Output: Send> + Send + Sync,
+{
+    #[inline]
+    fn public_key(&self) -> <C as Curve>::PublicKey {
+        self.derive_public_key(())
     }
 }
 
@@ -148,13 +159,8 @@ where
 {
     type Error = S::Error;
 
-    #[inline]
-    fn public_key(&self) -> <C as Curve>::PublicKey {
-        self.derive_public_key(())
-    }
-
-    async fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
-        DeriveSigner::<C, _>::derive_sign(self, (), msg).await
+    fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
+        DeriveSigner::<C, _>::derive_sign(self, (), msg)
     }
 }
 
@@ -164,16 +170,13 @@ where
     S: RecoverableDeriveSigner<C, D::Output>,
     D: Schema<(), Output: Send> + Send + Sync,
 {
-    async fn sign_recoverable(
-        &self,
-        msg: &[u8],
-    ) -> Result<(C::Signature, C::RecoveryId), Self::Error> {
-        RecoverableDeriveSigner::<C, _>::derive_sign_recoverable(self, (), msg).await
+    fn sign_recoverable(&self, msg: &[u8]) -> Result<(C::Signature, C::RecoveryId), Self::Error> {
+        RecoverableDeriveSigner::<C, _>::derive_sign_recoverable(self, (), msg)
     }
 }
 
 #[cfg(any(test, feature = "testing"))]
-pub async fn assert_signer_roundtrip<C, S, P>(
+pub fn assert_signer_roundtrip<C, S, P>(
     signer: &S,
     path: P,
     msg: &[u8],
@@ -184,7 +187,7 @@ where
     P: Clone + Send,
 {
     let derived_pk = signer.derive_public_key(path.clone());
-    let signature = signer.derive_sign(path, msg).await.expect("failed to sign");
+    let signature = signer.derive_sign(path, msg).expect("failed to sign");
 
     assert!(C::verify(&derived_pk, msg, &signature), "invalid signature");
 
