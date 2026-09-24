@@ -3,9 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use defuse_crypto::{
-    AsAsync, AsyncRecoverableSigner, AsyncSigner, Curve, RecoverableCurve, SignerPublicKey,
-};
+use defuse_crypto::{AsAsync, AsyncRecoverableSigner, AsyncSigner, Curve, RecoverableCurve};
 use impl_tools::autoimpl;
 
 use crate::{Derive, DeriveSigner, DeriveSignerSchema, RecoverableDeriveSigner, Schema};
@@ -13,30 +11,26 @@ use crate::{Derive, DeriveSigner, DeriveSignerSchema, RecoverableDeriveSigner, S
 /// An asynchronous [`DeriveSigner`].
 #[trait_variant::make(Send)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
-pub trait AsyncDeriveSigner<C: Curve, P>: DeriveSignerSchema<C, P> + Sync {
+pub trait AsyncDeriveSigner<C: Curve, P: Send>: DeriveSignerSchema<C, P> + Sync {
     type Error: Debug + Display;
 
     /// Asynchronous [`DeriveSigner::derive_sign`].
-    async fn derive_sign_async(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
-    where
-        P: Send;
+    async fn derive_sign_async(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>;
 }
 
 /// An asynchronous [`RecoverableDeriveSigner`].
 #[trait_variant::make(Send)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
-pub trait AsyncRecoverableDeriveSigner<C: RecoverableCurve, P>: AsyncDeriveSigner<C, P> {
+pub trait AsyncRecoverableDeriveSigner<C: RecoverableCurve, P: Send>: AsyncDeriveSigner<C, P> {
     /// Asynchronous [`RecoverableDeriveSigner::derive_sign_recoverable`].
     async fn derive_sign_recoverable_async(
         &self,
         path: P,
         msg: &[u8],
-    ) -> Result<(C::Signature, C::RecoveryId), Self::Error>
-    where
-        P: Send;
+    ) -> Result<(C::Signature, C::RecoveryId), Self::Error>;
 }
 
-impl<S, C, P> DeriveSignerSchema<C, P> for AsAsync<S>
+impl<C, P, S> DeriveSignerSchema<C, P> for AsAsync<S>
 where
     C: Curve,
     S: DeriveSignerSchema<C, P>,
@@ -52,11 +46,11 @@ where
     }
 }
 
-impl<S, C, P> AsyncDeriveSigner<C, P> for AsAsync<S>
+impl<C, P, S> AsyncDeriveSigner<C, P> for AsAsync<S>
 where
-    S: DeriveSigner<C, P> + Send + Sync,
     C: Curve,
     P: Send,
+    S: DeriveSigner<C, P> + Send + Sync,
 {
     type Error = S::Error;
 
@@ -65,11 +59,11 @@ where
     }
 }
 
-impl<S, C, P> AsyncRecoverableDeriveSigner<C, P> for AsAsync<S>
+impl<C, P, S> AsyncRecoverableDeriveSigner<C, P> for AsAsync<S>
 where
-    S: RecoverableDeriveSigner<C, P> + Send + Sync,
     C: RecoverableCurve,
     P: Send,
+    S: RecoverableDeriveSigner<C, P> + Send + Sync,
 {
     async fn derive_sign_recoverable_async(
         &self,
@@ -83,6 +77,7 @@ where
 impl<C, P, S, D> AsyncDeriveSigner<C, P> for Derive<S, D>
 where
     C: Curve,
+    P: Send,
     S: AsyncDeriveSigner<C, D::Output>,
     D: Schema<P, Output: Send> + Send + Sync,
 {
@@ -98,6 +93,7 @@ where
 impl<C, P, S, D> AsyncRecoverableDeriveSigner<C, P> for Derive<S, D>
 where
     C: RecoverableCurve,
+    P: Send,
     S: AsyncRecoverableDeriveSigner<C, D::Output>,
     D: Schema<P, Output: Send> + Send + Sync,
 {
@@ -117,7 +113,6 @@ where
     C: Curve,
     S: AsyncDeriveSigner<C, D::Output>,
     D: Schema<(), Output: Send> + Send + Sync,
-    Self: SignerPublicKey<C>,
 {
     type Error = <S as AsyncDeriveSigner<C, D::Output>>::Error;
 
@@ -132,7 +127,6 @@ where
     C: RecoverableCurve,
     S: AsyncRecoverableDeriveSigner<C, D::Output>,
     D: Schema<(), Output: Send> + Send + Sync,
-    Self: SignerPublicKey<C>,
 {
     #[inline]
     async fn sign_recoverable_async(

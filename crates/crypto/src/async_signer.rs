@@ -14,7 +14,7 @@ use crate::{CachePublicKey, Curve, RecoverableCurve, RecoverableSigner, Signer, 
 #[trait_variant::make(Send)]
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
 pub trait AsyncSigner<C: Curve>: SignerPublicKey<C> + Sync {
-    /// An error that can occur during [signing](Self::sign).
+    /// An error that can occur during [signing](Self::sign_async).
     type Error: Debug + Display;
 
     /// Asynchronous [`Signer::sign`].
@@ -36,7 +36,7 @@ pub trait AsyncRecoverableSigner<C: RecoverableCurve>: AsyncSigner<C> {
 /// Adapts a synchronous [`Signer`] to [`AsyncSigner`], by resolving
 /// immediately.
 #[autoimpl(Deref using self.0)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::From)]
+#[derive(Debug, Clone, PartialEq, Eq, derive_more::From)]
 pub struct AsAsync<S>(pub S);
 
 impl<C, S> SignerPublicKey<C> for AsAsync<S>
@@ -98,7 +98,7 @@ where
 
     #[inline]
     async fn sign_async(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
-        self.signer.sign_async(msg).await
+        S::sign_async(self, msg).await
     }
 }
 
@@ -113,6 +113,6 @@ where
         &self,
         msg: &[u8],
     ) -> Result<(C::Signature, C::RecoveryId), Self::Error> {
-        self.signer.sign_recoverable_async(msg).await
+        S::sign_recoverable_async(self, msg).await
     }
 }

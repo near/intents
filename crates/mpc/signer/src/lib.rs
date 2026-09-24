@@ -162,7 +162,7 @@ where
 impl<C, P> AsyncDeriveSigner<C, P> for MpcOnChainSigner<C>
 where
     C: OnChainNearMpcCurve<PublicKey: Clone + Send + Sync>,
-    P: AsRef<str> + AsRef<[u8]>,
+    P: AsRef<str> + AsRef<[u8]> + Send,
 {
     type Error = Error;
 
@@ -170,10 +170,7 @@ where
         mpc_contract_id = %self.mpc_contract_id,
         domain_id = self.domain_id,
     )))]
-    async fn derive_sign_async(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
-    where
-        P: Send,
-    {
+    async fn derive_sign_async(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error> {
         let path: &str = path.as_ref();
         self.sign_extract(
             path,
@@ -197,7 +194,7 @@ where
 impl<C, P> AsyncRecoverableDeriveSigner<C, P> for MpcOnChainSigner<C>
 where
     C: RecoverableOnChainNearMpcCurve<PublicKey: Clone + PartialEq + Send + Sync, RecoveryId: Copy>,
-    P: AsRef<str> + AsRef<[u8]>,
+    P: AsRef<str> + AsRef<[u8]> + Send,
 {
     #[cfg_attr(feature = "tracing", tracing::instrument(skip_all, fields(
         mpc_contract_id = %self.mpc_contract_id,
@@ -207,10 +204,7 @@ where
         &self,
         path: P,
         msg: &[u8],
-    ) -> Result<(C::Signature, C::RecoveryId), Self::Error>
-    where
-        P: Send,
-    {
+    ) -> Result<(C::Signature, C::RecoveryId), Self::Error> {
         let path: &str = path.as_ref();
         self.sign_extract(
             path,

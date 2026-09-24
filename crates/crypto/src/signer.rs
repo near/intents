@@ -27,7 +27,8 @@ pub trait SignerPublicKey<C: Curve> {
 
 /// A signer capable of producing signatures for a specific [`Curve`].
 ///
-/// See [`AsyncSigner`] for signers that need to await, e.g. remote ones.
+/// See [`AsyncSigner`](crate::AsyncSigner) for signers that need to await,
+/// e.g. remote ones.
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Arc<T>)]
 pub trait Signer<C: Curve>: SignerPublicKey<C> {
     /// An error that can occur during [signing](Self::sign).
@@ -58,7 +59,7 @@ pub trait RecoverableSigner<C: RecoverableCurve>: Signer<C> {
 #[autoimpl(Debug, Clone, PartialEq, Eq where C::PublicKey: trait, S: trait)]
 pub struct CachePublicKey<C: Curve, S> {
     public_key: OnceLock<C::PublicKey>,
-    pub(crate) signer: S,
+    signer: S,
 }
 
 impl<C: Curve, S> CachePublicKey<C, S> {
