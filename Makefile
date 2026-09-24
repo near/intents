@@ -69,6 +69,7 @@ CONTRACT_CRATES := \
     defuse-poa-factory \
     defuse-poa-token \
     defuse-wallet-ed25519 \
+    defuse-wallet-eip712 \
     defuse-wallet-no-sign \
     defuse-wallet-webauthn-ed25519 \
     defuse-wallet-webauthn-p256 \

@@ -1,0 +1,78 @@
+lints.workspace = true
+
+[package]
+name = "defuse-wallet-eip712"
+edition.workspace = true
+version = "0.1.0"
+rust-version.workspace = true
+repository.workspace = true
+readme = "../README.md"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+defuse-crypto = { workspace = true, features = ["borsh", "secp256k1", "serde"] }
+defuse-digest = { workspace = true, features = ["sha3"] }
+defuse-eip712.workspace = true
+defuse-wallet = { workspace = true, features = ["borsh", "digest", "json", "serde"] }
+
+borsh = { workspace = true, features = ["derive"] }
+derive_more = { workspace = true, features = ["as_ref", "from", "into"] }
+hex.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+serde_with.workspace = true
+thiserror.workspace = true
+
+defuse-wallet-sdk = { workspace = true, optional = true }
+hex-literal = { workspace = true, optional = true }
+near-sdk = { workspace = true, optional = true }
+schemars = { workspace = true, features = ["derive"], optional = true }
+
+[features]
+abi = [
+  "borsh/unstable__schema",
+  "defuse-crypto/abi",
+  "defuse-wallet/abi",
+  "dep:hex-literal",
+  "dep:schemars",
+  "near-sdk?/abi",
+]
+
+signer = ["defuse-crypto/signing", "dep:defuse-wallet-sdk"]
+
+contract = [
+  "defuse-crypto/borsh",
+  "defuse-wallet/near-contract",
+  "dep:near-sdk",
+]
+
+[dev-dependencies]
+defuse-wallet-eip712 = { path = ".", features = ["abi", "signer", "contract"] }
+
+hex-literal.workspace = true
+k256 = { workspace = true, features = ["getrandom"] }
+rstest.workspace = true
+tokio-test.workspace = true
+
+near-sdk = { workspace = true, features = ["unit-testing"] }
+
+[package.metadata.near.reproducible_build]
+image = "sourcescan/cargo-near:0.22.0-rust-1.97.1"
+image_digest = "sha256:7467038bdddc86484b73b416eeadce926ff59013e128e53dec5a19e1cb4b2234"
+passed_env = []
+container_build_command = [
+  "cargo",
+  "near",
+  "build",
+  "non-reproducible-wasm",
+  "--locked",
+  "--no-default-features",
+  "--features=contract",
+  "--abi-features=abi,contract",
+]
+
+[package.metadata.cargo-machete]
+# needed for `wallet!` macro, since `#[near(...)]` doesn't support re-exports
+ignored = ["near-sdk"]
