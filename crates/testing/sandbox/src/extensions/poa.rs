@@ -37,13 +37,13 @@ pub struct PoaFtDepositArgs {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct PoaRecordWithdrawArgs {
+pub struct PoaRecordWithdrawalArgs {
     pub withdrawal_id: IdDigest,
     pub withdrawal: Withdrawal,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct PoaUpdateWithdrawRecordArgs {
+pub struct PoaUpdateWithdrawalArgs {
     pub withdrawal_id: IdDigest,
     pub prev_payload_hash: PayloadHash,
     pub new_payload_hash: PayloadHash,
@@ -77,10 +77,10 @@ pub trait PoaFactory {
     fn ft_deposit(&mut self, args: PoaFtDepositArgs);
 
     #[call]
-    fn record_withdraw(&mut self, args: PoaRecordWithdrawArgs);
+    fn record_withdrawal(&mut self, args: PoaRecordWithdrawalArgs);
 
     #[call]
-    fn update_withdraw_record(&mut self, args: PoaUpdateWithdrawRecordArgs);
+    fn update_withdrawal(&mut self, args: PoaUpdateWithdrawalArgs);
 
     #[call]
     fn remove_withdrawals(&mut self, args: PoaRemoveWithdrawalsArgs);
@@ -166,14 +166,14 @@ pub trait PoAFactoryExt {
         memo: Option<String>,
     ) -> Result<SuccessfulExecutionOutcome>;
 
-    async fn poa_factory_record_withdraw(
+    async fn poa_factory_record_withdrawal(
         &self,
         factory: impl AsRef<AccountIdRef>,
         withdrawal_id: IdDigest,
         withdrawal: Withdrawal,
     ) -> Result<SuccessfulExecutionOutcome>;
 
-    async fn poa_factory_update_withdraw_record(
+    async fn poa_factory_update_withdrawal(
         &self,
         factory: impl AsRef<AccountIdRef>,
         withdrawal_id: IdDigest,
@@ -245,7 +245,7 @@ impl PoAFactoryExt for Near {
             .try_into()
     }
 
-    async fn poa_factory_record_withdraw(
+    async fn poa_factory_record_withdrawal(
         &self,
         factory: impl AsRef<AccountIdRef>,
         withdrawal_id: IdDigest,
@@ -253,7 +253,7 @@ impl PoAFactoryExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(factory.as_ref())
             .add_action(
-                PoaFactory::record_withdraw(PoaRecordWithdrawArgs {
+                PoaFactory::record_withdrawal(PoaRecordWithdrawalArgs {
                     withdrawal_id,
                     withdrawal,
                 })
@@ -264,7 +264,7 @@ impl PoAFactoryExt for Near {
             .try_into()
     }
 
-    async fn poa_factory_update_withdraw_record(
+    async fn poa_factory_update_withdrawal(
         &self,
         factory: impl AsRef<AccountIdRef>,
         withdrawal_id: IdDigest,
@@ -274,7 +274,7 @@ impl PoAFactoryExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(factory.as_ref())
             .add_action(
-                PoaFactory::update_withdraw_record(PoaUpdateWithdrawRecordArgs {
+                PoaFactory::update_withdrawal(PoaUpdateWithdrawalArgs {
                     withdrawal_id,
                     prev_payload_hash,
                     new_payload_hash,

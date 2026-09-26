@@ -86,11 +86,11 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     ///
     /// NOTE: as with [`PoaFactory::ft_omni_deposit`], this storage MUST be
     /// subsidised separately by the contract owner.
-    fn record_withdraw(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal);
+    fn record_withdrawal(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal);
 
     /// Replaces the payload hash of an existing withdrawal record, guarded by the
     /// previous hash. Fails if no record is stored under `withdrawal_id`.
-    fn update_withdraw_record(
+    fn update_withdrawal(
         &mut self,
         withdrawal_id: IdDigest,
         prev_payload_hash: PayloadHash,

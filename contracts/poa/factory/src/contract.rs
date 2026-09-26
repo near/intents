@@ -221,7 +221,7 @@ impl PoaFactory for Contract {
     #[pause]
     #[access_control_any(roles(Role::DAO, Role::OmniProver))]
     #[payable]
-    fn record_withdraw(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal) {
+    fn record_withdrawal(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal) {
         require!(
             !env::attached_deposit().is_zero(),
             "attached deposit is required"
@@ -242,7 +242,7 @@ impl PoaFactory for Contract {
     #[pause]
     #[access_control_any(roles(Role::DAO, Role::OmniProver))]
     #[payable]
-    fn update_withdraw_record(
+    fn update_withdrawal(
         &mut self,
         withdrawal_id: IdDigest,
         prev_payload_hash: PayloadHash,
