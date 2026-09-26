@@ -257,6 +257,7 @@ impl PoAFactoryExt for Near {
                     withdrawal_id,
                     withdrawal,
                 })
+                .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(30)),
             )
             .wait_until::<Final>()
@@ -280,6 +281,7 @@ impl PoAFactoryExt for Near {
                     new_payload_hash,
                     metadata: metadata.into(),
                 })
+                .deposit(NearToken::from_yoctonear(4))
                 .gas(Gas::from_tgas(30)),
             )
             .wait_until::<Final>()
