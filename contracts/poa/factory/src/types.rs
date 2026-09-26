@@ -1,10 +1,10 @@
 use near_sdk::near;
-use serde_with::base64::Base64;
+use serde_with::hex::Hex;
 
 /// A deposit or withdrawal id, digested by the caller to a fixed width.
 #[near(serializers=[borsh, json])]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct IdDigest(#[serde_as(as = "Base64")] pub [u8; Self::LEN]);
+pub struct IdDigest(#[serde_as(as = "Hex")] pub [u8; Self::LEN]);
 
 impl IdDigest {
     pub const LEN: usize = 20;
@@ -27,7 +27,7 @@ impl AsRef<[u8]> for IdDigest {
 /// A 32-byte hash of a cross-chain withdrawal payload.
 #[near(serializers=[borsh, json])]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct PayloadHash(#[serde_as(as = "Base64")] pub [u8; 32]);
+pub struct PayloadHash(#[serde_as(as = "Hex")] pub [u8; 32]);
 
 impl From<[u8; 32]> for PayloadHash {
     #[inline]
@@ -56,11 +56,14 @@ mod tests {
 
     use super::*;
 
-    /// A bare base64 string, not an object or a list of byte values.
+    /// A bare hex string, not an object or a list of byte values.
     #[test]
-    fn serializes_as_base64_string() {
+    fn serializes_as_hex_string() {
         let json = serde_json::to_value(PayloadHash([0xAB; 32])).unwrap();
-        assert_eq!(json, json!("q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s="));
+        assert_eq!(
+            json,
+            json!("abababababababababababababababababababababababababababababababab")
+        );
         let back: PayloadHash = serde_json::from_value(json).unwrap();
         assert_eq!(back, PayloadHash([0xAB; 32]));
     }
@@ -68,10 +71,15 @@ mod tests {
     /// The 32-byte width is enforced while decoding the argument, so no call site
     /// has to re-check it.
     #[rstest::rstest]
-    #[case::too_short(json!("BQUF"))]
-    #[case::too_long(json!("q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6ur"))]
+    #[case::too_short(json!("050505"))]
+    #[case::too_long(json!(
+        "ababababababababababababababababababababababababababababababababab"
+    ))]
+    #[case::odd_length(json!(
+        "abababababababababababababababababababababababababababababababa"
+    ))]
     #[case::empty(json!(""))]
-    #[case::not_base64(json!("!!!!"))]
+    #[case::not_hex(json!("zzzz"))]
     #[case::not_a_string(json!([5, 5, 5]))]
     fn rejects_non_32_byte_input(#[case] input: serde_json::Value) {
         serde_json::from_value::<PayloadHash>(input.clone())
