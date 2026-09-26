@@ -1,12 +1,42 @@
 #[cfg(feature = "contract")]
 pub mod contract;
+mod types;
 
 use std::collections::HashMap;
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_plugins::AccessControllable;
-use near_sdk::{AccountId, Promise, ext_contract, json_types::U128};
+use near_sdk::{AccountId, Promise, ext_contract, json_types::U128, near};
+
+pub use self::types::{IdDigest, PayloadHash};
+
+/// Metadata about a cross-chain withdrawal tracked by the factory.
+#[near(serializers=[borsh, json])]
+#[derive(Debug, Clone)]
+pub struct Withdrawal {
+    pub payload_hash: PayloadHash,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub metadata: String,
+}
+
+#[must_use = "make sure to `.emit()` this event"]
+#[near(event_json(standard = "factory"))]
+#[derive(Debug, Clone)]
+pub enum FactoryEvent<'a> {
+    #[event_version("0.1.0")]
+    WithdrawRecorded {
+        withdrawal_id: IdDigest,
+        withdrawal: &'a Withdrawal,
+    },
+    #[event_version("0.1.0")]
+    WithdrawRecordUpdated {
+        withdrawal_id: IdDigest,
+        prev_payload_hash: PayloadHash,
+        new_payload_hash: PayloadHash,
+        metadata: &'a str,
+    },
+}
 
 #[ext_contract(ext_poa_factory)]
 pub trait PoaFactory: AccessControllable + FullAccessKeys {
@@ -31,6 +61,61 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
         memo: Option<String>,
     ) -> Promise;
 
+    /// Same as [`PoaFactory::ft_deposit`], but deduplicates deposits by
+    /// `deposit_id`: the id is recorded on-chain and the call fails if it was
+    /// already used. Required for omni layer tokens, which [`PoaFactory::ft_deposit`]
+    /// rejects.
+    ///
+    /// NOTE: the `deposit_id` entry is not covered by the attached deposit,
+    /// so its storage MUST be subsidised separately by the contract owner.
+    fn ft_omni_deposit(
+        &mut self,
+        deposit_id: IdDigest,
+        token: String,
+        owner_id: AccountId,
+        amount: U128,
+        msg: Option<String>,
+        memo: Option<String>,
+    ) -> Promise;
+
     /// Returns a mapping of token names to their account ids.
     fn tokens(&self) -> HashMap<String, AccountId>;
+
+    /// Records a withdrawal made on another chain under `withdrawal_id`. Fails if
+    /// the id is already used.
+    ///
+    /// NOTE: as with [`PoaFactory::ft_omni_deposit`], this storage MUST be
+    /// subsidised separately by the contract owner.
+    fn record_withdrawal(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal);
+
+    /// Replaces the payload hash of an existing withdrawal record, guarded by the
+    /// previous hash. Fails if no record is stored under `withdrawal_id`.
+    fn update_withdrawal(
+        &mut self,
+        withdrawal_id: IdDigest,
+        prev_payload_hash: PayloadHash,
+        new_payload_hash: PayloadHash,
+        metadata: String,
+    );
+
+    /// Returns the withdrawal record stored under `withdrawal_id`, if any.
+    fn get_withdrawal(&self, withdrawal_id: IdDigest) -> Option<&Withdrawal>;
+
+    /// Removes the given withdrawal records from storage.
+    ///
+    /// Ids with nothing stored under them are ignored, so the call succeeds
+    /// whether or not every id was present and is safe to retry.
+    fn remove_withdrawals(&mut self, withdrawal_ids: Vec<IdDigest>);
+
+    /// Removes the given deposit ids from storage, allowing them to be reused.
+    ///
+    /// As with [`PoaFactory::remove_withdrawals`], unknown ids are ignored.
+    fn remove_deposits(&mut self, deposit_ids: Vec<IdDigest>);
+
+    /// Adds the given tokens to the list of omni layer tokens.
+    fn add_omni_tokens(&mut self, tokens: Vec<String>);
+    /// Removes the given tokens from the list of omni layer tokens.
+    fn remove_omni_tokens(&mut self, tokens: Vec<String>);
+    /// Returns the list of omni layer tokens.
+    fn get_omni_tokens(&self) -> Vec<String>;
 }

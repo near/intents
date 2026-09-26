@@ -32,6 +32,7 @@ near-contract-standards.workspace = true
 near-plugins.workspace = true
 near-sdk.workspace = true
 serde = { workspace = true, features = ["derive"] }
+serde_with = { workspace = true, features = ["hex"] }
 
 schemars = { workspace = true, features = ["derive"], optional = true }
 
