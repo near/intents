@@ -220,7 +220,12 @@ impl PoaFactory for Contract {
 
     #[pause]
     #[access_control_any(roles(Role::DAO, Role::OmniProver))]
+    #[payable]
     fn record_withdraw(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal) {
+        require!(
+            !env::attached_deposit().is_zero(),
+            "attached deposit is required"
+        );
         require!(
             self.withdrawals
                 .insert(withdrawal_id, withdrawal.clone())
@@ -236,6 +241,7 @@ impl PoaFactory for Contract {
 
     #[pause]
     #[access_control_any(roles(Role::DAO, Role::OmniProver))]
+    #[payable]
     fn update_withdraw_record(
         &mut self,
         withdrawal_id: IdDigest,
@@ -243,6 +249,10 @@ impl PoaFactory for Contract {
         new_payload_hash: PayloadHash,
         metadata: String,
     ) {
+        require!(
+            !env::attached_deposit().is_zero(),
+            "attached deposit is required"
+        );
         let withdrawal = self
             .withdrawals
             .get_mut(&withdrawal_id)
@@ -299,9 +309,7 @@ impl PoaFactory for Contract {
     #[pause]
     #[access_control_any(roles(Role::DAO))]
     fn add_omni_tokens(&mut self, tokens: Vec<String>) {
-        for token in tokens {
-            self.omni_tokens.insert(token);
-        }
+        self.omni_tokens.extend(tokens);
     }
 
     #[pause]
