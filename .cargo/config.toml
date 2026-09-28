@@ -9,3 +9,6 @@ DEFUSE_OUT_DIR = { value = "res", relative = true }
 
 [alias]
 integration-tests = "test -p defuse-tests --no-default-features --features"
+
+[build]
+warnings = "deny"
