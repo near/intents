@@ -11,4 +11,4 @@ DEFUSE_OUT_DIR = { value = "res", relative = true }
 integration-tests = "test -p defuse-tests --no-default-features --features"
 
 [build]
-warnings = "deny"
+rustdocflags = ["-D", "warnings"]
