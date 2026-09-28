@@ -21,6 +21,7 @@ help:
 	@echo "  check-contracts                   Run clippy on all contracts for wasm target"
 	@echo "  check-all                         Run all checks"
 	@echo "  fmt                               Format Rust files and Cargo.toml manifests"
+	@echo "  doc                               Generate docs"
 	@echo "  help                              Show this help"
 
 .PHONY: clean-out-dir
@@ -51,13 +52,16 @@ check-unused-deps:
 	cargo machete 2>/dev/null
 
 .PHONY: check-all
-check-all: check-fmt check-unused-deps check
+check-all: check-fmt check-unused-deps check doc
 
 .PHONY: fmt
 fmt:
 	cargo fmt --all
 	taplo format
 
+.PHONY: doc
+doc:
+	cargo doc --workspace --no-deps --all-features --features near-sdk/non-contract-usage
 
 
 .DEFAULT_GOAL := all
