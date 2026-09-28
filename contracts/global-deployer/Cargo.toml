@@ -48,7 +48,7 @@ near-kit = [
   "borsh",
   "dep:defuse-borsh-utils",
   "dep:defuse-serde-utils",
-  "dep:near-kit",
+  "near-kit/contracts",
   "serde",
 ]
 serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with", "near-account-id/serde"]
