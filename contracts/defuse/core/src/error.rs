@@ -84,6 +84,6 @@ pub enum DefuseError {
     #[error(transparent)]
     LogTooLong(#[from] ErrorLogTooLong),
 
-    #[error("too many tokens : max batch size is {BATCH_MAX_TOKENS}, got {0}")]
+    #[error("too many tokens: max batch size is {BATCH_MAX_TOKENS}, got {0}")]
     TooManyTokens(usize),
 }
