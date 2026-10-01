@@ -10,9 +10,12 @@ use defuse::{
 use defuse_near_utils::REFUND_MEMO;
 use defuse_near_utils::TOTAL_LOG_LENGTH_LIMIT;
 use defuse_randomness::Rng;
-use defuse_sandbox::{SigningAccount, extensions::mt::MtExt};
+use defuse_sandbox::{
+    SigningAccount,
+    extensions::mt::{MtExt, MtViewExt},
+};
 use defuse_test_utils::random::{gen_random_string, rng};
-use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
+use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{AccountId, AsNep297Event, Gas, json_types::U128};
 use rstest::rstest;
@@ -425,5 +428,174 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
         refund_amounts,
         vec![amount],
         "Expected full refund of all amounts"
+    );
+}
+
+/// Regression test: a receiver with a large balance could request refunds
+/// bigger than the deposited amounts (e.g. `1e35` for deposits of `1`), so the
+/// refund `mt_burn` event grew past `TOTAL_LOG_LENGTH_LIMIT` and the whole
+/// `mt_resolve_deposit` callback failed (as happened on the deployed revision).
+#[tokio::test]
+async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts() {
+    use defuse_sandbox::tx::FnCallBuilder;
+    use near_sdk::NearToken;
+
+    const TOKEN_COUNT: usize = 80;
+    const RECEIVER_BALANCE: u128 = 10u128.pow(37);
+    // 36-digit refund request: way more than the deposited `1`, but small
+    // enough for the receiver's balance to cover it for every token
+    const REFUND_REQUEST: u128 = 10u128.pow(35);
+
+    let env = Arc::new(
+        Env::builder()
+            .defuse_wasm(DEFUSE_WASM.clone())
+            .build()
+            .await,
+    );
+    env.tx(env.defuse.id())
+        .transfer(NearToken::from_near(1000))
+        .await
+        .unwrap();
+
+    let receiver_stub = env
+        .deploy_sub_contract(
+            "receiver",
+            NearToken::from_near(100),
+            MT_RECEIVER_STUB_WASM.to_vec(),
+            None::<FnCallBuilder>,
+        )
+        .await
+        .unwrap();
+
+    // Implicit account (64 hex chars) makes `nep245:{contract}:{token_id}`
+    // token ids as long as the ones seen on mainnet
+    let author_account = env.fund_implicit(NearToken::from_near(1000)).await.unwrap();
+    let token_id = "t".repeat(101);
+    let defuse_token_id = format!("nep245:{}:{}", author_account.id(), token_id);
+    assert_eq!(defuse_token_id.len(), 173);
+
+    // Fund the receiver so that its balance can cover the requested refunds
+    let pre_fund_message = DepositMessage {
+        receiver_id: receiver_stub.id().clone(),
+        action: None,
+    };
+    author_account
+        .mt_on_transfer_raw(
+            author_account.id(),
+            env.defuse.id(),
+            [(token_id.clone(), RECEIVER_BALANCE)],
+            serde_json::to_string(&pre_fund_message).unwrap(),
+        )
+        .await
+        .unwrap()
+        .into_result()
+        .unwrap();
+
+    assert_eq!(
+        env.defuse
+            .mt_balance_of(receiver_stub.id(), &defuse_token_id)
+            .await
+            .unwrap(),
+        RECEIVER_BALANCE
+    );
+
+    // Sanity check: the mint event fits into the log limit, but the refund
+    // event with uncapped (requested) amounts does not.
+    let defuse_token_ids = vec![defuse_token_id; TOKEN_COUNT];
+    let deposited_amounts = vec![U128(1); TOKEN_COUNT];
+    let uncapped_amounts = vec![U128(REFUND_REQUEST); TOKEN_COUNT];
+
+    let mint_log = MtEvent::MtMint(Cow::Owned(vec![MtMintEvent {
+        owner_id: Cow::Borrowed(receiver_stub.id()),
+        token_ids: Cow::Owned(defuse_token_ids.clone()),
+        amounts: Cow::Owned(deposited_amounts.clone()),
+        memo: Some(Cow::Borrowed("deposit")),
+    }]))
+    .to_nep297_event()
+    .to_event_log();
+
+    let refund_log = MtEvent::MtBurn(Cow::Owned(vec![MtBurnEvent {
+        owner_id: Cow::Borrowed(receiver_stub.id()),
+        authorized_id: None,
+        token_ids: Cow::Owned(defuse_token_ids.clone()),
+        amounts: Cow::Owned(deposited_amounts.clone()),
+        memo: Some(Cow::Borrowed(REFUND_MEMO)),
+    }]))
+    .to_nep297_event()
+    .to_event_log();
+
+    let uncapped_refund_log = MtEvent::MtBurn(Cow::Owned(vec![MtBurnEvent {
+        owner_id: Cow::Borrowed(receiver_stub.id()),
+        authorized_id: None,
+        token_ids: Cow::Owned(defuse_token_ids),
+        amounts: Cow::Owned(uncapped_amounts),
+        memo: Some(Cow::Borrowed(REFUND_MEMO)),
+    }]))
+    .to_nep297_event()
+    .to_event_log();
+
+    assert!(mint_log.len() <= TOTAL_LOG_LENGTH_LIMIT);
+    assert!(refund_log.len() <= TOTAL_LOG_LENGTH_LIMIT);
+    assert!(
+        uncapped_refund_log.len() > TOTAL_LOG_LENGTH_LIMIT,
+        "test setup is wrong: refund request must overflow the log limit \
+        (mint: {}, refund: {}, uncapped refund: {})",
+        mint_log.len(),
+        refund_log.len(),
+        uncapped_refund_log.len()
+    );
+
+    // Receiver requests huge refunds...
+    let deposit_message = DepositMessage {
+        receiver_id: receiver_stub.id().clone(),
+        action: Some(DepositAction::Notify(
+            NotifyOnTransfer::new(
+                serde_json::to_string(&MTReceiverMode::ReturnValue(U128(REFUND_REQUEST))).unwrap(),
+            )
+            .with_min_gas(Gas::from_tgas(5)),
+        )),
+    };
+
+    // ...but each deposit is just `1`, so refunds must be capped by it
+    let execution_result = author_account
+        .mt_on_transfer_raw(
+            author_account.id(),
+            env.defuse.id(),
+            (0..TOKEN_COUNT).map(|_| (token_id.clone(), 1)),
+            serde_json::to_string(&deposit_message).unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let defuse_outcomes: Vec<_> = execution_result
+        .outcomes()
+        .into_iter()
+        .filter(|o| o.executor_id == *env.defuse.id())
+        .collect();
+    assert_eq!(
+        defuse_outcomes.len(),
+        2,
+        "expected deposit + mt_resolve_deposit receipts"
+    );
+
+    let resolve_result = defuse_outcomes[1].clone().into_result();
+    assert!(
+        resolve_result.is_ok(),
+        "mt_resolve_deposit must not fail on oversized refund log: {:?}",
+        resolve_result.err()
+    );
+
+    let refunds = execution_result
+        .into_result()
+        .expect("transaction failed")
+        .json::<Vec<U128>>()
+        .expect("failed to parse refunds")
+        .into_iter()
+        .map(|a| a.0)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        refunds,
+        vec![1u128; TOKEN_COUNT],
+        "refunds must be capped by deposited amounts"
     );
 }

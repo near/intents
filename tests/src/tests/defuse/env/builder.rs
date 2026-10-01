@@ -44,6 +44,9 @@ pub struct EnvBuilder {
     create_unique_users: bool,
 
     concurrency_limit: Option<usize>,
+
+    // Deploy the regular `defuse.wasm` instead of the `far` variant
+    defuse_wasm: Option<Vec<u8>>,
 }
 
 impl EnvBuilder {
@@ -102,6 +105,12 @@ impl EnvBuilder {
         self
     }
 
+    /// Deploy the given wasm instead of the default `far` variant
+    pub fn defuse_wasm(mut self, wasm: Vec<u8>) -> Self {
+        self.defuse_wasm = Some(wasm);
+        self
+    }
+
     async fn deploy_defuse(
         &self,
         root: &SigningAccount,
@@ -128,8 +137,10 @@ impl EnvBuilder {
             if legacy {
                 DEFUSE_LEGACY_WASM.clone()
             } else {
-                // far feature enabled by default in tests
-                DEFUSE_FAR_WASM.clone()
+                self.defuse_wasm
+                    .clone()
+                    // far feature enabled by default in tests
+                    .unwrap_or_else(|| DEFUSE_FAR_WASM.clone())
             },
         )
         .await
