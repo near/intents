@@ -3,6 +3,7 @@ use defuse_nep245::receiver::MultiTokenReceiver;
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, FunctionError, PromiseOrValue, env, json_types::U128, near, require};
 
+use super::{BATCH_MAX_TOKENS, BATCH_MAX_TOKENS_ERR};
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
@@ -37,6 +38,8 @@ impl MultiTokenReceiver for Contract {
             previous_owner_ids.len() == token_ids.len(),
             "NEP-245: Contract MUST panic if `previous_owner_ids` length does not equals `token_ids` length"
         );
+
+        require!(token_ids.len() <= BATCH_MAX_TOKENS, BATCH_MAX_TOKENS_ERR);
 
         require!(
             token != env::current_account_id(),

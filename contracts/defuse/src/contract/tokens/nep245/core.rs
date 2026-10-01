@@ -10,6 +10,8 @@ use near_sdk::{
 };
 use std::borrow::Cow;
 
+use super::{BATCH_MAX_TOKENS, BATCH_MAX_TOKENS_ERR};
+
 #[near]
 impl MultiTokenCore for Contract {
     #[payable]
@@ -42,6 +44,7 @@ impl MultiTokenCore for Contract {
     ) {
         assert_one_yocto();
         require!(approvals.is_none(), "approvals are not supported");
+        require!(token_ids.len() <= BATCH_MAX_TOKENS, BATCH_MAX_TOKENS_ERR);
 
         self.internal_mt_batch_transfer(
             &self.ensure_auth_predecessor_id(),
@@ -88,6 +91,7 @@ impl MultiTokenCore for Contract {
     ) -> PromiseOrValue<Vec<U128>> {
         assert_one_yocto();
         require!(approvals.is_none(), "approvals are not supported");
+        require!(token_ids.len() <= BATCH_MAX_TOKENS, BATCH_MAX_TOKENS_ERR);
 
         self.internal_mt_batch_transfer_call(
             self.ensure_auth_predecessor_id(),
