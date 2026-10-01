@@ -1,6 +1,7 @@
 use crate::contract::{Contract, ContractExt};
 use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::NotifyOnTransfer, token_id::TokenId,
+    tokens::BATCH_MAX_TOKENS,
 };
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
@@ -9,8 +10,6 @@ use near_sdk::{
     json_types::U128, near, require,
 };
 use std::borrow::Cow;
-
-use defuse_core::tokens::BATCH_MAX_TOKENS;
 
 #[near]
 impl MultiTokenCore for Contract {
