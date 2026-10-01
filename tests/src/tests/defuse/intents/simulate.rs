@@ -667,7 +667,7 @@ async fn simulate_remove_public_key_intent(
 async fn simulate_set_auth_by_predecessor_id_intent(#[future(awt)] env: Env) {
     let user1 = env.create_user().await;
 
-    let set_auth_intent = SetAuthByPredecessorId { enabled: true };
+    let set_auth_intent = SetAuthByPredecessorId { enabled: false };
 
     let set_auth_payload = user1
         .sign_defuse_payload_default(&env.defuse, [set_auth_intent.clone()])
