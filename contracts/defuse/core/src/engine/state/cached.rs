@@ -356,7 +356,7 @@ where
                 // toggle
                 .auth_by_predecessor_id_toggled ^= true;
         }
-        Ok(was_enabled)
+        Ok(toggle)
     }
 
     fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()> {
