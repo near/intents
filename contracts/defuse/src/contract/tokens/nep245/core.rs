@@ -10,7 +10,7 @@ use near_sdk::{
 };
 use std::borrow::Cow;
 
-use super::{BATCH_MAX_TOKENS, BATCH_MAX_TOKENS_ERR};
+use super::BATCH_MAX_TOKENS;
 
 #[near]
 impl MultiTokenCore for Contract {
@@ -44,7 +44,6 @@ impl MultiTokenCore for Contract {
     ) {
         assert_one_yocto();
         require!(approvals.is_none(), "approvals are not supported");
-        require!(token_ids.len() <= BATCH_MAX_TOKENS, BATCH_MAX_TOKENS_ERR);
 
         self.internal_mt_batch_transfer(
             &self.ensure_auth_predecessor_id(),
@@ -91,7 +90,6 @@ impl MultiTokenCore for Contract {
     ) -> PromiseOrValue<Vec<U128>> {
         assert_one_yocto();
         require!(approvals.is_none(), "approvals are not supported");
-        require!(token_ids.len() <= BATCH_MAX_TOKENS, BATCH_MAX_TOKENS_ERR);
 
         self.internal_mt_batch_transfer_call(
             self.ensure_auth_predecessor_id(),
@@ -175,6 +173,10 @@ impl Contract {
     ) -> Result<()> {
         if sender_id == receiver_id || token_ids.len() != amounts.len() || amounts.is_empty() {
             return Err(DefuseError::InvalidIntent);
+        }
+
+        if token_ids.len() > BATCH_MAX_TOKENS {
+            return Err(DefuseError::TooManyTokens(token_ids.len()));
         }
 
         for (token_id, amount) in token_ids.iter().zip(amounts.iter().map(|a| a.0)) {

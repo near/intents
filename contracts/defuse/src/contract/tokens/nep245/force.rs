@@ -6,7 +6,6 @@ use near_sdk::{
     AccountId, FunctionError, PromiseOrValue, assert_one_yocto, json_types::U128, near, require,
 };
 
-use super::{BATCH_MAX_TOKENS, BATCH_MAX_TOKENS_ERR};
 use crate::{
     contract::{Contract, ContractExt, Role},
     tokens::nep245::MultiTokenForcedCore,
@@ -48,7 +47,6 @@ impl MultiTokenForcedCore for Contract {
     ) {
         assert_one_yocto();
         require!(approvals.is_none(), "approvals are not supported");
-        require!(token_ids.len() <= BATCH_MAX_TOKENS, BATCH_MAX_TOKENS_ERR);
 
         self.internal_mt_batch_transfer(
             &owner_id,
@@ -98,7 +96,6 @@ impl MultiTokenForcedCore for Contract {
     ) -> PromiseOrValue<Vec<U128>> {
         assert_one_yocto();
         require!(approvals.is_none(), "approvals are not supported");
-        require!(token_ids.len() <= BATCH_MAX_TOKENS, BATCH_MAX_TOKENS_ERR);
 
         self.internal_mt_batch_transfer_call(
             owner_id,

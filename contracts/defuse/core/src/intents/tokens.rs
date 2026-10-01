@@ -91,11 +91,12 @@ impl ExecutableIntent for Transfer {
         S: State,
         I: Inspector,
     {
-        if sender_id == self.receiver_id
-            || self.tokens.is_empty()
-            || self.tokens.len() > BATCH_MAX_TOKENS
-        {
+        if sender_id == self.receiver_id || self.tokens.is_empty() {
             return Err(DefuseError::InvalidIntent);
+        }
+
+        if self.tokens.len() > BATCH_MAX_TOKENS {
+            return Err(DefuseError::TooManyTokens(self.tokens.len()));
         }
 
         engine

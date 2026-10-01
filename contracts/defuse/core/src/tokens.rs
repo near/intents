@@ -7,7 +7,6 @@ use crate::{AccountIdRef, Gas, amounts::Amounts, intents::tokens::Transfer};
 pub const MAX_TOKEN_ID_LEN: usize = 127;
 
 pub const BATCH_MAX_TOKENS: usize = 10;
-pub const BATCH_MAX_TOKENS_ERR: &str = "too many tokens(>10)";
 
 pub const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
 pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
