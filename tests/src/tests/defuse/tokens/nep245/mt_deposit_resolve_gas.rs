@@ -509,7 +509,7 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
         )),
     };
     let token_ids = vec![token_id; TOKEN_COUNT];
-    let amounts = vec![1u128; TOKEN_COUNT];
+    let amounts = [1u128; TOKEN_COUNT];
 
     // ...but each deposit is just `1`, so refunds must be capped by it
     let execution_result = author_account
@@ -562,12 +562,17 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
         .find(|o| o.id == resolve_receipt.receipt_id)
         .expect("no execution outcome for the mt_resolve_deposit receipt");
 
-    assert!(
-        matches!(
-            resolve_result.outcome.status,
-            ExecutionStatus::SuccessValue(_)
-        ),
-        "mt_resolve_deposit must not fail on oversized refund log: {:?}",
-        resolve_result.outcome.status
+    let ExecutionStatus::SuccessValue(value) = &resolve_result.outcome.status else {
+        panic!(
+            "mt_resolve_deposit must not fail on oversized refund log: {:?}",
+            resolve_result.outcome.status
+        );
+    };
+
+    let refunds: Vec<U128> = serde_json::from_slice(value).unwrap();
+    assert_eq!(
+        refunds,
+        amounts.map(U128),
+        "refunds must be capped by deposited amounts"
     );
 }
