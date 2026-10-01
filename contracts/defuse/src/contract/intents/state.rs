@@ -356,12 +356,13 @@ impl Contract {
     /// Computes the static gas assigned to the `do_auth_call` callback.
     pub fn auth_call_callback_gas(auth_call: &AuthCall) -> Option<Gas> {
         Self::DO_AUTH_CALL_MIN_GAS
-            .checked_add(
-                auth_call
-                    .state_init
-                    .as_ref()
-                    .map_or(Gas::from_gas(0), |_| Self::STATE_INIT_GAS),
-            )
-            .and_then(|g| g.checked_add(auth_call.min_gas()))
+            // TODO: replace with UniversalStateInit
+            // .checked_add(
+            //     auth_call
+            //         .state_init
+            //         .as_ref()
+            //         .map_or(Gas::from_gas(0), |_| Self::STATE_INIT_GAS),
+            // )
+            .checked_add(auth_call.min_gas())
     }
 }
