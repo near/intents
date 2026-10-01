@@ -4,6 +4,7 @@ mod defuse;
 #[cfg(feature = "poa")]
 mod poa;
 
+// TODO: uncomment when UniversalStateInit lands
 // #[cfg(feature = "escrow-swap")]
 // mod escrow;
 
