@@ -39,10 +39,9 @@ impl MultiTokenReceiver for Contract {
             "NEP-245: Contract MUST panic if `previous_owner_ids` length does not equals `token_ids` length"
         );
 
-        require!(
-            token_ids.len() <= BATCH_MAX_TOKENS,
-            DefuseError::TooManyTokens(token_ids.len()).to_string()
-        );
+        if token_ids.len() <= BATCH_MAX_TOKENS {
+            DefuseError::TooManyTokens(token_ids.len()).panic()
+        }
 
         require!(
             token != env::current_account_id(),
