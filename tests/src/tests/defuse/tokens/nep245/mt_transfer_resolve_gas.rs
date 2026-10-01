@@ -3,6 +3,7 @@ use crate::tests::defuse::env::{Env, env};
 use crate::tests::defuse::tokens::nep245::letter_gen::LetterCombinations;
 use anyhow::Context;
 use arbitrary::Arbitrary;
+use defuse_core::tokens::BATCH_MAX_TOKENS;
 use defuse_near_utils::REFUND_MEMO;
 use defuse_randomness::Rng;
 use defuse_sandbox::{
@@ -235,6 +236,10 @@ async fn run_resolve_gas_test(
     Ok(())
 }
 
+// Binary-searches the maximum batch size for `mt_batch_transfer_call` such
+// that a failed receiver call still refunds, asserting the resolve callback
+// succeeds and balances are restored. The search covers one token above
+// BATCH_MAX_TOKENS to prove the cap rejects it.
 #[rstest]
 #[tokio::test]
 async fn mt_transfer_resolve_gas(#[future(awt)] env: Env, rng: impl Rng) {
@@ -252,7 +257,7 @@ async fn mt_transfer_resolve_gas(#[future(awt)] env: Env, rng: impl Rng) {
         let author_account = make_account(gen_mode, &env, &user).await;
 
         let min_token_count = 1;
-        let max_token_count = 200;
+        let max_token_count = BATCH_MAX_TOKENS + 1;
 
         let max_transferred_count = binary_search_max(min_token_count, max_token_count, {
             let rng = rng.clone();
@@ -278,8 +283,10 @@ async fn mt_transfer_resolve_gas(#[future(awt)] env: Env, rng: impl Rng) {
         );
 
         // If the max number of transferred tokens is less than this value, panic.
-        let min_transferred_desired = 50;
-        assert!(max_transferred_count >= min_transferred_desired);
+        assert_eq!(
+            max_transferred_count, BATCH_MAX_TOKENS,
+            "`mt_batch_transfer_call` must accept exactly BATCH_MAX_TOKENS tokens and reject more"
+        );
     }
 }
 
@@ -299,8 +306,16 @@ async fn binary_search() {
     }
 }
 
+// Verifies `mt_batch_transfer_call` fails early when the refund `mt_transfer`
+// log (67 tokens with max-length token IDs) would exceed
+// `TOTAL_LOG_LENGTH_LIMIT`, leaving sender and receiver balances unchanged.
+//
+// Ignored: this case is no longer reproducible. Overflowing the refund log
+// needs 67 tokens, but `mt_batch_transfer_call` now rejects more than
+// BATCH_MAX_TOKENS (10) tokens before the refund-log check is reached.
 #[rstest]
 #[tokio::test]
+#[ignore = "no longer reproducible: requires more than BATCH_MAX_TOKENS=10 tokens"]
 async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
     #[future(awt)] env: Env,
 ) {
@@ -415,8 +430,16 @@ const REPRO_TOKEN_COUNT: usize = 66;
 const REPRO_FIRST_TOKEN_ID_LEN: usize = MAX_TOKEN_ID_LEN - 8;
 const REPRO_TOKEN_ID_PREFIX_LEN: usize = 2;
 
+// Boundary variant of the test above: 66 max-length tokens where the transfer
+// log fits but the refund log exceeds `TOTAL_LOG_LENGTH_LIMIT`; the call must
+// fail without changing balances.
+//
+// Ignored: this case is no longer reproducible. The boundary needs 66 tokens,
+// but `mt_batch_transfer_call` now rejects more than BATCH_MAX_TOKENS (10)
+// tokens before the refund-log check is reached.
 #[rstest]
 #[tokio::test]
+#[ignore = "no longer reproducible: requires more than BATCH_MAX_TOKENS=10 tokens"]
 async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(awt)] env: Env) {
     env.transaction(env.defuse.contract_id())
         .transfer(NearToken::from_near(1000))

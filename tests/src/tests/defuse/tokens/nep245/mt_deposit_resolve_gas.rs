@@ -4,7 +4,7 @@ use crate::tests::defuse::{
     tokens::nep245::letter_gen::LetterCombinations,
 };
 use anyhow::Context;
-use defuse_core::intents::tokens::NotifyOnTransfer;
+use defuse_core::{intents::tokens::NotifyOnTransfer, tokens::BATCH_MAX_TOKENS};
 use defuse_near_utils::{REFUND_MEMO, TOTAL_LOG_LENGTH_LIMIT};
 use defuse_randomness::Rng;
 use defuse_sandbox::{
@@ -255,6 +255,10 @@ async fn run_deposit_resolve_gas_test(
     Ok(())
 }
 
+// Binary-searches the maximum batch size that can go through `mt_on_transfer`
+// -> deposit -> notify -> `mt_resolve_deposit`, asserting the resolve callback
+// succeeds and malicious over-refunds are capped. The search covers one token
+// above BATCH_MAX_TOKENS to prove the cap rejects it.
 #[rstest]
 #[tokio::test]
 async fn mt_deposit_resolve_gas(
@@ -287,7 +291,7 @@ async fn mt_deposit_resolve_gas(
 
     let author_account = make_author_account(gen_mode, &env).await;
     let min_token_count = 1;
-    let max_token_count = 200;
+    let max_token_count = BATCH_MAX_TOKENS + 1;
 
     let max_deposited_count = binary_search_max(min_token_count, max_token_count, {
         let rng = rng.clone();
@@ -311,8 +315,10 @@ async fn mt_deposit_resolve_gas(
 
     println!("Max token deposit per call for gen_mode={gen_mode} is: {max_deposited_count:?}");
 
-    let min_deposited_desired = 50;
-    assert!(max_deposited_count >= min_deposited_desired);
+    assert_eq!(
+        max_deposited_count, BATCH_MAX_TOKENS,
+        "`mt_on_transfer` must accept exactly BATCH_MAX_TOKENS tokens and reject more"
+    );
 
     run_deposit_resolve_gas_test(
         gen_mode,
@@ -434,8 +440,13 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
 /// bigger than the deposited amounts (e.g. `1e35` for deposits of `1`), so the
 /// refund `mt_burn` event grew past `TOTAL_LOG_LENGTH_LIMIT` and the whole
 /// `mt_resolve_deposit` callback failed (as happened to the deployed revision).
+//
+// Ignored: overflowing the refund log needs 80 tokens, but `mt_on_transfer` now
+// rejects more than BATCH_MAX_TOKENS (10) tokens before the deposit happens, so
+// the oversized-refund-log scenario can no longer be reached via this path.
 #[rstest]
 #[tokio::test]
+#[ignore = "exceeds BATCH_MAX_TOKENS=10; needs rework for the new batch cap"]
 async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env: Env) {
     const TOKEN_COUNT: usize = 80;
     const RECEIVER_BALANCE: u128 = 10u128.pow(37);
