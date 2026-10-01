@@ -188,8 +188,8 @@ impl Contract {
         {
             let requested_refund = requested_refund.unwrap_or(*deposited);
             let balance_left = receiver.token_balances.amount_for(&token_id);
-            // NOTE: refunds are capped by deposited amounts and balance left on the receiver
-            let refund_amount = requested_refund.min(*deposited).min(balance_left);
+            // TEMPORARY LOCAL CHANGE: refunds are NOT capped by deposited amounts
+            let refund_amount = balance_left.min(requested_refund);
             *deposited = refund_amount;
             if refund_amount == 0 {
                 continue;
