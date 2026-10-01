@@ -489,7 +489,7 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
             Mt::mt_on_transfer(MtOnTransferArgs {
                 sender_id: author_account.account_id(),
                 previous_owner_ids: &[author_account.account_id().clone()],
-                token_ids: &[token_id.clone()],
+                token_ids: std::slice::from_ref(&token_id),
                 amounts: &[RECEIVER_BALANCE],
                 msg: &serde_json::to_string(&pre_fund_message).unwrap(),
             })
@@ -497,12 +497,6 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
         )
         .await
         .expect("pre-fund at mt_on_transfer failed");
-
-    // Sanity check: the mint event fits into the log limit, but the refund
-    // event with uncapped (requested) amounts does not.
-    let defuse_token_ids = vec![defuse_token_id; TOKEN_COUNT];
-    let deposited_amounts = vec![1u128; TOKEN_COUNT];
-    let uncapped_amounts = vec![REFUND_REQUEST; TOKEN_COUNT];
 
     // let mint_log = MtEvent::MtMint(Cow::Owned(vec![MtMintEvent {
     //     owner_id: Cow::Borrowed(receiver_stub.account_id()),
