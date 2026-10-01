@@ -11,6 +11,7 @@ use defuse_core::{
     engine::StateView,
     intents::tokens::MtWithdraw,
     token_id::{nep141::Nep141TokenId, nep245::Nep245TokenId},
+    tokens::BATCH_MAX_TOKENS,
 };
 use defuse_near_utils::{
     REFUND_MEMO, promise_result_checked_json_with_len, promise_result_checked_void,
@@ -38,6 +39,7 @@ impl MultiTokenWithdrawer for Contract {
         msg: Option<String>,
     ) -> PromiseOrValue<Vec<U128>> {
         assert_one_yocto();
+
         self.internal_mt_withdraw(
             self.ensure_auth_predecessor_id(),
             MtWithdraw {
@@ -65,6 +67,10 @@ impl Contract {
     ) -> Result<PromiseOrValue<Vec<U128>>> {
         if withdraw.token_ids.len() != withdraw.amounts.len() || withdraw.token_ids.is_empty() {
             return Err(DefuseError::InvalidIntent);
+        }
+
+        if withdraw.token_ids.len() > BATCH_MAX_TOKENS {
+            return Err(DefuseError::TooManyTokens(withdraw.token_ids.len()));
         }
 
         self.withdraw(
@@ -271,6 +277,7 @@ impl MultiTokenForcedWithdrawer for Contract {
         msg: Option<String>,
     ) -> PromiseOrValue<Vec<U128>> {
         assert_one_yocto();
+
         self.internal_mt_withdraw(
             owner_id,
             MtWithdraw {

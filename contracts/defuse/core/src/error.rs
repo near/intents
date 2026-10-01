@@ -3,7 +3,7 @@ use crate::{
     engine::deltas::InvariantViolated,
     public_key::PublicKey,
     token_id::{TokenId, TokenIdError, nep171::Nep171TokenId},
-    tokens::MAX_TOKEN_ID_LEN,
+    tokens::{BATCH_MAX_TOKENS, MAX_TOKEN_ID_LEN},
 };
 use defuse_nep245::ErrorLogTooLong;
 
@@ -83,4 +83,7 @@ pub enum DefuseError {
 
     #[error(transparent)]
     LogTooLong(#[from] ErrorLogTooLong),
+
+    #[error("too many tokens: max batch size is {BATCH_MAX_TOKENS}, got {0}")]
+    TooManyTokens(usize),
 }

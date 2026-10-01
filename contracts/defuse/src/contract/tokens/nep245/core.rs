@@ -1,6 +1,7 @@
 use crate::contract::{Contract, ContractExt};
 use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::NotifyOnTransfer, token_id::TokenId,
+    tokens::BATCH_MAX_TOKENS,
 };
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
@@ -171,6 +172,10 @@ impl Contract {
     ) -> Result<()> {
         if sender_id == receiver_id || token_ids.len() != amounts.len() || amounts.is_empty() {
             return Err(DefuseError::InvalidIntent);
+        }
+
+        if token_ids.len() > BATCH_MAX_TOKENS {
+            return Err(DefuseError::TooManyTokens(token_ids.len()));
         }
 
         for (token_id, amount) in token_ids.iter().zip(amounts.iter().map(|a| a.0)) {
