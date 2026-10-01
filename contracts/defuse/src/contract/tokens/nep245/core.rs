@@ -10,7 +10,7 @@ use near_sdk::{
 };
 use std::borrow::Cow;
 
-use super::BATCH_MAX_TOKENS;
+use defuse_core::tokens::BATCH_MAX_TOKENS;
 
 #[near]
 impl MultiTokenCore for Contract {

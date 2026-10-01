@@ -4,5 +4,3 @@ mod enumeration;
 mod force;
 mod resolver;
 mod withdraw;
-
-pub use defuse_core::tokens::BATCH_MAX_TOKENS;

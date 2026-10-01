@@ -3,7 +3,7 @@ use defuse_nep245::receiver::MultiTokenReceiver;
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, FunctionError, PromiseOrValue, env, json_types::U128, near, require};
 
-use super::BATCH_MAX_TOKENS;
+use defuse_core::tokens::BATCH_MAX_TOKENS;
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
