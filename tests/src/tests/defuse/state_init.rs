@@ -13,7 +13,7 @@ use defuse_sandbox::{
         },
         mt_receiver::MtReceiverStubDeployerExt,
     },
-    kit::{AccountId, ExecutionStatus, Gas, GlobalContractId, NearToken, StateInit, StateInitV1},
+    kit::{AccountId, ExecutionStatus, Gas, GlobalContractId, NearToken},
 };
 use defuse_test_utils::{
     random::rng,
@@ -22,7 +22,6 @@ use defuse_test_utils::{
 use futures::stream::{self, StreamExt};
 
 use rstest::rstest;
-use std::collections::BTreeMap;
 
 mod helpers {
     use super::*;

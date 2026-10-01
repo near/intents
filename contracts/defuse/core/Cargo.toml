@@ -34,7 +34,6 @@ hex-literal.workspace = true
 impl-tools.workspace = true
 near-account-id = { workspace = true, features = ["borsh", "serde"] }
 near-gas = { workspace = true, features = ["borsh", "serde"] }
-near-global-contracts = { workspace = true, features = ["borsh", "serde"] }
 near-token = { workspace = true, features = ["borsh", "serde"] }
 
 serde = { workspace = true, features = ["derive"] }
@@ -58,7 +57,6 @@ arbitrary = [
   "dep:arbitrary",
   "near-account-id/arbitrary",
   "near-gas/arbitrary",
-  "near-global-contracts/arbitrary",
   "near-token/arbitrary",
 ]
 borsh-schema = [
@@ -72,7 +70,6 @@ borsh-schema = [
   "defuse-webauthn/borsh-schema",
   "near-account-id/abi",
   "near-gas/abi",
-  "near-global-contracts/abi",
   "near-token/abi",
 ]
 imt = []
@@ -95,7 +92,6 @@ schemars-v0_8 = [
   "dep:schemars",
   "near-account-id/schemars-v0_8",
   "near-gas/schemars-v0_8",
-  "near-global-contracts/schemars-v0_8",
   "near-token/schemars-v0_8",
   "serde_with/schemars_0_8",
 ]

@@ -730,7 +730,7 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
 
     let auth_call_intent = AuthCall {
         contract_id: ft1.contract_id().clone(), // Call to ft1 contract
-        state_init: None,
+        // state_init: None,
         msg: "test_message".to_string(),
         attached_deposit: NearToken::from_millinear(10),
         min_gas: None,

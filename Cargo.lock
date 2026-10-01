@@ -1253,7 +1253,6 @@ dependencies = [
  "itertools",
  "near-account-id",
  "near-gas",
- "near-global-contracts",
  "near-kit",
  "near-sdk",
  "near-token",
