@@ -16,7 +16,7 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtOnTransferArgs},
     },
-    kit::{AccountId, ExecutionStatus, Gas, Near, NearToken},
+    kit::{AccountId, ActionView, ExecutionStatus, Final, Gas, Near, NearToken, ReceiptContent},
 };
 use defuse_test_utils::{
     random::{gen_random_string, rng},
@@ -427,5 +427,152 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
         refund_amounts,
         vec![amount],
         "Expected full refund of all amounts"
+    );
+}
+
+/// Regression test: a receiver with a large balance could request refunds
+/// bigger than the deposited amounts (e.g. `1e35` for deposits of `1`), so the
+/// refund `mt_burn` event grew past `TOTAL_LOG_LENGTH_LIMIT` and the whole
+/// `mt_resolve_deposit` callback failed (as happened to the deployed revision).
+#[rstest]
+#[tokio::test]
+async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env: Env) {
+    const TOKEN_COUNT: usize = 80;
+    const RECEIVER_BALANCE: u128 = 10u128.pow(37);
+    // 36-digit refund request: way more than the deposited `1`, but small
+    // enough for the receiver's balance to cover it for every token
+    const REFUND_REQUEST: u128 = 10u128.pow(35);
+
+    let env = Arc::new(env);
+
+    env.transaction(env.defuse.contract_id())
+        .transfer(NearToken::from_near(1000))
+        .await
+        .unwrap();
+
+    let receiver_stub = env
+        .deploy_sub_contract(
+            "receiver",
+            NearToken::from_near(100),
+            MT_RECEIVER_STUB_WASM.to_vec(),
+            None,
+        )
+        .await
+        .unwrap();
+
+    // Implicit account (64 hex chars) makes `nep245:{contract}:{token_id}`
+    // token ids as long as the ones seen on mainnet
+    let author_account = env.create_implicit(NearToken::from_near(1000)).await;
+    let token_id = "t".repeat(101);
+    let defuse_token_id = format!("nep245:{}:{}", author_account.account_id(), token_id);
+    assert_eq!(defuse_token_id.len(), 173);
+
+    let pre_fund_message = DepositMessage {
+        receiver_id: receiver_stub.account_id().clone(),
+        action: None,
+    };
+
+    // NOTE: In this test we leverage the fact that we control the `defuse`
+    // account, so we call its `mt_on_transfer` callback directly. Normally one
+    // would need a real NEP-245 token contract and transfer tokens on it so
+    // that `mt_on_transfer` gets invoked on `defuse` as a callback. Calling it
+    // directly yields the exact same code path with a much shorter setup.
+    //
+    // Pre-fund the receiver so its balance can cover the requested refunds.
+    // This is what makes the bug observable: refunds are computed as
+    // `min(balance_left, requested)`, so without a big pre-existing balance
+    // the refund would be capped by the deposited `1` and the refund log
+    // could never grow past the limit.
+    author_account
+        .transaction(env.defuse.contract_id())
+        .add_action(
+            Mt::mt_on_transfer(MtOnTransferArgs {
+                sender_id: author_account.account_id(),
+                previous_owner_ids: &[author_account.account_id().clone()],
+                token_ids: std::slice::from_ref(&token_id),
+                amounts: &[RECEIVER_BALANCE],
+                msg: &serde_json::to_string(&pre_fund_message).unwrap(),
+            })
+            .gas(Gas::from_tgas(300)),
+        )
+        .await
+        .expect("pre-fund at mt_on_transfer failed");
+
+    // Receiver requests huge refunds...
+    let deposit_message = DepositMessage {
+        receiver_id: receiver_stub.account_id().clone(),
+        action: Some(DepositAction::Notify(
+            NotifyOnTransfer::new(
+                serde_json::to_string(&MTReceiverMode::ReturnValue(U128(REFUND_REQUEST))).unwrap(),
+            )
+            .with_min_gas(Gas::from_tgas(5)),
+        )),
+    };
+    let token_ids = vec![token_id; TOKEN_COUNT];
+    let amounts = [1u128; TOKEN_COUNT];
+
+    // ...but each deposit is just `1`, so refunds must be capped by it
+    let execution_result = author_account
+        .transaction(env.defuse.contract_id())
+        .add_action(
+            Mt::mt_on_transfer(MtOnTransferArgs {
+                sender_id: author_account.account_id(),
+                previous_owner_ids: &vec![author_account.account_id().clone(); TOKEN_COUNT],
+                token_ids: &token_ids,
+                amounts: &amounts,
+                msg: &serde_json::to_string(&deposit_message).unwrap(),
+            })
+            .gas(Gas::from_tgas(300)),
+        )
+        .await
+        .expect("Failed at mt_on_transfer (RPC error)");
+
+    // Re-fetch the full outcome to get the receipts themselves (the send path
+    // only returns execution outcomes), so we can find the callback by name.
+    let outcome = env
+        .root
+        .tx_status(
+            execution_result.transaction_hash(),
+            author_account.account_id(),
+        )
+        .wait_until::<Final>()
+        .await
+        .expect("failed to fetch tx status");
+
+    let resolve_receipt = outcome
+        .receipts
+        .iter()
+        .find(|receipt| {
+            receipt.receiver_id == *env.defuse.contract_id()
+                && matches!(
+                    &receipt.receipt,
+                    ReceiptContent::Action(data)
+                        if data.actions.iter().any(|action| matches!(
+                            action,
+                            ActionView::FunctionCall { method_name, .. }
+                                if method_name == "mt_resolve_deposit"
+                        ))
+                )
+        })
+        .expect("no receipt calling mt_resolve_deposit on defuse");
+
+    let resolve_result = outcome
+        .receipts_outcome
+        .iter()
+        .find(|o| o.id == resolve_receipt.receipt_id)
+        .expect("no execution outcome for the mt_resolve_deposit receipt");
+
+    let ExecutionStatus::SuccessValue(value) = &resolve_result.outcome.status else {
+        panic!(
+            "mt_resolve_deposit must not fail on oversized refund log: {:?}",
+            resolve_result.outcome.status
+        );
+    };
+
+    let refunds: Vec<U128> = serde_json::from_slice(value).unwrap();
+    assert_eq!(
+        refunds,
+        amounts.map(U128),
+        "refunds must be capped by deposited amounts"
     );
 }
