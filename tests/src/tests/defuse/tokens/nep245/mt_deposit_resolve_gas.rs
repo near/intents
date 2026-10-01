@@ -478,10 +478,10 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
     // that `mt_on_transfer` gets invoked on `defuse` as a callback. Calling it
     // directly yields the exact same code path with a much shorter setup.
     //
-    // Pre-fund the receiver so its balance can cover the requested refunds. 
-    // This is what makes the bug observable: refunds are computed as 
-    // `min(balance_left, requested)`, so without a big pre-existing balance 
-    // the refund would be capped by the deposited `1` and the refund log 
+    // Pre-fund the receiver so its balance can cover the requested refunds.
+    // This is what makes the bug observable: refunds are computed as
+    // `min(balance_left, requested)`, so without a big pre-existing balance
+    // the refund would be capped by the deposited `1` and the refund log
     // could never grow past the limit.
     author_account
         .transaction(env.defuse.contract_id())
