@@ -498,46 +498,6 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
         .await
         .expect("pre-fund at mt_on_transfer failed");
 
-    // let mint_log = MtEvent::MtMint(Cow::Owned(vec![MtMintEvent {
-    //     owner_id: Cow::Borrowed(receiver_stub.account_id()),
-    //     token_ids: Cow::Owned(defuse_token_ids.clone()),
-    //     amounts: Cow::Borrowed(&deposited_amounts),
-    //     memo: Some(Cow::Borrowed("deposit")),
-    // }]))
-    // .to_nep297_event()
-    // .to_event_log();
-
-    // let refund_log = MtEvent::MtBurn(Cow::Owned(vec![MtBurnEvent {
-    //     owner_id: Cow::Borrowed(receiver_stub.account_id()),
-    //     authorized_id: None,
-    //     token_ids: Cow::Owned(defuse_token_ids.clone()),
-    //     amounts: Cow::Borrowed(&deposited_amounts),
-    //     memo: Some(Cow::Borrowed(REFUND_MEMO)),
-    // }]))
-    // .to_nep297_event()
-    // .to_event_log();
-    //
-    // let uncapped_refund_log = MtEvent::MtBurn(Cow::Owned(vec![MtBurnEvent {
-    //     owner_id: Cow::Borrowed(receiver_stub.account_id()),
-    //     authorized_id: None,
-    //     token_ids: Cow::Owned(defuse_token_ids),
-    //     amounts: Cow::Borrowed(&uncapped_amounts),
-    //     memo: Some(Cow::Borrowed(REFUND_MEMO)),
-    // }]))
-    // .to_nep297_event()
-    // .to_event_log();
-    //
-    // assert!(mint_log.len() <= TOTAL_LOG_LENGTH_LIMIT);
-    // assert!(refund_log.len() <= TOTAL_LOG_LENGTH_LIMIT);
-    // assert!(
-    //     uncapped_refund_log.len() > TOTAL_LOG_LENGTH_LIMIT,
-    //     "test setup is wrong: refund request must overflow the log limit \
-    //     (mint: {}, refund: {}, uncapped refund: {})",
-    //     mint_log.len(),
-    //     refund_log.len(),
-    //     uncapped_refund_log.len()
-    // );
-
     // Receiver requests huge refunds...
     let deposit_message = DepositMessage {
         receiver_id: receiver_stub.account_id().clone(),
@@ -610,16 +570,4 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
         "mt_resolve_deposit must not fail on oversized refund log: {:?}",
         resolve_result.outcome.status
     );
-
-    // let refunds = execution_result
-    //     .json::<Vec<U128>>()
-    //     .expect("Failed to parse refund amounts")
-    //     .into_iter()
-    //     .map(|a| a.0)
-    //     .collect::<Vec<_>>();
-    // assert_eq!(
-    //     refunds,
-    //     vec![1u128; TOKEN_COUNT],
-    //     "refunds must be capped by deposited amounts"
-    // );
 }
