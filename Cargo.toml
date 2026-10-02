@@ -166,7 +166,6 @@ derive_more = "2.0"
 digest = { version = "0.11", default-features = false }
 digest-io = "0.1.0"
 ed25519-dalek = { version = "3.0.0", default-features = false }
-either = "1.18"
 futures = "0.3"
 generic-array = "1"
 hex = "0.4"

@@ -3551,7 +3551,6 @@ dependencies = [
  "bs58 0.5.1",
  "clap",
  "defuse-controller",
- "either",
  "hex",
  "near-gas",
  "sha2 0.11.0",
