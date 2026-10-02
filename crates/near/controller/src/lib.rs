@@ -1,14 +1,16 @@
-use near_sdk::{Gas, Promise, ext_contract};
+#[cfg(feature = "near-kit")]
+pub mod client;
 
-#[ext_contract(ext_controller_upgradable)]
-pub trait ControllerUpgradable {
-    /// Requires 1yN attached for security purposes
-    fn upgrade(
-        &mut self,
-        #[serializer(borsh)] code: Vec<u8>,
-        #[serializer(borsh)] state_migration_gas: Option<Gas>,
-    ) -> Promise;
+#[cfg(feature = "contract")]
+mod contract;
+#[cfg(feature = "contract")]
+pub use self::contract::*;
 
-    /// MUST be `#[private]`
-    fn state_migrate(&mut self);
+use borsh::BorshSerialize;
+use near_gas::NearGas as Gas;
+
+#[derive(BorshSerialize)]
+pub struct UpgradeArgs<'a> {
+    pub code: &'a [u8],
+    pub state_migration_gas: Option<Gas>,
 }
