@@ -41,7 +41,7 @@ fn main() -> anyhow::Result<()> {
     };
 
     if !args.quiet {
-        let code_hash = Sha256::digest(&update_args.code);
+        let code_hash = Sha256::digest(update_args.code);
         eprintln!("SHA-256 code hash (hex):    {}", hex::encode(code_hash));
         eprintln!(
             "SHA-256 code hash (base58): {}",
@@ -56,6 +56,6 @@ fn main() -> anyhow::Result<()> {
         writer.finish().context("base64")?;
     } else {
         borsh::to_writer(&mut writer, &update_args).context("borsh")?;
-    };
+    }
     writer.flush().context("stdout")
 }
