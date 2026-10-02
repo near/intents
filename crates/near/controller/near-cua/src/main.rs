@@ -12,15 +12,15 @@ use sha2::{Digest, Sha256};
 /// Reads code from stdin and writes final arguments to stdout.
 #[derive(Parser)]
 struct Args {
-    /// Gas to pass to `state_migrate` method, e.g. `15 TGas`
+    /// Gas to pass to `state_migrate` method, e.g. `15 TGas`.
     #[arg(long, value_name = "GAS")]
     state_migration_gas: Option<Gas>,
 
-    /// Write arguments as base64 encoded.
+    /// Write arguments to stdout as base64 encoded.
     #[arg(long)]
     base64: bool,
 
-    /// Do not print code hashes to stderr
+    /// Do not print code hashes to stderr.
     #[arg(short, long)]
     quiet: bool,
 }
