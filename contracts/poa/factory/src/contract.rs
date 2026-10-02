@@ -1,4 +1,5 @@
 use core::iter;
+use near_sdk::store::{LookupMap, LookupSet};
 use std::collections::{HashMap, HashSet};
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
@@ -19,7 +20,7 @@ use near_sdk::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::PoaFactory;
+use crate::{FactoryEvent, IdDigest, PayloadHash, PoaFactory, Withdrawal};
 
 const POA_TOKEN_WASM: &[u8] = include_bytes!(std::env!("POA_TOKEN_WASM"));
 
@@ -49,6 +50,7 @@ pub enum Role {
     TokenDepositer,
     PauseManager,
     UnpauseManager,
+    OmniProver,
 }
 
 #[near(contract_state, contract_metadata())]
@@ -61,6 +63,9 @@ pub enum Role {
 pub struct Contract {
     tokens: IterableSet<String>,
     bridge_token_storage_deposit_required: NearToken,
+    deposits: LookupSet<IdDigest>,
+    withdrawals: LookupMap<IdDigest, Withdrawal>,
+    omni_tokens: IterableSet<String>,
 }
 
 #[near]
@@ -80,6 +85,9 @@ impl Contract {
                     .account_storage_usage
                     .into(),
             ),
+            deposits: LookupSet::new(Prefix::Deposits),
+            withdrawals: LookupMap::new(Prefix::Withdrawals),
+            omni_tokens: IterableSet::new(Prefix::OmniTokens),
         };
 
         let mut acl = contract.acl_get_or_init();
@@ -99,6 +107,27 @@ impl Contract {
         );
         contract
     }
+
+    #[init(ignore_state)]
+    #[must_use]
+    #[allow(clippy::use_self)]
+    pub fn migrate() -> Self {
+        let old: OldContract = env::state_read().expect("failed to read old state");
+        Self {
+            tokens: old.tokens,
+            bridge_token_storage_deposit_required: old.bridge_token_storage_deposit_required,
+            deposits: LookupSet::new(Prefix::Deposits),
+            withdrawals: LookupMap::new(Prefix::Withdrawals),
+            omni_tokens: IterableSet::new(Prefix::OmniTokens),
+        }
+    }
+}
+
+#[derive(BorshDeserialize)]
+#[borsh(crate = "::near_sdk::borsh")]
+struct OldContract {
+    tokens: IterableSet<String>,
+    bridge_token_storage_deposit_required: NearToken,
 }
 
 #[near]
@@ -162,6 +191,160 @@ impl PoaFactory for Contract {
         memo: Option<String>,
     ) -> Promise {
         require!(
+            !self.omni_tokens.contains(&token),
+            "omni token deposit requires `ft_omni_deposit()` method"
+        );
+
+        self.ft_deposit_internal(token, owner_id, amount, msg, memo)
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO, Role::OmniProver))]
+    #[payable]
+    fn ft_omni_deposit(
+        &mut self,
+        deposit_id: IdDigest,
+        token: String,
+        owner_id: AccountId,
+        amount: U128,
+        msg: Option<String>,
+        memo: Option<String>,
+    ) -> Promise {
+        require!(
+            self.omni_tokens.contains(&token),
+            "non-omni token deposit requires `ft_deposit()` method"
+        );
+        require!(self.deposits.insert(deposit_id), "deposit already exists");
+        self.ft_deposit_internal(token, owner_id, amount, msg, memo)
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO, Role::OmniProver))]
+    #[payable]
+    fn record_withdrawal(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal) {
+        require!(
+            !env::attached_deposit().is_zero(),
+            "attached deposit is required"
+        );
+        require!(
+            self.withdrawals
+                .insert(withdrawal_id, withdrawal.clone())
+                .is_none(),
+            "withdrawal already exists"
+        );
+        FactoryEvent::WithdrawRecorded {
+            withdrawal_id,
+            withdrawal: &withdrawal,
+        }
+        .emit();
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO, Role::OmniProver))]
+    #[payable]
+    fn update_withdrawal(
+        &mut self,
+        withdrawal_id: IdDigest,
+        prev_payload_hash: PayloadHash,
+        new_payload_hash: PayloadHash,
+        metadata: String,
+    ) {
+        require!(
+            !env::attached_deposit().is_zero(),
+            "attached deposit is required"
+        );
+        let withdrawal = self
+            .withdrawals
+            .get_mut(&withdrawal_id)
+            .unwrap_or_else(|| panic!("withdrawal not found"));
+
+        require!(
+            withdrawal.payload_hash == prev_payload_hash,
+            "payload hash mismatch"
+        );
+
+        withdrawal.payload_hash = new_payload_hash;
+        withdrawal.metadata = metadata;
+
+        FactoryEvent::WithdrawRecordUpdated {
+            withdrawal_id,
+            prev_payload_hash,
+            new_payload_hash: withdrawal.payload_hash,
+            metadata: &withdrawal.metadata,
+        }
+        .emit();
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO))]
+    fn remove_withdrawals(&mut self, withdrawal_ids: Vec<IdDigest>) {
+        for id in withdrawal_ids {
+            self.withdrawals.remove(&id);
+        }
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO))]
+    fn remove_deposits(&mut self, deposit_ids: Vec<IdDigest>) {
+        for id in deposit_ids {
+            self.deposits.remove(&id);
+        }
+    }
+
+    fn get_withdrawal(&self, withdrawal_id: IdDigest) -> Option<&Withdrawal> {
+        self.withdrawals.get(&withdrawal_id)
+    }
+
+    fn tokens(&self) -> HashMap<String, AccountId> {
+        self.tokens
+            .iter()
+            .cloned()
+            .map(|token| {
+                let account_id = Self::token_id(&token);
+                (token, account_id)
+            })
+            .collect()
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO))]
+    fn add_omni_tokens(&mut self, tokens: Vec<String>) {
+        self.omni_tokens.extend(tokens);
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO))]
+    fn remove_omni_tokens(&mut self, tokens: Vec<String>) {
+        for token in tokens {
+            self.omni_tokens.remove(&token);
+        }
+    }
+
+    fn get_omni_tokens(&self) -> Vec<String> {
+        self.omni_tokens.iter().cloned().collect()
+    }
+}
+
+impl Contract {
+    #[track_caller]
+    #[inline]
+    fn token_id(token: impl AsRef<str>) -> AccountId {
+        let token = token.as_ref();
+        require!(!token.contains('.'), "invalid token name");
+        format!("{token}.{}", env::current_account_id())
+            .parse()
+            .unwrap_or_else(|e| panic!("{e}"))
+    }
+
+    fn ft_deposit_internal(
+        &self,
+        token: String,
+        owner_id: AccountId,
+        amount: U128,
+        msg: Option<String>,
+        memo: Option<String>,
+    ) -> Promise {
+        require!(
             env::attached_deposit() >= self.bridge_token_storage_deposit_required,
             "not enough deposit attached for token storage_deposit"
         );
@@ -191,29 +374,6 @@ impl PoaFactory for Contract {
                 .ft_deposit(owner_id, amount, memo)
         }
     }
-
-    fn tokens(&self) -> HashMap<String, AccountId> {
-        self.tokens
-            .iter()
-            .cloned()
-            .map(|token| {
-                let account_id = Self::token_id(&token);
-                (token, account_id)
-            })
-            .collect()
-    }
-}
-
-impl Contract {
-    #[track_caller]
-    #[inline]
-    fn token_id(token: impl AsRef<str>) -> AccountId {
-        let token = token.as_ref();
-        require!(!token.contains('.'), "invalid token name");
-        format!("{token}.{}", env::current_account_id())
-            .parse()
-            .unwrap_or_else(|e| panic!("{e}"))
-    }
 }
 
 #[near]
@@ -237,4 +397,7 @@ impl FullAccessKeys for Contract {
 #[borsh(crate = "::near_sdk::borsh")]
 enum Prefix {
     Tokens,
+    Deposits,
+    Withdrawals,
+    OmniTokens,
 }
