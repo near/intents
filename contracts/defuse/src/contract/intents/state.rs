@@ -246,7 +246,7 @@ impl State for Contract {
         receiver_id: AccountId,
         tokens: Amounts,
         notification: NotifyOnTransfer,
-    ) {
+    ) -> Result<()> {
         let (token_ids, amounts) = tokens
             .iter()
             .map(|(token_id, amount)| (token_id.to_string(), U128(*amount)))
@@ -258,8 +258,10 @@ impl State for Contract {
             token_ids,
             amounts,
             notification,
-        )
+        )?
         .detach();
+
+        Ok(())
     }
 
     fn storage_deposit(

@@ -11,7 +11,7 @@ use crate::{
     engine::{Engine, Inspector, State},
     events::DefuseEvent,
     intents::MaybeIntentEvent,
-    tokens::{BATCH_MAX_TOKENS, MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN, TransferEvent},
+    tokens::{MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN, TransferEvent},
 };
 
 use super::ExecutableIntent;
@@ -95,10 +95,6 @@ impl ExecutableIntent for Transfer {
             return Err(DefuseError::InvalidIntent);
         }
 
-        if self.tokens.len() > BATCH_MAX_TOKENS {
-            return Err(DefuseError::TooManyTokens(self.tokens.len()));
-        }
-
         engine
             .inspector
             .on_event(DefuseEvent::Transfer(Cow::Borrowed(
@@ -124,9 +120,12 @@ impl ExecutableIntent for Transfer {
                     .max(MT_ON_TRANSFER_GAS_MIN),
             );
 
-            engine
-                .state
-                .notify_on_transfer(sender_id, self.receiver_id, self.tokens, notification);
+            engine.state.notify_on_transfer(
+                sender_id,
+                self.receiver_id,
+                self.tokens,
+                notification,
+            )?;
         }
 
         Ok(())

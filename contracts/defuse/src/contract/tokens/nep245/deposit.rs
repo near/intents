@@ -1,8 +1,4 @@
-use defuse_core::{
-    DefuseError,
-    token_id::nep245::Nep245TokenId,
-    tokens::{BATCH_MAX_TOKENS, MAX_TOKEN_ID_LEN},
-};
+use defuse_core::{DefuseError, token_id::nep245::Nep245TokenId, tokens::MAX_TOKEN_ID_LEN};
 use defuse_nep245::receiver::MultiTokenReceiver;
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, FunctionError, PromiseOrValue, env, json_types::U128, near, require};
@@ -41,10 +37,6 @@ impl MultiTokenReceiver for Contract {
             previous_owner_ids.len() == token_ids.len(),
             "NEP-245: Contract MUST panic if `previous_owner_ids` length does not equals `token_ids` length"
         );
-
-        if token_ids.len() > BATCH_MAX_TOKENS {
-            DefuseError::TooManyTokens(token_ids.len()).panic()
-        }
 
         require!(
             token != env::current_account_id(),
@@ -93,6 +85,7 @@ impl MultiTokenReceiver for Contract {
                 amounts.clone(),
                 notify,
             )
+            .unwrap_or_else(|err| err.panic())
             .then(
                 Self::ext(env::current_account_id())
                     .with_static_gas(Self::mt_resolve_deposit_gas(amounts.len()))

@@ -174,10 +174,6 @@ impl Contract {
             return Err(DefuseError::InvalidIntent);
         }
 
-        if token_ids.len() > BATCH_MAX_TOKENS {
-            return Err(DefuseError::TooManyTokens(token_ids.len()));
-        }
-
         for (token_id, amount) in token_ids.iter().zip(amounts.iter().map(|a| a.0)) {
             if amount == 0 {
                 return Err(DefuseError::InvalidIntent);
@@ -239,13 +235,13 @@ impl Contract {
             force,
         )?;
 
-        Ok(Self::notify_and_resolve_transfer(
+        Self::notify_and_resolve_transfer(
             sender_id,
             receiver_id,
             token_ids,
             amounts,
             NotifyOnTransfer::new(msg),
-        ))
+        )
     }
 
     pub(crate) fn notify_and_resolve_transfer(
@@ -254,17 +250,17 @@ impl Contract {
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
         notify: NotifyOnTransfer,
-    ) -> PromiseOrValue<Vec<U128>> {
+    ) -> Result<PromiseOrValue<Vec<U128>>> {
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];
 
-        Self::notify_on_transfer(
+        Ok(Self::notify_on_transfer(
             sender_id,
             previous_owner_ids.clone(),
             receiver_id.clone(),
             token_ids.clone(),
             amounts.clone(),
             notify,
-        )
+        )?
         .then(
             Self::ext(env::current_account_id())
                 .with_static_gas(Self::mt_resolve_gas(token_ids.len()))
@@ -272,7 +268,7 @@ impl Contract {
                 .with_unused_gas_weight(0)
                 .mt_resolve_transfer(previous_owner_ids, receiver_id, token_ids, amounts, None),
         )
-        .into()
+        .into())
     }
 
     pub(crate) fn notify_on_transfer(
@@ -282,7 +278,11 @@ impl Contract {
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
         notify: NotifyOnTransfer,
-    ) -> Promise {
+    ) -> Result<Promise> {
+        if token_ids.len() > BATCH_MAX_TOKENS {
+            return Err(DefuseError::TooManyTokens(token_ids.len()));
+        }
+
         let p = Promise::new(receiver_id);
 
         // TODO: replace with UniversalStateInit
@@ -299,7 +299,7 @@ impl Contract {
         //     );
         // }
 
-        ext_mt_receiver::ext_on(p)
+        Ok(ext_mt_receiver::ext_on(p)
             .with_static_gas(notify.min_gas.unwrap_or_default())
             // distribute remaining gas here
             .with_unused_gas_weight(1)
@@ -309,7 +309,7 @@ impl Contract {
                 token_ids,
                 amounts,
                 notify.msg,
-            )
+            ))
     }
 
     #[must_use]
