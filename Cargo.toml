@@ -36,6 +36,7 @@ members = [
   "crates/near/admin-utils",
   "crates/near/auth-call",
   "crates/near/controller",
+  "crates/near/controller/near-cua",
   "crates/near/nep245",
   "crates/near/promise",
   "crates/near/sender",
