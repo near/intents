@@ -15,8 +15,10 @@ A generic minimalistic wallet smart-contract that enables for true *sharded* and
   added/removed by the signer or other installed extensions. Enables 2FA, social
   recovery and more.
 * Can support *any* [**signing standards**](#signing-standards). As of now, we
-  have support for **passkeys** (both `p256` and `ed25519`). Additional variants
-  can be implemented by *anyone* in the future.
+  have support for **passkeys** (both `p256` and `ed25519`) and **Ethereum
+  wallets** via [EIP-712](https://eips.ethereum.org/EIPS/eip-712)
+  (`eth_signTypedData_v4`), with clear signing. Additional variants can be
+  implemented by *anyone* in the future.
 * **Non-sequential** timeout-based [nonces](#nonces) enable *concurrent* request
   and avoid head-of-line blocking.
 * `AccountIds` are [deterministically derived](https://github.com/near/NEPs/blob/master/neps/nep-0616.md#deterministic-accountids)
@@ -58,6 +60,20 @@ is fixed at the time of a deployment. Each variant is deployed as a
 A public key of the wallet contract instance is also fixed at the time of first
 initialization and **cannot** be changed later. However, signature can still be
 disabled by signer/extension (see [key rotation](#key-rotation)).
+
+A variant MAY store a *derivative* of the public key instead, as long as each
+proof still binds the key: the `eip712` variant stores the signer's `0x`
+Ethereum address and derives it from the public key it recovers from the proof.
+Ethereum wallets expose the address without any signing ceremony, so a client
+knows the wallet's deterministic `AccountId` as soon as the user connects.
+
+Most standards sign the *canonical digest* of the message
+(`SHA3-256(domain || borsh(msg))`), since general-purpose signers (e.g. passkey
+authenticators) implement blind signing anyway. **Clear-signing** standards
+(e.g. [EIP-712](https://eips.ethereum.org/EIPS/eip-712), where the wallet
+displays the structure being signed) instead bind the proof to the *contents*
+of the message: their schemas verify that the signed structure denotes exactly
+the message the contract is about to act upon.
 
 ### Extensions
 
