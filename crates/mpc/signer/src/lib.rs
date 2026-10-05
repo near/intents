@@ -15,7 +15,7 @@ use defuse_mpc_kdf::{
 use defuse_near_promise::{AccountId, AccountIdRef, Gas, NearToken, actions::FunctionCall};
 use defuse_near_sender::{ArcNearSender, NearSender, SentTransaction};
 use impl_tools::autoimpl;
-use near_kit::{CryptoHash, ExecutedOptimistic, ExecutionStatus, Near};
+use near_kit::{CryptoHash, Near, rpc::ExecutionStatus, transaction::ExecutedOptimistic};
 
 use crate::contract::{MpcContract, Payload, PublicKeyArgs, SignArgs, SignRequest, SignResponse};
 
@@ -51,7 +51,7 @@ where
         let mpc_contract_id = mpc_contract_id.into();
 
         let mpc_public_key = client
-            .contract::<MpcContract>(&mpc_contract_id)
+            .contract::<MpcContract>(&mpc_contract_id)?
             .public_key(PublicKeyArgs { domain_id })
             .await?;
 

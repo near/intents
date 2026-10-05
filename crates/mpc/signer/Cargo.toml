@@ -14,7 +14,7 @@ defuse-near-promise = { workspace = true, features = ["json"] }
 defuse-near-sender = { workspace = true, features = ["near-kit"] }
 
 impl-tools.workspace = true
-near-kit.workspace = true
+near-kit = { workspace = true, features = ["contracts"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 serde_with = { workspace = true, features = ["hex"] }
