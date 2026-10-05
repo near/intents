@@ -85,6 +85,7 @@ impl MultiTokenReceiver for Contract {
                 amounts.clone(),
                 notify,
             )
+            .unwrap_or_else(|err| err.panic())
             .then(
                 Self::ext(env::current_account_id())
                     .with_static_gas(Self::mt_resolve_deposit_gas(amounts.len()))

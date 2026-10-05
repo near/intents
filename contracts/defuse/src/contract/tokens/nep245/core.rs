@@ -1,12 +1,13 @@
 use crate::contract::{Contract, ContractExt};
 use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::NotifyOnTransfer, token_id::TokenId,
+    tokens::BATCH_MAX_TOKENS,
 };
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{
-    AccountId, AccountIdRef, FunctionError, Gas, NearToken, Promise, PromiseOrValue,
-    assert_one_yocto, env, json_types::U128, near, require,
+    AccountId, AccountIdRef, FunctionError, Gas, Promise, PromiseOrValue, assert_one_yocto, env,
+    json_types::U128, near, require,
 };
 use std::borrow::Cow;
 
@@ -234,13 +235,13 @@ impl Contract {
             force,
         )?;
 
-        Ok(Self::notify_and_resolve_transfer(
+        Self::notify_and_resolve_transfer(
             sender_id,
             receiver_id,
             token_ids,
             amounts,
             NotifyOnTransfer::new(msg),
-        ))
+        )
     }
 
     pub(crate) fn notify_and_resolve_transfer(
@@ -249,17 +250,17 @@ impl Contract {
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
         notify: NotifyOnTransfer,
-    ) -> PromiseOrValue<Vec<U128>> {
+    ) -> Result<PromiseOrValue<Vec<U128>>> {
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];
 
-        Self::notify_on_transfer(
+        Ok(Self::notify_on_transfer(
             sender_id,
             previous_owner_ids.clone(),
             receiver_id.clone(),
             token_ids.clone(),
             amounts.clone(),
             notify,
-        )
+        )?
         .then(
             Self::ext(env::current_account_id())
                 .with_static_gas(Self::mt_resolve_gas(token_ids.len()))
@@ -267,7 +268,7 @@ impl Contract {
                 .with_unused_gas_weight(0)
                 .mt_resolve_transfer(previous_owner_ids, receiver_id, token_ids, amounts, None),
         )
-        .into()
+        .into())
     }
 
     pub(crate) fn notify_on_transfer(
@@ -277,23 +278,28 @@ impl Contract {
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
         notify: NotifyOnTransfer,
-    ) -> Promise {
-        let mut p = Promise::new(receiver_id);
-
-        if let Some(state_init) = notify.state_init {
-            // No need to require `receiver_id == state_init.derive_account_id()` here,
-            // since Near runtime does this validation for us and current receipt will
-            // fail in case of mismatch anyway:
-            // https://github.com/near/nearcore/blob/523c659ac47ea31205fec830a1427a71352c605a/runtime/runtime/src/verifier.rs#L637-L644
-
-            p = p.state_init(
-                state_init,
-                // we can't spend native NEAR from sender's account during the deposits
-                NearToken::ZERO,
-            );
+    ) -> Result<Promise> {
+        if token_ids.len() > BATCH_MAX_TOKENS {
+            return Err(DefuseError::TooManyTokens(token_ids.len()));
         }
 
-        ext_mt_receiver::ext_on(p)
+        let p = Promise::new(receiver_id);
+
+        // TODO: replace with UniversalStateInit
+        // if let Some(state_init) = notify.state_init {
+        //     // No need to require `receiver_id == state_init.derive_account_id()` here,
+        //     // since Near runtime does this validation for us and current receipt will
+        //     // fail in case of mismatch anyway:
+        //     // https://github.com/near/nearcore/blob/523c659ac47ea31205fec830a1427a71352c605a/runtime/runtime/src/verifier.rs#L637-L644
+
+        //     p = p.state_init(
+        //         state_init,
+        //         // we can't spend native NEAR from sender's account during the deposits
+        //         NearToken::ZERO,
+        //     );
+        // }
+
+        Ok(ext_mt_receiver::ext_on(p)
             .with_static_gas(notify.min_gas.unwrap_or_default())
             // distribute remaining gas here
             .with_unused_gas_weight(1)
@@ -303,7 +309,7 @@ impl Contract {
                 token_ids,
                 amounts,
                 notify.msg,
-            )
+            ))
     }
 
     #[must_use]

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
-    AccountId, AccountIdRef, DefuseError, Gas, NearToken, Result, StateInit,
+    AccountId, AccountIdRef, DefuseError, Gas, NearToken, Result,
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State},
@@ -20,12 +20,12 @@ use super::ExecutableIntent;
 #[cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NotifyOnTransfer {
-    /// Optionally initialize the receiver's contract (Deterministic `AccountId`)
-    /// via [`state_init`](https://github.com/near/NEPs/blob/master/neps/nep-0616.md#stateinit-action)
-    /// right before calling `mt_on_transfer()` (in the same receipt).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub state_init: Option<StateInit>,
-
+    // TODO: replace with UniversalStateInit
+    // /// Optionally initialize the receiver's contract (Deterministic `AccountId`)
+    // /// via [`state_init`](https://github.com/near/NEPs/blob/master/neps/nep-0616.md#stateinit-action)
+    // /// right before calling `mt_on_transfer()` (in the same receipt).
+    // #[serde(default, skip_serializing_if = "Option::is_none")]
+    // pub state_init: Option<StateInit>,
     /// Message to pass to `mt_on_transfer`
     pub msg: String,
 
@@ -40,16 +40,17 @@ pub struct NotifyOnTransfer {
 impl NotifyOnTransfer {
     pub const fn new(msg: String) -> Self {
         Self {
-            state_init: None,
+            // state_init: None,
             msg,
             min_gas: None,
         }
     }
 
-    pub fn with_state_init(mut self, state_init: StateInit) -> Self {
-        self.state_init = Some(state_init);
-        self
-    }
+    // TODO: replace with UniversalStateInit
+    // pub fn with_state_init(mut self, state_init: StateInit) -> Self {
+    //     self.state_init = Some(state_init);
+    //     self
+    // }
 
     pub const fn with_min_gas(mut self, min_gas: Gas) -> Self {
         self.min_gas = Some(min_gas);
@@ -119,9 +120,12 @@ impl ExecutableIntent for Transfer {
                     .max(MT_ON_TRANSFER_GAS_MIN),
             );
 
-            engine
-                .state
-                .notify_on_transfer(sender_id, self.receiver_id, self.tokens, notification);
+            engine.state.notify_on_transfer(
+                sender_id,
+                self.receiver_id,
+                self.tokens,
+                notification,
+            )?;
         }
 
         Ok(())
