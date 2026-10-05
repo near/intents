@@ -4,7 +4,7 @@ use std::{borrow::Cow, collections::BTreeSet};
 
 use defuse_wallet::{Request, RequestMessage, Timestamp};
 use derive_more::From;
-use near_kit::{AccountId, AccountIdRef};
+use near_kit::{AccountId, protocol::AccountIdRef};
 use serde::Serialize;
 
 #[near_kit::contract]
