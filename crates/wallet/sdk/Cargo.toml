@@ -56,6 +56,7 @@ defuse-nep641 = { workspace = true, features = ["resolver", "tracing"] }
 defuse-wallet-ed25519 = { workspace = true, features = ["signer"] }
 futures.workspace = true
 hex-literal.workspace = true
+near-kit-sandbox.workspace = true
 rand = { workspace = true, features = ["sys_rng"] }
 rstest.workspace = true
 serde_json.workspace = true

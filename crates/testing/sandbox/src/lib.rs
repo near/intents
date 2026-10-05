@@ -7,6 +7,7 @@ pub mod nep616;
 pub mod outcome;
 
 pub use near_kit as kit;
+pub use near_kit_sandbox as sandbox;
 
 use near_kit::{Near, NearToken};
 use near_kit_sandbox::SandboxConfig;
