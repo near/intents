@@ -23,7 +23,7 @@ serde_with = { workspace = true, features = ["base58"], optional = true }
 [features]
 default = ["serde"]
 
-near-kit = ["dep:near-kit"]
+near-kit = ["dep:near-kit", "near-kit/rpc", "defuse-near-promise/near-kit"]
 schemars-v0_8 = [
   "defuse-near-promise/schemars-v0_8",
   "dep:schemars",

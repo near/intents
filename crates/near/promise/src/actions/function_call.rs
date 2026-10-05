@@ -263,7 +263,7 @@ const fn is_default_gas_weight(gas_weight: &u64) -> bool {
 
 #[cfg(feature = "near-kit")]
 const _: () = {
-    use near_kit::FunctionCallAction;
+    use near_kit::protocol::FunctionCallAction;
 
     impl From<FunctionCallAction> for FunctionCall {
         #[inline]

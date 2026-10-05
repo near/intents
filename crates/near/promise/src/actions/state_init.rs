@@ -86,7 +86,7 @@ impl From<StateInitV1> for DeterministicStateInit {
 
 #[cfg(feature = "near-kit")]
 const _: () = {
-    use near_kit::DeterministicStateInitAction;
+    use near_kit::protocol::DeterministicStateInitAction;
 
     impl From<DeterministicStateInitAction> for DeterministicStateInit {
         #[inline]
