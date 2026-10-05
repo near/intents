@@ -8,7 +8,7 @@ use ed25519_dalek::{
     hazmat::{ExpandedSecretKey, raw_sign},
 };
 
-use crate::{Additive, CurveArithmetic, DeriveSigner, ReducableScalar};
+use crate::{Additive, CurveArithmetic, DeriveSigner, ReducableScalarCurve};
 
 impl CurveArithmetic for Ed25519 {
     type Scalar = Scalar;
@@ -31,17 +31,17 @@ impl CurveArithmetic for Ed25519 {
     }
 }
 
-impl ReducableScalar<[u8; 32]> for Scalar {
+impl ReducableScalarCurve<[u8; 32]> for Ed25519 {
     #[inline]
-    fn reduce(path: [u8; 32]) -> Self {
-        Self::from_bytes_mod_order(path)
+    fn reduce(path: [u8; 32]) -> Scalar {
+        Scalar::from_bytes_mod_order(path)
     }
 }
 
-impl ReducableScalar<[u8; 64]> for Scalar {
+impl ReducableScalarCurve<[u8; 64]> for Ed25519 {
     #[inline]
-    fn reduce(path: [u8; 64]) -> Self {
-        Self::from_bytes_mod_order_wide(&path)
+    fn reduce(path: [u8; 64]) -> Scalar {
+        Scalar::from_bytes_mod_order_wide(&path)
     }
 }
 

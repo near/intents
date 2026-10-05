@@ -5,7 +5,9 @@ use k256::{
     elliptic_curve::ops::Reduce,
 };
 
-use crate::{Additive, CurveArithmetic, DeriveSigner, RecoverableDeriveSigner, ReducableScalar};
+use crate::{
+    Additive, CurveArithmetic, DeriveSigner, RecoverableDeriveSigner, ReducableScalarCurve,
+};
 
 impl CurveArithmetic for Secp256k1 {
     type Scalar = NonZeroScalar;
@@ -29,16 +31,16 @@ impl CurveArithmetic for Secp256k1 {
     }
 }
 
-impl ReducableScalar<[u8; 32]> for NonZeroScalar {
+impl ReducableScalarCurve<[u8; 32]> for Secp256k1 {
     #[inline]
-    fn reduce(path: [u8; 32]) -> Self {
+    fn reduce(path: [u8; 32]) -> NonZeroScalar {
         Reduce::<FieldBytes>::reduce((&path).into())
     }
 }
 
-impl ReducableScalar<[u8; 64]> for NonZeroScalar {
+impl ReducableScalarCurve<[u8; 64]> for Secp256k1 {
     #[inline]
-    fn reduce(path: [u8; 64]) -> Self {
+    fn reduce(path: [u8; 64]) -> NonZeroScalar {
         Reduce::<WideBytes>::reduce((&path).into())
     }
 }

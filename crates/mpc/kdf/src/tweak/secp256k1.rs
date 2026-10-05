@@ -3,6 +3,7 @@ use defuse_kdf::crypto::secp256k1::{Secp256k1, k256::NonZeroScalar};
 use super::{NearMpcCurve, sealed::Sealed};
 
 impl NearMpcCurve for Secp256k1 {
+    #[inline]
     fn to_scalar(tweak: [u8; 32]) -> NonZeroScalar {
         // See <https://github.com/near/mpc/blob/1f833a13f70addc34eb1cff704f93fec61e7f7eb/crates/contract/src/crypto_shared/kdf.rs#L22>.
         NonZeroScalar::from_repr(tweak.into())
