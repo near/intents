@@ -1,6 +1,6 @@
 use futures::join;
 use near_account_id::AccountId;
-use near_kit::{AccessKeyPermissionView, BlockReference, RpcError};
+use near_kit::rpc::{AccessKeyPermissionView, BlockReference, RpcError};
 #[cfg(feature = "tracing")]
 use tracing::instrument;
 
@@ -46,7 +46,12 @@ impl RpcResolver {
         }
 
         let (block, access_key) = {
-            let rpc_pk = auth.access_key.clone().into();
+            let rpc_pk = auth
+                .access_key
+                .clone()
+                .try_into()
+                .map_err(AccessKeyError::InvalidPublicKey)?;
+
             if let BlockReference::Hash(block_hash) = block {
                 // fetch the block concurrently with access key only if block_hash is already known
                 join!(
@@ -94,7 +99,7 @@ impl RpcResolver {
 
             // Account doesn't exist on-chain yet -> allow only if it's an implicit account derived
             // from this public key, since it can be initialized any time in the future.
-            Err(RpcError::AccountNotFound(_)) => {
+            Err(RpcError::AccountNotFound { .. }) => {
                 // TODO: or check if we have `self.state_inits.get(&account_id)` with this public
                 // key added, since it can be just one of them
                 auth.access_key.to_implicit_account_id() == *account_id
@@ -130,6 +135,9 @@ pub enum AccessKeyError {
     #[error("invalid path")]
     InvalidPath,
 
+    #[error("invalid public key: {0}")]
+    InvalidPublicKey(#[from] near_kit::signer::ParseKeyError),
+
     #[error("invalid signer_id: {0}")]
     InvalidSignerId(AccountId),
 
@@ -145,7 +153,11 @@ mod tests {
     use std::time::Duration;
 
     use defuse_time::Timestamp;
-    use near_kit::{Final, InMemorySigner, Signer, sandbox::SandboxConfig};
+    use near_kit::{
+        signer::{InMemorySigner, Signer},
+        transaction::Final,
+    };
+    use near_kit_sandbox::SandboxConfig;
 
     use crate::{
         OffchainMessage,
@@ -158,12 +170,12 @@ mod tests {
     async fn full_access_key() {
         const PAYLOAD: &str = "Hello, Near!";
 
-        let sandbox = SandboxConfig::fresh().await;
+        let sandbox = SandboxConfig::fresh().await.unwrap();
         let mut near = sandbox.client();
 
         let msg = OffchainMessage {
             chain_id: near.chain_id().as_str().to_string(),
-            signer_id: near.account_id().clone(),
+            signer_id: near.account_id().unwrap().clone(),
             path: vec![],
             timestamp: Timestamp::now() - Duration::from_mins(1),
             payload: PAYLOAD.to_string(),
@@ -186,11 +198,14 @@ mod tests {
             .with_max_depth(0);
 
         let resolved = resolver
-            .resolve_auth(near.account_id(), &authorization)
+            .resolve_auth(near.account_id().unwrap(), &authorization)
             .await
             .expect("invalid authorization");
 
-        println!("{authorization}\n{} -> {resolved}", near.account_id());
+        println!(
+            "{authorization}\n{} -> {resolved}",
+            near.account_id().unwrap()
+        );
         assert_eq!(PAYLOAD, resolved, "resolved invalid payload");
 
         let new_signer = InMemorySigner::generate_implicit();
@@ -211,7 +226,7 @@ mod tests {
         near = near.with_signer(new_signer);
 
         resolver
-            .resolve_auth(near.account_id(), &authorization)
+            .resolve_auth(near.account_id().unwrap(), &authorization)
             .await
             .expect_err("old authorization must be invalid after key rotation");
     }

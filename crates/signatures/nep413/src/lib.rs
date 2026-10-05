@@ -117,7 +117,9 @@ impl Nep413Payload {
 
 #[cfg(feature = "near-kit")]
 const _: () = {
-    impl From<Nep413Payload> for near_kit::nep413::SignMessageParams {
+    use near_kit::standards::nep413::SignMessageParams;
+
+    impl From<Nep413Payload> for SignMessageParams {
         #[inline]
         fn from(payload: Nep413Payload) -> Self {
             Self {

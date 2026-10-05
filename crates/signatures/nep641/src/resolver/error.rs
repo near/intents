@@ -36,7 +36,7 @@ pub enum ResolveErrorKind {
     MaxDepthExceeded(usize),
 
     #[error("RPC: {0}")]
-    Rpc(#[from] near_kit::RpcError),
+    Rpc(#[from] near_kit::rpc::RpcError),
 
     #[error("too many sub-authorizations, maximum is set to: {0}")]
     TooManySubAuthorizations(usize),

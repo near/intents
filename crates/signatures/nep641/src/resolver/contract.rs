@@ -1,5 +1,5 @@
 use near_account_id::AccountId;
-use near_kit::{BlockReference, RpcError};
+use near_kit::rpc::{BlockReference, RpcError};
 #[cfg(feature = "tracing")]
 use tracing::instrument;
 
@@ -37,16 +37,12 @@ impl RpcResolver {
             )
             .await
             .map_err::<ResolveErrorKind, _>(|err| match err {
-                RpcError::AccountNotFound(_) | RpcError::ContractNotDeployed(_) => {
+                RpcError::AccountNotFound { .. } | RpcError::ContractNotDeployed { .. } => {
                     ContractError::NoResolve.into()
                 }
-                RpcError::ContractPanic { message }
+                RpcError::ContractPanic { message, .. }
                 | RpcError::ContractExecution { message, .. } => {
                     ContractError::Panic(message).into()
-                }
-                RpcError::FunctionCall { panic, .. } => {
-                    ContractError::Panic(panic.unwrap_or_else(|| "contract panic".to_string()))
-                        .into()
                 }
                 _ => err.into(),
             })?;

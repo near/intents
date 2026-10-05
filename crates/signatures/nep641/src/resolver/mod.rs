@@ -11,7 +11,11 @@ use futures::{
     stream::{FuturesUnordered, TryStreamExt},
 };
 use near_account_id::AccountId;
-use near_kit::{BlockReference, CryptoHash, Finality, RpcClient, RpcError};
+
+use near_kit::{
+    CryptoHash,
+    rpc::{BlockReference, Finality, RpcClient, RpcError},
+};
 #[cfg(feature = "tracing")]
 use tracing::{Span, field, instrument, record_all};
 
@@ -187,7 +191,7 @@ impl RpcResolver {
                 vec![], // path is empty for top-level authorization
                 authorization.into(),
                 None, // no expected payload for top-level authorization
-                self.at_block.clone(),
+                self.at_block,
                 #[cfg(feature = "tracing")]
                 Span::current(),
             )
@@ -322,8 +326,8 @@ impl RpcResolver {
     ) -> Result<Resolved, ResolveErrorKind> {
         // try to resolve via both FullAccessKey and `w_resolve_auth()` contract view-method
         let res = match join!(
-            self.resolve_access_key(account_id, rev_path, authorization, block.clone()),
-            self.resolve_contract(account_id, rev_path, authorization, block.clone()),
+            self.resolve_access_key(account_id, rev_path, authorization, block),
+            self.resolve_contract(account_id, rev_path, authorization, block),
             // TODO: add optional support for fallback to Intents verifier contract as a resolver
         ) {
             // if both failed, but access key authorization at least deserialized successfully,

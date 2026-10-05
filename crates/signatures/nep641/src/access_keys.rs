@@ -271,25 +271,32 @@ impl FromStr for Signature {
 
 #[cfg(feature = "near-kit")]
 const _: () = {
+    use near_kit::signer::{
+        KeyType as NearKeyType, ParseKeyError, PublicKey as NearPublicKey,
+        Signature as NearSignature,
+    };
+
     impl PublicKey {
         #[allow(clippy::needless_pass_by_value)]
         #[must_use]
         #[inline]
-        pub fn from_kit(pk: near_kit::PublicKey) -> Option<Self> {
-            match pk {
-                near_kit::PublicKey::Ed25519(pk) => Some(Self::Ed25519(pk.into())),
-                near_kit::PublicKey::Secp256k1(pk) => Some(Self::Secp256k1(pk.into())),
-                _ => None,
+        pub fn from_kit(pk: NearPublicKey) -> Option<Self> {
+            match pk.key_type() {
+                NearKeyType::Ed25519 => Some(Self::Ed25519((*pk.as_ed25519_bytes()?).into())),
+                NearKeyType::Secp256k1 => Some(Self::Secp256k1((*pk.as_secp256k1_bytes()?).into())),
+                NearKeyType::MlDsa65 => None,
             }
         }
     }
 
-    impl From<PublicKey> for ::near_kit::PublicKey {
+    impl TryFrom<PublicKey> for NearPublicKey {
+        type Error = ParseKeyError;
+
         #[inline]
-        fn from(pk: PublicKey) -> Self {
+        fn try_from(pk: PublicKey) -> Result<Self, Self::Error> {
             match pk {
-                PublicKey::Ed25519(pk) => Self::Ed25519(pk.0),
-                PublicKey::Secp256k1(pk) => Self::Secp256k1(pk.0),
+                PublicKey::Ed25519(pk) => Self::ed25519_from_bytes(pk.0),
+                PublicKey::Secp256k1(pk) => Self::secp256k1_from_bytes(pk.0),
             }
         }
     }
@@ -298,17 +305,17 @@ const _: () = {
         #[allow(clippy::needless_pass_by_value)]
         #[must_use]
         #[inline]
-        pub fn from_kit(sig: near_kit::Signature) -> Option<Self> {
+        pub fn from_kit(sig: NearSignature) -> Option<Self> {
             #[allow(clippy::match_wildcard_for_single_variants)]
             match sig {
-                near_kit::Signature::Ed25519(sig) => Some(Self::Ed25519(sig.into())),
-                near_kit::Signature::Secp256k1(sig) => Some(Self::Secp256k1(sig.into())),
+                NearSignature::Ed25519(sig) => Some(Self::Ed25519(sig.into())),
+                NearSignature::Secp256k1(sig) => Some(Self::Secp256k1(sig.into())),
                 _ => None,
             }
         }
     }
 
-    impl From<Signature> for near_kit::Signature {
+    impl From<Signature> for NearSignature {
         #[inline]
         fn from(sig: Signature) -> Self {
             match sig {
