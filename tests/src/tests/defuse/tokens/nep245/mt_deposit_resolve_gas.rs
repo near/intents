@@ -16,7 +16,7 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtOnTransferArgs},
     },
-    kit::{AccountId, ExecutionStatus, Gas, Near, NearToken},
+    kit::{AccountId, Gas, Near, NearToken, rpc::ExecutionStatus},
 };
 use defuse_test_utils::{
     random::{gen_random_string, rng},
@@ -47,7 +47,7 @@ async fn make_author_account(mode: TokenIdGenerationMode, env: &Env) -> Near {
         TokenIdGenerationMode::Medium => {
             // Use a 64-char named account: {name}.{root_id} = 64 chars total
             const TARGET_LEN: usize = 64;
-            let root_id_len = env.account_id().as_str().len();
+            let root_id_len = env.signer_id().as_str().len();
             // name_len + 1 (dot) + root_id_len = TARGET_LEN
             let name_len = TARGET_LEN - 1 - root_id_len;
             let name = "a".repeat(name_len);
@@ -76,7 +76,7 @@ fn make_defuse_token_ids(
         // Medium/Long modes use nep245 format: nep245:{contract_id}:{token_id}
         TokenIdGenerationMode::Medium | TokenIdGenerationMode::Long => token_ids
             .iter()
-            .map(|token_id| format!("nep245:{}:{}", author_account.account_id(), token_id))
+            .map(|token_id| format!("nep245:{}:{}", author_account.signer_id(), token_id))
             .collect(),
     }
 }
@@ -198,8 +198,8 @@ async fn run_deposit_resolve_gas_test(
         .transaction(env.defuse.contract_id()) // defuse contract receives the deposit
         .add_action(
             Mt::mt_on_transfer(MtOnTransferArgs {
-                sender_id: author_account.account_id(), // sender_id (who the tokens are being deposited for)
-                previous_owner_ids: &vec![author_account.account_id().clone(); token_count],
+                sender_id: author_account.signer_id(), // sender_id (who the tokens are being deposited for)
+                previous_owner_ids: &vec![author_account.signer_id().clone(); token_count],
                 token_ids: &token_ids,
                 amounts: &amounts,
                 msg: &serde_json::to_string(&deposit_message).unwrap(),
@@ -293,7 +293,7 @@ async fn mt_deposit_resolve_gas(
         let rng = rng.clone();
         let env = env.clone();
         let author_account = author_account.clone();
-        let receiver_id = receiver_stub.account_id().clone();
+        let receiver_id = receiver_stub.signer_id().clone();
         move |token_count| {
             run_deposit_resolve_gas_test(
                 gen_mode,
@@ -319,7 +319,7 @@ async fn mt_deposit_resolve_gas(
         max_deposited_count,
         env.clone(),
         author_account.clone(),
-        receiver_stub.account_id().clone(),
+        receiver_stub.signer_id().clone(),
         rng.clone(),
     )
     .await
@@ -335,7 +335,7 @@ async fn mt_deposit_resolve_gas(
                 token_count,
                 env.clone(),
                 author_account.clone(),
-                receiver_stub.account_id().clone(),
+                receiver_stub.signer_id().clone(),
                 rng.clone(),
             )
             .await
@@ -369,7 +369,7 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
 
     let author_account = env.create_implicit(NearToken::from_near(1000)).await;
     let deposit_message = DepositMessage {
-        receiver_id: receiver_stub.account_id().clone(),
+        receiver_id: receiver_stub.signer_id().clone(),
         action: Some(DepositAction::Notify(
             NotifyOnTransfer::new(
                 serde_json::to_string(&MTReceiverMode::ReturnBytes(U128(3 * 1024 * 1024))).unwrap(),
@@ -383,8 +383,8 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
         .transaction(env.defuse.contract_id())
         .add_action(
             Mt::mt_on_transfer(MtOnTransferArgs {
-                sender_id: author_account.account_id(),
-                previous_owner_ids: &[author_account.account_id().clone()],
+                sender_id: author_account.signer_id(),
+                previous_owner_ids: &[author_account.signer_id().clone()],
                 token_ids: &["testtoken1".to_string()],
                 amounts: &[amount],
                 msg: &serde_json::to_string(&deposit_message).unwrap(),

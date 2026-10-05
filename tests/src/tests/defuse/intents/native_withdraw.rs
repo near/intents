@@ -1,4 +1,5 @@
 use defuse_sandbox::{
+    account::Account,
     extensions::{
         defuse::{
             DefuseExt, DefuseSignerExt, ToEventLog,
@@ -12,7 +13,7 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs},
         wnear::WNearExt,
     },
-    kit::{Final, Gas, NearToken},
+    kit::{Gas, NearToken, transaction::Final},
 };
 use rstest::rstest;
 
@@ -33,7 +34,7 @@ async fn native_withdraw_intent(
 ) {
     let (user, other_user) = futures::join!(env.create_user(), env.create_user());
 
-    env.initial_ft_storage_deposit([user.account_id(), other_user.account_id()], [])
+    env.initial_ft_storage_deposit([user.signer_id(), other_user.signer_id()], [])
         .await;
 
     let amounts_to_withdraw = [
@@ -47,7 +48,7 @@ async fn native_withdraw_intent(
             secp256k1_pk.to_implicit_account_id(),
             NearToken::from_near(200),
         ),
-        (user.account_id().to_owned(), NearToken::from_near(300)),
+        (user.signer_id().to_owned(), NearToken::from_near(300)),
     ];
 
     let initial_balances = {
@@ -80,9 +81,10 @@ async fn native_withdraw_intent(
         .transfer_call(
             env.defuse.contract_id(),
             total_amount_yocto,
-            DepositMessage::new(other_user.account_id().clone()).to_string(),
+            DepositMessage::new(other_user.signer_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
+        .finish()
         .wait_until::<Final>()
         .await
         .expect("failed to deposit wNEAR to user2");
@@ -111,8 +113,9 @@ async fn native_withdraw_intent(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: other_user.account_id(),
+                account_id: other_user.signer_id(),
                 token_id: &TokenId::Nep141(Nep141TokenId::new(env.wnear.contract_id().clone()))
                     .to_string()
             })

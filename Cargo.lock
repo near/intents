@@ -1916,6 +1916,7 @@ dependencies = [
  "hex-literal",
  "impl-tools 0.12.0",
  "near-kit",
+ "near-kit-sandbox",
  "rand 0.10.2",
  "rstest",
  "schemars 0.8.22",

@@ -2,8 +2,9 @@ use crate::{
     sandbox::{extensions::wnear::WNearExt, kit::NearToken},
     tests::defuse::env::{Env, env},
 };
-use defuse_sandbox::extensions::defuse::{
-    DefuseExt, DefuseSignerExt, core::intents::tokens::StorageDeposit,
+use defuse_sandbox::{
+    account::Account,
+    extensions::defuse::{DefuseExt, DefuseSignerExt, core::intents::tokens::StorageDeposit},
 };
 use rstest::rstest;
 
@@ -37,15 +38,15 @@ async fn storage_deposit_success(
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
     futures::try_join!(
-        env.fund_account_with_near(user.account_id(), NearToken::from_near(1000)),
-        env.fund_account_with_near(other_user.account_id(), NearToken::from_near(1000))
+        env.fund_account_with_near(user.signer_id(), NearToken::from_near(1000)),
+        env.fund_account_with_near(other_user.signer_id(), NearToken::from_near(1000))
     )
     .unwrap();
 
     futures::join!(
         async {
             assert!(
-                ft.storage_balance_of(user.account_id())
+                ft.storage_balance_of(user.signer_id())
                     .await
                     .unwrap()
                     .is_none()
@@ -53,7 +54,7 @@ async fn storage_deposit_success(
         },
         async {
             assert!(
-                ft.storage_balance_of(other_user.account_id())
+                ft.storage_balance_of(other_user.signer_id())
                     .await
                     .unwrap()
                     .is_none()
@@ -66,7 +67,7 @@ async fn storage_deposit_success(
         env.wnear
             .storage_deposit(env.defuse.contract_id(), NearToken::from_near(1))
             .into_future(),
-        ft.storage_deposit(user.account_id(), NearToken::from_near(1))
+        ft.storage_deposit(user.signer_id(), NearToken::from_near(1))
             .into_future(),
     )
     .unwrap();
@@ -75,7 +76,7 @@ async fn storage_deposit_success(
         futures::join!(
             async {
                 assert_eq!(
-                    ft.storage_balance_of(user.account_id())
+                    ft.storage_balance_of(user.signer_id())
                         .await
                         .unwrap()
                         .unwrap()
@@ -85,7 +86,7 @@ async fn storage_deposit_success(
             },
             async {
                 assert!(
-                    ft.storage_balance_of(other_user.account_id())
+                    ft.storage_balance_of(other_user.signer_id())
                         .await
                         .unwrap()
                         .is_none()
@@ -104,7 +105,7 @@ async fn storage_deposit_success(
     env.defuse_ft_deposit_to(
         env.wnear.contract_id(),
         NearToken::from_near(10).as_yoctonear(),
-        other_user.account_id(),
+        other_user.signer_id(),
         None,
     )
     .await
@@ -115,7 +116,7 @@ async fn storage_deposit_success(
             &env.defuse,
             [StorageDeposit {
                 contract_id: ft.contract_id().clone(),
-                deposit_for_account_id: other_user.account_id().clone(),
+                deposit_for_account_id: other_user.signer_id().clone(),
                 amount: amount_to_deposit,
             }],
         )
@@ -127,10 +128,8 @@ async fn storage_deposit_success(
         .unwrap();
 
     {
-        let storage_balance_ft1_user2 = ft
-            .storage_balance_of(other_user.account_id())
-            .await
-            .unwrap();
+        let storage_balance_ft1_user2 =
+            ft.storage_balance_of(other_user.signer_id()).await.unwrap();
 
         assert_eq!(
             storage_balance_ft1_user2.map(|v| v.total),
@@ -146,15 +145,15 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(#[future(awt)] env
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
     futures::try_join!(
-        env.fund_account_with_near(user.account_id(), NearToken::from_near(1000)),
-        env.fund_account_with_near(other_user.account_id(), NearToken::from_near(1000))
+        env.fund_account_with_near(user.signer_id(), NearToken::from_near(1000)),
+        env.fund_account_with_near(other_user.signer_id(), NearToken::from_near(1000))
     )
     .unwrap();
     {
         futures::join!(
             async {
                 assert!(
-                    ft.storage_balance_of(user.account_id())
+                    ft.storage_balance_of(user.signer_id())
                         .await
                         .unwrap()
                         .is_none()
@@ -162,7 +161,7 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(#[future(awt)] env
             },
             async {
                 assert!(
-                    ft.storage_balance_of(other_user.account_id())
+                    ft.storage_balance_of(other_user.signer_id())
                         .await
                         .unwrap()
                         .is_none()
@@ -176,7 +175,7 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(#[future(awt)] env
         env.wnear
             .storage_deposit(env.defuse.contract_id(), NearToken::from_near(1))
             .into_future(),
-        ft.storage_deposit(user.account_id(), NearToken::from_near(1))
+        ft.storage_deposit(user.signer_id(), NearToken::from_near(1))
             .into_future(),
     )
     .unwrap();
@@ -185,7 +184,7 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(#[future(awt)] env
         futures::join!(
             async {
                 assert_eq!(
-                    ft.storage_balance_of(user.account_id())
+                    ft.storage_balance_of(user.signer_id())
                         .await
                         .unwrap()
                         .unwrap()
@@ -195,7 +194,7 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(#[future(awt)] env
             },
             async {
                 assert!(
-                    ft.storage_balance_of(other_user.account_id())
+                    ft.storage_balance_of(other_user.signer_id())
                         .await
                         .unwrap()
                         .is_none()
@@ -215,7 +214,7 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(#[future(awt)] env
             &env.defuse,
             [StorageDeposit {
                 contract_id: ft.contract_id().clone(),
-                deposit_for_account_id: other_user.account_id().clone(),
+                deposit_for_account_id: other_user.signer_id().clone(),
                 amount: MIN_FT_STORAGE_DEPOSIT_VALUE,
             }],
         )

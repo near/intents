@@ -16,8 +16,10 @@ use defuse_sandbox::{
     },
     global_contract::GlobalContract,
     kit::{
-        Action, ExecutionStatus, Final, FunctionCall, Gas, GlobalContractId, Near, NearToken,
-        UseGlobalContractAction,
+        Gas, Near, NearToken,
+        protocol::{Action, GlobalContractId, UseGlobalContractAction},
+        rpc::ExecutionStatus,
+        transaction::{Final, FunctionCall},
     },
     root,
 };
@@ -44,7 +46,7 @@ pub struct DeployerEnv {
 pub async fn deployer_env(#[future(awt)] root: Near) -> DeployerEnv {
     let deployer_global_id = root
         .deploy_immutable_global_contract(
-            root.account_id().sub_account("deployer").unwrap(),
+            root.signer_id().sub_account("deployer").unwrap(),
             DEPLOYER_WASM.clone(),
             NearToken::from_near(20),
         )
@@ -75,9 +77,9 @@ async fn test_deploy_controller_instance(
 
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
-    let state = DeployerState::owner(root.account_id().clone()).with_index(unique_index);
+    let state = DeployerState::owner(root.signer_id().clone()).with_index(unique_index);
 
-    let upgradeable_instance_state = DeployerState::owner(alice.account_id().clone());
+    let upgradeable_instance_state = DeployerState::owner(alice.signer_id().clone());
 
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), state.clone())
@@ -163,7 +165,7 @@ async fn test_gd_init(#[future(awt)] deployer_env: DeployerEnv) {
     let implicit = root.create_implicit(NearToken::from_near(100)).await;
 
     implicit
-        .transaction(implicit.account_id())
+        .transaction(implicit.signer_id())
         .add_action(Action::UseGlobalContract(UseGlobalContractAction {
             contract_identifier: deployer_global_id,
         }))
@@ -173,7 +175,7 @@ async fn test_gd_init(#[future(awt)] deployer_env: DeployerEnv) {
                 .deposit(NearToken::from_yoctonear(1)),
         )
         .add_action(
-            GlobalDeployerContract::gd_transfer_ownership(root.account_id().into())
+            GlobalDeployerContract::gd_transfer_ownership(root.signer_id().into())
                 .gas(Gas::from_tgas(30))
                 .deposit(NearToken::from_yoctonear(1)),
         )
@@ -188,11 +190,13 @@ async fn test_gd_init(#[future(awt)] deployer_env: DeployerEnv) {
         .result()
         .unwrap();
 
-    let controller = root.contract::<GlobalDeployerContract>(implicit.account_id().clone());
+    let controller = root
+        .contract::<GlobalDeployerContract>(implicit.signer_id().clone())
+        .unwrap();
 
-    assert_eq!(controller.gd_owner_id().await.unwrap(), *root.account_id());
+    assert_eq!(controller.gd_owner_id().await.unwrap(), *root.signer_id());
     assert!(
-        root.access_keys(implicit.account_id())
+        root.access_keys(implicit.signer_id())
             .await
             .unwrap()
             .keys
@@ -200,7 +204,7 @@ async fn test_gd_init(#[future(awt)] deployer_env: DeployerEnv) {
     );
 
     root.gd_approve_and_deploy(
-        implicit.account_id(),
+        implicit.signer_id(),
         DeployerState::DEFAULT_HASH,
         &DEPLOYER_WASM,
     )
@@ -217,7 +221,7 @@ async fn test_gd_init(#[future(awt)] deployer_env: DeployerEnv) {
     );
 
     assert_eq!(
-        root.global_contract(implicit.account_id())
+        root.global_contract(implicit.signer_id())
             .await
             .unwrap()
             .code,
@@ -236,13 +240,13 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
     let owner = root.create_subaccount("dummy", initial_balance).await;
 
     assert_eq!(
-        root.balance(owner.account_id()).await.unwrap().total,
+        root.balance(owner.signer_id()).await.unwrap().total,
         initial_balance
     );
 
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
-    let storage = DeployerState::owner(owner.account_id().clone()).with_index(unique_index);
+    let storage = DeployerState::owner(owner.signer_id().clone()).with_index(unique_index);
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
         .await
@@ -277,7 +281,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
         .await
         .assert_err_contains("NEAR to cover storage cost");
 
-    let after = root.balance(owner.account_id()).await.unwrap().total;
+    let after = root.balance(owner.signer_id()).await.unwrap().total;
 
     // NOTE: we expect the storage deposit to be refunded lets account for 10% less because
     // some balance is used to cover fees
@@ -300,7 +304,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
 
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
-    let storage = DeployerState::owner(alice.account_id().clone()).with_index(unique_index);
+    let storage = DeployerState::owner(alice.signer_id().clone()).with_index(unique_index);
 
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -322,13 +326,13 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
     .assert_err_contains(Error::Unauthorized.to_string());
 
     // Non-owner cannot transfer ownership
-    bob.gd_transfer_ownership(controller_instance.contract_id(), bob.account_id())
+    bob.gd_transfer_ownership(controller_instance.contract_id(), bob.signer_id())
         .await
         .assert_err_contains(Error::Unauthorized.to_string());
 
     // Owner transfers ownership
     let result = alice
-        .gd_transfer_ownership(controller_instance.contract_id(), bob.account_id())
+        .gd_transfer_ownership(controller_instance.contract_id(), bob.signer_id())
         .await
         .unwrap();
 
@@ -336,14 +340,14 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         result.logs(),
         vec![
             GdEvent::Transfer {
-                old_owner_id: alice.account_id().into(),
-                new_owner_id: bob.account_id().into(),
+                old_owner_id: alice.signer_id().into(),
+                new_owner_id: bob.signer_id().into(),
             }
             .to_nep297_event()
             .to_event_log(),
             GdEvent::Approve {
                 code_hash: DeployerState::DEFAULT_HASH,
-                reason: ApprovalReason::By(bob.account_id().into()),
+                reason: ApprovalReason::By(bob.signer_id().into()),
             }
             .to_nep297_event()
             .to_event_log(),
@@ -352,7 +356,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
 
     assert_eq!(
         controller_instance.gd_owner_id().await.unwrap(),
-        bob.account_id().clone()
+        bob.signer_id().clone()
     );
 }
 
@@ -361,7 +365,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
 async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, unique_index: u32) {
     let root = deployer_env.root;
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-    let storage = DeployerState::owner(root.account_id().clone()).with_index(unique_index);
+    let storage = DeployerState::owner(root.signer_id().clone()).with_index(unique_index);
 
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -416,7 +420,7 @@ async fn test_deploy_event_old_hash_after_upgrade(
 ) {
     let root = deployer_env.root;
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-    let storage = DeployerState::owner(root.account_id().clone()).with_index(unique_index);
+    let storage = DeployerState::owner(root.signer_id().clone()).with_index(unique_index);
 
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -454,7 +458,7 @@ async fn test_deploy_event_old_hash_after_upgrade(
         vec![
             GdEvent::Approve {
                 code_hash: mt_stub_hash.into(),
-                reason: ApprovalReason::By(root.account_id().into()),
+                reason: ApprovalReason::By(root.signer_id().into()),
             }
             .to_nep297_event()
             .to_event_log(),
@@ -486,7 +490,7 @@ async fn test_concurrent_upgrades_only_one_succeeds(
     let root = deployer_env.root;
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
-    let state = DeployerState::owner(root.account_id().clone()).with_index(unique_index);
+    let state = DeployerState::owner(root.signer_id().clone()).with_index(unique_index);
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), state.clone())
         .await
@@ -556,7 +560,7 @@ async fn test_second_approval_overwrites_first(
     let root = deployer_env.root;
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
-    let state = DeployerState::owner(root.account_id().clone()).with_index(unique_index);
+    let state = DeployerState::owner(root.signer_id().clone()).with_index(unique_index);
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), state.clone())
         .await
@@ -599,7 +603,7 @@ async fn test_approve_revoke_resets_to_code_hash(
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
     // State starts with both code_hash and approved_hash set to [0; 32]
-    let state = DeployerState::owner(root.account_id().clone()).with_index(unique_index);
+    let state = DeployerState::owner(root.signer_id().clone()).with_index(unique_index);
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), state.clone())
         .await
@@ -653,7 +657,7 @@ async fn test_permissionless_deploy_with_approval(
     .await;
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
-    let state = DeployerState::owner(alice.account_id().clone()).with_index(unique_index);
+    let state = DeployerState::owner(alice.signer_id().clone()).with_index(unique_index);
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), state.clone())
         .await
@@ -716,12 +720,12 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
     let owner = root.create_implicit(initial_balance).await;
 
     assert_eq!(
-        root.balance(owner.account_id()).await.unwrap().total,
+        root.balance(owner.signer_id()).await.unwrap().total,
         initial_balance
     );
 
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-    let storage = DeployerState::owner(owner.account_id().clone()).with_index(unique_index);
+    let storage = DeployerState::owner(owner.signer_id().clone()).with_index(unique_index);
 
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -778,7 +782,7 @@ async fn test_state_init_pre_approve_allows_immediate_deploy(
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
     // Pre-set approved_hash so gd_deploy can be called immediately without gd_approve
-    let state = DeployerState::owner(root.account_id().clone())
+    let state = DeployerState::owner(root.signer_id().clone())
         .with_index(unique_index)
         .pre_approve(Sha256::digest(&*DEPLOYER_WASM));
 
@@ -788,7 +792,7 @@ async fn test_state_init_pre_approve_allows_immediate_deploy(
         .unwrap();
 
     assert_ne!(
-        bob.account_id().clone(),
+        bob.signer_id().clone(),
         controller_instance.gd_owner_id().await.unwrap()
     );
     bob.gd_deploy(
@@ -823,7 +827,7 @@ async fn test_state_init_same_code_hash_and_pre_approve_allows_deploy(
     let dummy_hash = Sha256::digest(&dummy_wasm);
 
     // State where code_hash == approved_hash == hash(dummy_wasm)
-    let mut state = DeployerState::owner(root.account_id().clone())
+    let mut state = DeployerState::owner(root.signer_id().clone())
         .with_index(unique_index)
         .pre_approve(dummy_hash);
     state.code_hash = dummy_hash.into();
@@ -874,7 +878,7 @@ async fn test_post_deploy_does_not_run_on_failed_deploy(
     let owner = root.create_subaccount("dummy2", initial_balance).await;
 
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-    let storage = DeployerState::owner(owner.account_id().clone()).with_index(unique_index);
+    let storage = DeployerState::owner(owner.signer_id().clone()).with_index(unique_index);
 
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -941,7 +945,7 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
         .await;
 
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-    let storage = DeployerState::owner(owner.account_id().clone()).with_index(unique_index);
+    let storage = DeployerState::owner(owner.signer_id().clone()).with_index(unique_index);
 
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -1002,7 +1006,7 @@ async fn test_post_deploy_fails_when_approval_changed(
     let root = deployer_env.root;
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
-    let state = DeployerState::owner(root.account_id().clone()).with_index(unique_index);
+    let state = DeployerState::owner(root.signer_id().clone()).with_index(unique_index);
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), state.clone())
         .await
@@ -1097,7 +1101,7 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
         .await;
 
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-    let storage = DeployerState::owner(owner.account_id().clone()).with_index(unique_index);
+    let storage = DeployerState::owner(owner.signer_id().clone()).with_index(unique_index);
 
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -1165,7 +1169,7 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
     let owner = root.create_implicit(initial_balance).await;
 
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-    let storage = DeployerState::owner(owner.account_id().clone()).with_index(unique_index);
+    let storage = DeployerState::owner(owner.signer_id().clone()).with_index(unique_index);
 
     let controller_instance = root
         .deploy_gd_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -1202,7 +1206,7 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
     let senders: Vec<Near> =
         join_all((0..num_senders).map(|_| root.create_implicit(NearToken::from_near(10)))).await;
 
-    let owner_balance_before_deploy = root.balance(owner.account_id()).await.unwrap().total;
+    let owner_balance_before_deploy = root.balance(owner.signer_id()).await.unwrap().total;
 
     let deploy_deposit = NearToken::from_near(50);
 
@@ -1232,7 +1236,7 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
         mt_stub_hash,
     );
 
-    let owner_balance_after = root.balance(owner.account_id()).await.unwrap().total;
+    let owner_balance_after = root.balance(owner.signer_id()).await.unwrap().total;
     // Some transfers land between gd_deploy and gd_post_deploy, inflating
     // account_balance well above initial_balance + attached_deposit. The refund
     // cap `min(excess, attached_deposit)` limits refund to 50 NEAR
@@ -1278,7 +1282,7 @@ async fn test_gd_deploy_accepts_raw_bytes(
 ) {
     let root = deployer_env.root;
     let owner = root.create_implicit(NearToken::from_near(200)).await;
-    let storage = DeployerState::owner(owner.account_id().clone()).with_index(unique_index);
+    let storage = DeployerState::owner(owner.signer_id().clone()).with_index(unique_index);
 
     let controller_instance = root
         .deploy_gd_instance(deployer_env.deployer_global_id.clone(), storage.clone())

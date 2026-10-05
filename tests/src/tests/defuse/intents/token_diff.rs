@@ -1,6 +1,7 @@
 #![allow(clippy::cloned_ref_to_slice_refs)]
 
 use defuse_sandbox::{
+    account::Account,
     extensions::{
         defuse::{
             DefuseExt, DefuseSignerExt, MultiPayloadArgs,
@@ -40,7 +41,7 @@ async fn swap_p2p(
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.contract_id().clone()));
 
     env.initial_ft_storage_deposit(
-        vec![user1.account_id(), user2.account_id()],
+        vec![user1.signer_id(), user2.signer_id()],
         vec![ft1.contract_id(), ft2.contract_id()],
     )
     .await;
@@ -114,7 +115,7 @@ async fn swap_many(
     let ft3_token_id = TokenId::from(Nep141TokenId::new(ft3.contract_id().clone()));
 
     env.initial_ft_storage_deposit(
-        vec![user1.account_id(), user2.account_id(), user3.account_id()],
+        vec![user1.signer_id(), user2.signer_id(), user3.signer_id()],
         vec![ft1.contract_id(), ft2.contract_id(), ft3.contract_id()],
     )
     .await;
@@ -212,7 +213,7 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
                 env.defuse_ft_deposit_to(
                     token_id,
                     (*balance).try_into().unwrap(),
-                    account.account.account_id(),
+                    account.account.signer_id(),
                     None,
                 )
             })
@@ -263,8 +264,9 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
+                .unwrap()
                 .mt_batch_balance_of(MtBatchBalanceOfArgs {
-                    account_id: account.account.account_id(),
+                    account_id: account.account.signer_id(),
                     token_ids: &tokens,
                 })
                 .await
@@ -288,15 +290,15 @@ async fn invariant_violated(#[future(awt)] env: Env) {
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.contract_id().clone()));
 
     env.initial_ft_storage_deposit(
-        vec![user1.account_id(), user2.account_id()],
+        vec![user1.signer_id(), user2.signer_id()],
         vec![ft1.contract_id(), ft2.contract_id()],
     )
     .await;
 
     // deposit
     futures::try_join!(
-        env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.account_id(), None),
-        env.defuse_ft_deposit_to(ft2.contract_id(), 2000, user2.account_id(), None)
+        env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.signer_id(), None),
+        env.defuse_ft_deposit_to(ft2.contract_id(), 2000, user2.signer_id(), None)
     )
     .expect("Failed to deposit tokens");
 
@@ -351,8 +353,9 @@ async fn invariant_violated(#[future(awt)] env: Env) {
     // balances should stay the same
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_batch_balance_of(MtBatchBalanceOfArgs {
-                account_id: user1.account_id(),
+                account_id: user1.signer_id(),
                 token_ids: &[ft1_token_id.to_string(), ft2_token_id.to_string()],
             })
             .await
@@ -362,8 +365,9 @@ async fn invariant_violated(#[future(awt)] env: Env) {
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_batch_balance_of(MtBatchBalanceOfArgs {
-                account_id: user2.account_id(),
+                account_id: user2.signer_id(),
                 token_ids: &[ft1_token_id.to_string(), ft2_token_id.to_string()],
             })
             .await
@@ -396,15 +400,15 @@ async fn solver_user_closure(
     );
 
     env.initial_ft_storage_deposit(
-        vec![user.account_id(), solver.account_id()],
+        vec![user.signer_id(), solver.signer_id()],
         vec![ft1.contract_id(), ft2.contract_id()],
     )
     .await;
 
     // deposit
     futures::try_join!(
-        env.defuse_ft_deposit_to(ft1.contract_id(), USER_BALANCE, user.account_id(), None),
-        env.defuse_ft_deposit_to(ft2.contract_id(), SOLVER_BALANCE, solver.account_id(), None)
+        env.defuse_ft_deposit_to(ft1.contract_id(), USER_BALANCE, user.signer_id(), None),
+        env.defuse_ft_deposit_to(ft2.contract_id(), SOLVER_BALANCE, solver.signer_id(), None)
     )
     .expect("Failed to deposit tokens");
 
@@ -516,8 +520,9 @@ async fn solver_user_closure(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_batch_balance_of(MtBatchBalanceOfArgs {
-                account_id: user.account_id(),
+                account_id: user.signer_id(),
                 token_ids: &[token_in.to_string(), token_out.to_string()],
             })
             .await
@@ -530,8 +535,9 @@ async fn solver_user_closure(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_batch_balance_of(MtBatchBalanceOfArgs {
-                account_id: solver.account_id(),
+                account_id: solver.signer_id(),
                 token_ids: &[token_in.to_string(), token_out.to_string()],
             })
             .await

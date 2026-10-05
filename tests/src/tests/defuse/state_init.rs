@@ -2,6 +2,7 @@ use crate::tests::defuse::env::{Env, env};
 use defuse_fees::Pips;
 use defuse_randomness::Rng;
 use defuse_sandbox::{
+    account::Account,
     extensions::{
         defuse::{
             DefuseDeployerExt, DefuseExt, DefuseSignerExt, DoAuthCallArgs,
@@ -13,7 +14,11 @@ use defuse_sandbox::{
         },
         mt_receiver::MtReceiverStubDeployerExt,
     },
-    kit::{AccountId, ExecutionStatus, Gas, GlobalContractId, NearToken, StateInit, StateInitV1},
+    kit::{
+        AccountId, Gas, NearToken,
+        protocol::{GlobalContractId, StateInit, StateInitV1},
+        rpc::ExecutionStatus,
+    },
 };
 use defuse_test_utils::{
     random::rng,
@@ -139,12 +144,12 @@ async fn benchmark_auth_call_with_largest_possible_state_init(
     let user = env.create_named_user("user1").await;
 
     // Register defuse with WNEAR and deposit WNEAR to user's defuse account
-    env.initial_ft_storage_deposit(vec![user.account_id()], vec![])
+    env.initial_ft_storage_deposit(vec![user.signer_id()], vec![])
         .await;
     env.defuse_ft_deposit_to(
         env.wnear.contract_id(),
         NearToken::from_near(1).as_yoctonear(),
-        user.account_id(),
+        user.signer_id(),
         None,
     )
     .await
@@ -202,7 +207,7 @@ async fn benchmark_gas_used_by_do_auth_call_callback(
                 wnear_id: env.wnear.contract_id().clone(),
                 fees: FeesConfig {
                     fee: Pips::ZERO,
-                    fee_collector: env.account_id().clone(),
+                    fee_collector: env.signer_id().clone(),
                 },
                 roles: RolesConfig::default(),
             },
@@ -220,7 +225,7 @@ async fn benchmark_gas_used_by_do_auth_call_callback(
 
     defuse
         .defuse_do_auth_call(
-            defuse.account_id(),
+            defuse.signer_id(),
             DoAuthCallArgs {
                 signer_id: &account,
                 auth_call: &intent,
@@ -277,12 +282,12 @@ async fn test_auth_call_state_init_via_execute_intents(
     let user = env.create_named_user("user1").await;
 
     // Register defuse with WNEAR and deposit WNEAR to user's defuse account
-    env.initial_ft_storage_deposit(vec![user.account_id()], vec![])
+    env.initial_ft_storage_deposit(vec![user.signer_id()], vec![])
         .await;
     env.defuse_ft_deposit_to(
         env.wnear.contract_id(),
         NearToken::from_near(1).as_yoctonear(),
-        user.account_id(),
+        user.signer_id(),
         None,
     )
     .await
@@ -401,7 +406,7 @@ async fn test_auth_call_state_init_via_do_auth_call(
                 wnear_id: env.wnear.contract_id().clone(),
                 fees: FeesConfig {
                     fee: Pips::ZERO,
-                    fee_collector: env.account_id().clone(),
+                    fee_collector: env.signer_id().clone(),
                 },
                 roles: RolesConfig::default(),
             },
@@ -428,7 +433,7 @@ async fn test_auth_call_state_init_via_do_auth_call(
             async move {
                 let result = defuse
                     .defuse_do_auth_call(
-                        defuse.account_id(),
+                        defuse.signer_id(),
                         DoAuthCallArgs {
                             signer_id: &account_id,
                             auth_call: &auth_intent,

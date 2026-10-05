@@ -1,5 +1,6 @@
 use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::{
+    account::Account,
     extensions::{
         acl::AccessControllableExt,
         defuse::{
@@ -53,7 +54,7 @@ async fn test_force_add_public_keys(
 
     let public_keys = generate_public_keys(
         &mut rng,
-        [user1.account_id().clone(), user2.account_id().clone()],
+        [user1.signer_id().clone(), user2.signer_id().clone()],
     );
 
     // only DAO or pubkey synchronizer can add public keys to accounts
@@ -69,7 +70,7 @@ async fn test_force_add_public_keys(
         env.acl_grant_role(
             env.defuse.contract_id(),
             Role::UnrestrictedAccountManager,
-            user1.account_id(),
+            user1.signer_id(),
         )
         .await
         .expect("failed to grant role");
@@ -126,7 +127,7 @@ async fn test_force_add_and_remove_public_keys(
 
     let public_keys = generate_public_keys(
         &mut rng,
-        [user1.account_id().clone(), user2.account_id().clone()],
+        [user1.signer_id().clone(), user2.signer_id().clone()],
     );
 
     // Add public keys
@@ -134,7 +135,7 @@ async fn test_force_add_and_remove_public_keys(
         env.acl_grant_role(
             env.defuse.contract_id(),
             Role::UnrestrictedAccountManager,
-            user1.account_id(),
+            user1.signer_id(),
         )
         .await
         .expect("failed to grant role");
@@ -158,7 +159,7 @@ async fn test_force_add_and_remove_public_keys(
         env.acl_grant_role(
             env.defuse.contract_id(),
             Role::UnrestrictedAccountManager,
-            user2.account_id(),
+            user2.signer_id(),
         )
         .await
         .expect("failed to grant role");

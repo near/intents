@@ -14,7 +14,7 @@ use defuse_sandbox::{
         wnear::WNearDeployerExt,
     },
     global_contract::GlobalContract,
-    kit::{FungibleToken, GlobalContractId, Near, NearToken},
+    kit::{Near, NearToken, protocol::GlobalContractId, standards::FungibleToken},
     root,
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, ESCROW_SWAP_WASM, POA_FACTORY_WASM, WNEAR_WASM};
@@ -80,10 +80,10 @@ impl Env {
 
         try_join_all(
             [
-                ("src-ft", maker.account_id()),
-                ("dst-ft", taker1.account_id()),
-                ("dst-ft", taker2.account_id()),
-                ("dst-ft", taker3.account_id()),
+                ("src-ft", maker.signer_id()),
+                ("dst-ft", taker1.signer_id()),
+                ("dst-ft", taker2.signer_id()),
+                ("dst-ft", taker3.signer_id()),
             ]
             .into_iter()
             .map(|(token, owner_id)| {
@@ -113,7 +113,7 @@ impl Env {
     }
 
     async fn deploy_global_escrow_swap(root: &Near) -> GlobalContractId {
-        let account_id = root.account_id().sub_account("escrow-swap").unwrap();
+        let account_id = root.signer_id().sub_account("escrow-swap").unwrap();
         root.deploy_upgradable_global_contract(
             account_id,
             ESCROW_SWAP_WASM.clone(),
@@ -132,7 +132,7 @@ impl Env {
                     wnear_id: wnear.contract_id().clone(),
                     fees: FeesConfig {
                         fee: Pips::ZERO,
-                        fee_collector: root.account_id().clone(),
+                        fee_collector: root.signer_id().clone(),
                     },
                     roles: RolesConfig::default(),
                 },
@@ -140,20 +140,20 @@ impl Env {
             )
             .await;
 
-        defuse.contract::<Defuse>(defuse.account_id())
+        defuse.contract::<Defuse>(defuse.signer_id()).unwrap()
     }
 
     async fn deploy_poa_factory(root: &Near) -> PoaFactoryClient {
         root.deploy_poa_factory(
             "poa-factory",
-            [root.account_id().clone()],
+            [root.signer_id().clone()],
             [
-                (PoAFactoryRole::TokenDeployer, [root.account_id().clone()]),
-                (PoAFactoryRole::TokenDepositer, [root.account_id().clone()]),
+                (PoAFactoryRole::TokenDeployer, [root.signer_id().clone()]),
+                (PoAFactoryRole::TokenDepositer, [root.signer_id().clone()]),
             ],
             [
-                (PoAFactoryRole::TokenDeployer, [root.account_id().clone()]),
-                (PoAFactoryRole::TokenDepositer, [root.account_id().clone()]),
+                (PoAFactoryRole::TokenDeployer, [root.signer_id().clone()]),
+                (PoAFactoryRole::TokenDepositer, [root.signer_id().clone()]),
             ],
             POA_FACTORY_WASM.clone(),
         )

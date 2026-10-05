@@ -1,12 +1,15 @@
 use std::borrow::Cow;
 
-use defuse_sandbox::extensions::defuse::{
-    DefuseExt, HasPublicKeyArgs,
-    core::{
-        PublicKey,
-        accounts::{AccountEvent, PublicKeyEvent},
-        events::DefuseEvent,
-        intents::MaybeIntentEvent,
+use defuse_sandbox::{
+    account::Account,
+    extensions::defuse::{
+        DefuseExt, HasPublicKeyArgs,
+        core::{
+            PublicKey,
+            accounts::{AccountEvent, PublicKeyEvent},
+            events::DefuseEvent,
+            intents::MaybeIntentEvent,
+        },
     },
 };
 use defuse_test_utils::fixtures::public_key;
@@ -29,7 +32,7 @@ async fn test_add_public_key(
     assert!(
         !env.defuse
             .has_public_key(HasPublicKeyArgs {
-                account_id: user.account_id(),
+                account_id: user.signer_id(),
                 public_key: &public_key,
             })
             .await
@@ -42,7 +45,7 @@ async fn test_add_public_key(
         .unwrap();
 
     let event = DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_fn_call(AccountEvent::new(
-        user.account_id(),
+        user.signer_id(),
         PublicKeyEvent {
             public_key: Cow::Borrowed(&public_key),
         },
@@ -55,7 +58,7 @@ async fn test_add_public_key(
     assert!(
         env.defuse
             .has_public_key(HasPublicKeyArgs {
-                account_id: user.account_id(),
+                account_id: user.signer_id(),
                 public_key: &public_key,
             })
             .await
@@ -81,7 +84,7 @@ async fn test_add_and_remove_public_key(
     assert!(
         env.defuse
             .has_public_key(HasPublicKeyArgs {
-                account_id: user.account_id(),
+                account_id: user.signer_id(),
                 public_key: &public_key,
             })
             .await
@@ -94,7 +97,7 @@ async fn test_add_and_remove_public_key(
         .unwrap();
 
     let event = DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_fn_call(AccountEvent::new(
-        user.account_id(),
+        user.signer_id(),
         PublicKeyEvent {
             public_key: Cow::Borrowed(&public_key),
         },
@@ -107,7 +110,7 @@ async fn test_add_and_remove_public_key(
     assert!(
         !env.defuse
             .has_public_key(HasPublicKeyArgs {
-                account_id: user.account_id(),
+                account_id: user.signer_id(),
                 public_key: &public_key,
             })
             .await

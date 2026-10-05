@@ -1,6 +1,7 @@
 #![allow(clippy::cloned_ref_to_slice_refs)]
 
 use defuse_sandbox::{
+    account::Account,
     extensions::{
         defuse::{
             Defuse, DefuseDeployerExt, DefuseExt, DefuseSignerExt, ExtractNonceExt,
@@ -30,7 +31,7 @@ use defuse_sandbox::{
         nft::NftAdminExt,
         wnear::WNearExt,
     },
-    kit::{Final, Gas, NearToken},
+    kit::{Gas, NearToken, transaction::Final},
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use near_contract_standards::non_fungible_token::metadata::{
@@ -54,17 +55,17 @@ async fn simulate_transfer_intent(#[future(awt)] env: Env) {
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
     env.initial_ft_storage_deposit(
-        vec![user1.account_id(), user2.account_id()],
+        vec![user1.signer_id(), user2.signer_id()],
         vec![ft1.contract_id()],
     )
     .await;
 
-    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.account_id(), None)
+    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.signer_id(), None)
         .await
         .unwrap();
 
     let transfer_intent = Transfer {
-        receiver_id: user2.account_id().clone(),
+        receiver_id: user2.signer_id().clone(),
         tokens: Amounts::new(
             std::iter::once((
                 TokenId::from(Nep141TokenId::new(ft1.contract_id().clone())),
@@ -99,12 +100,12 @@ async fn simulate_ft_withdraw_intent(#[future(awt)] env: Env) {
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
     env.initial_ft_storage_deposit(
-        vec![user1.account_id(), user2.account_id()],
+        vec![user1.signer_id(), user2.signer_id()],
         vec![ft1.contract_id()],
     )
     .await;
 
-    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.account_id(), None)
+    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.signer_id(), None)
         .await
         .unwrap();
 
@@ -112,8 +113,9 @@ async fn simulate_ft_withdraw_intent(#[future(awt)] env: Env) {
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
+                account_id: user1.signer_id(),
                 token_id: &ft1_token_id.to_string()
             })
             .await
@@ -124,7 +126,7 @@ async fn simulate_ft_withdraw_intent(#[future(awt)] env: Env) {
 
     let ft_withdraw_intent = FtWithdraw {
         token: ft1.contract_id().clone(),
-        receiver_id: user2.account_id().clone(),
+        receiver_id: user2.signer_id().clone(),
         amount: 500,
         memo: None,
         msg: None,
@@ -153,7 +155,7 @@ async fn simulate_ft_withdraw_intent(#[future(awt)] env: Env) {
 async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
-    env.initial_ft_storage_deposit(vec![user1.account_id(), user2.account_id()], &[])
+    env.initial_ft_storage_deposit(vec![user1.signer_id(), user2.signer_id()], &[])
         .await;
 
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.contract_id().clone()));
@@ -171,9 +173,10 @@ async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
         .transfer_call(
             env.defuse.contract_id(),
             wnear_amount.as_yoctonear(),
-            DepositMessage::new(user1.account_id().clone()).to_string(),
+            DepositMessage::new(user1.signer_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
+        .finish()
         .wait_until::<Final>()
         .await
         .unwrap();
@@ -181,8 +184,9 @@ async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
     // Verify wNEAR balance in Defuse
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
+                account_id: user1.signer_id(),
                 token_id: &wnear_token_id.to_string()
             })
             .await
@@ -193,7 +197,7 @@ async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
 
     let withdraw_amount = NearToken::from_millinear(50);
     let native_withdraw_intent = NativeWithdraw {
-        receiver_id: user2.account_id().clone(),
+        receiver_id: user2.signer_id().clone(),
         amount: withdraw_amount,
     };
 
@@ -223,7 +227,7 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
     let (user1, user2) =
         futures::join!(env.create_named_user("nft_issuer_admin"), env.create_user());
 
-    env.transaction(user1.account_id())
+    env.transaction(user1.signer_id())
         .transfer(NearToken::from_near(100))
         .await
         .unwrap();
@@ -231,7 +235,7 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
     let nft_contract = user1
         .deploy_vanilla_nft_issuer(
             "nft1",
-            user1.account_id(),
+            user1.signer_id(),
             &NFTContractMetadata {
                 reference: Some(DUMMY_NFT_URL.to_string()),
                 reference_hash: Some(Base64VecU8(DUMMY_NFT_REFERENCE_HASH.to_vec())),
@@ -249,7 +253,7 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
         .mint_nft(
             nft_contract.contract_id(),
             &DUMMY_NFT_ID.to_string(),
-            user1.account_id(),
+            user1.signer_id(),
         )
         .await
         .unwrap();
@@ -266,17 +270,19 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
         .transfer_call(
             env.defuse.contract_id(),
             DUMMY_NFT_ID,
-            user1.account_id().as_str(),
+            user1.signer_id().as_str(),
         )
         .gas(Gas::from_tgas(300))
+        .finish()
         .wait_until::<Final>()
         .await
         .unwrap();
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
+                account_id: user1.signer_id(),
                 token_id: &nft_token_id.to_string()
             })
             .await
@@ -287,7 +293,7 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
 
     let nft_withdraw_intent = NftWithdraw {
         token: nft_contract.contract_id().clone(),
-        receiver_id: user2.account_id().clone(),
+        receiver_id: user2.signer_id().clone(),
         token_id: DUMMY_NFT_ID.to_string(),
         memo: None,
         msg: None,
@@ -325,7 +331,7 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
                 wnear_id: env.wnear.contract_id().clone(),
                 fees: FeesConfig {
                     fee: Pips::ZERO,
-                    fee_collector: env.account_id().clone(),
+                    fee_collector: env.signer_id().clone(),
                 },
                 roles: RolesConfig::default(),
             },
@@ -334,29 +340,30 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
         .await;
 
     env.initial_ft_storage_deposit(
-        vec![user1.account_id(), user2.account_id()],
+        vec![user1.signer_id(), user2.signer_id()],
         vec![ft1.contract_id()],
     )
     .await;
 
     // Register user1's public key on defuse2
     user1
-        .defuse_add_public_key(defuse2.account_id(), user1.signer().unwrap().public_key())
+        .defuse_add_public_key(defuse2.signer_id(), user1.signer().unwrap().public_key())
         .await
         .unwrap();
 
     let ft1_id = TokenId::from(Nep141TokenId::new(ft1.contract_id().clone()));
 
     // Step 1: Deposit FT to user1 in the first Defuse contract (stored as MT internally)
-    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.account_id(), None)
+    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.signer_id(), None)
         .await
         .unwrap();
 
     // Verify balance in first Defuse contract
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
+                account_id: user1.signer_id(),
                 token_id: &ft1_id.to_string()
             })
             .await
@@ -370,11 +377,11 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
     user1
         .mt_transfer_call(
             env.defuse.contract_id(),
-            defuse2.account_id(),
+            defuse2.signer_id(),
             ft1_id.to_string(),
             500,
             None,
-            user1.account_id().to_string(), // user1 will own these tokens in defuse2
+            user1.signer_id().to_string(), // user1 will own these tokens in defuse2
         )
         .await
         .unwrap();
@@ -385,9 +392,10 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
 
     assert_eq!(
         defuse2
-            .contract::<Mt>(defuse2.account_id())
+            .contract::<Mt>(defuse2.signer_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
+                account_id: user1.signer_id(),
                 token_id: &nep245_token_id.to_string()
             })
             .await
@@ -400,7 +408,7 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
     // Now we're simulating on defuse2, withdrawing to defuse1
     let mt_withdraw_intent = MtWithdraw {
         token: env.defuse.contract_id().clone(), // External NEP-245 contract (defuse1)
-        receiver_id: user2.account_id().clone(), // Withdraw to user2's account in defuse1
+        receiver_id: user2.signer_id().clone(),  // Withdraw to user2's account in defuse1
         token_ids: vec![ft1_id.to_string()],     // The FT token ID within defuse1
         amounts: vec![200],
         memo: None,
@@ -409,7 +417,7 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
         min_gas: None,
     };
 
-    let defuse2 = env.contract::<Defuse>(defuse2.account_id());
+    let defuse2 = env.contract::<Defuse>(defuse2.signer_id()).unwrap();
     let mt_withdraw_payload = user1
         .sign_defuse_payload_default(&defuse2, [mt_withdraw_intent.clone()])
         .await
@@ -432,7 +440,7 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
     let (user1, user2, ft1) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
-    env.initial_ft_storage_deposit(vec![user1.account_id()], vec![ft1.contract_id()])
+    env.initial_ft_storage_deposit(vec![user1.signer_id()], vec![ft1.contract_id()])
         .await;
 
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.contract_id().clone()));
@@ -449,9 +457,10 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
         .transfer_call(
             env.defuse.contract_id(),
             wnear_amount.as_yoctonear(),
-            DepositMessage::new(user1.account_id().clone()).to_string(),
+            DepositMessage::new(user1.signer_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
+        .finish()
         .wait_until::<Final>()
         .await
         .unwrap();
@@ -459,8 +468,9 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
     // Verify wNEAR balance in Defuse
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
+                account_id: user1.signer_id(),
                 token_id: &wnear_token_id.to_string()
             })
             .await
@@ -472,7 +482,7 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
     let storage_deposit_amount = NearToken::from_millinear(10);
     let storage_deposit_intent = StorageDeposit {
         contract_id: ft1.contract_id().clone(), // Deposit storage on ft1 contract
-        deposit_for_account_id: user2.account_id().clone(), // For user2
+        deposit_for_account_id: user2.signer_id().clone(), // For user2
         amount: storage_deposit_amount,
     };
 
@@ -503,7 +513,7 @@ async fn simulate_token_diff_intent(#[future(awt)] env: Env) {
     );
 
     env.initial_ft_storage_deposit(
-        vec![user1.account_id(), user2.account_id()],
+        vec![user1.signer_id(), user2.signer_id()],
         vec![ft1.contract_id(), ft2.contract_id()],
     )
     .await;
@@ -512,20 +522,21 @@ async fn simulate_token_diff_intent(#[future(awt)] env: Env) {
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.contract_id().clone()));
 
     // user1 has 100 ft1
-    env.defuse_ft_deposit_to(ft1.contract_id(), 100, user1.account_id(), None)
+    env.defuse_ft_deposit_to(ft1.contract_id(), 100, user1.signer_id(), None)
         .await
         .unwrap();
 
     // user2 has 200 ft2
-    env.defuse_ft_deposit_to(ft2.contract_id(), 200, user2.account_id(), None)
+    env.defuse_ft_deposit_to(ft2.contract_id(), 200, user2.signer_id(), None)
         .await
         .unwrap();
 
     // Verify initial balances
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
+                account_id: user1.signer_id(),
                 token_id: &ft1_token_id.to_string()
             })
             .await
@@ -535,8 +546,9 @@ async fn simulate_token_diff_intent(#[future(awt)] env: Env) {
     );
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user2.account_id(),
+                account_id: user2.signer_id(),
                 token_id: &ft2_token_id.to_string()
             })
             .await
@@ -690,7 +702,7 @@ async fn simulate_set_auth_by_predecessor_id_intent(#[future(awt)] env: Env) {
 async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
     let (user1, ft1) = futures::join!(env.create_user(), env.create_token());
 
-    env.initial_ft_storage_deposit(vec![user1.account_id()], vec![ft1.contract_id()])
+    env.initial_ft_storage_deposit(vec![user1.signer_id()], vec![ft1.contract_id()])
         .await;
 
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.contract_id().clone()));
@@ -708,9 +720,10 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
         .transfer_call(
             env.defuse.contract_id(),
             wnear_amount.as_yoctonear(),
-            DepositMessage::new(user1.account_id().clone()).to_string(),
+            DepositMessage::new(user1.signer_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
+        .finish()
         .wait_until::<Final>()
         .await
         .unwrap();
@@ -718,8 +731,9 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
     // Verify wNEAR balance
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
+                account_id: user1.signer_id(),
                 token_id: &wnear_token_id.to_string()
             })
             .await
@@ -774,7 +788,7 @@ mod imt {
         let mint_intent = ImtMint {
             tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
             memo: Some(memo.to_string()),
-            receiver_id: user.account_id().clone(),
+            receiver_id: user.signer_id().clone(),
             notification: None,
         };
 
@@ -813,7 +827,7 @@ mod imt {
                 [ImtMint {
                     tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
                     memo: Some(memo.to_string()),
-                    receiver_id: user.account_id().clone(),
+                    receiver_id: user.signer_id().clone(),
                     notification: None,
                 }],
             )
@@ -825,7 +839,7 @@ mod imt {
             .unwrap();
 
         let burn_intent = ImtBurn {
-            minter_id: user.account_id().clone(),
+            minter_id: user.signer_id().clone(),
             tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
             memo: Some(memo.to_string()),
         };
@@ -863,7 +877,7 @@ mod imt {
         assert!(
             env.defuse
                 .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
+                    account_id: user.signer_id(),
                     nonce: &payload.extract_nonce().unwrap(),
                 })
                 .await

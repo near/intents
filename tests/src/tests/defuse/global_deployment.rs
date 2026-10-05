@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use defuse_sandbox::{
+    account::Account,
     extensions::{
         mt::{MtExt, MtOnTransferArgs},
         mt_receiver::MtReceiverStubDeployerExt,
@@ -54,7 +55,7 @@ async fn different_states_produce_different_addresses(
         .mt_on_transfer(
             account_a.clone(),
             MtOnTransferArgs {
-                sender_id: env.account_id(),
+                sender_id: env.signer_id(),
                 previous_owner_ids: &[],
                 token_ids: &["token1".to_string()],
                 amounts: &[100],
@@ -68,7 +69,7 @@ async fn different_states_produce_different_addresses(
         .mt_on_transfer(
             account_b,
             MtOnTransferArgs {
-                sender_id: env.account_id(),
+                sender_id: env.signer_id(),
                 previous_owner_ids: &[],
                 token_ids: &["token1".to_string()],
                 amounts: &[200],
@@ -83,7 +84,7 @@ async fn different_states_produce_different_addresses(
         .mt_on_transfer(
             account_a,
             MtOnTransferArgs {
-                sender_id: env.account_id(),
+                sender_id: env.signer_id(),
                 previous_owner_ids: &[],
                 token_ids: &["token1".to_string()],
                 amounts: &[500],

@@ -1,5 +1,6 @@
 use arbitrary::{Arbitrary, Unstructured};
 use defuse_sandbox::{
+    account::Account,
     extensions::{
         acl::AccessControllableExt,
         defuse::{
@@ -65,7 +66,7 @@ async fn test_commit_nonces(
         assert!(
             env.defuse
                 .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
+                    account_id: user.signer_id(),
                     nonce: &legacy_nonce,
                 })
                 .await
@@ -156,7 +157,7 @@ async fn test_commit_nonces(
         assert!(
             env.defuse
                 .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
+                    account_id: user.signer_id(),
                     nonce: &expirable_nonce,
                 })
                 .await
@@ -169,7 +170,7 @@ async fn test_commit_nonces(
         env.acl_grant_role(
             env.defuse.contract_id(),
             Role::SaltManager,
-            user.account_id(),
+            user.signer_id(),
         )
         .await
         .expect("failed to grant role");
@@ -198,7 +199,7 @@ async fn test_commit_nonces(
         assert!(
             env.defuse
                 .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
+                    account_id: user.signer_id(),
                     nonce: &old_salt_nonce,
                 })
                 .await
@@ -290,7 +291,7 @@ async fn test_cleanup_nonces(
     {
         user.defuse_cleanup_nonces(
             env.defuse.contract_id(),
-            vec![(user.account_id().clone(), vec![expirable_nonce])],
+            vec![(user.signer_id().clone(), vec![expirable_nonce])],
         )
         .await
         .assert_err_contains("Insufficient permissions for method");
@@ -301,14 +302,14 @@ async fn test_cleanup_nonces(
         env.acl_grant_role(
             env.defuse.contract_id(),
             Role::GarbageCollector,
-            user.account_id(),
+            user.signer_id(),
         )
         .await
         .expect("failed to grant role");
 
         user.defuse_cleanup_nonces(
             env.defuse.contract_id(),
-            vec![(user.account_id().clone(), vec![expirable_nonce])],
+            vec![(user.signer_id().clone(), vec![expirable_nonce])],
         )
         .await
         .unwrap();
@@ -316,7 +317,7 @@ async fn test_cleanup_nonces(
         assert!(
             !env.defuse
                 .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
+                    account_id: user.signer_id(),
                     nonce: &expirable_nonce,
                 })
                 .await
@@ -331,9 +332,9 @@ async fn test_cleanup_nonces(
         user.defuse_cleanup_nonces(
             env.defuse.contract_id(),
             vec![
-                (user.account_id().clone(), vec![expirable_nonce]),
-                (user.account_id().clone(), vec![legacy_nonce]),
-                (user.account_id().clone(), vec![long_term_expirable_nonce]),
+                (user.signer_id().clone(), vec![expirable_nonce]),
+                (user.signer_id().clone(), vec![legacy_nonce]),
+                (user.signer_id().clone(), vec![long_term_expirable_nonce]),
                 (unknown_user, vec![expirable_nonce]),
             ],
         )
@@ -345,7 +346,7 @@ async fn test_cleanup_nonces(
                 assert!(
                     env.defuse
                         .is_nonce_used(IsNonceUsedArgs {
-                            account_id: user.account_id(),
+                            account_id: user.signer_id(),
                             nonce: &legacy_nonce,
                         })
                         .await
@@ -356,7 +357,7 @@ async fn test_cleanup_nonces(
                 assert!(
                     env.defuse
                         .is_nonce_used(IsNonceUsedArgs {
-                            account_id: user.account_id(),
+                            account_id: user.signer_id(),
                             nonce: &long_term_expirable_nonce,
                         })
                         .await
@@ -371,7 +372,7 @@ async fn test_cleanup_nonces(
         env.acl_grant_role(
             env.defuse.contract_id(),
             Role::SaltManager,
-            user.account_id(),
+            user.signer_id(),
         )
         .await
         .expect("failed to grant role");
@@ -382,7 +383,7 @@ async fn test_cleanup_nonces(
 
         user.defuse_cleanup_nonces(
             env.defuse.contract_id(),
-            vec![(user.account_id().clone(), vec![long_term_expirable_nonce])],
+            vec![(user.signer_id().clone(), vec![long_term_expirable_nonce])],
         )
         .await
         .unwrap();
@@ -390,7 +391,7 @@ async fn test_cleanup_nonces(
         assert!(
             !env.defuse
                 .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
+                    account_id: user.signer_id(),
                     nonce: &long_term_expirable_nonce,
                 })
                 .await
@@ -422,7 +423,7 @@ async fn cleanup_multiple_nonces(
     env.acl_grant_role(
         env.defuse.contract_id(),
         Role::GarbageCollector,
-        user.account_id(),
+        user.signer_id(),
     )
     .await
     .expect("failed to grant role");
@@ -456,7 +457,7 @@ async fn cleanup_multiple_nonces(
 
     user.defuse_cleanup_nonces(
         env.defuse.contract_id(),
-        vec![(user.account_id().clone(), nonces.clone())],
+        vec![(user.signer_id().clone(), nonces.clone())],
     )
     .await
     .unwrap();
@@ -465,7 +466,7 @@ async fn cleanup_multiple_nonces(
         futures::stream::iter(nonces)
             .all(|n| {
                 let defuse = &env.defuse;
-                let user_id = user.account_id().clone();
+                let user_id = user.signer_id().clone();
 
                 async move {
                     !defuse

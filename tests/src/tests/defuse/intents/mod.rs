@@ -3,6 +3,7 @@
 use defuse_core::{intents::MaybeIntentEvent, payload::Payload};
 use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::{
+    account::Account,
     extensions::{
         defuse::{
             DefuseExt, DefuseSignerExt, MultiPayloadArgs,
@@ -18,7 +19,8 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBalanceOfArgs},
     },
-    kit::{AccountId, AccountIdRef, CryptoHash, sandbox::SandboxConfig},
+    kit::{AccountId, CryptoHash, protocol::AccountIdRef},
+    sandbox::SandboxConfig,
 };
 use defuse_test_utils::random::rng;
 use near_sdk::events::AsNep297Event;
@@ -72,20 +74,20 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
     let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
 
     env.initial_ft_storage_deposit(
-        vec![user.account_id(), other_user.account_id()],
+        vec![user.signer_id(), other_user.signer_id()],
         vec![ft.contract_id()],
     )
     .await;
 
     // deposit
-    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.account_id(), None)
+    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.signer_id(), None)
         .await
         .unwrap();
 
     let nonce = rng.random();
 
     let transfer_intent = Transfer {
-        receiver_id: other_user.account_id().clone(),
+        receiver_id: other_user.signer_id().clone(),
         tokens: Amounts::new(std::iter::once((ft_id.clone(), 1000)).collect()),
         memo: None,
         notification: None,
@@ -114,7 +116,7 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
     // Prepare expected transfer event
     let expected_log = DefuseEvent::Transfer(Cow::Owned(vec![MaybeIntentEvent::new_intent(
         AccountEvent {
-            account_id: user.account_id().clone().into(),
+            account_id: user.signer_id().clone().into(),
             event: TransferEvent {
                 receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
                 tokens: transfer_intent.tokens,
@@ -143,8 +145,9 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
     // Verify balances haven't changed (simulate is a view method)
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.account_id(),
+                account_id: user.signer_id(),
                 token_id: &ft_id.to_string()
             })
             .await
@@ -154,8 +157,9 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
     );
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: other_user.account_id(),
+                account_id: other_user.signer_id(),
                 token_id: &ft_id.to_string()
             })
             .await
@@ -174,7 +178,11 @@ async fn webauthn() {
     const SIGNER_ID: &AccountIdRef =
         AccountIdRef::new_or_panic("0x3602b546589a8fcafdce7fad64a46f91db0e4d50");
 
-    let sandbox = SandboxConfig::builder().root_account(ROOT_ID).fresh().await;
+    let sandbox = SandboxConfig::builder()
+        .root_account(ROOT_ID)
+        .fresh()
+        .await
+        .unwrap();
 
     let env = EnvBuilder::default()
         .defuse_name(DEFUSE_NAME)
@@ -189,7 +197,7 @@ async fn webauthn() {
 
     let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
 
-    env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
+    env.initial_ft_storage_deposit(vec![user.signer_id()], vec![ft.contract_id()])
         .await;
 
     // deposit
@@ -218,8 +226,9 @@ async fn webauthn() {
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.account_id(),
+                account_id: user.signer_id(),
                 token_id: &ft_id.to_string()
             })
             .await
@@ -229,6 +238,7 @@ async fn webauthn() {
     );
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: SIGNER_ID,
                 token_id: &ft_id.to_string()

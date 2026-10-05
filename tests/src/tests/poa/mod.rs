@@ -18,14 +18,14 @@ async fn deploy_mint(#[future(awt)] root: Near) {
     let poa_factory = root
         .deploy_poa_factory(
             "poa-factory",
-            [root.account_id().clone()],
+            [root.signer_id().clone()],
             [
-                (Role::TokenDeployer, [root.account_id().clone()]),
-                (Role::TokenDepositer, [root.account_id().clone()]),
+                (Role::TokenDeployer, [root.signer_id().clone()]),
+                (Role::TokenDepositer, [root.signer_id().clone()]),
             ],
             [
-                (Role::TokenDeployer, [root.account_id().clone()]),
-                (Role::TokenDepositer, [root.account_id().clone()]),
+                (Role::TokenDeployer, [root.signer_id().clone()]),
+                (Role::TokenDepositer, [root.signer_id().clone()]),
             ],
             POA_FACTORY_WASM.clone(),
         )
@@ -48,12 +48,12 @@ async fn deploy_mint(#[future(awt)] root: Near) {
         .await
         .unwrap_err();
 
-    assert!(ft1.balance_of(user.account_id()).await.unwrap().is_zero());
+    assert!(ft1.balance_of(user.signer_id()).await.unwrap().is_zero());
 
     try_join!(
-        ft1.storage_deposit(root.account_id(), NearToken::from_near(1))
+        ft1.storage_deposit(root.signer_id(), NearToken::from_near(1))
             .into_future(),
-        ft1.storage_deposit(user.account_id(), NearToken::from_near(1))
+        ft1.storage_deposit(user.signer_id(), NearToken::from_near(1))
             .into_future()
     )
     .unwrap();
@@ -61,7 +61,7 @@ async fn deploy_mint(#[future(awt)] root: Near) {
     user.poa_factory_ft_deposit(
         poa_factory.contract_id(),
         "ft1",
-        user.account_id(),
+        user.signer_id(),
         1000,
         None,
         None,
@@ -72,7 +72,7 @@ async fn deploy_mint(#[future(awt)] root: Near) {
     root.poa_factory_ft_deposit(
         poa_factory.contract_id(),
         "ft1",
-        user.account_id(),
+        user.signer_id(),
         1000,
         None,
         None,
@@ -80,7 +80,7 @@ async fn deploy_mint(#[future(awt)] root: Near) {
     .await
     .unwrap();
 
-    let balance: u128 = ft1.balance_of(user.account_id()).await.unwrap().into();
+    let balance: u128 = ft1.balance_of(user.signer_id()).await.unwrap().into();
 
     assert_eq!(balance, 1000);
 }

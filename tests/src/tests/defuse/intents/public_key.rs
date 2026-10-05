@@ -1,13 +1,16 @@
 use defuse_core::payload::Payload;
-use defuse_sandbox::extensions::defuse::{
-    DefuseExt, DefuseSignerExt, ExtractNonceExt, ToEventLog,
-    core::{
-        PublicKey,
-        accounts::{AccountEvent, PublicKeyEvent},
-        events::DefuseEvent,
-        intents::{
-            MaybeIntentEvent,
-            account::{AddPublicKey, RemovePublicKey},
+use defuse_sandbox::{
+    account::Account,
+    extensions::defuse::{
+        DefuseExt, DefuseSignerExt, ExtractNonceExt, ToEventLog,
+        core::{
+            PublicKey,
+            accounts::{AccountEvent, PublicKeyEvent},
+            events::DefuseEvent,
+            intents::{
+                MaybeIntentEvent,
+                account::{AddPublicKey, RemovePublicKey},
+            },
         },
     },
 };
@@ -60,7 +63,7 @@ async fn execute_add_public_key_intent(
     let events = vec![
         DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_intent(
             AccountEvent::new(
-                user.account_id(),
+                user.signer_id(),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(&new_public_key),
                 },
@@ -69,7 +72,7 @@ async fn execute_add_public_key_intent(
         ))
         .to_nep297_event()
         .to_event_log(),
-        AccountNonceIntentEvent::new(&user.account_id(), nonce, &add_public_key_payload)
+        AccountNonceIntentEvent::new(&user.signer_id(), nonce, &add_public_key_payload)
             .into_event()
             .to_nep297_event()
             .to_event_log(),

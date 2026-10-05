@@ -13,7 +13,7 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs, MtExt},
         nft::NftAdminExt,
     },
-    kit::{Final, Gas, NearToken},
+    kit::{Gas, NearToken, transaction::Final},
 };
 use defuse_test_utils::wasms::{MT_RECEIVER_STUB_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
@@ -40,7 +40,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
         env.create_user()
     );
 
-    env.transaction(user1.account_id())
+    env.transaction(user1.signer_id())
         .transfer(NearToken::from_near(100))
         .await
         .unwrap();
@@ -50,7 +50,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
     let nft_issuer_contract = user1
         .deploy_vanilla_nft_issuer(
             "nft1",
-            user1.account_id(),
+            user1.signer_id(),
             &NFTContractMetadata {
                 reference: Some("http://abc.com/xyz/".to_string()),
                 reference_hash: Some(Base64VecU8(DUMMY_REFERENCE_HASH.to_vec())),
@@ -74,13 +74,13 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
         .mint_nft(
             nft_issuer_contract.contract_id(),
             &DUMMY_NFT1_ID.to_string(),
-            user2.account_id(),
+            user2.signer_id(),
         )
         .await
         .unwrap();
 
     assert_eq!(nft1.token_id, DUMMY_NFT1_ID.to_string());
-    assert_eq!(nft1.owner_id, *user2.account_id());
+    assert_eq!(nft1.owner_id, *user2.signer_id());
 
     // Create the token id, expected inside the verifier contract
     let nft2_mt_token_id = TokenId::from(Nep171TokenId::new(
@@ -94,17 +94,17 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
         .mint_nft(
             nft_issuer_contract.contract_id(),
             &DUMMY_NFT2_ID.to_string(),
-            user3.account_id(),
+            user3.signer_id(),
         )
         .await
         .unwrap();
 
     assert_eq!(nft2.token_id, DUMMY_NFT2_ID.to_string());
-    assert_eq!(nft2.owner_id, *user3.account_id());
+    assert_eq!(nft2.owner_id, *user3.signer_id());
 
     {
         {
-            assert_eq!(nft1.owner_id, *user2.account_id());
+            assert_eq!(nft1.owner_id, *user2.signer_id());
 
             user2
                 .nft(nft_issuer_contract.contract_id())
@@ -112,10 +112,10 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                 .transfer_call(
                     env.defuse.contract_id(),
                     nft1.token_id.clone(),
-                    serde_json::to_string(&DepositMessage::new(user3.account_id().clone()))
-                        .unwrap(),
+                    serde_json::to_string(&DepositMessage::new(user3.signer_id().clone())).unwrap(),
                 )
                 .gas(Gas::from_tgas(300))
+                .finish()
                 .wait_until::<Final>()
                 .await
                 .unwrap();
@@ -134,8 +134,9 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             async {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
+                        .unwrap()
                         .mt_balance_of(MtBalanceOfArgs {
-                            account_id: user2.account_id(),
+                            account_id: user2.signer_id(),
                             token_id: &nft1_mt_token_id,
                         })
                         .await
@@ -147,8 +148,9 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             async {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
+                        .unwrap()
                         .mt_balance_of(MtBalanceOfArgs {
-                            account_id: user3.account_id(),
+                            account_id: user3.signer_id(),
                             token_id: &nft1_mt_token_id,
                         })
                         .await
@@ -162,17 +164,17 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
 
     {
         {
-            assert_eq!(nft2.owner_id, *user3.account_id());
+            assert_eq!(nft2.owner_id, *user3.signer_id());
             user3
                 .nft(nft_issuer_contract.contract_id())
                 .unwrap()
                 .transfer_call(
                     env.defuse.contract_id(),
                     nft2.token_id.clone(),
-                    serde_json::to_string(&DepositMessage::new(user1.account_id().clone()))
-                        .unwrap(),
+                    serde_json::to_string(&DepositMessage::new(user1.signer_id().clone())).unwrap(),
                 )
                 .gas(Gas::from_tgas(300))
+                .finish()
                 .wait_until::<Final>()
                 .await
                 .unwrap();
@@ -191,8 +193,9 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             async {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
+                        .unwrap()
                         .mt_balance_of(MtBalanceOfArgs {
-                            account_id: user3.account_id(),
+                            account_id: user3.signer_id(),
                             token_id: &nft2_mt_token_id,
                         })
                         .await
@@ -204,8 +207,9 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             async {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
+                        .unwrap()
                         .mt_balance_of(MtBalanceOfArgs {
-                            account_id: user1.account_id(),
+                            account_id: user1.signer_id(),
                             token_id: &nft2_mt_token_id,
                         })
                         .await
@@ -239,18 +243,18 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
         futures::join!(
             async {
                 let user1_tokens = env
-                    .mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), ..)
+                    .mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), ..)
                     .await
                     .unwrap();
                 assert_eq!(user1_tokens.len(), 1);
                 assert_eq!(
                     user1_tokens[0].owner_id.as_ref().unwrap(),
-                    user1.account_id()
+                    user1.signer_id()
                 );
             },
             async {
                 assert_eq!(
-                    env.mt_tokens_for_owner(env.defuse.contract_id(), user2.account_id(), ..)
+                    env.mt_tokens_for_owner(env.defuse.contract_id(), user2.signer_id(), ..)
                         .await
                         .unwrap()
                         .len(),
@@ -259,13 +263,13 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             },
             async {
                 let user3_tokens = env
-                    .mt_tokens_for_owner(env.defuse.contract_id(), user3.account_id(), ..)
+                    .mt_tokens_for_owner(env.defuse.contract_id(), user3.signer_id(), ..)
                     .await
                     .unwrap();
                 assert_eq!(user3_tokens.len(), 1);
                 assert_eq!(
                     user3_tokens[0].owner_id.as_ref().unwrap(),
-                    user3.account_id()
+                    user3.signer_id()
                 );
             }
         );
@@ -287,8 +291,9 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             async {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
+                        .unwrap()
                         .mt_balance_of(MtBalanceOfArgs {
-                            account_id: user3.account_id(),
+                            account_id: user3.signer_id(),
                             token_id: &nft1_mt_token_id,
                         })
                         .await
@@ -304,7 +309,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                 &env.defuse,
                 [NftWithdraw {
                     token: nft_issuer_contract.contract_id().clone(),
-                    receiver_id: user1.account_id().clone(),
+                    receiver_id: user1.signer_id().clone(),
                     token_id: DUMMY_NFT1_ID.to_string(),
                     memo: None,
                     msg: None,
@@ -324,8 +329,9 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             async {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
+                        .unwrap()
                         .mt_balance_of(MtBalanceOfArgs {
-                            account_id: user3.account_id(),
+                            account_id: user3.signer_id(),
                             token_id: &nft1_mt_token_id,
                         })
                         .await
@@ -344,7 +350,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                         .unwrap()
                         .unwrap()
                         .owner_id,
-                    *user1.account_id()
+                    *user1.signer_id()
                 );
             }
         );
@@ -414,7 +420,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
         .await
         .unwrap();
 
-    env.transaction(user.account_id())
+    env.transaction(user.signer_id())
         .transfer(NearToken::from_near(100))
         .await
         .unwrap()
@@ -424,7 +430,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
     let nft_issuer_contract = user
         .deploy_vanilla_nft_issuer(
             "nft_test",
-            user.account_id(),
+            user.signer_id(),
             &NFTContractMetadata {
                 reference: Some("http://test.com/".to_string()),
                 reference_hash: Some(Base64VecU8(DUMMY_REFERENCE_HASH.to_vec())),
@@ -442,12 +448,12 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
         .mint_nft(
             nft_issuer_contract.contract_id(),
             &DUMMY_NFT1_ID.to_string(),
-            user.account_id(),
+            user.signer_id(),
         )
         .await
         .unwrap();
 
-    assert_eq!(nft.owner_id, *user.account_id());
+    assert_eq!(nft.owner_id, *user.signer_id());
 
     let nft_token_id = TokenId::from(Nep171TokenId::new(
         nft_issuer_contract.contract_id().clone(),
@@ -460,7 +466,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
                 .sign_defuse_payload_default(
                     &env.defuse,
                     [Transfer {
-                        receiver_id: intent_receiver.account_id().clone(),
+                        receiver_id: intent_receiver.signer_id().clone(),
                         tokens: Amounts::new(std::iter::once((nft_token_id.clone(), 1)).collect()),
                         memo: None,
                         notification: None,
@@ -475,14 +481,14 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
 
     let deposit_message = if intents.is_empty() {
         DepositMessage {
-            receiver_id: receiver.account_id().clone(),
+            receiver_id: receiver.signer_id().clone(),
             action: Some(DepositAction::Notify(NotifyOnTransfer::new(
                 serde_json::to_string(&expectation.action).unwrap(),
             ))),
         }
     } else {
         DepositMessage {
-            receiver_id: receiver.account_id().clone(),
+            receiver_id: receiver.signer_id().clone(),
             action: Some(DepositAction::Execute(ExecuteIntents {
                 execute_intents: intents,
                 refund_if_fails: expectation.refund_if_fails,
@@ -498,6 +504,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
             serde_json::to_string(&deposit_message).unwrap(),
         )
         .gas(Gas::from_tgas(300))
+        .finish()
         .wait_until::<Final>()
         .await
         .unwrap();
@@ -506,8 +513,9 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
     let (nft_owner, receiver_mt_balance) = futures::try_join!(
         nft_issuer_contract.token(&nft.token_id).into_future(),
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: receiver.account_id(),
+                account_id: receiver.signer_id(),
                 token_id: &nft_token_id,
             })
             .into_future()
@@ -518,7 +526,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
     if expectation.expected_sender_owns_nft {
         assert_eq!(
             nft_owner,
-            *user.account_id(),
+            *user.signer_id(),
             "NFT should be owned by sender"
         );
     } else {

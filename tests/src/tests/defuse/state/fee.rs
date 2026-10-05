@@ -3,6 +3,7 @@ use crate::{
     utils::asserts::ResultAssertsExt,
 };
 use defuse_sandbox::{
+    account::Account,
     extensions::{
         acl::AccessControllableExt,
         defuse::{
@@ -49,7 +50,7 @@ async fn set_fee(
         env.acl_grant_role(
             env.defuse.contract_id().clone(),
             Role::FeesManager,
-            user1.account_id().clone(),
+            user1.signer_id().clone(),
         )
         .await
         .expect("failed to grant role");
@@ -99,7 +100,7 @@ async fn set_fee_collector(
         env.acl_grant_role(
             env.defuse.contract_id().clone(),
             Role::FeesManager,
-            user1.account_id().clone(),
+            user1.signer_id().clone(),
         )
         .await
         .expect("failed to grant role");
@@ -110,7 +111,7 @@ async fn set_fee_collector(
             .expect("unable to set fee");
 
         let event = DefuseEvent::FeeCollectorChanged(FeeCollectorChangedEvent {
-            old_fee_collector: env.account_id().clone().into(),
+            old_fee_collector: env.signer_id().clone().into(),
             new_fee_collector: fee_collector.clone().into(),
         })
         .to_nep297_event()

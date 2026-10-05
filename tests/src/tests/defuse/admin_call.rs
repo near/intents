@@ -1,4 +1,5 @@
 use defuse_sandbox::{
+    account::Account,
     extensions::{
         acl::AccessControllableExt,
         defuse::{
@@ -10,7 +11,7 @@ use defuse_sandbox::{
             },
         },
     },
-    kit::{Action, NearToken},
+    kit::{NearToken, protocol::Action},
 };
 use near_sdk::{Gas as NearGas, json_types::U128};
 
@@ -60,7 +61,7 @@ async fn multiple_actions_with_admin_call(
             .raw(),
         amount
     );
-    assert_eq!(ft1.balance_of(admin.account_id()).await.unwrap().raw(), 0);
+    assert_eq!(ft1.balance_of(admin.signer_id()).await.unwrap().raw(), 0);
     assert_eq!(
         ft2.balance_of(env.defuse.contract_id())
             .await
@@ -68,35 +69,39 @@ async fn multiple_actions_with_admin_call(
             .raw(),
         amount
     );
-    assert_eq!(ft2.balance_of(admin.account_id()).await.unwrap().raw(), 0);
+    assert_eq!(ft2.balance_of(admin.signer_id()).await.unwrap().raw(), 0);
 
     let deposit = NearToken::from_yoctonear(1);
     let storage = NearToken::from_near(1);
 
     let first_promise = [NearPromise::new(ft1.contract_id())
         .add_action(into_fn_call_action(
-            ft1.storage_deposit(admin.account_id(), storage)
+            ft1.storage_deposit(admin.signer_id(), storage)
                 .gas(NearGas::from_tgas(100))
-                .into_action(),
+                .into_action()
+                .unwrap(),
         ))
         .add_action(into_fn_call_action(
-            ft1.transfer(admin.account_id(), U128(amount))
+            ft1.transfer(admin.signer_id(), U128(amount))
                 .gas(NearGas::from_tgas(100))
                 .deposit(NearToken::from_yoctonear(1))
-                .into_action(),
+                .into_action()
+                .unwrap(),
         ))];
 
     let second_promise = [NearPromise::new(ft2.contract_id())
         .add_action(into_fn_call_action(
-            ft2.storage_deposit(admin.account_id(), storage)
+            ft2.storage_deposit(admin.signer_id(), storage)
                 .gas(NearGas::from_tgas(100))
-                .into_action(),
+                .into_action()
+                .unwrap(),
         ))
         .add_action(into_fn_call_action(
-            ft2.transfer(admin.account_id(), U128(amount))
+            ft2.transfer(admin.signer_id(), U128(amount))
                 .gas(NearGas::from_tgas(100))
                 .deposit(NearToken::from_yoctonear(1))
-                .into_action(),
+                .into_action()
+                .unwrap(),
         ))];
 
     let promises = [first_promise, second_promise].concat();
@@ -112,7 +117,7 @@ async fn multiple_actions_with_admin_call(
         .assert_err_contains("Insufficient permissions for method");
 
     // grant DAO role
-    env.acl_grant_role(env.defuse.contract_id(), Role::DAO, admin.account_id())
+    env.acl_grant_role(env.defuse.contract_id(), Role::DAO, admin.signer_id())
         .await
         .unwrap();
 
@@ -141,7 +146,7 @@ async fn multiple_actions_with_admin_call(
         0
     );
     assert_eq!(
-        ft1.balance_of(admin.account_id()).await.unwrap().raw(),
+        ft1.balance_of(admin.signer_id()).await.unwrap().raw(),
         amount
     );
 
@@ -153,7 +158,7 @@ async fn multiple_actions_with_admin_call(
         0
     );
     assert_eq!(
-        ft2.balance_of(admin.account_id()).await.unwrap().raw(),
+        ft2.balance_of(admin.signer_id()).await.unwrap().raw(),
         amount
     );
 }
@@ -170,7 +175,7 @@ async fn transfer_near_with_admin_call(
 
     let (admin, receiver) = futures::join!(env.create_user(), env.create_user());
 
-    let promise = [NearPromise::new(receiver.account_id())
+    let promise = [NearPromise::new(receiver.signer_id())
         .add_action(NearAction::Transfer(Transfer { amount }))];
 
     admin
@@ -183,10 +188,10 @@ async fn transfer_near_with_admin_call(
         .await
         .assert_err_contains("Insufficient permissions for method");
 
-    let receiver_balance_before = env.balance(receiver.account_id()).await.unwrap().total;
+    let receiver_balance_before = env.balance(receiver.signer_id()).await.unwrap().total;
 
     // grant DAO role
-    env.acl_grant_role(env.defuse.contract_id(), Role::DAO, admin.account_id())
+    env.acl_grant_role(env.defuse.contract_id(), Role::DAO, admin.signer_id())
         .await
         .unwrap();
 
@@ -200,7 +205,7 @@ async fn transfer_near_with_admin_call(
         .await
         .unwrap();
 
-    let receiver_balance_after = env.balance(receiver.account_id()).await.unwrap().total;
+    let receiver_balance_after = env.balance(receiver.signer_id()).await.unwrap().total;
 
     assert_eq!(
         receiver_balance_after,
@@ -220,7 +225,7 @@ async fn admin_call_with_gas_exceeding_action(
     let (admin, ft) = futures::join!(env.create_user(), env.create_token());
 
     env.initial_ft_storage_deposit(
-        vec![env.defuse.contract_id(), admin.account_id()],
+        vec![env.defuse.contract_id(), admin.signer_id()],
         vec![ft.contract_id()],
     )
     .await;
@@ -229,16 +234,17 @@ async fn admin_call_with_gas_exceeding_action(
         .await
         .expect("Failed to transfer tokens to defuse");
 
-    env.acl_grant_role(env.defuse.contract_id(), Role::DAO, admin.account_id())
+    env.acl_grant_role(env.defuse.contract_id(), Role::DAO, admin.signer_id())
         .await
         .unwrap();
 
     let promise = [
         NearPromise::new(ft.contract_id()).add_action(into_fn_call_action(
-            ft.transfer(admin.account_id(), U128(amount))
+            ft.transfer(admin.signer_id(), U128(amount))
                 .gas(NearGas::from_tgas(500))
                 .deposit(NearToken::from_yoctonear(1))
-                .into_action(),
+                .into_action()
+                .unwrap(),
         )),
     ];
 
@@ -257,7 +263,7 @@ async fn admin_call_with_gas_exceeding_action(
         ft.balance_of(env.defuse.contract_id()).await.unwrap().raw(),
         amount
     );
-    assert_eq!(ft.balance_of(admin.account_id()).await.unwrap().raw(), 0);
+    assert_eq!(ft.balance_of(admin.signer_id()).await.unwrap().raw(), 0);
 }
 
 #[rstest]
@@ -269,13 +275,13 @@ async fn admin_call_accepts_only_allowed_actions(
 ) {
     let (admin, receiver) = futures::join!(env.create_user(), env.create_user());
 
-    env.acl_grant_role(env.defuse.contract_id(), Role::DAO, admin.account_id())
+    env.acl_grant_role(env.defuse.contract_id(), Role::DAO, admin.signer_id())
         .await
         .unwrap();
 
     let promise =
         [
-            NearPromise::new(receiver.account_id()).add_action(NearAction::DeterministicStateInit(
+            NearPromise::new(receiver.signer_id()).add_action(NearAction::DeterministicStateInit(
                 DeterministicStateInit {
                     state_init: StateInitV1::code(env.defuse.contract_id().to_owned()).into(),
                     deposit: NearToken::from_yoctonear(0),
@@ -303,7 +309,7 @@ async fn admin_call_refunds_failed_deposit_to_contract(
 ) {
     let (admin, ft) = futures::join!(env.create_user(), env.create_token());
 
-    env.acl_grant_role(env.defuse.contract_id(), Role::DAO, admin.account_id())
+    env.acl_grant_role(env.defuse.contract_id(), Role::DAO, admin.signer_id())
         .await
         .unwrap();
 
@@ -320,7 +326,7 @@ async fn admin_call_refunds_failed_deposit_to_contract(
     ];
 
     let defuse_before = env.balance(env.defuse.contract_id()).await.unwrap().total;
-    let admin_before = env.balance(admin.account_id()).await.unwrap().total;
+    let admin_before = env.balance(admin.signer_id()).await.unwrap().total;
 
     // Promises are detached
     admin
@@ -334,7 +340,7 @@ async fn admin_call_refunds_failed_deposit_to_contract(
         .unwrap();
 
     let defuse_after = env.balance(env.defuse.contract_id()).await.unwrap().total;
-    let admin_after = env.balance(admin.account_id()).await.unwrap().total;
+    let admin_after = env.balance(admin.signer_id()).await.unwrap().total;
 
     assert!(admin_before.saturating_sub(admin_after) >= deposit);
     assert!(defuse_after.saturating_sub(defuse_before) >= deposit);

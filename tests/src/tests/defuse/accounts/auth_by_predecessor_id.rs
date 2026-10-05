@@ -1,5 +1,6 @@
 use crate::tests::defuse::env::{Env, env};
 use defuse_sandbox::{
+    account::Account,
     extensions::{
         defuse::{
             AccountArgs, DefuseExt, DefuseSignerExt, ToEventLog,
@@ -26,13 +27,13 @@ use std::borrow::Cow;
 async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    env.initial_ft_storage_deposit([user.account_id()], [ft.contract_id()])
+    env.initial_ft_storage_deposit([user.signer_id()], [ft.contract_id()])
         .await;
 
     let receiver_id: AccountId = "receiver_id.near".parse().unwrap();
 
     // deposit tokens
-    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.account_id(), None)
+    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.signer_id(), None)
         .await
         .unwrap();
 
@@ -40,8 +41,9 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
+            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.account_id(),
+                account_id: user.signer_id(),
                 token_id: &ft.to_string(),
             })
             .await
@@ -55,7 +57,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
         assert!(
             env.defuse
                 .is_auth_by_predecessor_id_enabled(AccountArgs {
-                    account_id: user.account_id(),
+                    account_id: user.signer_id(),
                 })
                 .await
                 .unwrap()
@@ -68,7 +70,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
 
         let event =
             DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_fn_call(AccountEvent::new(
-                user.account_id().clone(),
+                user.signer_id().clone(),
                 Cow::Owned(SetAuthByPredecessorId { enabled: false }),
             )))
             .to_nep297_event()
@@ -79,7 +81,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
         assert!(
             !env.defuse
                 .is_auth_by_predecessor_id_enabled(AccountArgs {
-                    account_id: user.account_id(),
+                    account_id: user.signer_id(),
                 })
                 .await
                 .unwrap()
@@ -89,7 +91,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
         user.defuse_disable_auth_by_predecessor_id(env.defuse.contract_id())
             .await
             .assert_err_contains(
-                DefuseError::AuthByPredecessorIdDisabled(user.account_id().clone()).to_string(),
+                DefuseError::AuthByPredecessorIdDisabled(user.signer_id().clone()).to_string(),
             );
     }
 
@@ -97,8 +99,9 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
     {
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
+                .unwrap()
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user.account_id(),
+                    account_id: user.signer_id(),
                     token_id: &ft.to_string(),
                 })
                 .await
@@ -116,13 +119,14 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
         )
         .await
         .assert_err_contains(
-            DefuseError::AuthByPredecessorIdDisabled(user.account_id().clone()).to_string(),
+            DefuseError::AuthByPredecessorIdDisabled(user.signer_id().clone()).to_string(),
         );
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
+                .unwrap()
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user.account_id(),
+                    account_id: user.signer_id(),
                     token_id: &ft.to_string(),
                 })
                 .await
@@ -132,6 +136,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
         );
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
+                .unwrap()
                 .mt_balance_of(MtBalanceOfArgs {
                     account_id: &receiver_id,
                     token_id: &ft.to_string(),
@@ -164,8 +169,9 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
+                .unwrap()
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user.account_id(),
+                    account_id: user.signer_id(),
                     token_id: &ft.to_string(),
                 })
                 .await
@@ -175,6 +181,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
         );
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
+                .unwrap()
                 .mt_balance_of(MtBalanceOfArgs {
                     account_id: &receiver_id,
                     token_id: &ft.to_string(),
@@ -207,7 +214,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
         assert!(
             env.defuse
                 .is_auth_by_predecessor_id_enabled(AccountArgs {
-                    account_id: user.account_id()
+                    account_id: user.signer_id()
                 })
                 .await
                 .unwrap()
@@ -229,8 +236,9 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
+                .unwrap()
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user.account_id(),
+                    account_id: user.signer_id(),
                     token_id: &ft.to_string(),
                 })
                 .await
@@ -240,6 +248,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
         );
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
+                .unwrap()
                 .mt_balance_of(MtBalanceOfArgs {
                     account_id: &receiver_id,
                     token_id: &ft.to_string(),

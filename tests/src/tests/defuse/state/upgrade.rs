@@ -1,6 +1,7 @@
 use defuse_core::intents::account::RemovePublicKey;
 use defuse_core::{PublicKey, crypto::ed25519::Ed25519PublicKey};
 use defuse_sandbox::{
+    account::Account,
     extensions::{
         acl::AccessControllableExt,
         defuse::{
@@ -16,7 +17,7 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBatchBalanceOfArgs},
     },
-    kit::{AccountIdRef, Near},
+    kit::{Near, protocol::AccountIdRef},
 };
 use defuse_test_utils::wasms::DEFUSE_WASM;
 use rstest::rstest;
@@ -34,6 +35,7 @@ async fn balance_of(
     token_id: &str,
 ) -> u128 {
     near.contract::<Mt>(defuse_id.as_ref())
+        .unwrap()
         .mt_batch_balance_of(MtBatchBalanceOfArgs {
             account_id: account_id.as_ref(),
             token_ids: &[token_id.to_string()],
@@ -59,14 +61,14 @@ async fn test_upgrade_with_persistence(
         env.create_named_token("testtoken")
     );
 
-    env.initial_ft_storage_deposit([user1.account_id(), user2.account_id()], [ft.contract_id()])
+    env.initial_ft_storage_deposit([user1.signer_id(), user2.signer_id()], [ft.contract_id()])
         .await;
 
     let deposit_amount = 10_000u128;
 
     futures::try_join!(
-        env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user1.account_id(), None),
-        env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user2.account_id(), None)
+        env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user1.signer_id(), None),
+        env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user2.signer_id(), None)
     )
     .unwrap();
 
@@ -88,25 +90,13 @@ async fn test_upgrade_with_persistence(
     futures::join!(
         async {
             assert_eq!(
-                balance_of(
-                    &env,
-                    env.defuse.contract_id(),
-                    user1.account_id(),
-                    &token_id,
-                )
-                .await,
+                balance_of(&env, env.defuse.contract_id(), user1.signer_id(), &token_id,).await,
                 deposit_amount
             );
         },
         async {
             assert_eq!(
-                balance_of(
-                    &env,
-                    env.defuse.contract_id(),
-                    user2.account_id(),
-                    &token_id
-                )
-                .await,
+                balance_of(&env, env.defuse.contract_id(), user2.signer_id(), &token_id).await,
                 deposit_amount
             );
         },
@@ -114,7 +104,7 @@ async fn test_upgrade_with_persistence(
             assert!(
                 env.defuse
                     .has_public_key(HasPublicKeyArgs {
-                        account_id: user1.account_id(),
+                        account_id: user1.signer_id(),
                         public_key: &user1_pubkey,
                     })
                     .await
@@ -125,7 +115,7 @@ async fn test_upgrade_with_persistence(
             assert!(
                 env.defuse
                     .has_public_key(HasPublicKeyArgs {
-                        account_id: user2.account_id(),
+                        account_id: user2.signer_id(),
                         public_key: &user2_pubkey,
                     })
                     .await
@@ -147,25 +137,13 @@ async fn test_upgrade_with_persistence(
     futures::join!(
         async {
             assert_eq!(
-                balance_of(
-                    &env,
-                    env.defuse.contract_id(),
-                    user1.account_id(),
-                    &token_id
-                )
-                .await,
+                balance_of(&env, env.defuse.contract_id(), user1.signer_id(), &token_id).await,
                 deposit_amount
             );
         },
         async {
             assert_eq!(
-                balance_of(
-                    &env,
-                    env.defuse.contract_id(),
-                    user2.account_id(),
-                    &token_id
-                )
-                .await,
+                balance_of(&env, env.defuse.contract_id(), user2.signer_id(), &token_id).await,
                 deposit_amount
             );
         },
@@ -173,7 +151,7 @@ async fn test_upgrade_with_persistence(
             assert!(
                 env.defuse
                     .has_public_key(HasPublicKeyArgs {
-                        account_id: user1.account_id(),
+                        account_id: user1.signer_id(),
                         public_key: &user1_pubkey,
                     })
                     .await
@@ -184,7 +162,7 @@ async fn test_upgrade_with_persistence(
             assert!(
                 env.defuse
                     .has_public_key(HasPublicKeyArgs {
-                        account_id: user2.account_id(),
+                        account_id: user2.signer_id(),
                         public_key: &user2_pubkey,
                     })
                     .await
@@ -198,18 +176,12 @@ async fn test_upgrade_with_persistence(
 
     // existing user can still receive deposits
     let extra = 5_000u128;
-    env.defuse_ft_deposit_to(ft.contract_id(), extra, user1.account_id(), None)
+    env.defuse_ft_deposit_to(ft.contract_id(), extra, user1.signer_id(), None)
         .await
         .unwrap();
 
     assert_eq!(
-        balance_of(
-            &env,
-            env.defuse.contract_id(),
-            user1.account_id(),
-            &token_id
-        )
-        .await,
+        balance_of(&env, env.defuse.contract_id(), user1.signer_id(), &token_id).await,
         deposit_amount + extra
     );
 
@@ -219,7 +191,7 @@ async fn test_upgrade_with_persistence(
         .sign_defuse_payload_default(
             &env.defuse,
             [Transfer {
-                receiver_id: user2.account_id().clone(),
+                receiver_id: user2.signer_id().clone(),
                 tokens: Amounts::new(BTreeMap::from([(
                     TokenId::Nep141(Nep141TokenId::new(ft.contract_id().clone())),
                     transfer_amount,
@@ -238,25 +210,13 @@ async fn test_upgrade_with_persistence(
     futures::join!(
         async {
             assert_eq!(
-                balance_of(
-                    &env,
-                    env.defuse.contract_id(),
-                    user1.account_id(),
-                    &token_id
-                )
-                .await,
+                balance_of(&env, env.defuse.contract_id(), user1.signer_id(), &token_id).await,
                 deposit_amount + extra - transfer_amount
             );
         },
         async {
             assert_eq!(
-                balance_of(
-                    &env,
-                    env.defuse.contract_id(),
-                    user2.account_id(),
-                    &token_id
-                )
-                .await,
+                balance_of(&env, env.defuse.contract_id(), user2.signer_id(), &token_id).await,
                 deposit_amount + transfer_amount
             );
         },
@@ -269,7 +229,7 @@ async fn test_upgrade_with_persistence(
             &env.defuse,
             [FtWithdraw {
                 token: ft.contract_id().clone(),
-                receiver_id: user2.account_id().clone(),
+                receiver_id: user2.signer_id().clone(),
                 amount: withdraw_amount,
                 memo: None,
                 msg: None,
@@ -285,33 +245,21 @@ async fn test_upgrade_with_persistence(
         .unwrap();
 
     assert_eq!(
-        balance_of(
-            &env,
-            env.defuse.contract_id(),
-            user2.account_id(),
-            &token_id
-        )
-        .await,
+        balance_of(&env, env.defuse.contract_id(), user2.signer_id(), &token_id).await,
         deposit_amount + transfer_amount - withdraw_amount,
     );
 
     // new user can register and deposit
     let user3 = env.create_user().await;
-    env.initial_ft_storage_deposit([user3.account_id()], [ft.contract_id()])
+    env.initial_ft_storage_deposit([user3.signer_id()], [ft.contract_id()])
         .await;
 
-    env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user3.account_id(), None)
+    env.defuse_ft_deposit_to(ft.contract_id(), deposit_amount, user3.signer_id(), None)
         .await
         .unwrap();
 
     assert_eq!(
-        balance_of(
-            &env,
-            env.defuse.contract_id(),
-            user3.account_id(),
-            &token_id
-        )
-        .await,
+        balance_of(&env, env.defuse.contract_id(), user3.signer_id(), &token_id).await,
         deposit_amount
     );
 
@@ -319,7 +267,7 @@ async fn test_upgrade_with_persistence(
     env.acl_grant_role(
         env.defuse.contract_id().clone(),
         Role::FeesManager,
-        user1.account_id().clone(),
+        user1.signer_id().clone(),
     )
     .await
     .expect("failed to grant role after upgrade");

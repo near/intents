@@ -4,12 +4,15 @@ use crate::{
     tests::defuse::env::{Env, env},
     utils::asserts::ResultAssertsExt,
 };
-use defuse_sandbox::extensions::{
-    acl::AccessControllableExt,
-    defuse::{
-        DefuseExt, SaltArgs,
-        contract::Role,
-        core::{accounts::SaltRotationEvent, events::DefuseEvent},
+use defuse_sandbox::{
+    account::Account,
+    extensions::{
+        acl::AccessControllableExt,
+        defuse::{
+            DefuseExt, SaltArgs,
+            contract::Role,
+            core::{accounts::SaltRotationEvent, events::DefuseEvent},
+        },
     },
 };
 use futures::FutureExt;
@@ -43,7 +46,7 @@ async fn update_current_salt(
         env.acl_grant_role(
             env.defuse.contract_id().clone(),
             Role::SaltManager,
-            user1.account_id().clone(),
+            user1.signer_id().clone(),
         )
         .await
         .expect("failed to grant role");
@@ -104,7 +107,7 @@ async fn invalidate_salts(
         env.acl_grant_role(
             env.defuse.contract_id().clone(),
             Role::SaltManager,
-            user1.account_id().clone(),
+            user1.signer_id().clone(),
         )
         .await
         .expect("failed to grant role");
