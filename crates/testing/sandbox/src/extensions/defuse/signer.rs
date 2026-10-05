@@ -13,7 +13,7 @@ use near_kit::{Near, protocol::AccountIdRef};
 use serde::Serialize;
 use serde_json;
 
-use crate::extensions::defuse::nonce::generate_unique_nonce;
+use crate::{account::Account, extensions::defuse::nonce::generate_unique_nonce};
 
 pub trait DefuseSignerExt {
     async fn sign_defuse_message<T>(
@@ -64,7 +64,7 @@ impl DefuseSignerExt for Near {
     {
         let payload = Nep413Payload::new(
             serde_json::to_string(&Nep413DefuseMessage {
-                signer_id: self.account_id().clone(),
+                signer_id: self.signer_id().clone(),
                 deadline,
                 message,
             })

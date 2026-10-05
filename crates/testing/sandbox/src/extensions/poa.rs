@@ -104,7 +104,7 @@ impl PoaFactoryDeployerExt for Near {
             .await
             .unwrap();
 
-        self.contract::<PoaFactory>(account.account_id())
+        self.contract::<PoaFactory>(account.signer_id()).unwrap()
     }
 }
 

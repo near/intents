@@ -335,7 +335,7 @@ impl MtExt for Near {
         range: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>> {
         let (from_index, limit) = range_to_pagination(range);
-        self.contract::<Mt>(contract.into())
+        self.contract::<Mt>(contract.into())?
             .mt_tokens(MtTokensArgs { from_index, limit })
             .await
             .map_err(Into::into)
@@ -348,7 +348,7 @@ impl MtExt for Near {
         range: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>> {
         let (from_index, limit) = range_to_pagination(range);
-        self.contract::<Mt>(contract.into())
+        self.contract::<Mt>(contract.into())?
             .mt_tokens_for_owner(MtTokensForOwnerArgs {
                 account_id: account_id.as_ref(),
                 from_index,

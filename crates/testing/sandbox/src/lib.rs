@@ -21,6 +21,7 @@ pub async fn root(#[default(NearToken::from_near(100_000))] amount: NearToken) -
 
     SandboxConfig::shared()
         .await
+        .expect("failed to start sandbox")
         .client()
         .create_subaccount(
             SUB_COUNTER.fetch_add(1, Ordering::Relaxed).to_string(),

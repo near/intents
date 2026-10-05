@@ -589,7 +589,7 @@ impl DefuseExt for Near {
         let signed: Vec<MultiPayload> = intents.into_iter().collect();
 
         let simulation_result = self
-            .contract::<Defuse>(defuse_id.clone())
+            .contract::<Defuse>(defuse_id.clone())?
             .simulate_intents(MultiPayloadArgs { signed: &signed })
             .await?;
 

@@ -30,13 +30,13 @@ impl GlobalContract for Near {
         code: impl Into<Vec<u8>>,
         balance: NearToken,
     ) -> Result<GlobalContractId> {
-        let kp = KeyPair::random();
+        let secret_key = SecretKey::generate_ed25519();
         let account_id = target.as_ref();
 
         self.transaction(account_id)
             .create_account()
             .transfer(balance)
-            .add_full_access_key(kp.public_key)
+            .add_full_access_key(secret_key.public_key())
             .publish(code, PublishMode::Updatable)
             .wait_until::<Final>()
             .await?

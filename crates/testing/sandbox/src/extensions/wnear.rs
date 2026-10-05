@@ -55,7 +55,7 @@ impl WNearDeployerExt for Near {
             .result()
             .unwrap();
 
-        self.ft(account.account_id()).unwrap()
+        self.ft(account.signer_id()).unwrap()
     }
 }
 

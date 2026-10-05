@@ -28,15 +28,12 @@ impl OutlayerAppDeployerExt for Near {
         global_contract_id: GlobalContractId,
         state: OutlayerState<'static>,
     ) -> OutlayerAppContractClient {
-        self.contract::<OutlayerAppContract>(
-            self.deploy_deterministic_account(
-                global_contract_id,
-                state.as_storage(),
-                NearToken::ZERO,
-            )
+        let account_id = self
+            .deploy_deterministic_account(global_contract_id, state.as_storage(), NearToken::ZERO)
             .await
-            .unwrap(),
-        )
+            .unwrap();
+
+        self.contract::<OutlayerAppContract>(account_id).unwrap()
     }
 }
 

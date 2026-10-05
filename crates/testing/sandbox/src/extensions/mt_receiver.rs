@@ -1,7 +1,7 @@
 use anyhow::Result;
 use near_kit::{Near, NearToken, protocol::GlobalContractId};
 
-use crate::global_contract::GlobalContract;
+use crate::{account::Account, global_contract::GlobalContract};
 
 #[near_kit::contract]
 pub trait MtReceiverStub {
@@ -22,7 +22,7 @@ impl MtReceiverStubDeployerExt for Near {
         name: impl AsRef<str>,
         wasm: impl Into<Vec<u8>>,
     ) -> Result<GlobalContractId> {
-        let account_id = self.account_id().sub_account(name.as_ref())?;
+        let account_id = self.signer_id().sub_account(name.as_ref())?;
 
         self.deploy_upgradable_global_contract(&account_id, wasm, NearToken::from_near(40))
             .await?;

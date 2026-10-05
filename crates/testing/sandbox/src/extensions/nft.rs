@@ -53,7 +53,7 @@ impl NftAdminExt for Near {
             .await
             .unwrap();
 
-        self.nft(account.account_id()).unwrap()
+        self.nft(account.signer_id()).unwrap()
     }
 
     async fn mint_nft(
