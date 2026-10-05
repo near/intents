@@ -8,7 +8,8 @@ pub mod outcome;
 
 pub use near_kit as kit;
 
-use near_kit::{Near, NearToken, sandbox::SandboxConfig};
+use near_kit::{Near, NearToken};
+use near_kit_sandbox::SandboxConfig;
 use rstest::fixture;
 use std::sync::atomic::{AtomicUsize, Ordering};
 

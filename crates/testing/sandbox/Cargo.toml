@@ -13,7 +13,8 @@ defuse-core = { workspace = true, features = ["near-kit"] }
 defuse-digest = { workspace = true, features = ["sha2"] }
 defuse-nep245.workspace = true
 near-contract-standards.workspace = true
-near-kit = { workspace = true, features = ["sandbox"] }
+near-kit = { workspace = true, features = ["contracts"] }
+near-kit-sandbox.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
 rstest.workspace = true
 serde.workspace = true

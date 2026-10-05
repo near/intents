@@ -1,5 +1,5 @@
 use anyhow::Result;
-use near_kit::{GlobalContractId, Near, NearToken};
+use near_kit::{Near, NearToken, protocol::GlobalContractId};
 
 use crate::global_contract::GlobalContract;
 

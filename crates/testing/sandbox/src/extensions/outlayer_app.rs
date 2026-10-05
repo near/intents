@@ -3,7 +3,11 @@ use defuse_outlayer_app::{
     State as OutlayerState,
     client::{OaSetCodeArgs, OutlayerAppContract, OutlayerAppContractClient},
 };
-use near_kit::{AccountIdRef, Final, Gas, GlobalContractId, Near, NearToken};
+use near_kit::{
+    Gas, Near, NearToken,
+    protocol::{AccountIdRef, GlobalContractId},
+    transaction::Final,
+};
 
 use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
 

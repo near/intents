@@ -1,4 +1,4 @@
-use near_kit::{ExecutionOutcomeWithId, FinalExecutionOutcome};
+use near_kit::rpc::{ExecutionOutcomeWithId, FinalExecutionOutcome};
 
 #[derive(Debug)]
 pub struct SuccessfulExecutionOutcome {

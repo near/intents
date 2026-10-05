@@ -1,6 +1,11 @@
 use anyhow::Result;
 use defuse_digest::{Digest, sha2::Sha256};
-use near_kit::{AccountIdRef, Final, GlobalContractId, KeyPair, Near, NearToken, PublishMode};
+use near_kit::{
+    Near, NearToken,
+    protocol::{AccountIdRef, GlobalContractId, PublishMode},
+    signer::SecretKey,
+    transaction::Final,
+};
 
 pub trait GlobalContract {
     async fn deploy_upgradable_global_contract(

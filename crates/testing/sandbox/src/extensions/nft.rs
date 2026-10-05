@@ -1,7 +1,9 @@
 use near_contract_standards::non_fungible_token::{Token, metadata::NFTContractMetadata};
 use near_kit::{
-    AccountIdRef, Action, Final, FunctionCallAction, Gas, Near, NearToken, NftContractMetadata,
-    NonFungibleToken,
+    Gas, Near, NearToken,
+    protocol::{AccountIdRef, Action, FunctionCallAction},
+    standards::{NftContractMetadata, NonFungibleToken},
+    transaction::Final,
 };
 use serde_json::json;
 

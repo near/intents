@@ -1,5 +1,10 @@
 use anyhow::Result;
-use near_kit::{AccountId, Action, Final, FunctionCallAction, FungibleToken, Gas, Near, NearToken};
+use near_kit::{
+    AccountId, Gas, Near, NearToken,
+    protocol::{Action, FunctionCallAction},
+    standards::FungibleToken,
+    transaction::Final,
+};
 use serde::Serialize;
 
 use crate::{account::Account, outcome::SuccessfulExecutionOutcome};

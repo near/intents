@@ -1,5 +1,10 @@
 use defuse_core::crypto::ed25519::Ed25519PublicKey;
-use near_kit::{Action, Final, FunctionCallAction, InMemorySigner, KeyPair, Near, NearToken};
+use near_kit::{
+    Near, NearToken,
+    protocol::{Action, FunctionCallAction},
+    signer::{InMemorySigner, SecretKey},
+    transaction::Final,
+};
 
 pub trait Account {
     async fn create_subaccount(

@@ -1,6 +1,10 @@
 use anyhow::Result;
 use defuse_wallet_sdk::{Request, RequestMessage, client::WalletContract};
-use near_kit::{AccountIdRef, Final, Gas, Near, NearToken, StateInit};
+use near_kit::{
+    Gas, Near, NearToken,
+    protocol::{AccountIdRef, StateInit},
+    transaction::Final,
+};
 
 pub use defuse_wallet_sdk as sdk;
 

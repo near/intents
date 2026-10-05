@@ -1,6 +1,6 @@
 use anyhow::Result;
 use defuse_escrow_swap::{Params, Storage};
-use near_kit::{AccountIdRef, Final, Gas, Near};
+use near_kit::{Gas, Near, protocol::AccountIdRef, transaction::Final};
 use serde::{Deserialize, Serialize};
 
 use crate::outcome::SuccessfulExecutionOutcome;

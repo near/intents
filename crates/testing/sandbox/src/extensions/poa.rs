@@ -2,7 +2,10 @@ use anyhow::Result;
 use defuse_poa_factory::contract::Role;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_kit::{
-    AccountId, AccountIdRef, Final, FunctionCallAction, FungibleToken, Gas, Near, NearToken,
+    AccountId, Gas, Near, NearToken,
+    protocol::{AccountIdRef, FunctionCallAction},
+    standards::FungibleToken,
+    transaction::Final,
 };
 use near_sdk::json_types::U128;
 use serde::{Deserialize, Serialize};
