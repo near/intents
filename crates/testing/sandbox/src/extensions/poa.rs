@@ -297,6 +297,7 @@ impl PoAFactoryExt for Near {
         self.transaction(factory.as_ref())
             .add_action(
                 PoaFactory::remove_withdrawals(PoaRemoveWithdrawalsArgs { withdrawal_ids })
+                    .deposit(NearToken::from_yoctonear(1))
                     .gas(Gas::from_tgas(30)),
             )
             .wait_until::<Final>()
@@ -312,6 +313,7 @@ impl PoAFactoryExt for Near {
         self.transaction(factory.as_ref())
             .add_action(
                 PoaFactory::remove_deposits(PoaRemoveDepositsArgs { deposit_ids })
+                    .deposit(NearToken::from_yoctonear(1))
                     .gas(Gas::from_tgas(30)),
             )
             .wait_until::<Final>()

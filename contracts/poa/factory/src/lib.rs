@@ -113,16 +113,24 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     ///
     /// Ids with nothing stored under them are ignored, so the call succeeds
     /// whether or not every id was present and is safe to retry.
+    ///
+    /// NOTE: MUST attach 1 yⓃ for security purposes.
     fn remove_withdrawals(&mut self, withdrawal_ids: Vec<IdDigest>);
 
     /// Removes the given deposit ids from storage, allowing them to be reused.
     ///
     /// As with [`PoaFactory::remove_withdrawals`], unknown ids are ignored.
+    ///
+    /// NOTE: MUST attach 1 yⓃ for security purposes.
     fn remove_deposits(&mut self, deposit_ids: Vec<IdDigest>);
 
     /// Marks the given token names as omni layer tokens. Does not deploy them.
+    ///
+    /// NOTE: MUST attach 1 yⓃ for security purposes.
     fn mark_omni_tokens(&mut self, tokens: Vec<String>);
     /// Reverts [`PoaFactory::mark_omni_tokens`].
+    ///
+    /// NOTE: MUST attach 1 yⓃ for security purposes.
     fn unmark_omni_tokens(&mut self, tokens: Vec<String>);
     /// Returns the list of omni layer tokens.
     fn get_omni_tokens(&self) -> BTreeSet<String>;

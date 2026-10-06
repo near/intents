@@ -277,7 +277,9 @@ impl PoaFactory for Contract {
 
     #[pause]
     #[access_control_any(roles(Role::DAO))]
+    #[payable]
     fn remove_withdrawals(&mut self, withdrawal_ids: Vec<IdDigest>) {
+        assert_one_yocto();
         let removed: Vec<_> = withdrawal_ids
             .into_iter()
             .filter(|id| self.withdrawals.remove(id).is_some())
@@ -293,7 +295,9 @@ impl PoaFactory for Contract {
 
     #[pause]
     #[access_control_any(roles(Role::DAO))]
+    #[payable]
     fn remove_deposits(&mut self, deposit_ids: Vec<IdDigest>) {
+        assert_one_yocto();
         let removed: Vec<_> = deposit_ids
             .into_iter()
             .filter(|id| self.deposits.remove(id))
@@ -304,6 +308,36 @@ impl PoaFactory for Contract {
                 deposit_ids: &removed,
             }
             .emit();
+        }
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO))]
+    #[payable]
+    fn mark_omni_tokens(&mut self, tokens: Vec<String>) {
+        assert_one_yocto();
+        let marked: Vec<_> = tokens
+            .into_iter()
+            .filter(|token| self.omni_tokens.insert(token.clone()))
+            .collect();
+
+        if !marked.is_empty() {
+            FactoryEvent::OmniTokensMarked { tokens: &marked }.emit();
+        }
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO))]
+    #[payable]
+    fn unmark_omni_tokens(&mut self, tokens: Vec<String>) {
+        assert_one_yocto();
+        let unmarked: Vec<_> = tokens
+            .into_iter()
+            .filter(|token| self.omni_tokens.remove(token))
+            .collect();
+
+        if !unmarked.is_empty() {
+            FactoryEvent::OmniTokensUnmarked { tokens: &unmarked }.emit();
         }
     }
 
@@ -320,32 +354,6 @@ impl PoaFactory for Contract {
                 (token, account_id)
             })
             .collect()
-    }
-
-    #[pause]
-    #[access_control_any(roles(Role::DAO))]
-    fn mark_omni_tokens(&mut self, tokens: Vec<String>) {
-        let marked: Vec<_> = tokens
-            .into_iter()
-            .filter(|token| self.omni_tokens.insert(token.clone()))
-            .collect();
-
-        if !marked.is_empty() {
-            FactoryEvent::OmniTokensMarked { tokens: &marked }.emit();
-        }
-    }
-
-    #[pause]
-    #[access_control_any(roles(Role::DAO))]
-    fn unmark_omni_tokens(&mut self, tokens: Vec<String>) {
-        let unmarked: Vec<_> = tokens
-            .into_iter()
-            .filter(|token| self.omni_tokens.remove(token))
-            .collect();
-
-        if !unmarked.is_empty() {
-            FactoryEvent::OmniTokensUnmarked { tokens: &unmarked }.emit();
-        }
     }
 
     fn get_omni_tokens(&self) -> BTreeSet<String> {
