@@ -21,7 +21,7 @@ pub struct Withdrawal {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[near(event_json(standard = "factory"))]
+#[near(event_json(standard = "omni-factory"))]
 #[derive(Debug, Clone)]
 pub enum FactoryEvent<'a> {
     #[event_version("0.1.0")]
