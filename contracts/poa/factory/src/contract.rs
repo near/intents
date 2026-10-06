@@ -324,15 +324,27 @@ impl PoaFactory for Contract {
 
     #[pause]
     #[access_control_any(roles(Role::DAO))]
-    fn add_omni_tokens(&mut self, tokens: Vec<String>) {
-        self.omni_tokens.extend(tokens);
+    fn mark_omni_tokens(&mut self, tokens: Vec<String>) {
+        let marked: Vec<_> = tokens
+            .into_iter()
+            .filter(|token| self.omni_tokens.insert(token.clone()))
+            .collect();
+
+        if !marked.is_empty() {
+            FactoryEvent::OmniTokensMarked { tokens: &marked }.emit();
+        }
     }
 
     #[pause]
     #[access_control_any(roles(Role::DAO))]
-    fn remove_omni_tokens(&mut self, tokens: Vec<String>) {
-        for token in tokens {
-            self.omni_tokens.remove(&token);
+    fn unmark_omni_tokens(&mut self, tokens: Vec<String>) {
+        let unmarked: Vec<_> = tokens
+            .into_iter()
+            .filter(|token| self.omni_tokens.remove(token))
+            .collect();
+
+        if !unmarked.is_empty() {
+            FactoryEvent::OmniTokensUnmarked { tokens: &unmarked }.emit();
         }
     }
 

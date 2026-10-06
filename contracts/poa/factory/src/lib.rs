@@ -40,6 +40,10 @@ pub enum FactoryEvent<'a> {
     WithdrawalRecordsRemoved { withdrawal_ids: &'a [IdDigest] },
     #[event_version("0.1.0")]
     DepositsRemoved { deposit_ids: &'a [IdDigest] },
+    #[event_version("0.1.0")]
+    OmniTokensMarked { tokens: &'a [String] },
+    #[event_version("0.1.0")]
+    OmniTokensUnmarked { tokens: &'a [String] },
 }
 
 #[ext_contract(ext_poa_factory)]
@@ -116,10 +120,10 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     /// As with [`PoaFactory::remove_withdrawals`], unknown ids are ignored.
     fn remove_deposits(&mut self, deposit_ids: Vec<IdDigest>);
 
-    /// Adds the given tokens to the list of omni layer tokens.
-    fn add_omni_tokens(&mut self, tokens: Vec<String>);
-    /// Removes the given tokens from the list of omni layer tokens.
-    fn remove_omni_tokens(&mut self, tokens: Vec<String>);
+    /// Marks the given token names as omni layer tokens. Does not deploy them.
+    fn mark_omni_tokens(&mut self, tokens: Vec<String>);
+    /// Reverts [`PoaFactory::mark_omni_tokens`].
+    fn unmark_omni_tokens(&mut self, tokens: Vec<String>);
     /// Returns the list of omni layer tokens.
     fn get_omni_tokens(&self) -> BTreeSet<String>;
 }
