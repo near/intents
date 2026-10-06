@@ -1,6 +1,6 @@
 use core::iter;
 use near_sdk::store::{LookupMap, LookupSet};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use defuse_poa_token::ext_poa_fungible_token;
@@ -232,7 +232,7 @@ impl PoaFactory for Contract {
                 .is_none(),
             "withdrawal already exists"
         );
-        FactoryEvent::WithdrawRecorded {
+        FactoryEvent::WithdrawalRecorded {
             withdrawal_id,
             withdrawal: &withdrawal,
         }
@@ -266,7 +266,7 @@ impl PoaFactory for Contract {
         withdrawal.payload_hash = new_payload_hash;
         withdrawal.metadata = metadata;
 
-        FactoryEvent::WithdrawRecordUpdated {
+        FactoryEvent::WithdrawalRecordUpdated {
             withdrawal_id,
             prev_payload_hash,
             new_payload_hash: withdrawal.payload_hash,
@@ -278,16 +278,32 @@ impl PoaFactory for Contract {
     #[pause]
     #[access_control_any(roles(Role::DAO))]
     fn remove_withdrawals(&mut self, withdrawal_ids: Vec<IdDigest>) {
-        for id in withdrawal_ids {
-            self.withdrawals.remove(&id);
+        let removed: Vec<_> = withdrawal_ids
+            .into_iter()
+            .filter(|id| self.withdrawals.remove(id).is_some())
+            .collect();
+
+        if !removed.is_empty() {
+            FactoryEvent::WithdrawalRecordsRemoved {
+                withdrawal_ids: &removed,
+            }
+            .emit();
         }
     }
 
     #[pause]
     #[access_control_any(roles(Role::DAO))]
     fn remove_deposits(&mut self, deposit_ids: Vec<IdDigest>) {
-        for id in deposit_ids {
-            self.deposits.remove(&id);
+        let removed: Vec<_> = deposit_ids
+            .into_iter()
+            .filter(|id| self.deposits.remove(id))
+            .collect();
+
+        if !removed.is_empty() {
+            FactoryEvent::DepositsRemoved {
+                deposit_ids: &removed,
+            }
+            .emit();
         }
     }
 

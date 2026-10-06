@@ -2,7 +2,7 @@
 pub mod contract;
 mod types;
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
@@ -36,6 +36,10 @@ pub enum FactoryEvent<'a> {
         new_payload_hash: PayloadHash,
         metadata: &'a str,
     },
+    #[event_version("0.1.0")]
+    WithdrawalRecordsRemoved { withdrawal_ids: &'a [IdDigest] },
+    #[event_version("0.1.0")]
+    DepositsRemoved { deposit_ids: &'a [IdDigest] },
 }
 
 #[ext_contract(ext_poa_factory)]
@@ -117,5 +121,5 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     /// Removes the given tokens from the list of omni layer tokens.
     fn remove_omni_tokens(&mut self, tokens: Vec<String>);
     /// Returns the list of omni layer tokens.
-    fn get_omni_tokens(&self) -> Vec<String>;
+    fn get_omni_tokens(&self) -> BTreeSet<String>;
 }
