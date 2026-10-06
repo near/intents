@@ -98,11 +98,11 @@ std = ["defuse-time/std"]
 tracing = ["dep:tracing", "near-kit?/tracing"]
 resolver = [
   "access-keys",
+  "client",
   "dep:futures",
   "dep:itertools",
   "dep:thiserror",
   "json",
-  "client",
   "near-kit/rpc",
   "serde",
 ]
