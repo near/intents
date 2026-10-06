@@ -320,7 +320,7 @@ impl PoaFactory for Contract {
         }
     }
 
-    fn get_omni_tokens(&self) -> Vec<String> {
+    fn get_omni_tokens(&self) -> BTreeSet<String> {
         self.omni_tokens.iter().cloned().collect()
     }
 }
