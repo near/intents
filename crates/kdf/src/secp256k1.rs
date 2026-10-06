@@ -6,7 +6,7 @@ use k256::{
 };
 
 use crate::{
-    Additive, CurveArithmetic, DeriveSigner, RecoverableDeriveSigner, ReduceScalar, Schema,
+    Additive, CurveArithmetic, DeriveSigner, RecoverableDeriveSigner, ReducableScalarCurve,
 };
 
 impl CurveArithmetic for Secp256k1 {
@@ -28,6 +28,20 @@ impl CurveArithmetic for Secp256k1 {
     fn point2pk(point: Self::Point) -> Self::PublicKey {
         VerifyingKey::from_affine(point.to_affine())
             .expect("derived public key is the point at infinity")
+    }
+}
+
+impl ReducableScalarCurve<[u8; 32]> for Secp256k1 {
+    #[inline]
+    fn reduce(path: [u8; 32]) -> NonZeroScalar {
+        Reduce::<FieldBytes>::reduce((&path).into())
+    }
+}
+
+impl ReducableScalarCurve<[u8; 64]> for Secp256k1 {
+    #[inline]
+    fn reduce(path: [u8; 64]) -> NonZeroScalar {
+        Reduce::<WideBytes>::reduce((&path).into())
     }
 }
 
@@ -96,31 +110,13 @@ impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     }
 }
 
-impl Schema<[u8; 32]> for ReduceScalar<Secp256k1> {
-    type Output = NonZeroScalar;
-
-    #[inline]
-    fn derive(&self, path: [u8; 32]) -> Self::Output {
-        Reduce::<FieldBytes>::reduce(&path.into())
-    }
-}
-
-impl Schema<[u8; 64]> for ReduceScalar<Secp256k1> {
-    type Output = NonZeroScalar;
-
-    #[inline]
-    fn derive(&self, path: [u8; 64]) -> Self::Output {
-        Reduce::<WideBytes>::reduce(&path.into())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use defuse_crypto::secp256k1::Secp256k1UncompressedPublicKey;
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::{DeriveExt, signer::assert_signer_roundtrip};
+    use crate::{DeriveExt, ReduceScalar, signer::assert_signer_roundtrip};
 
     use super::*;
 
