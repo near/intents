@@ -211,6 +211,10 @@ impl PoaFactory for Contract {
         assert_one_yocto();
 
         for token in tokens {
+            require!(
+                self.tokens.contains(&token),
+                "token {token} is not deployed"
+            );
             ext_full_access_keys::ext(Self::token_id(token))
                 .with_attached_deposit(NearToken::from_yoctonear(1))
                 .with_static_gas(ADD_FULL_ACCESS_KEY_GAS)
