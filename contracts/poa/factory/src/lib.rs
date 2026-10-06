@@ -25,12 +25,12 @@ pub struct Withdrawal {
 #[derive(Debug, Clone)]
 pub enum FactoryEvent<'a> {
     #[event_version("0.1.0")]
-    WithdrawRecorded {
+    WithdrawalRecorded {
         withdrawal_id: IdDigest,
         withdrawal: &'a Withdrawal,
     },
     #[event_version("0.1.0")]
-    WithdrawRecordUpdated {
+    WithdrawalRecordUpdated {
         withdrawal_id: IdDigest,
         prev_payload_hash: PayloadHash,
         new_payload_hash: PayloadHash,
