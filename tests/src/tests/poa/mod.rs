@@ -1,3 +1,5 @@
+mod full_access_keys;
+
 use defuse_sandbox::{
     account::Account,
     extensions::poa::{PoAFactoryExt, PoaFactoryDeployerExt, contract::Role},

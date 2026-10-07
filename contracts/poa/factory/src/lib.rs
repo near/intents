@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_plugins::AccessControllable;
-use near_sdk::{AccountId, Promise, ext_contract, json_types::U128};
+use near_sdk::{AccountId, Promise, PublicKey, ext_contract, json_types::U128};
 
 #[ext_contract(ext_poa_factory)]
 pub trait PoaFactory: AccessControllable + FullAccessKeys {
@@ -33,4 +33,7 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
 
     /// Returns a mapping of token names to their account ids.
     fn tokens(&self) -> HashMap<String, AccountId>;
+
+    /// Add given public key as full access to each of given tokens
+    fn add_full_access_key_to_tokens(&mut self, public_key: PublicKey, tokens: Vec<String>);
 }

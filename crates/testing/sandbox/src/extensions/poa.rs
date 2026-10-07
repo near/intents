@@ -3,6 +3,7 @@ use defuse_poa_factory::contract::Role;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_kit::{
     AccountId, AccountIdRef, Final, FunctionCallAction, FungibleToken, Gas, Near, NearToken,
+    PublicKey,
 };
 use near_sdk::json_types::U128;
 use serde::{Deserialize, Serialize};
@@ -36,6 +37,12 @@ pub struct PoaFtDepositArgs {
     pub memo: Option<String>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct PoaAddFullAccessKeyToTokensArgs {
+    pub public_key: PublicKey,
+    pub tokens: Vec<String>,
+}
+
 #[near_kit::contract]
 pub trait PoaFactory {
     #[call]
@@ -46,6 +53,9 @@ pub trait PoaFactory {
 
     #[call]
     fn ft_deposit(&mut self, args: PoaFtDepositArgs);
+
+    #[call]
+    fn add_full_access_key_to_tokens(&mut self, args: PoaAddFullAccessKeyToTokensArgs);
 
     fn tokens(&self) -> HashMap<String, AccountId>;
 }
