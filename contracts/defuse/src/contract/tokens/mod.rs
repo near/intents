@@ -9,7 +9,7 @@ use defuse_core::{DefuseError, Lock, Result, token_id::TokenId};
 use defuse_near_utils::{REFUND_MEMO, promise_result_checked_json_with_len};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
-use near_sdk::{AccountId, AccountIdRef, FunctionError, Gas, env, json_types::U128};
+use near_sdk::{AccountId, AccountIdRef, FunctionError, Gas, json_types::U128};
 use std::borrow::Cow;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
@@ -129,25 +129,25 @@ impl Contract {
 }
 
 impl Contract {
-    #[must_use]
-    pub(crate) fn mt_resolve_deposit_gas(token_count: usize) -> Gas {
-        const MT_RESOLVE_DEPOSIT_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
-        const MT_RESOLVE_DEPOSIT_BASE_GAS: Gas = Gas::from_tgas(4);
+    // #[must_use]
+    // pub(crate) fn mt_resolve_deposit_gas(token_count: usize) -> Gas {
+    //     const MT_RESOLVE_DEPOSIT_PER_TOKEN_GAS: Gas = Gas::from_tgas(5);
+    //     const MT_RESOLVE_DEPOSIT_BASE_GAS: Gas = Gas::from_tgas(10);
 
-        let token_count: u64 = token_count
-            .try_into()
-            .unwrap_or_else(|_| env::panic_str(&format!("token_count overflow: {token_count}")));
+    //     let token_count: u64 = token_count
+    //         .try_into()
+    //         .unwrap_or_else(|_| env::panic_str(&format!("token_count overflow: {token_count}")));
 
-        MT_RESOLVE_DEPOSIT_BASE_GAS
-            .checked_add(
-                MT_RESOLVE_DEPOSIT_PER_TOKEN_GAS
-                    .checked_mul(token_count)
-                    .ok_or(DefuseError::GasOverflow)
-                    .unwrap_or_else(|err| err.panic()),
-            )
-            .ok_or(DefuseError::GasOverflow)
-            .unwrap_or_else(|err| err.panic())
-    }
+    //     MT_RESOLVE_DEPOSIT_BASE_GAS
+    //         .checked_add(
+    //             MT_RESOLVE_DEPOSIT_PER_TOKEN_GAS
+    //                 .checked_mul(token_count)
+    //                 .ok_or(DefuseError::GasOverflow)
+    //                 .unwrap_or_else(|err| err.panic()),
+    //         )
+    //         .ok_or(DefuseError::GasOverflow)
+    //         .unwrap_or_else(|err| err.panic())
+    // }
 
     pub fn resolve_deposit_internal<'a, I>(&mut self, receiver_id: &AccountIdRef, tokens: I)
     where

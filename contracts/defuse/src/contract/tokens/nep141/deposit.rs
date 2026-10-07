@@ -30,39 +30,35 @@ impl FungibleTokenReceiver for Contract {
             receiver_id,
             action,
         } = if msg.is_empty() {
-            DepositMessage::new(sender_id.clone())
+            DepositMessage::new(sender_id)
         } else {
             msg.parse().unwrap_or_else(|e| panic!("{e}"))
         };
 
-        self.deposit(
-            receiver_id.clone(),
-            [(token_id.clone(), amount.0)],
-            Some("deposit"),
-        )
-        .unwrap_or_else(|err| err.panic());
+        self.deposit(receiver_id, [(token_id, amount.0)], Some("deposit"))
+            .unwrap_or_else(|err| err.panic());
 
         let Some(action) = action else {
             return PromiseOrValue::Value(0.into());
         };
 
         match action {
-            DepositAction::Notify(notify) => Self::notify_on_transfer(
-                sender_id.clone(),
-                vec![sender_id],
-                receiver_id.clone(),
-                vec![token_id.to_string()],
-                vec![amount],
-                notify,
-            )
-            .unwrap_or_else(|err| err.panic())
-            .then(
-                Self::ext(env::current_account_id())
-                    .with_static_gas(Self::mt_resolve_deposit_gas(1))
-                    .with_unused_gas_weight(0)
-                    .ft_resolve_deposit(receiver_id, env::predecessor_account_id(), amount),
-            )
-            .into(),
+            // DepositAction::Notify(notify) => Self::notify_on_transfer(
+            //     sender_id.clone(),
+            //     vec![sender_id],
+            //     receiver_id.clone(),
+            //     vec![token_id.to_string()],
+            //     vec![amount],
+            //     notify,
+            // )
+            // .unwrap_or_else(|err| err.panic())
+            // .then(
+            //     Self::ext(env::current_account_id())
+            //         .with_static_gas(Self::mt_resolve_deposit_gas(1))
+            //         .with_unused_gas_weight(0)
+            //         .ft_resolve_deposit(receiver_id, env::predecessor_account_id(), amount),
+            // )
+            // .into(),
             DepositAction::Execute(execute) => {
                 if !execute.execute_intents.is_empty() {
                     if execute.refund_if_fails {

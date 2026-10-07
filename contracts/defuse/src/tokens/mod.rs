@@ -9,7 +9,7 @@ use core::{
     str::FromStr,
 };
 
-use defuse_core::{intents::tokens::NotifyOnTransfer, payload::multi::MultiPayload};
+use defuse_core::payload::multi::MultiPayload;
 use near_sdk::{AccountId, account_id::ParseAccountError};
 use serde::{Deserialize, Serialize};
 
@@ -71,7 +71,7 @@ impl FromStr for DepositMessage {
 #[serde(untagged)]
 pub enum DepositAction {
     Execute(ExecuteIntents),
-    Notify(NotifyOnTransfer),
+    // Notify(NotifyOnTransfer),
 }
 
 #[must_use]
@@ -106,25 +106,25 @@ mod tests {
         assert!(msg.action.is_none());
     }
 
-    #[test]
-    fn test_deserialize_with_notify() {
-        // With notify action (flattened untagged)
-        let json = r#"{
-            "receiver_id": "alice.near",
-            "msg": "hello world",
-            "min_gas": null
-        }"#;
-        let msg: DepositMessage = serde_json::from_str(json).unwrap();
+    // #[test]
+    // fn test_deserialize_with_notify() {
+    //     // With notify action (flattened untagged)
+    //     let json = r#"{
+    //         "receiver_id": "alice.near",
+    //         "msg": "hello world",
+    //         "min_gas": null
+    //     }"#;
+    //     let msg: DepositMessage = serde_json::from_str(json).unwrap();
 
-        assert_eq!(msg.receiver_id.as_str(), "alice.near");
-        match msg.action {
-            Some(DepositAction::Notify(notify)) => {
-                assert_eq!(notify.msg, "hello world");
-                assert!(notify.min_gas.is_none());
-            }
-            _ => panic!("Expected Notify action"),
-        }
-    }
+    //     assert_eq!(msg.receiver_id.as_str(), "alice.near");
+    //     match msg.action {
+    //         Some(DepositAction::Notify(notify)) => {
+    //             assert_eq!(notify.msg, "hello world");
+    //             assert!(notify.min_gas.is_none());
+    //         }
+    //         _ => panic!("Expected Notify action"),
+    //     }
+    // }
 
     #[test]
     fn test_deserialize_with_execute() {
@@ -157,21 +157,21 @@ mod tests {
         assert!(!json.contains("action"));
     }
 
-    #[test]
-    fn test_serialize_with_notify() {
-        // Serialization with notify action
-        let msg = DepositMessage {
-            receiver_id: "alice.near".parse().unwrap(),
-            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
-                "hello".to_string(),
-            ))),
-        };
-        let json = serde_json::to_string(&msg).unwrap();
+    // #[test]
+    // fn test_serialize_with_notify() {
+    //     // Serialization with notify action
+    //     let msg = DepositMessage {
+    //         receiver_id: "alice.near".parse().unwrap(),
+    //         action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+    //             "hello".to_string(),
+    //         ))),
+    //     };
+    //     let json = serde_json::to_string(&msg).unwrap();
 
-        // Should serialize with flattened notify fields
-        assert!(json.contains("\"receiver_id\":\"alice.near\""));
-        assert!(json.contains("\"msg\":\"hello\""));
-    }
+    //     // Should serialize with flattened notify fields
+    //     assert!(json.contains("\"receiver_id\":\"alice.near\""));
+    //     assert!(json.contains("\"msg\":\"hello\""));
+    // }
 
     #[test]
     fn test_serialize_with_execute() {
@@ -198,20 +198,20 @@ mod tests {
         assert_eq!(msg.to_string(), "alice.near");
     }
 
-    #[test]
-    fn test_display_with_action() {
-        // Display for message with action (should be JSON)
-        let msg = DepositMessage {
-            receiver_id: "alice.near".parse().unwrap(),
-            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
-                "test".to_string(),
-            ))),
-        };
-        let display = msg.to_string();
+    // #[test]
+    // fn test_display_with_action() {
+    //     // Display for message with action (should be JSON)
+    //     let msg = DepositMessage {
+    //         receiver_id: "alice.near".parse().unwrap(),
+    //         action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+    //             "test".to_string(),
+    //         ))),
+    //     };
+    //     let display = msg.to_string();
 
-        assert!(display.starts_with('{'));
-        assert!(display.contains("alice.near"));
-    }
+    //     assert!(display.starts_with('{'));
+    //     assert!(display.contains("alice.near"));
+    // }
 
     #[test]
     fn test_from_str_simple() {
@@ -237,45 +237,45 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_from_str_json_with_notify() {
-        // Parse JSON with notify action
-        let json = r#"{"receiver_id":"alice.near","msg":"test"}"#;
-        let msg: DepositMessage = json.parse().unwrap();
+    // #[test]
+    // fn test_from_str_json_with_notify() {
+    //     // Parse JSON with notify action
+    //     let json = r#"{"receiver_id":"alice.near","msg":"test"}"#;
+    //     let msg: DepositMessage = json.parse().unwrap();
 
-        assert_eq!(msg.receiver_id.as_str(), "alice.near");
-        match msg.action {
-            Some(DepositAction::Notify(notify)) => {
-                assert_eq!(notify.msg, "test");
-            }
-            _ => panic!("Expected Notify action"),
-        }
-    }
+    //     assert_eq!(msg.receiver_id.as_str(), "alice.near");
+    //     match msg.action {
+    //         Some(DepositAction::Notify(notify)) => {
+    //             assert_eq!(notify.msg, "test");
+    //         }
+    //         _ => panic!("Expected Notify action"),
+    //     }
+    // }
 
-    #[test]
-    fn test_deserialize_execute_takes_precedence_when_both_fields_present() {
-        // When both execute_intents and msg are present, Execute variant should be matched first
-        // since it comes first in the untagged enum
-        let json = r#"{
-            "receiver_id": "alice.near",
-            "execute_intents": [],
-            "refund_if_fails": true,
-            "msg": "this should be ignored"
-        }"#;
-        let deposit_msg: DepositMessage = serde_json::from_str(json).unwrap();
+    // #[test]
+    // fn test_deserialize_execute_takes_precedence_when_both_fields_present() {
+    //     // When both execute_intents and msg are present, Execute variant should be matched first
+    //     // since it comes first in the untagged enum
+    //     let json = r#"{
+    //         "receiver_id": "alice.near",
+    //         "execute_intents": [],
+    //         "refund_if_fails": true,
+    //         "msg": "this should be ignored"
+    //     }"#;
+    //     let deposit_msg: DepositMessage = serde_json::from_str(json).unwrap();
 
-        assert_eq!(deposit_msg.receiver_id.as_str(), "alice.near");
-        match deposit_msg.action {
-            Some(DepositAction::Execute(exec)) => {
-                assert!(exec.execute_intents.is_empty());
-                assert!(exec.refund_if_fails);
-            }
-            Some(DepositAction::Notify(_)) => {
-                panic!("Expected Execute action, got Notify instead");
-            }
-            None => panic!("Expected Execute action, got None"),
-        }
-    }
+    //     assert_eq!(deposit_msg.receiver_id.as_str(), "alice.near");
+    //     match deposit_msg.action {
+    //         Some(DepositAction::Execute(exec)) => {
+    //             assert!(exec.execute_intents.is_empty());
+    //             assert!(exec.refund_if_fails);
+    //         }
+    //         Some(DepositAction::Notify(_)) => {
+    //             panic!("Expected Execute action, got Notify instead");
+    //         }
+    //         None => panic!("Expected Execute action, got None"),
+    //     }
+    // }
 
     #[test]
     fn test_builder_methods() {
@@ -297,17 +297,17 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_builder_with_notify() {
-        // Test direct construction with notify
-        let msg = DepositMessage {
-            receiver_id: "alice.near".parse().unwrap(),
-            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
-                "test".to_string(),
-            ))),
-        };
+    // #[test]
+    // fn test_builder_with_notify() {
+    //     // Test direct construction with notify
+    //     let msg = DepositMessage {
+    //         receiver_id: "alice.near".parse().unwrap(),
+    //         action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+    //             "test".to_string(),
+    //         ))),
+    //     };
 
-        assert_eq!(msg.receiver_id.as_str(), "alice.near");
-        assert!(matches!(msg.action, Some(DepositAction::Notify(_))));
-    }
+    //     assert_eq!(msg.receiver_id.as_str(), "alice.near");
+    //     assert!(matches!(msg.action, Some(DepositAction::Notify(_))));
+    // }
 }
