@@ -131,7 +131,7 @@ impl Contract {
 impl Contract {
     // #[must_use]
     // pub(crate) fn mt_resolve_deposit_gas(token_count: usize) -> Gas {
-    //     const MT_RESOLVE_DEPOSIT_PER_TOKEN_GAS: Gas = Gas::from_tgas(3);
+    //     const MT_RESOLVE_DEPOSIT_PER_TOKEN_GAS: Gas = Gas::from_tgas(5);
     //     const MT_RESOLVE_DEPOSIT_BASE_GAS: Gas = Gas::from_tgas(10);
 
     //     let token_count: u64 = token_count
