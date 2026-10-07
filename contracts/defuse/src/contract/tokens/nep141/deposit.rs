@@ -47,22 +47,22 @@ impl FungibleTokenReceiver for Contract {
         };
 
         match action {
-            DepositAction::Notify(notify) => Self::notify_on_transfer(
-                sender_id.clone(),
-                vec![sender_id],
-                receiver_id.clone(),
-                vec![token_id.to_string()],
-                vec![amount],
-                notify,
-            )
-            .unwrap_or_else(|err| err.panic())
-            .then(
-                Self::ext(env::current_account_id())
-                    .with_static_gas(Self::mt_resolve_deposit_gas(1))
-                    .with_unused_gas_weight(0)
-                    .ft_resolve_deposit(receiver_id, env::predecessor_account_id(), amount),
-            )
-            .into(),
+            // DepositAction::Notify(notify) => Self::notify_on_transfer(
+            //     sender_id.clone(),
+            //     vec![sender_id],
+            //     receiver_id.clone(),
+            //     vec![token_id.to_string()],
+            //     vec![amount],
+            //     notify,
+            // )
+            // .unwrap_or_else(|err| err.panic())
+            // .then(
+            //     Self::ext(env::current_account_id())
+            //         .with_static_gas(Self::mt_resolve_deposit_gas(1))
+            //         .with_unused_gas_weight(0)
+            //         .ft_resolve_deposit(receiver_id, env::predecessor_account_id(), amount),
+            // )
+            // .into(),
             DepositAction::Execute(execute) => {
                 if !execute.execute_intents.is_empty() {
                     if execute.refund_if_fails {
@@ -79,20 +79,20 @@ impl FungibleTokenReceiver for Contract {
     }
 }
 
-#[near]
-impl Contract {
-    #[private]
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn ft_resolve_deposit(
-        &mut self,
-        receiver_id: AccountId,
-        contract_id: AccountId,
-        #[allow(unused_mut)] mut amount: U128,
-    ) -> PromiseOrValue<U128> {
-        self.resolve_deposit_internal(
-            &receiver_id,
-            [(Nep141TokenId::new(contract_id).into(), &mut amount.0)],
-        );
-        PromiseOrValue::Value(amount)
-    }
-}
+// #[near]
+// impl Contract {
+//     #[private]
+//     #[allow(clippy::needless_pass_by_value)]
+//     pub fn ft_resolve_deposit(
+//         &mut self,
+//         receiver_id: AccountId,
+//         contract_id: AccountId,
+//         #[allow(unused_mut)] mut amount: U128,
+//     ) -> PromiseOrValue<U128> {
+//         self.resolve_deposit_internal(
+//             &receiver_id,
+//             [(Nep141TokenId::new(contract_id).into(), &mut amount.0)],
+//         );
+//         PromiseOrValue::Value(amount)
+//     }
+// }

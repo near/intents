@@ -77,22 +77,22 @@ impl MultiTokenReceiver for Contract {
         };
 
         match action {
-            DepositAction::Notify(notify) => Self::notify_on_transfer(
-                sender_id,
-                previous_owner_ids,
-                receiver_id.clone(),
-                core_token_ids.map(|t| t.to_string()).collect(),
-                amounts.clone(),
-                notify,
-            )
-            .unwrap_or_else(|err| err.panic())
-            .then(
-                Self::ext(env::current_account_id())
-                    .with_static_gas(Self::mt_resolve_deposit_gas(amounts.len()))
-                    .with_unused_gas_weight(0)
-                    .mt_resolve_deposit(receiver_id, token.clone(), token_ids, amounts),
-            )
-            .into(),
+            // DepositAction::Notify(notify) => Self::notify_on_transfer(
+            //     sender_id,
+            //     previous_owner_ids,
+            //     receiver_id.clone(),
+            //     core_token_ids.map(|t| t.to_string()).collect(),
+            //     amounts.clone(),
+            //     notify,
+            // )
+            // .unwrap_or_else(|err| err.panic())
+            // .then(
+            //     Self::ext(env::current_account_id())
+            //         .with_static_gas(Self::mt_resolve_deposit_gas(amounts.len()))
+            //         .with_unused_gas_weight(0)
+            //         .mt_resolve_deposit(receiver_id, token.clone(), token_ids, amounts),
+            // )
+            // .into(),
             DepositAction::Execute(execute) => {
                 if !execute.execute_intents.is_empty() {
                     if execute.refund_if_fails {
@@ -109,26 +109,26 @@ impl MultiTokenReceiver for Contract {
     }
 }
 
-#[near]
-impl Contract {
-    #[private]
-    #[allow(clippy::needless_pass_by_value)]
-    pub fn mt_resolve_deposit(
-        &mut self,
-        receiver_id: AccountId,
-        contract_id: AccountId,
-        tokens: Vec<defuse_nep245::TokenId>,
-        #[allow(unused_mut)] mut amounts: Vec<U128>,
-    ) -> PromiseOrValue<Vec<U128>> {
-        self.resolve_deposit_internal(
-            &receiver_id,
-            tokens
-                .into_iter()
-                .map(|token_id| Nep245TokenId::new(contract_id.clone(), token_id))
-                .map(Into::into)
-                .zip(amounts.iter_mut().map(|amount| &mut amount.0)),
-        );
+// #[near]
+// impl Contract {
+//     #[private]
+//     #[allow(clippy::needless_pass_by_value)]
+//     pub fn mt_resolve_deposit(
+//         &mut self,
+//         receiver_id: AccountId,
+//         contract_id: AccountId,
+//         tokens: Vec<defuse_nep245::TokenId>,
+//         #[allow(unused_mut)] mut amounts: Vec<U128>,
+//     ) -> PromiseOrValue<Vec<U128>> {
+//         self.resolve_deposit_internal(
+//             &receiver_id,
+//             tokens
+//                 .into_iter()
+//                 .map(|token_id| Nep245TokenId::new(contract_id.clone(), token_id))
+//                 .map(Into::into)
+//                 .zip(amounts.iter_mut().map(|amount| &mut amount.0)),
+//         );
 
-        PromiseOrValue::Value(amounts)
-    }
-}
+//         PromiseOrValue::Value(amounts)
+//     }
+// }

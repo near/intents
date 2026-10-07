@@ -1,24 +1,17 @@
-use defuse_sandbox::{
-    account::Account,
-    extensions::{
-        acl::AccessControllableExt,
-        defuse::{
-            DefuseExt, DefuseSignerExt,
-            contract::Role,
-            core::{
-                amounts::Amounts,
-                intents::tokens::{FtWithdraw, NotifyOnTransfer, Transfer},
-                token_id::{TokenId, nep141::Nep141TokenId},
-            },
-            tokens::{DepositAction, DepositMessage, ExecuteIntents},
+use defuse_sandbox::extensions::{
+    acl::AccessControllableExt,
+    defuse::{
+        DefuseExt, DefuseSignerExt,
+        contract::Role,
+        core::{
+            intents::tokens::FtWithdraw,
+            token_id::{TokenId, nep141::Nep141TokenId},
         },
-        mt::{Mt, MtBalanceOfArgs},
-        poa::PoAFactoryExt,
+        tokens::{DepositAction, DepositMessage, ExecuteIntents},
     },
-    kit::{Final, Gas, NearToken},
+    mt::{Mt, MtBalanceOfArgs},
+    poa::PoAFactoryExt,
 };
-use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
-use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::json_types::U128;
 use rstest::rstest;
 
@@ -412,165 +405,165 @@ async fn ft_force_withdraw(
     );
 }
 
-#[derive(Debug, Clone)]
-struct TransferCallExpectation {
-    action: StubAction,
-    intent_transfer_amount: Option<u128>,
-    refund_if_fails: bool,
-    expected_sender_ft_balance: u128,
-    expected_receiver_mt_balance: u128,
-}
+// #[derive(Debug, Clone)]
+// struct TransferCallExpectation {
+//     action: StubAction,
+//     intent_transfer_amount: Option<u128>,
+//     refund_if_fails: bool,
+//     expected_sender_ft_balance: u128,
+//     expected_receiver_mt_balance: u128,
+// }
 
-#[rstest]
-#[case::nothing_to_refund(TransferCallExpectation {
-    action: StubAction::ReturnValue(0.into()),
-    intent_transfer_amount: None,
-    refund_if_fails: true,
-    expected_sender_ft_balance: 0,
-    expected_receiver_mt_balance: 1_500,
-})]
-#[case::partial_refund(TransferCallExpectation {
-    action: StubAction::ReturnValue(300.into()),
-    intent_transfer_amount: None,
-    refund_if_fails: true,
-    expected_sender_ft_balance: 300,
-    expected_receiver_mt_balance: 1_200,
-})]
-#[case::malicious_refund(TransferCallExpectation {
-    action: StubAction::ReturnValue(2_000.into()),
-    intent_transfer_amount: None,
-    refund_if_fails: true,
-    expected_sender_ft_balance: 1_000,
-    expected_receiver_mt_balance: 500,
-})]
-#[case::receiver_panics_results_with_no_refund(TransferCallExpectation {
-    action: StubAction::Panic,
-    intent_transfer_amount: None,
-    refund_if_fails: true,
-    expected_sender_ft_balance: 1000,
-    expected_receiver_mt_balance: 500,
-})]
-#[case::malicious_receiver(TransferCallExpectation {
-    action: StubAction::MaliciousReturn,
-    intent_transfer_amount: None,
-    refund_if_fails: true,
-    expected_sender_ft_balance: 1000,
-    expected_receiver_mt_balance: 500,
-})]
-#[tokio::test]
-async fn ft_transfer_call_calls_mt_on_transfer_variants(
-    #[case] expectation: TransferCallExpectation,
-    #[with(Env::builder().deployer_as_super_admin())]
-    #[future(awt)]
-    env: Env,
-) {
-    let (user, intent_receiver, ft) =
-        futures::join!(env.create_user(), env.create_user(), env.create_token());
+// #[rstest]
+// #[case::nothing_to_refund(TransferCallExpectation {
+//     action: StubAction::ReturnValue(0.into()),
+//     intent_transfer_amount: None,
+//     refund_if_fails: true,
+//     expected_sender_ft_balance: 0,
+//     expected_receiver_mt_balance: 1_500,
+// })]
+// #[case::partial_refund(TransferCallExpectation {
+//     action: StubAction::ReturnValue(300.into()),
+//     intent_transfer_amount: None,
+//     refund_if_fails: true,
+//     expected_sender_ft_balance: 300,
+//     expected_receiver_mt_balance: 1_200,
+// })]
+// #[case::malicious_refund(TransferCallExpectation {
+//     action: StubAction::ReturnValue(2_000.into()),
+//     intent_transfer_amount: None,
+//     refund_if_fails: true,
+//     expected_sender_ft_balance: 1_000,
+//     expected_receiver_mt_balance: 500,
+// })]
+// #[case::receiver_panics_results_with_no_refund(TransferCallExpectation {
+//     action: StubAction::Panic,
+//     intent_transfer_amount: None,
+//     refund_if_fails: true,
+//     expected_sender_ft_balance: 1000,
+//     expected_receiver_mt_balance: 500,
+// })]
+// #[case::malicious_receiver(TransferCallExpectation {
+//     action: StubAction::MaliciousReturn,
+//     intent_transfer_amount: None,
+//     refund_if_fails: true,
+//     expected_sender_ft_balance: 1000,
+//     expected_receiver_mt_balance: 500,
+// })]
+// #[tokio::test]
+// async fn ft_transfer_call_calls_mt_on_transfer_variants(
+//     #[case] expectation: TransferCallExpectation,
+//     #[with(Env::builder().deployer_as_super_admin())]
+//     #[future(awt)]
+//     env: Env,
+// ) {
+//     let (user, intent_receiver, ft) =
+//         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
-    let receiver = env
-        .deploy_sub_contract(
-            "receiver_stub",
-            NearToken::from_near(100),
-            MT_RECEIVER_STUB_WASM.to_vec(),
-            None,
-        )
-        .await
-        .unwrap();
+//     let receiver = env
+//         .deploy_sub_contract(
+//             "receiver_stub",
+//             NearToken::from_near(100),
+//             MT_RECEIVER_STUB_WASM.to_vec(),
+//             None,
+//         )
+//         .await
+//         .unwrap();
 
-    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
-    env.initial_ft_storage_deposit(
-        vec![
-            user.account_id(),
-            receiver.account_id(),
-            intent_receiver.account_id(),
-        ],
-        vec![ft.contract_id()],
-    )
-    .await;
+//     let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
+//     env.initial_ft_storage_deposit(
+//         vec![
+//             user.account_id(),
+//             receiver.account_id(),
+//             intent_receiver.account_id(),
+//         ],
+//         vec![ft.contract_id()],
+//     )
+//     .await;
 
-    env.defuse_ft_deposit_to(ft.contract_id(), 500, receiver.account_id(), None)
-        .await
-        .unwrap();
+//     env.defuse_ft_deposit_to(ft.contract_id(), 500, receiver.account_id(), None)
+//         .await
+//         .unwrap();
 
-    env.ft(ft.contract_id())
-        .unwrap()
-        .transfer(user.account_id(), 1000u128)
-        .await
-        .unwrap()
-        .result()
-        .unwrap();
+//     env.ft(ft.contract_id())
+//         .unwrap()
+//         .transfer(user.account_id(), 1000u128)
+//         .await
+//         .unwrap()
+//         .result()
+//         .unwrap();
 
-    assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 1000);
+//     assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 1000);
 
-    let intents = match &expectation.intent_transfer_amount {
-        Some(amount) => vec![
-            receiver
-                .sign_defuse_payload_default(
-                    &env.defuse,
-                    [Transfer {
-                        receiver_id: intent_receiver.account_id().clone(),
-                        tokens: Amounts::new(std::iter::once((ft_id.clone(), *amount)).collect()),
-                        memo: None,
-                        notification: None,
-                    }],
-                )
-                .await
-                .unwrap(),
-        ],
-        None => vec![],
-    };
+//     let intents = match &expectation.intent_transfer_amount {
+//         Some(amount) => vec![
+//             receiver
+//                 .sign_defuse_payload_default(
+//                     &env.defuse,
+//                     [Transfer {
+//                         receiver_id: intent_receiver.account_id().clone(),
+//                         tokens: Amounts::new(std::iter::once((ft_id.clone(), *amount)).collect()),
+//                         memo: None,
+//                         notification: None,
+//                     }],
+//                 )
+//                 .await
+//                 .unwrap(),
+//         ],
+//         None => vec![],
+//     };
 
-    let deposit_message = if intents.is_empty() {
-        DepositMessage {
-            receiver_id: receiver.account_id().clone(),
-            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
-                serde_json::to_string(&expectation.action).unwrap(),
-            ))),
-        }
-    } else {
-        DepositMessage {
-            receiver_id: receiver.account_id().clone(),
-            action: Some(DepositAction::Execute(ExecuteIntents {
-                execute_intents: intents,
-                refund_if_fails: expectation.refund_if_fails,
-            })),
-        }
-    };
+//     let deposit_message = if intents.is_empty() {
+//         DepositMessage {
+//             receiver_id: receiver.account_id().clone(),
+//             action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+//                 serde_json::to_string(&expectation.action).unwrap(),
+//             ))),
+//         }
+//     } else {
+//         DepositMessage {
+//             receiver_id: receiver.account_id().clone(),
+//             action: Some(DepositAction::Execute(ExecuteIntents {
+//                 execute_intents: intents,
+//                 refund_if_fails: expectation.refund_if_fails,
+//             })),
+//         }
+//     };
 
-    user.ft(ft.contract_id())
-        .unwrap()
-        .transfer_call(
-            env.defuse.contract_id(),
-            1000u128,
-            deposit_message.to_string(),
-        )
-        .gas(Gas::from_tgas(300))
-        .wait_until::<Final>()
-        .await
-        .unwrap()
-        .result()
-        .unwrap();
+//     user.ft(ft.contract_id())
+//         .unwrap()
+//         .transfer_call(
+//             env.defuse.contract_id(),
+//             1000u128,
+//             deposit_message.to_string(),
+//         )
+//         .gas(Gas::from_tgas(300))
+//         .wait_until::<Final>()
+//         .await
+//         .unwrap()
+//         .result()
+//         .unwrap();
 
-    let ft_id = ft_id.to_string();
-    futures::join!(
-        async {
-            assert_eq!(
-                ft.balance_of(user.account_id()).await.unwrap().raw(),
-                expectation.expected_sender_ft_balance
-            );
-        },
-        async {
-            assert_eq!(
-                env.contract::<Mt>(env.defuse.contract_id())
-                    .mt_balance_of(MtBalanceOfArgs {
-                        account_id: receiver.account_id(),
-                        token_id: &ft_id,
-                    })
-                    .await
-                    .unwrap()
-                    .0,
-                expectation.expected_receiver_mt_balance
-            );
-        },
-    );
-}
+//     let ft_id = ft_id.to_string();
+//     futures::join!(
+//         async {
+//             assert_eq!(
+//                 ft.balance_of(user.account_id()).await.unwrap().raw(),
+//                 expectation.expected_sender_ft_balance
+//             );
+//         },
+//         async {
+//             assert_eq!(
+//                 env.contract::<Mt>(env.defuse.contract_id())
+//                     .mt_balance_of(MtBalanceOfArgs {
+//                         account_id: receiver.account_id(),
+//                         token_id: &ft_id,
+//                     })
+//                     .await
+//                     .unwrap()
+//                     .0,
+//                 expectation.expected_receiver_mt_balance
+//             );
+//         },
+//     );
+// }
