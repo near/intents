@@ -5,9 +5,11 @@ mod nep171;
 mod nep245;
 
 use super::Contract;
-use defuse_core::{DefuseError, Result, token_id::TokenId};
+use defuse_core::{DefuseError, Lock, Result, token_id::TokenId};
+use defuse_near_utils::{REFUND_MEMO, promise_result_checked_json_with_len};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
-use near_sdk::{AccountId, AccountIdRef, Gas};
+use itertools::{Either, Itertools};
+use near_sdk::{AccountId, AccountIdRef, FunctionError, Gas, json_types::U128};
 use std::borrow::Cow;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
@@ -126,94 +128,94 @@ impl Contract {
     }
 }
 
-// impl Contract {
-//     #[must_use]
-//     pub(crate) fn mt_resolve_deposit_gas(token_count: usize) -> Gas {
-//         const MT_RESOLVE_DEPOSIT_PER_TOKEN_GAS: Gas = Gas::from_tgas(3);
-//         const MT_RESOLVE_DEPOSIT_BASE_GAS: Gas = Gas::from_tgas(10);
+impl Contract {
+    // #[must_use]
+    // pub(crate) fn mt_resolve_deposit_gas(token_count: usize) -> Gas {
+    //     const MT_RESOLVE_DEPOSIT_PER_TOKEN_GAS: Gas = Gas::from_tgas(3);
+    //     const MT_RESOLVE_DEPOSIT_BASE_GAS: Gas = Gas::from_tgas(10);
 
-//         let token_count: u64 = token_count
-//             .try_into()
-//             .unwrap_or_else(|_| env::panic_str(&format!("token_count overflow: {token_count}")));
+    //     let token_count: u64 = token_count
+    //         .try_into()
+    //         .unwrap_or_else(|_| env::panic_str(&format!("token_count overflow: {token_count}")));
 
-//         MT_RESOLVE_DEPOSIT_BASE_GAS
-//             .checked_add(
-//                 MT_RESOLVE_DEPOSIT_PER_TOKEN_GAS
-//                     .checked_mul(token_count)
-//                     .ok_or(DefuseError::GasOverflow)
-//                     .unwrap_or_else(|err| err.panic()),
-//             )
-//             .ok_or(DefuseError::GasOverflow)
-//             .unwrap_or_else(|err| err.panic())
-//     }
+    //     MT_RESOLVE_DEPOSIT_BASE_GAS
+    //         .checked_add(
+    //             MT_RESOLVE_DEPOSIT_PER_TOKEN_GAS
+    //                 .checked_mul(token_count)
+    //                 .ok_or(DefuseError::GasOverflow)
+    //                 .unwrap_or_else(|err| err.panic()),
+    //         )
+    //         .ok_or(DefuseError::GasOverflow)
+    //         .unwrap_or_else(|err| err.panic())
+    // }
 
-//     pub fn resolve_deposit_internal<'a, I>(&mut self, receiver_id: &AccountIdRef, tokens: I)
-//     where
-//         I: IntoIterator<Item = (TokenId, &'a mut u128)>,
-//         I::IntoIter: ExactSizeIterator,
-//     {
-//         let tokens_iter = tokens.into_iter();
-//         let tokens_count = tokens_iter.len();
+    pub fn resolve_deposit_internal<'a, I>(&mut self, receiver_id: &AccountIdRef, tokens: I)
+    where
+        I: IntoIterator<Item = (TokenId, &'a mut u128)>,
+        I::IntoIter: ExactSizeIterator,
+    {
+        let tokens_iter = tokens.into_iter();
+        let tokens_count = tokens_iter.len();
 
-//         let requested_refunds = promise_result_checked_json_with_len::<Vec<U128>>(0, tokens_count)
-//             .ok()
-//             .and_then(Result::ok)
-//             .filter(|refunds| refunds.len() == tokens_count);
+        let requested_refunds = promise_result_checked_json_with_len::<Vec<U128>>(0, tokens_count)
+            .ok()
+            .and_then(Result::ok)
+            .filter(|refunds| refunds.len() == tokens_count);
 
-//         let mut burn_event = MtBurnEvent {
-//             owner_id: Cow::Borrowed(receiver_id),
-//             authorized_id: None,
-//             token_ids: Vec::with_capacity(tokens_count).into(),
-//             amounts: Vec::with_capacity(tokens_count).into(),
-//             memo: Some(REFUND_MEMO.into()),
-//         };
+        let mut burn_event = MtBurnEvent {
+            owner_id: Cow::Borrowed(receiver_id),
+            authorized_id: None,
+            token_ids: Vec::with_capacity(tokens_count).into(),
+            amounts: Vec::with_capacity(tokens_count).into(),
+            memo: Some(REFUND_MEMO.into()),
+        };
 
-//         let Some(receiver) = self
-//             .storage
-//             .accounts
-//             .get_mut(receiver_id)
-//             .map(Lock::as_inner_unchecked_mut)
-//         else {
-//             tokens_iter.for_each(|(_, amount)| *amount = 0);
-//             return;
-//         };
+        let Some(receiver) = self
+            .storage
+            .accounts
+            .get_mut(receiver_id)
+            .map(Lock::as_inner_unchecked_mut)
+        else {
+            tokens_iter.for_each(|(_, amount)| *amount = 0);
+            return;
+        };
 
-//         for ((token_id, deposited), requested_refund) in
-//             tokens_iter.zip_eq(requested_refunds.map_or_else(
-//                 || Either::Right(std::iter::repeat_n(None, tokens_count)),
-//                 |v| Either::Left(v.into_iter().map(|elem| Some(elem.0))),
-//             ))
-//         {
-//             let requested_refund = requested_refund.unwrap_or(*deposited);
-//             let balance_left = receiver.token_balances.amount_for(&token_id);
-//             // NOTE: refunds are capped by deposited amounts and balance left on the receiver
-//             let refund_amount = requested_refund.min(*deposited).min(balance_left);
-//             *deposited = refund_amount;
-//             if refund_amount == 0 {
-//                 continue;
-//             }
+        for ((token_id, deposited), requested_refund) in
+            tokens_iter.zip_eq(requested_refunds.map_or_else(
+                || Either::Right(std::iter::repeat_n(None, tokens_count)),
+                |v| Either::Left(v.into_iter().map(|elem| Some(elem.0))),
+            ))
+        {
+            let requested_refund = requested_refund.unwrap_or(*deposited);
+            let balance_left = receiver.token_balances.amount_for(&token_id);
+            // NOTE: refunds are capped by deposited amounts and balance left on the receiver
+            let refund_amount = requested_refund.min(*deposited).min(balance_left);
+            *deposited = refund_amount;
+            if refund_amount == 0 {
+                continue;
+            }
 
-//             burn_event.token_ids.to_mut().push(token_id.to_string());
-//             burn_event.amounts.to_mut().push(refund_amount);
+            burn_event.token_ids.to_mut().push(token_id.to_string());
+            burn_event.amounts.to_mut().push(refund_amount);
 
-//             receiver
-//                 .token_balances
-//                 .sub(token_id.clone(), refund_amount)
-//                 .ok_or(DefuseError::BalanceOverflow)
-//                 .unwrap_or_else(|err| err.panic());
+            receiver
+                .token_balances
+                .sub(token_id.clone(), refund_amount)
+                .ok_or(DefuseError::BalanceOverflow)
+                .unwrap_or_else(|err| err.panic());
 
-//             self.storage
-//                 .state
-//                 .total_supplies
-//                 .sub(token_id, refund_amount)
-//                 .ok_or(DefuseError::BalanceOverflow)
-//                 .unwrap_or_else(|err| err.panic());
-//         }
+            self.storage
+                .state
+                .total_supplies
+                .sub(token_id, refund_amount)
+                .ok_or(DefuseError::BalanceOverflow)
+                .unwrap_or_else(|err| err.panic());
+        }
 
-//         if !burn_event.amounts.is_empty() {
-//             // NOTE: No need for `check_refund()` here since this IS the refund.
-//             // The refund memo size was already accounted for in the original mint.
-//             MtEvent::MtBurn([burn_event].as_slice().into()).emit();
-//         }
-//     }
-// }
+        if !burn_event.amounts.is_empty() {
+            // NOTE: No need for `check_refund()` here since this IS the refund.
+            // The refund memo size was already accounted for in the original mint.
+            MtEvent::MtBurn([burn_event].as_slice().into()).emit();
+        }
+    }
+}

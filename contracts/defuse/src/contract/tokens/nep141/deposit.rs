@@ -75,20 +75,20 @@ impl FungibleTokenReceiver for Contract {
     }
 }
 
-// #[near]
-// impl Contract {
-//     #[private]
-//     #[allow(clippy::needless_pass_by_value)]
-//     pub fn ft_resolve_deposit(
-//         &mut self,
-//         receiver_id: AccountId,
-//         contract_id: AccountId,
-//         #[allow(unused_mut)] mut amount: U128,
-//     ) -> PromiseOrValue<U128> {
-//         self.resolve_deposit_internal(
-//             &receiver_id,
-//             [(Nep141TokenId::new(contract_id).into(), &mut amount.0)],
-//         );
-//         PromiseOrValue::Value(amount)
-//     }
-// }
+#[near]
+impl Contract {
+    #[private]
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn ft_resolve_deposit(
+        &mut self,
+        receiver_id: AccountId,
+        contract_id: AccountId,
+        #[allow(unused_mut)] mut amount: U128,
+    ) -> PromiseOrValue<U128> {
+        self.resolve_deposit_internal(
+            &receiver_id,
+            [(Nep141TokenId::new(contract_id).into(), &mut amount.0)],
+        );
+        PromiseOrValue::Value(amount)
+    }
+}

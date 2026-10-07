@@ -88,25 +88,25 @@ impl NonFungibleTokenReceiver for Contract {
     }
 }
 
-// #[near]
-// impl Contract {
-//     #[private]
-//     #[allow(clippy::needless_pass_by_value)]
-//     pub fn nft_resolve_deposit(
-//         &mut self,
-//         receiver_id: AccountId,
-//         contract_id: AccountId,
-//         nft_token_id: nep171::TokenId,
-//     ) -> PromiseOrValue<bool> {
-//         let mut amount = 1u128;
+#[near]
+impl Contract {
+    #[private]
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn nft_resolve_deposit(
+        &mut self,
+        receiver_id: AccountId,
+        contract_id: AccountId,
+        nft_token_id: nep171::TokenId,
+    ) -> PromiseOrValue<bool> {
+        let mut amount = 1u128;
 
-//         self.resolve_deposit_internal(
-//             &receiver_id,
-//             [(
-//                 Nep171TokenId::new(contract_id, nft_token_id).into(),
-//                 &mut amount,
-//             )],
-//         );
-//         PromiseOrValue::Value(amount != 0)
-//     }
-// }
+        self.resolve_deposit_internal(
+            &receiver_id,
+            [(
+                Nep171TokenId::new(contract_id, nft_token_id).into(),
+                &mut amount,
+            )],
+        );
+        PromiseOrValue::Value(amount != 0)
+    }
+}

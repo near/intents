@@ -109,26 +109,26 @@ impl MultiTokenReceiver for Contract {
     }
 }
 
-// #[near]
-// impl Contract {
-//     #[private]
-//     #[allow(clippy::needless_pass_by_value)]
-//     pub fn mt_resolve_deposit(
-//         &mut self,
-//         receiver_id: AccountId,
-//         contract_id: AccountId,
-//         tokens: Vec<defuse_nep245::TokenId>,
-//         #[allow(unused_mut)] mut amounts: Vec<U128>,
-//     ) -> PromiseOrValue<Vec<U128>> {
-//         self.resolve_deposit_internal(
-//             &receiver_id,
-//             tokens
-//                 .into_iter()
-//                 .map(|token_id| Nep245TokenId::new(contract_id.clone(), token_id))
-//                 .map(Into::into)
-//                 .zip(amounts.iter_mut().map(|amount| &mut amount.0)),
-//         );
+#[near]
+impl Contract {
+    #[private]
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn mt_resolve_deposit(
+        &mut self,
+        receiver_id: AccountId,
+        contract_id: AccountId,
+        tokens: Vec<defuse_nep245::TokenId>,
+        #[allow(unused_mut)] mut amounts: Vec<U128>,
+    ) -> PromiseOrValue<Vec<U128>> {
+        self.resolve_deposit_internal(
+            &receiver_id,
+            tokens
+                .into_iter()
+                .map(|token_id| Nep245TokenId::new(contract_id.clone(), token_id))
+                .map(Into::into)
+                .zip(amounts.iter_mut().map(|amount| &mut amount.0)),
+        );
 
-//         PromiseOrValue::Value(amounts)
-//     }
-// }
+        PromiseOrValue::Value(amounts)
+    }
+}
