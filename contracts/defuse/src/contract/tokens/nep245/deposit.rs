@@ -58,13 +58,13 @@ impl MultiTokenReceiver for Contract {
             receiver_id,
             action,
         } = if msg.is_empty() {
-            DepositMessage::new(sender_id.clone())
+            DepositMessage::new(sender_id)
         } else {
             msg.parse().unwrap_or_else(|e| panic!("{e}"))
         };
 
         self.deposit(
-            receiver_id.clone(),
+            receiver_id,
             core_token_ids
                 .clone()
                 .zip(amounts.iter().map(|amount| amount.0)),

@@ -39,20 +39,16 @@ impl NonFungibleTokenReceiver for Contract {
             receiver_id,
             action,
         } = if msg.is_empty() {
-            DepositMessage::new(sender_id.clone())
+            DepositMessage::new(sender_id)
         } else {
             msg.parse().unwrap_or_else(|e| panic!("{e}"))
         };
 
         let core_token_id: TokenId =
-            Nep171TokenId::new(env::predecessor_account_id(), token_id.clone()).into();
+            Nep171TokenId::new(env::predecessor_account_id(), token_id).into();
 
-        self.deposit(
-            receiver_id.clone(),
-            [(core_token_id.clone(), 1)],
-            Some("deposit"),
-        )
-        .unwrap_or_else(|err| err.panic());
+        self.deposit(receiver_id, [(core_token_id, 1)], Some("deposit"))
+            .unwrap_or_else(|err| err.panic());
 
         let Some(action) = action else {
             return PromiseOrValue::Value(false);
