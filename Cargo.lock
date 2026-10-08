@@ -1217,6 +1217,9 @@ dependencies = [
 name = "defuse-controller"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "near-gas",
+ "near-kit",
  "near-sdk",
 ]
 
@@ -2254,9 +2257,9 @@ dependencies = [
 
 [[package]]
 name = "either"
-version = "1.16.0"
+version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91622ff5e7162018101f2fea40d6ebf4a78bbe5a49736a2020649edf9693679e"
+checksum = "252afb9ae5eaa683babdc6a068b3f5726eb19e05070c731f9b2a23a7c3e8ed34"
 
 [[package]]
 name = "elliptic-curve"
@@ -3537,6 +3540,21 @@ name = "near-crypto-hash"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8fd0822ff3a82bdccda49b787cb11530512a929bfd13fd0d9fbd510b6360200"
+
+[[package]]
+name = "near-cua"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64 0.22.1",
+ "borsh",
+ "bs58 0.5.1",
+ "clap",
+ "defuse-controller",
+ "hex",
+ "near-gas",
+ "sha2 0.11.0",
+]
 
 [[package]]
 name = "near-fmt"
@@ -5746,7 +5764,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
