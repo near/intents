@@ -116,15 +116,6 @@ pub struct P256UncompressedPublicKey(
 );
 
 impl P256UncompressedPublicKey {
-    #[cfg(feature = "schemars-v0_8")]
-    const fn example() -> Self {
-        Self(hex_literal::hex!(
-            "b87da10683d04e6ec4e2f1775556a63cbb01be843058eb737fe02f9e22663093cf61b416dfb33ba2e32e9c6f3a09d84fa90d0ab9709f4a298d52e0799c8217f5"
-        ))
-    }
-}
-
-impl P256UncompressedPublicKey {
     /// Compress public key
     ///
     /// # Examples
@@ -152,6 +143,13 @@ impl P256UncompressedPublicKey {
                 |_| unreachable!(), // compressed key is exactly 33 bytes
                 P256CompressedPublicKey,
             )
+    }
+
+    #[cfg(feature = "schemars-v0_8")]
+    const fn example() -> Self {
+        Self(hex_literal::hex!(
+            "b87da10683d04e6ec4e2f1775556a63cbb01be843058eb737fe02f9e22663093cf61b416dfb33ba2e32e9c6f3a09d84fa90d0ab9709f4a298d52e0799c8217f5"
+        ))
     }
 }
 
