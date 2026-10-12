@@ -209,15 +209,8 @@ impl Secp256k1UncompressedPublicKey {
     /// );
     /// ```
     #[inline]
-    pub fn compress(&self) -> Secp256k1CompressedPublicKey {
-        Sec1Point::from_untagged_bytes((&self.0).into())
-            .compress()
-            .as_bytes()
-            .try_into()
-            .map_or_else(
-                |_| unreachable!(), // compressed key is exactly 33 bytes
-                Secp256k1CompressedPublicKey,
-            )
+    pub fn compress(&self) -> Result<Secp256k1CompressedPublicKey, k256::ecdsa::Error> {
+        VerifyingKey::try_from(self).map(Into::into)
     }
 
     #[cfg(feature = "schemars-v0_8")]
@@ -266,16 +259,20 @@ impl TryFrom<&Secp256k1UncompressedPublicKey> for VerifyingKey {
     }
 }
 
-impl From<Secp256k1UncompressedPublicKey> for Secp256k1CompressedPublicKey {
+impl TryFrom<Secp256k1UncompressedPublicKey> for Secp256k1CompressedPublicKey {
+    type Error = k256::ecdsa::Error;
+
     #[inline]
-    fn from(pk: Secp256k1UncompressedPublicKey) -> Self {
-        (&pk).into()
+    fn try_from(pk: Secp256k1UncompressedPublicKey) -> Result<Self, Self::Error> {
+        (&pk).try_into()
     }
 }
 
-impl From<&Secp256k1UncompressedPublicKey> for Secp256k1CompressedPublicKey {
+impl TryFrom<&Secp256k1UncompressedPublicKey> for Secp256k1CompressedPublicKey {
+    type Error = k256::ecdsa::Error;
+
     #[inline]
-    fn from(pk: &Secp256k1UncompressedPublicKey) -> Self {
+    fn try_from(pk: &Secp256k1UncompressedPublicKey) -> Result<Self, Self::Error> {
         pk.compress()
     }
 }
@@ -341,6 +338,7 @@ impl From<&VerifyingKey> for Secp256k1CompressedPublicKey {
                 .to_sec1_point(true) // compress
                 .as_bytes()
                 .try_into()
+                // compressed key is exactly 33 bytes
                 .unwrap_or_else(|_| unreachable!()),
         )
     }
@@ -443,7 +441,7 @@ impl From<&Signature> for Secp256k1Signature {
 }
 
 impl TryFrom<Secp256k1Signature> for Signature {
-    type Error = p256::ecdsa::Error;
+    type Error = k256::ecdsa::Error;
 
     #[inline]
     fn try_from(value: Secp256k1Signature) -> Result<Self, Self::Error> {
@@ -452,7 +450,7 @@ impl TryFrom<Secp256k1Signature> for Signature {
 }
 
 impl TryFrom<&Secp256k1Signature> for Signature {
-    type Error = p256::ecdsa::Error;
+    type Error = k256::ecdsa::Error;
 
     #[inline]
     fn try_from(value: &Secp256k1Signature) -> Result<Self, Self::Error> {
