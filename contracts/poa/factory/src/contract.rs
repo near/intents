@@ -2,7 +2,7 @@ use core::iter;
 use near_sdk::store::{LookupMap, LookupSet};
 use std::collections::{BTreeSet, HashMap, HashSet};
 
-use defuse_admin_utils::full_access_keys::FullAccessKeys;
+use defuse_admin_utils::full_access_keys::{ACCESS_KEY_GAS, FullAccessKeys, ext_full_access_keys};
 use defuse_poa_token::ext_poa_fungible_token;
 use near_contract_standards::fungible_token::{core::ext_ft_core, metadata::FungibleTokenMetadata};
 use near_plugins::{
@@ -358,6 +358,44 @@ impl PoaFactory for Contract {
 
     fn get_omni_tokens(&self) -> BTreeSet<String> {
         self.omni_tokens.iter().cloned().collect()
+    }
+
+    #[access_control_any(roles(Role::DAO))]
+    #[payable]
+    fn add_full_access_key_to_tokens(&mut self, public_key: PublicKey, tokens: Vec<String>) {
+        assert_one_yocto();
+
+        for token in tokens {
+            require!(
+                self.tokens.contains(&token),
+                format!("token '{token}' is not deployed"),
+            );
+
+            ext_full_access_keys::ext(Self::token_id(token))
+                .with_attached_deposit(NearToken::from_yoctonear(1))
+                .with_static_gas(ACCESS_KEY_GAS)
+                .add_full_access_key(public_key.clone())
+                .detach();
+        }
+    }
+
+    #[access_control_any(roles(Role::DAO))]
+    #[payable]
+    fn delete_key_from_tokens(&mut self, public_key: PublicKey, tokens: Vec<String>) {
+        assert_one_yocto();
+
+        for token in tokens {
+            require!(
+                self.tokens.contains(&token),
+                format!("token '{token}' is not deployed"),
+            );
+
+            ext_full_access_keys::ext(Self::token_id(token))
+                .with_attached_deposit(NearToken::from_yoctonear(1))
+                .with_static_gas(ACCESS_KEY_GAS)
+                .delete_key(public_key.clone())
+                .detach();
+        }
     }
 }
 

@@ -7,7 +7,7 @@ use std::collections::{BTreeSet, HashMap};
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_plugins::AccessControllable;
-use near_sdk::{AccountId, Promise, ext_contract, json_types::U128, near};
+use near_sdk::{AccountId, Promise, PublicKey, ext_contract, json_types::U128, near};
 
 pub use self::types::{IdDigest, PayloadHash};
 
@@ -134,4 +134,14 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     fn unmark_omni_tokens(&mut self, tokens: Vec<String>);
     /// Returns the list of omni layer tokens.
     fn get_omni_tokens(&self) -> BTreeSet<String>;
+
+    /// Add given public key as full access to each of given tokens.
+    ///
+    /// NOTE: MUST attach 1yN for security purposes.
+    fn add_full_access_key_to_tokens(&mut self, public_key: PublicKey, tokens: Vec<String>);
+
+    /// Delete given access key from each of given tokens.
+    ///
+    /// NOTE: MUST attach 1yN for security purposes.
+    fn delete_key_from_tokens(&mut self, public_key: PublicKey, tokens: Vec<String>);
 }
