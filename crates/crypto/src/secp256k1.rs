@@ -204,6 +204,7 @@ impl Secp256k1UncompressedPublicKey {
     /// assert_eq!(
     ///     Secp256k1UncompressedPublicKey(hex!("85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"))
     ///         .compress()
+    ///         .unwrap()
     ///         .0,
     ///     hex!("0285a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b8"),
     /// );

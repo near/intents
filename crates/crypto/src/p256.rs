@@ -129,6 +129,7 @@ impl P256UncompressedPublicKey {
     /// assert_eq!(
     ///     P256UncompressedPublicKey(hex!("beed8cb2c3622dd5f1ee641f12d88e35f3fb8c6ae081d689008bdaa6af38d4408e9c469c5ca7b59927606ef9ea34ee2335e85dbeaa265ca038b5e2896f34ded0"))
     ///         .compress()
+    ///         .unwrap()
     ///         .0,
     ///     hex!("02beed8cb2c3622dd5f1ee641f12d88e35f3fb8c6ae081d689008bdaa6af38d440"),
     /// );
