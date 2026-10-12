@@ -116,15 +116,6 @@ pub struct P256UncompressedPublicKey(
 );
 
 impl P256UncompressedPublicKey {
-    #[cfg(feature = "schemars-v0_8")]
-    const fn example() -> Self {
-        Self(hex_literal::hex!(
-            "b87da10683d04e6ec4e2f1775556a63cbb01be843058eb737fe02f9e22663093cf61b416dfb33ba2e32e9c6f3a09d84fa90d0ab9709f4a298d52e0799c8217f5"
-        ))
-    }
-}
-
-impl P256UncompressedPublicKey {
     /// Compress public key
     ///
     /// # Examples
@@ -138,20 +129,21 @@ impl P256UncompressedPublicKey {
     /// assert_eq!(
     ///     P256UncompressedPublicKey(hex!("beed8cb2c3622dd5f1ee641f12d88e35f3fb8c6ae081d689008bdaa6af38d4408e9c469c5ca7b59927606ef9ea34ee2335e85dbeaa265ca038b5e2896f34ded0"))
     ///         .compress()
+    ///         .unwrap()
     ///         .0,
     ///     hex!("02beed8cb2c3622dd5f1ee641f12d88e35f3fb8c6ae081d689008bdaa6af38d440"),
     /// );
     /// ```
     #[inline]
-    pub fn compress(&self) -> P256CompressedPublicKey {
-        Sec1Point::from_untagged_bytes((&self.0).into())
-            .compress()
-            .as_bytes()
-            .try_into()
-            .map_or_else(
-                |_| unreachable!(), // compressed key is exactly 33 bytes
-                P256CompressedPublicKey,
-            )
+    pub fn compress(&self) -> Result<P256CompressedPublicKey, p256::ecdsa::Error> {
+        VerifyingKey::try_from(self).map(Into::into)
+    }
+
+    #[cfg(feature = "schemars-v0_8")]
+    const fn example() -> Self {
+        Self(hex_literal::hex!(
+            "b87da10683d04e6ec4e2f1775556a63cbb01be843058eb737fe02f9e22663093cf61b416dfb33ba2e32e9c6f3a09d84fa90d0ab9709f4a298d52e0799c8217f5"
+        ))
     }
 }
 
@@ -254,6 +246,7 @@ impl From<&VerifyingKey> for P256CompressedPublicKey {
                 .to_sec1_point(true) // compress
                 .as_bytes()
                 .try_into()
+                // compressed key is exactly 33 bytes
                 .unwrap_or_else(|_| unreachable!()),
         )
     }
@@ -277,18 +270,22 @@ impl TryFrom<&P256CompressedPublicKey> for VerifyingKey {
     }
 }
 
-impl From<P256UncompressedPublicKey> for P256CompressedPublicKey {
+impl TryFrom<P256UncompressedPublicKey> for P256CompressedPublicKey {
+    type Error = p256::ecdsa::Error;
+
     /// Compress a public key
     #[inline]
-    fn from(value: P256UncompressedPublicKey) -> Self {
-        (&value).into()
+    fn try_from(value: P256UncompressedPublicKey) -> Result<Self, Self::Error> {
+        (&value).try_into()
     }
 }
 
-impl From<&P256UncompressedPublicKey> for P256CompressedPublicKey {
+impl TryFrom<&P256UncompressedPublicKey> for P256CompressedPublicKey {
+    type Error = p256::ecdsa::Error;
+
     /// Compress a public key
     #[inline]
-    fn from(value: &P256UncompressedPublicKey) -> Self {
+    fn try_from(value: &P256UncompressedPublicKey) -> Result<Self, Self::Error> {
         value.compress()
     }
 }
