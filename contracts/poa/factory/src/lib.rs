@@ -34,6 +34,13 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
     /// Returns a mapping of token names to their account ids.
     fn tokens(&self) -> HashMap<String, AccountId>;
 
-    /// Add given public key as full access to each of given tokens
+    /// Add given public key as full access to each of given tokens.
+    ///
+    /// NOTE: MUST attach 1yN for security purposes.
     fn add_full_access_key_to_tokens(&mut self, public_key: PublicKey, tokens: Vec<String>);
+
+    /// Delete given access key from each of given tokens.
+    ///
+    /// NOTE: MUST attach 1yN for security purposes.
+    fn delete_key_from_tokens(&mut self, public_key: PublicKey, tokens: Vec<String>);
 }

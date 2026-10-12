@@ -4,7 +4,7 @@ use defuse_sandbox::{
         FnCallTransaction,
         acl::AccessControllableExt,
         poa::{
-            PoAFactoryExt, PoaAddFullAccessKeyToTokensArgs, PoaFactory, PoaFactoryClient,
+            AccessKeyToTokensArgs, PoAFactoryExt, PoaFactory, PoaFactoryClient,
             PoaFactoryDeployerExt, contract::Role,
         },
     },
@@ -57,7 +57,7 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: Near) {
 
     dao.fn_call(
         factory.contract_id(),
-        PoaFactory::add_full_access_key_to_tokens(PoaAddFullAccessKeyToTokensArgs {
+        PoaFactory::add_full_access_key_to_tokens(AccessKeyToTokensArgs {
             public_key: public_key.clone(),
             tokens: tokens.into_iter().map(str::to_string).collect(),
         })
@@ -68,8 +68,8 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: Near) {
     .unwrap();
 
     // The factory detaches its promises, so verify the resulting keys on every token.
-    for token_id in token_ids {
-        let keys = root.access_keys(&token_id).await.unwrap().keys;
+    for token_id in &token_ids {
+        let keys = root.access_keys(token_id).await.unwrap().keys;
         assert_eq!(keys.len(), 1);
         assert_eq!(keys[0].public_key, public_key);
         assert!(matches!(
@@ -85,6 +85,24 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: Near) {
             .iter()
             .all(|key| key.public_key != public_key)
     );
+
+    dao.fn_call(
+        factory.contract_id(),
+        PoaFactory::delete_key_from_tokens(AccessKeyToTokensArgs {
+            public_key: public_key.clone(),
+            tokens: tokens.into_iter().map(str::to_string).collect(),
+        })
+        .deposit(NearToken::from_yoctonear(1))
+        .gas(Gas::from_tgas(100)),
+    )
+    .await
+    .unwrap();
+
+    // The factory detaches its promises, so verify the resulting keys on every token.
+    for token_id in token_ids {
+        let keys = root.access_keys(&token_id).await.unwrap().keys;
+        assert!(keys.is_empty());
+    }
 }
 
 #[rstest]
@@ -99,7 +117,7 @@ async fn add_full_access_key_to_tokens_requires_deployed_tokens(#[future(awt)] r
     let undeployed_token = "missing";
     root.fn_call(
         factory.contract_id(),
-        PoaFactory::add_full_access_key_to_tokens(PoaAddFullAccessKeyToTokensArgs {
+        PoaFactory::add_full_access_key_to_tokens(AccessKeyToTokensArgs {
             public_key: KeyPair::random().public_key,
             tokens: vec!["ft1".to_string(), undeployed_token.to_string()],
         })

@@ -38,7 +38,7 @@ pub struct PoaFtDepositArgs {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct PoaAddFullAccessKeyToTokensArgs {
+pub struct AccessKeyToTokensArgs {
     pub public_key: PublicKey,
     pub tokens: Vec<String>,
 }
@@ -55,7 +55,10 @@ pub trait PoaFactory {
     fn ft_deposit(&mut self, args: PoaFtDepositArgs);
 
     #[call]
-    fn add_full_access_key_to_tokens(&mut self, args: PoaAddFullAccessKeyToTokensArgs);
+    fn add_full_access_key_to_tokens(&mut self, args: AccessKeyToTokensArgs);
+
+    #[call]
+    fn delete_key_from_tokens(&mut self, args: AccessKeyToTokensArgs);
 
     fn tokens(&self) -> HashMap<String, AccountId>;
 }
