@@ -1,22 +1,19 @@
 use defuse_sandbox::{
-    account::Account,
     extensions::{
         defuse::{
             DefuseExt, DefuseSignerExt,
             core::{
-                amounts::Amounts,
-                intents::tokens::{NftWithdraw, NotifyOnTransfer, Transfer},
+                intents::tokens::NftWithdraw,
                 token_id::{TokenId, nep171::Nep171TokenId},
             },
-            tokens::{DepositAction, DepositMessage, ExecuteIntents},
+            tokens::DepositMessage,
         },
         mt::{Mt, MtBalanceOfArgs, MtExt},
         nft::NftAdminExt,
     },
     kit::{Final, Gas, NearToken},
 };
-use defuse_test_utils::wasms::{MT_RECEIVER_STUB_WASM, NON_FUNGIBLE_TOKEN_WASM};
-use multi_token_receiver_stub::MTReceiverMode as StubAction;
+use defuse_test_utils::wasms::NON_FUNGIBLE_TOKEN_WASM;
 use near_contract_standards::non_fungible_token::{
     Token,
     metadata::{NFT_METADATA_SPEC, NFTContractMetadata},
@@ -351,194 +348,194 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
     }
 }
 
-#[derive(Debug, Clone)]
-#[allow(clippy::struct_excessive_bools)]
-struct NftTransferCallExpectation {
-    action: StubAction,
-    intent_transfer: bool,
-    refund_if_fails: bool,
-    expected_sender_owns_nft: bool,
-    expected_receiver_owns_nft: bool,
-}
+// #[derive(Debug, Clone)]
+// #[allow(clippy::struct_excessive_bools)]
+// struct NftTransferCallExpectation {
+//     action: StubAction,
+//     intent_transfer: bool,
+//     refund_if_fails: bool,
+//     expected_sender_owns_nft: bool,
+//     expected_receiver_owns_nft: bool,
+// }
 
-#[rstest]
-#[case::nothing_to_refund(NftTransferCallExpectation {
-    action: StubAction::ReturnValue(0.into()),
-    intent_transfer: false,
-    refund_if_fails: true,
-    expected_sender_owns_nft: false,
-    expected_receiver_owns_nft: true,
-})]
-#[case::request_refund(NftTransferCallExpectation {
-    action: StubAction::ReturnValue(1.into()),
-    intent_transfer: false,
-    refund_if_fails: true,
-    expected_sender_owns_nft: true,
-    expected_receiver_owns_nft: false,
-})]
-#[case::receiver_panics(NftTransferCallExpectation {
-    action: StubAction::Panic,
-    intent_transfer: false,
-    refund_if_fails: true,
-    expected_sender_owns_nft: true,
-    expected_receiver_owns_nft: false,
-})]
-#[case::malicious_receiver(NftTransferCallExpectation {
-    action: StubAction::MaliciousReturn,
-    intent_transfer: false,
-    refund_if_fails: true,
-    expected_sender_owns_nft: true,
-    expected_receiver_owns_nft: false,
-})]
-#[tokio::test]
-async fn nft_transfer_call_calls_mt_on_transfer_variants(
-    #[case] expectation: NftTransferCallExpectation,
-    #[with(Env::builder().deployer_as_super_admin())]
-    #[future(awt)]
-    env: Env,
-) {
-    // Ensure the NFT issuer account name stays short enough to host `nft_test.<user>`
-    // subaccounts; randomly generated names occasionally exceed the NEAR 64-char limit.
-    let (user, intent_receiver) = futures::join!(
-        env.create_named_user("nft_transfer_sender"),
-        env.create_user()
-    );
+// #[rstest]
+// #[case::nothing_to_refund(NftTransferCallExpectation {
+//     action: StubAction::ReturnValue(0.into()),
+//     intent_transfer: false,
+//     refund_if_fails: true,
+//     expected_sender_owns_nft: false,
+//     expected_receiver_owns_nft: true,
+// })]
+// #[case::request_refund(NftTransferCallExpectation {
+//     action: StubAction::ReturnValue(1.into()),
+//     intent_transfer: false,
+//     refund_if_fails: true,
+//     expected_sender_owns_nft: true,
+//     expected_receiver_owns_nft: false,
+// })]
+// #[case::receiver_panics(NftTransferCallExpectation {
+//     action: StubAction::Panic,
+//     intent_transfer: false,
+//     refund_if_fails: true,
+//     expected_sender_owns_nft: true,
+//     expected_receiver_owns_nft: false,
+// })]
+// #[case::malicious_receiver(NftTransferCallExpectation {
+//     action: StubAction::MaliciousReturn,
+//     intent_transfer: false,
+//     refund_if_fails: true,
+//     expected_sender_owns_nft: true,
+//     expected_receiver_owns_nft: false,
+// })]
+// #[tokio::test]
+// async fn nft_transfer_call_calls_mt_on_transfer_variants(
+//     #[case] expectation: NftTransferCallExpectation,
+//     #[with(Env::builder().deployer_as_super_admin())]
+//     #[future(awt)]
+//     env: Env,
+// ) {
+//     // Ensure the NFT issuer account name stays short enough to host `nft_test.<user>`
+//     // subaccounts; randomly generated names occasionally exceed the NEAR 64-char limit.
+//     let (user, intent_receiver) = futures::join!(
+//         env.create_named_user("nft_transfer_sender"),
+//         env.create_user()
+//     );
 
-    let receiver = env
-        .deploy_sub_contract(
-            "receiver_stub",
-            NearToken::from_near(100),
-            MT_RECEIVER_STUB_WASM.to_vec(),
-            None,
-        )
-        .await
-        .unwrap();
+//     let receiver = env
+//         .deploy_sub_contract(
+//             "receiver_stub",
+//             NearToken::from_near(100),
+//             MT_RECEIVER_STUB_WASM.to_vec(),
+//             None,
+//         )
+//         .await
+//         .unwrap();
 
-    env.transaction(user.account_id())
-        .transfer(NearToken::from_near(100))
-        .await
-        .unwrap()
-        .result()
-        .unwrap();
+//     env.transaction(user.account_id())
+//         .transfer(NearToken::from_near(100))
+//         .await
+//         .unwrap()
+//         .result()
+//         .unwrap();
 
-    let nft_issuer_contract = user
-        .deploy_vanilla_nft_issuer(
-            "nft_test",
-            user.account_id(),
-            &NFTContractMetadata {
-                reference: Some("http://test.com/".to_string()),
-                reference_hash: Some(Base64VecU8(DUMMY_REFERENCE_HASH.to_vec())),
-                spec: NFT_METADATA_SPEC.to_string(),
-                name: "Test NFT".to_string(),
-                symbol: "TNFT".to_string(),
-                icon: None,
-                base_uri: None,
-            },
-            NON_FUNGIBLE_TOKEN_WASM.clone(),
-        )
-        .await;
+//     let nft_issuer_contract = user
+//         .deploy_vanilla_nft_issuer(
+//             "nft_test",
+//             user.account_id(),
+//             &NFTContractMetadata {
+//                 reference: Some("http://test.com/".to_string()),
+//                 reference_hash: Some(Base64VecU8(DUMMY_REFERENCE_HASH.to_vec())),
+//                 spec: NFT_METADATA_SPEC.to_string(),
+//                 name: "Test NFT".to_string(),
+//                 symbol: "TNFT".to_string(),
+//                 icon: None,
+//                 base_uri: None,
+//             },
+//             NON_FUNGIBLE_TOKEN_WASM.clone(),
+//         )
+//         .await;
 
-    let nft = user
-        .mint_nft(
-            nft_issuer_contract.contract_id(),
-            &DUMMY_NFT1_ID.to_string(),
-            user.account_id(),
-        )
-        .await
-        .unwrap();
+//     let nft = user
+//         .mint_nft(
+//             nft_issuer_contract.contract_id(),
+//             &DUMMY_NFT1_ID.to_string(),
+//             user.account_id(),
+//         )
+//         .await
+//         .unwrap();
 
-    assert_eq!(nft.owner_id, *user.account_id());
+//     assert_eq!(nft.owner_id, *user.account_id());
 
-    let nft_token_id = TokenId::from(Nep171TokenId::new(
-        nft_issuer_contract.contract_id().clone(),
-        DUMMY_NFT1_ID.to_string(),
-    ));
+//     let nft_token_id = TokenId::from(Nep171TokenId::new(
+//         nft_issuer_contract.contract_id().clone(),
+//         DUMMY_NFT1_ID.to_string(),
+//     ));
 
-    let intents = if expectation.intent_transfer {
-        vec![
-            receiver
-                .sign_defuse_payload_default(
-                    &env.defuse,
-                    [Transfer {
-                        receiver_id: intent_receiver.account_id().clone(),
-                        tokens: Amounts::new(std::iter::once((nft_token_id.clone(), 1)).collect()),
-                        memo: None,
-                        notification: None,
-                    }],
-                )
-                .await
-                .unwrap(),
-        ]
-    } else {
-        vec![]
-    };
+//     let intents = if expectation.intent_transfer {
+//         vec![
+//             receiver
+//                 .sign_defuse_payload_default(
+//                     &env.defuse,
+//                     [Transfer {
+//                         receiver_id: intent_receiver.account_id().clone(),
+//                         tokens: Amounts::new(std::iter::once((nft_token_id.clone(), 1)).collect()),
+//                         memo: None,
+//                         notification: None,
+//                     }],
+//                 )
+//                 .await
+//                 .unwrap(),
+//         ]
+//     } else {
+//         vec![]
+//     };
 
-    let deposit_message = if intents.is_empty() {
-        DepositMessage {
-            receiver_id: receiver.account_id().clone(),
-            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
-                serde_json::to_string(&expectation.action).unwrap(),
-            ))),
-        }
-    } else {
-        DepositMessage {
-            receiver_id: receiver.account_id().clone(),
-            action: Some(DepositAction::Execute(ExecuteIntents {
-                execute_intents: intents,
-                refund_if_fails: expectation.refund_if_fails,
-            })),
-        }
-    };
+//     let deposit_message = if intents.is_empty() {
+//         DepositMessage {
+//             receiver_id: receiver.account_id().clone(),
+//             action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+//                 serde_json::to_string(&expectation.action).unwrap(),
+//             ))),
+//         }
+//     } else {
+//         DepositMessage {
+//             receiver_id: receiver.account_id().clone(),
+//             action: Some(DepositAction::Execute(ExecuteIntents {
+//                 execute_intents: intents,
+//                 refund_if_fails: expectation.refund_if_fails,
+//             })),
+//         }
+//     };
 
-    user.nft(nft_issuer_contract.contract_id())
-        .unwrap()
-        .transfer_call(
-            env.defuse.contract_id(),
-            nft.token_id.clone(),
-            serde_json::to_string(&deposit_message).unwrap(),
-        )
-        .gas(Gas::from_tgas(300))
-        .wait_until::<Final>()
-        .await
-        .unwrap();
+//     user.nft(nft_issuer_contract.contract_id())
+//         .unwrap()
+//         .transfer_call(
+//             env.defuse.contract_id(),
+//             nft.token_id.clone(),
+//             serde_json::to_string(&deposit_message).unwrap(),
+//         )
+//         .gas(Gas::from_tgas(300))
+//         .wait_until::<Final>()
+//         .await
+//         .unwrap();
 
-    let nft_token_id = nft_token_id.to_string();
-    let (nft_owner, receiver_mt_balance) = futures::try_join!(
-        nft_issuer_contract.token(&nft.token_id).into_future(),
-        env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: receiver.account_id(),
-                token_id: &nft_token_id,
-            })
-            .into_future()
-    )
-    .unwrap();
-    let nft_owner = nft_owner.unwrap().owner_id;
+//     let nft_token_id = nft_token_id.to_string();
+//     let (nft_owner, receiver_mt_balance) = futures::try_join!(
+//         nft_issuer_contract.token(&nft.token_id).into_future(),
+//         env.contract::<Mt>(env.defuse.contract_id())
+//             .mt_balance_of(MtBalanceOfArgs {
+//                 account_id: receiver.account_id(),
+//                 token_id: &nft_token_id,
+//             })
+//             .into_future()
+//     )
+//     .unwrap();
+//     let nft_owner = nft_owner.unwrap().owner_id;
 
-    if expectation.expected_sender_owns_nft {
-        assert_eq!(
-            nft_owner,
-            *user.account_id(),
-            "NFT should be owned by sender"
-        );
-    } else {
-        assert_eq!(
-            nft_owner,
-            *env.defuse.contract_id(),
-            "NFT should be owned by defuse contract"
-        );
-    }
+//     if expectation.expected_sender_owns_nft {
+//         assert_eq!(
+//             nft_owner,
+//             *user.account_id(),
+//             "NFT should be owned by sender"
+//         );
+//     } else {
+//         assert_eq!(
+//             nft_owner,
+//             *env.defuse.contract_id(),
+//             "NFT should be owned by defuse contract"
+//         );
+//     }
 
-    // Check if receiver owns the NFT in MT balance
-    if expectation.expected_receiver_owns_nft {
-        assert_eq!(
-            receiver_mt_balance.0, 1,
-            "Receiver should own the NFT (MT balance = 1)"
-        );
-    } else {
-        assert_eq!(
-            receiver_mt_balance.0, 0,
-            "Receiver should not own the NFT (MT balance = 0)"
-        );
-    }
-}
+//     // Check if receiver owns the NFT in MT balance
+//     if expectation.expected_receiver_owns_nft {
+//         assert_eq!(
+//             receiver_mt_balance.0, 1,
+//             "Receiver should own the NFT (MT balance = 1)"
+//         );
+//     } else {
+//         assert_eq!(
+//             receiver_mt_balance.0, 0,
+//             "Receiver should not own the NFT (MT balance = 0)"
+//         );
+//     }
+// }

@@ -58,13 +58,13 @@ impl MultiTokenReceiver for Contract {
             receiver_id,
             action,
         } = if msg.is_empty() {
-            DepositMessage::new(sender_id.clone())
+            DepositMessage::new(sender_id)
         } else {
             msg.parse().unwrap_or_else(|e| panic!("{e}"))
         };
 
         self.deposit(
-            receiver_id.clone(),
+            receiver_id,
             core_token_ids
                 .clone()
                 .zip(amounts.iter().map(|amount| amount.0)),
@@ -77,22 +77,22 @@ impl MultiTokenReceiver for Contract {
         };
 
         match action {
-            DepositAction::Notify(notify) => Self::notify_on_transfer(
-                sender_id,
-                previous_owner_ids,
-                receiver_id.clone(),
-                core_token_ids.map(|t| t.to_string()).collect(),
-                amounts.clone(),
-                notify,
-            )
-            .unwrap_or_else(|err| err.panic())
-            .then(
-                Self::ext(env::current_account_id())
-                    .with_static_gas(Self::mt_resolve_deposit_gas(amounts.len()))
-                    .with_unused_gas_weight(0)
-                    .mt_resolve_deposit(receiver_id, token.clone(), token_ids, amounts),
-            )
-            .into(),
+            // DepositAction::Notify(notify) => Self::notify_on_transfer(
+            //     sender_id,
+            //     previous_owner_ids,
+            //     receiver_id.clone(),
+            //     core_token_ids.map(|t| t.to_string()).collect(),
+            //     amounts.clone(),
+            //     notify,
+            // )
+            // .unwrap_or_else(|err| err.panic())
+            // .then(
+            //     Self::ext(env::current_account_id())
+            //         .with_static_gas(Self::mt_resolve_deposit_gas(amounts.len()))
+            //         .with_unused_gas_weight(0)
+            //         .mt_resolve_deposit(receiver_id, token.clone(), token_ids, amounts),
+            // )
+            // .into(),
             DepositAction::Execute(execute) => {
                 if !execute.execute_intents.is_empty() {
                     if execute.refund_if_fails {
