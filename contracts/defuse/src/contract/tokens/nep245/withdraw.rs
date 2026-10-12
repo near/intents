@@ -133,8 +133,8 @@ impl Contract {
     #[must_use]
     fn mt_resolve_withdraw_gas(token_count: usize) -> Gas {
         // Values chosen to be similar to `MT_RESOLVE_TRANSFER_*` values
-        const MT_RESOLVE_WITHDRAW_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
-        const MT_RESOLVE_WITHDRAW_BASE_GAS: Gas = Gas::from_tgas(8);
+        const MT_RESOLVE_WITHDRAW_PER_TOKEN_GAS: Gas = Gas::from_tgas(5);
+        const MT_RESOLVE_WITHDRAW_BASE_GAS: Gas = Gas::from_tgas(10);
 
         let token_count: u64 = token_count.try_into().unwrap();
 
