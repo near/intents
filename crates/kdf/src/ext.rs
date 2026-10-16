@@ -5,7 +5,7 @@ use crate::{
     schema::{Schema, Value},
 };
 
-/// A helper extension trait for [`Schema`] and [`DeriveSigner`].
+/// An extension trait for [`Schema`] and [`DeriveSigner`].
 pub trait DeriveExt {
     /// Derive a public key for given path on curve `C`.
     ///
