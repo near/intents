@@ -245,7 +245,6 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
     let deposited = env
         .maker
         .ft(env.src_ft.contract_id())
-        .unwrap()
         .transfer_call(
             env.verifier.contract_id(),
             MAKER_AMOUNT,
@@ -270,14 +269,13 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
 
     assert_eq!(deposited.0, MAKER_AMOUNT);
 
-    let escrow_state = env.contract::<Escrow>(&escrow_id).unwrap().es_view().await;
+    let escrow_state = env.contract::<Escrow>(&escrow_id).es_view().await;
     assert!(escrow_state.is_ok());
 
     // Taker fills at price "2" — sends 20,000 dst tokens for 10,000 src
     // surplus = taker_dst_used - src_out * maker_price = 20,000 - 10,000 = 10,000
     let deposited_on_fill = env.takers[0]
         .ft(env.dst_ft.contract_id())
-        .unwrap()
         .transfer_call(
             env.verifier.contract_id(),
             TAKER_AMOUNT,
@@ -308,7 +306,6 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
 
     let collector_balance = env
         .contract::<Mt>(env.verifier.contract_id())
-        .unwrap()
         .mt_balance_of(MtBalanceOfArgs {
             account_id: env.fee_collectors[0].signer_id(),
             token_id: &dst_verifier_asset.to_string(),

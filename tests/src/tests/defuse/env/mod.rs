@@ -69,7 +69,7 @@ impl Env {
         }
 
         if self
-            .ft(AccountId::from(token_id))?
+            .ft(AccountId::from(token_id))
             .transfer_call(
                 self.defuse.contract_id(),
                 amount,
@@ -171,7 +171,7 @@ impl Env {
                     .into_iter()
                     .chain([self.wnear.contract_id()])
                     .flat_map(|token| {
-                        let ft = self.ft(token).unwrap();
+                        let ft = self.ft(token);
                         all_accounts.iter().map(move |account_id| {
                             ft.storage_deposit(account_id, TOKEN_STORAGE_DEPOSIT)
                                 .finish().wait_until::<Final>()

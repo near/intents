@@ -35,7 +35,6 @@ async fn balance_of(
     token_id: &str,
 ) -> u128 {
     near.contract::<Mt>(defuse_id.as_ref())
-        .unwrap()
         .mt_batch_balance_of(MtBatchBalanceOfArgs {
             account_id: account_id.as_ref(),
             token_ids: &[token_id.to_string()],

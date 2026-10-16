@@ -51,7 +51,7 @@ where
         let mpc_contract_id = mpc_contract_id.into();
 
         let mpc_public_key = client
-            .contract::<MpcContract>(&mpc_contract_id)?
+            .contract::<MpcContract>(&mpc_contract_id)
             .public_key(PublicKeyArgs { domain_id })
             .await?;
 

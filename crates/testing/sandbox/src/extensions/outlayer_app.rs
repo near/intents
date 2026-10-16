@@ -33,7 +33,7 @@ impl OutlayerAppDeployerExt for Near {
             .await
             .unwrap();
 
-        self.contract::<OutlayerAppContract>(account_id).unwrap()
+        self.contract::<OutlayerAppContract>(account_id)
     }
 }
 

@@ -147,7 +147,7 @@ const _: () = {
 
         #[inline]
         fn account_id(&self) -> Cow<'_, AccountIdRef> {
-            self.account_id().unwrap().into()
+            self.account_id().into()
         }
 
         async fn send(

@@ -61,7 +61,6 @@ async fn imt_mint_intent(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.signer_id(),
                 token_id: &mt_id.to_string()
@@ -184,7 +183,6 @@ async fn imt_mint_intent_to_defuse(
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .unwrap()
                 .mt_balance_of(MtBalanceOfArgs {
                     account_id: defuse2.signer_id(),
                     token_id: &mt_token.to_string(),
@@ -212,7 +210,6 @@ async fn imt_mint_intent_to_defuse(
 
         assert_eq!(
             env.contract::<Mt>(defuse2.signer_id())
-                .unwrap()
                 .mt_balance_of(MtBalanceOfArgs {
                     account_id: &other_user_id,
                     token_id: &defuse_ft1.to_string(),
@@ -305,7 +302,6 @@ async fn imt_mint_intent_with_msg_to_receiver_smc(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.signer_id(),
                 token_id: &mt_token.to_string(),
@@ -318,7 +314,6 @@ async fn imt_mint_intent_with_msg_to_receiver_smc(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: mt_receiver.signer_id(),
                 token_id: &mt_token.to_string(),

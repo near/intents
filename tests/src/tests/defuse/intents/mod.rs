@@ -145,7 +145,6 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
     // Verify balances haven't changed (simulate is a view method)
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.signer_id(),
                 token_id: &ft_id.to_string()
@@ -157,7 +156,6 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
     );
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: other_user.signer_id(),
                 token_id: &ft_id.to_string()
@@ -226,7 +224,6 @@ async fn webauthn() {
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.signer_id(),
                 token_id: &ft_id.to_string()
@@ -238,7 +235,6 @@ async fn webauthn() {
     );
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: SIGNER_ID,
                 token_id: &ft_id.to_string()

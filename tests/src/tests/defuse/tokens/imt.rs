@@ -59,7 +59,6 @@ async fn imt_burn_call(
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .unwrap()
                 .mt_balance_of(MtBalanceOfArgs {
                     account_id: user2.signer_id(),
                     token_id: &imt_id.to_string(),
@@ -83,7 +82,6 @@ async fn imt_burn_call(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user2.signer_id(),
                 token_id: &imt_id.to_string(),

@@ -40,7 +40,6 @@ async fn deposit_withdraw(#[future(awt)] env: Env) {
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.signer_id(),
                 token_id: &ft_id,
@@ -70,7 +69,6 @@ async fn deposit_withdraw(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .unwrap()
                     .mt_balance_of(MtBalanceOfArgs {
                         account_id: user.signer_id(),
                         token_id: &ft_id,
@@ -115,7 +113,6 @@ async fn poa_deposit(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .unwrap()
                     .mt_balance_of(MtBalanceOfArgs {
                         account_id: user.signer_id(),
                         token_id: &ft_id,
@@ -170,7 +167,6 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
 
     assert_eq!(
         user.ft(ft.contract_id())
-            .unwrap()
             .transfer_call(
                 env.defuse.contract_id(),
                 1000u128,
@@ -200,7 +196,6 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .unwrap()
                     .mt_balance_of(MtBalanceOfArgs {
                         account_id: user.signer_id(),
                         token_id: &ft_id,
@@ -214,7 +209,6 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .unwrap()
                     .mt_balance_of(MtBalanceOfArgs {
                         account_id: other_user.signer_id(),
                         token_id: &ft_id,
@@ -271,7 +265,6 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
 
     assert_eq!(
         user.ft(ft.contract_id())
-            .unwrap()
             .transfer_call(
                 env.defuse.contract_id(),
                 1000u128,
@@ -297,7 +290,6 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .unwrap()
                     .mt_balance_of(MtBalanceOfArgs {
                         account_id: user.signer_id(),
                         token_id: &ft_id,
@@ -353,7 +345,6 @@ async fn ft_force_withdraw(
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .unwrap()
                     .mt_balance_of(MtBalanceOfArgs {
                         account_id: user.signer_id(),
                         token_id: &ft_id,
@@ -400,7 +391,6 @@ async fn ft_force_withdraw(
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .unwrap()
                     .mt_balance_of(MtBalanceOfArgs {
                         account_id: user.signer_id(),
                         token_id: &ft_id,
@@ -501,7 +491,6 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
         .unwrap();
 
     env.ft(ft.contract_id())
-        .unwrap()
         .transfer(user.signer_id(), 1000u128)
         .await
         .unwrap()
@@ -546,7 +535,6 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
     };
 
     user.ft(ft.contract_id())
-        .unwrap()
         .transfer_call(
             env.defuse.contract_id(),
             1000u128,
@@ -571,7 +559,6 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .unwrap()
                     .mt_balance_of(MtBalanceOfArgs {
                         account_id: receiver.signer_id(),
                         token_id: &ft_id,

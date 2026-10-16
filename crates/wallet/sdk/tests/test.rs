@@ -134,12 +134,11 @@ async fn w_init(
         .result()
         .unwrap();
 
-    near.contract::<WalletContract>(near.account_id().unwrap())
-        .unwrap()
+    near.contract::<WalletContract>(near.account_id())
         .w_execute_extension(
             Request::new()
                 .internal([WalletOp::RemoveExtension {
-                    account_id: near.account_id().unwrap().clone(),
+                    account_id: near.account_id().clone(),
                 }])
                 .into(),
         )
@@ -149,8 +148,7 @@ async fn w_init(
         .result()
         .expect_err("cannot accidentally delete itself from extension");
 
-    near.contract::<WalletContract>(near.account_id().unwrap())
-        .unwrap()
+    near.contract::<WalletContract>(near.account_id())
         .w_execute_extension(
             Request::new()
                 .internal([WalletOp::AddExtension {
@@ -165,7 +163,7 @@ async fn w_init(
         .unwrap();
 
     extension
-        .as_extension_of(near.account_id().unwrap())
+        .as_extension_of(near.account_id())
         .sign_and_send(NearPromise::new(receiver.account_id()).transfer(NearToken::from_near(5)))
         .await
         .unwrap()

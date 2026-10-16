@@ -77,7 +77,6 @@ async fn native_withdraw_intent(
     .expect("failed to wrap NEAR");
 
     env.ft(env.wnear.contract_id())
-        .unwrap()
         .transfer_call(
             env.defuse.contract_id(),
             total_amount_yocto,
@@ -113,7 +112,6 @@ async fn native_withdraw_intent(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: other_user.signer_id(),
                 token_id: &TokenId::Nep141(Nep141TokenId::new(env.wnear.contract_id().clone()))

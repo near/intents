@@ -175,7 +175,7 @@ mod tests {
 
         let msg = OffchainMessage {
             chain_id: near.chain_id().as_str().to_string(),
-            signer_id: near.account_id().unwrap().clone(),
+            signer_id: near.account_id().clone(),
             path: vec![],
             timestamp: Timestamp::now() - Duration::from_mins(1),
             payload: PAYLOAD.to_string(),
@@ -198,14 +198,11 @@ mod tests {
             .with_max_depth(0);
 
         let resolved = resolver
-            .resolve_auth(near.account_id().unwrap(), &authorization)
+            .resolve_auth(near.account_id(), &authorization)
             .await
             .expect("invalid authorization");
 
-        println!(
-            "{authorization}\n{} -> {resolved}",
-            near.account_id().unwrap()
-        );
+        println!("{authorization}\n{} -> {resolved}", near.account_id());
         assert_eq!(PAYLOAD, resolved, "resolved invalid payload");
 
         let new_signer = InMemorySigner::generate_implicit();
@@ -226,7 +223,7 @@ mod tests {
         near = near.with_signer(new_signer);
 
         resolver
-            .resolve_auth(near.account_id().unwrap(), &authorization)
+            .resolve_auth(near.account_id(), &authorization)
             .await
             .expect_err("old authorization must be invalid after key rotation");
     }

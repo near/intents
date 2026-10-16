@@ -127,7 +127,7 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
             )
             .await
             .unwrap();
-        root.contract::<Escrow>(account_id).unwrap()
+        root.contract::<Escrow>(account_id)
     };
 
     // call escrow instance method
@@ -225,7 +225,7 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
             )
             .await
             .unwrap();
-        root.contract::<Escrow>(account_id).unwrap()
+        root.contract::<Escrow>(account_id)
     };
 
     escrow_instance
@@ -236,7 +236,6 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
     // near-sdk returns empty bytes for void methods; near-kit fails to JSON-parse them.
     // Only an Rpc error means the method doesn't exist.
     root.contract::<MtReceiverStub>(escrow_instance.contract_id().clone())
-        .unwrap()
         .dummy_method()
         .await
         .unwrap();
@@ -266,7 +265,6 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
         .expect("escrow should have `es_view` method");
     storage.verify(&escrow_instance_params).unwrap();
     root.contract::<MtReceiverStub>(escrow_instance.contract_id().clone())
-        .unwrap()
         .dummy_method()
         .await
         .expect_err("escrow should not have `dummy_method` method");

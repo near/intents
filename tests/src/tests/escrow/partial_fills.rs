@@ -101,7 +101,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
     });
 
     let escrow_id = state_init.derive_account_id();
-    let escrow = env.contract::<Escrow>(escrow_id.clone()).unwrap();
+    let escrow = env.contract::<Escrow>(escrow_id.clone());
 
     show_verifier_balances(
         &env,
@@ -121,7 +121,6 @@ async fn partial_fills(#[future(awt)] env: Env) {
             let deposited = env
                 .maker
                 .ft(env.src_ft.contract_id().clone())
-                .unwrap()
                 .transfer_call(
                     env.verifier.contract_id().clone(),
                     amount,
@@ -171,7 +170,6 @@ async fn partial_fills(#[future(awt)] env: Env) {
         for (taker, amount) in env.takers.iter().zip([10000_u128, 5000, 20000]) {
             let deposited = taker
                 .ft(env.dst_ft.contract_id().clone())
-                .unwrap()
                 .transfer_call(
                     env.verifier.contract_id().clone(),
                     amount,
@@ -266,7 +264,6 @@ pub async fn show_verifier_balances(
         .map(|account_id| async move {
             let balances = near
                 .contract::<Mt>(verifier)
-                .unwrap()
                 .mt_batch_balance_of(MtBatchBalanceOfArgs {
                     account_id,
                     token_ids: &token_ids

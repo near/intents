@@ -372,7 +372,6 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
 
     let balance_before = env
         .contract::<Mt>(env.defuse.contract_id())
-        .unwrap()
         .mt_balance_of(MtBalanceOfArgs {
             account_id: user.signer_id(),
             token_id: &defuse_token_ids[0],
@@ -404,7 +403,6 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
 
     let balance_after = env
         .contract::<Mt>(env.defuse.contract_id())
-        .unwrap()
         .mt_balance_of(MtBalanceOfArgs {
             account_id: user.signer_id(),
             token_id: &defuse_token_ids[0],
@@ -474,7 +472,6 @@ async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(aw
 
     let balances_of = async |account_id| {
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_batch_balance_of(MtBatchBalanceOfArgs {
                 account_id,
                 token_ids: &defuse_token_ids,

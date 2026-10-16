@@ -615,7 +615,7 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
     let ft2_id = TokenId::Nep141(Nep141TokenId::new(ft2.contract_id().clone()));
     let ft3_id = TokenId::Nep141(Nep141TokenId::new(ft3.contract_id().clone()));
 
-    let defuse2_mt = env.contract::<Mt>(defuse2.signer_id()).unwrap();
+    let defuse2_mt = env.contract::<Mt>(defuse2.signer_id());
 
     // At this point, user1 in defuse2, has no balance of `"nep245:defuse.test.near:nep141:ft1.test.near"`, and others. We will fund it next.
     {
@@ -1069,7 +1069,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
             vec![
                 receiver
                     .sign_defuse_payload_default(
-                        &env.contract::<Defuse>(defuse2.signer_id()).unwrap(),
+                        &env.contract::<Defuse>(defuse2.signer_id()),
                         [Transfer {
                             receiver_id: intent_receiver.signer_id().clone(),
                             tokens: Amounts::new(
@@ -1118,7 +1118,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     // Check balances in defuse1 (original sender)
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.signer_id(),
                 token_id: &ft_id.to_string(),
@@ -1133,7 +1132,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     // Check balances in defuse2 (receiver) - token is wrapped as NEP-245
     assert_eq!(
         env.contract::<Mt>(defuse2.signer_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: receiver.signer_id(),
                 token_id: &nep245_ft_id.to_string(),
@@ -1288,7 +1286,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
         vec![
             receiver
                 .sign_defuse_payload_default(
-                    &env.contract::<Defuse>(defuse2.signer_id()).unwrap(),
+                    &env.contract::<Defuse>(defuse2.signer_id()),
                     [Transfer {
                         receiver_id: intent_receiver.signer_id().clone(),
                         tokens: Amounts::new(intent_map),
@@ -1335,7 +1333,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     // Check balances in defuse1 (original sender)
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.signer_id(),
                 token_id: &ft1_id.to_string(),
@@ -1348,7 +1345,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     );
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.signer_id(),
                 token_id: &ft2_id.to_string(),
@@ -1363,7 +1359,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     // Check balances in defuse2 (receiver)
     assert_eq!(
         env.contract::<Mt>(defuse2.signer_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: receiver.signer_id(),
                 token_id: &nep245_ft1_id.to_string(),
@@ -1376,7 +1371,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     );
     assert_eq!(
         env.contract::<Mt>(defuse2.signer_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: receiver.signer_id(),
                 token_id: &nep245_ft2_id.to_string(),
@@ -1425,7 +1419,6 @@ async fn mt_transfer_call_circullar_callback(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.signer_id(),
                 token_id: &ft_id.to_string(),
@@ -1474,7 +1467,6 @@ async fn mt_transfer_call_circullar_callback(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.signer_id(),
                 token_id: &ft_id.to_string(),
@@ -1496,7 +1488,6 @@ async fn mt_transfer_call_circullar_callback(
 
     assert_eq!(
         env.contract::<Mt>(defuse2.signer_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: env.defuse.contract_id(),
                 token_id: &nep245_ft_id.to_string(),
@@ -1510,7 +1501,6 @@ async fn mt_transfer_call_circullar_callback(
 
     assert_eq!(
         env.contract::<Mt>(defuse2.signer_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.signer_id(),
                 token_id: &nep245_ft_id.to_string(),
@@ -1576,7 +1566,6 @@ async fn mt_transfer_call_circullar_deposit(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: defuse2.signer_id(),
                 token_id: &defuse1_ft_id.to_string(),
@@ -1595,7 +1584,6 @@ async fn mt_transfer_call_circullar_deposit(
 
     assert_eq!(
         env.contract::<Mt>(defuse2.signer_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: env.defuse.contract_id(),
                 token_id: &defuse2_nep245_ft_id.to_string(),
@@ -1614,7 +1602,6 @@ async fn mt_transfer_call_circullar_deposit(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.signer_id(),
                 token_id: &defuse1_defuse2_nep245_ft_id.to_string(),
@@ -1707,7 +1694,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
     let stub_action = StubAction::ExecuteAndRefund {
         multipayload: stub_receiver
             .sign_defuse_payload_default(
-                &env.contract::<Defuse>(defuse2.signer_id()).unwrap(),
+                &env.contract::<Defuse>(defuse2.signer_id()),
                 [Transfer {
                     receiver_id: another_receiver.signer_id().clone(),
                     tokens: Amounts::new([(nep245_ft1_id.clone(), 2000)].into()),
@@ -1777,7 +1764,6 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.signer_id(),
                 token_id: &ft1_id.to_string(),
@@ -1791,7 +1777,6 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user.signer_id(),
                 token_id: &ft2_id.to_string(),

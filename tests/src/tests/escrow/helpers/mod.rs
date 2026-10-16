@@ -140,7 +140,7 @@ impl Env {
             )
             .await;
 
-        defuse.contract::<Defuse>(defuse.signer_id()).unwrap()
+        defuse.contract::<Defuse>(defuse.signer_id())
     }
 
     async fn deploy_poa_factory(root: &Near) -> PoaFactoryClient {

@@ -104,7 +104,7 @@ impl PoaFactoryDeployerExt for Near {
             .await
             .unwrap();
 
-        self.contract::<PoaFactory>(account.signer_id()).unwrap()
+        self.contract::<PoaFactory>(account.signer_id())
     }
 }
 
@@ -148,7 +148,7 @@ impl PoAFactoryExt for Near {
             .await?
             .result()?;
 
-        Ok(self.ft(factory.sub_account(token)?)?)
+        Ok(self.ft(factory.sub_account(token)?))
     }
 
     async fn poa_factory_ft_deposit(

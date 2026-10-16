@@ -68,7 +68,6 @@ async fn imt_burn_intent(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: other_user.signer_id(),
                 token_id: &mt_id.to_string()

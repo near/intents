@@ -29,7 +29,7 @@ pub trait Account {
 impl Account for Near {
     #[inline]
     fn signer_id(&self) -> &AccountId {
-        self.account_id().expect("client has no signer")
+        self.account_id()
     }
 
     async fn create_subaccount(

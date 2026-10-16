@@ -33,8 +33,7 @@ impl GDDeployerExt for Near {
             .deploy_deterministic_account(global_contract_id, state.as_storage(), NearToken::ZERO)
             .await?;
 
-        self.contract::<GlobalDeployerContract>(account_id)
-            .map_err(Into::into)
+        Ok(self.contract::<GlobalDeployerContract>(account_id))
     }
 }
 

@@ -151,7 +151,7 @@ impl EnvBuilder {
             .await
             .unwrap();
 
-        let client = root.contract::<Defuse>(account.signer_id()).unwrap();
+        let client = root.contract::<Defuse>(account.signer_id());
         (client, account)
     }
 

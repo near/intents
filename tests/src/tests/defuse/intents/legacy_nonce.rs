@@ -45,7 +45,6 @@ async fn execute_intent_with_legacy_nonce(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user1.signer_id(),
                 token_id: &token_id.to_string()
@@ -57,7 +56,6 @@ async fn execute_intent_with_legacy_nonce(
     );
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user2.signer_id(),
                 token_id: &token_id.to_string()
@@ -98,7 +96,6 @@ async fn execute_intent_with_legacy_nonce(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user1.signer_id(),
                 token_id: &token_id.to_string()
@@ -111,7 +108,6 @@ async fn execute_intent_with_legacy_nonce(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .unwrap()
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: user2.signer_id(),
                 token_id: &token_id.to_string()

@@ -190,9 +190,7 @@ async fn test_gd_init(#[future(awt)] deployer_env: DeployerEnv) {
         .result()
         .unwrap();
 
-    let controller = root
-        .contract::<GlobalDeployerContract>(implicit.signer_id().clone())
-        .unwrap();
+    let controller = root.contract::<GlobalDeployerContract>(implicit.signer_id().clone());
 
     assert_eq!(controller.gd_owner_id().await.unwrap(), *root.signer_id());
     assert!(
