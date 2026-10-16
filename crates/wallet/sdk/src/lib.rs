@@ -764,7 +764,7 @@ where
     ///
     /// ```rust,no_run
     /// use defuse_wallet_sdk::mpc::kdf::{
-    ///     DeriveSigner, crypto::{Curve, ed25519::Ed25519},
+    ///     DeriveExt, crypto::{Curve, ed25519::Ed25519},
     /// };
     /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
     /// # use defuse_wallet_ed25519::{
@@ -797,7 +797,7 @@ where
     ///
     /// ```rust,no_run
     /// use defuse_wallet_sdk::mpc::kdf::{
-    ///     DeriveSigner, RecoverableDeriveSigner,
+    ///     DeriveExt,
     ///     crypto::{RecoverableCurve, secp256k1::Secp256k1},
     /// };
     /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
