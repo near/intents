@@ -220,23 +220,24 @@ pub trait DeriveExt {
     /// // define sub-schema: "alice" -> "users/alice"
     /// let schema = SchemaFn::new(|user| format!("users/{user}"));
     /// // compose signer with sub-schema
-    /// let nested = signer.with_schema(schema);
+    /// let users = signer.with_schema(schema);
     /// # // re-create
     /// # let signer = ed25519_dalek::SigningKey::from_bytes(&[0u8; 32])
     /// # .with_schema(ReduceScalar::<Ed25519>::new())
     /// # .with_schema(Digest::<Sha3_256>::default());
     ///
     /// // derive public key for nested path
-    /// let path = "alice";
-    /// let derived_pk = nested.derive_public_key::<Ed25519, _>(path);
+    /// let user = "alice";
+    /// let alice_pk = users.derive_public_key::<Ed25519, _>(user);
     /// assert_eq!(
-    ///     derived_pk,
+    ///     alice_pk,
     ///     signer.derive_public_key::<Ed25519, _>("users/alice"),
     /// );
+    ///
     /// // sign with key derived for nested path
-    /// let msg = b"message";
-    /// let signature = nested.derive_sign::<Ed25519, _>(path, msg).await?;
-    /// assert!(Ed25519::verify(&derived_pk, msg, &signature));
+    /// let msg = b"Hi, I'm Alice!";
+    /// let signature = users.derive_sign::<Ed25519, _>(user, msg).await?;
+    /// assert!(Ed25519::verify(&alice_pk, msg, &signature));
     /// # Ok(()) }
     /// ```
     #[inline]
@@ -255,12 +256,9 @@ pub trait DeriveExt {
     /// method allows to fix the derivation path once, so that further code can
     /// use following methods instead, which don't require to pass one anymore:
     ///
-    /// * [`.derive_public_key(path)`](Self::derive_public_key) ->
-    ///   [`.public_key()`](defuse_crypto::SignerExt::public_key)
-    /// * [`.derive_sign(path, msg)`](Self::derive_sign) ->
-    ///   [`.sign(msg)`](defuse_crypto::SignerExt::sign)
-    /// * [`.derive_sign_recoverable(path, msg)`](Self::derive_sign_recoverable) ->
-    ///   [`.sign_recoverable(msg)`](defuse_crypto::SignerExt::sign_recoverable)
+    /// * <code>[derive_public_key(path)](Self::derive_public_key) -> [public_key()](defuse_crypto::SignerExt::public_key)</code>
+    /// * <code>[derive_sign(path, msg)](Self::derive_sign) -> [sign(msg)](defuse_crypto::SignerExt::sign)</code>
+    /// * <code>[derive_sign_recoverable(path, msg)](Self::derive_sign_recoverable) -> [sign_recoverable(msg)](defuse_crypto::SignerExt::sign_recoverable)</code>
     ///
     /// # Examples
     ///
