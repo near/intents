@@ -69,7 +69,7 @@ const _: () = {
         fn sign(
             &self,
             prehash: &[u8],
-        ) -> impl Future<Output = Result<<P256 as Curve>::Signature, Self::Error>> {
+        ) -> impl Future<Output = Result<<P256 as Curve>::Signature, Self::Error>> + Send {
             let Ok(prehash) = <&[u8; 32]>::try_from(prehash) else {
                 return future::err(ecdsa::Error::from_source("prehash must be 32 bytes long"));
             };

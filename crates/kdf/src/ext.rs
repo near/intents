@@ -10,7 +10,7 @@ pub trait DeriveExt {
     /// Derive a public key for given path on curve `C`.
     ///
     /// This is a shorthand for:
-    /// [`.schema()`](DeriveSigner::schema)[`.derive(path)`](Schema::derive).
+    /// <code>[.schema()](DeriveSigner::schema)[.derive(path)](Schema::derive)</code>.
     ///
     /// > ℹ️ Tips:
     /// > 1. Use [`.with_schema(inner)`](Self::with_schema) to compose derivable
@@ -106,7 +106,7 @@ pub trait DeriveExt {
         Self: DeriveSigner<C, P>,
         P: Send,
     {
-        DeriveSigner::<C, P>::derive_sign(self, path, msg.as_ref())
+        DeriveSigner::<C, P>::derive_sign(self, path, msg)
     }
 
     /// Recoveryably [sign](DeriveSigner::derive_sign) given message with a
