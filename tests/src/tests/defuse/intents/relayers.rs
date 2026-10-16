@@ -1,6 +1,5 @@
 use defuse_core::PublicKey;
 use defuse_sandbox::{
-    account::Account,
     extensions::{
         acl::AccessControllableExt,
         defuse::{DefuseExt, contract::Role},
@@ -26,7 +25,7 @@ async fn relayer_keys(
     env.acl_grant_role(
         env.defuse.contract_id(),
         Role::RelayerKeysManager,
-        user.signer_id(),
+        user.account_id(),
     )
     .await
     .unwrap();

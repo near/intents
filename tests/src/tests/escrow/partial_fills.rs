@@ -1,5 +1,4 @@
 use defuse_sandbox::{
-    account::Account,
     extensions::{
         defuse::{
             core::intents::tokens::NotifyOnTransfer,
@@ -58,7 +57,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
         .map(Into::<TokenId>::into);
 
     let params = Params {
-        maker: env.maker.signer_id().clone(),
+        maker: env.maker.account_id().clone(),
 
         src_token: src_token.clone(),
         dst_token: dst_token.clone(),
@@ -71,17 +70,17 @@ async fn partial_fills(#[future(awt)] env: Env) {
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
         // taker_whitelist: Default::default(),
-        taker_whitelist: env.takers.iter().map(Account::signer_id).cloned().collect(),
+        taker_whitelist: env.takers.iter().map(Near::account_id).cloned().collect(),
         protocol_fees: ProtocolFees {
             fee: Pips::from_percent(1).unwrap(),
             surplus: Pips::from_percent(10).unwrap(),
-            collector: env.fee_collectors[0].signer_id().clone(),
+            collector: env.fee_collectors[0].account_id().clone(),
         }
         .into(),
         integrator_fees: env
             .fee_collectors
             .iter()
-            .map(Account::signer_id)
+            .map(Near::account_id)
             .cloned()
             .enumerate()
             .map(|(percent, a)| {
@@ -106,10 +105,10 @@ async fn partial_fills(#[future(awt)] env: Env) {
     show_verifier_balances(
         &env,
         env.verifier.contract_id(),
-        [escrow.contract_id(), env.maker.signer_id()]
+        [escrow.contract_id(), env.maker.account_id()]
             .into_iter()
-            .chain(env.takers.iter().map(Account::signer_id))
-            .chain(env.fee_collectors.iter().map(Account::signer_id))
+            .chain(env.takers.iter().map(Near::account_id))
+            .chain(env.fee_collectors.iter().map(Near::account_id))
             .map(AsRef::as_ref),
         &[&src_verifier_asset, &dst_verifier_asset],
     )
@@ -151,10 +150,10 @@ async fn partial_fills(#[future(awt)] env: Env) {
             show_verifier_balances(
                 &env,
                 env.verifier.contract_id(),
-                [escrow.contract_id(), env.maker.signer_id()]
+                [escrow.contract_id(), env.maker.account_id()]
                     .into_iter()
-                    .chain(env.takers.iter().map(Account::signer_id))
-                    .chain(env.fee_collectors.iter().map(Account::signer_id))
+                    .chain(env.takers.iter().map(Near::account_id))
+                    .chain(env.fee_collectors.iter().map(Near::account_id))
                     .map(AsRef::as_ref),
                 &[&src_verifier_asset, &dst_verifier_asset],
             )
@@ -209,10 +208,10 @@ async fn partial_fills(#[future(awt)] env: Env) {
             show_verifier_balances(
                 &env,
                 env.verifier.contract_id(),
-                [escrow.contract_id(), env.maker.signer_id()]
+                [escrow.contract_id(), env.maker.account_id()]
                     .into_iter()
-                    .chain(env.takers.iter().map(Account::signer_id))
-                    .chain(env.fee_collectors.iter().map(Account::signer_id))
+                    .chain(env.takers.iter().map(Near::account_id))
+                    .chain(env.fee_collectors.iter().map(Near::account_id))
                     .map(AsRef::as_ref),
                 &[&src_verifier_asset, &dst_verifier_asset],
             )
@@ -236,10 +235,10 @@ async fn partial_fills(#[future(awt)] env: Env) {
         show_verifier_balances(
             &env,
             env.verifier.contract_id(),
-            [escrow.contract_id(), env.maker.signer_id()]
+            [escrow.contract_id(), env.maker.account_id()]
                 .into_iter()
-                .chain(env.takers.iter().map(Account::signer_id))
-                .chain(env.fee_collectors.iter().map(Account::signer_id))
+                .chain(env.takers.iter().map(Near::account_id))
+                .chain(env.fee_collectors.iter().map(Near::account_id))
                 .map(AsRef::as_ref),
             &[&src_verifier_asset, &dst_verifier_asset],
         )

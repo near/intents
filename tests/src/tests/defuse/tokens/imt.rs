@@ -1,5 +1,4 @@
 use defuse_sandbox::{
-    account::Account,
     extensions::defuse::{
         DefuseExt, DefuseImtExt, DefuseSignerExt,
         core::{
@@ -36,7 +35,7 @@ async fn imt_burn_call(
     let memo = "Some memo";
     let amount = 1000;
 
-    let imt_id = TokenId::from(ImtTokenId::new(user1.signer_id().clone(), token.clone()));
+    let imt_id = TokenId::from(ImtTokenId::new(user1.account_id().clone(), token.clone()));
 
     // Mint tokens first
     {
@@ -46,7 +45,7 @@ async fn imt_burn_call(
                 [ImtMint {
                     tokens: Amounts::new(std::iter::once((token.clone(), amount)).collect()),
                     memo: Some(memo.to_string()),
-                    receiver_id: user2.signer_id().clone(),
+                    receiver_id: user2.account_id().clone(),
                     notification: None,
                 }],
             )
@@ -60,7 +59,7 @@ async fn imt_burn_call(
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user2.signer_id(),
+                    account_id: user2.account_id(),
                     token_id: &imt_id.to_string(),
                 })
                 .await
@@ -73,7 +72,7 @@ async fn imt_burn_call(
     let result = user2
         .defuse_imt_burn(
             env.defuse.contract_id(),
-            user1.signer_id().clone(),
+            user1.account_id().clone(),
             [(token.clone(), amount)],
             Some(memo.to_string()),
         )
@@ -83,7 +82,7 @@ async fn imt_burn_call(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user2.signer_id(),
+                account_id: user2.account_id(),
                 token_id: &imt_id.to_string(),
             })
             .await
@@ -94,9 +93,9 @@ async fn imt_burn_call(
 
     let expected = DefuseEvent::ImtBurn(Cow::Owned(vec![MaybeIntentEvent::new_fn_call(
         AccountEvent::new(
-            user2.signer_id(),
+            user2.account_id(),
             Cow::Owned(ImtBurn {
-                minter_id: user1.signer_id().clone(),
+                minter_id: user1.account_id().clone(),
                 tokens: Amounts::new(std::iter::once((token.clone(), amount)).collect()),
                 memo: Some(memo.to_string()),
             }),
@@ -119,7 +118,7 @@ async fn failed_to_burn_tokens_by_fn_call(#[future(awt)] env: Env) {
 
     user.defuse_imt_burn(
         env.defuse.contract_id(),
-        user.signer_id().clone(),
+        user.account_id().clone(),
         [(ft_id.to_string(), amount)],
         Some(memo.to_string()),
     )

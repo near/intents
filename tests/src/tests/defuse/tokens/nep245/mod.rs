@@ -78,7 +78,7 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
     );
 
     env.initial_ft_storage_deposit(
-        vec![user1.signer_id(), user2.signer_id()],
+        vec![user1.account_id(), user2.account_id()],
         vec![ft1.contract_id(), ft2.contract_id()],
     )
     .await;
@@ -92,26 +92,26 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             existing_tokens
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
     }
 
-    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.signer_id(), None)
+    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.account_id(), None)
         .await
         .unwrap();
 
@@ -131,7 +131,7 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             }]
         );
         assert_eq!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), ..)
                 .await
                 .unwrap(),
             [Token {
@@ -140,20 +140,20 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             }]
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
     }
 
-    env.defuse_ft_deposit_to(ft1.contract_id(), 2000, user2.signer_id(), None)
+    env.defuse_ft_deposit_to(ft1.contract_id(), 2000, user2.account_id(), None)
         .await
         .unwrap();
 
@@ -168,7 +168,7 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             }]
         );
         assert_eq!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), ..)
                 .await
                 .unwrap(),
             [Token {
@@ -177,7 +177,7 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             }]
         );
         assert_eq!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.account_id(), ..)
                 .await
                 .unwrap(),
             [Token {
@@ -186,14 +186,14 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             }]
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
     }
 
-    env.defuse_ft_deposit_to(ft2.contract_id(), 5000, user1.signer_id(), None)
+    env.defuse_ft_deposit_to(ft2.contract_id(), 5000, user1.account_id(), None)
         .await
         .unwrap();
 
@@ -214,7 +214,7 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             ]
         );
         assert_eq!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), ..)
                 .await
                 .unwrap(),
             [
@@ -229,7 +229,7 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             ]
         );
         assert_eq!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.account_id(), ..)
                 .await
                 .unwrap(),
             [Token {
@@ -238,7 +238,7 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             }]
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
@@ -251,7 +251,7 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             .defuse_ft_withdraw(
                 env.defuse.contract_id(),
                 ft1.contract_id(),
-                user1.signer_id(),
+                user1.account_id(),
                 1000,
                 None,
                 None,
@@ -266,7 +266,7 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             .defuse_ft_withdraw(
                 env.defuse.contract_id(),
                 ft1.contract_id(),
-                user2.signer_id(),
+                user2.account_id(),
                 2000,
                 None,
                 None
@@ -288,7 +288,7 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             }]
         );
         assert_eq!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), ..)
                 .await
                 .unwrap(),
             [Token {
@@ -297,13 +297,13 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             }]
         );
         assert_eq!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.account_id(), ..)
                 .await
                 .unwrap(),
             []
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
@@ -316,7 +316,7 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             .defuse_ft_withdraw(
                 env.defuse.contract_id(),
                 ft2.contract_id(),
-                user1.signer_id(),
+                user1.account_id(),
                 5000,
                 None,
                 None
@@ -333,19 +333,19 @@ async fn multitoken_enumeration(#[future(awt)] env: Env) {
             existing_tokens
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
@@ -366,7 +366,7 @@ async fn multitoken_enumeration_with_ranges(#[future(awt)] env: Env) {
     );
 
     env.initial_ft_storage_deposit(
-        vec![user1.signer_id()],
+        vec![user1.account_id()],
         vec![ft1.contract_id(), ft2.contract_id(), ft3.contract_id()],
     )
     .await;
@@ -376,32 +376,32 @@ async fn multitoken_enumeration_with_ranges(#[future(awt)] env: Env) {
 
     {
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
     }
 
-    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.signer_id(), None)
+    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.account_id(), None)
         .await
         .unwrap();
-    env.defuse_ft_deposit_to(ft2.contract_id(), 2000, user1.signer_id(), None)
+    env.defuse_ft_deposit_to(ft2.contract_id(), 2000, user1.account_id(), None)
         .await
         .unwrap();
-    env.defuse_ft_deposit_to(ft3.contract_id(), 3000, user1.signer_id(), None)
+    env.defuse_ft_deposit_to(ft3.contract_id(), 3000, user1.account_id(), None)
         .await
         .unwrap();
 
@@ -475,14 +475,14 @@ async fn multitoken_enumeration_with_ranges(#[future(awt)] env: Env) {
         ];
 
         assert_eq!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), ..)
                 .await
                 .unwrap(),
             expected[..]
         );
 
         assert_eq!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), ..)
                 .await
                 .unwrap(),
             expected[..]
@@ -490,7 +490,7 @@ async fn multitoken_enumeration_with_ranges(#[future(awt)] env: Env) {
 
         for i in 0..=3 {
             assert_eq!(
-                env.mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), i..)
+                env.mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), i..)
                     .await
                     .unwrap(),
                 expected[i..]
@@ -499,7 +499,7 @@ async fn multitoken_enumeration_with_ranges(#[future(awt)] env: Env) {
 
         for i in 0..=3 {
             assert_eq!(
-                env.mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), ..i)
+                env.mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), ..i)
                     .await
                     .unwrap(),
                 expected[..i]
@@ -508,7 +508,7 @@ async fn multitoken_enumeration_with_ranges(#[future(awt)] env: Env) {
 
         for i in 1..=3 {
             assert_eq!(
-                env.mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), 1..i)
+                env.mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), 1..i)
                     .await
                     .unwrap(),
                 expected[1..i]
@@ -517,7 +517,7 @@ async fn multitoken_enumeration_with_ranges(#[future(awt)] env: Env) {
 
         for i in 2..=3 {
             assert_eq!(
-                env.mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), 2..i)
+                env.mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), 2..i)
                     .await
                     .unwrap(),
                 expected[2..i]
@@ -539,7 +539,7 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
     );
 
     env.initial_ft_storage_deposit(
-        vec![user1.signer_id()],
+        vec![user1.account_id()],
         vec![ft1.contract_id(), ft2.contract_id(), ft3.contract_id()],
     )
     .await;
@@ -554,7 +554,7 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
                 wnear_id: env.wnear.contract_id().clone(),
                 fees: FeesConfig {
                     fee: Pips::ZERO,
-                    fee_collector: env.signer_id().clone(),
+                    fee_collector: env.account_id().clone(),
                 },
                 roles: RolesConfig::default(),
             },
@@ -568,46 +568,46 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
             existing_tokens
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user1.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user2.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.signer_id(), ..)
+            env.mt_tokens_for_owner(env.defuse.contract_id(), user3.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
     }
 
-    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.signer_id(), None)
+    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.account_id(), None)
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(ft2.contract_id(), 5000, user1.signer_id(), None)
+    env.defuse_ft_deposit_to(ft2.contract_id(), 5000, user1.account_id(), None)
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(ft3.contract_id(), 8000, user1.signer_id(), None)
+    env.defuse_ft_deposit_to(ft3.contract_id(), 8000, user1.account_id(), None)
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user2.signer_id(), None)
+    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user2.account_id(), None)
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(ft2.contract_id(), 5000, user2.signer_id(), None)
+    env.defuse_ft_deposit_to(ft2.contract_id(), 5000, user2.account_id(), None)
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(ft3.contract_id(), 8000, user2.signer_id(), None)
+    env.defuse_ft_deposit_to(ft3.contract_id(), 8000, user2.account_id(), None)
         .await
         .unwrap();
 
@@ -615,14 +615,14 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
     let ft2_id = TokenId::Nep141(Nep141TokenId::new(ft2.contract_id().clone()));
     let ft3_id = TokenId::Nep141(Nep141TokenId::new(ft3.contract_id().clone()));
 
-    let defuse2_mt = env.contract::<Mt>(defuse2.signer_id());
+    let defuse2_mt = env.contract::<Mt>(defuse2.account_id());
 
     // At this point, user1 in defuse2, has no balance of `"nep245:defuse.test.near:nep141:ft1.test.near"`, and others. We will fund it next.
     {
         assert_eq!(
             defuse2_mt
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.signer_id(),
+                    account_id: user1.account_id(),
                     token_id: &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft1_id.to_string()
@@ -638,7 +638,7 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         assert_eq!(
             defuse2_mt
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.signer_id(),
+                    account_id: user1.account_id(),
                     token_id: &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft2_id.to_string()
@@ -654,7 +654,7 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         assert_eq!(
             defuse2_mt
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.signer_id(),
+                    account_id: user1.account_id(),
                     token_id: &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft3_id.to_string()
@@ -673,11 +673,11 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         user1
             .mt_transfer_call(
                 env.defuse.contract_id(),
-                defuse2.signer_id(),
+                defuse2.account_id(),
                 ft1_id.to_string(),
                 100,
                 None,
-                user1.signer_id().to_string(),
+                user1.account_id().to_string(),
             )
             .await
             .unwrap();
@@ -685,11 +685,11 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         user1
             .mt_transfer_call(
                 env.defuse.contract_id(),
-                defuse2.signer_id(),
+                defuse2.account_id(),
                 ft2_id.to_string(),
                 200,
                 None,
-                user1.signer_id().to_string(),
+                user1.account_id().to_string(),
             )
             .await
             .unwrap();
@@ -697,11 +697,11 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         user1
             .mt_transfer_call(
                 env.defuse.contract_id(),
-                defuse2.signer_id(),
+                defuse2.account_id(),
                 ft3_id.to_string(),
                 300,
                 None,
-                user1.signer_id().to_string(),
+                user1.account_id().to_string(),
             )
             .await
             .unwrap();
@@ -712,7 +712,7 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         assert_eq!(
             defuse2_mt
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.signer_id(),
+                    account_id: user1.account_id(),
                     token_id: &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft1_id.to_string()
@@ -728,7 +728,7 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         assert_eq!(
             defuse2_mt
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.signer_id(),
+                    account_id: user1.account_id(),
                     token_id: &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft2_id.to_string()
@@ -744,7 +744,7 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         assert_eq!(
             defuse2_mt
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.signer_id(),
+                    account_id: user1.account_id(),
                     token_id: &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft3_id.to_string()
@@ -770,9 +770,9 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
 
         let (_amounts, _test_log) = user1
             .defuse_mt_withdraw(
-                defuse2.signer_id(),
+                defuse2.account_id(),
                 env.defuse.contract_id(),
-                user2.signer_id(),
+                user2.account_id(),
                 tokens.iter().cloned().map(|v| v.0),
                 tokens.iter().map(|v| v.1),
                 None,
@@ -797,7 +797,7 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         assert_eq!(
             defuse2_mt
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.signer_id(),
+                    account_id: user1.account_id(),
                     token_id: &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft1_id.to_string()
@@ -813,7 +813,7 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         assert_eq!(
             defuse2_mt
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.signer_id(),
+                    account_id: user1.account_id(),
                     token_id: &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft2_id.to_string()
@@ -829,7 +829,7 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         assert_eq!(
             defuse2_mt
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.signer_id(),
+                    account_id: user1.account_id(),
                     token_id: &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft3_id.to_string()
@@ -849,9 +849,9 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
 
         let (_amounts, _test_log) = user1
             .defuse_mt_withdraw(
-                defuse2.signer_id(),
+                defuse2.account_id(),
                 env.defuse.contract_id(),
-                user2.signer_id(),
+                user2.account_id(),
                 tokens.iter().cloned().map(|v| v.0),
                 tokens.iter().map(|v| v.1),
                 None,
@@ -880,9 +880,9 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
 
         let (_amounts, _test_log) = user1
             .defuse_mt_withdraw(
-                defuse2.signer_id(),
+                defuse2.account_id(),
                 env.defuse.contract_id(),
-                user2.signer_id(),
+                user2.account_id(),
                 tokens.iter().cloned().map(|v| v.0),
                 tokens.iter().map(|v| v.1),
                 None,
@@ -906,7 +906,7 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         assert_eq!(
             defuse2_mt
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.signer_id(),
+                    account_id: user1.account_id(),
                     token_id: &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft1_id.to_string()
@@ -922,7 +922,7 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         assert_eq!(
             defuse2_mt
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.signer_id(),
+                    account_id: user1.account_id(),
                     token_id: &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft2_id.to_string()
@@ -938,7 +938,7 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         assert_eq!(
             defuse2_mt
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.signer_id(),
+                    account_id: user1.account_id(),
                     token_id: &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft3_id.to_string()
@@ -1016,7 +1016,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
                 wnear_id: env.wnear.contract_id().clone(),
                 fees: FeesConfig {
                     fee: Pips::ZERO,
-                    fee_collector: env.signer_id().clone(),
+                    fee_collector: env.account_id().clone(),
                 },
                 roles: RolesConfig::default(),
             },
@@ -1037,15 +1037,18 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
 
     // Register receiver's public key in defuse2 so it can execute intents
     receiver
-        .defuse_add_public_key(defuse2.signer_id(), receiver.signer().unwrap().public_key())
+        .defuse_add_public_key(
+            defuse2.account_id(),
+            receiver.signer().unwrap().public_key(),
+        )
         .await
         .unwrap();
 
     env.initial_ft_storage_deposit(
         vec![
-            user.signer_id(),
-            receiver.signer_id(),
-            intent_receiver.signer_id(),
+            user.account_id(),
+            receiver.account_id(),
+            intent_receiver.account_id(),
         ],
         vec![ft.contract_id()],
     )
@@ -1053,7 +1056,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
 
     let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
     // Fund user with tokens in defuse1
-    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.signer_id(), None)
+    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.account_id(), None)
         .await
         .unwrap();
 
@@ -1069,9 +1072,9 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
             vec![
                 receiver
                     .sign_defuse_payload_default(
-                        &env.contract::<Defuse>(defuse2.signer_id()),
+                        &env.contract::<Defuse>(defuse2.account_id()),
                         [Transfer {
-                            receiver_id: intent_receiver.signer_id().clone(),
+                            receiver_id: intent_receiver.account_id().clone(),
                             tokens: Amounts::new(
                                 std::iter::once((nep245_ft_id.clone(), amounts[0])).collect(),
                             ),
@@ -1088,14 +1091,14 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
 
     let deposit_message = if intents.is_empty() {
         DepositMessage {
-            receiver_id: receiver.signer_id().clone(),
+            receiver_id: receiver.account_id().clone(),
             action: Some(DepositAction::Notify(NotifyOnTransfer::new(
                 serde_json::to_string(&expectation.action).unwrap(),
             ))),
         }
     } else {
         DepositMessage {
-            receiver_id: receiver.signer_id().clone(),
+            receiver_id: receiver.account_id().clone(),
             action: Some(DepositAction::Execute(ExecuteIntents {
                 execute_intents: intents,
                 refund_if_fails: expectation.refund_if_fails,
@@ -1106,7 +1109,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     // Transfer from defuse1 to defuse2 using mt_transfer_call
     user.mt_transfer_call(
         env.defuse.contract_id(),
-        defuse2.signer_id(),
+        defuse2.account_id(),
         &ft_id.to_string(),
         1000,
         None,
@@ -1119,7 +1122,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.signer_id(),
+                account_id: user.account_id(),
                 token_id: &ft_id.to_string(),
             })
             .await
@@ -1131,9 +1134,9 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
 
     // Check balances in defuse2 (receiver) - token is wrapped as NEP-245
     assert_eq!(
-        env.contract::<Mt>(defuse2.signer_id())
+        env.contract::<Mt>(defuse2.account_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: receiver.signer_id(),
+                account_id: receiver.account_id(),
                 token_id: &nep245_ft_id.to_string(),
             })
             .await
@@ -1216,7 +1219,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
                 wnear_id: env.wnear.contract_id().clone(),
                 fees: FeesConfig {
                     fee: Pips::ZERO,
-                    fee_collector: env.signer_id().clone(),
+                    fee_collector: env.account_id().clone(),
                 },
                 roles: RolesConfig::default(),
             },
@@ -1237,15 +1240,18 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
 
     // Register receiver's public key in defuse2 so it can execute intents
     receiver
-        .defuse_add_public_key(defuse2.signer_id(), receiver.signer().unwrap().public_key())
+        .defuse_add_public_key(
+            defuse2.account_id(),
+            receiver.signer().unwrap().public_key(),
+        )
         .await
         .unwrap();
 
     env.initial_ft_storage_deposit(
         vec![
-            user.signer_id(),
-            receiver.signer_id(),
-            intent_receiver.signer_id(),
+            user.account_id(),
+            receiver.account_id(),
+            intent_receiver.account_id(),
         ],
         vec![ft1.contract_id(), ft2.contract_id()],
     )
@@ -1255,10 +1261,10 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     let ft2_id = TokenId::from(Nep141TokenId::new(ft2.contract_id().clone()));
 
     // Fund user with tokens in defuse1
-    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user.signer_id(), None)
+    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user.account_id(), None)
         .await
         .unwrap();
-    env.defuse_ft_deposit_to(ft2.contract_id(), 2000, user.signer_id(), None)
+    env.defuse_ft_deposit_to(ft2.contract_id(), 2000, user.account_id(), None)
         .await
         .unwrap();
 
@@ -1286,9 +1292,9 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
         vec![
             receiver
                 .sign_defuse_payload_default(
-                    &env.contract::<Defuse>(defuse2.signer_id()),
+                    &env.contract::<Defuse>(defuse2.account_id()),
                     [Transfer {
-                        receiver_id: intent_receiver.signer_id().clone(),
+                        receiver_id: intent_receiver.account_id().clone(),
                         tokens: Amounts::new(intent_map),
                         memo: None,
                         notification: None,
@@ -1303,14 +1309,14 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
 
     let deposit_message = if intents.is_empty() {
         DepositMessage {
-            receiver_id: receiver.signer_id().clone(),
+            receiver_id: receiver.account_id().clone(),
             action: Some(DepositAction::Notify(NotifyOnTransfer::new(
                 serde_json::to_string(&expectation.action).unwrap(),
             ))),
         }
     } else {
         DepositMessage {
-            receiver_id: receiver.signer_id().clone(),
+            receiver_id: receiver.account_id().clone(),
             action: Some(DepositAction::Execute(ExecuteIntents {
                 execute_intents: intents,
                 refund_if_fails: expectation.refund_if_fails,
@@ -1321,7 +1327,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     // Transfer both tokens from user in defuse1 to defuse2 using batch transfer
     user.mt_batch_transfer_call(
         env.defuse.contract_id(),
-        defuse2.signer_id(),
+        defuse2.account_id(),
         vec![ft1_id.to_string(), ft2_id.to_string()],
         vec![1000, 2000],
         None,
@@ -1334,7 +1340,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.signer_id(),
+                account_id: user.account_id(),
                 token_id: &ft1_id.to_string(),
             })
             .await
@@ -1346,7 +1352,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.signer_id(),
+                account_id: user.account_id(),
                 token_id: &ft2_id.to_string(),
             })
             .await
@@ -1358,9 +1364,9 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
 
     // Check balances in defuse2 (receiver)
     assert_eq!(
-        env.contract::<Mt>(defuse2.signer_id())
+        env.contract::<Mt>(defuse2.account_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: receiver.signer_id(),
+                account_id: receiver.account_id(),
                 token_id: &nep245_ft1_id.to_string(),
             })
             .await
@@ -1370,9 +1376,9 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
         "Receiver balance for ft1 in defuse2 should match expected"
     );
     assert_eq!(
-        env.contract::<Mt>(defuse2.signer_id())
+        env.contract::<Mt>(defuse2.account_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: receiver.signer_id(),
+                account_id: receiver.account_id(),
                 token_id: &nep245_ft2_id.to_string(),
             })
             .await
@@ -1399,7 +1405,7 @@ async fn mt_transfer_call_circullar_callback(
                 wnear_id: env.wnear.contract_id().clone(),
                 fees: FeesConfig {
                     fee: Pips::ZERO,
-                    fee_collector: env.signer_id().clone(),
+                    fee_collector: env.account_id().clone(),
                 },
                 roles: RolesConfig::default(),
             },
@@ -1407,20 +1413,20 @@ async fn mt_transfer_call_circullar_callback(
         )
         .await;
 
-    env.initial_ft_storage_deposit(vec![user.signer_id()], vec![ft.contract_id()])
+    env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
         .await;
 
     let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
 
     // Step 1: Deposit tokens to user in defuse1
-    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.signer_id(), None)
+    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.account_id(), None)
         .await
         .unwrap();
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.signer_id(),
+                account_id: user.account_id(),
                 token_id: &ft_id.to_string(),
             })
             .await
@@ -1436,7 +1442,7 @@ async fn mt_transfer_call_circullar_callback(
     let deposit_message = DepositMessage {
         receiver_id: env.defuse.contract_id().clone(), // Circular: back to defuse1
         action: Some(DepositAction::Notify(NotifyOnTransfer::new(
-            serde_json::to_string(&DepositMessage::new(user.signer_id().clone())).unwrap(),
+            serde_json::to_string(&DepositMessage::new(user.account_id().clone())).unwrap(),
         ))),
     };
 
@@ -1449,7 +1455,7 @@ async fn mt_transfer_call_circullar_callback(
     let refund_amount = user
         .mt_transfer_call(
             env.defuse.contract_id(),
-            defuse2.signer_id(),
+            defuse2.account_id(),
             &ft_id.to_string(),
             600,
             None,
@@ -1468,7 +1474,7 @@ async fn mt_transfer_call_circullar_callback(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.signer_id(),
+                account_id: user.account_id(),
                 token_id: &ft_id.to_string(),
             })
             .await
@@ -1487,7 +1493,7 @@ async fn mt_transfer_call_circullar_callback(
     // The tokens are already deposited in defuse2, owned by defuse1.
 
     assert_eq!(
-        env.contract::<Mt>(defuse2.signer_id())
+        env.contract::<Mt>(defuse2.account_id())
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: env.defuse.contract_id(),
                 token_id: &nep245_ft_id.to_string(),
@@ -1500,9 +1506,9 @@ async fn mt_transfer_call_circullar_callback(
     );
 
     assert_eq!(
-        env.contract::<Mt>(defuse2.signer_id())
+        env.contract::<Mt>(defuse2.account_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.signer_id(),
+                account_id: user.account_id(),
                 token_id: &nep245_ft_id.to_string(),
             })
             .await
@@ -1529,7 +1535,7 @@ async fn mt_transfer_call_circullar_deposit(
                 wnear_id: env.wnear.contract_id().clone(),
                 fees: FeesConfig {
                     fee: Pips::ZERO,
-                    fee_collector: env.signer_id().clone(),
+                    fee_collector: env.account_id().clone(),
                 },
                 roles: RolesConfig::default(),
             },
@@ -1537,14 +1543,14 @@ async fn mt_transfer_call_circullar_deposit(
         )
         .await;
 
-    env.initial_ft_storage_deposit(vec![user.signer_id()], vec![ft.contract_id()])
+    env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
         .await;
 
     // Step 1: Deposit tokens to defuse2 in defuse1
     env.defuse_ft_deposit_to(
         ft.contract_id(),
         1000,
-        defuse2.signer_id(),
+        defuse2.account_id(),
         // NOTE: Test circular callback case: defuse2 → defuse1
         // Set receiver_id to defuse1 to create circular callback
         // With empty inner message to avoid further callbacks
@@ -1552,7 +1558,7 @@ async fn mt_transfer_call_circullar_deposit(
             serde_json::to_string(&DepositMessage {
                 receiver_id: env.defuse.contract_id().clone(), // Circular: back to defuse1
                 action: Some(DepositAction::Notify(NotifyOnTransfer::new(
-                    serde_json::to_string(&DepositMessage::new(user.signer_id().clone())).unwrap(),
+                    serde_json::to_string(&DepositMessage::new(user.account_id().clone())).unwrap(),
                 ))),
             })
             .unwrap(),
@@ -1567,7 +1573,7 @@ async fn mt_transfer_call_circullar_deposit(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: defuse2.signer_id(),
+                account_id: defuse2.account_id(),
                 token_id: &defuse1_ft_id.to_string(),
             })
             .await
@@ -1583,7 +1589,7 @@ async fn mt_transfer_call_circullar_deposit(
     ));
 
     assert_eq!(
-        env.contract::<Mt>(defuse2.signer_id())
+        env.contract::<Mt>(defuse2.account_id())
             .mt_balance_of(MtBalanceOfArgs {
                 account_id: env.defuse.contract_id(),
                 token_id: &defuse2_nep245_ft_id.to_string(),
@@ -1596,14 +1602,14 @@ async fn mt_transfer_call_circullar_deposit(
     );
 
     let defuse1_defuse2_nep245_ft_id = TokenId::Nep245(Nep245TokenId::new(
-        defuse2.signer_id().clone(),
+        defuse2.account_id().clone(),
         defuse2_nep245_ft_id.to_string(),
     ));
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.signer_id(),
+                account_id: user.account_id(),
                 token_id: &defuse1_defuse2_nep245_ft_id.to_string(),
             })
             .await
@@ -1636,7 +1642,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
                 wnear_id: env.wnear.contract_id().clone(),
                 fees: FeesConfig {
                     fee: Pips::ZERO,
-                    fee_collector: env.signer_id().clone(),
+                    fee_collector: env.account_id().clone(),
                 },
                 roles: RolesConfig::default(),
             },
@@ -1657,14 +1663,14 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
     // Register stub's public key in defuse2 so it can execute intents
     stub_receiver
         .defuse_add_public_key(
-            defuse2.signer_id(),
+            defuse2.account_id(),
             stub_receiver.signer().unwrap().public_key(),
         )
         .await
         .unwrap();
 
     env.initial_ft_storage_deposit(
-        vec![user.signer_id(), stub_receiver.signer_id()],
+        vec![user.account_id(), stub_receiver.account_id()],
         vec![ft1.contract_id(), ft2.contract_id()],
     )
     .await;
@@ -1684,19 +1690,19 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
         ft2_id.to_string(),
     ));
 
-    env.defuse_ft_deposit_to(ft1.contract_id(), 4000, user.signer_id(), None)
+    env.defuse_ft_deposit_to(ft1.contract_id(), 4000, user.account_id(), None)
         .await
         .unwrap();
-    env.defuse_ft_deposit_to(ft2.contract_id(), 2000, user.signer_id(), None)
+    env.defuse_ft_deposit_to(ft2.contract_id(), 2000, user.account_id(), None)
         .await
         .unwrap();
 
     let stub_action = StubAction::ExecuteAndRefund {
         multipayload: stub_receiver
             .sign_defuse_payload_default(
-                &env.contract::<Defuse>(defuse2.signer_id()),
+                &env.contract::<Defuse>(defuse2.account_id()),
                 [Transfer {
-                    receiver_id: another_receiver.signer_id().clone(),
+                    receiver_id: another_receiver.account_id().clone(),
                     tokens: Amounts::new([(nep245_ft1_id.clone(), 2000)].into()),
                     memo: None,
                     notification: None,
@@ -1708,7 +1714,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
     };
 
     let deposit_message = DepositMessage {
-        receiver_id: stub_receiver.signer_id().clone(),
+        receiver_id: stub_receiver.account_id().clone(),
         action: Some(DepositAction::Notify(NotifyOnTransfer::new(
             serde_json::to_string(&stub_action).unwrap(),
         ))),
@@ -1717,7 +1723,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
     let result = user
         .mt_batch_transfer_call(
             env.defuse.contract_id(),
-            defuse2.signer_id(),
+            defuse2.account_id(),
             vec![ft1_id.to_string(), ft2_id.to_string(), ft1_id.to_string()],
             transfer_amounts.into_iter().map(|a| a.0),
             None,
@@ -1736,7 +1742,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
     ];
 
     let burn_events = [MtBurnEvent {
-        owner_id: Cow::Borrowed(stub_receiver.signer_id().as_ref()),
+        owner_id: Cow::Borrowed(stub_receiver.account_id().as_ref()),
         authorized_id: None,
         token_ids: Cow::Borrowed(&mt_token_ids),
         amounts: Cow::Borrowed(&refund_amounts),
@@ -1746,8 +1752,8 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
 
     let transfer_events = [MtTransferEvent {
         authorized_id: None,
-        old_owner_id: Cow::Borrowed(defuse2.signer_id().as_ref()),
-        new_owner_id: Cow::Borrowed(user.signer_id().as_ref()),
+        old_owner_id: Cow::Borrowed(defuse2.account_id().as_ref()),
+        new_owner_id: Cow::Borrowed(user.account_id().as_ref()),
         token_ids: Cow::Borrowed(&ft_token_ids),
         amounts: Cow::Borrowed(&refund_amounts), // Use capped refund amounts
         memo: Some(Cow::Borrowed(REFUND_MEMO)),
@@ -1765,7 +1771,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.signer_id(),
+                account_id: user.account_id(),
                 token_id: &ft1_id.to_string(),
             })
             .await
@@ -1778,7 +1784,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.signer_id(),
+                account_id: user.account_id(),
                 token_id: &ft2_id.to_string(),
             })
             .await

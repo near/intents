@@ -138,7 +138,7 @@ impl EnvBuilder {
                                 fee_collector: self
                                     .fee_collector
                                     .as_ref()
-                                    .unwrap_or_else(|| root.signer_id())
+                                    .unwrap_or_else(|| root.account_id())
                                     .clone(),
                             },
                             roles: self.roles.clone(),
@@ -151,7 +151,7 @@ impl EnvBuilder {
             .await
             .unwrap();
 
-        let client = root.contract::<Defuse>(account.signer_id());
+        let client = root.contract::<Defuse>(account.account_id());
         (client, account)
     }
 
@@ -168,7 +168,7 @@ impl EnvBuilder {
     }
 
     pub async fn build(mut self, root: Near) -> Env {
-        self.grant_roles(root.signer_id());
+        self.grant_roles(root.account_id());
 
         let (poa_factory, (wnear, defuse, defuse_near)) =
             futures::join!(self.deploy_poa_factory(&root), async {
@@ -192,10 +192,10 @@ impl EnvBuilder {
     }
 
     async fn deploy_poa_factory(&self, root: &Near) -> PoaFactoryClient {
-        let root_id = root.signer_id();
+        let root_id = root.account_id();
         root.deploy_poa_factory(
             &self.poa_factory_name,
-            [root.signer_id().clone()],
+            [root.account_id().clone()],
             [
                 (POAFactoryRole::TokenDeployer, [root_id.clone()]),
                 (POAFactoryRole::TokenDepositer, [root_id.clone()]),

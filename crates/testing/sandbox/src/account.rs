@@ -1,14 +1,12 @@
 use defuse_core::crypto::ed25519::Ed25519PublicKey;
 use near_kit::{
-    AccountId, Near, NearToken,
+    Near, NearToken,
     protocol::{Action, FunctionCallAction},
     signer::{InMemorySigner, SecretKey},
     transaction::Final,
 };
 
 pub trait Account {
-    fn signer_id(&self) -> &AccountId;
-
     async fn create_subaccount(
         &self,
         name: impl AsRef<str>,
@@ -27,11 +25,6 @@ pub trait Account {
 }
 
 impl Account for Near {
-    #[inline]
-    fn signer_id(&self) -> &AccountId {
-        self.account_id()
-    }
-
     async fn create_subaccount(
         &self,
         name: impl AsRef<str>,
@@ -39,7 +32,7 @@ impl Account for Near {
     ) -> Self {
         let secret_key = SecretKey::generate_ed25519();
         let account_id = self
-            .signer_id()
+            .account_id()
             .sub_account(name)
             .expect("Failed to generate subaccount ID");
 
@@ -95,7 +88,7 @@ impl Account for Near {
     ) -> anyhow::Result<Self> {
         let secret_key = SecretKey::generate_ed25519();
         let account_id = self
-            .signer_id()
+            .account_id()
             .sub_account(name)
             .expect("failed to generate subaccount ID");
 

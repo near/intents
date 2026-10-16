@@ -40,10 +40,10 @@ async fn transfer_intent(#[future(awt)] env: Env) {
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
     let token_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone())).to_string();
 
-    env.initial_ft_storage_deposit(vec![user.signer_id()], vec![ft.contract_id()])
+    env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
         .await;
 
-    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.signer_id(), None)
+    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.account_id(), None)
         .await
         .unwrap();
 
@@ -78,7 +78,7 @@ async fn transfer_intent(#[future(awt)] env: Env) {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
                     .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.signer_id(),
+                        account_id: user.account_id(),
                         token_id: &token_id,
                     })
                     .await
@@ -118,7 +118,7 @@ async fn transfer_intent_to_defuse(#[future(awt)] env: Env) {
                 wnear_id: env.wnear.contract_id().clone(),
                 fees: FeesConfig {
                     fee: Pips::ZERO,
-                    fee_collector: env.signer_id().clone(),
+                    fee_collector: env.account_id().clone(),
                 },
                 roles: RolesConfig::default(),
             },
@@ -127,12 +127,12 @@ async fn transfer_intent_to_defuse(#[future(awt)] env: Env) {
         .await;
 
     env.initial_ft_storage_deposit(
-        vec![user.signer_id(), defuse2.signer_id()],
+        vec![user.account_id(), defuse2.account_id()],
         vec![ft.contract_id()],
     )
     .await;
 
-    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.signer_id(), None)
+    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.account_id(), None)
         .await
         .unwrap();
 
@@ -141,7 +141,7 @@ async fn transfer_intent_to_defuse(#[future(awt)] env: Env) {
     // large gas limit
     {
         let transfer_intent = Transfer {
-            receiver_id: defuse2.signer_id().clone(),
+            receiver_id: defuse2.account_id().clone(),
             tokens: Amounts::new(
                 std::iter::once((
                     TokenId::from(Nep141TokenId::new(ft.contract_id().clone())),
@@ -168,7 +168,7 @@ async fn transfer_intent_to_defuse(#[future(awt)] env: Env) {
     // Should pass default gas limit in case of low gas
     {
         let transfer_intent = Transfer {
-            receiver_id: defuse2.signer_id().clone(),
+            receiver_id: defuse2.account_id().clone(),
             tokens: Amounts::new(
                 std::iter::once((
                     TokenId::from(Nep141TokenId::new(ft.contract_id().clone())),
@@ -188,7 +188,7 @@ async fn transfer_intent_to_defuse(#[future(awt)] env: Env) {
             .unwrap();
 
         assert!(
-            env.mt_tokens_for_owner(defuse2.signer_id(), &other_user_id, ..)
+            env.mt_tokens_for_owner(defuse2.account_id(), &other_user_id, ..)
                 .await
                 .unwrap()
                 .is_empty()
@@ -215,7 +215,7 @@ async fn transfer_intent_to_defuse(#[future(awt)] env: Env) {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
                         .mt_balance_of(MtBalanceOfArgs {
-                            account_id: user.signer_id(),
+                            account_id: user.account_id(),
                             token_id: &ft1,
                         })
                         .await
@@ -228,7 +228,7 @@ async fn transfer_intent_to_defuse(#[future(awt)] env: Env) {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
                         .mt_balance_of(MtBalanceOfArgs {
-                            account_id: defuse2.signer_id(),
+                            account_id: defuse2.account_id(),
                             token_id: &ft1,
                         })
                         .await
@@ -239,13 +239,13 @@ async fn transfer_intent_to_defuse(#[future(awt)] env: Env) {
             },
             async {
                 assert_eq!(
-                    env.mt_tokens(defuse2.signer_id(), ..).await.unwrap().len(),
+                    env.mt_tokens(defuse2.account_id(), ..).await.unwrap().len(),
                     1
                 );
             },
             async {
                 assert_eq!(
-                    env.mt_tokens_for_owner(defuse2.signer_id(), &other_user_id, ..)
+                    env.mt_tokens_for_owner(defuse2.account_id(), &other_user_id, ..)
                         .await
                         .unwrap()
                         .len(),
@@ -253,11 +253,11 @@ async fn transfer_intent_to_defuse(#[future(awt)] env: Env) {
                 );
             },
             async {
-                assert!(ft.balance_of(defuse2.signer_id()).await.unwrap().is_zero());
+                assert!(ft.balance_of(defuse2.account_id()).await.unwrap().is_zero());
             },
             async {
                 assert_eq!(
-                    env.contract::<Mt>(defuse2.signer_id())
+                    env.contract::<Mt>(defuse2.account_id())
                         .mt_balance_of(MtBalanceOfArgs {
                             account_id: &other_user_id,
                             token_id: &defuse_ft1,
@@ -332,10 +332,10 @@ async fn transfer_intent_with_msg_to_receiver_smc(
         .await
         .unwrap();
 
-    env.initial_ft_storage_deposit(vec![user.signer_id()], vec![ft.contract_id()])
+    env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
         .await;
 
-    env.defuse_ft_deposit_to(ft.contract_id(), initial_amount, user.signer_id(), None)
+    env.defuse_ft_deposit_to(ft.contract_id(), initial_amount, user.account_id(), None)
         .await
         .unwrap();
 
@@ -344,7 +344,7 @@ async fn transfer_intent_with_msg_to_receiver_smc(
     let msg = serde_json::to_string(&expectation.mode).unwrap();
 
     let transfer_intent = Transfer {
-        receiver_id: mt_receiver.signer_id().clone(),
+        receiver_id: mt_receiver.account_id().clone(),
         tokens: Amounts::new(
             std::iter::once((
                 TokenId::from(Nep141TokenId::new(ft.contract_id().clone())),
@@ -373,7 +373,7 @@ async fn transfer_intent_with_msg_to_receiver_smc(
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
                     .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.signer_id(),
+                        account_id: user.account_id(),
                         token_id: &ft1.to_string(),
                     })
                     .await
@@ -386,7 +386,7 @@ async fn transfer_intent_with_msg_to_receiver_smc(
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
                     .mt_balance_of(MtBalanceOfArgs {
-                        account_id: mt_receiver.signer_id(),
+                        account_id: mt_receiver.account_id(),
                         token_id: &ft1.to_string(),
                     })
                     .await

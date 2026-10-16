@@ -44,7 +44,7 @@ async fn imt_mint_intent(
     let intent = ImtMint {
         tokens: Amounts::new(std::iter::once((token.clone(), amount)).collect()),
         memo: Some(memo.to_string()),
-        receiver_id: user.signer_id().clone(),
+        receiver_id: user.account_id().clone(),
         notification: None,
     };
     let mint_payload = user
@@ -57,12 +57,12 @@ async fn imt_mint_intent(
         .await
         .unwrap();
 
-    let mt_id = TokenId::from(ImtTokenId::new(user.signer_id().clone(), token.clone()));
+    let mt_id = TokenId::from(ImtTokenId::new(user.account_id().clone(), token.clone()));
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.signer_id(),
+                account_id: user.account_id(),
                 token_id: &mt_id.to_string()
             })
             .await
@@ -89,7 +89,7 @@ async fn failed_imt_mint_intent(
     let intent = ImtMint {
         tokens: Amounts::new(std::iter::once((token.clone(), amount)).collect()),
         memo: None,
-        receiver_id: user.signer_id().clone(),
+        receiver_id: user.account_id().clone(),
         notification: None,
     };
     let mint_payload = user
@@ -119,7 +119,7 @@ async fn imt_mint_intent_to_defuse(
                 wnear_id: env.wnear.contract_id().clone(),
                 fees: FeesConfig {
                     fee: Pips::ZERO,
-                    fee_collector: env.signer_id().clone(),
+                    fee_collector: env.account_id().clone(),
                 },
                 roles: RolesConfig::default(),
             },
@@ -131,7 +131,7 @@ async fn imt_mint_intent_to_defuse(
     // large gas limit
     {
         let mint_intent = ImtMint {
-            receiver_id: defuse2.signer_id().clone(),
+            receiver_id: defuse2.account_id().clone(),
             tokens: Amounts::new(std::iter::once((ft.clone(), 1000)).collect()),
             memo: None,
             notification: NotifyOnTransfer::new(other_user_id.to_string())
@@ -152,7 +152,7 @@ async fn imt_mint_intent_to_defuse(
     // Should pass default gas limit in case of low gas
     {
         let mint_intent = ImtMint {
-            receiver_id: defuse2.signer_id().clone(),
+            receiver_id: defuse2.account_id().clone(),
             tokens: Amounts::new(std::iter::once((ft.clone(), 1000)).collect()),
             memo: None,
             notification: NotifyOnTransfer::new(other_user_id.to_string())
@@ -166,7 +166,7 @@ async fn imt_mint_intent_to_defuse(
             .unwrap();
 
         assert!(
-            env.mt_tokens(defuse2.signer_id(), ..)
+            env.mt_tokens(defuse2.account_id(), ..)
                 .await
                 .unwrap()
                 .is_empty()
@@ -179,12 +179,12 @@ async fn imt_mint_intent_to_defuse(
 
         assert_eq_defuse_event_logs(mint_payload.to_event_log(), res.logs());
 
-        let mt_token = TokenId::from(ImtTokenId::new(user.signer_id().clone(), ft.clone()));
+        let mt_token = TokenId::from(ImtTokenId::new(user.account_id().clone(), ft.clone()));
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: defuse2.signer_id(),
+                    account_id: defuse2.account_id(),
                     token_id: &mt_token.to_string(),
                 })
                 .await
@@ -194,11 +194,11 @@ async fn imt_mint_intent_to_defuse(
         );
 
         assert_eq!(
-            env.mt_tokens(defuse2.signer_id(), ..).await.unwrap().len(),
+            env.mt_tokens(defuse2.account_id(), ..).await.unwrap().len(),
             1
         );
         assert_eq!(
-            env.mt_tokens_for_owner(defuse2.signer_id(), &other_user_id, ..)
+            env.mt_tokens_for_owner(defuse2.account_id(), &other_user_id, ..)
                 .await
                 .unwrap()
                 .len(),
@@ -209,7 +209,7 @@ async fn imt_mint_intent_to_defuse(
             Nep245TokenId::new(env.defuse.contract_id().clone(), mt_token.to_string()).into();
 
         assert_eq!(
-            env.contract::<Mt>(defuse2.signer_id())
+            env.contract::<Mt>(defuse2.account_id())
                 .mt_balance_of(MtBalanceOfArgs {
                     account_id: &other_user_id,
                     token_id: &defuse_ft1.to_string(),
@@ -280,7 +280,7 @@ async fn imt_mint_intent_with_msg_to_receiver_smc(
     let msg = serde_json::to_string(&expectation.mode).unwrap();
 
     let mint_intent = ImtMint {
-        receiver_id: mt_receiver.signer_id().clone(),
+        receiver_id: mt_receiver.account_id().clone(),
         tokens: Amounts::new(std::iter::once((ft1.clone(), initial_amount)).collect()),
         memo: None,
         notification: NotifyOnTransfer::new(msg).into(),
@@ -298,12 +298,12 @@ async fn imt_mint_intent_with_msg_to_receiver_smc(
 
     assert_eq_defuse_event_logs(mint_payload.to_event_log(), res.logs());
 
-    let mt_token = TokenId::from(ImtTokenId::new(user.signer_id().clone(), ft1.clone()));
+    let mt_token = TokenId::from(ImtTokenId::new(user.account_id().clone(), ft1.clone()));
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.signer_id(),
+                account_id: user.account_id(),
                 token_id: &mt_token.to_string(),
             })
             .await
@@ -315,7 +315,7 @@ async fn imt_mint_intent_with_msg_to_receiver_smc(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: mt_receiver.signer_id(),
+                account_id: mt_receiver.account_id(),
                 token_id: &mt_token.to_string(),
             })
             .await

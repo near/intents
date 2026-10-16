@@ -1,21 +1,18 @@
-use defuse_sandbox::{
-    account::Account,
-    extensions::{
-        acl::AccessControllableExt,
-        defuse::{
-            AccountArgs, DefuseExt, DefuseSignerExt, ExtractNonceExt, HasPublicKeyArgs,
-            IsNonceUsedArgs,
-            contract::Role,
-            core::{
-                DefuseError, PublicKey,
-                accounts::AccountEvent,
-                events::DefuseEvent,
-                intents::{Intent, MaybeIntentEvent, account::SetAuthByPredecessorId},
-                token_id::{TokenId, nep141::Nep141TokenId},
-            },
+use defuse_sandbox::extensions::{
+    acl::AccessControllableExt,
+    defuse::{
+        AccountArgs, DefuseExt, DefuseSignerExt, ExtractNonceExt, HasPublicKeyArgs,
+        IsNonceUsedArgs,
+        contract::Role,
+        core::{
+            DefuseError, PublicKey,
+            accounts::AccountEvent,
+            events::DefuseEvent,
+            intents::{Intent, MaybeIntentEvent, account::SetAuthByPredecessorId},
+            token_id::{TokenId, nep141::Nep141TokenId},
         },
-        mt::{Mt, MtBalanceOfArgs, MtExt},
     },
+    mt::{Mt, MtBalanceOfArgs, MtExt},
 };
 use defuse_test_utils::fixtures::public_key;
 use near_sdk::events::AsNep297Event;
@@ -43,7 +40,7 @@ async fn test_lock_account(
     );
 
     env.initial_ft_storage_deposit(
-        vec![locked_account.signer_id(), unlocked_account.signer_id()],
+        vec![locked_account.account_id(), unlocked_account.account_id()],
         vec![ft.contract_id()],
     )
     .await;
@@ -51,11 +48,11 @@ async fn test_lock_account(
     // deposit tokens
     let ft1: TokenId = Nep141TokenId::new(ft.contract_id().clone()).into();
     {
-        env.defuse_ft_deposit_to(ft.contract_id(), 1000, locked_account.signer_id(), None)
+        env.defuse_ft_deposit_to(ft.contract_id(), 1000, locked_account.account_id(), None)
             .await
             .unwrap();
 
-        env.defuse_ft_deposit_to(ft.contract_id(), 3000, unlocked_account.signer_id(), None)
+        env.defuse_ft_deposit_to(ft.contract_id(), 3000, unlocked_account.account_id(), None)
             .await
             .unwrap();
     }
@@ -65,13 +62,13 @@ async fn test_lock_account(
         // no permission
         {
             account_locker
-                .defuse_force_lock_account(env.defuse.contract_id(), locked_account.signer_id())
+                .defuse_force_lock_account(env.defuse.contract_id(), locked_account.account_id())
                 .await
                 .expect_err("user2 doesn't have UnrestrictedAccountLocker role");
             assert!(
                 !env.defuse
                     .is_account_locked(AccountArgs {
-                        account_id: locked_account.signer_id(),
+                        account_id: locked_account.account_id(),
                     })
                     .await
                     .unwrap(),
@@ -83,7 +80,7 @@ async fn test_lock_account(
         env.acl_grant_role(
             env.defuse.contract_id(),
             Role::UnrestrictedAccountLocker,
-            account_locker.signer_id(),
+            account_locker.account_id(),
         )
         .await
         .unwrap();
@@ -91,14 +88,14 @@ async fn test_lock_account(
         // force lock account
         {
             let (res, locked) = account_locker
-                .defuse_force_lock_account(env.defuse.contract_id(), locked_account.signer_id())
+                .defuse_force_lock_account(env.defuse.contract_id(), locked_account.account_id())
                 .await
                 .expect("user2 should be able to lock an account");
 
             assert!(locked);
 
             let event = DefuseEvent::AccountLocked(AccountEvent::new(
-                locked_account.signer_id().clone(),
+                locked_account.account_id().clone(),
                 (),
             ))
             .to_nep297_event()
@@ -109,7 +106,7 @@ async fn test_lock_account(
             assert!(
                 env.defuse
                     .is_account_locked(AccountArgs {
-                        account_id: locked_account.signer_id(),
+                        account_id: locked_account.account_id(),
                     })
                     .await
                     .unwrap(),
@@ -120,7 +117,7 @@ async fn test_lock_account(
         // force lock account, second attempt
         {
             let (_, locked) = account_locker
-                .defuse_force_lock_account(env.defuse.contract_id(), locked_account.signer_id())
+                .defuse_force_lock_account(env.defuse.contract_id(), locked_account.account_id())
                 .await
                 .expect("locking already locked account shouldn't fail");
             assert!(!locked);
@@ -128,7 +125,7 @@ async fn test_lock_account(
             assert!(
                 env.defuse
                     .is_account_locked(AccountArgs {
-                        account_id: locked_account.signer_id(),
+                        account_id: locked_account.account_id(),
                     })
                     .await
                     .unwrap(),
@@ -140,7 +137,7 @@ async fn test_lock_account(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: locked_account.signer_id(),
+                account_id: locked_account.account_id(),
                 token_id: &ft1.to_string(),
             })
             .await
@@ -155,13 +152,13 @@ async fn test_lock_account(
             .defuse_add_public_key(env.defuse.contract_id(), public_key)
             .await
             .assert_err_contains(
-                DefuseError::AccountLocked(locked_account.signer_id().clone()).to_string(),
+                DefuseError::AccountLocked(locked_account.account_id().clone()).to_string(),
             );
 
         assert!(
             !env.defuse
                 .has_public_key(HasPublicKeyArgs {
-                    account_id: locked_account.signer_id(),
+                    account_id: locked_account.account_id(),
                     public_key: &public_key,
                 })
                 .await
@@ -177,13 +174,13 @@ async fn test_lock_account(
             .defuse_remove_public_key(env.defuse.contract_id(), locked_pk)
             .await
             .assert_err_contains(
-                DefuseError::AccountLocked(locked_account.signer_id().clone()).to_string(),
+                DefuseError::AccountLocked(locked_account.account_id().clone()).to_string(),
             );
 
         assert!(
             env.defuse
                 .has_public_key(HasPublicKeyArgs {
-                    account_id: locked_account.signer_id(),
+                    account_id: locked_account.account_id(),
                     public_key: &locked_pk,
                 })
                 .await
@@ -196,7 +193,7 @@ async fn test_lock_account(
         locked_account
             .mt_transfer(
                 env.defuse.contract_id(),
-                unlocked_account.signer_id(),
+                unlocked_account.account_id(),
                 &ft1.to_string(),
                 100,
                 None,
@@ -207,7 +204,7 @@ async fn test_lock_account(
         locked_account
             .mt_transfer_call(
                 env.defuse.contract_id(),
-                unlocked_account.signer_id(),
+                unlocked_account.account_id(),
                 &ft1.to_string(),
                 100,
                 None,
@@ -223,7 +220,7 @@ async fn test_lock_account(
             locked_account
                 .defuse_ft_withdraw(
                     env.defuse.contract_id(),
-                    unlocked_account.signer_id(),
+                    unlocked_account.account_id(),
                     ft.contract_id(),
                     100,
                     None,
@@ -237,7 +234,7 @@ async fn test_lock_account(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: locked_account.signer_id(),
+                account_id: locked_account.account_id(),
                 token_id: &ft1.to_string(),
             })
             .await
@@ -249,14 +246,14 @@ async fn test_lock_account(
 
     // deposit to locked account
     {
-        env.defuse_ft_deposit_to(ft.contract_id(), 100, locked_account.signer_id(), None)
+        env.defuse_ft_deposit_to(ft.contract_id(), 100, locked_account.account_id(), None)
             .await
             .expect("deposits to locked account should be allowed");
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: locked_account.signer_id(),
+                    account_id: locked_account.account_id(),
                     token_id: &ft1.to_string(),
                 })
                 .await
@@ -271,7 +268,7 @@ async fn test_lock_account(
         unlocked_account
             .mt_transfer(
                 env.defuse.contract_id(),
-                locked_account.signer_id(),
+                locked_account.account_id(),
                 &ft1.to_string(),
                 200,
                 None,
@@ -282,7 +279,7 @@ async fn test_lock_account(
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: locked_account.signer_id(),
+                    account_id: locked_account.account_id(),
                     token_id: &ft1.to_string(),
                 })
                 .await
@@ -298,7 +295,7 @@ async fn test_lock_account(
             *unlocked_account
                 .mt_transfer_call(
                     env.defuse.contract_id(),
-                    locked_account.signer_id(),
+                    locked_account.account_id(),
                     &ft1.to_string(),
                     200,
                     None,
@@ -315,7 +312,7 @@ async fn test_lock_account(
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: unlocked_account.signer_id(),
+                    account_id: unlocked_account.account_id(),
                     token_id: &ft1.to_string(),
                 })
                 .await
@@ -328,7 +325,7 @@ async fn test_lock_account(
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: locked_account.signer_id(),
+                    account_id: locked_account.account_id(),
                     token_id: &ft1.to_string(),
                 })
                 .await
@@ -349,13 +346,13 @@ async fn test_lock_account(
         env.defuse_simulate_and_execute_intents(env.defuse.contract_id(), [locked_payload])
             .await
             .assert_err_contains(
-                DefuseError::AccountLocked(locked_account.signer_id().clone()).to_string(),
+                DefuseError::AccountLocked(locked_account.account_id().clone()).to_string(),
             );
 
         assert!(
             !env.defuse
                 .is_nonce_used(IsNonceUsedArgs {
-                    account_id: locked_account.signer_id(),
+                    account_id: locked_account.account_id(),
                     nonce: &nonce,
                 })
                 .await
@@ -368,13 +365,13 @@ async fn test_lock_account(
         // no permission
         {
             account_locker
-                .defuse_force_unlock_account(env.defuse.contract_id(), locked_account.signer_id())
+                .defuse_force_unlock_account(env.defuse.contract_id(), locked_account.account_id())
                 .await
                 .expect_err("user2 doesn't have UnrestrictedAccountUnlocker role");
             assert!(
                 env.defuse
                     .is_account_locked(AccountArgs {
-                        account_id: locked_account.signer_id(),
+                        account_id: locked_account.account_id(),
                     })
                     .await
                     .unwrap(),
@@ -386,7 +383,7 @@ async fn test_lock_account(
         env.acl_grant_role(
             env.defuse.contract_id(),
             Role::UnrestrictedAccountUnlocker,
-            account_locker.signer_id(),
+            account_locker.account_id(),
         )
         .await
         .unwrap();
@@ -394,14 +391,14 @@ async fn test_lock_account(
         // force unlock account
         {
             let (res, unlocked) = account_locker
-                .defuse_force_unlock_account(env.defuse.contract_id(), locked_account.signer_id())
+                .defuse_force_unlock_account(env.defuse.contract_id(), locked_account.account_id())
                 .await
                 .expect("user2 should be able to lock an account");
 
             assert!(unlocked);
 
             let event = DefuseEvent::AccountUnlocked(AccountEvent::new(
-                locked_account.signer_id().clone(),
+                locked_account.account_id().clone(),
                 (),
             ))
             .to_nep297_event()
@@ -412,7 +409,7 @@ async fn test_lock_account(
             assert!(
                 !env.defuse
                     .is_account_locked(AccountArgs {
-                        account_id: locked_account.signer_id(),
+                        account_id: locked_account.account_id(),
                     })
                     .await
                     .unwrap(),
@@ -426,7 +423,7 @@ async fn test_lock_account(
         locked_account
             .mt_transfer(
                 env.defuse.contract_id(),
-                unlocked_account.signer_id(),
+                unlocked_account.account_id(),
                 &ft1.to_string(),
                 50,
                 None,
@@ -436,7 +433,7 @@ async fn test_lock_account(
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: locked_account.signer_id(),
+                    account_id: locked_account.account_id(),
                     token_id: &ft1.to_string(),
                 })
                 .await
@@ -447,7 +444,7 @@ async fn test_lock_account(
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
                 .mt_balance_of(MtBalanceOfArgs {
-                    account_id: unlocked_account.signer_id(),
+                    account_id: unlocked_account.account_id(),
                     token_id: &ft1.to_string(),
                 })
                 .await
@@ -476,18 +473,18 @@ async fn test_force_set_auth_by_predecessor_id(
             account_locker
                 .defuse_force_disable_auth_by_predecessor_ids(
                     env.defuse.contract_id(),
-                    [user_account.signer_id().clone()],
+                    [user_account.account_id().clone()],
                 )
                 .await
                 .expect_err(&format!(
                     "{} doesn't have {:?} role yet",
-                    account_locker.signer_id(),
+                    account_locker.account_id(),
                     Role::UnrestrictedAccountLocker,
                 ));
             assert!(
                 env.defuse
                     .is_auth_by_predecessor_id_enabled(AccountArgs {
-                        account_id: user_account.signer_id(),
+                        account_id: user_account.account_id(),
                     })
                     .await
                     .unwrap()
@@ -498,7 +495,7 @@ async fn test_force_set_auth_by_predecessor_id(
         env.acl_grant_role(
             env.defuse.contract_id(),
             Role::UnrestrictedAccountLocker,
-            account_locker.signer_id(),
+            account_locker.account_id(),
         )
         .await
         .unwrap();
@@ -508,14 +505,14 @@ async fn test_force_set_auth_by_predecessor_id(
             let result = account_locker
                 .defuse_force_disable_auth_by_predecessor_ids(
                     env.defuse.contract_id(),
-                    [user_account.signer_id().clone()],
+                    [user_account.account_id().clone()],
                 )
                 .await
                 .unwrap();
 
             let event = DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_fn_call(
                 AccountEvent::new(
-                    user_account.signer_id().clone(),
+                    user_account.account_id().clone(),
                     Cow::Owned(SetAuthByPredecessorId { enabled: false }),
                 ),
             ))
@@ -527,7 +524,7 @@ async fn test_force_set_auth_by_predecessor_id(
             assert!(
                 !env.defuse
                     .is_auth_by_predecessor_id_enabled(AccountArgs {
-                        account_id: user_account.signer_id(),
+                        account_id: user_account.account_id(),
                     })
                     .await
                     .unwrap()
@@ -545,7 +542,7 @@ async fn test_force_set_auth_by_predecessor_id(
         assert!(
             !env.defuse
                 .has_public_key(HasPublicKeyArgs {
-                    account_id: user_account.signer_id(),
+                    account_id: user_account.account_id(),
                     public_key: &public_key,
                 })
                 .await
@@ -560,18 +557,18 @@ async fn test_force_set_auth_by_predecessor_id(
             account_unlocker
                 .defuse_force_enable_auth_by_predecessor_ids(
                     env.defuse.contract_id(),
-                    [user_account.signer_id().clone()],
+                    [user_account.account_id().clone()],
                 )
                 .await
                 .expect_err(&format!(
                     "{} doesn't have {:?} role yet",
-                    account_unlocker.signer_id(),
+                    account_unlocker.account_id(),
                     Role::UnrestrictedAccountUnlocker,
                 ));
             assert!(
                 !env.defuse
                     .is_auth_by_predecessor_id_enabled(AccountArgs {
-                        account_id: user_account.signer_id(),
+                        account_id: user_account.account_id(),
                     })
                     .await
                     .unwrap()
@@ -582,7 +579,7 @@ async fn test_force_set_auth_by_predecessor_id(
         env.acl_grant_role(
             env.defuse.contract_id(),
             Role::UnrestrictedAccountUnlocker,
-            account_unlocker.signer_id(),
+            account_unlocker.account_id(),
         )
         .await
         .unwrap();
@@ -592,14 +589,14 @@ async fn test_force_set_auth_by_predecessor_id(
             let result = account_unlocker
                 .defuse_force_enable_auth_by_predecessor_ids(
                     env.defuse.contract_id(),
-                    [user_account.signer_id().clone()],
+                    [user_account.account_id().clone()],
                 )
                 .await
                 .unwrap();
 
             let event = DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_fn_call(
                 AccountEvent::new(
-                    user_account.signer_id().clone(),
+                    user_account.account_id().clone(),
                     Cow::Owned(SetAuthByPredecessorId { enabled: true }),
                 ),
             ))
@@ -611,7 +608,7 @@ async fn test_force_set_auth_by_predecessor_id(
             assert!(
                 env.defuse
                     .is_auth_by_predecessor_id_enabled(AccountArgs {
-                        account_id: user_account.signer_id(),
+                        account_id: user_account.account_id(),
                     })
                     .await
                     .unwrap()
@@ -629,7 +626,7 @@ async fn test_force_set_auth_by_predecessor_id(
         assert!(
             env.defuse
                 .has_public_key(HasPublicKeyArgs {
-                    account_id: user_account.signer_id(),
+                    account_id: user_account.account_id(),
                     public_key: &public_key,
                 })
                 .await

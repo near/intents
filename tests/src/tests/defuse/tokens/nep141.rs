@@ -29,10 +29,10 @@ use crate::tests::defuse::env::{Env, env};
 async fn deposit_withdraw(#[future(awt)] env: Env) {
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    env.initial_ft_storage_deposit(vec![user.signer_id()], vec![ft.contract_id()])
+    env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
         .await;
 
-    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.signer_id(), None)
+    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.account_id(), None)
         .await
         .unwrap();
 
@@ -41,7 +41,7 @@ async fn deposit_withdraw(#[future(awt)] env: Env) {
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.signer_id(),
+                account_id: user.account_id(),
                 token_id: &ft_id,
             })
             .await
@@ -54,7 +54,7 @@ async fn deposit_withdraw(#[future(awt)] env: Env) {
         user.defuse_ft_withdraw(
             env.defuse.contract_id(),
             ft.contract_id(),
-            user.signer_id(),
+            user.account_id(),
             1000,
             None,
             None,
@@ -70,7 +70,7 @@ async fn deposit_withdraw(#[future(awt)] env: Env) {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
                     .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.signer_id(),
+                        account_id: user.account_id(),
                         token_id: &ft_id,
                     })
                     .await
@@ -80,7 +80,7 @@ async fn deposit_withdraw(#[future(awt)] env: Env) {
             );
         },
         async {
-            assert_eq!(ft.balance_of(user.signer_id()).await.unwrap().raw(), 1000);
+            assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 1000);
         },
     );
 }
@@ -92,15 +92,15 @@ async fn poa_deposit(#[future(awt)] env: Env) {
 
     let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone())).to_string();
 
-    env.initial_ft_storage_deposit(vec![user.signer_id()], vec![ft.contract_id()])
+    env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
         .await;
 
     env.poa_factory_ft_deposit(
         env.poa_factory.contract_id(),
         &env.poa_factory.ft_name(ft.contract_id()),
-        user.signer_id(),
+        user.account_id(),
         1000,
-        Some(DepositMessage::new(user.signer_id().clone()).to_string()),
+        Some(DepositMessage::new(user.account_id().clone()).to_string()),
         None,
     )
     .await
@@ -108,13 +108,13 @@ async fn poa_deposit(#[future(awt)] env: Env) {
 
     futures::join!(
         async {
-            assert_eq!(ft.balance_of(user.signer_id()).await.unwrap().raw(), 0);
+            assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 0);
         },
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
                     .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.signer_id(),
+                        account_id: user.account_id(),
                         token_id: &ft_id,
                     })
                     .await
@@ -133,7 +133,7 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
     env.initial_ft_storage_deposit(
-        vec![user.signer_id(), other_user.signer_id()],
+        vec![user.account_id(), other_user.account_id()],
         vec![ft.contract_id()],
     )
     .await;
@@ -141,7 +141,7 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
     env.poa_factory_ft_deposit(
         env.poa_factory.contract_id(),
         &env.poa_factory.ft_name(ft.contract_id()),
-        user.signer_id(),
+        user.account_id(),
         1000,
         None,
         None,
@@ -154,7 +154,7 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
             &env.defuse,
             [FtWithdraw {
                 token: ft.contract_id().clone(),
-                receiver_id: other_user.signer_id().clone(),
+                receiver_id: other_user.account_id().clone(),
                 amount: 600,
                 memo: None,
                 msg: None,
@@ -171,7 +171,7 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
                 env.defuse.contract_id(),
                 1000u128,
                 DepositMessage {
-                    receiver_id: user.signer_id().clone(),
+                    receiver_id: user.account_id().clone(),
                     action: Some(DepositAction::Execute(ExecuteIntents {
                         execute_intents: [withdraw_intent_payload].into(),
                         // another promise will be created for `execute_intents()`
@@ -191,13 +191,13 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
     let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone())).to_string();
     futures::join!(
         async {
-            assert_eq!(ft.balance_of(user.signer_id()).await.unwrap().raw(), 0);
+            assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 0);
         },
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
                     .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.signer_id(),
+                        account_id: user.account_id(),
                         token_id: &ft_id,
                     })
                     .await
@@ -210,7 +210,7 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
                     .mt_balance_of(MtBalanceOfArgs {
-                        account_id: other_user.signer_id(),
+                        account_id: other_user.account_id(),
                         token_id: &ft_id,
                     })
                     .await
@@ -221,7 +221,7 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
         },
         async {
             assert_eq!(
-                ft.balance_of(other_user.signer_id()).await.unwrap().raw(),
+                ft.balance_of(other_user.account_id()).await.unwrap().raw(),
                 600
             );
         },
@@ -233,13 +233,13 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
 async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    env.initial_ft_storage_deposit(vec![user.signer_id()], vec![ft.contract_id()])
+    env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
         .await;
 
     env.poa_factory_ft_deposit(
         env.poa_factory.contract_id(),
         &env.poa_factory.ft_name(ft.contract_id()),
-        user.signer_id(),
+        user.account_id(),
         1000,
         None,
         None,
@@ -252,7 +252,7 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
             &env.defuse,
             [FtWithdraw {
                 token: ft.contract_id().clone(),
-                receiver_id: user.signer_id().clone(),
+                receiver_id: user.account_id().clone(),
                 amount: 1001,
                 memo: None,
                 msg: None,
@@ -269,7 +269,7 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
                 env.defuse.contract_id(),
                 1000u128,
                 DepositMessage {
-                    receiver_id: user.signer_id().clone(),
+                    receiver_id: user.account_id().clone(),
                     action: Some(DepositAction::Execute(ExecuteIntents {
                         execute_intents: [overflow_withdraw_payload].into(),
                         refund_if_fails: true,
@@ -291,7 +291,7 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
                     .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.signer_id(),
+                        account_id: user.account_id(),
                         token_id: &ft_id,
                     })
                     .await
@@ -301,7 +301,7 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
             );
         },
         async {
-            assert_eq!(ft.balance_of(user.signer_id()).await.unwrap().raw(), 1000);
+            assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 1000);
         },
     );
 }
@@ -317,12 +317,12 @@ async fn ft_force_withdraw(
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
     env.initial_ft_storage_deposit(
-        vec![user.signer_id(), other_user.signer_id()],
+        vec![user.account_id(), other_user.account_id()],
         vec![ft.contract_id()],
     )
     .await;
 
-    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.signer_id(), None)
+    env.defuse_ft_deposit_to(ft.contract_id(), 1000, user.account_id(), None)
         .await
         .unwrap();
 
@@ -331,9 +331,9 @@ async fn ft_force_withdraw(
     other_user
         .defuse_ft_force_withdraw(
             env.defuse.contract_id(),
-            user.signer_id(),
+            user.account_id(),
             ft.contract_id(),
-            other_user.signer_id(),
+            other_user.account_id(),
             1000,
             None,
             None,
@@ -346,7 +346,7 @@ async fn ft_force_withdraw(
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
                     .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.signer_id(),
+                        account_id: user.account_id(),
                         token_id: &ft_id,
                     })
                     .await
@@ -357,7 +357,7 @@ async fn ft_force_withdraw(
         },
         async {
             assert_eq!(
-                ft.balance_of(other_user.signer_id()).await.unwrap().raw(),
+                ft.balance_of(other_user.account_id()).await.unwrap().raw(),
                 0
             );
         },
@@ -366,7 +366,7 @@ async fn ft_force_withdraw(
     env.acl_grant_role(
         env.defuse.contract_id(),
         Role::UnrestrictedWithdrawer,
-        other_user.signer_id(),
+        other_user.account_id(),
     )
     .await
     .unwrap();
@@ -375,9 +375,9 @@ async fn ft_force_withdraw(
         other_user
             .defuse_ft_force_withdraw(
                 env.defuse.contract_id(),
-                user.signer_id(),
+                user.account_id(),
                 ft.contract_id(),
-                other_user.signer_id(),
+                other_user.account_id(),
                 1000,
                 None,
                 None,
@@ -392,7 +392,7 @@ async fn ft_force_withdraw(
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
                     .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.signer_id(),
+                        account_id: user.account_id(),
                         token_id: &ft_id,
                     })
                     .await
@@ -403,7 +403,7 @@ async fn ft_force_withdraw(
         },
         async {
             assert_eq!(
-                ft.balance_of(other_user.signer_id()).await.unwrap().raw(),
+                ft.balance_of(other_user.account_id()).await.unwrap().raw(),
                 1000
             );
         },
@@ -478,26 +478,26 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
     let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone()));
     env.initial_ft_storage_deposit(
         vec![
-            user.signer_id(),
-            receiver.signer_id(),
-            intent_receiver.signer_id(),
+            user.account_id(),
+            receiver.account_id(),
+            intent_receiver.account_id(),
         ],
         vec![ft.contract_id()],
     )
     .await;
 
-    env.defuse_ft_deposit_to(ft.contract_id(), 500, receiver.signer_id(), None)
+    env.defuse_ft_deposit_to(ft.contract_id(), 500, receiver.account_id(), None)
         .await
         .unwrap();
 
     env.ft(ft.contract_id())
-        .transfer(user.signer_id(), 1000u128)
+        .transfer(user.account_id(), 1000u128)
         .await
         .unwrap()
         .result()
         .unwrap();
 
-    assert_eq!(ft.balance_of(user.signer_id()).await.unwrap().raw(), 1000);
+    assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 1000);
 
     let intents = match &expectation.intent_transfer_amount {
         Some(amount) => vec![
@@ -505,7 +505,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
                 .sign_defuse_payload_default(
                     &env.defuse,
                     [Transfer {
-                        receiver_id: intent_receiver.signer_id().clone(),
+                        receiver_id: intent_receiver.account_id().clone(),
                         tokens: Amounts::new(std::iter::once((ft_id.clone(), *amount)).collect()),
                         memo: None,
                         notification: None,
@@ -519,14 +519,14 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
 
     let deposit_message = if intents.is_empty() {
         DepositMessage {
-            receiver_id: receiver.signer_id().clone(),
+            receiver_id: receiver.account_id().clone(),
             action: Some(DepositAction::Notify(NotifyOnTransfer::new(
                 serde_json::to_string(&expectation.action).unwrap(),
             ))),
         }
     } else {
         DepositMessage {
-            receiver_id: receiver.signer_id().clone(),
+            receiver_id: receiver.account_id().clone(),
             action: Some(DepositAction::Execute(ExecuteIntents {
                 execute_intents: intents,
                 refund_if_fails: expectation.refund_if_fails,
@@ -552,7 +552,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
     futures::join!(
         async {
             assert_eq!(
-                ft.balance_of(user.signer_id()).await.unwrap().raw(),
+                ft.balance_of(user.account_id()).await.unwrap().raw(),
                 expectation.expected_sender_ft_balance
             );
         },
@@ -560,7 +560,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
                     .mt_balance_of(MtBalanceOfArgs {
-                        account_id: receiver.signer_id(),
+                        account_id: receiver.account_id(),
                         token_id: &ft_id,
                     })
                     .await

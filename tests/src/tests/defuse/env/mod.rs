@@ -117,7 +117,7 @@ impl Env {
         if !self
             .defuse
             .has_public_key(HasPublicKeyArgs {
-                account_id: account.signer_id(),
+                account_id: account.account_id(),
                 public_key: &defuse_pubkey,
             })
             .await
@@ -133,13 +133,13 @@ impl Env {
     }
 
     pub async fn create_user(&self) -> Near {
-        let account_id = generate_random_account_id(self.signer_id())
+        let account_id = generate_random_account_id(self.account_id())
             .expect("Failed to generate next account id");
 
         println!("Creating user account: {account_id}");
         let name = account_id
             .as_str()
-            .trim_end_matches(&format!(".{}", self.signer_id()));
+            .trim_end_matches(&format!(".{}", self.account_id()));
 
         self.create_named_user(name).await
     }
@@ -192,7 +192,7 @@ impl Env {
         self.poa_factory_ft_deposit(
             self.poa_factory.contract_id().clone(),
             self.poa_factory.ft_name(token),
-            self.signer_id(),
+            self.account_id(),
             1_000_000_000,
             None,
             None,

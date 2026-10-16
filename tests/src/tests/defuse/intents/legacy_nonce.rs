@@ -1,17 +1,14 @@
-use defuse_sandbox::{
-    account::Account,
-    extensions::{
-        defuse::{
-            DefuseExt, DefuseSignerExt, ToEventLog,
-            core::{
-                Nonce, Timestamp,
-                amounts::Amounts,
-                intents::{DefuseIntents, tokens::Transfer},
-                token_id::{TokenId, nep141::Nep141TokenId},
-            },
+use defuse_sandbox::extensions::{
+    defuse::{
+        DefuseExt, DefuseSignerExt, ToEventLog,
+        core::{
+            Nonce, Timestamp,
+            amounts::Amounts,
+            intents::{DefuseIntents, tokens::Transfer},
+            token_id::{TokenId, nep141::Nep141TokenId},
         },
-        mt::{Mt, MtBalanceOfArgs},
     },
+    mt::{Mt, MtBalanceOfArgs},
 };
 
 use defuse_test_utils::random::make_arbitrary;
@@ -32,12 +29,12 @@ async fn execute_intent_with_legacy_nonce(
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
     env.initial_ft_storage_deposit(
-        vec![user1.signer_id(), user2.signer_id()],
+        vec![user1.account_id(), user2.account_id()],
         vec![ft1.contract_id()],
     )
     .await;
 
-    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.signer_id(), None)
+    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user1.account_id(), None)
         .await
         .unwrap();
 
@@ -46,7 +43,7 @@ async fn execute_intent_with_legacy_nonce(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.signer_id(),
+                account_id: user1.account_id(),
                 token_id: &token_id.to_string()
             })
             .await
@@ -57,7 +54,7 @@ async fn execute_intent_with_legacy_nonce(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user2.signer_id(),
+                account_id: user2.account_id(),
                 token_id: &token_id.to_string()
             })
             .await
@@ -67,7 +64,7 @@ async fn execute_intent_with_legacy_nonce(
     );
 
     let transfer_intent = Transfer {
-        receiver_id: user2.signer_id().clone(),
+        receiver_id: user2.account_id().clone(),
         tokens: Amounts::new(std::iter::once((token_id.clone(), 1000)).collect()),
         memo: None,
         notification: None,
@@ -97,7 +94,7 @@ async fn execute_intent_with_legacy_nonce(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.signer_id(),
+                account_id: user1.account_id(),
                 token_id: &token_id.to_string()
             })
             .await
@@ -109,7 +106,7 @@ async fn execute_intent_with_legacy_nonce(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: user2.signer_id(),
+                account_id: user2.account_id(),
                 token_id: &token_id.to_string()
             })
             .await

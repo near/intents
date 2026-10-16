@@ -48,7 +48,7 @@ enum GenerationMode {
 async fn make_account(mode: GenerationMode, env: &Env, user: &Near) -> Near {
     match mode {
         GenerationMode::ShortestPossible => {
-            env.transaction(user.signer_id())
+            env.transaction(user.account_id())
                 .transfer(NearToken::from_near(1000))
                 .await
                 .unwrap()
@@ -142,7 +142,7 @@ async fn run_resolve_gas_test(
         .iter()
         .map(|token_id| {
             TokenId::Nep245(Nep245TokenId::new(
-                author_account.signer_id().clone(),
+                author_account.account_id().clone(),
                 token_id.clone(),
             ))
             .to_string()
@@ -158,8 +158,8 @@ async fn run_resolve_gas_test(
         .mt_on_transfer(
             env.defuse.contract_id(),
             MtOnTransferArgs {
-                sender_id: user_account.signer_id(),
-                previous_owner_ids: &vec![author_account.signer_id().clone(); token_ids.len()],
+                sender_id: user_account.account_id(),
+                previous_owner_ids: &vec![author_account.account_id().clone(); token_ids.len()],
                 token_ids: &token_ids,
                 amounts: &amounts,
                 msg: "",
@@ -177,7 +177,7 @@ async fn run_resolve_gas_test(
     // events that serialize more fields. These transfer logs approach the hard log-size limit, so
     // we pre-calculate the worst-case payload to fail fast if the limit would be exceeded.
     let expected_transfer_log = validate_mt_batch_transfer_log_size(
-        user_account.signer_id(),
+        user_account.account_id(),
         &non_existent_account,
         &defuse_token_ids,
         &amounts,
@@ -339,7 +339,7 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
         .iter()
         .map(|token_id| {
             TokenId::Nep245(Nep245TokenId::new(
-                author_account.signer_id().clone(),
+                author_account.account_id().clone(),
                 token_id.clone(),
             ))
             .to_string()
@@ -347,8 +347,8 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
         .collect();
 
     let (transfer_log_size, refund_log_size) = calculate_log_sizes(
-        user.signer_id(),
-        receiver_stub.signer_id(),
+        user.account_id(),
+        receiver_stub.account_id(),
         &defuse_token_ids,
         &amounts,
     );
@@ -360,8 +360,8 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
         .mt_on_transfer(
             env.defuse.contract_id(),
             MtOnTransferArgs {
-                sender_id: user.signer_id(),
-                previous_owner_ids: &vec![author_account.signer_id().clone(); token_ids.len()],
+                sender_id: user.account_id(),
+                previous_owner_ids: &vec![author_account.account_id().clone(); token_ids.len()],
                 token_ids: &token_ids,
                 amounts: &amounts,
                 msg: "",
@@ -373,7 +373,7 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
     let balance_before = env
         .contract::<Mt>(env.defuse.contract_id())
         .mt_balance_of(MtBalanceOfArgs {
-            account_id: user.signer_id(),
+            account_id: user.account_id(),
             token_id: &defuse_token_ids[0],
         })
         .await
@@ -382,7 +382,7 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
     let result = user
         .mt_batch_transfer_call(
             env.defuse.contract_id(),
-            receiver_stub.signer_id(),
+            receiver_stub.account_id(),
             defuse_token_ids.clone(),
             amounts.clone(),
             None,
@@ -404,7 +404,7 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
     let balance_after = env
         .contract::<Mt>(env.defuse.contract_id())
         .mt_balance_of(MtBalanceOfArgs {
-            account_id: user.signer_id(),
+            account_id: user.account_id(),
             token_id: &defuse_token_ids[0],
         })
         .await
@@ -449,7 +449,7 @@ async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(aw
         .iter()
         .map(|token_id| {
             TokenId::Nep245(Nep245TokenId::new(
-                author_account.signer_id().clone(),
+                author_account.account_id().clone(),
                 token_id.clone(),
             ))
             .to_string()
@@ -460,8 +460,8 @@ async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(aw
         .mt_on_transfer(
             env.defuse.contract_id(),
             MtOnTransferArgs {
-                sender_id: user.signer_id(),
-                previous_owner_ids: &vec![author_account.signer_id().clone(); token_ids.len()],
+                sender_id: user.account_id(),
+                previous_owner_ids: &vec![author_account.account_id().clone(); token_ids.len()],
                 token_ids: &token_ids,
                 amounts: &amounts,
                 msg: "",
@@ -479,8 +479,8 @@ async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(aw
             .await
             .unwrap()
     };
-    let sender_balances_before = balances_of(user.signer_id()).await;
-    let receiver_balances_before = balances_of(receiver_stub.signer_id()).await;
+    let sender_balances_before = balances_of(user.account_id()).await;
+    let receiver_balances_before = balances_of(receiver_stub.account_id()).await;
 
     // NOTE: called as a raw transaction rather than through `MtExt::mt_batch_transfer_call`,
     // since that helper drops the outcome when any receipt in the chain fails.
@@ -488,7 +488,7 @@ async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(aw
         .transaction(env.defuse.contract_id())
         .add_action(
             Mt::mt_batch_transfer_call(MtBatchTransferCallArgs {
-                receiver_id: receiver_stub.signer_id(),
+                receiver_id: receiver_stub.account_id(),
                 token_ids: &defuse_token_ids,
                 amounts: &amounts,
                 approvals: None,
@@ -521,12 +521,12 @@ async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(aw
     );
 
     assert_eq!(
-        balances_of(user.signer_id()).await,
+        balances_of(user.account_id()).await,
         sender_balances_before,
         "failed mt_batch_transfer_call changed one or more sender balances"
     );
     assert_eq!(
-        balances_of(receiver_stub.signer_id()).await,
+        balances_of(receiver_stub.account_id()).await,
         receiver_balances_before,
         "failed mt_batch_transfer_call changed one or more receiver balances"
     );

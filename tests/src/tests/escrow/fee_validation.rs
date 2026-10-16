@@ -1,6 +1,5 @@
 use defuse_fees::Pips;
 use defuse_sandbox::{
-    account::Account,
     extensions::{
         defuse::{
             core::{
@@ -20,7 +19,7 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs},
     },
     kit::{
-        AccountId,
+        AccountId, Near,
         protocol::{StateInit, StateInitV1},
     },
 };
@@ -215,7 +214,7 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
         .map(Into::<TokenId>::into);
 
     let params = Params {
-        maker: env.maker.signer_id().clone(),
+        maker: env.maker.account_id().clone(),
         src_token: src_token.clone(),
         dst_token: dst_token.clone(),
         price: "1".parse().unwrap(),
@@ -223,11 +222,11 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
         partial_fills_allowed: true,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
-        taker_whitelist: env.takers.iter().map(Account::signer_id).cloned().collect(),
+        taker_whitelist: env.takers.iter().map(Near::account_id).cloned().collect(),
         protocol_fees: ProtocolFees {
             fee: Pips::from_percent(1).unwrap(),
             surplus: Pips::from_percent(100).unwrap(),
-            collector: env.fee_collectors[0].signer_id().clone(),
+            collector: env.fee_collectors[0].account_id().clone(),
         }
         .into(),
         integrator_fees: BTreeMap::default(),
@@ -307,7 +306,7 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
     let collector_balance = env
         .contract::<Mt>(env.verifier.contract_id())
         .mt_balance_of(MtBalanceOfArgs {
-            account_id: env.fee_collectors[0].signer_id(),
+            account_id: env.fee_collectors[0].account_id(),
             token_id: &dst_verifier_asset.to_string(),
         })
         .await

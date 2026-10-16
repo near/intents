@@ -1,16 +1,13 @@
-use defuse_sandbox::{
-    account::Account,
-    extensions::{
-        defuse::{
-            DefuseExt, DefuseSignerExt, ToEventLog,
-            core::{
-                amounts::Amounts,
-                intents::imt::{ImtBurn, ImtMint},
-                token_id::{TokenId, imt::ImtTokenId, nep141::Nep141TokenId},
-            },
+use defuse_sandbox::extensions::{
+    defuse::{
+        DefuseExt, DefuseSignerExt, ToEventLog,
+        core::{
+            amounts::Amounts,
+            intents::imt::{ImtBurn, ImtMint},
+            token_id::{TokenId, imt::ImtTokenId, nep141::Nep141TokenId},
         },
-        mt::{Mt, MtBalanceOfArgs},
     },
+    mt::{Mt, MtBalanceOfArgs},
 };
 use rstest::rstest;
 
@@ -32,7 +29,7 @@ async fn imt_burn_intent(
     let memo = "Some memo";
     let amount = 1000;
 
-    let mt_id = TokenId::from(ImtTokenId::new(user.signer_id().clone(), token_id.clone()));
+    let mt_id = TokenId::from(ImtTokenId::new(user.account_id().clone(), token_id.clone()));
 
     let mint_payload = user
         .sign_defuse_payload_default(
@@ -40,7 +37,7 @@ async fn imt_burn_intent(
             [ImtMint {
                 tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
                 memo: Some(memo.to_string()),
-                receiver_id: other_user.signer_id().clone(),
+                receiver_id: other_user.account_id().clone(),
                 notification: None,
             }],
         )
@@ -52,7 +49,7 @@ async fn imt_burn_intent(
         .unwrap();
 
     let intent = ImtBurn {
-        minter_id: user.signer_id().clone(),
+        minter_id: user.account_id().clone(),
         tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
         memo: Some(memo.to_string()),
     };
@@ -69,7 +66,7 @@ async fn imt_burn_intent(
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
             .mt_balance_of(MtBalanceOfArgs {
-                account_id: other_user.signer_id(),
+                account_id: other_user.account_id(),
                 token_id: &mt_id.to_string()
             })
             .await
@@ -100,7 +97,7 @@ async fn failed_to_burn_tokens_with_intent(
         .sign_defuse_payload_default(
             &env.defuse,
             [ImtBurn {
-                minter_id: user.signer_id().clone(),
+                minter_id: user.account_id().clone(),
                 tokens: Amounts::new(vec![(ft_id.to_string(), amount)].into_iter().collect()),
                 memo: Some(memo.to_string()),
             }],
