@@ -145,7 +145,7 @@ mod tests {
         assert_signer_roundtrip(
             &SigningKey::from_bytes(&root_sk.into())
                 .expect("invalid root sk")
-                .derive_with(ReduceScalar::<Secp256k1>::new()),
+                .with_schema(ReduceScalar::<Secp256k1>::new()),
             tweak,
             &prehash,
         )
@@ -167,7 +167,7 @@ mod tests {
         let (derived_pk, _signature) = assert_signer_roundtrip(
             &SigningKey::from_bytes(&root_sk.into())
                 .expect("invalid root sk")
-                .derive_with(ReduceScalar::<Secp256k1>::new()),
+                .with_schema(ReduceScalar::<Secp256k1>::new()),
             tweak,
             &hex!("00cf20e07aa9699f6c4f934230eeff8fc6f6cfdd57c8e5af93496082d75cee42"),
         )

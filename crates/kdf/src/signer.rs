@@ -6,7 +6,7 @@ use std::{
 use defuse_crypto::{Curve, RecoverableCurve, RecoverableSigner, Signer};
 use impl_tools::autoimpl;
 
-use crate::{Derive, DeriveExt, schema::Schema};
+use crate::{DeriveExt, WithSchema, schema::Schema};
 
 /// A signer that can sign messages by **internally** deriving signing keys
 /// according to its public key derivation [schema](DeriveSigner::schema).
@@ -31,7 +31,7 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
     /// For _hardened_ derivation, this would typically reference `self`, since
     /// public keys can be only derived by knowing a master signing key.
     ///
-    /// See [`.derive_public_key()`](DeriveSigner::derive_public_key)
+    /// See [`.derive_public_key()`](DeriveExt::derive_public_key)
     /// shorthand.
     fn schema(&self) -> Self::Schema<'_>;
 
@@ -76,7 +76,7 @@ pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
         P: Send;
 }
 
-impl<C, P, S, D> DeriveSigner<C, P> for Derive<S, D>
+impl<C, P, S, D> DeriveSigner<C, P> for WithSchema<S, D>
 where
     C: Curve,
     S: DeriveSigner<C, D::Output>,
@@ -85,13 +85,13 @@ where
     type Error = S::Error;
 
     type Schema<'a>
-        = Derive<S::Schema<'a>, &'a D>
+        = WithSchema<S::Schema<'a>, &'a D>
     where
         Self: 'a;
 
     #[inline]
     fn schema(&self) -> Self::Schema<'_> {
-        self.outer.schema().derive_with(&self.inner)
+        self.outer.schema().with_schema(&self.inner)
     }
 
     #[inline]
@@ -107,7 +107,7 @@ where
     }
 }
 
-impl<C, P, S, D> RecoverableDeriveSigner<C, P> for Derive<S, D>
+impl<C, P, S, D> RecoverableDeriveSigner<C, P> for WithSchema<S, D>
 where
     C: RecoverableCurve,
     S: RecoverableDeriveSigner<C, D::Output>,
@@ -127,7 +127,7 @@ where
     }
 }
 
-impl<C, S, D> Signer<C> for Derive<S, D>
+impl<C, S, D> Signer<C> for WithSchema<S, D>
 where
     C: Curve,
     S: DeriveSigner<C, D::Output>,
@@ -146,7 +146,7 @@ where
     }
 }
 
-impl<C, S, D> RecoverableSigner<C> for Derive<S, D>
+impl<C, S, D> RecoverableSigner<C> for WithSchema<S, D>
 where
     C: RecoverableCurve,
     S: RecoverableDeriveSigner<C, D::Output>,

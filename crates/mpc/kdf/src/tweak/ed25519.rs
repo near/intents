@@ -57,7 +57,7 @@ mod tests {
         let predecessor_id = AccountIdRef::new(predecessor_id).unwrap();
 
         let schema =
-            Additive::<Ed25519>::new(master_pk).derive_with(tweak::<Ed25519>(predecessor_id));
+            Additive::<Ed25519>::new(master_pk).with_schema(tweak::<Ed25519>(predecessor_id));
 
         let derived_pk = schema.derive(path);
 

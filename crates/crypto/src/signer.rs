@@ -60,16 +60,17 @@ pub trait SignerExt {
     /// of cryptographic hash function) of a fixed length and return
     /// an error otherwise. Check corresponding docs before using.
     ///
-    /// Forwards to [`Signer::sign()`].
+    /// This forwards to [`Signer::sign()`].
+    // TODO: examples
     #[inline]
     fn sign<C: Curve>(
         &self,
-        msg: impl AsRef<[u8]> + Send,
+        msg: &[u8],
     ) -> impl Future<Output = Result<C::Signature, Self::Error>> + Send
     where
         Self: Signer<C>,
     {
-        async move { Signer::<C>::sign(self, msg.as_ref()).await }
+        Signer::<C>::sign(self, msg)
     }
 
     /// Sign a given message and return a signature along with recovery id.
@@ -78,16 +79,16 @@ pub trait SignerExt {
     /// of cryptographic hash function) of a fixed length and return
     /// an error otherwise. Check corresponding docs before using.
     ///
-    /// Forwards to [`RecoverableSigner::sign_recoverable()`].
+    /// This forwards to [`RecoverableSigner::sign_recoverable()`].
     #[inline]
     fn sign_recoverable<C: RecoverableCurve>(
         &self,
-        msg: impl AsRef<[u8]> + Send,
+        msg: &[u8],
     ) -> impl Future<Output = Result<(C::Signature, C::RecoveryId), Self::Error>> + Send
     where
         Self: RecoverableSigner<C>,
     {
-        async move { RecoverableSigner::<C>::sign_recoverable(self, msg.as_ref()).await }
+        RecoverableSigner::<C>::sign_recoverable(self, msg)
     }
 
     /// Cache [`.public_key()`](Signer::public_key) on a first access.

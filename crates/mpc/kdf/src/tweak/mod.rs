@@ -7,7 +7,7 @@ use core::marker::PhantomData;
 
 use defuse_digest::{Digest as _, sha3::Sha3_256};
 use defuse_kdf::{
-    Derive, DeriveExt,
+    DeriveExt, WithSchema,
     schema::{CurveArithmetic, Schema, digest::Digest},
 };
 use impl_tools::autoimpl;
@@ -15,7 +15,7 @@ use near_account_id::AccountIdRef;
 
 use crate::derive_from_path;
 
-pub type TweakSchema<C> = Derive<ToScalar<C>, Digest<Sha3_256>>;
+pub type TweakSchema<C> = WithSchema<ToScalar<C>, Digest<Sha3_256>>;
 
 /// Prepare [`Schema`](defuse_kdf::schema::Schema) for MPC tweak derivation.
 #[inline]
@@ -23,7 +23,7 @@ pub fn tweak<C>(predecessor_id: impl AsRef<AccountIdRef>) -> TweakSchema<C>
 where
     C: NearMpcCurve,
 {
-    ToScalar::<C>::new().derive_with(derive_tweak(predecessor_id))
+    ToScalar::<C>::new().with_schema(derive_tweak(predecessor_id))
 }
 
 fn derive_tweak(predecessor_id: impl AsRef<AccountIdRef>) -> Digest<Sha3_256> {

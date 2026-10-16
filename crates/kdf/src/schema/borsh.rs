@@ -8,7 +8,7 @@ use super::Schema;
 /// [Borsh](borsh)-serialization adapter for [`Schema`]
 ///
 /// ```rust
-/// use defuse_kdf::{borsh::Borsh, Schema};
+/// use defuse_kdf::schema::{borsh::Borsh, Schema};
 ///
 /// let schema = Borsh::<Vec<u8>>::default();
 /// assert_eq!(schema.derive(b"abc"), [97, 98, 99]);
@@ -76,7 +76,7 @@ const _: () = {
     /// Optimized writer implementation to serialize directly to hasher
     ///
     /// ```rust
-    /// use defuse_kdf::{borsh::{Borsh, IoWrapper}, Schema};
+    /// use defuse_kdf::schema::{borsh::{Borsh, IoWrapper}, Schema};
     /// # use hex_literal::hex;
     /// use defuse_digest::sha3::Sha3_256;
     ///

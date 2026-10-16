@@ -5,7 +5,7 @@ use super::Schema;
 /// Hashing adaptor for [`Schema`]
 ///
 /// ```rust
-/// use defuse_kdf::{digest::Digest, Schema};
+/// use defuse_kdf::schema::{digest::Digest, Schema};
 /// # use hex_literal::hex;
 /// use defuse_digest::sha3::Sha3_256;
 ///
@@ -25,7 +25,7 @@ where
     /// Create new schema which always re-uses given hasher by cloning it.
     ///
     /// ```rust
-    /// use defuse_kdf::{digest::Digest, Schema};
+    /// use defuse_kdf::schema::{digest::Digest, Schema};
     /// # use hex_literal::hex;
     /// use defuse_digest::{Digest as _, sha3::Sha3_256};
     ///

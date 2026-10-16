@@ -161,7 +161,7 @@ mod tests {
         #[values(b"", b"test", b"message")] msg: &[u8],
     ) {
         assert_signer_roundtrip(
-            &SigningKey::from_bytes(&root_sk).derive_with(ReduceScalar::<Ed25519>::new()),
+            &SigningKey::from_bytes(&root_sk).with_schema(ReduceScalar::<Ed25519>::new()),
             tweak,
             msg,
         )
@@ -181,7 +181,7 @@ mod tests {
         #[case] expected_derived_pk: impl Into<Ed25519PublicKey>,
     ) {
         let (derived_pk, _signature) = assert_signer_roundtrip(
-            &SigningKey::from_bytes(&root_sk).derive_with(ReduceScalar::<Ed25519>::new()),
+            &SigningKey::from_bytes(&root_sk).with_schema(ReduceScalar::<Ed25519>::new()),
             tweak,
             b"message",
         )

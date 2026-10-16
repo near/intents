@@ -14,11 +14,11 @@ use std::{rc::Rc, sync::Arc};
 
 use impl_tools::autoimpl;
 
-use crate::Derive;
+use crate::WithSchema;
 
 /// A generic closure that can used for public key
-/// [derivation](crate::DeriveSigner::derive_public_key) and its intermediary
-/// steps.
+/// [derivation](crate::DeriveExt::derive_public_key) and its
+/// [intermediary steps](crate::DeriveExt::with_schema).
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>, Rc<T>, Arc<T>)]
 pub trait Schema<P> {
     /// [Derivation](Schema::derive) output.
@@ -31,7 +31,7 @@ pub trait Schema<P> {
 /// No-op identity adator for [`Schema`].
 ///
 /// ```rust
-/// use defuse_kdf::{Schema, Identity};
+/// use defuse_kdf::schema::{Schema, Identity};
 ///
 /// assert_eq!(Identity.derive(42), 42);
 /// ```
@@ -47,7 +47,7 @@ impl<T> Schema<T> for Identity {
     }
 }
 
-impl<P, S, D> Schema<P> for Derive<S, D>
+impl<P, S, D> Schema<P> for WithSchema<S, D>
 where
     D: Schema<P>,
     S: Schema<D::Output>,
@@ -63,7 +63,7 @@ where
 /// Adaptor for creating [`Schema`] from a closure.
 ///
 /// ```rust
-/// use defuse_kdf::{Schema, SchemaFn};
+/// use defuse_kdf::schema::{Schema, SchemaFn};
 ///
 /// let schema = SchemaFn::new(|v| v + 2);
 ///
@@ -94,7 +94,7 @@ where
 /// [`Schema`] adaptor that always uses the same path by cloning it.
 ///
 /// ```rust
-/// use defuse_kdf::{Value, Schema};
+/// use defuse_kdf::schema::{Value, Schema};
 ///  
 /// let schema = Value::new("abc");
 ///

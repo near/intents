@@ -771,7 +771,7 @@ where
     /// #   WalletEd25519, WalletEd25519Signer,
     /// #   crypto::ed25519::ed25519_dalek::SigningKey,
     /// # };
-    /// # #[tokio::main]
+    /// # #[tokio::main(flavor = "local")]
     /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let wallet = Wallet::<WalletEd25519>::new(
     /// #     [0u8; 32],
@@ -806,7 +806,7 @@ where
     /// #   crypto::ed25519::ed25519_dalek::SigningKey,
     /// # };
     /// # use hex_literal::hex;
-    /// # #[tokio::main]
+    /// # #[tokio::main(flavor = "local")]
     /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let wallet = Wallet::<WalletEd25519>::new(
     /// #     [0u8; 32],
