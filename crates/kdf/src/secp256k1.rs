@@ -1,4 +1,5 @@
 use defuse_crypto::{RecoverableCurve, secp256k1::Secp256k1};
+use futures_util::{TryFutureExt, future};
 use k256::{
     FieldBytes, NonZeroScalar, ProjectivePoint, WideBytes,
     ecdsa::{self, RecoveryId, Signature, SigningKey, VerifyingKey},
@@ -6,7 +7,8 @@ use k256::{
 };
 
 use crate::{
-    Additive, CurveArithmetic, DeriveSigner, RecoverableDeriveSigner, ReducableScalarCurve,
+    DeriveExt, DeriveSigner, RecoverableDeriveSigner,
+    schema::{Additive, CurveArithmetic, ReducableScalarCurve},
 };
 
 impl CurveArithmetic for Secp256k1 {
@@ -59,36 +61,39 @@ impl DeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     }
 
     /// Sign given **32-bytes prehash** with _internally_ derived secret key
-    async fn derive_sign(
+    #[inline]
+    fn derive_sign(
         &self,
         tweak: NonZeroScalar,
         prehash: &[u8],
-    ) -> Result<Signature, Self::Error> {
-        self.derive_sign_recoverable(tweak, prehash)
-            .await
-            .map(|s| s.0)
+    ) -> impl Future<Output = Result<Signature, Self::Error>> + Send {
+        RecoverableDeriveSigner::<Secp256k1, NonZeroScalar>::derive_sign_recoverable(
+            self, tweak, prehash,
+        )
+        .map_ok(|(sig, _)| sig)
     }
 }
 
 impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
     /// Sign given **32-bytes prehash** with _internally_ derived secret key
     /// and return signature along with recovery id.
-    async fn derive_sign_recoverable(
+    fn derive_sign_recoverable(
         &self,
         tweak: NonZeroScalar,
         prehash: &[u8],
-    ) -> Result<(Signature, RecoveryId), Self::Error> {
-        let prehash: &[u8; 32] = prehash
-            .try_into()
-            .map_err(|_| ecdsa::Error::from_source("prehash must be 32-bytes long"))?;
+    ) -> impl Future<Output = Result<(Signature, RecoveryId), Self::Error>> + Send {
+        let Ok(prehash) = <&[u8; 32]>::try_from(prehash) else {
+            return future::err(ecdsa::Error::from_source("prehash must be 32 bytes long"));
+        };
 
-        let derived_scalar = NonZeroScalar::new(
+        let Some(derived_scalar) = NonZeroScalar::new(
             // sk' = sk + tweak
             **self.as_nonzero_scalar() + *tweak,
         )
-        .into_option()
-        // derived secret key is zero
-        .ok_or_else(ecdsa::Error::new)?;
+        .into_option() else {
+            // derived secret key is zero
+            return future::err(ecdsa::Error::new());
+        };
 
         let derived_sk = Self::from(derived_scalar);
 
@@ -106,7 +111,7 @@ impl RecoverableDeriveSigner<Secp256k1, NonZeroScalar> for SigningKey {
             "invalid recovered public key",
         );
 
-        Ok((sig, recovery_id))
+        future::ok((sig, recovery_id))
     }
 }
 
@@ -116,7 +121,7 @@ mod tests {
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::{DeriveExt, ReduceScalar, signer::assert_signer_roundtrip};
+    use crate::{DeriveExt, schema::ReduceScalar, signer::assert_signer_roundtrip};
 
     use super::*;
 

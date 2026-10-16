@@ -1,6 +1,6 @@
 use digest::{array::ArraySize, common::OutputSize};
 
-use crate::Schema;
+use super::Schema;
 
 /// Hashing adaptor for [`Schema`]
 ///

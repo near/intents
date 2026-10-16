@@ -3,7 +3,7 @@ use borsh::{BorshSerialize, io};
 pub use digest_io::IoWrapper;
 use impl_tools::autoimpl;
 
-use crate::Schema;
+use super::Schema;
 
 /// [Borsh](borsh)-serialization adapter for [`Schema`]
 ///
@@ -30,6 +30,7 @@ where
 {
     type Output = W::Output;
 
+    #[inline]
     fn derive(&self, path: P) -> Self::Output {
         let mut w = W::new(self.0.clone()); // branch a new writer
         borsh::to_writer(&mut w, &path).expect("borsh");
@@ -58,7 +59,7 @@ impl WriteFinalizer for Vec<u8> {
     type Output = Self;
 
     #[inline]
-    fn new(_data: Self::Data) -> Self {
+    fn new((): Self::Data) -> Self {
         Self::new()
     }
 

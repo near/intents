@@ -6,7 +6,7 @@ use std::{
 use defuse_crypto::{Curve, RecoverableCurve, RecoverableSigner, Signer};
 use impl_tools::autoimpl;
 
-use crate::{Derive, DeriveExt, Schema, Value};
+use crate::{Derive, DeriveExt, schema::Schema};
 
 /// A signer that can sign messages by **internally** deriving signing keys
 /// according to its public key derivation [schema](DeriveSigner::schema).
@@ -48,24 +48,6 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
     async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
     where
         P: Send;
-
-    /// Helper method to [derive](Schema::derive) public key for given
-    /// `path` via [`.schema()`](DeriveSigner::Schema)
-    #[inline]
-    fn derive_public_key(&self, path: P) -> C::PublicKey {
-        self.schema().derive(path)
-    }
-
-    /// Derive a signer with a given value for [current](Self::schema) schema,
-    /// so that returned signer implements [`Signer`] and doesn't take any
-    /// derivation path.
-    #[inline]
-    fn derive(self, value: P) -> Derive<Self, Value<P>>
-    where
-        Self: Sized,
-    {
-        self.derive_with(Value::new(value))
-    }
 }
 
 /// A [signer](DeriveSigner) that can recoverably sign messages by
@@ -112,11 +94,16 @@ where
         self.outer.schema().derive_with(&self.inner)
     }
 
-    async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
+    #[inline]
+    fn derive_sign(
+        &self,
+        path: P,
+        msg: &[u8],
+    ) -> impl Future<Output = Result<C::Signature, Self::Error>> + Send
     where
         P: Send,
     {
-        self.outer.derive_sign(self.inner.derive(path), msg).await
+        self.outer.derive_sign(self.inner.derive(path), msg)
     }
 }
 
@@ -126,17 +113,17 @@ where
     S: RecoverableDeriveSigner<C, D::Output>,
     D: Schema<P, Output: Send> + Send + Sync,
 {
-    async fn derive_sign_recoverable(
+    #[inline]
+    fn derive_sign_recoverable(
         &self,
         path: P,
         msg: &[u8],
-    ) -> Result<(C::Signature, C::RecoveryId), Self::Error>
+    ) -> impl Future<Output = Result<(C::Signature, C::RecoveryId), Self::Error>> + Send
     where
         P: Send,
     {
         self.outer
             .derive_sign_recoverable(self.inner.derive(path), msg)
-            .await
     }
 }
 
@@ -153,8 +140,9 @@ where
         self.derive_public_key(())
     }
 
-    async fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
-        DeriveSigner::<C, _>::derive_sign(self, (), msg).await
+    #[inline]
+    fn sign(&self, msg: &[u8]) -> impl Future<Output = Result<C::Signature, Self::Error>> + Send {
+        DeriveSigner::<C, _>::derive_sign(self, (), msg)
     }
 }
 
@@ -164,11 +152,12 @@ where
     S: RecoverableDeriveSigner<C, D::Output>,
     D: Schema<(), Output: Send> + Send + Sync,
 {
-    async fn sign_recoverable(
+    #[inline]
+    fn sign_recoverable(
         &self,
         msg: &[u8],
-    ) -> Result<(C::Signature, C::RecoveryId), Self::Error> {
-        RecoverableDeriveSigner::<C, _>::derive_sign_recoverable(self, (), msg).await
+    ) -> impl Future<Output = Result<(C::Signature, C::RecoveryId), Self::Error>> + Send {
+        RecoverableDeriveSigner::<C, _>::derive_sign_recoverable(self, (), msg)
     }
 }
 

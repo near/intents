@@ -1,4 +1,4 @@
-use crate::Schema;
+use super::Schema;
 
 /// Hex-encoding adaptor for [`Schema`]
 ///

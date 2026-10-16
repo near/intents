@@ -17,18 +17,28 @@ curve25519-dalek = { workspace = true, optional = true }
 digest = { workspace = true, optional = true }
 digest-io = { workspace = true, optional = true }
 ed25519-dalek = { workspace = true, features = ["digest", "hazmat"], optional = true }
+futures-util = { workspace = true, optional = true }
 hex = { workspace = true, optional = true }
 k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"], optional = true }
 
 [features]
-ed25519 = ["defuse-crypto/ed25519", "dep:curve25519-dalek", "dep:ed25519-dalek"]
-secp256k1 = ["defuse-crypto/secp256k1", "dep:k256"]
+ed25519 = [
+  "defuse-crypto/ed25519",
+  "dep:curve25519-dalek",
+  "dep:ed25519-dalek",
+  "dep:futures-util",
+]
+secp256k1 = ["defuse-crypto/secp256k1", "dep:futures-util", "dep:k256"]
 
 borsh = ["defuse-crypto/borsh", "dep:borsh"]
 digest = ["dep:digest", "dep:digest-io"]
 hex = ["dep:hex"]
 testing = []
-zeroize = ["curve25519-dalek?/zeroize", "ed25519-dalek?/zeroize"]
+zeroize = [
+  "curve25519-dalek?/zeroize",
+  "digest?/zeroize",
+  "ed25519-dalek?/zeroize",
+]
 
 [dev-dependencies]
 defuse-kdf = { workspace = true, features = ["borsh", "digest", "ed25519", "secp256k1", "hex"] }

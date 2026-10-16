@@ -17,8 +17,9 @@ impl Sealed for Secp256k1 {}
 #[cfg(test)]
 mod tests {
     use defuse_kdf::{
-        Additive, DeriveExt, Schema,
+        DeriveExt,
         crypto::secp256k1::{Secp256k1UncompressedPublicKey, k256::ecdsa::VerifyingKey},
+        schema::{Additive, Schema},
     };
     use hex_literal::hex;
     use near_account_id::AccountIdRef;

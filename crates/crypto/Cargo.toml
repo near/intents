@@ -14,6 +14,7 @@ arbitrary = { workspace = true, features = ["derive"], optional = true }
 borsh = { workspace = true, features = ["derive"], optional = true }
 bs58 = { workspace = true, optional = true }
 ed25519-dalek = { workspace = true, optional = true }
+futures-util = { workspace = true, optional = true }
 hex-literal = { workspace = true, optional = true }
 impl-tools = { workspace = true, optional = true }
 k256 = { workspace = true, features = ["ecdsa"], optional = true }
@@ -44,6 +45,7 @@ schemars-v0_8 = [
 ]
 serde = ["dep:serde_with", "fmt"]
 signing = [
+  "dep:futures-util",
   "dep:impl-tools",
   "dep:trait-variant",
   "ed25519-dalek?/alloc",
