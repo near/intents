@@ -1,3 +1,5 @@
+//! [Borsh](borsh)-related adaptors
+
 use borsh::{BorshSerialize, io};
 #[cfg(feature = "digest")]
 pub use digest_io::IoWrapper;

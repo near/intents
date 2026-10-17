@@ -1,3 +1,5 @@
+//! [`Digest`](digest::Digest)-related adaptors
+
 use digest::{array::ArraySize, common::OutputSize};
 
 use super::Schema;

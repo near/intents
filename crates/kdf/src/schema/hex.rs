@@ -1,3 +1,5 @@
+//! Hexadecimal encoding
+
 use super::Schema;
 
 /// Hex-encoding adaptor for [`Schema`]
