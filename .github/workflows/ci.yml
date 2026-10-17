@@ -103,7 +103,10 @@ jobs:
           mkdir -p target res
           echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null
       - name: Install Cargo Plugins
-        run: cargo install cargo-near --version 0.22.0 --locked
+        run: |
+          if [ "$(cargo-near --version 2>/dev/null)" != 'cargo-near 0.22.0' ]; then
+            cargo install cargo-near --version 0.22.0 --locked --force
+          fi
       - name: Build Reproducible WASM and calculate checksum
         run: make REPRODUCIBLE=1 '${{ matrix.target }}'
       - name: Upload Reproducible WASM
