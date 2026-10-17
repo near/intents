@@ -1,3 +1,5 @@
+//! Ed25519 Digital Signature Algorithm
+
 pub use ed25519_dalek;
 use ed25519_dalek::{Signature, VerifyingKey};
 

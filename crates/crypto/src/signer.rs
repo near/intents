@@ -89,7 +89,6 @@ pub trait SignerExt {
     /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let signer = ed25519_dalek::SigningKey::from_bytes(&[0u8; 32]);
     /// let msg = b"message";
-    ///
     /// let signature = signer.sign::<Ed25519>(msg).await?;
     ///
     /// assert!(Ed25519::verify(
@@ -126,14 +125,16 @@ pub trait SignerExt {
     ///
     /// # #[tokio::main(flavor = "local")]
     /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
-    /// # let signer = k256::ecdsa::SigningKey::from_bytes(
-    /// #     &hex!("f9151587531d664b5e266a1943c56530d8c6cebeedf631b15736176f1f9d8a90").into(),
-    /// # )
-    /// # .unwrap();
+    /// # fn make_signer() -> impl defuse_crypto::RecoverableSigner<Secp256k1, Error: core::error::Error> {
+    /// #     k256::ecdsa::SigningKey::from_bytes(
+    /// #         &hex!("f9151587531d664b5e266a1943c56530d8c6cebeedf631b15736176f1f9d8a90").into(),
+    /// #     )
+    /// #     .unwrap()
+    /// # }
+    /// # let signer = make_signer();
     /// // secp256k1 signs over 32-byte prehash
     /// let prehash = hex!("f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2");
-    ///
-    /// let (sig, recovery_id) = SignerExt::sign_recoverable::<Secp256k1>(&signer, &prehash).await?;
+    /// let (sig, recovery_id) = signer.sign_recoverable::<Secp256k1>(&prehash).await?;
     ///
     /// assert_eq!(
     ///     Secp256k1::recover(&prehash, &sig, recovery_id),

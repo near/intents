@@ -1,3 +1,5 @@
+//! Derivation schema.
+
 #[cfg(feature = "borsh")]
 pub mod borsh;
 #[cfg(feature = "digest")]
