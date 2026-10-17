@@ -8,4 +8,13 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-near-sdk.workspace = true
+borsh = { workspace = true, features = ["derive"] }
+near-gas = { workspace = true, features = ["borsh"] }
+
+near-kit = { workspace = true, optional = true }
+near-sdk = { workspace = true, optional = true }
+
+[features]
+abi = ["borsh/unstable__schema", "near-sdk?/abi"]
+contract = ["dep:near-sdk"]
+near-kit = ["dep:near-kit"]
