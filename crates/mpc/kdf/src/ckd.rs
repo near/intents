@@ -9,7 +9,7 @@ pub type CkdSchema = Digest<Sha3_256>;
 /// Prepare [`Schema`](defuse_kdf::schema::Schema) for MPC CKD `AppId` derivation.
 ///
 /// ```rust
-/// # use defuse_mpc_kdf::{ckd, Schema};
+/// # use defuse_mpc_kdf::{ckd, schema::Schema};
 /// # use hex_literal::hex;
 /// # use near_account_id::AccountIdRef;
 /// let predecessor_id = AccountIdRef::new_or_panic("predecessor.near");
