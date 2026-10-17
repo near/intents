@@ -115,12 +115,6 @@ jobs:
           path: ./res/*.wasm
           archive: false
           if-no-files-found: error
-      - name: Upload Reproducible ABI
-        uses: actions/upload-artifact@v7
-        with:
-          path: ./res/*.abi.json
-          archive: false
-          if-no-files-found: error
 
   tests:
     name: Tests
@@ -148,7 +142,7 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: '*.{wasm,abi.json}'
+          pattern: '*.wasm'
           merge-multiple: true
           path: ./res
       - name: Run Tests
