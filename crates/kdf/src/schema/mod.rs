@@ -14,8 +14,6 @@ use std::{rc::Rc, sync::Arc};
 
 use impl_tools::autoimpl;
 
-use crate::WithSchema;
-
 /// A generic closure that can used for public key
 /// [derivation](crate::DeriveExt::derive_public_key) and its
 /// [intermediary steps](crate::DeriveExt::with_schema).
@@ -26,6 +24,36 @@ pub trait Schema<P> {
 
     /// Derive output for given `path`.
     fn derive(&self, path: P) -> Self::Output;
+}
+
+/// Derive adaptor for [`Schema`] and [`DeriveSigner`](crate::DeriveSigner).
+///
+/// See [`.with_schema()`](crate::DeriveExt::with_schema).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct WithSchema<S, D> {
+    pub(crate) outer: S,
+    pub(crate) inner: D,
+}
+
+impl<S, D> WithSchema<S, D> {
+    #[must_use]
+    #[inline]
+    pub const fn new(outer: S, inner: D) -> Self {
+        Self { outer, inner }
+    }
+}
+
+impl<P, S, D> Schema<P> for WithSchema<S, D>
+where
+    D: Schema<P>,
+    S: Schema<D::Output>,
+{
+    type Output = S::Output;
+
+    #[inline]
+    fn derive(&self, path: P) -> Self::Output {
+        self.outer.derive(self.inner.derive(path))
+    }
 }
 
 /// No-op identity adator for [`Schema`].
@@ -44,19 +72,6 @@ impl<T> Schema<T> for Identity {
     #[inline]
     fn derive(&self, path: T) -> T {
         path
-    }
-}
-
-impl<P, S, D> Schema<P> for WithSchema<S, D>
-where
-    D: Schema<P>,
-    S: Schema<D::Output>,
-{
-    type Output = S::Output;
-
-    #[inline]
-    fn derive(&self, path: P) -> Self::Output {
-        self.outer.derive(self.inner.derive(path))
     }
 }
 
@@ -134,4 +149,5 @@ impl<P> AsRef<P> for Value<P> {
     }
 }
 
+/// Boxed [`Schema`]
 pub type BoxSchema<'a, P, O> = Box<dyn Schema<P, Output = O> + 'a>;

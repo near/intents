@@ -2,7 +2,7 @@ use defuse_crypto::{Curve, RecoverableCurve};
 
 use crate::{
     DeriveSigner, RecoverableDeriveSigner,
-    schema::{Schema, Value},
+    schema::{Schema, Value, WithSchema},
 };
 
 /// An extension trait for [`Schema`] and [`DeriveSigner`].
@@ -305,20 +305,3 @@ pub trait DeriveExt {
     }
 }
 impl<T> DeriveExt for T {}
-
-/// Derive adaptor for [`Schema`] and [`DeriveSigner`].
-///
-/// See [`.with_schema()`](DeriveExt::with_schema).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct WithSchema<S, D> {
-    pub(crate) outer: S,
-    pub(crate) inner: D,
-}
-
-impl<S, D> WithSchema<S, D> {
-    #[must_use]
-    #[inline]
-    pub const fn new(outer: S, inner: D) -> Self {
-        Self { outer, inner }
-    }
-}

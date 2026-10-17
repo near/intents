@@ -6,7 +6,10 @@ use std::{
 use defuse_crypto::{Curve, RecoverableCurve, RecoverableSigner, Signer};
 use impl_tools::autoimpl;
 
-use crate::{DeriveExt, WithSchema, schema::Schema};
+use crate::{
+    DeriveExt,
+    schema::{Schema, WithSchema},
+};
 
 /// A signer that can sign messages by **internally** deriving signing keys
 /// according to its public key derivation [schema](DeriveSigner::schema).
