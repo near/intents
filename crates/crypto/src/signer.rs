@@ -14,7 +14,7 @@ pub trait Signer<C: Curve>: Sync {
     /// An error that can occur during [signing](Self::sign).
     type Error: Debug + Display;
 
-    /// Public key of the signer
+    /// Get the public key of the signer.
     fn public_key(&self) -> C::PublicKey;
 
     /// Sign a given message and return a signature.
@@ -23,14 +23,6 @@ pub trait Signer<C: Curve>: Sync {
     /// of cryptographic hash function) of a fixed length and return
     /// an error otherwise. Check corresponding docs before using.
     async fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error>;
-
-    #[inline]
-    fn cache_public_key(self) -> CachePublicKey<C, Self>
-    where
-        Self: Sized,
-    {
-        CachePublicKey::new(self)
-    }
 }
 
 /// A [`Signer`] that can produce [recoverable](RecoverableCurve::recover)
@@ -49,7 +41,134 @@ pub trait RecoverableSigner<C: RecoverableCurve>: Signer<C> {
     ) -> Result<(C::Signature, C::RecoveryId), Self::Error>;
 }
 
-/// TODO: docs
+/// An extention trait for [`Signer`].
+pub trait SignerExt {
+    /// Get the public key of the signer on a curve `C`.
+    ///
+    /// This method forwards to [`Signer::public_key()`].
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use defuse_crypto::{SignerExt, ed25519::Ed25519};
+    /// # use defuse_crypto::ed25519::ed25519_dalek;
+    /// # use hex_literal::hex;
+    /// # let signer = ed25519_dalek::SigningKey::from_bytes(
+    /// #     &hex!("5e20282e090a2be1487b29a38750d746ffcdb0b47ebff09441a2167b7523260f"),
+    /// # );
+    ///
+    /// let public_key = signer.public_key::<Ed25519>();
+    /// # assert_eq!(
+    /// #     *public_key.as_bytes(),
+    /// #     hex!("a0453cc99514600fd5f65a7c2e1e8c147fe1fdb3df7f7fe8d4bf18d619865110"),
+    /// # );
+    /// ```
+    #[inline]
+    fn public_key<C: Curve>(&self) -> C::PublicKey
+    where
+        Self: Signer<C>,
+    {
+        Signer::<C>::public_key(self)
+    }
+
+    /// Sign a given message and return a signature.
+    ///
+    /// **NOTE**: implementations MAY require `msg` to be prehash (i.e. output
+    /// of cryptographic hash function) of a fixed length and return an error
+    /// otherwise. Check corresponding docs before using.
+    ///
+    /// This method forwards to [`Signer::sign()`].
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use defuse_crypto::{Curve, SignerExt, ed25519::Ed25519};
+    /// # use defuse_crypto::ed25519::ed25519_dalek;
+    ///
+    /// # #[tokio::main(flavor = "local")]
+    /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let signer = ed25519_dalek::SigningKey::from_bytes(&[0u8; 32]);
+    /// let msg = b"message";
+    ///
+    /// let signature = signer.sign::<Ed25519>(msg).await?;
+    ///
+    /// assert!(Ed25519::verify(
+    ///     &signer.public_key::<Ed25519>(),
+    ///     msg,
+    ///     &signature,
+    /// ));
+    /// # Ok(()) }
+    #[inline]
+    fn sign<C: Curve>(
+        &self,
+        msg: &[u8],
+    ) -> impl Future<Output = Result<C::Signature, Self::Error>> + Send
+    where
+        Self: Signer<C>,
+    {
+        Signer::<C>::sign(self, msg)
+    }
+
+    /// Sign a given message and return a signature along with recovery id.
+    ///
+    /// **NOTE**: implementations MAY require `msg` to be prehash (i.e. output
+    /// of cryptographic hash function) of a fixed length and return an error
+    /// otherwise. Check corresponding docs before using.
+    ///
+    /// This method forwards to [`RecoverableSigner::sign_recoverable()`].
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use defuse_crypto::{RecoverableCurve, SignerExt, secp256k1::Secp256k1};
+    /// # use defuse_crypto::secp256k1::k256;
+    /// # use hex_literal::hex;
+    ///
+    /// # #[tokio::main(flavor = "local")]
+    /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let signer = k256::ecdsa::SigningKey::from_bytes(
+    /// #     &hex!("f9151587531d664b5e266a1943c56530d8c6cebeedf631b15736176f1f9d8a90").into(),
+    /// # )
+    /// # .unwrap();
+    /// // secp256k1 signs over 32-byte prehash
+    /// let prehash = hex!("f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2");
+    ///
+    /// let (sig, recovery_id) = SignerExt::sign_recoverable::<Secp256k1>(&signer, &prehash).await?;
+    ///
+    /// assert_eq!(
+    ///     Secp256k1::recover(&prehash, &sig, recovery_id),
+    ///     Some(signer.public_key::<Secp256k1>()),
+    /// );
+    /// # Ok(()) }
+    #[inline]
+    fn sign_recoverable<C: RecoverableCurve>(
+        &self,
+        msg: &[u8],
+    ) -> impl Future<Output = Result<(C::Signature, C::RecoveryId), Self::Error>> + Send
+    where
+        Self: RecoverableSigner<C>,
+    {
+        RecoverableSigner::<C>::sign_recoverable(self, msg)
+    }
+
+    /// Cache [`.public_key()`](Signer::public_key) on a first access.
+    ///
+    /// This might be useful if a signer performs some expensive key derivation
+    /// underneath.
+    #[inline]
+    fn cache_public_key<C: Curve>(self) -> CachePublicKey<C, Self>
+    where
+        Self: Signer<C> + Sized,
+    {
+        CachePublicKey::new(self)
+    }
+}
+impl<S> SignerExt for S {}
+
+/// An adaptor for [`Signer`] that caches the [`.public_key`](Signer::public_key)
+/// on a first access.
+///
+/// See [`.cache_public_key()`](SignerExt::cache_public_key) for usages.
 #[autoimpl(Deref using self.signer)]
 #[autoimpl(Debug, Clone, PartialEq, Eq where C::PublicKey: trait, S: trait)]
 pub struct CachePublicKey<C: Curve, S> {
@@ -82,8 +201,9 @@ where
             .clone()
     }
 
-    async fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
-        self.signer.sign(msg).await
+    #[inline]
+    fn sign(&self, msg: &[u8]) -> impl Future<Output = Result<C::Signature, Self::Error>> + Send {
+        self.signer.sign(msg)
     }
 }
 
@@ -93,11 +213,14 @@ where
     C::PublicKey: Clone + Send + Sync,
     S: RecoverableSigner<C>,
 {
-    async fn sign_recoverable(
+    #[inline]
+    fn sign_recoverable(
         &self,
         msg: &[u8],
-    ) -> Result<(<C>::Signature, <C as RecoverableCurve>::RecoveryId), Self::Error> {
-        self.signer.sign_recoverable(msg).await
+    ) -> impl Future<
+        Output = Result<(<C>::Signature, <C as RecoverableCurve>::RecoveryId), Self::Error>,
+    > + Send {
+        self.signer.sign_recoverable(msg)
     }
 }
 

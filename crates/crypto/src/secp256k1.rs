@@ -101,6 +101,7 @@ impl RecoverableCurve for Secp256k1 {
 
 #[cfg(feature = "signing")]
 const _: () = {
+    use futures_util::{TryFutureExt, future};
     use k256::ecdsa::{Error, SigningKey};
 
     use crate::{RecoverableSigner, Signer};
@@ -117,13 +118,13 @@ const _: () = {
         /// function).
         ///
         /// If given prehash is of different length, an error will be returned.
-        async fn sign(
+        #[inline]
+        fn sign(
             &self,
             prehash: &[u8],
-        ) -> Result<<Secp256k1 as Curve>::Signature, Self::Error> {
-            RecoverableSigner::sign_recoverable(self, prehash)
-                .await
-                .map(|s| s.0)
+        ) -> impl Future<Output = Result<<Secp256k1 as Curve>::Signature, Self::Error>> + Send
+        {
+            RecoverableSigner::sign_recoverable(self, prehash).map_ok(|s| s.0)
         }
     }
 
@@ -132,23 +133,26 @@ const _: () = {
         /// function) and return a signature along with recovery id.
         ///
         /// If given prehash is of different length, an error will be returned.
-        async fn sign_recoverable(
+        #[inline]
+        fn sign_recoverable(
             &self,
             prehash: &[u8],
-        ) -> Result<
-            (
-                <Secp256k1 as Curve>::Signature,
-                <Secp256k1 as RecoverableCurve>::RecoveryId,
-            ),
-            Self::Error,
-        > {
-            let prehash: &[u8; 32] = prehash
-                .try_into()
-                .map_err(|_| Error::from_source("prehash must be 32 bytes long"))?;
+        ) -> impl Future<
+            Output = Result<
+                (
+                    <Secp256k1 as Curve>::Signature,
+                    <Secp256k1 as RecoverableCurve>::RecoveryId,
+                ),
+                Self::Error,
+            >,
+        > + Send {
+            let Ok(prehash) = <&[u8; 32]>::try_from(prehash) else {
+                return future::err(Error::from_source("prehash must be 32 bytes long"));
+            };
 
             // Signature is automatically normalized to be low-S form, since
             // `<k256::Secp256k1 as EcdsaCurve>::NORMALIZE_S` is set.
-            Ok(self.sign_prehash_recoverable(prehash))
+            future::ok(self.sign_prehash_recoverable(prehash))
         }
     }
 };

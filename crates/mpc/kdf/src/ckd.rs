@@ -1,15 +1,15 @@
 use defuse_digest::{Digest as _, sha3::Sha3_256};
-use defuse_kdf::digest::Digest;
+use defuse_kdf::schema::digest::Digest;
 use near_account_id::AccountIdRef;
 
 use crate::derive_from_path;
 
 pub type CkdSchema = Digest<Sha3_256>;
 
-/// Prepare [`Schema`](defuse_kdf::Schema) for MPC CKD `AppId` derivation.
+/// Prepare [`Schema`](defuse_kdf::schema::Schema) for MPC CKD `AppId` derivation.
 ///
 /// ```rust
-/// # use defuse_mpc_kdf::{ckd, Schema};
+/// # use defuse_mpc_kdf::{ckd, schema::Schema};
 /// # use hex_literal::hex;
 /// # use near_account_id::AccountIdRef;
 /// let predecessor_id = AccountIdRef::new_or_panic("predecessor.near");
@@ -33,7 +33,7 @@ pub fn ckd(predecessor_id: impl AsRef<AccountIdRef>) -> CkdSchema {
 
 #[cfg(test)]
 mod tests {
-    use defuse_kdf::Schema;
+    use defuse_kdf::schema::Schema;
     use hex_literal::hex;
     use rstest::rstest;
 

@@ -43,6 +43,7 @@ const _: () = {
     use core::convert::Infallible;
 
     use ed25519_dalek::SigningKey;
+    use futures_util::future;
 
     use crate::Signer;
 
@@ -54,8 +55,13 @@ const _: () = {
             self.verifying_key()
         }
 
-        async fn sign(&self, msg: &[u8]) -> Result<<Ed25519 as Curve>::Signature, Self::Error> {
-            Ok(ed25519_dalek::Signer::sign(self, msg))
+        #[inline]
+        fn sign(
+            &self,
+            msg: &[u8],
+        ) -> impl Future<Output = Result<<Ed25519 as Curve>::Signature, Self::Error>> + Send
+        {
+            future::ok(ed25519_dalek::Signer::sign(self, msg))
         }
     }
 };

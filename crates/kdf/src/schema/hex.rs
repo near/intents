@@ -1,9 +1,9 @@
-use crate::Schema;
+use super::Schema;
 
 /// Hex-encoding adaptor for [`Schema`]
 ///
 /// ```rust
-/// use defuse_kdf::{hex::Hex, Schema};
+/// use defuse_kdf::schema::{hex::Hex, Schema};
 ///
 /// assert_eq!(Hex.derive(b"(=_=)"), "283d5f3d29")
 /// ```
