@@ -1,3 +1,5 @@
+//! P256 (a.k.a. secp256r1) Elliptic Curve Digital Signature Algorithm
+
 pub use p256;
 use p256::{
     Sec1Point,

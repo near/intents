@@ -1,3 +1,5 @@
+//! Secp256k1 (a.k.a. k256) Elliptic Curve Digital Signature Algorithm
+
 pub use k256;
 
 use k256::{

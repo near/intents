@@ -1,3 +1,5 @@
+//! Formatting
+
 /// Helper trait to encode/decode bytes as `<CURVE>:<base58>`
 pub trait TypedCurve {
     /// Used as prefix: `<CURVE>:...`
