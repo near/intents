@@ -48,6 +48,7 @@ impl Curve for P256 {
 
 #[cfg(feature = "signing")]
 const _: () = {
+    use futures_util::future;
     use p256::ecdsa::{self, SigningKey};
 
     use crate::Signer;
@@ -64,16 +65,20 @@ const _: () = {
         /// function).
         ///
         /// If given prehash is of different length, an error will be returned.
-        async fn sign(&self, prehash: &[u8]) -> Result<<P256 as Curve>::Signature, Self::Error> {
-            let prehash: &[u8; 32] = prehash
-                .try_into()
-                .map_err(|_| ecdsa::Error::from_source("prehash must be 32-bytes long"))?;
+        #[inline]
+        fn sign(
+            &self,
+            prehash: &[u8],
+        ) -> impl Future<Output = Result<<P256 as Curve>::Signature, Self::Error>> + Send {
+            let Ok(prehash) = <&[u8; 32]>::try_from(prehash) else {
+                return future::err(ecdsa::Error::from_source("prehash must be 32 bytes long"));
+            };
 
             let signature = self.sign_prehash_recoverable(prehash).0;
             // Signature is **not** automatically normalized to be low-S
             // form, since `<p256::NistP256 as EcdsaCurve>::NORMALIZE_S`
             // is not set. So, we need to normalize ourselves:
-            Ok(signature.normalize_s())
+            future::ok(signature.normalize_s())
         }
     }
 };

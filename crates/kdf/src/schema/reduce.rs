@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use impl_tools::autoimpl;
 
-use crate::{CurveArithmetic, Schema};
+use super::{CurveArithmetic, Schema};
 
 /// [`Schema`] for converting fixed byte arrays into a scalar
 /// via modular reduction.
