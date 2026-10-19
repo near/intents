@@ -26,7 +26,6 @@ use defuse_test_utils::{
 use futures::stream::{self, StreamExt};
 
 use rstest::rstest;
-use std::collections::BTreeMap;
 
 mod helpers {
     use super::*;

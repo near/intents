@@ -487,6 +487,7 @@ macro_rules! wallet {
             contract_state(key = $crate::STATE_KEY),
             contract_metadata(
                 standard(standard = "wallet", version = "1.0.0"),
+                standard(standard = "nep641", version = "1.0.0"),
                 $($metadata),+
             )
         )]

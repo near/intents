@@ -6,7 +6,10 @@ use std::{
 use defuse_crypto::{Curve, RecoverableCurve, RecoverableSigner, Signer};
 use impl_tools::autoimpl;
 
-use crate::{Derive, DeriveExt, Schema, Value};
+use crate::{
+    DeriveExt,
+    schema::{Schema, WithSchema},
+};
 
 /// A signer that can sign messages by **internally** deriving signing keys
 /// according to its public key derivation [schema](DeriveSigner::schema).
@@ -31,7 +34,7 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
     /// For _hardened_ derivation, this would typically reference `self`, since
     /// public keys can be only derived by knowing a master signing key.
     ///
-    /// See [`.derive_public_key()`](DeriveSigner::derive_public_key)
+    /// See [`.derive_public_key()`](DeriveExt::derive_public_key)
     /// shorthand.
     fn schema(&self) -> Self::Schema<'_>;
 
@@ -48,24 +51,6 @@ pub trait DeriveSigner<C: Curve, P>: Sync {
     async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
     where
         P: Send;
-
-    /// Helper method to [derive](Schema::derive) public key for given
-    /// `path` via [`.schema()`](DeriveSigner::Schema)
-    #[inline]
-    fn derive_public_key(&self, path: P) -> C::PublicKey {
-        self.schema().derive(path)
-    }
-
-    /// Derive a signer with a given value for [current](Self::schema) schema,
-    /// so that returned signer implements [`Signer`] and doesn't take any
-    /// derivation path.
-    #[inline]
-    fn derive(self, value: P) -> Derive<Self, Value<P>>
-    where
-        Self: Sized,
-    {
-        self.derive_with(Value::new(value))
-    }
 }
 
 /// A [signer](DeriveSigner) that can recoverably sign messages by
@@ -94,57 +79,62 @@ pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
         P: Send;
 }
 
-impl<C, P, S, D> DeriveSigner<C, P> for Derive<S, D>
+impl<C, P, S, I> DeriveSigner<C, P> for WithSchema<S, I>
 where
     C: Curve,
-    S: DeriveSigner<C, D::Output>,
-    D: Schema<P, Output: Send> + Send + Sync,
+    S: DeriveSigner<C, I::Output>,
+    I: Schema<P, Output: Send> + Send + Sync,
 {
     type Error = S::Error;
 
     type Schema<'a>
-        = Derive<S::Schema<'a>, &'a D>
+        = WithSchema<S::Schema<'a>, &'a I>
     where
         Self: 'a;
 
     #[inline]
     fn schema(&self) -> Self::Schema<'_> {
-        self.outer.schema().derive_with(&self.inner)
+        self.outer.schema().with_schema(&self.inner)
     }
 
-    async fn derive_sign(&self, path: P, msg: &[u8]) -> Result<C::Signature, Self::Error>
-    where
-        P: Send,
-    {
-        self.outer.derive_sign(self.inner.derive(path), msg).await
-    }
-}
-
-impl<C, P, S, D> RecoverableDeriveSigner<C, P> for Derive<S, D>
-where
-    C: RecoverableCurve,
-    S: RecoverableDeriveSigner<C, D::Output>,
-    D: Schema<P, Output: Send> + Send + Sync,
-{
-    async fn derive_sign_recoverable(
+    #[inline]
+    fn derive_sign(
         &self,
         path: P,
         msg: &[u8],
-    ) -> Result<(C::Signature, C::RecoveryId), Self::Error>
+    ) -> impl Future<Output = Result<C::Signature, Self::Error>> + Send
+    where
+        P: Send,
+    {
+        self.outer.derive_sign(self.inner.derive(path), msg)
+    }
+}
+
+impl<C, P, S, I> RecoverableDeriveSigner<C, P> for WithSchema<S, I>
+where
+    C: RecoverableCurve,
+    S: RecoverableDeriveSigner<C, I::Output>,
+    I: Schema<P, Output: Send> + Send + Sync,
+{
+    #[inline]
+    fn derive_sign_recoverable(
+        &self,
+        path: P,
+        msg: &[u8],
+    ) -> impl Future<Output = Result<(C::Signature, C::RecoveryId), Self::Error>> + Send
     where
         P: Send,
     {
         self.outer
             .derive_sign_recoverable(self.inner.derive(path), msg)
-            .await
     }
 }
 
-impl<C, S, D> Signer<C> for Derive<S, D>
+impl<C, S, I> Signer<C> for WithSchema<S, I>
 where
     C: Curve,
-    S: DeriveSigner<C, D::Output>,
-    D: Schema<(), Output: Send> + Send + Sync,
+    S: DeriveSigner<C, I::Output>,
+    I: Schema<(), Output: Send> + Send + Sync,
 {
     type Error = S::Error;
 
@@ -153,22 +143,24 @@ where
         self.derive_public_key(())
     }
 
-    async fn sign(&self, msg: &[u8]) -> Result<C::Signature, Self::Error> {
-        DeriveSigner::<C, _>::derive_sign(self, (), msg).await
+    #[inline]
+    fn sign(&self, msg: &[u8]) -> impl Future<Output = Result<C::Signature, Self::Error>> + Send {
+        DeriveSigner::<C, _>::derive_sign(self, (), msg)
     }
 }
 
-impl<C, S, D> RecoverableSigner<C> for Derive<S, D>
+impl<C, S, I> RecoverableSigner<C> for WithSchema<S, I>
 where
     C: RecoverableCurve,
-    S: RecoverableDeriveSigner<C, D::Output>,
-    D: Schema<(), Output: Send> + Send + Sync,
+    S: RecoverableDeriveSigner<C, I::Output>,
+    I: Schema<(), Output: Send> + Send + Sync,
 {
-    async fn sign_recoverable(
+    #[inline]
+    fn sign_recoverable(
         &self,
         msg: &[u8],
-    ) -> Result<(C::Signature, C::RecoveryId), Self::Error> {
-        RecoverableDeriveSigner::<C, _>::derive_sign_recoverable(self, (), msg).await
+    ) -> impl Future<Output = Result<(C::Signature, C::RecoveryId), Self::Error>> + Send {
+        RecoverableDeriveSigner::<C, _>::derive_sign_recoverable(self, (), msg)
     }
 }
 

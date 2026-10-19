@@ -3,7 +3,7 @@ use core::ops::Add;
 use defuse_crypto::Curve;
 use impl_tools::autoimpl;
 
-use crate::Schema;
+use super::Schema;
 
 /// Additive derivation [schema](Schema).
 ///
@@ -38,6 +38,7 @@ where
 {
     type Output = C::PublicKey;
 
+    #[inline]
     fn derive(&self, tweak: C::Scalar) -> Self::Output {
         let master_pk = C::pk2point(&self.master_pk);
 

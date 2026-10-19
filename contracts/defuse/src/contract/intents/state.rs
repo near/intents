@@ -246,7 +246,7 @@ impl State for Contract {
         receiver_id: AccountId,
         tokens: Amounts,
         notification: NotifyOnTransfer,
-    ) {
+    ) -> Result<()> {
         let (token_ids, amounts) = tokens
             .iter()
             .map(|(token_id, amount)| (token_id.to_string(), U128(*amount)))
@@ -258,8 +258,10 @@ impl State for Contract {
             token_ids,
             amounts,
             notification,
-        )
+        )?
         .detach();
+
+        Ok(())
     }
 
     fn storage_deposit(
@@ -356,12 +358,13 @@ impl Contract {
     /// Computes the static gas assigned to the `do_auth_call` callback.
     pub fn auth_call_callback_gas(auth_call: &AuthCall) -> Option<Gas> {
         Self::DO_AUTH_CALL_MIN_GAS
-            .checked_add(
-                auth_call
-                    .state_init
-                    .as_ref()
-                    .map_or(Gas::from_gas(0), |_| Self::STATE_INIT_GAS),
-            )
-            .and_then(|g| g.checked_add(auth_call.min_gas()))
+            // TODO: replace with UniversalStateInit
+            // .checked_add(
+            //     auth_call
+            //         .state_init
+            //         .as_ref()
+            //         .map_or(Gas::from_gas(0), |_| Self::STATE_INIT_GAS),
+            // )
+            .checked_add(auth_call.min_gas())
     }
 }

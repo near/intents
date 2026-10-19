@@ -15,4 +15,4 @@ mod token;
 pub use self::{errors::*, events::*, token::*};
 
 #[cfg(feature = "near-contract")]
-pub use self::core::*;
+pub use self::{checked::CheckedMtEvent, core::*};

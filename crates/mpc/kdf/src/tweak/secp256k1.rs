@@ -3,6 +3,7 @@ use defuse_kdf::crypto::secp256k1::{Secp256k1, k256::NonZeroScalar};
 use super::{NearMpcCurve, sealed::Sealed};
 
 impl NearMpcCurve for Secp256k1 {
+    #[inline]
     fn to_scalar(tweak: [u8; 32]) -> NonZeroScalar {
         // See <https://github.com/near/mpc/blob/1f833a13f70addc34eb1cff704f93fec61e7f7eb/crates/contract/src/crypto_shared/kdf.rs#L22>.
         NonZeroScalar::from_repr(tweak.into())
@@ -16,8 +17,9 @@ impl Sealed for Secp256k1 {}
 #[cfg(test)]
 mod tests {
     use defuse_kdf::{
-        Additive, DeriveExt, Schema,
+        DeriveExt,
         crypto::secp256k1::{Secp256k1UncompressedPublicKey, k256::ecdsa::VerifyingKey},
+        schema::{Additive, Schema},
     };
     use hex_literal::hex;
     use near_account_id::AccountIdRef;
@@ -56,7 +58,7 @@ mod tests {
         let predecessor_id = AccountIdRef::new(predecessor_id).unwrap();
 
         let schema =
-            Additive::<Secp256k1>::new(master_pk).derive_with(tweak::<Secp256k1>(predecessor_id));
+            Additive::<Secp256k1>::new(master_pk).with_schema(tweak::<Secp256k1>(predecessor_id));
 
         let derived_pk = schema.derive(path);
 

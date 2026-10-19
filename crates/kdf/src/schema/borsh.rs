@@ -1,14 +1,16 @@
+//! [Borsh](borsh)-related adaptors
+
 use borsh::{BorshSerialize, io};
 #[cfg(feature = "digest")]
 pub use digest_io::IoWrapper;
 use impl_tools::autoimpl;
 
-use crate::Schema;
+use super::Schema;
 
 /// [Borsh](borsh)-serialization adapter for [`Schema`]
 ///
 /// ```rust
-/// use defuse_kdf::{borsh::Borsh, Schema};
+/// use defuse_kdf::schema::{borsh::Borsh, Schema};
 ///
 /// let schema = Borsh::<Vec<u8>>::default();
 /// assert_eq!(schema.derive(b"abc"), [97, 98, 99]);
@@ -30,6 +32,7 @@ where
 {
     type Output = W::Output;
 
+    #[inline]
     fn derive(&self, path: P) -> Self::Output {
         let mut w = W::new(self.0.clone()); // branch a new writer
         borsh::to_writer(&mut w, &path).expect("borsh");
@@ -58,7 +61,7 @@ impl WriteFinalizer for Vec<u8> {
     type Output = Self;
 
     #[inline]
-    fn new(_data: Self::Data) -> Self {
+    fn new((): Self::Data) -> Self {
         Self::new()
     }
 
@@ -75,7 +78,7 @@ const _: () = {
     /// Optimized writer implementation to serialize directly to hasher
     ///
     /// ```rust
-    /// use defuse_kdf::{borsh::{Borsh, IoWrapper}, Schema};
+    /// use defuse_kdf::schema::{borsh::{Borsh, IoWrapper}, Schema};
     /// # use hex_literal::hex;
     /// use defuse_digest::sha3::Sha3_256;
     ///

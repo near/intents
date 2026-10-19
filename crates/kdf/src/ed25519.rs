@@ -7,8 +7,12 @@ use ed25519_dalek::{
     Digest, Sha512, Signature, SigningKey, VerifyingKey,
     hazmat::{ExpandedSecretKey, raw_sign},
 };
+use futures_util::future;
 
-use crate::{Additive, CurveArithmetic, DeriveSigner, ReduceScalar, Schema};
+use crate::{
+    DeriveExt, DeriveSigner,
+    schema::{Additive, CurveArithmetic, ReducableScalarCurve},
+};
 
 impl CurveArithmetic for Ed25519 {
     type Scalar = Scalar;
@@ -31,20 +35,16 @@ impl CurveArithmetic for Ed25519 {
     }
 }
 
-impl Schema<[u8; 32]> for ReduceScalar<Ed25519> {
-    type Output = Scalar;
-
+impl ReducableScalarCurve<[u8; 32]> for Ed25519 {
     #[inline]
-    fn derive(&self, path: [u8; 32]) -> Self::Output {
+    fn reduce(path: [u8; 32]) -> Scalar {
         Scalar::from_bytes_mod_order(path)
     }
 }
 
-impl Schema<[u8; 64]> for ReduceScalar<Ed25519> {
-    type Output = Scalar;
-
+impl ReducableScalarCurve<[u8; 64]> for Ed25519 {
     #[inline]
-    fn derive(&self, path: [u8; 64]) -> Self::Output {
+    fn reduce(path: [u8; 64]) -> Scalar {
         Scalar::from_bytes_mod_order_wide(&path)
     }
 }
@@ -72,7 +72,7 @@ impl DeriveSigner<Ed25519, Scalar> for SigningKey {
         );
 
         // delegate signing to expanded secret key
-        esk.derive_sign(tweak, msg).await
+        DeriveSigner::<Ed25519, Scalar>::derive_sign(&esk, tweak, msg).await
     }
 }
 
@@ -89,7 +89,11 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
         Additive::new(VerifyingKey::from(self))
     }
 
-    async fn derive_sign(&self, tweak: Scalar, msg: &[u8]) -> Result<Signature, Self::Error> {
+    fn derive_sign(
+        &self,
+        tweak: Scalar,
+        msg: &[u8],
+    ) -> impl Future<Output = Result<Signature, Self::Error>> + Send {
         let derived_esk = Self {
             // sk' = sk + tweak
             scalar: self.scalar + tweak,
@@ -124,7 +128,7 @@ impl DeriveSigner<Ed25519, Scalar> for ExpandedSecretKey {
             "derived public key mismatch",
         );
 
-        Ok(raw_sign::<Sha512>(
+        future::ok(raw_sign::<Sha512>(
             &derived_esk,
             msg,
             &derived_verifying_key,
@@ -139,7 +143,7 @@ mod tests {
     use hex_literal::hex;
     use rstest::rstest;
 
-    use crate::{DeriveExt, signer::assert_signer_roundtrip};
+    use crate::{DeriveExt, schema::ReduceScalar, signer::assert_signer_roundtrip};
 
     use super::*;
 
@@ -157,7 +161,7 @@ mod tests {
         #[values(b"", b"test", b"message")] msg: &[u8],
     ) {
         assert_signer_roundtrip(
-            &SigningKey::from_bytes(&root_sk).derive_with(ReduceScalar::<Ed25519>::new()),
+            &SigningKey::from_bytes(&root_sk).with_schema(ReduceScalar::<Ed25519>::new()),
             tweak,
             msg,
         )
@@ -177,7 +181,7 @@ mod tests {
         #[case] expected_derived_pk: impl Into<Ed25519PublicKey>,
     ) {
         let (derived_pk, _signature) = assert_signer_roundtrip(
-            &SigningKey::from_bytes(&root_sk).derive_with(ReduceScalar::<Ed25519>::new()),
+            &SigningKey::from_bytes(&root_sk).with_schema(ReduceScalar::<Ed25519>::new()),
             tweak,
             b"message",
         )

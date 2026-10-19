@@ -764,14 +764,14 @@ where
     ///
     /// ```rust,no_run
     /// use defuse_wallet_sdk::mpc::kdf::{
-    ///     DeriveSigner, crypto::{Curve, ed25519::Ed25519},
+    ///     DeriveExt, crypto::{Curve, ed25519::Ed25519},
     /// };
     /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
     /// # use defuse_wallet_ed25519::{
     /// #   WalletEd25519, WalletEd25519Signer,
     /// #   crypto::ed25519::ed25519_dalek::SigningKey,
     /// # };
-    /// # #[tokio::main]
+    /// # #[tokio::main(flavor = "local")]
     /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let wallet = Wallet::<WalletEd25519>::new(
     /// #     [0u8; 32],
@@ -797,7 +797,7 @@ where
     ///
     /// ```rust,no_run
     /// use defuse_wallet_sdk::mpc::kdf::{
-    ///     DeriveSigner, RecoverableDeriveSigner,
+    ///     DeriveExt,
     ///     crypto::{RecoverableCurve, secp256k1::Secp256k1},
     /// };
     /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
@@ -806,7 +806,7 @@ where
     /// #   crypto::ed25519::ed25519_dalek::SigningKey,
     /// # };
     /// # use hex_literal::hex;
-    /// # #[tokio::main]
+    /// # #[tokio::main(flavor = "local")]
     /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let wallet = Wallet::<WalletEd25519>::new(
     /// #     [0u8; 32],

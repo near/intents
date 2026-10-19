@@ -2,7 +2,7 @@ use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519:
 use defuse_wallet_sdk::{
     AccountIdRef, Wallet,
     mpc::kdf::{
-        DeriveSigner, RecoverableDeriveSigner,
+        DeriveExt,
         crypto::{
             RecoverableCurve,
             secp256k1::{Secp256k1, Secp256k1RecoverableSignature, Secp256k1UncompressedPublicKey},

@@ -190,9 +190,9 @@ where
         receiver_id: AccountId,
         tokens: Amounts,
         notification: NotifyOnTransfer,
-    ) {
+    ) -> Result<()> {
         self.state
-            .notify_on_transfer(sender_id, receiver_id, tokens, notification);
+            .notify_on_transfer(sender_id, receiver_id, tokens, notification)
     }
 
     #[inline]

@@ -3,6 +3,7 @@ use defuse_kdf::{crypto::ed25519::Ed25519, ed25519::curve25519_dalek::Scalar};
 use super::{NearMpcCurve, sealed::Sealed};
 
 impl NearMpcCurve for Ed25519 {
+    #[inline]
     fn to_scalar(tweak: [u8; 32]) -> Scalar {
         // See <https://github.com/near/mpc/blob/1f833a13f70addc34eb1cff704f93fec61e7f7eb/crates/contract/src/crypto_shared/kdf.rs#L36>
         Scalar::from_bytes_mod_order(tweak)
@@ -14,8 +15,9 @@ impl Sealed for Ed25519 {}
 #[cfg(test)]
 mod tests {
     use defuse_kdf::{
-        Additive, DeriveExt, Schema,
+        DeriveExt,
         crypto::ed25519::ed25519_dalek::{self, VerifyingKey},
+        schema::{Additive, Schema},
     };
     use hex_literal::hex;
     use near_account_id::AccountIdRef;
@@ -55,7 +57,7 @@ mod tests {
         let predecessor_id = AccountIdRef::new(predecessor_id).unwrap();
 
         let schema =
-            Additive::<Ed25519>::new(master_pk).derive_with(tweak::<Ed25519>(predecessor_id));
+            Additive::<Ed25519>::new(master_pk).with_schema(tweak::<Ed25519>(predecessor_id));
 
         let derived_pk = schema.derive(path);
 

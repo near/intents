@@ -667,7 +667,7 @@ async fn simulate_remove_public_key_intent(
 async fn simulate_set_auth_by_predecessor_id_intent(#[future(awt)] env: Env) {
     let user1 = env.create_user().await;
 
-    let set_auth_intent = SetAuthByPredecessorId { enabled: true };
+    let set_auth_intent = SetAuthByPredecessorId { enabled: false };
 
     let set_auth_payload = user1
         .sign_defuse_payload_default(&env.defuse, [set_auth_intent.clone()])
@@ -730,7 +730,7 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
 
     let auth_call_intent = AuthCall {
         contract_id: ft1.contract_id().clone(), // Call to ft1 contract
-        state_init: None,
+        // state_init: None,
         msg: "test_message".to_string(),
         attached_deposit: NearToken::from_millinear(10),
         min_gas: None,

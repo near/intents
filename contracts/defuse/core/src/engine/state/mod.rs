@@ -118,7 +118,7 @@ pub trait State: StateView {
         receiver_id: AccountId,
         tokens: Amounts,
         notification: NotifyOnTransfer,
-    );
+    ) -> Result<()>;
 
     fn storage_deposit(
         &mut self,
@@ -165,7 +165,7 @@ pub trait State: StateView {
                     .max(MT_ON_TRANSFER_GAS_MIN),
             );
 
-            self.notify_on_transfer(minter_id, receiver_id, tokens, notification);
+            self.notify_on_transfer(minter_id, receiver_id, tokens, notification)?;
         }
 
         Ok(())

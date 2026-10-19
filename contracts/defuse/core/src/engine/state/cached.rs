@@ -10,6 +10,7 @@ use crate::{
     },
     public_key::PublicKey,
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
+    tokens::BATCH_MAX_TOKENS,
 };
 use defuse_bitmap::{U248, U256};
 use std::{
@@ -291,6 +292,10 @@ where
             return Err(DefuseError::InvalidIntent);
         }
 
+        if withdraw.token_ids.len() > BATCH_MAX_TOKENS {
+            return Err(DefuseError::TooManyTokens(withdraw.token_ids.len()));
+        }
+
         self.internal_sub_balance(
             owner_id,
             withdraw
@@ -324,9 +329,14 @@ where
         &self,
         _sender_id: &AccountIdRef,
         _receiver_id: AccountId,
-        _tokens: Amounts,
+        tokens: Amounts,
         _notification: NotifyOnTransfer,
-    ) {
+    ) -> Result<()> {
+        if tokens.len() > BATCH_MAX_TOKENS {
+            return Err(DefuseError::TooManyTokens(tokens.len()));
+        }
+
+        Ok(())
     }
 
     fn storage_deposit(
@@ -356,7 +366,7 @@ where
                 // toggle
                 .auth_by_predecessor_id_toggled ^= true;
         }
-        Ok(was_enabled)
+        Ok(toggle)
     }
 
     fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()> {
