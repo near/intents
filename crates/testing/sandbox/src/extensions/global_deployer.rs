@@ -29,11 +29,14 @@ impl GDDeployerExt for Near {
         global_contract_id: GlobalContractId,
         state: DeployerState<'_>,
     ) -> Result<GlobalDeployerContractClient> {
-        let account_id = self
-            .deploy_deterministic_account(global_contract_id, state.as_storage(), NearToken::ZERO)
-            .await?;
-
-        Ok(self.contract::<GlobalDeployerContract>(account_id))
+        Ok(self.contract::<GlobalDeployerContract>(
+            self.deploy_deterministic_account(
+                global_contract_id,
+                state.as_storage(),
+                NearToken::ZERO,
+            )
+            .await?,
+        ))
     }
 }
 

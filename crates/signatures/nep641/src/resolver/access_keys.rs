@@ -185,7 +185,7 @@ mod tests {
         let authorization: String = AccessKeyAuthorization {
             msg,
             via: AccessKeySchema::Nep413 { callback_url: None },
-            access_key: PublicKey::from_kit(signed.public_key).unwrap(),
+            access_key: PublicKey::from_kit(&signed.public_key).unwrap(),
             signature: Signature::from_kit(signed.signature).unwrap(),
         }
         .into();

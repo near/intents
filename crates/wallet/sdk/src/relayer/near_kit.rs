@@ -20,7 +20,7 @@ impl WalletRelayer for Near {
     type Error = Error;
 
     #[cfg_attr(feature = "tracing", tracing::instrument(skip_all, fields(
-            relayer.account_id = ?self.account_id(),
+            relayer.account_id = %self.account_id(),
             msg.signer_id = %request.msg.signer_id,
             msg.hash = %near_kit::CryptoHash::from_bytes(request.msg.hash()),
         )))]

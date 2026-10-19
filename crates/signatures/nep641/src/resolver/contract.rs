@@ -37,9 +37,9 @@ impl RpcResolver {
             )
             .await
             .map_err::<ResolveErrorKind, _>(|err| match err {
-                RpcError::AccountNotFound { .. } | RpcError::ContractNotDeployed { .. } => {
-                    ContractError::NoResolve.into()
-                }
+                RpcError::AccountNotFound { .. }
+                | RpcError::ContractNotDeployed { .. }
+                | RpcError::MethodNotFound { .. } => ContractError::NoResolve.into(),
                 RpcError::ContractPanic { message, .. }
                 | RpcError::ContractExecution { message, .. } => {
                     ContractError::Panic(message).into()

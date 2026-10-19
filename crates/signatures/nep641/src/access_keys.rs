@@ -271,20 +271,16 @@ impl FromStr for Signature {
 
 #[cfg(feature = "near-kit")]
 const _: () = {
-    use near_kit::signer::{
-        KeyType as NearKeyType, ParseKeyError, PublicKey as NearPublicKey,
-        Signature as NearSignature,
-    };
+    use near_kit::signer::{ParseKeyError, PublicKey as NearPublicKey, Signature as NearSignature};
 
     impl PublicKey {
-        #[allow(clippy::needless_pass_by_value)]
         #[must_use]
         #[inline]
-        pub fn from_kit(pk: NearPublicKey) -> Option<Self> {
-            match pk.key_type() {
-                NearKeyType::Ed25519 => Some(Self::Ed25519((*pk.as_ed25519_bytes()?).into())),
-                NearKeyType::Secp256k1 => Some(Self::Secp256k1((*pk.as_secp256k1_bytes()?).into())),
-                NearKeyType::MlDsa65 => None,
+        pub fn from_kit(pk: &NearPublicKey) -> Option<Self> {
+            match pk {
+                NearPublicKey::Ed25519(bytes) => Some(Self::Ed25519((*bytes).into())),
+                NearPublicKey::Secp256k1(bytes) => Some(Self::Secp256k1((*bytes).into())),
+                NearPublicKey::MlDsa65(_) => None,
             }
         }
     }
