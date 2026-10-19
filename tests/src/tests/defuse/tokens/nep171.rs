@@ -115,7 +115,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                         .unwrap(),
                 )
                 .gas(Gas::from_tgas(300))
-                .finish()
+                .send()
                 .wait_until::<Final>()
                 .await
                 .unwrap();
@@ -172,7 +172,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                         .unwrap(),
                 )
                 .gas(Gas::from_tgas(300))
-                .finish()
+                .send()
                 .wait_until::<Final>()
                 .await
                 .unwrap();
@@ -497,7 +497,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
             serde_json::to_string(&deposit_message).unwrap(),
         )
         .gas(Gas::from_tgas(300))
-        .finish()
+        .send()
         .wait_until::<Final>()
         .await
         .unwrap();

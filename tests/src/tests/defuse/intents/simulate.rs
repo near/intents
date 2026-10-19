@@ -173,7 +173,7 @@ async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .finish()
+        .send()
         .wait_until::<Final>()
         .await
         .unwrap();
@@ -268,7 +268,7 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
             user1.account_id().as_str(),
         )
         .gas(Gas::from_tgas(300))
-        .finish()
+        .send()
         .wait_until::<Final>()
         .await
         .unwrap();
@@ -451,7 +451,7 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .finish()
+        .send()
         .wait_until::<Final>()
         .await
         .unwrap();
@@ -710,7 +710,7 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .finish()
+        .send()
         .wait_until::<Final>()
         .await
         .unwrap();

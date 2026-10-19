@@ -48,6 +48,7 @@ near-kit = [
   "borsh",
   "dep:defuse-borsh-utils",
   "dep:defuse-serde-utils",
+  "dep:near-kit",
   "near-kit/contracts",
   "serde",
 ]

@@ -76,7 +76,7 @@ impl Env {
                 serde_json::to_string(&msg).unwrap(),
             )
             .gas(Gas::from_tgas(300))
-            .finish()
+            .send()
             .wait_until::<Final>()
             .await?
             .json::<U128>()
@@ -174,7 +174,8 @@ impl Env {
                         let ft = self.ft(token);
                         all_accounts.iter().map(move |account_id| {
                             ft.storage_deposit(account_id, TOKEN_STORAGE_DEPOSIT)
-                                .finish().wait_until::<Final>()
+                                .send()
+                                .wait_until::<Final>()
                                 .into_future()
                                 .map(move |r| {
                                     r.context(format!(

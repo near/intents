@@ -142,7 +142,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
             String::new(),
         )
         .gas(Gas::from_tgas(300))
-        .finish()
+        .send()
         .wait_until::<Final>()
         .await
         .unwrap();

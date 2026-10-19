@@ -541,7 +541,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
             deposit_message.to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .finish()
+        .send()
         .wait_until::<Final>()
         .await
         .unwrap()

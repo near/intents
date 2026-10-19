@@ -271,28 +271,27 @@ impl FromStr for Signature {
 
 #[cfg(feature = "near-kit")]
 const _: () = {
-    use near_kit::signer::{ParseKeyError, PublicKey as NearPublicKey, Signature as NearSignature};
+    use near_kit::signer::{PublicKey as NearPublicKey, Signature as NearSignature};
 
     impl PublicKey {
+        #[allow(clippy::needless_pass_by_value)]
         #[must_use]
         #[inline]
-        pub fn from_kit(pk: &NearPublicKey) -> Option<Self> {
+        pub fn from_kit(pk: NearPublicKey) -> Option<Self> {
             match pk {
-                NearPublicKey::Ed25519(bytes) => Some(Self::Ed25519((*bytes).into())),
-                NearPublicKey::Secp256k1(bytes) => Some(Self::Secp256k1((*bytes).into())),
+                NearPublicKey::Ed25519(pk) => Some(Self::Ed25519(pk.into())),
+                NearPublicKey::Secp256k1(pk) => Some(Self::Secp256k1(pk.into())),
                 NearPublicKey::MlDsa65(_) => None,
             }
         }
     }
 
-    impl TryFrom<PublicKey> for NearPublicKey {
-        type Error = ParseKeyError;
-
+    impl From<PublicKey> for NearPublicKey {
         #[inline]
-        fn try_from(pk: PublicKey) -> Result<Self, Self::Error> {
+        fn from(pk: PublicKey) -> Self {
             match pk {
-                PublicKey::Ed25519(pk) => Self::ed25519_from_bytes(pk.0),
-                PublicKey::Secp256k1(pk) => Self::secp256k1_from_bytes(pk.0),
+                PublicKey::Ed25519(pk) => Self::Ed25519(pk.0),
+                PublicKey::Secp256k1(pk) => Self::Secp256k1(pk.0),
             }
         }
     }

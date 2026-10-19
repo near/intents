@@ -141,7 +141,7 @@ near-contract-standards = "5.29.0"
 near-gas = "0.3.6"
 near-global-contracts = "0.2.5"
 near-kit = { version = "0.19.0", default-features = false }
-near-kit-sandbox = { version = "0.19.0", default-features = false }
+near-kit-sandbox = "0.19.0"
 near-plugins = "0.5.3"
 near-sdk = "5.29.0"
 near-sdk-env = "0.1.5"

@@ -138,7 +138,7 @@ async fn w_init(
         .w_execute_extension(
             Request::new()
                 .internal([WalletOp::RemoveExtension {
-                    account_id: near.account_id().clone(),
+                    account_id: near.account_id().into(),
                 }])
                 .into(),
         )

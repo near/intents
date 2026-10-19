@@ -11,7 +11,6 @@ use futures::{
     stream::{FuturesUnordered, TryStreamExt},
 };
 use near_account_id::AccountId;
-
 use near_kit::{
     CryptoHash,
     rpc::{BlockReference, Finality, RpcClient, RpcError},

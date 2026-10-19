@@ -82,7 +82,7 @@ async fn native_withdraw_intent(
             DepositMessage::new(other_user.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .finish()
+        .send()
         .wait_until::<Final>()
         .await
         .expect("failed to deposit wNEAR to user2");

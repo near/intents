@@ -3,7 +3,6 @@ use super::*;
 use defuse_core::Timestamp;
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_sandbox::{
-    account::Account,
     extensions::{
         escrow::{
             Escrow,

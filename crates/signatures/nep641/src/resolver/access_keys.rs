@@ -46,12 +46,7 @@ impl RpcResolver {
         }
 
         let (block, access_key) = {
-            let rpc_pk = auth
-                .access_key
-                .clone()
-                .try_into()
-                .map_err(AccessKeyError::InvalidPublicKey)?;
-
+            let rpc_pk = auth.access_key.clone().into();
             if let BlockReference::Hash(block_hash) = block {
                 // fetch the block concurrently with access key only if block_hash is already known
                 join!(
@@ -135,9 +130,6 @@ pub enum AccessKeyError {
     #[error("invalid path")]
     InvalidPath,
 
-    #[error("invalid public key: {0}")]
-    InvalidPublicKey(#[from] near_kit::signer::ParseKeyError),
-
     #[error("invalid signer_id: {0}")]
     InvalidSignerId(AccountId),
 
@@ -185,7 +177,7 @@ mod tests {
         let authorization: String = AccessKeyAuthorization {
             msg,
             via: AccessKeySchema::Nep413 { callback_url: None },
-            access_key: PublicKey::from_kit(&signed.public_key).unwrap(),
+            access_key: PublicKey::from_kit(signed.public_key).unwrap(),
             signature: Signature::from_kit(signed.signature).unwrap(),
         }
         .into();

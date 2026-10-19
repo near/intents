@@ -137,7 +137,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
                     )
                     .unwrap(),
                 )
-                .finish()
+                .send()
                 .wait_until::<Final>()
                 .await
                 .unwrap()
@@ -195,7 +195,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
                     .unwrap(),
                 )
                 .gas(Gas::from_tgas(300))
-                .finish()
+                .send()
                 .wait_until::<Final>()
                 .await
                 .unwrap()

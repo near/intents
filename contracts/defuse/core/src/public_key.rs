@@ -207,8 +207,8 @@ const _: () = {
         #[inline]
         fn from(pk: NearPublicKey) -> Self {
             match pk {
-                NearPublicKey::Ed25519(bytes) => Ed25519PublicKey(bytes).into(),
-                NearPublicKey::Secp256k1(bytes) => Secp256k1UncompressedPublicKey(bytes).into(),
+                NearPublicKey::Ed25519(pk) => Self::Ed25519(pk.into()),
+                NearPublicKey::Secp256k1(pk) => Self::Secp256k1(pk.into()),
                 NearPublicKey::MlDsa65(_) => panic!("unsupported public key type"),
             }
         }
