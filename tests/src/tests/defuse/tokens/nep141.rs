@@ -483,12 +483,13 @@ async fn ft_force_withdraw(
 //         .await
 //         .unwrap();
 
-// env.ft(ft.contract_id())
-//     .transfer(user.account_id(), 1000u128)
-//     .await
-//     .unwrap()
-//     .result()
-//     .unwrap();
+//     env.ft(ft.contract_id())
+//         .unwrap()
+//         .transfer(user.account_id(), 1000u128)
+//         .await
+//         .unwrap()
+//         .result()
+//         .unwrap();
 
 //     assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 1000);
 
@@ -527,19 +528,19 @@ async fn ft_force_withdraw(
 //         }
 //     };
 
-// user.ft(ft.contract_id())
-//     .transfer_call(
-//         env.defuse.contract_id(),
-//         1000u128,
-//         deposit_message.to_string(),
-//     )
-//     .gas(Gas::from_tgas(300))
-//     .send()
-//     .wait_until::<Final>()
-//     .await
-//     .unwrap()
-//     .result()
-//     .unwrap();
+//     user.ft(ft.contract_id())
+//         .unwrap()
+//         .transfer_call(
+//             env.defuse.contract_id(),
+//             1000u128,
+//             deposit_message.to_string(),
+//         )
+//         .gas(Gas::from_tgas(300))
+//         .wait_until::<Final>()
+//         .await
+//         .unwrap()
+//         .result()
+//         .unwrap();
 
 //     let ft_id = ft_id.to_string();
 //     futures::join!(

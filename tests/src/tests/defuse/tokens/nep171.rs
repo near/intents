@@ -487,17 +487,17 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
 //         }
 //     };
 
-// user.nft(nft_issuer_contract.contract_id())
-//     .transfer_call(
-//         env.defuse.contract_id(),
-//         nft.token_id.clone(),
-//         serde_json::to_string(&deposit_message).unwrap(),
-//     )
-//     .gas(Gas::from_tgas(300))
-//     .send()
-//     .wait_until::<Final>()
-//     .await
-//     .unwrap();
+//     user.nft(nft_issuer_contract.contract_id())
+//         .unwrap()
+//         .transfer_call(
+//             env.defuse.contract_id(),
+//             nft.token_id.clone(),
+//             serde_json::to_string(&deposit_message).unwrap(),
+//         )
+//         .gas(Gas::from_tgas(300))
+//         .wait_until::<Final>()
+//         .await
+//         .unwrap();
 
 //     let nft_token_id = nft_token_id.to_string();
 //     let (nft_owner, receiver_mt_balance) = futures::try_join!(
