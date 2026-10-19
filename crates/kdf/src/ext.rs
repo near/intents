@@ -16,7 +16,7 @@ pub trait DeriveExt {
     /// > 1. Use [`.with_schema(inner)`](Self::with_schema) to compose derivable
     /// >    signer with `inner` sub-schema.
     /// > 2. Use [`.at_path(path)`](Self::at_path) to convert [`DeriveSigner`]
-    /// >    into a [`Signer`](defuse_crypto::Signer) with fixed derivation `path`.
+    /// >    into a [`Signer`](crate::crypto::Signer) with fixed derivation `path`.
     ///
     /// # Examples
     ///
@@ -67,7 +67,7 @@ pub trait DeriveExt {
     /// > 1. Use [`.with_schema(inner)`](Self::with_schema) to compose derivable
     /// >    signer with `inner` sub-schema.
     /// > 2. Use [`.at_path(path)`](Self::at_path) to convert [`DeriveSigner`]
-    /// >    into a [`Signer`](defuse_crypto::Signer) with fixed derivation `path`.
+    /// >    into a [`Signer`](crate::crypto::Signer) with fixed derivation `path`.
     ///
     /// # Examples
     ///
@@ -128,7 +128,7 @@ pub trait DeriveExt {
     /// > 1. Use [`.with_schema(inner)`](Self::with_schema) to compose derivable
     /// >    signer with `inner` sub-schema.
     /// > 2. Use [`.at_path(path)`](Self::at_path) to convert [`DeriveSigner`]
-    /// >    into a [`Signer`](defuse_crypto::Signer) with fixed derivation `path`.
+    /// >    into a [`Signer`](crate::crypto::Signer) with fixed derivation `path`.
     ///
     /// # Examples
     ///
@@ -200,7 +200,7 @@ pub trait DeriveExt {
     /// schema-level paths are mapped into signer's ones before derivation happens:
     ///
     /// > ℹ️ Tip: use [`.at_path(path)`](Self::at_path) to convert [`DeriveSigner`]
-    /// > into a [`Signer`](defuse_crypto::Signer) with fixed derivation `path`.
+    /// > into a [`Signer`](crate::crypto::Signer) with fixed derivation `path`.
     ///
     /// ```rust
     /// use defuse_kdf::{
@@ -248,7 +248,7 @@ pub trait DeriveExt {
         WithSchema::new(self, inner)
     }
 
-    /// Convert [`DeriveSigner`] into a [`Signer`](defuse_crypto::Signer) with a
+    /// Convert [`DeriveSigner`] into a [`Signer`](crate::crypto::Signer) with a
     /// fixed derivation path.
     ///
     /// Methods of this trait require to pass derivation path on every callsite,
@@ -256,9 +256,9 @@ pub trait DeriveExt {
     /// method allows to fix the derivation path once, so that further code can
     /// use following methods instead, which don't require to pass one anymore:
     ///
-    /// * <code>[derive_public_key(path)](Self::derive_public_key) -> [public_key()](defuse_crypto::SignerExt::public_key)</code>
-    /// * <code>[derive_sign(path, msg)](Self::derive_sign) -> [sign(msg)](defuse_crypto::SignerExt::sign)</code>
-    /// * <code>[derive_sign_recoverable(path, msg)](Self::derive_sign_recoverable) -> [sign_recoverable(msg)](defuse_crypto::SignerExt::sign_recoverable)</code>
+    /// * <code>[derive_public_key(path)](Self::derive_public_key) -> [public_key()](crate::crypto::SignerExt::public_key)</code>
+    /// * <code>[derive_sign(path, msg)](Self::derive_sign) -> [sign(msg)](crate::crypto::SignerExt::sign)</code>
+    /// * <code>[derive_sign_recoverable(path, msg)](Self::derive_sign_recoverable) -> [sign_recoverable(msg)](crate::crypto::SignerExt::sign_recoverable)</code>
     ///
     /// # Examples
     ///
