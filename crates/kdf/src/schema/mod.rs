@@ -32,25 +32,25 @@ pub trait Schema<P> {
 ///
 /// See [`.with_schema()`](crate::DeriveExt::with_schema).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct WithSchema<S, D> {
-    pub(crate) outer: S,
-    pub(crate) inner: D,
+pub struct WithSchema<O, I> {
+    pub(crate) outer: O,
+    pub(crate) inner: I,
 }
 
-impl<S, D> WithSchema<S, D> {
+impl<O, I> WithSchema<O, I> {
     #[must_use]
     #[inline]
-    pub const fn new(outer: S, inner: D) -> Self {
+    pub const fn new(outer: O, inner: I) -> Self {
         Self { outer, inner }
     }
 }
 
-impl<P, S, D> Schema<P> for WithSchema<S, D>
+impl<P, O, I> Schema<P> for WithSchema<O, I>
 where
-    D: Schema<P>,
-    S: Schema<D::Output>,
+    I: Schema<P>,
+    O: Schema<I::Output>,
 {
-    type Output = S::Output;
+    type Output = O::Output;
 
     #[inline]
     fn derive(&self, path: P) -> Self::Output {

@@ -79,16 +79,16 @@ pub trait RecoverableDeriveSigner<C: RecoverableCurve, P>: DeriveSigner<C, P> {
         P: Send;
 }
 
-impl<C, P, S, D> DeriveSigner<C, P> for WithSchema<S, D>
+impl<C, P, S, I> DeriveSigner<C, P> for WithSchema<S, I>
 where
     C: Curve,
-    S: DeriveSigner<C, D::Output>,
-    D: Schema<P, Output: Send> + Send + Sync,
+    S: DeriveSigner<C, I::Output>,
+    I: Schema<P, Output: Send> + Send + Sync,
 {
     type Error = S::Error;
 
     type Schema<'a>
-        = WithSchema<S::Schema<'a>, &'a D>
+        = WithSchema<S::Schema<'a>, &'a I>
     where
         Self: 'a;
 
@@ -110,11 +110,11 @@ where
     }
 }
 
-impl<C, P, S, D> RecoverableDeriveSigner<C, P> for WithSchema<S, D>
+impl<C, P, S, I> RecoverableDeriveSigner<C, P> for WithSchema<S, I>
 where
     C: RecoverableCurve,
-    S: RecoverableDeriveSigner<C, D::Output>,
-    D: Schema<P, Output: Send> + Send + Sync,
+    S: RecoverableDeriveSigner<C, I::Output>,
+    I: Schema<P, Output: Send> + Send + Sync,
 {
     #[inline]
     fn derive_sign_recoverable(
@@ -130,11 +130,11 @@ where
     }
 }
 
-impl<C, S, D> Signer<C> for WithSchema<S, D>
+impl<C, S, I> Signer<C> for WithSchema<S, I>
 where
     C: Curve,
-    S: DeriveSigner<C, D::Output>,
-    D: Schema<(), Output: Send> + Send + Sync,
+    S: DeriveSigner<C, I::Output>,
+    I: Schema<(), Output: Send> + Send + Sync,
 {
     type Error = S::Error;
 
@@ -149,11 +149,11 @@ where
     }
 }
 
-impl<C, S, D> RecoverableSigner<C> for WithSchema<S, D>
+impl<C, S, I> RecoverableSigner<C> for WithSchema<S, I>
 where
     C: RecoverableCurve,
-    S: RecoverableDeriveSigner<C, D::Output>,
-    D: Schema<(), Output: Send> + Send + Sync,
+    S: RecoverableDeriveSigner<C, I::Output>,
+    I: Schema<(), Output: Send> + Send + Sync,
 {
     #[inline]
     fn sign_recoverable(
