@@ -7,7 +7,7 @@ use serde_with::hex::Hex;
 pub struct IdDigest(#[serde_as(as = "Hex")] pub [u8; Self::LEN]);
 
 impl IdDigest {
-    pub const LEN: usize = 20;
+    pub const LEN: usize = 32;
 }
 
 impl From<[u8; Self::LEN]> for IdDigest {

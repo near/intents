@@ -1,5 +1,5 @@
 use core::iter;
-use near_sdk::store::{LookupMap, LookupSet};
+use near_sdk::store::{LookupMap, LookupSet, key::Sha256};
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 use defuse_admin_utils::full_access_keys::{ACCESS_KEY_GAS, FullAccessKeys, ext_full_access_keys};
@@ -63,8 +63,8 @@ pub enum Role {
 pub struct Contract {
     tokens: IterableSet<String>,
     bridge_token_storage_deposit_required: NearToken,
-    deposits: LookupSet<IdDigest>,
-    withdrawals: LookupMap<IdDigest, Withdrawal>,
+    deposits: LookupSet<IdDigest, Sha256>,
+    withdrawals: LookupMap<IdDigest, Withdrawal, Sha256>,
     omni_tokens: IterableSet<String>,
 }
 
@@ -85,8 +85,8 @@ impl Contract {
                     .account_storage_usage
                     .into(),
             ),
-            deposits: LookupSet::new(Prefix::Deposits),
-            withdrawals: LookupMap::new(Prefix::Withdrawals),
+            deposits: LookupSet::with_hasher(Prefix::Deposits),
+            withdrawals: LookupMap::with_hasher(Prefix::Withdrawals),
             omni_tokens: IterableSet::new(Prefix::OmniTokens),
         };
 
@@ -116,8 +116,8 @@ impl Contract {
         Self {
             tokens: old.tokens,
             bridge_token_storage_deposit_required: old.bridge_token_storage_deposit_required,
-            deposits: LookupSet::new(Prefix::Deposits),
-            withdrawals: LookupMap::new(Prefix::Withdrawals),
+            deposits: LookupSet::with_hasher(Prefix::Deposits),
+            withdrawals: LookupMap::with_hasher(Prefix::Withdrawals),
             omni_tokens: IterableSet::new(Prefix::OmniTokens),
         }
     }
