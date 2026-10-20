@@ -9,7 +9,7 @@ use defuse_core::{
     crypto::ed25519::{Ed25519PublicKey, Ed25519Signature},
     payload::nep413::SignedNep413Payload,
 };
-use near_kit::{AccountIdRef, Near};
+use near_kit::{Near, protocol::AccountIdRef};
 use serde::Serialize;
 use serde_json;
 

@@ -200,7 +200,7 @@ const _: () = {
 
 #[cfg(feature = "near-kit")]
 const _: () = {
-    use near_kit::types::PublicKey as NearPublicKey;
+    use near_kit::signer::PublicKey as NearPublicKey;
 
     #[allow(clippy::fallible_impl_from)] // this is used only in tests
     impl From<NearPublicKey> for PublicKey {
@@ -209,7 +209,7 @@ const _: () = {
             match pk {
                 NearPublicKey::Ed25519(pk) => Self::Ed25519(pk.into()),
                 NearPublicKey::Secp256k1(pk) => Self::Secp256k1(pk.into()),
-                _ => panic!("unsupported public key type"),
+                NearPublicKey::MlDsa65(_) => panic!("unsupported public key type"),
             }
         }
     }

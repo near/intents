@@ -20,7 +20,10 @@ pub mod wallet;
 
 use crate::outcome::SuccessfulExecutionOutcome;
 use anyhow::Result;
-use near_kit::{AccountId, Final, FunctionCall, Near};
+use near_kit::{
+    AccountId, Near,
+    transaction::{Final, FunctionCall},
+};
 
 pub trait FnCallTransaction {
     async fn fn_call(

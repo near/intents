@@ -1,5 +1,5 @@
 use anyhow::Result;
-use near_kit::{AccountId, AccountIdRef, Gas, Near};
+use near_kit::{AccountId, Gas, Near, protocol::AccountIdRef};
 use serde::Serialize;
 
 use crate::{extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};

@@ -12,7 +12,7 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs},
         wnear::WNearExt,
     },
-    kit::{Final, Gas, NearToken},
+    kit::{Gas, NearToken, transaction::Final},
 };
 use rstest::rstest;
 
@@ -76,13 +76,13 @@ async fn native_withdraw_intent(
     .expect("failed to wrap NEAR");
 
     env.ft(env.wnear.contract_id())
-        .unwrap()
         .transfer_call(
             env.defuse.contract_id(),
             total_amount_yocto,
             DepositMessage::new(other_user.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
+        .send()
         .wait_until::<Final>()
         .await
         .expect("failed to deposit wNEAR to user2");

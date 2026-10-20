@@ -18,7 +18,10 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBalanceOfArgs},
     },
-    kit::{AccountId, Near, StateInit, StateInitV1},
+    kit::{
+        AccountId, Near,
+        protocol::{StateInit, StateInitV1},
+    },
 };
 use near_sdk::json_types::U128;
 use rstest::rstest;
@@ -241,7 +244,6 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
     let deposited = env
         .maker
         .ft(env.src_ft.contract_id())
-        .unwrap()
         .transfer_call(
             env.verifier.contract_id(),
             MAKER_AMOUNT,
@@ -273,7 +275,6 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
     // surplus = taker_dst_used - src_out * maker_price = 20,000 - 10,000 = 10,000
     let deposited_on_fill = env.takers[0]
         .ft(env.dst_ft.contract_id())
-        .unwrap()
         .transfer_call(
             env.verifier.contract_id(),
             TAKER_AMOUNT,

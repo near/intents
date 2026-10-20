@@ -82,7 +82,7 @@ pub struct SentTransaction {
 impl SentTransaction {
     #[cfg(feature = "near-kit")]
     #[inline]
-    pub fn status(self, client: &::near_kit::Near) -> ::near_kit::TransactionStatusQuery {
+    pub fn status(self, client: &::near_kit::Near) -> ::near_kit::rpc::TransactionStatusQuery {
         client.tx_status(&self.tx_hash.into(), self.sender_id)
     }
 }
@@ -140,7 +140,7 @@ impl NearSender for dyn DynNearSender + '_ {
 
 #[cfg(feature = "near-kit")]
 const _: () = {
-    use near_kit::{Action, Error, Included, Near, SendTxResponse};
+    use near_kit::{Error, Near, protocol::Action, rpc::SendTxResponse};
 
     impl NearSender for Near {
         type Error = Error;
@@ -155,7 +155,7 @@ const _: () = {
             receiver_id: AccountId,
             actions: Vec<NearAction>,
         ) -> Result<SentTransaction, Self::Error> {
-            use near_kit::TransactionBuilder;
+            use near_kit::transaction::{Included, TransactionBuilder};
 
             actions
                 .into_iter()

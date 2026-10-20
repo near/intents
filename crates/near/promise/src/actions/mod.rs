@@ -101,7 +101,7 @@ const _: () = {
 
 #[cfg(feature = "near-kit")]
 const _: () = {
-    use near_kit::Action;
+    use near_kit::protocol::Action;
 
     impl From<NearAction> for Action {
         #[inline]

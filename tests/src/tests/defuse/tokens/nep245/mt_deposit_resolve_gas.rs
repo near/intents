@@ -16,7 +16,11 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtOnTransferArgs},
     },
-    kit::{AccountId, ActionView, ExecutionStatus, Final, Gas, Near, NearToken, ReceiptContent},
+    kit::{
+        AccountId, Gas, Near, NearToken,
+        rpc::{ActionView, ExecutionStatus, ReceiptContent},
+        transaction::Final,
+    },
 };
 use defuse_test_utils::{
     random::{gen_random_string, rng},

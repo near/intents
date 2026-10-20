@@ -5,7 +5,11 @@ use defuse_sandbox::{
         OutlayerAppDeployerExt, OutlayerAppExt,
         contract::{OaEvent, State as OutlayerState},
     },
-    kit::{Final, GlobalContractId, Near, NearToken, PublishMode},
+    kit::{
+        Near, NearToken,
+        protocol::{GlobalContractId, PublishMode},
+        transaction::Final,
+    },
     root,
 };
 use defuse_test_utils::wasms::OUTLAYER_APP_WASM;

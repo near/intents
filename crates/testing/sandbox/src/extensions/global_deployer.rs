@@ -4,7 +4,11 @@ use defuse_global_deployer::{
     AsWrap, State as DeployerState,
     client::{GdApproveArgs, GlobalDeployerContract, GlobalDeployerContractClient},
 };
-use near_kit::{AccountIdRef, Final, Gas, GlobalContractId, Near, NearToken};
+use near_kit::{
+    Gas, Near, NearToken,
+    protocol::{AccountIdRef, GlobalContractId},
+    transaction::Final,
+};
 
 use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
 

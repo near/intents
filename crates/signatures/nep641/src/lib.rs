@@ -2,7 +2,7 @@
 
 #[cfg(feature = "access-keys")]
 pub mod access_keys;
-#[cfg(feature = "near-kit")]
+#[cfg(feature = "client")]
 pub mod client;
 mod message;
 #[cfg(feature = "resolver")]

@@ -1,5 +1,10 @@
 use defuse_core::crypto::ed25519::Ed25519PublicKey;
-use near_kit::{Action, Final, FunctionCallAction, InMemorySigner, KeyPair, Near, NearToken};
+use near_kit::{
+    Near, NearToken,
+    protocol::{Action, FunctionCallAction},
+    signer::{InMemorySigner, SecretKey},
+    transaction::Final,
+};
 
 pub trait Account {
     async fn create_subaccount(
@@ -25,7 +30,7 @@ impl Account for Near {
         name: impl AsRef<str>,
         balance: impl Into<Option<NearToken>>,
     ) -> Self {
-        let kp = KeyPair::random();
+        let secret_key = SecretKey::generate_ed25519();
         let account_id = self
             .account_id()
             .sub_account(name)
@@ -34,7 +39,7 @@ impl Account for Near {
         let mut tx = self
             .transaction(&account_id)
             .create_account()
-            .add_full_access_key(kp.public_key);
+            .add_full_access_key(secret_key.public_key());
 
         if let Some(balance) = balance.into() {
             tx = tx.transfer(balance);
@@ -47,13 +52,14 @@ impl Account for Near {
             .result()
             .expect("failed to create subaccount");
 
-        self.with_signer(InMemorySigner::from_secret_key(account_id, kp.secret_key).unwrap())
+        self.with_signer(InMemorySigner::from_secret_key(account_id, secret_key).unwrap())
     }
 
     async fn create_implicit(&self, balance: impl Into<Option<NearToken>>) -> Self {
-        let kp = KeyPair::random();
+        let secret_key = SecretKey::generate_ed25519();
         let account_id = defuse_core::PublicKey::Ed25519(Ed25519PublicKey(
-            *kp.public_key
+            *secret_key
+                .public_key()
                 .as_ed25519_bytes()
                 .expect("should return valid ed25519 pubkey"),
         ))
@@ -70,7 +76,7 @@ impl Account for Near {
                 .expect("implicit account funding failed");
         }
 
-        self.with_signer(InMemorySigner::from_secret_key(account_id, kp.secret_key).unwrap())
+        self.with_signer(InMemorySigner::from_secret_key(account_id, secret_key).unwrap())
     }
 
     async fn deploy_sub_contract(
@@ -80,7 +86,7 @@ impl Account for Near {
         code: impl Into<Vec<u8>>,
         init_call: impl Into<Option<FunctionCallAction>>,
     ) -> anyhow::Result<Self> {
-        let kp = KeyPair::random();
+        let secret_key = SecretKey::generate_ed25519();
         let account_id = self
             .account_id()
             .sub_account(name)
@@ -90,7 +96,7 @@ impl Account for Near {
             .transaction(&account_id)
             .create_account()
             .transfer(balance)
-            .add_full_access_key(kp.public_key)
+            .add_full_access_key(secret_key.public_key())
             .deploy(code);
 
         if let Some(init_call) = init_call.into() {
@@ -101,6 +107,6 @@ impl Account for Near {
             anyhow::anyhow!("failed to deploy sub contract to '{account_id}': {e:?}")
         })?;
 
-        Ok(self.with_signer(InMemorySigner::from_secret_key(account_id, kp.secret_key).unwrap()))
+        Ok(self.with_signer(InMemorySigner::from_secret_key(account_id, secret_key).unwrap()))
     }
 }

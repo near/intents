@@ -20,8 +20,10 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs, MtBatchBalanceOfArgs, MtBatchTransferCallArgs, MtExt},
     },
     kit::{
-        AccountId, ActionError, ActionErrorKind, ExecutionStatus, Final, FunctionCallError, Gas,
-        Near, NearToken,
+        AccountId, Gas, Near, NearToken,
+        protocol::{ActionError, ActionErrorKind, FunctionCallError},
+        rpc::ExecutionStatus,
+        transaction::Final,
     },
 };
 use defuse_test_utils::{

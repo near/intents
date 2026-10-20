@@ -14,7 +14,7 @@ use defuse_sandbox::{
         wnear::WNearDeployerExt,
     },
     global_contract::GlobalContract,
-    kit::{FungibleToken, GlobalContractId, Near, NearToken},
+    kit::{Near, NearToken, protocol::GlobalContractId, standards::FungibleToken},
     root,
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, ESCROW_SWAP_WASM, POA_FACTORY_WASM, WNEAR_WASM};

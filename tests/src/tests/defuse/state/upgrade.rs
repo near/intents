@@ -16,7 +16,7 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBatchBalanceOfArgs},
     },
-    kit::{AccountIdRef, Near},
+    kit::{Near, protocol::AccountIdRef},
 };
 use defuse_test_utils::wasms::DEFUSE_WASM;
 use rstest::rstest;

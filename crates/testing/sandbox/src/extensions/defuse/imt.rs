@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use anyhow::Result;
 use defuse::core::tokens::imt::ImtTokens;
 use defuse_core::amounts::Amounts;
-use near_kit::{AccountId, AccountIdRef, Gas, Near, NearToken};
+use near_kit::{AccountId, Gas, Near, NearToken, protocol::AccountIdRef};
 use serde::Serialize;
 
 use crate::{extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};

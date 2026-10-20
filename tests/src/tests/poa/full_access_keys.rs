@@ -8,7 +8,7 @@ use defuse_sandbox::{
             PoaFactoryDeployerExt, contract::Role,
         },
     },
-    kit::{AccessKeyPermissionView, Gas, KeyPair, Near, NearToken},
+    kit::{Gas, Near, NearToken, rpc::AccessKeyPermissionView, signer::SecretKey},
     root,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::POA_FACTORY_WASM};
@@ -49,7 +49,7 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: Near) {
         token_ids.push(token.contract_id().clone());
     }
 
-    let public_key = KeyPair::random().public_key;
+    let public_key = SecretKey::generate_ed25519().public_key();
     let dao = root.create_subaccount("dao", NearToken::from_near(1)).await;
     root.acl_grant_role(factory.contract_id(), Role::DAO, dao.account_id())
         .await
@@ -71,7 +71,7 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: Near) {
     for token_id in &token_ids {
         let keys = root.access_keys(token_id).await.unwrap().keys;
         assert_eq!(keys.len(), 1);
-        assert_eq!(keys[0].public_key, public_key);
+        assert_eq!(keys[0].public_key.full_pubkey(), Some(&public_key));
         assert!(matches!(
             keys[0].access_key.permission,
             AccessKeyPermissionView::FullAccess
@@ -83,7 +83,7 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: Near) {
             .unwrap()
             .keys
             .iter()
-            .all(|key| key.public_key != public_key)
+            .all(|key| !key.public_key.refers_to(&public_key))
     );
 
     dao.fn_call(
@@ -118,7 +118,7 @@ async fn add_full_access_key_to_tokens_requires_deployed_tokens(#[future(awt)] r
     root.fn_call(
         factory.contract_id(),
         PoaFactory::add_full_access_key_to_tokens(AccessKeyToTokensArgs {
-            public_key: KeyPair::random().public_key,
+            public_key: SecretKey::generate_ed25519().public_key(),
             tokens: vec!["ft1".to_string(), undeployed_token.to_string()],
         })
         .deposit(NearToken::from_yoctonear(1))

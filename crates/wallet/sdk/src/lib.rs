@@ -482,7 +482,7 @@ where
     #[cfg(feature = "near-kit")]
     /// Check if [real account ID](Self::real_account_id) is initialized on-chain.
     async fn check_initialized(&self) -> Result<bool> {
-        use near_kit::{BlockReference, Finality, RpcError};
+        use near_kit::rpc::{BlockReference, Finality, RpcError};
 
         if self.initialized.load(Relaxed) {
             return Ok(true);
@@ -500,7 +500,7 @@ where
             .await
         {
             Ok(account) => account.has_contract(),
-            Err(RpcError::AccountNotFound(_)) => false,
+            Err(RpcError::AccountNotFound { .. }) => false,
             Err(err) => return Err(err.into()),
         };
 
@@ -518,7 +518,7 @@ where
     /// This method panics when called on wallet with non-empty configured
     /// [extension chain](Self::as_extension_of).
     pub async fn initialize(&self) -> Result<()> {
-        use near_kit::{ExecutionStatus, Final};
+        use near_kit::{rpc::ExecutionStatus, transaction::Final};
 
         assert!(
             self.as_extension_chain().is_empty(),

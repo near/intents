@@ -1,6 +1,11 @@
 use anyhow::Result;
 use defuse_digest::{Digest, sha2::Sha256};
-use near_kit::{AccountIdRef, Final, GlobalContractId, KeyPair, Near, NearToken, PublishMode};
+use near_kit::{
+    Near, NearToken,
+    protocol::{AccountIdRef, GlobalContractId, PublishMode},
+    signer::SecretKey,
+    transaction::Final,
+};
 
 pub trait GlobalContract {
     async fn deploy_upgradable_global_contract(
@@ -25,13 +30,13 @@ impl GlobalContract for Near {
         code: impl Into<Vec<u8>>,
         balance: NearToken,
     ) -> Result<GlobalContractId> {
-        let kp = KeyPair::random();
+        let secret_key = SecretKey::generate_ed25519();
         let account_id = target.as_ref();
 
         self.transaction(account_id)
             .create_account()
             .transfer(balance)
-            .add_full_access_key(kp.public_key)
+            .add_full_access_key(secret_key.public_key())
             .publish(code, PublishMode::Updatable)
             .wait_until::<Final>()
             .await?

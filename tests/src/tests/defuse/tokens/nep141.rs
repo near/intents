@@ -160,7 +160,6 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
 
     assert_eq!(
         user.ft(ft.contract_id())
-            .unwrap()
             .transfer_call(
                 env.defuse.contract_id(),
                 1000u128,
@@ -259,7 +258,6 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
 
     assert_eq!(
         user.ft(ft.contract_id())
-            .unwrap()
             .transfer_call(
                 env.defuse.contract_id(),
                 1000u128,
