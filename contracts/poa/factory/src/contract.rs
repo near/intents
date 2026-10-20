@@ -61,11 +61,11 @@ pub enum Role {
     unpause_roles(Role::DAO, Role::UnpauseManager)
 )]
 pub struct Contract {
-    tokens: IterableSet<String>,
+    tokens: IterableSet<String, Sha256>,
     bridge_token_storage_deposit_required: NearToken,
     deposits: LookupSet<IdDigest, Sha256>,
     withdrawals: LookupMap<IdDigest, Withdrawal, Sha256>,
-    omni_tokens: IterableSet<String>,
+    omni_tokens: IterableSet<String, Sha256>,
 }
 
 #[near]
@@ -126,7 +126,7 @@ impl Contract {
 #[derive(BorshDeserialize)]
 #[borsh(crate = "::near_sdk::borsh")]
 struct OldContract {
-    tokens: IterableSet<String>,
+    tokens: IterableSet<String, Sha256>,
     bridge_token_storage_deposit_required: NearToken,
 }
 
