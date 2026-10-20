@@ -12,7 +12,7 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs},
         wnear::WNearExt,
     },
-    kit::{AccountId, Final, Gas, NearToken},
+    kit::{AccountId, Gas, NearToken, transaction::Final},
 };
 use defuse_test_utils::wasms::DEFUSE_WASM;
 use rstest::rstest;
@@ -136,13 +136,13 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
 
     // deposit wNEAR
     user.ft(env.wnear.contract_id())
-        .unwrap()
         .transfer_call(
             env.defuse.contract_id(),
             STORAGE_DEPOSIT.as_yoctonear(),
             String::new(),
         )
         .gas(Gas::from_tgas(300))
+        .send()
         .wait_until::<Final>()
         .await
         .unwrap();

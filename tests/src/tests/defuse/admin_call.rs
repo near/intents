@@ -10,7 +10,7 @@ use defuse_sandbox::{
             },
         },
     },
-    kit::{Action, NearToken},
+    kit::{NearToken, protocol::Action},
 };
 use near_sdk::{Gas as NearGas, json_types::U128};
 
@@ -77,26 +77,30 @@ async fn multiple_actions_with_admin_call(
         .add_action(into_fn_call_action(
             ft1.storage_deposit(admin.account_id(), storage)
                 .gas(NearGas::from_tgas(100))
-                .into_action(),
+                .into_action()
+                .unwrap(),
         ))
         .add_action(into_fn_call_action(
             ft1.transfer(admin.account_id(), U128(amount))
                 .gas(NearGas::from_tgas(100))
                 .deposit(NearToken::from_yoctonear(1))
-                .into_action(),
+                .into_action()
+                .unwrap(),
         ))];
 
     let second_promise = [NearPromise::new(ft2.contract_id())
         .add_action(into_fn_call_action(
             ft2.storage_deposit(admin.account_id(), storage)
                 .gas(NearGas::from_tgas(100))
-                .into_action(),
+                .into_action()
+                .unwrap(),
         ))
         .add_action(into_fn_call_action(
             ft2.transfer(admin.account_id(), U128(amount))
                 .gas(NearGas::from_tgas(100))
                 .deposit(NearToken::from_yoctonear(1))
-                .into_action(),
+                .into_action()
+                .unwrap(),
         ))];
 
     let promises = [first_promise, second_promise].concat();
@@ -238,7 +242,8 @@ async fn admin_call_with_gas_exceeding_action(
             ft.transfer(admin.account_id(), U128(amount))
                 .gas(NearGas::from_tgas(500))
                 .deposit(NearToken::from_yoctonear(1))
-                .into_action(),
+                .into_action()
+                .unwrap(),
         )),
     ];
 

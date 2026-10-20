@@ -14,7 +14,8 @@ use futures::{
     stream::{self, FuturesUnordered},
     try_join,
 };
-use near_kit::{CryptoHash, Final, Near, PublishMode, sandbox::SandboxConfig};
+use near_kit::{CryptoHash, Near, protocol::PublishMode, transaction::Final};
+use near_kit_sandbox::SandboxConfig;
 use rand::{rand_core::UnwrapErr, rngs::SysRng};
 use rstest::{fixture, rstest};
 use sha2::{Digest, Sha256};
@@ -123,7 +124,7 @@ async fn w_init(
 ) {
     near.deploy_from(CryptoHash::from(*WALLET_NO_SIGN_CODE_HASH))
         .add_action(
-            near_kit::FunctionCall::new("w_init")
+            near_kit::transaction::FunctionCall::new("w_init")
                 .gas(Gas::from_tgas(5))
                 .deposit(NearToken::from_yoctonear(1)),
         )
@@ -284,7 +285,10 @@ async fn resolver(#[default(0)] depth: usize, #[future] near: Near) -> RpcResolv
 async fn near() -> Near {
     static DEPLOY: OnceCell<()> = OnceCell::const_new();
 
-    let near = SandboxConfig::shared().await.client();
+    let near = SandboxConfig::shared()
+        .await
+        .expect("failed to start sandbox")
+        .client();
 
     DEPLOY
         .get_or_init(|| async {

@@ -14,7 +14,11 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBatchBalanceOfArgs},
     },
-    kit::{AccountId, AccountIdRef, Final, Gas, Near, StateInit, StateInitV1},
+    kit::{
+        AccountId, Gas, Near,
+        protocol::{AccountIdRef, StateInit, StateInitV1},
+        transaction::Final,
+    },
 };
 use futures::{TryStreamExt, stream::FuturesOrdered};
 use itertools::Itertools;
@@ -116,7 +120,6 @@ async fn partial_fills(#[future(awt)] env: Env) {
             let deposited = env
                 .maker
                 .ft(env.src_ft.contract_id().clone())
-                .unwrap()
                 .transfer_call(
                     env.verifier.contract_id().clone(),
                     amount,
@@ -134,6 +137,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
                     )
                     .unwrap(),
                 )
+                .send()
                 .wait_until::<Final>()
                 .await
                 .unwrap()
@@ -165,7 +169,6 @@ async fn partial_fills(#[future(awt)] env: Env) {
         for (taker, amount) in env.takers.iter().zip([10000_u128, 5000, 20000]) {
             let deposited = taker
                 .ft(env.dst_ft.contract_id().clone())
-                .unwrap()
                 .transfer_call(
                     env.verifier.contract_id().clone(),
                     amount,
@@ -192,6 +195,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
                     .unwrap(),
                 )
                 .gas(Gas::from_tgas(300))
+                .send()
                 .wait_until::<Final>()
                 .await
                 .unwrap()

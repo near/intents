@@ -14,7 +14,10 @@ use defuse_core::{
     Nonce, PublicKey, Salt, fees::Pips, intents::auth::AuthCall, payload::multi::MultiPayload,
 };
 use near_kit::{
-    AccountId, AccountIdRef, Final, FinalExecutionOutcome, FunctionCallAction, Gas, Near, NearToken,
+    AccountId, Gas, Near, NearToken,
+    protocol::{AccountIdRef, FunctionCallAction},
+    rpc::FinalExecutionOutcome,
+    transaction::Final,
 };
 use near_sdk::json_types::U128;
 use serde::Serialize;

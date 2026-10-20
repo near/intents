@@ -1,5 +1,5 @@
 use defuse_near_sender::SentTransaction;
-use near_kit::{Error, Included, Near};
+use near_kit::{Error, Near, transaction::Included};
 
 use crate::{
     BLOCKCHAIN_LAG, Gas, NearToken,

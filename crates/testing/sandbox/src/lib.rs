@@ -7,8 +7,10 @@ pub mod nep616;
 pub mod outcome;
 
 pub use near_kit as kit;
+pub use near_kit_sandbox as sandbox;
 
-use near_kit::{Near, NearToken, sandbox::SandboxConfig};
+use near_kit::{Near, NearToken};
+use near_kit_sandbox::SandboxConfig;
 use rstest::fixture;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -20,6 +22,7 @@ pub async fn root(#[default(NearToken::from_near(100_000))] amount: NearToken) -
 
     SandboxConfig::shared()
         .await
+        .expect("failed to start sandbox")
         .client()
         .create_subaccount(
             SUB_COUNTER.fetch_add(1, Ordering::Relaxed).to_string(),

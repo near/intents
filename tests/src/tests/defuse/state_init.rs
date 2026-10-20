@@ -13,7 +13,11 @@ use defuse_sandbox::{
         },
         mt_receiver::MtReceiverStubDeployerExt,
     },
-    kit::{AccountId, ExecutionStatus, Gas, GlobalContractId, NearToken},
+    kit::{
+        AccountId, Gas, NearToken,
+        protocol::{GlobalContractId, StateInit, StateInitV1},
+        rpc::ExecutionStatus,
+    },
 };
 use defuse_test_utils::{
     random::rng,

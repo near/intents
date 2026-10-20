@@ -19,7 +19,10 @@ use defuse_sandbox::{
         },
         poa::{PoAFactoryExt, PoaFactoryClient},
     },
-    kit::{AccountId, AccountIdRef, Final, FungibleToken, Gas, Near, NearToken},
+    kit::{
+        AccountId, Gas, Near, NearToken, protocol::AccountIdRef, standards::FungibleToken,
+        transaction::Final,
+    },
     root,
 };
 use futures::future::{FutureExt, try_join_all};
@@ -66,13 +69,14 @@ impl Env {
         }
 
         if self
-            .ft(AccountId::from(token_id))?
+            .ft(AccountId::from(token_id))
             .transfer_call(
                 self.defuse.contract_id(),
                 amount,
                 serde_json::to_string(&msg).unwrap(),
             )
             .gas(Gas::from_tgas(300))
+            .send()
             .wait_until::<Final>()
             .await?
             .json::<U128>()
@@ -167,9 +171,10 @@ impl Env {
                     .into_iter()
                     .chain([self.wnear.contract_id()])
                     .flat_map(|token| {
-                        let ft = self.ft(token).unwrap();
+                        let ft = self.ft(token);
                         all_accounts.iter().map(move |account_id| {
                             ft.storage_deposit(account_id, TOKEN_STORAGE_DEPOSIT)
+                                .send()
                                 .wait_until::<Final>()
                                 .into_future()
                                 .map(move |r| {

@@ -1,6 +1,6 @@
 use futures::join;
 use near_account_id::AccountId;
-use near_kit::{AccessKeyPermissionView, BlockReference, RpcError};
+use near_kit::rpc::{AccessKeyPermissionView, BlockReference, RpcError};
 #[cfg(feature = "tracing")]
 use tracing::instrument;
 
@@ -94,7 +94,7 @@ impl RpcResolver {
 
             // Account doesn't exist on-chain yet -> allow only if it's an implicit account derived
             // from this public key, since it can be initialized any time in the future.
-            Err(RpcError::AccountNotFound(_)) => {
+            Err(RpcError::AccountNotFound { .. }) => {
                 // TODO: or check if we have `self.state_inits.get(&account_id)` with this public
                 // key added, since it can be just one of them
                 auth.access_key.to_implicit_account_id() == *account_id
@@ -145,7 +145,11 @@ mod tests {
     use std::time::Duration;
 
     use defuse_time::Timestamp;
-    use near_kit::{Final, InMemorySigner, Signer, sandbox::SandboxConfig};
+    use near_kit::{
+        signer::{InMemorySigner, Signer},
+        transaction::Final,
+    };
+    use near_kit_sandbox::SandboxConfig;
 
     use crate::{
         OffchainMessage,
@@ -158,7 +162,7 @@ mod tests {
     async fn full_access_key() {
         const PAYLOAD: &str = "Hello, Near!";
 
-        let sandbox = SandboxConfig::fresh().await;
+        let sandbox = SandboxConfig::fresh().await.unwrap();
         let mut near = sandbox.client();
 
         let msg = OffchainMessage {

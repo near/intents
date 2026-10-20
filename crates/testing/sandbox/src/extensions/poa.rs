@@ -2,8 +2,11 @@ use anyhow::Result;
 use defuse_poa_factory::contract::Role;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_kit::{
-    AccountId, AccountIdRef, Final, FunctionCallAction, FungibleToken, Gas, Near, NearToken,
-    PublicKey,
+    AccountId, Gas, Near, NearToken,
+    protocol::{AccountIdRef, FunctionCallAction},
+    signer::PublicKey,
+    standards::FungibleToken,
+    transaction::Final,
 };
 use near_sdk::json_types::U128;
 use serde::{Deserialize, Serialize};
@@ -229,7 +232,7 @@ impl PoAFactoryExt for Near {
             .await?
             .result()?;
 
-        Ok(self.ft(factory.sub_account(token)?)?)
+        Ok(self.ft(factory.sub_account(token)?))
     }
 
     async fn poa_factory_ft_deposit(

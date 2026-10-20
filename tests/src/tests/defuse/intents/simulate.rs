@@ -30,7 +30,7 @@ use defuse_sandbox::{
         nft::NftAdminExt,
         wnear::WNearExt,
     },
-    kit::{Final, Gas, NearToken},
+    kit::{Gas, NearToken, transaction::Final},
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use near_contract_standards::non_fungible_token::metadata::{
@@ -167,13 +167,13 @@ async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
 
     user1
         .ft(env.wnear.contract_id())
-        .unwrap()
         .transfer_call(
             env.defuse.contract_id(),
             wnear_amount.as_yoctonear(),
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
+        .send()
         .wait_until::<Final>()
         .await
         .unwrap();
@@ -262,13 +262,13 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
 
     user1
         .nft(nft_contract.contract_id())
-        .unwrap()
         .transfer_call(
             env.defuse.contract_id(),
             DUMMY_NFT_ID,
             user1.account_id().as_str(),
         )
         .gas(Gas::from_tgas(300))
+        .send()
         .wait_until::<Final>()
         .await
         .unwrap();
@@ -445,13 +445,13 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
 
     user1
         .ft(env.wnear.contract_id())
-        .unwrap()
         .transfer_call(
             env.defuse.contract_id(),
             wnear_amount.as_yoctonear(),
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
+        .send()
         .wait_until::<Final>()
         .await
         .unwrap();
@@ -704,13 +704,13 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
 
     user1
         .ft(env.wnear.contract_id())
-        .unwrap()
         .transfer_call(
             env.defuse.contract_id(),
             wnear_amount.as_yoctonear(),
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
+        .send()
         .wait_until::<Final>()
         .await
         .unwrap();

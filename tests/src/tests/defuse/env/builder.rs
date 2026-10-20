@@ -13,7 +13,10 @@ use defuse_sandbox::{
         poa::{PoaFactoryClient, PoaFactoryDeployerExt, contract::Role as POAFactoryRole},
         wnear::{WNearDeployerExt, WNearExt},
     },
-    kit::{AccountId, AccountIdRef, FunctionCallAction, Gas, Near, NearToken},
+    kit::{
+        AccountId, Gas, Near, NearToken,
+        protocol::{AccountIdRef, FunctionCallAction},
+    },
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, POA_FACTORY_WASM, WNEAR_WASM};
 use futures::FutureExt;

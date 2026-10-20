@@ -299,7 +299,7 @@ const _: () = {
     }
 
     #[cfg(feature = "near-kit")]
-    impl From<OffchainMessage> for ::near_kit::nep413::SignMessageParams {
+    impl From<OffchainMessage> for ::near_kit::standards::nep413::SignMessageParams {
         /// Convert into NEP-413 message **without** callback URL
         #[inline]
         fn from(msg: OffchainMessage) -> Self {

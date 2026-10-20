@@ -16,8 +16,10 @@ use defuse_sandbox::{
     },
     global_contract::GlobalContract,
     kit::{
-        Action, ExecutionStatus, Final, FunctionCall, Gas, GlobalContractId, Near, NearToken,
-        UseGlobalContractAction,
+        Gas, Near, NearToken,
+        protocol::{Action, GlobalContractId, UseGlobalContractAction},
+        rpc::ExecutionStatus,
+        transaction::{Final, FunctionCall},
     },
     root,
 };
