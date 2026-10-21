@@ -101,7 +101,8 @@ where
         self.accounts
             .get(account_id)
             .map(Lock::as_inner_unchecked)
-            .and_then(|account| account.token_amounts.get(token_id).copied())
+            .and_then(|account| account.token_amounts.get(token_id))
+            .copied()
             .unwrap_or_else(|| self.view.balance_of(account_id, token_id))
     }
 
@@ -210,10 +211,16 @@ where
             })
             .as_inner_unchecked_mut();
         for (token_id, amount) in token_amounts {
+            if amount == 0 {
+                return Err(DefuseError::InvalidIntent);
+            }
+
             let balance = account
                 .token_amounts
                 .entry(token_id)
+                // cache zero balances as well
                 .or_insert_with_key(|token_id| self.view.balance_of(&owner_id, token_id));
+
             *balance = balance
                 .checked_add(amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
@@ -241,7 +248,8 @@ where
             let balance = account
                 .token_amounts
                 .entry(token_id)
-                .or_insert_with_key(|token_id| self.view.balance_of(&owner_id, token_id));
+                // cache zero balances as well
+                .or_insert_with_key(|token_id| self.view.balance_of(owner_id, token_id));
 
             *balance = balance
                 .checked_sub(amount)
