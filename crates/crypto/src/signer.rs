@@ -1,6 +1,6 @@
 use std::{
     fmt::{Debug, Display},
-    sync::{Arc, OnceLock},
+    sync::Arc,
 };
 
 use impl_tools::autoimpl;
@@ -152,7 +152,8 @@ pub trait SignerExt {
         RecoverableSigner::<C>::sign_recoverable(self, msg)
     }
 
-    /// Cache [`.public_key()`](Signer::public_key) on a first access.
+    /// Calculate [`.public_key()`](Signer::public_key) and cache its value for
+    /// further invocations.
     ///
     /// This might be useful if a signer performs some expensive key derivation
     /// underneath.
@@ -166,22 +167,25 @@ pub trait SignerExt {
 }
 impl<S> SignerExt for S {}
 
-/// An adaptor for [`Signer`] that caches the [`.public_key`](Signer::public_key)
-/// on a first access.
+/// An adaptor for [`Signer`] that caches the [`.public_key`](Signer::public_key).
 ///
 /// See [`.cache_public_key()`](SignerExt::cache_public_key) for usages.
 #[autoimpl(Deref using self.signer)]
 #[autoimpl(Debug, Clone, PartialEq, Eq where C::PublicKey: trait, S: trait)]
-pub struct CachePublicKey<C: Curve, S> {
-    public_key: OnceLock<C::PublicKey>,
+pub struct CachePublicKey<C: Curve, S: Signer<C>> {
+    public_key: C::PublicKey,
     signer: S,
 }
 
-impl<C: Curve, S> CachePublicKey<C, S> {
+impl<C, S> CachePublicKey<C, S>
+where
+    C: Curve,
+    S: Signer<C>,
+{
     #[inline]
-    const fn new(signer: S) -> Self {
+    fn new(signer: S) -> Self {
         Self {
-            public_key: OnceLock::new(),
+            public_key: signer.public_key(),
             signer,
         }
     }
@@ -189,17 +193,14 @@ impl<C: Curve, S> CachePublicKey<C, S> {
 
 impl<C, S> Signer<C> for CachePublicKey<C, S>
 where
-    C: Curve,
-    C::PublicKey: Clone + Send + Sync,
+    C: Curve<PublicKey: Clone + Send + Sync>,
     S: Signer<C>,
 {
     type Error = S::Error;
 
     #[inline]
     fn public_key(&self) -> C::PublicKey {
-        self.public_key
-            .get_or_init(|| self.signer.public_key())
-            .clone()
+        self.public_key.clone()
     }
 
     #[inline]
@@ -210,8 +211,7 @@ where
 
 impl<C, S> RecoverableSigner<C> for CachePublicKey<C, S>
 where
-    C: RecoverableCurve,
-    C::PublicKey: Clone + Send + Sync,
+    C: RecoverableCurve<PublicKey: Clone + Send + Sync>,
     S: RecoverableSigner<C>,
 {
     #[inline]
