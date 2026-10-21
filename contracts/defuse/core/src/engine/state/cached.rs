@@ -210,15 +210,12 @@ where
             })
             .as_inner_unchecked_mut();
         for (token_id, amount) in token_amounts {
-            if account.token_amounts.get(&token_id).is_none() {
-                account
-                    .token_amounts
-                    .add(token_id.clone(), self.view.balance_of(&owner_id, &token_id))
-                    .ok_or(DefuseError::BalanceOverflow)?;
-            }
-            account
+            let balance = account
                 .token_amounts
-                .add(token_id, amount)
+                .entry(token_id)
+                .or_insert_with_key(|token_id| self.view.balance_of(&owner_id, token_id));
+            *balance = balance
+                .checked_add(amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
         Ok(())
@@ -241,15 +238,13 @@ where
                 return Err(DefuseError::InvalidIntent);
             }
 
-            if account.token_amounts.get(&token_id).is_none() {
-                account
-                    .token_amounts
-                    .add(token_id.clone(), self.view.balance_of(owner_id, &token_id))
-                    .ok_or(DefuseError::BalanceOverflow)?;
-            }
-            account
+            let balance = account
                 .token_amounts
-                .sub(token_id, amount)
+                .entry(token_id)
+                .or_insert_with_key(|token_id| self.view.balance_of(&owner_id, token_id));
+
+            *balance = balance
+                .checked_sub(amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
         Ok(())
@@ -440,7 +435,7 @@ pub struct CachedAccount {
     public_keys_added: HashSet<PublicKey>,
     public_keys_removed: HashSet<PublicKey>,
 
-    token_amounts: Amounts<HashMap<TokenId, u128>>,
+    token_amounts: HashMap<TokenId, u128>,
 }
 
 impl CachedAccount {
