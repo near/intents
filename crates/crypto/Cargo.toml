@@ -23,7 +23,7 @@ schemars = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, optional = true }
 thiserror = { workspace = true, optional = true }
 trait-variant = { workspace = true, optional = true }
-zeroize = { workspace = true, optional = true }
+zeroize = { workspace = true, features = ["derive"], optional = true }
 
 [target.'cfg(near)'.dependencies]
 near-sdk = { workspace = true, optional = true }

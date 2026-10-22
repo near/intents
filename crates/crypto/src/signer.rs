@@ -172,7 +172,13 @@ impl<S> SignerExt for S {}
 /// See [`.cache_public_key()`](SignerExt::cache_public_key) for usages.
 #[autoimpl(Deref using self.signer)]
 #[autoimpl(Debug, Clone, PartialEq, Eq where C::PublicKey: trait, S: trait)]
+#[cfg_attr(
+    feature = "zeroize",
+    derive(zeroize::Zeroize),
+    zeroize(bound = "S: zeroize::Zeroize")
+)]
 pub struct CachePublicKey<C: Curve, S: Signer<C>> {
+    #[cfg_attr(feature = "zeroize", zeroize(skip))]
     public_key: C::PublicKey,
     signer: S,
 }
@@ -191,6 +197,8 @@ where
     }
 }
 
+/// Not `#[derive(ZeroizeOnDrop)]`: its `Drop` impl would need `S: Zeroize`,
+/// which the struct itself doesn't require.
 #[cfg(feature = "zeroize")]
 impl<C, S> zeroize::ZeroizeOnDrop for CachePublicKey<C, S>
 where
