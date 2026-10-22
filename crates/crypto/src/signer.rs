@@ -191,6 +191,14 @@ where
     }
 }
 
+#[cfg(feature = "zeroize")]
+impl<C, S> zeroize::ZeroizeOnDrop for CachePublicKey<C, S>
+where
+    C: Curve,
+    S: Signer<C> + zeroize::ZeroizeOnDrop,
+{
+}
+
 impl<C, S> Signer<C> for CachePublicKey<C, S>
 where
     C: Curve<PublicKey: Clone + Send + Sync>,
