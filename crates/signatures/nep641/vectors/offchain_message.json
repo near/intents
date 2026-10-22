@@ -1,0 +1,66 @@
+{
+  "domain_separator": "NEAR_NEP641_OFFCHAIN_MESSAGE/V1",
+  "algorithm": "SHA3_256(domain_separator || borsh(message))",
+  "vectors": [
+    {
+      "name": "empty_path",
+      "description": "Top-level authorization: the message is signed for the signer itself.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "wallet.near",
+        "path": [],
+        "timestamp": "2026-08-05T07:28:00Z",
+        "payload": "Hello, Near!"
+      },
+      "hash": "d74f6c10967f3458aecc8ae11e5feef032ddf73df20c465a3ed4690ddf62dafa"
+    },
+    {
+      "name": "single_resolver_path",
+      "description": "One resolver hop, i.e. the top-level resolver is the only element of the path.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "extension.near",
+        "path": ["wallet.near"],
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "hash": "ac9fc5df2a1da51c4e0446185c8e5b58b65f37d12c544d144fa8f026239962ae"
+    },
+    {
+      "name": "nested_resolver_path",
+      "description": "Two resolver hops, ordered bottom-top: the top-level resolver comes last.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "extension.near",
+        "path": ["wallet.near", "v1.signer"],
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "hash": "039f8afb4ef2d76c621d3952f214bd2a080ce977ef351d52ff65a090eebbf72c"
+    },
+    {
+      "name": "subsecond_trailing_zeros",
+      "description": "Subseconds with trailing zeros, spelled out to full nanosecond precision.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "wallet.near",
+        "path": [],
+        "timestamp": "2026-08-05T07:28:00.500000000Z",
+        "payload": "Hello, Near!"
+      },
+      "hash": "9f78988357a3ddb1bf6db6b1d13de12054e1baa26e055361a62bf8319e0d5129"
+    },
+    {
+      "name": "subsecond_trailing_zeros_omitted",
+      "description": "The same instant as `subsecond_trailing_zeros` with trailing zeros omitted. The timestamp is hashed as an integer number of nanoseconds, so both spellings MUST produce the same hash.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "wallet.near",
+        "path": [],
+        "timestamp": "2026-08-05T07:28:00.5Z",
+        "payload": "Hello, Near!"
+      },
+      "hash": "9f78988357a3ddb1bf6db6b1d13de12054e1baa26e055361a62bf8319e0d5129"
+    }
+  ]
+}
