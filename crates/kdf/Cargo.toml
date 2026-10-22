@@ -20,6 +20,7 @@ ed25519-dalek = { workspace = true, features = ["digest", "hazmat"], optional = 
 futures-util = { workspace = true, optional = true }
 hex = { workspace = true, optional = true }
 k256 = { workspace = true, features = ["std", "arithmetic", "ecdsa"], optional = true }
+zeroize = { workspace = true, optional = true }
 
 [features]
 ed25519 = [
@@ -36,6 +37,7 @@ hex = ["dep:hex"]
 testing = []
 zeroize = [
   "curve25519-dalek?/zeroize",
+  "dep:zeroize",
   "defuse-crypto/zeroize",
   "digest?/zeroize",
   "ed25519-dalek?/zeroize",

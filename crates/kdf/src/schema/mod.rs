@@ -45,6 +45,14 @@ impl<O, I> WithSchema<O, I> {
     }
 }
 
+#[cfg(feature = "zeroize")]
+impl<O, I> zeroize::ZeroizeOnDrop for WithSchema<O, I>
+where
+    O: zeroize::ZeroizeOnDrop,
+    I: zeroize::ZeroizeOnDrop,
+{
+}
+
 impl<P, O, I> Schema<P> for WithSchema<O, I>
 where
     I: Schema<P>,
@@ -131,6 +139,9 @@ impl<P> Value<P> {
         self.0
     }
 }
+
+#[cfg(feature = "zeroize")]
+impl<P: zeroize::ZeroizeOnDrop> zeroize::ZeroizeOnDrop for Value<P> {}
 
 impl<P> Schema<()> for Value<P>
 where

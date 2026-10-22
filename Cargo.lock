@@ -1403,6 +1403,7 @@ dependencies = [
  "rstest",
  "tokio",
  "trait-variant",
+ "zeroize",
 ]
 
 [[package]]

@@ -25,6 +25,9 @@ impl<W: WriteFinalizer> Borsh<W> {
     }
 }
 
+#[cfg(feature = "zeroize")]
+impl<W> zeroize::ZeroizeOnDrop for Borsh<W> where W: WriteFinalizer<Data: zeroize::ZeroizeOnDrop> {}
+
 impl<P, W> Schema<P> for Borsh<W>
 where
     P: BorshSerialize,
