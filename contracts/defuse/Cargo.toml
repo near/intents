@@ -14,7 +14,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 defuse-admin-utils.workspace = true
 defuse-auth-call.workspace = true
-defuse-controller.workspace = true
+defuse-controller = { workspace = true, features = ["contract"] }
 defuse-core = { workspace = true, features = ["near-contract"] }
 defuse-near-promise = { workspace = true, features = ["serde"] }
 defuse-near-utils = { workspace = true, features = ["borsh"] }
@@ -26,7 +26,7 @@ impl-tools.workspace = true
 itertools.workspace = true
 near-contract-standards.workspace = true
 near-plugins.workspace = true
-near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
+near-sdk.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 thiserror.workspace = true
@@ -43,6 +43,7 @@ schemars = { workspace = true, features = ["derive"], optional = true }
 [features]
 abi = [
   "borsh/unstable__schema",
+  "defuse-controller/abi",
   "defuse-core/abi",
   "defuse-near-promise/abi",
   "defuse-near-utils/abi",
@@ -67,7 +68,11 @@ contract = [
 imt = ["defuse-core/imt"]
 far = ["imt"]
 
-near-kit = ["defuse-core/near-kit", "defuse-near-promise/near-kit"]
+near-kit = [
+  "defuse-controller/near-kit",
+  "defuse-core/near-kit",
+  "defuse-near-promise/near-kit",
+]
 
 [dev-dependencies]
 defuse = { path = ".", features = ["abi"] }
