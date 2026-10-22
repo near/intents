@@ -141,7 +141,7 @@ impl<P> Value<P> {
 }
 
 #[cfg(feature = "zeroize")]
-impl<P: zeroize::ZeroizeOnDrop> zeroize::ZeroizeOnDrop for Value<P> {}
+impl<P> zeroize::ZeroizeOnDrop for Value<P> where P: zeroize::ZeroizeOnDrop {}
 
 impl<P> Schema<()> for Value<P>
 where

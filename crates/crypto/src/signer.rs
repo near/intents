@@ -197,8 +197,8 @@ where
     }
 }
 
-/// Not `#[derive(ZeroizeOnDrop)]`: its `Drop` impl would need `S: Zeroize`,
-/// which the struct itself doesn't require.
+// Not `#[derive(ZeroizeOnDrop)]`: its `Drop` impl would need `S: Zeroize`,
+// which the struct itself doesn't require.
 #[cfg(feature = "zeroize")]
 impl<C, S> zeroize::ZeroizeOnDrop for CachePublicKey<C, S>
 where

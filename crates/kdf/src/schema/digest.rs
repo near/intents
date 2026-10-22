@@ -44,7 +44,7 @@ where
 }
 
 #[cfg(feature = "zeroize")]
-impl<D: zeroize::ZeroizeOnDrop> zeroize::ZeroizeOnDrop for Digest<D> {}
+impl<D> zeroize::ZeroizeOnDrop for Digest<D> where D: zeroize::ZeroizeOnDrop {}
 
 impl<D, P> Schema<P> for Digest<D>
 where

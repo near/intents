@@ -37,8 +37,8 @@ hex = ["dep:hex"]
 testing = []
 zeroize = [
   "curve25519-dalek?/zeroize",
-  "dep:zeroize",
   "defuse-crypto/zeroize",
+  "dep:zeroize",
   "digest?/zeroize",
   "ed25519-dalek?/zeroize",
 ]
