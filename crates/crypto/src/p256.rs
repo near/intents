@@ -102,7 +102,6 @@ const _: () = {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[derive(
-    Debug,
     Clone,
     Copy,
     PartialEq,
@@ -209,7 +208,6 @@ impl TryFrom<&P256UncompressedPublicKey> for VerifyingKey {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[derive(
-    Debug,
     Clone,
     Copy,
     PartialEq,
@@ -314,7 +312,6 @@ impl TryFrom<&P256UncompressedPublicKey> for P256CompressedPublicKey {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[derive(
-    Debug,
     Clone,
     Copy,
     PartialEq,
@@ -378,7 +375,7 @@ impl TryFrom<&P256Signature> for Signature {
 #[cfg(feature = "fmt")]
 const _: () = {
     use core::{
-        fmt::{self, Display},
+        fmt::{self, Debug, Display},
         str::FromStr,
     };
 
@@ -392,6 +389,13 @@ const _: () = {
         #[inline]
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             f.write_str(&P256::to_base58(self.0))
+        }
+    }
+
+    impl Debug for P256UncompressedPublicKey {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
         }
     }
 
@@ -411,6 +415,13 @@ const _: () = {
         }
     }
 
+    impl Debug for P256CompressedPublicKey {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
+        }
+    }
+
     impl FromStr for P256CompressedPublicKey {
         type Err = ParseCurveError;
 
@@ -424,6 +435,13 @@ const _: () = {
         #[inline]
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             f.write_str(&P256::to_base58(self.0))
+        }
+    }
+
+    impl Debug for P256Signature {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
         }
     }
 
