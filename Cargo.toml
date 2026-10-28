@@ -183,6 +183,7 @@ rand_core = "0.10.1"
 ripemd = "0.2"
 rstest = "0.26"
 schemars = { version = "0.8", default-features = false }
+secrecy = { version = "0.10.3", default-features = false }
 serde = "1"
 serde_json = "1"
 serde_with = "3.21"
