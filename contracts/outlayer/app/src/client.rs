@@ -10,10 +10,10 @@ use serde_with::{hex::Hex, serde_as};
 #[near_kit::contract]
 pub trait OutlayerAppContract {
     #[call]
-    fn oa_set_code(&mut self, args: OaSetCodeArgs<'_>);
+    fn oa_set_code(&mut self, #[args] args: OaSetCodeArgs<'_>);
 
     #[call]
-    fn oa_transfer_admin(&mut self, args: OaTransferAdminArgs<'_>);
+    fn oa_transfer_admin(&mut self, #[args] args: OaTransferAdminArgs<'_>);
 
     fn oa_admin_id(&self) -> AccountId;
     fn oa_code_hash(&self) -> AsHex<[u8; 32]>;

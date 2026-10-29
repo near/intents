@@ -1,5 +1,9 @@
 use defuse_near_sender::SentTransaction;
-use near_kit::{Error, Near, transaction::Included};
+use near_kit::{
+    Error, SigningNear,
+    protocol::{Action, derive_deterministic_account_id},
+    transaction::{Included, WaitLevel},
+};
 
 use crate::{
     BLOCKCHAIN_LAG, Gas, NearToken,
@@ -16,7 +20,7 @@ const MAX_ASSIST_DEPOSIT: NearToken = NearToken::from_yoctonear(1);
 // TODO: change to 1 PGas
 const MAX_GAS: Gas = Gas::from_tgas(300);
 
-impl WalletRelayer for Near {
+impl<W: WaitLevel> WalletRelayer for SigningNear<W> {
     type Error = Error;
 
     #[cfg_attr(feature = "tracing", tracing::instrument(skip_all, fields(
@@ -28,26 +32,31 @@ impl WalletRelayer for Near {
         &self,
         request: WalletRelayRequest,
     ) -> Result<SentTransaction, Self::Error> {
-        if request.msg.chain_id != self.chain_id().as_str() {
-            return Err(Error::InvalidTransaction("invalid chain_id".to_string()));
+        if request.msg.chain_id != self.near().chain_id().as_str() {
+            return Err(Error::Validation("invalid chain_id".to_string()));
         }
 
         if request.msg.request.estimate_gas() > MAX_GAS {
-            return Err(Error::InvalidTransaction("gas limit exceeded".to_string()));
+            return Err(Error::Validation("gas limit exceeded".to_string()));
         }
 
-        let mut tx = self.transaction(&request.msg.signer_id);
+        let relayer = self
+            .clone()
+            // rely on timeouts instead of number of retry attempts
+            .max_nonce_retries(u32::MAX)
+            .wait_until::<Included>();
+        let mut tx = relayer.transaction(&request.msg.signer_id);
 
         if let Some(state_init) = request.deterministic_state_init {
-            if state_init.derive_account_id() != request.msg.signer_id {
-                return Err(Error::InvalidTransaction("invalid state_init".to_string()));
+            if derive_deterministic_account_id(&state_init) != request.msg.signer_id {
+                return Err(Error::Validation("invalid state_init".to_string()));
             }
 
-            tx = tx.state_init(
+            tx = tx.add_action(Action::state_init(
                 state_init,
                 // wallet-contract should fit into ZBA limits
                 NearToken::ZERO,
-            );
+            ));
         }
 
         tx = tx.add_action(
@@ -60,16 +69,13 @@ impl WalletRelayer for Near {
             request
                 .msg
                 .duration_left()
-                .ok_or_else(|| Error::InvalidTransaction("expired or from the future".to_string()))?
+                .ok_or_else(|| Error::Validation("expired or from the future".to_string()))?
                 // add more buffer for short-living requests
                 .saturating_add(BLOCKCHAIN_LAG),
-            tx.send()
-                .wait_until::<Included>()
-                // rely on timeouts instead of number of retry attempts
-                .max_nonce_retries(u32::MAX),
+            tx,
         )
         .await
-        .map_err(|_| Error::InvalidTransaction("expired".to_string()))
+        .map_err(|_| Error::Validation("expired".to_string()))
         .flatten()
         .map(Into::into)
     }

@@ -9,7 +9,7 @@ use defuse_core::{
     crypto::ed25519::{Ed25519PublicKey, Ed25519Signature},
     payload::nep413::SignedNep413Payload,
 };
-use near_kit::{Near, protocol::AccountIdRef};
+use near_kit::{AccountIdRef, SigningNear, signer::Signer, standards::nep413::SignMessageParams};
 use serde::Serialize;
 use serde_json;
 
@@ -28,7 +28,7 @@ pub trait DefuseSignerExt {
 
     async fn sign_defuse_payload_default<T>(
         &self,
-        defuse_contract: &DefuseClient,
+        defuse_contract: &DefuseClient<SigningNear>,
         intents: impl IntoIterator<Item = T>,
     ) -> anyhow::Result<MultiPayload>
     where
@@ -51,7 +51,7 @@ pub trait DefuseSignerExt {
     }
 }
 
-impl DefuseSignerExt for Near {
+impl DefuseSignerExt for SigningNear {
     async fn sign_defuse_message<T>(
         &self,
         defuse_contract: impl AsRef<AccountIdRef>,
@@ -73,7 +73,13 @@ impl DefuseSignerExt for Near {
         .recipient(defuse_contract.as_ref())
         .nonce(nonce);
 
-        let signed = self.sign_message(payload.clone().into()).await.unwrap();
+        let params: SignMessageParams = payload.clone().into();
+        let signed = self
+            .signer()
+            .key()
+            .sign_nep413(self.account_id(), &params)
+            .await
+            .unwrap();
 
         MultiPayload::Nep413(SignedNep413Payload {
             payload,
