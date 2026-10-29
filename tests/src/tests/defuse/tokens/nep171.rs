@@ -13,6 +13,8 @@ use defuse_sandbox::{
     },
     kit::{Gas, NearToken, transaction::Final},
 };
+
+use super::{ENC_MEMO, mt_mint_log, mt_mint_logs};
 use defuse_test_utils::wasms::NON_FUNGIBLE_TOKEN_WASM;
 use near_contract_standards::non_fungible_token::{
     Token,
@@ -539,3 +541,91 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
 //         );
 //     }
 // }
+
+#[rstest]
+#[tokio::test]
+async fn deposit_nft_with_memo(#[future(awt)] env: Env) {
+    let (issuer, user) = futures::join!(env.create_user(), env.create_user());
+
+    env.transaction(issuer.account_id())
+        .transfer(NearToken::from_near(100))
+        .await
+        .unwrap();
+
+    let nft_issuer_contract = issuer
+        .deploy_vanilla_nft_issuer(
+            "nft1",
+            issuer.account_id(),
+            &NFTContractMetadata {
+                reference: Some("http://abc.com/xyz/".to_string()),
+                reference_hash: Some(Base64VecU8(DUMMY_REFERENCE_HASH.to_vec())),
+                spec: NFT_METADATA_SPEC.to_string(),
+                name: "Token nft1".to_string(),
+                symbol: "NFT_TKN".to_string(),
+                icon: None,
+                base_uri: None,
+            },
+            NON_FUNGIBLE_TOKEN_WASM.clone(),
+        )
+        .await;
+
+    let nft: Token = issuer
+        .mint_nft(
+            nft_issuer_contract.contract_id(),
+            &DUMMY_NFT1_ID.to_string(),
+            user.account_id(),
+        )
+        .await
+        .unwrap();
+
+    let outcome = user
+        .nft(nft_issuer_contract.contract_id())
+        .transfer_call(
+            env.defuse.contract_id(),
+            nft.token_id.clone(),
+            DepositMessage::new(user.account_id().clone())
+                .with_memo(ENC_MEMO)
+                .to_string(),
+        )
+        .gas(Gas::from_tgas(300))
+        .send()
+        .wait_until::<Final>()
+        .await
+        .unwrap();
+
+    let nft_mt_token_id = TokenId::from(Nep171TokenId::new(
+        nft_issuer_contract.contract_id().to_owned(),
+        DUMMY_NFT1_ID.to_string(),
+    ))
+    .to_string();
+
+    assert_eq!(
+        mt_mint_logs(&outcome),
+        [mt_mint_log(
+            user.account_id(),
+            std::slice::from_ref(&nft_mt_token_id),
+            &[1],
+            ENC_MEMO
+        )]
+    );
+    assert_eq!(
+        nft_issuer_contract
+            .token(&nft.token_id)
+            .await
+            .unwrap()
+            .unwrap()
+            .owner_id,
+        *env.defuse.contract_id()
+    );
+    assert_eq!(
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: user.account_id(),
+                token_id: &nft_mt_token_id,
+            })
+            .await
+            .unwrap()
+            .0,
+        1
+    );
+}
