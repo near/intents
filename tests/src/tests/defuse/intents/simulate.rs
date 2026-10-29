@@ -3,15 +3,13 @@
 use defuse_sandbox::{
     extensions::{
         defuse::{
-            Defuse, DefuseDeployerExt, DefuseExt, DefuseSignerExt, ExtractNonceExt,
-            IsNonceUsedArgs, MultiPayloadArgs, ToEventLog,
+            Defuse, DefuseDeployerExt, DefuseExt, DefuseSignerExt, MultiPayloadArgs, ToEventLog,
             contract::config::{DefuseConfig, RolesConfig},
             core::{
                 PublicKey,
                 amounts::Amounts,
                 fees::{FeesConfig, Pips},
                 intents::{
-                    Intent,
                     account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId},
                     auth::AuthCall,
                     token_diff::{TokenDeltas, TokenDiff},
@@ -755,6 +753,9 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
 #[cfg(feature = "imt")]
 mod imt {
     use defuse_core::intents::imt::{ImtBurn, ImtMint};
+    use defuse_sandbox::extensions::defuse::{
+        ExtractNonceExt, IsNonceUsedArgs, core::intents::Intent,
+    };
 
     use super::*;
 
