@@ -5,6 +5,7 @@ use defuse_core::{
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
 };
 use defuse_test_utils::random::{Rng, RngExt, TestRng};
+use near_kit::SigningNear;
 
 pub trait ExtractNonceExt {
     fn extract_nonce(&self) -> Result<Nonce, serde_json::Error>;
@@ -19,7 +20,7 @@ impl ExtractNonceExt for MultiPayload {
 }
 
 pub async fn generate_unique_nonce(
-    defuse_contract: &DefuseClient,
+    defuse_contract: &DefuseClient<SigningNear>,
     deadline: Option<Timestamp>,
 ) -> anyhow::Result<Nonce> {
     let deadline = deadline.unwrap_or_else(|| Timestamp::now() + std::time::Duration::from_mins(2));

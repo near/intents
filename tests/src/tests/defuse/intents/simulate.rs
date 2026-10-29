@@ -30,7 +30,11 @@ use defuse_sandbox::{
         nft::NftAdminExt,
         wnear::WNearExt,
     },
-    kit::{Gas, NearToken, transaction::Final},
+    kit::{
+        Gas, NearToken,
+        protocol::Action,
+        standards::{FungibleToken, NonFungibleToken},
+    },
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use near_contract_standards::non_fungible_token::metadata::{
@@ -165,18 +169,19 @@ async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    user1
-        .ft(env.wnear.contract_id())
+    let outcome = user1
+        .contract::<FungibleToken>(env.wnear.contract_id())
         .transfer_call(
             env.defuse.contract_id(),
             wnear_amount.as_yoctonear(),
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
         .unwrap();
+    if let Some(error) = outcome.receipt_failures().next() {
+        panic!("wNEAR deposit failed: {error}");
+    }
 
     // Verify wNEAR balance in Defuse
     assert_eq!(
@@ -224,8 +229,10 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
         futures::join!(env.create_named_user("nft_issuer_admin"), env.create_user());
 
     env.transaction(user1.account_id())
-        .transfer(NearToken::from_near(100))
+        .add_action(Action::transfer(NearToken::from_near(100)))
         .await
+        .unwrap()
+        .result()
         .unwrap();
 
     let nft_contract = user1
@@ -260,18 +267,19 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
     )
     .into();
 
-    user1
-        .nft(nft_contract.contract_id())
+    let outcome = user1
+        .contract::<NonFungibleToken>(nft_contract.contract_id())
         .transfer_call(
             env.defuse.contract_id(),
             DUMMY_NFT_ID,
             user1.account_id().as_str(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
         .unwrap();
+    if let Some(error) = outcome.receipt_failures().next() {
+        panic!("NFT deposit failed: {error}");
+    }
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
@@ -341,7 +349,7 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
 
     // Register user1's public key on defuse2
     user1
-        .defuse_add_public_key(defuse2.account_id(), user1.signer().unwrap().public_key())
+        .defuse_add_public_key(defuse2.account_id(), user1.signer().public_key())
         .await
         .unwrap();
 
@@ -443,18 +451,19 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    user1
-        .ft(env.wnear.contract_id())
+    let outcome = user1
+        .contract::<FungibleToken>(env.wnear.contract_id())
         .transfer_call(
             env.defuse.contract_id(),
             wnear_amount.as_yoctonear(),
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
         .unwrap();
+    if let Some(error) = outcome.receipt_failures().next() {
+        panic!("wNEAR deposit failed: {error}");
+    }
 
     // Verify wNEAR balance in Defuse
     assert_eq!(
@@ -702,18 +711,19 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    user1
-        .ft(env.wnear.contract_id())
+    let outcome = user1
+        .contract::<FungibleToken>(env.wnear.contract_id())
         .transfer_call(
             env.defuse.contract_id(),
             wnear_amount.as_yoctonear(),
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
         .unwrap();
+    if let Some(error) = outcome.receipt_failures().next() {
+        panic!("wNEAR deposit failed: {error}");
+    }
 
     // Verify wNEAR balance
     assert_eq!(

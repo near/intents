@@ -3,11 +3,7 @@ use defuse_outlayer_app::{
     State as OutlayerState,
     client::{OaSetCodeArgs, OutlayerAppContract, OutlayerAppContractClient},
 };
-use near_kit::{
-    Gas, Near, NearToken,
-    protocol::{AccountIdRef, GlobalContractId},
-    transaction::Final,
-};
+use near_kit::{AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId};
 
 use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
 
@@ -19,15 +15,15 @@ pub trait OutlayerAppDeployerExt {
         &self,
         global_contract_id: GlobalContractId,
         state: OutlayerState<'static>,
-    ) -> OutlayerAppContractClient;
+    ) -> OutlayerAppContractClient<SigningNear>;
 }
 
-impl OutlayerAppDeployerExt for Near {
+impl OutlayerAppDeployerExt for SigningNear {
     async fn deploy_outlayer_app(
         &self,
         global_contract_id: GlobalContractId,
         state: OutlayerState<'static>,
-    ) -> OutlayerAppContractClient {
+    ) -> OutlayerAppContractClient<Self> {
         self.contract::<OutlayerAppContract>(
             self.deploy_deterministic_account(
                 global_contract_id,
@@ -56,7 +52,7 @@ pub trait OutlayerAppExt {
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
-impl OutlayerAppExt for Near {
+impl OutlayerAppExt for SigningNear {
     async fn oa_set_code(
         &self,
         target: impl AsRef<AccountIdRef>,
@@ -74,7 +70,6 @@ impl OutlayerAppExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(10)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }
@@ -90,7 +85,6 @@ impl OutlayerAppExt for Near {
                     .deposit(NearToken::from_yoctonear(1))
                     .gas(Gas::from_tgas(30)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }

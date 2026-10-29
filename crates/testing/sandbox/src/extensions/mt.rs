@@ -1,7 +1,7 @@
 use anyhow::Result;
 use core::str;
 use defuse_nep245::{Token, TokenId};
-use near_kit::{AccountId, Gas, Near, NearToken, protocol::AccountIdRef, transaction::Final};
+use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear};
 use near_sdk::json_types::U128;
 use serde::Serialize;
 use serde_with::{DisplayFromStr, serde_as};
@@ -115,29 +115,29 @@ pub struct MtOnTransferArgs<'a> {
 
 #[near_kit::contract]
 pub trait Mt {
-    fn mt_token(&self, args: MtTokenArgs) -> Vec<Option<Token>>;
-    fn mt_balance_of(&self, args: MtBalanceOfArgs) -> U128;
-    fn mt_batch_balance_of(&self, args: MtBatchBalanceOfArgs) -> Vec<U128>;
-    fn mt_supply(&self, args: MtSupplyArgs) -> Option<U128>;
-    fn mt_batch_supply(&self, args: MtBatchSupplyArgs) -> Vec<Option<U128>>;
+    fn mt_token(&self, #[args] args: MtTokenArgs) -> Vec<Option<Token>>;
+    fn mt_balance_of(&self, #[args] args: MtBalanceOfArgs) -> U128;
+    fn mt_batch_balance_of(&self, #[args] args: MtBatchBalanceOfArgs) -> Vec<U128>;
+    fn mt_supply(&self, #[args] args: MtSupplyArgs) -> Option<U128>;
+    fn mt_batch_supply(&self, #[args] args: MtBatchSupplyArgs) -> Vec<Option<U128>>;
 
-    fn mt_tokens(&self, args: MtTokensArgs) -> Vec<Token>;
-    fn mt_tokens_for_owner(&self, args: MtTokensForOwnerArgs) -> Vec<Token>;
-
-    #[call]
-    fn mt_transfer(&mut self, args: MtTransferArgs);
+    fn mt_tokens(&self, #[args] args: MtTokensArgs) -> Vec<Token>;
+    fn mt_tokens_for_owner(&self, #[args] args: MtTokensForOwnerArgs) -> Vec<Token>;
 
     #[call]
-    fn mt_batch_transfer(&mut self, args: MtBatchTransferArgs);
+    fn mt_transfer(&mut self, #[args] args: MtTransferArgs);
 
     #[call]
-    fn mt_transfer_call(&mut self, args: MtTransferCallArgs);
+    fn mt_batch_transfer(&mut self, #[args] args: MtBatchTransferArgs);
 
     #[call]
-    fn mt_batch_transfer_call(&mut self, args: MtBatchTransferCallArgs);
+    fn mt_transfer_call(&mut self, #[args] args: MtTransferCallArgs);
 
     #[call]
-    fn mt_on_transfer(&mut self, args: MtOnTransferArgs);
+    fn mt_batch_transfer_call(&mut self, #[args] args: MtBatchTransferCallArgs);
+
+    #[call]
+    fn mt_on_transfer(&mut self, #[args] args: MtOnTransferArgs);
 }
 
 pub trait MtExt {
@@ -218,7 +218,7 @@ fn range_to_pagination(range: impl RangeBounds<usize>) -> (Option<u128>, Option<
     (from.map(|v| v.try_into().unwrap()), limit)
 }
 
-impl MtExt for Near {
+impl MtExt for SigningNear {
     async fn mt_transfer(
         &self,
         contract: impl Into<AccountId>,
@@ -262,7 +262,6 @@ impl MtExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }
@@ -290,7 +289,6 @@ impl MtExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
 
         let res = outcome.json::<Vec<U128>>()?;
@@ -321,7 +319,6 @@ impl MtExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
 
         let res = outcome.json::<Vec<U128>>()?;
@@ -370,7 +367,6 @@ impl MtExt for Near {
                     .deposit(NearToken::from_near(0))
                     .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
         let amounts = res.json::<Vec<U128>>()?;
         Ok((res.try_into()?, amounts))

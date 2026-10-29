@@ -12,7 +12,7 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs},
         wnear::WNearExt,
     },
-    kit::{Gas, NearToken, transaction::Final},
+    kit::{Gas, NearToken, rpc::BlockReference, standards::FungibleToken},
 };
 use rstest::rstest;
 
@@ -54,7 +54,9 @@ async fn native_withdraw_intent(
         let mut result = vec![];
         for (account, _) in &amounts_to_withdraw {
             let balance = env
-                .account(account)
+                .near()
+                .rpc()
+                .view_account(account, BlockReference::default())
                 .await
                 .map_or(NearToken::ZERO, |a| a.amount);
 
@@ -75,17 +77,19 @@ async fn native_withdraw_intent(
     .await
     .expect("failed to wrap NEAR");
 
-    env.ft(env.wnear.contract_id())
+    let outcome = env
+        .contract::<FungibleToken>(env.wnear.contract_id())
         .transfer_call(
             env.defuse.contract_id(),
             total_amount_yocto,
             DepositMessage::new(other_user.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
         .expect("failed to deposit wNEAR to user2");
+    if let Some(error) = outcome.receipt_failures().next() {
+        panic!("wNEAR deposit failed: {error}");
+    }
 
     // withdraw native NEAR to corresponding receivers
     let withdraw_payload = other_user
@@ -126,7 +130,13 @@ async fn native_withdraw_intent(
     // Check balances of NEAR on the blockchain
     for ((receiver_id, amount), initial_balance) in amounts_to_withdraw.iter().zip(initial_balances)
     {
-        let balance = env.account(receiver_id).await.unwrap().amount;
+        let balance = env
+            .near()
+            .rpc()
+            .view_account(receiver_id, BlockReference::default())
+            .await
+            .unwrap()
+            .amount;
 
         assert!(
             balance == initial_balance.checked_add(*amount).unwrap(),

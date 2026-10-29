@@ -4,11 +4,7 @@ use defuse_global_deployer::{
     AsWrap, State as DeployerState,
     client::{GdApproveArgs, GlobalDeployerContract, GlobalDeployerContractClient},
 };
-use near_kit::{
-    Gas, Near, NearToken,
-    protocol::{AccountIdRef, GlobalContractId},
-    transaction::Final,
-};
+use near_kit::{AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId};
 
 use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
 
@@ -20,15 +16,15 @@ pub trait GDDeployerExt {
         &self,
         global_contract_id: GlobalContractId,
         state: DeployerState<'_>,
-    ) -> Result<GlobalDeployerContractClient>;
+    ) -> Result<GlobalDeployerContractClient<SigningNear>>;
 }
 
-impl GDDeployerExt for Near {
+impl GDDeployerExt for SigningNear {
     async fn deploy_gd_instance(
         &self,
         global_contract_id: GlobalContractId,
         state: DeployerState<'_>,
-    ) -> Result<GlobalDeployerContractClient> {
+    ) -> Result<GlobalDeployerContractClient<Self>> {
         Ok(self.contract::<GlobalDeployerContract>(
             self.deploy_deterministic_account(
                 global_contract_id,
@@ -69,7 +65,7 @@ pub trait GlobalDeployerExt {
     ) -> anyhow::Result<SuccessfulExecutionOutcome>;
 }
 
-impl GlobalDeployerExt for Near {
+impl GlobalDeployerExt for SigningNear {
     async fn gd_approve_and_deploy(
         &self,
         target: impl AsRef<AccountIdRef>,
@@ -92,7 +88,6 @@ impl GlobalDeployerExt for Near {
                     .deposit(NearToken::from_near(50))
                     .gas(Gas::from_tgas(290)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }
@@ -112,7 +107,6 @@ impl GlobalDeployerExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(10)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }
@@ -130,7 +124,6 @@ impl GlobalDeployerExt for Near {
                     .deposit(deposit)
                     .gas(Gas::from_tgas(290)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }
@@ -146,7 +139,6 @@ impl GlobalDeployerExt for Near {
                     .deposit(NearToken::from_yoctonear(1))
                     .gas(Gas::from_tgas(30)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }

@@ -1,9 +1,8 @@
 use anyhow::Result;
 use defuse_wallet_sdk::{Request, RequestMessage, client::WalletContract};
 use near_kit::{
-    Gas, Near, NearToken,
-    protocol::{AccountIdRef, StateInit},
-    transaction::Final,
+    AccountIdRef, Gas, NearToken, SigningNear,
+    protocol::{Action, StateInit, derive_deterministic_account_id},
 };
 
 pub use defuse_wallet_sdk as sdk;
@@ -29,7 +28,7 @@ pub trait WalletExt {
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
-impl WalletExt for Near {
+impl WalletExt for SigningNear {
     async fn w_execute_signed(
         &self,
         contract_id: impl AsRef<AccountIdRef>,
@@ -38,10 +37,15 @@ impl WalletExt for Near {
         proof: impl AsRef<str>,
         deposit: NearToken,
     ) -> Result<SuccessfulExecutionOutcome> {
-        let mut tx = self.transaction(contract_id.as_ref());
+        let state_init = state_init.into();
+        // a state_init is executed on the account derived from it
+        let mut tx = self.transaction(state_init.as_ref().map_or_else(
+            || contract_id.as_ref().into(),
+            derive_deterministic_account_id,
+        ));
 
-        if let Some(state_init) = state_init.into() {
-            tx = tx.state_init(state_init, NearToken::ZERO);
+        if let Some(state_init) = state_init {
+            tx = tx.add_action(Action::state_init(state_init, NearToken::ZERO));
         }
 
         tx.add_action(
@@ -49,7 +53,6 @@ impl WalletExt for Near {
                 .deposit(deposit)
                 .gas(Gas::from_tgas(300)),
         )
-        .wait_until::<Final>()
         .await?
         .try_into()
     }
@@ -61,17 +64,21 @@ impl WalletExt for Near {
         request: &Request,
         deposit: NearToken,
     ) -> Result<SuccessfulExecutionOutcome> {
-        let mut tx = self.transaction(contract_id.as_ref());
+        let state_init = state_init.into();
+        // a state_init is executed on the account derived from it
+        let mut tx = self.transaction(state_init.as_ref().map_or_else(
+            || contract_id.as_ref().into(),
+            derive_deterministic_account_id,
+        ));
 
-        if let Some(state_init) = state_init.into() {
-            tx = tx.state_init(state_init, NearToken::ZERO);
+        if let Some(state_init) = state_init {
+            tx = tx.add_action(Action::state_init(state_init, NearToken::ZERO));
         }
         tx.add_action(
             WalletContract::w_execute_extension(request.into())
                 .deposit(deposit)
                 .gas(Gas::from_tgas(300)),
         )
-        .wait_until::<Final>()
         .await?
         .try_into()
     }

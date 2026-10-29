@@ -4,16 +4,16 @@ use std::{borrow::Cow, collections::BTreeSet};
 
 use defuse_wallet::{Request, RequestMessage, Timestamp};
 use derive_more::From;
-use near_kit::{AccountId, protocol::AccountIdRef};
+use near_kit::{AccountId, AccountIdRef};
 use serde::Serialize;
 
 #[near_kit::contract]
 pub trait WalletContract {
     #[call]
-    fn w_execute_signed(&mut self, args: WExecuteSignedArgs<'_>);
+    fn w_execute_signed(&mut self, #[args] args: WExecuteSignedArgs<'_>);
 
     #[call]
-    fn w_execute_extension(&mut self, args: WExecuteExtensionArgs<'_>);
+    fn w_execute_extension(&mut self, #[args] args: WExecuteExtensionArgs<'_>);
 
     fn w_subwallet_id(&self) -> u32;
 
@@ -21,7 +21,7 @@ pub trait WalletContract {
 
     fn w_public_key(&self) -> String;
 
-    fn w_is_extension_enabled(&self, args: WIsExtensionEnabledArgs<'_>) -> bool;
+    fn w_is_extension_enabled(&self, #[args] args: WIsExtensionEnabledArgs<'_>) -> bool;
 
     fn w_extensions(&self) -> BTreeSet<AccountId>;
 

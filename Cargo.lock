@@ -3692,32 +3692,19 @@ dependencies = [
 
 [[package]]
 name = "near-kit"
-version = "0.20.1"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "294bd31dcea04d2ae423cf2d499737ebabd6d8da04eeba5a13f1c45a646ea0cf"
+checksum = "02081eef732be3e818fd967ac5d0ff91340660232fe7548e685d8cdb03d2061e"
 dependencies = [
  "base64 0.23.1",
  "borsh",
- "bs58 0.5.1",
- "ed25519-dalek 3.0.0",
- "getrandom 0.4.3",
  "gloo-timers",
- "hex",
  "hyper",
- "js-sys",
- "k256",
- "ml-dsa",
- "near-account-id",
- "near-gas",
- "near-global-contracts",
  "near-kit-macros",
- "near-token",
+ "near-kit-primitives",
  "reqwest",
  "serde",
  "serde_json",
- "serde_with",
- "sha2 0.11.1",
- "sha3 0.12.0",
  "thiserror 2.0.21",
  "tokio",
  "tracing",
@@ -3725,9 +3712,9 @@ dependencies = [
 
 [[package]]
 name = "near-kit-macros"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5565d050a154d4431f767e17786758e65a511aa1b6ac9a6169942b6774f7831"
+checksum = "51392dd0427f35e7be467aaa170d31441788a3c65703c2f6a6abfc42f9d608c8"
 dependencies = [
  "proc-macro-crate 3.5.0",
  "proc-macro2",
@@ -3736,10 +3723,39 @@ dependencies = [
 ]
 
 [[package]]
-name = "near-kit-sandbox"
-version = "0.20.1"
+name = "near-kit-primitives"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aca5ab2abe52c3b2ab6160c79593e30d904171aad603f6981ed7d96d3d9489dc"
+checksum = "c81c8e754f4a2f6654631107c0ee996480984e985210f46ccd856f50d1a02b25"
+dependencies = [
+ "base64 0.23.1",
+ "borsh",
+ "bs58 0.5.1",
+ "ed25519-dalek 3.0.0",
+ "getrandom 0.4.3",
+ "hex",
+ "js-sys",
+ "k256",
+ "ml-dsa",
+ "near-account-id",
+ "near-gas",
+ "near-global-contracts",
+ "near-sdk-core",
+ "near-token",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "sha2 0.11.1",
+ "sha3 0.12.0",
+ "thiserror 2.0.21",
+ "tracing",
+]
+
+[[package]]
+name = "near-kit-sandbox"
+version = "0.30.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "844f179d2a82e33d7bbe14dd84867923a2d595c5b95b524bbc55e656e353f1c1"
 dependencies = [
  "libc",
  "near-kit",

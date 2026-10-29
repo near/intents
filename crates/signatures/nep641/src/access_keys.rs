@@ -281,7 +281,7 @@ const _: () = {
             match pk {
                 NearPublicKey::Ed25519(pk) => Some(Self::Ed25519(pk.into())),
                 NearPublicKey::Secp256k1(pk) => Some(Self::Secp256k1(pk.into())),
-                NearPublicKey::MlDsa65(_) => None,
+                _ => None,
             }
         }
     }

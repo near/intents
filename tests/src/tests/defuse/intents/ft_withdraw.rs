@@ -12,7 +12,9 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs},
         wnear::WNearExt,
     },
-    kit::{AccountId, Gas, NearToken, transaction::Final},
+    kit::{
+        AccountId, Gas, NearToken, protocol::Action, rpc::BlockReference, standards::FungibleToken,
+    },
 };
 use defuse_test_utils::wasms::DEFUSE_WASM;
 use rstest::rstest;
@@ -98,7 +100,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
             );
         },
         async {
-            assert_eq!(ft.balance_of(&other_user_id).await.unwrap().raw(), 0);
+            assert_eq!(ft.balance_of(&other_user_id).await.unwrap(), 0);
         }
     );
 
@@ -125,8 +127,10 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
 
     // send user some near
     env.transaction(user.account_id())
-        .transfer(STORAGE_DEPOSIT)
+        .add_action(Action::transfer(STORAGE_DEPOSIT))
         .await
+        .unwrap()
+        .result()
         .unwrap();
 
     // wrap NEAR
@@ -135,19 +139,27 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
         .unwrap();
 
     // deposit wNEAR
-    user.ft(env.wnear.contract_id())
+    let outcome = user
+        .contract::<FungibleToken>(env.wnear.contract_id())
         .transfer_call(
             env.defuse.contract_id(),
             STORAGE_DEPOSIT.as_yoctonear(),
             String::new(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
         .unwrap();
+    if let Some(error) = outcome.receipt_failures().next() {
+        panic!("wNEAR deposit failed: {error}");
+    }
 
-    let old_defuse_balance = env.account(env.defuse.contract_id()).await.unwrap().amount;
+    let old_defuse_balance = env
+        .near()
+        .rpc()
+        .view_account(env.defuse.contract_id(), BlockReference::default())
+        .await
+        .unwrap()
+        .amount;
 
     // too large min_gas specified
     let too_large_min_gas_payload = user
@@ -198,7 +210,13 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
     futures::join!(
         async {
             assert!(
-                env.account(env.defuse.contract_id()).await.unwrap().amount >= old_defuse_balance,
+                env.near()
+                    .rpc()
+                    .view_account(env.defuse.contract_id(), BlockReference::default())
+                    .await
+                    .unwrap()
+                    .amount
+                    >= old_defuse_balance,
                 "contract balance must not decrease"
             );
         },
@@ -230,7 +248,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
             );
         },
         async {
-            assert_eq!(ft.balance_of(&other_user_id).await.unwrap().raw(), 1000);
+            assert_eq!(ft.balance_of(&other_user_id).await.unwrap(), 1000);
         },
     );
 }
@@ -313,16 +331,10 @@ async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
                 );
             },
             async {
-                assert_eq!(
-                    ft.balance_of(env.defuse.contract_id()).await.unwrap().raw(),
-                    600
-                );
+                assert_eq!(ft.balance_of(env.defuse.contract_id()).await.unwrap(), 600);
             },
             async {
-                assert_eq!(
-                    ft.balance_of(defuse2.account_id()).await.unwrap().raw(),
-                    400
-                );
+                assert_eq!(ft.balance_of(defuse2.account_id()).await.unwrap(), 400);
             },
             async {
                 assert_eq!(
@@ -382,16 +394,10 @@ async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
             );
         },
         async {
-            assert_eq!(
-                ft.balance_of(env.defuse.contract_id()).await.unwrap().raw(),
-                0
-            );
+            assert_eq!(ft.balance_of(env.defuse.contract_id()).await.unwrap(), 0);
         },
         async {
-            assert_eq!(
-                ft.balance_of(defuse2.account_id()).await.unwrap().raw(),
-                1000
-            );
+            assert_eq!(ft.balance_of(defuse2.account_id()).await.unwrap(), 1000);
         },
         async {
             assert_eq!(
