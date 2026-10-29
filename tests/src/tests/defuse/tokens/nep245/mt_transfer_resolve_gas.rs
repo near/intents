@@ -20,10 +20,9 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs, MtBatchBalanceOfArgs, MtBatchTransferCallArgs, MtExt},
     },
     kit::{
-        AccountId, Gas, Near, NearToken,
-        protocol::{ActionError, ActionErrorKind, FunctionCallError},
+        AccountId, Gas, NearToken, SigningNear,
+        protocol::{Action, ActionError, ActionErrorKind, FunctionCallError},
         rpc::ExecutionStatus,
-        transaction::Final,
     },
 };
 use defuse_test_utils::{
@@ -46,11 +45,11 @@ enum GenerationMode {
     LongestPossible,
 }
 
-async fn make_account(mode: GenerationMode, env: &Env, user: &Near) -> Near {
+async fn make_account(mode: GenerationMode, env: &Env, user: &SigningNear) -> SigningNear {
     match mode {
         GenerationMode::ShortestPossible => {
             env.transaction(user.account_id())
-                .transfer(NearToken::from_near(1000))
+                .add_action(Action::transfer(NearToken::from_near(1000)))
                 .await
                 .unwrap()
                 .result()
@@ -59,7 +58,7 @@ async fn make_account(mode: GenerationMode, env: &Env, user: &Near) -> Near {
         }
         GenerationMode::LongestPossible => {
             env.transaction(env.defuse.contract_id())
-                .transfer(NearToken::from_near(1000))
+                .add_action(Action::transfer(NearToken::from_near(1000)))
                 .await
                 .unwrap()
                 .result()
@@ -125,8 +124,8 @@ async fn run_resolve_gas_test(
     gen_mode: GenerationMode,
     token_count: usize,
     env: Arc<Env>,
-    user_account: Near,
-    author_account: Near,
+    user_account: SigningNear,
+    author_account: SigningNear,
     rng: Arc<tokio::sync::Mutex<impl Rng>>,
 ) -> anyhow::Result<()> {
     println!("token count: {token_count}");
@@ -252,8 +251,10 @@ async fn mt_transfer_resolve_gas(#[future(awt)] env: Env, rng: impl Rng) {
         let user = env.create_user().await;
 
         env.transaction(env.defuse.contract_id())
-            .transfer(NearToken::from_near(1000))
+            .add_action(Action::transfer(NearToken::from_near(1000)))
             .await
+            .unwrap()
+            .result()
             .unwrap();
 
         let author_account = make_account(gen_mode, &env, &user).await;
@@ -324,8 +325,10 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
     let user = env.create_named_user("u").await;
 
     env.transaction(env.defuse.contract_id())
-        .transfer(NearToken::from_near(1000))
+        .add_action(Action::transfer(NearToken::from_near(1000)))
         .await
+        .unwrap()
+        .result()
         .unwrap();
 
     let author_account = env.create_implicit(NearToken::from_near(1000)).await;
@@ -444,16 +447,18 @@ const REPRO_TOKEN_ID_PREFIX_LEN: usize = 2;
 #[ignore = "no longer reproducible: requires more than BATCH_MAX_TOKENS=10 tokens"]
 async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(awt)] env: Env) {
     env.transaction(env.defuse.contract_id())
-        .transfer(NearToken::from_near(1000))
+        .add_action(Action::transfer(NearToken::from_near(1000)))
         .await
+        .unwrap()
+        .result()
         .unwrap();
 
     let author_account = env.create_implicit(NearToken::from_near(1000)).await;
     let user = env.create_implicit(NearToken::from_near(1000)).await;
     let receiver_stub = env.create_implicit(NearToken::from_near(100)).await;
     receiver_stub
-        .deploy(MT_RECEIVER_STUB_WASM.to_vec())
-        .wait_until::<Final>()
+        .transaction(receiver_stub.account_id())
+        .add_action(Action::deploy_contract(MT_RECEIVER_STUB_WASM.to_vec()))
         .await
         .unwrap()
         .result()
@@ -521,7 +526,6 @@ async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(aw
             .deposit(NearToken::from_yoctonear(1))
             .gas(Gas::from_tgas(300)),
         )
-        .wait_until::<Final>()
         .await
         .unwrap();
 

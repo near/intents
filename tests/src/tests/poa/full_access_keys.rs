@@ -8,13 +8,17 @@ use defuse_sandbox::{
             PoaFactoryDeployerExt, contract::Role,
         },
     },
-    kit::{Gas, Near, NearToken, rpc::AccessKeyPermissionView, signer::SecretKey},
+    kit::{
+        Gas, NearToken, SigningNear,
+        rpc::{AccessKeyPermissionView, BlockReference},
+        signer::SecretKey,
+    },
     root,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::POA_FACTORY_WASM};
 use rstest::rstest;
 
-async fn deploy_factory(root: &Near) -> PoaFactoryClient {
+async fn deploy_factory(root: &SigningNear) -> PoaFactoryClient<SigningNear> {
     root.deploy_poa_factory(
         "poa-factory",
         [root.account_id().clone()],
@@ -30,7 +34,7 @@ async fn deploy_factory(root: &Near) -> PoaFactoryClient {
 
 #[rstest]
 #[tokio::test]
-async fn add_full_access_key_to_tokens(#[future(awt)] root: Near) {
+async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
     let factory = deploy_factory(&root).await;
     let tokens = ["ft1", "ft2", "ft3"];
     let mut token_ids = Vec::new();
@@ -40,7 +44,9 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: Near) {
             .await
             .unwrap();
         assert!(
-            root.access_keys(token.contract_id())
+            root.near()
+                .rpc()
+                .view_access_key_list(token.contract_id(), BlockReference::default())
                 .await
                 .unwrap()
                 .keys
@@ -69,16 +75,24 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: Near) {
 
     // The factory detaches its promises, so verify the resulting keys on every token.
     for token_id in &token_ids {
-        let keys = root.access_keys(token_id).await.unwrap().keys;
+        let keys = root
+            .near()
+            .rpc()
+            .view_access_key_list(token_id, BlockReference::default())
+            .await
+            .unwrap()
+            .keys;
         assert_eq!(keys.len(), 1);
-        assert_eq!(keys[0].public_key.full_pubkey(), Some(&public_key));
+        assert_eq!(keys[0].public_key.as_full(), Some(&public_key));
         assert!(matches!(
             keys[0].access_key.permission,
             AccessKeyPermissionView::FullAccess
         ));
     }
     assert!(
-        root.access_keys(factory.contract_id())
+        root.near()
+            .rpc()
+            .view_access_key_list(factory.contract_id(), BlockReference::default())
             .await
             .unwrap()
             .keys
@@ -100,14 +114,20 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: Near) {
 
     // The factory detaches its promises, so verify the resulting keys on every token.
     for token_id in token_ids {
-        let keys = root.access_keys(&token_id).await.unwrap().keys;
+        let keys = root
+            .near()
+            .rpc()
+            .view_access_key_list(&token_id, BlockReference::default())
+            .await
+            .unwrap()
+            .keys;
         assert!(keys.is_empty());
     }
 }
 
 #[rstest]
 #[tokio::test]
-async fn add_full_access_key_to_tokens_requires_deployed_tokens(#[future(awt)] root: Near) {
+async fn add_full_access_key_to_tokens_requires_deployed_tokens(#[future(awt)] root: SigningNear) {
     let factory = deploy_factory(&root).await;
     let token = root
         .poa_factory_deploy_token(factory.contract_id(), "ft1", None)
@@ -128,7 +148,9 @@ async fn add_full_access_key_to_tokens_requires_deployed_tokens(#[future(awt)] r
     .assert_err_contains(format!("token '{undeployed_token}' is not deployed"));
 
     assert!(
-        root.access_keys(token.contract_id())
+        root.near()
+            .rpc()
+            .view_access_key_list(token.contract_id(), BlockReference::default())
             .await
             .unwrap()
             .keys

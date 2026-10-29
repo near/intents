@@ -13,10 +13,7 @@ use defuse_sandbox::{
         poa::{PoaFactoryClient, PoaFactoryDeployerExt, contract::Role as POAFactoryRole},
         wnear::{WNearDeployerExt, WNearExt},
     },
-    kit::{
-        AccountId, Gas, Near, NearToken,
-        protocol::{AccountIdRef, FunctionCallAction},
-    },
+    kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear, protocol::FunctionCallAction},
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, POA_FACTORY_WASM, WNEAR_WASM};
 use futures::FutureExt;
@@ -120,9 +117,9 @@ impl EnvBuilder {
     async fn deploy_defuse(
         &self,
         name: &str,
-        root: &Near,
+        root: &SigningNear,
         wnear: impl AsRef<AccountIdRef>,
-    ) -> (DefuseClient, Near) {
+    ) -> (DefuseClient<SigningNear>, SigningNear) {
         let account = root
             .deploy_sub_contract(
                 name,
@@ -167,7 +164,7 @@ impl EnvBuilder {
         }
     }
 
-    pub async fn build(mut self, root: Near) -> Env {
+    pub async fn build(mut self, root: SigningNear) -> Env {
         self.grant_roles(root.account_id());
 
         let (poa_factory, (wnear, defuse, defuse_near)) =
@@ -191,7 +188,7 @@ impl EnvBuilder {
         }
     }
 
-    async fn deploy_poa_factory(&self, root: &Near) -> PoaFactoryClient {
+    async fn deploy_poa_factory(&self, root: &SigningNear) -> PoaFactoryClient<SigningNear> {
         let root_id = root.account_id();
         root.deploy_poa_factory(
             &self.poa_factory_name,

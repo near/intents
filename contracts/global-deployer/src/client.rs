@@ -10,15 +10,17 @@ use serde_with::{hex::Hex, serde_as};
 
 #[near_kit::contract]
 pub trait GlobalDeployerContract {
+    /// Returns `bool` (decode it from the outcome).
     #[call]
-    fn gd_approve(&mut self, args: GdApproveArgs) -> bool;
+    fn gd_approve(&mut self, #[args] args: GdApproveArgs);
 
+    /// Returns `bool` (decode it from the outcome).
     #[call]
     #[borsh]
-    fn gd_deploy(&mut self, code: AsWrap<Vec<u8>, Remainder>) -> bool;
+    fn gd_deploy(&mut self, code: AsWrap<Vec<u8>, Remainder>);
 
     #[call]
-    fn gd_transfer_ownership(&mut self, args: GdTransferOwnershipArgs);
+    fn gd_transfer_ownership(&mut self, #[args] args: GdTransferOwnershipArgs);
 
     fn gd_owner_id(&self) -> AccountId;
     fn gd_code_hash(&self) -> AsHex<[u8; 32]>;

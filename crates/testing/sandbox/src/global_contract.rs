@@ -1,10 +1,9 @@
 use anyhow::Result;
 use defuse_digest::{Digest, sha2::Sha256};
 use near_kit::{
-    Near, NearToken,
-    protocol::{AccountIdRef, GlobalContractId, PublishMode},
+    AccountIdRef, NearToken, SigningNear,
+    protocol::{Action, GlobalContractId, PublishMode},
     signer::SecretKey,
-    transaction::Final,
 };
 
 pub trait GlobalContract {
@@ -23,7 +22,7 @@ pub trait GlobalContract {
     ) -> Result<GlobalContractId>;
 }
 
-impl GlobalContract for Near {
+impl GlobalContract for SigningNear {
     async fn deploy_upgradable_global_contract(
         &self,
         target: impl AsRef<AccountIdRef>,
@@ -34,11 +33,10 @@ impl GlobalContract for Near {
         let account_id = target.as_ref();
 
         self.transaction(account_id)
-            .create_account()
-            .transfer(balance)
-            .add_full_access_key(secret_key.public_key())
-            .publish(code, PublishMode::Updatable)
-            .wait_until::<Final>()
+            .add_action(Action::create_account())
+            .add_action(Action::transfer(balance))
+            .add_action(Action::add_full_access_key(secret_key.public_key()))
+            .add_action(Action::publish(code, PublishMode::Updatable))
             .await?
             .result()?;
 
@@ -56,10 +54,9 @@ impl GlobalContract for Near {
         let id = GlobalContractId::CodeHash(Sha256::digest(&code).into());
 
         self.transaction(target.as_ref())
-            .create_account()
-            .transfer(balance)
-            .publish(code, PublishMode::Immutable)
-            .wait_until::<Final>()
+            .add_action(Action::create_account())
+            .add_action(Action::transfer(balance))
+            .add_action(Action::publish(code, PublishMode::Immutable))
             .await?
             .result()?;
 

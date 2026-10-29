@@ -1,14 +1,15 @@
 use anyhow::Result;
-use near_kit::{AccountId, Gas, Near, protocol::AccountIdRef};
+use near_kit::{AccountId, AccountIdRef, Gas, SigningNear};
 use serde::Serialize;
 
 use crate::{extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};
 
 #[near_kit::contract]
 pub trait AccessControllable {
-    fn acl_has_role(&self, args: AclRoleArgs) -> bool;
+    fn acl_has_role(&self, #[args] args: AclRoleArgs) -> bool;
+    /// Returns `Option<bool>` (decode it from the outcome).
     #[call]
-    fn acl_grant_role(&mut self, args: AclRoleArgs) -> Option<bool>;
+    fn acl_grant_role(&mut self, #[args] args: AclRoleArgs);
 }
 
 #[derive(Serialize)]
@@ -26,7 +27,7 @@ pub trait AccessControllableExt {
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
-impl AccessControllableExt for Near {
+impl AccessControllableExt for SigningNear {
     async fn acl_grant_role(
         &self,
         contract_id: impl Into<AccountId>,

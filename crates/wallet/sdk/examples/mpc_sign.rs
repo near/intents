@@ -10,7 +10,7 @@ use defuse_wallet_sdk::{
     },
 };
 use hex_literal::hex;
-use near_kit::Near;
+use near_kit::SigningNear;
 use rand::{rand_core::UnwrapErr, rngs::SysRng};
 
 const WALLET_GLOBAL_CONTRACT_ID: &AccountIdRef =
@@ -20,7 +20,7 @@ const PATH: &str = "derivation path";
 
 #[tokio::main]
 async fn main() {
-    let near = Near::from_env().unwrap();
+    let near = SigningNear::from_env().unwrap();
 
     // 0. Generate a keypair and Build a wallet
     let signer = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
@@ -28,7 +28,7 @@ async fn main() {
         WALLET_GLOBAL_CONTRACT_ID.to_owned(),
         WalletEd25519Signer(signer),
     )
-    .with_client(near.clone())
+    .with_client(near.near().clone())
     .with_relayer(near);
 
     println!("wallet account ID: {}", wallet.account_id());
