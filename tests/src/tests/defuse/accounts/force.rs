@@ -168,7 +168,7 @@ async fn test_lock_account(
 
     // try to remove existing public key from locked account
     {
-        let locked_pk: PublicKey = locked_account.signer().unwrap().public_key().into();
+        let locked_pk: PublicKey = locked_account.signer().public_key().into();
 
         locked_account
             .defuse_remove_public_key(env.defuse.contract_id(), locked_pk)

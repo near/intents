@@ -16,7 +16,7 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBatchBalanceOfArgs},
     },
-    kit::{Near, protocol::AccountIdRef},
+    kit::{AccountIdRef, SigningNear},
 };
 use defuse_test_utils::wasms::DEFUSE_WASM;
 use rstest::rstest;
@@ -28,7 +28,7 @@ use crate::{
 };
 
 async fn balance_of(
-    near: &Near,
+    near: &SigningNear,
     defuse_id: impl AsRef<AccountIdRef>,
     account_id: impl AsRef<AccountIdRef>,
     token_id: &str,
@@ -72,8 +72,8 @@ async fn test_upgrade_with_persistence(
 
     let token_id = TokenId::Nep141(Nep141TokenId::new(ft.contract_id().clone())).to_string();
 
-    let get_pubkey = |near: &Near| {
-        let near_pubkey = near.public_key().expect("must have signer");
+    let get_pubkey = |near: &SigningNear| {
+        let near_pubkey = near.signer().public_key();
         DefusePublicKey::Ed25519(Ed25519PublicKey(
             *near_pubkey
                 .as_ed25519_bytes()

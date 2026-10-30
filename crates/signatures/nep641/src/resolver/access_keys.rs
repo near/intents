@@ -51,9 +51,8 @@ impl RpcResolver {
                 // fetch the block concurrently with access key only if block_hash is already known
                 join!(
                     // TODO: cache resolved blocks with some TTL and other limis
-                    self.client.block(block_hash.into()),
-                    self.client
-                        .view_access_key(account_id, &rpc_pk, block_hash.into())
+                    self.client.block(block_hash),
+                    self.client.view_access_key(account_id, &rpc_pk, block_hash)
                 )
             } else {
                 // otherwise, fetch the block first
@@ -61,7 +60,7 @@ impl RpcResolver {
                 // and then the access key against fetched block hash
                 let access_key = self
                     .client
-                    .view_access_key(account_id, &rpc_pk, block.header.hash.into())
+                    .view_access_key(account_id, &rpc_pk, block.header.hash)
                     .await;
                 (Ok(block), access_key)
             }
@@ -146,10 +145,11 @@ mod tests {
 
     use defuse_time::Timestamp;
     use near_kit::{
-        signer::{InMemorySigner, Signer},
-        transaction::Final,
+        protocol::Action,
+        signer::{InMemorySigner, SecretKey, Signer},
+        standards::nep413::SignMessageParams,
     };
-    use near_kit_sandbox::SandboxConfig;
+    use near_kit_sandbox::Sandbox;
 
     use crate::{
         OffchainMessage,
@@ -162,18 +162,24 @@ mod tests {
     async fn full_access_key() {
         const PAYLOAD: &str = "Hello, Near!";
 
-        let sandbox = SandboxConfig::fresh().await.unwrap();
-        let mut near = sandbox.client();
+        let sandbox = Sandbox::builder().fresh().await.unwrap();
+        let mut near = sandbox.root_account();
 
         let msg = OffchainMessage {
-            chain_id: near.chain_id().as_str().to_string(),
+            chain_id: near.near().chain_id().as_str().to_string(),
             signer_id: near.account_id().clone(),
             path: vec![],
             timestamp: Timestamp::now() - Duration::from_mins(1),
             payload: PAYLOAD.to_string(),
         };
 
-        let signed = near.sign_message(msg.clone().into()).await.unwrap();
+        let params: SignMessageParams = msg.clone().into();
+        let signed = near
+            .signer()
+            .key()
+            .sign_nep413(near.account_id(), &params)
+            .await
+            .unwrap();
         let authorization: String = AccessKeyAuthorization {
             msg,
             via: AccessKeySchema::Nep413 { callback_url: None },
@@ -182,7 +188,7 @@ mod tests {
         }
         .into();
 
-        let resolver = RpcResolver::new(near.rpc().clone())
+        let resolver = RpcResolver::new(near.near().rpc().clone())
             .await
             .expect("failed to initialize RPC resolver")
             // set explicitly, we're testing a top-level auth via FullAccessKey
@@ -197,7 +203,7 @@ mod tests {
         println!("{authorization}\n{} -> {resolved}", near.account_id());
         assert_eq!(PAYLOAD, resolved, "resolved invalid payload");
 
-        let new_signer = InMemorySigner::generate_implicit();
+        let new_signer = InMemorySigner::implicit(SecretKey::generate_ed25519()).unwrap();
         // check on other account
         resolver
             .resolve_auth(new_signer.account_id(), &authorization)
@@ -205,10 +211,10 @@ mod tests {
             .expect_err("authorization must be invalid only for non-signer accounts");
 
         // rotate key
-        near.add_full_access_key(new_signer.public_key().clone())
-            .delete_key(near.public_key().unwrap())
-            .wait_until::<Final>() // wait for finalization
-            .await
+        near.transaction(near.account_id())
+            .add_action(Action::add_full_access_key(new_signer.public_key()))
+            .add_action(Action::delete_key(near.signer().public_key()))
+            .await // waits for finalization by default
             .unwrap()
             .result()
             .unwrap();

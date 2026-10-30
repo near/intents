@@ -1,9 +1,8 @@
 use defuse_core::crypto::ed25519::Ed25519PublicKey;
 use near_kit::{
-    Near, NearToken,
+    NearToken, SigningNear,
     protocol::{Action, FunctionCallAction},
     signer::{InMemorySigner, SecretKey},
-    transaction::Final,
 };
 
 pub trait Account {
@@ -11,9 +10,9 @@ pub trait Account {
         &self,
         name: impl AsRef<str>,
         balance: impl Into<Option<NearToken>>,
-    ) -> Near;
+    ) -> SigningNear;
 
-    async fn create_implicit(&self, balance: impl Into<Option<NearToken>>) -> Near;
+    async fn create_implicit(&self, balance: impl Into<Option<NearToken>>) -> SigningNear;
 
     async fn deploy_sub_contract(
         &self,
@@ -21,10 +20,10 @@ pub trait Account {
         balance: NearToken,
         code: impl Into<Vec<u8>>,
         init_call: impl Into<Option<FunctionCallAction>>,
-    ) -> anyhow::Result<Near>;
+    ) -> anyhow::Result<SigningNear>;
 }
 
-impl Account for Near {
+impl Account for SigningNear {
     async fn create_subaccount(
         &self,
         name: impl AsRef<str>,
@@ -38,21 +37,19 @@ impl Account for Near {
 
         let mut tx = self
             .transaction(&account_id)
-            .create_account()
-            .add_full_access_key(secret_key.public_key());
+            .add_action(Action::create_account())
+            .add_action(Action::add_full_access_key(secret_key.public_key()));
 
         if let Some(balance) = balance.into() {
-            tx = tx.transfer(balance);
+            tx = tx.add_action(Action::transfer(balance));
         }
 
-        tx.send()
-            .wait_until::<Final>()
-            .await
+        tx.await
             .unwrap()
             .result()
             .expect("failed to create subaccount");
 
-        self.with_signer(InMemorySigner::from_secret_key(account_id, secret_key).unwrap())
+        self.with_signer(InMemorySigner::new(account_id, secret_key))
     }
 
     async fn create_implicit(&self, balance: impl Into<Option<NearToken>>) -> Self {
@@ -67,16 +64,14 @@ impl Account for Near {
 
         if let Some(balance) = balance.into() {
             self.transaction(&account_id)
-                .transfer(balance)
-                .send()
-                .wait_until::<Final>()
+                .add_action(Action::transfer(balance))
                 .await
                 .unwrap()
                 .result()
                 .expect("implicit account funding failed");
         }
 
-        self.with_signer(InMemorySigner::from_secret_key(account_id, secret_key).unwrap())
+        self.with_signer(InMemorySigner::new(account_id, secret_key))
     }
 
     async fn deploy_sub_contract(
@@ -94,19 +89,19 @@ impl Account for Near {
 
         let mut tx = self
             .transaction(&account_id)
-            .create_account()
-            .transfer(balance)
-            .add_full_access_key(secret_key.public_key())
-            .deploy(code);
+            .add_action(Action::create_account())
+            .add_action(Action::transfer(balance))
+            .add_action(Action::add_full_access_key(secret_key.public_key()))
+            .add_action(Action::deploy_contract(code));
 
         if let Some(init_call) = init_call.into() {
             tx = tx.add_action(Action::FunctionCall(init_call));
         }
 
-        tx.wait_until::<Final>().await?.result().map_err(|e| {
+        tx.await?.result().map_err(|e| {
             anyhow::anyhow!("failed to deploy sub contract to '{account_id}': {e:?}")
         })?;
 
-        Ok(self.with_signer(InMemorySigner::from_secret_key(account_id, secret_key).unwrap()))
+        Ok(self.with_signer(InMemorySigner::new(account_id, secret_key)))
     }
 }

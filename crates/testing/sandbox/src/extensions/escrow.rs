@@ -1,26 +1,22 @@
 use anyhow::Result;
 use defuse_escrow_swap::{Params, Storage};
-use near_kit::{Gas, Near, protocol::AccountIdRef, transaction::Final};
-use serde::{Deserialize, Serialize};
+use near_kit::{AccountIdRef, Gas, SigningNear};
 
 use crate::outcome::SuccessfulExecutionOutcome;
 
 pub use defuse_escrow_swap as contract;
 
-#[derive(Serialize, Deserialize)]
-pub struct EsParams {
-    pub params: Params,
-}
-
 #[near_kit::contract]
 pub trait Escrow {
     fn es_view(&self) -> Storage;
 
+    /// Returns `bool` (decode it from the outcome).
     #[call]
-    fn es_close(&mut self, params: EsParams) -> bool;
+    fn es_close(&mut self, params: Params);
 
+    /// Returns `bool` (decode it from the outcome).
     #[call]
-    fn es_lost_found(&mut self, params: EsParams) -> bool;
+    fn es_lost_found(&mut self, params: Params);
 }
 
 pub trait EscrowExt {
@@ -37,15 +33,14 @@ pub trait EscrowExt {
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
-impl EscrowExt for Near {
+impl EscrowExt for SigningNear {
     async fn es_close(
         &self,
         escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(escrow_id.as_ref())
-            .add_action(Escrow::es_close(EsParams { params }).gas(Gas::from_tgas(300)))
-            .wait_until::<Final>()
+            .add_action(Escrow::es_close(params).gas(Gas::from_tgas(300)))
             .await?
             .try_into()
     }
@@ -56,8 +51,7 @@ impl EscrowExt for Near {
         params: Params,
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(escrow_id.as_ref())
-            .add_action(Escrow::es_lost_found(EsParams { params }).gas(Gas::from_tgas(300)))
-            .wait_until::<Final>()
+            .add_action(Escrow::es_lost_found(params).gas(Gas::from_tgas(300)))
             .await?
             .try_into()
     }

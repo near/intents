@@ -20,8 +20,10 @@ use defuse_sandbox::{
         poa::{PoAFactoryExt, PoaFactoryClient},
     },
     kit::{
-        AccountId, Gas, Near, NearToken, protocol::AccountIdRef, standards::FungibleToken,
-        transaction::Final,
+        AccountId, AccountIdRef, Gas, NearToken, SigningNear,
+        protocol::Action,
+        signer::Signer,
+        standards::{FungibleToken, FungibleTokenClient},
     },
     root,
 };
@@ -36,19 +38,19 @@ const INITIAL_USER_BALANCE: NearToken = NearToken::from_near(10);
 #[fixture]
 pub async fn env(
     #[default(EnvBuilder::default())] builder: EnvBuilder,
-    #[future(awt)] root: Near,
+    #[future(awt)] root: SigningNear,
 ) -> Env {
     builder.build(root).await
 }
 
 #[autoimpl(Deref using self.root)]
 pub struct Env {
-    pub root: Near,
+    pub root: SigningNear,
 
-    pub defuse_near: Near,
-    pub wnear: FungibleToken,
-    pub defuse: DefuseClient,
-    pub poa_factory: PoaFactoryClient,
+    pub defuse_near: SigningNear,
+    pub wnear: FungibleTokenClient<SigningNear>,
+    pub defuse: DefuseClient<SigningNear>,
+    pub poa_factory: PoaFactoryClient<SigningNear>,
 }
 
 impl Env {
@@ -69,15 +71,13 @@ impl Env {
         }
 
         if self
-            .ft(AccountId::from(token_id))
+            .contract::<FungibleToken>(AccountId::from(token_id))
             .transfer_call(
                 self.defuse.contract_id(),
                 amount,
                 serde_json::to_string(&msg).unwrap(),
             )
             .gas(Gas::from_tgas(300))
-            .send()
-            .wait_until::<Final>()
             .await?
             .json::<U128>()
             .map(|v| v.0)?
@@ -88,13 +88,16 @@ impl Env {
         Ok(())
     }
 
-    pub async fn create_named_token(&self, name: impl AsRef<str>) -> FungibleToken {
+    pub async fn create_named_token(
+        &self,
+        name: impl AsRef<str>,
+    ) -> FungibleTokenClient<SigningNear> {
         self.poa_factory_deploy_token(self.poa_factory.contract_id(), name, None)
             .await
             .unwrap()
     }
 
-    pub async fn create_token(&self) -> FungibleToken {
+    pub async fn create_token(&self) -> FungibleTokenClient<SigningNear> {
         let account_id = generate_random_account_id(self.poa_factory.contract_id())
             .expect("Failed to generate random account ID");
         let name = account_id
@@ -104,10 +107,10 @@ impl Env {
         self.create_named_token(name).await
     }
 
-    pub async fn create_named_user(&self, name: &str) -> Near {
+    pub async fn create_named_user(&self, name: &str) -> SigningNear {
         let account = self.create_subaccount(name, INITIAL_USER_BALANCE).await;
 
-        let near_pubkey = account.public_key().expect("account must have signer");
+        let near_pubkey = account.signer().public_key();
         let defuse_pubkey = DefusePublicKey::Ed25519(Ed25519PublicKey(
             *near_pubkey
                 .as_ed25519_bytes()
@@ -132,7 +135,7 @@ impl Env {
         account
     }
 
-    pub async fn create_user(&self) -> Near {
+    pub async fn create_user(&self) -> SigningNear {
         let account_id = generate_random_account_id(self.account_id())
             .expect("Failed to generate next account id");
 
@@ -171,11 +174,9 @@ impl Env {
                     .into_iter()
                     .chain([self.wnear.contract_id()])
                     .flat_map(|token| {
-                        let ft = self.ft(token);
+                        let ft = self.contract::<FungibleToken>(token);
                         all_accounts.iter().map(move |account_id| {
                             ft.storage_deposit(account_id, TOKEN_STORAGE_DEPOSIT)
-                                .send()
-                                .wait_until::<Final>()
                                 .into_future()
                                 .map(move |r| {
                                     r.context(format!(
@@ -204,8 +205,8 @@ impl Env {
 
     pub async fn upgrade_defuse(&self, wasm: impl Into<Vec<u8>>) {
         self.defuse_near
-            .deploy(wasm)
-            .wait_until::<Final>()
+            .transaction(self.defuse_near.account_id())
+            .add_action(Action::deploy_contract(wasm))
             .await
             .unwrap()
             .result()
@@ -218,10 +219,9 @@ impl Env {
         amount: NearToken,
     ) -> Result<()> {
         self.transaction(account_id)
-            .transfer(amount)
-            .send()
-            .wait_until::<Final>()
-            .await?;
+            .add_action(Action::transfer(amount))
+            .await?
+            .result()?;
         Ok(())
     }
 }

@@ -6,7 +6,7 @@ use defuse_sandbox::{
         IdDigest, PayloadHash, PoAFactoryExt, PoaFactoryClient, PoaFactoryDeployerExt,
         PoaGetWithdrawalArgs, Withdrawal, contract::Role,
     },
-    kit::{Near, NearToken},
+    kit::{NearToken, SigningNear},
     root,
 };
 use defuse_test_utils::wasms::POA_FACTORY_WASM;
@@ -15,7 +15,7 @@ use rstest::rstest;
 
 #[rstest]
 #[tokio::test]
-async fn deploy_mint(#[future(awt)] root: Near) {
+async fn deploy_mint(#[future(awt)] root: SigningNear) {
     let user = root
         .create_subaccount("user1", NearToken::from_near(10))
         .await;
@@ -53,15 +53,17 @@ async fn deploy_mint(#[future(awt)] root: Near) {
         .await
         .unwrap_err();
 
-    assert!(ft1.balance_of(user.account_id()).await.unwrap().is_zero());
+    assert_eq!(ft1.balance_of(user.account_id()).await.unwrap(), 0);
 
-    try_join!(
+    let (root_deposit, user_deposit) = try_join!(
         ft1.storage_deposit(root.account_id(), NearToken::from_near(1))
             .into_future(),
         ft1.storage_deposit(user.account_id(), NearToken::from_near(1))
             .into_future()
     )
     .unwrap();
+    root_deposit.result().unwrap();
+    user_deposit.result().unwrap();
 
     user.poa_factory_ft_deposit(
         poa_factory.contract_id(),
@@ -85,12 +87,12 @@ async fn deploy_mint(#[future(awt)] root: Near) {
     .await
     .unwrap();
 
-    let balance: u128 = ft1.balance_of(user.account_id()).await.unwrap().into();
+    let balance = ft1.balance_of(user.account_id()).await.unwrap();
 
     assert_eq!(balance, 1000);
 }
 
-async fn deploy_factory_with_all_roles(root: &Near) -> PoaFactoryClient {
+async fn deploy_factory_with_all_roles(root: &SigningNear) -> PoaFactoryClient<SigningNear> {
     root.deploy_poa_factory(
         "poa-factory",
         [root.account_id().clone()],
@@ -125,7 +127,7 @@ fn id(byte: u8) -> IdDigest {
 
 #[rstest]
 #[tokio::test]
-async fn record_withdrawal_and_reject_duplicate(#[future(awt)] root: Near) {
+async fn record_withdrawal_and_reject_duplicate(#[future(awt)] root: SigningNear) {
     let unauthorized = root
         .create_subaccount("unauth", NearToken::from_near(10))
         .await;
@@ -174,7 +176,7 @@ async fn record_withdrawal_and_reject_duplicate(#[future(awt)] root: Near) {
 
 #[rstest]
 #[tokio::test]
-async fn update_withdrawal(#[future(awt)] root: Near) {
+async fn update_withdrawal(#[future(awt)] root: SigningNear) {
     let unauthorized = root
         .create_subaccount("unauth-upd", NearToken::from_near(10))
         .await;

@@ -18,8 +18,8 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBalanceOfArgs},
     },
-    kit::{AccountId, CryptoHash, protocol::AccountIdRef},
-    sandbox::SandboxConfig,
+    kit::{AccountId, AccountIdRef, CryptoHash},
+    sandbox::Sandbox,
 };
 use defuse_test_utils::random::rng;
 use near_sdk::events::AsNep297Event;
@@ -175,7 +175,7 @@ async fn webauthn() {
     const SIGNER_ID: &AccountIdRef =
         AccountIdRef::new_or_panic("0x3602b546589a8fcafdce7fad64a46f91db0e4d50");
 
-    let sandbox = SandboxConfig::builder()
+    let sandbox = Sandbox::builder()
         .root_account(ROOT_ID)
         .fresh()
         .await
@@ -184,7 +184,7 @@ async fn webauthn() {
     let env = EnvBuilder::default()
         .defuse_name(DEFUSE_NAME)
         .poa_factory_name(POA_FACTORY_NAME)
-        .build(sandbox.client())
+        .build(sandbox.root_account())
         .await;
 
     let (user, ft) = futures::join!(

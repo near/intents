@@ -11,7 +11,7 @@ use defuse_sandbox::{
         mt::{Mt, MtBalanceOfArgs, MtExt},
         nft::NftAdminExt,
     },
-    kit::{Gas, NearToken, transaction::Final},
+    kit::{Gas, NearToken, protocol::Action, standards::NonFungibleToken},
 };
 use defuse_test_utils::wasms::NON_FUNGIBLE_TOKEN_WASM;
 use near_contract_standards::non_fungible_token::{
@@ -38,8 +38,10 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
     );
 
     env.transaction(user1.account_id())
-        .transfer(NearToken::from_near(100))
+        .add_action(Action::transfer(NearToken::from_near(100)))
         .await
+        .unwrap()
+        .result()
         .unwrap();
 
     let existing_tokens = env.mt_tokens(env.defuse.contract_id(), ..).await.unwrap();
@@ -103,8 +105,8 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
         {
             assert_eq!(nft1.owner_id, *user2.account_id());
 
-            user2
-                .nft(nft_issuer_contract.contract_id())
+            let outcome = user2
+                .contract::<NonFungibleToken>(nft_issuer_contract.contract_id())
                 .transfer_call(
                     env.defuse.contract_id(),
                     nft1.token_id.clone(),
@@ -112,10 +114,11 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                         .unwrap(),
                 )
                 .gas(Gas::from_tgas(300))
-                .send()
-                .wait_until::<Final>()
                 .await
                 .unwrap();
+            if let Some(error) = outcome.receipt_failures().next() {
+                panic!("NFT deposit failed: {error}");
+            }
 
             let nft1_data = nft_issuer_contract
                 .token(&nft1.token_id)
@@ -160,8 +163,8 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
     {
         {
             assert_eq!(nft2.owner_id, *user3.account_id());
-            user3
-                .nft(nft_issuer_contract.contract_id())
+            let outcome = user3
+                .contract::<NonFungibleToken>(nft_issuer_contract.contract_id())
                 .transfer_call(
                     env.defuse.contract_id(),
                     nft2.token_id.clone(),
@@ -169,10 +172,11 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                         .unwrap(),
                 )
                 .gas(Gas::from_tgas(300))
-                .send()
-                .wait_until::<Final>()
                 .await
                 .unwrap();
+            if let Some(error) = outcome.receipt_failures().next() {
+                panic!("NFT deposit failed: {error}");
+            }
 
             let nft2_data = nft_issuer_contract
                 .token(&nft2.token_id)
