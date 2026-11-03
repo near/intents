@@ -21,4 +21,12 @@ ignore = [
   "RUSTSEC-2026-0346",
   "RUSTSEC-2026-0348",
   "RUSTSEC-2026-0349",
+
+  # crypto-bigint 0.5.5: timing variability in constant-time ops.
+  # Pulled in via near-vm-runner (near-sdk's `unit-testing` 
+  # feature, restricted to cfg(not(target_arch = "wasm32"))),
+  # never linked into the contract wasm.
+  # BLOCKED: near-vm-runner 0.38.0 (latest) requires p256 ^0.13.
+  "RUSTSEC-2026-0387",
+
 ]
