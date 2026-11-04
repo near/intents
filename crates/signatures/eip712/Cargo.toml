@@ -1,0 +1,20 @@
+lints.workspace = true
+
+[package]
+name = "defuse-eip712"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+defuse-crypto = { workspace = true, features = ["secp256k1"] }
+defuse-digest = { workspace = true, features = ["sha3"] }
+
+[dev-dependencies]
+defuse-crypto = { workspace = true, features = ["fmt", "signing"] }
+
+hex-literal.workspace = true
+k256 = { workspace = true, features = ["getrandom"] }
+rstest.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }
