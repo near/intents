@@ -11,7 +11,7 @@ use crate::AuthorizationResolution;
 #[near_kit::contract]
 pub trait AuthResolverContract {
     /// See [`w_resolve_auth()`](crate::AuthResolver::w_resolve_auth) method.
-    fn w_resolve_auth(&self, args: WResolveAuthArgs<'_>) -> AuthorizationResolution;
+    fn w_resolve_auth(&self, #[args] args: WResolveAuthArgs<'_>) -> AuthorizationResolution;
 }
 
 /// Arguments for [`w_resolve_auth()`](AuthResolverContractClient::w_resolve_auth) view-method.

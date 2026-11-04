@@ -21,7 +21,6 @@ trait-variant.workspace = true
 
 bs58 = { workspace = true, optional = true }
 defuse-mpc-signer = { workspace = true, optional = true }
-derive_more = { workspace = true, features = ["from"], optional = true }
 near-kit = { workspace = true, default-features = false, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 tokio = { workspace = true, optional = true }
@@ -33,7 +32,6 @@ default = ["mpc", "near-kit"]
 near-kit = [
   "defuse-near-sender/near-kit",
   "defuse-wallet/near-kit",
-  "dep:derive_more",
   "dep:near-kit",
   "dep:tokio",
   "tokio/time",
