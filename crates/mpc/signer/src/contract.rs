@@ -8,9 +8,10 @@ use serde_with::{hex::Hex, serde_as};
 
 #[near_kit::contract]
 pub trait MpcContract {
-    fn public_key(&self, args: PublicKeyArgs) -> PublicKey;
+    fn public_key(&self, #[args] args: PublicKeyArgs) -> PublicKey;
+    /// Returns [`SignResponse`] from a yielded receipt (decode it from the outcome).
     #[call]
-    fn sign(&mut self, args: SignArgs<'_>) -> SignResponse;
+    fn sign(&mut self, #[args] args: SignArgs<'_>);
 }
 
 #[derive(Serialize)]

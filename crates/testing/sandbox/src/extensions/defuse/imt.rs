@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use anyhow::Result;
 use defuse::core::tokens::imt::ImtTokens;
 use defuse_core::amounts::Amounts;
-use near_kit::{AccountId, Gas, Near, NearToken, protocol::AccountIdRef};
+use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear};
 use serde::Serialize;
 
 use crate::{extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};
@@ -18,7 +18,7 @@ pub struct ImtBurnArgs<'a> {
 #[near_kit::contract]
 pub trait ImtBurnerContract {
     #[call]
-    fn imt_burn(&mut self, args: ImtBurnArgs);
+    fn imt_burn(&mut self, #[args] args: ImtBurnArgs);
 }
 
 pub trait DefuseImtExt {
@@ -31,7 +31,7 @@ pub trait DefuseImtExt {
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
-impl DefuseImtExt for Near {
+impl DefuseImtExt for SigningNear {
     async fn defuse_imt_burn(
         &self,
         defuse: impl Into<AccountId>,

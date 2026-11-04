@@ -14,10 +14,8 @@ use defuse_core::{
     Nonce, PublicKey, Salt, fees::Pips, intents::auth::AuthCall, payload::multi::MultiPayload,
 };
 use near_kit::{
-    AccountId, Gas, Near, NearToken,
-    protocol::{AccountIdRef, FunctionCallAction},
+    AccountId, AccountIdRef, Gas, NearToken, SigningNear, protocol::FunctionCallAction,
     rpc::FinalExecutionOutcome,
-    transaction::Final,
 };
 use near_sdk::json_types::U128;
 use serde::Serialize;
@@ -52,11 +50,6 @@ pub struct IsNonceUsedArgs<'a> {
 #[derive(Serialize)]
 pub struct PublicKeyArgs {
     pub public_key: PublicKey,
-}
-
-#[derive(Serialize)]
-pub struct SaltArgs {
-    pub salt: Salt,
 }
 
 #[derive(Serialize)]
@@ -161,79 +154,87 @@ pub trait Defuse {
     fn fee(&self) -> Pips;
     fn fee_collector(&self) -> AccountId;
 
-    fn has_public_key(&self, args: HasPublicKeyArgs) -> bool;
-    fn public_keys_of(&self, args: AccountArgs) -> HashSet<PublicKey>;
+    fn has_public_key(&self, #[args] args: HasPublicKeyArgs) -> bool;
+    fn public_keys_of(&self, #[args] args: AccountArgs) -> HashSet<PublicKey>;
 
-    fn is_nonce_used(&self, args: IsNonceUsedArgs) -> bool;
-    fn is_auth_by_predecessor_id_enabled(&self, args: AccountArgs) -> bool;
+    fn is_nonce_used(&self, #[args] args: IsNonceUsedArgs) -> bool;
+    fn is_auth_by_predecessor_id_enabled(&self, #[args] args: AccountArgs) -> bool;
 
     #[call]
-    fn add_public_key(&mut self, args: PublicKeyArgs);
+    fn add_public_key(&mut self, #[args] args: PublicKeyArgs);
     #[call]
-    fn remove_public_key(&mut self, args: PublicKeyArgs);
+    fn remove_public_key(&mut self, #[args] args: PublicKeyArgs);
 
     #[call]
     fn disable_auth_by_predecessor_id(&mut self);
 
     #[call]
-    fn set_fee(&mut self, args: FeeArgs);
+    fn set_fee(&mut self, #[args] args: FeeArgs);
     #[call]
-    fn set_fee_collector(&mut self, args: FeeCollectorArgs);
+    fn set_fee_collector(&mut self, #[args] args: FeeCollectorArgs);
 
     fn current_salt(&self) -> Salt;
-    fn is_valid_salt(&self, salt: SaltArgs) -> bool;
+    fn is_valid_salt(&self, salt: Salt) -> bool;
+
+    /// Returns `Salt` (decode it from the outcome).
+    #[call]
+    fn update_current_salt(&mut self);
+    /// Returns `Salt` (decode it from the outcome).
+    #[call]
+    fn invalidate_salts(&mut self, #[args] args: InvalidateSaltArgs);
 
     #[call]
-    fn update_current_salt(&mut self) -> Salt;
-    #[call]
-    fn invalidate_salts(&mut self, args: InvalidateSaltArgs) -> Salt;
+    fn admin_call(&mut self, #[args] args: AdminCallArgs);
+
+    fn simulate_intents(&self, #[args] args: MultiPayloadArgs) -> SimulationOutput;
 
     #[call]
-    fn admin_call(&mut self, args: AdminCallArgs);
-
-    fn simulate_intents(&self, args: MultiPayloadArgs) -> SimulationOutput;
+    fn execute_intents(&mut self, #[args] args: MultiPayloadArgs);
 
     #[call]
-    fn execute_intents(&mut self, args: MultiPayloadArgs);
+    fn add_relayer_key(&mut self, #[args] args: PublicKeyArgs);
+    #[call]
+    fn do_add_relayer_key(&mut self, #[args] args: PublicKeyArgs);
+    #[call]
+    fn delete_relayer_key(&mut self, #[args] args: PublicKeyArgs);
 
     #[call]
-    fn add_relayer_key(&mut self, args: PublicKeyArgs);
-    #[call]
-    fn do_add_relayer_key(&mut self, args: PublicKeyArgs);
-    #[call]
-    fn delete_relayer_key(&mut self, args: PublicKeyArgs);
+    fn cleanup_nonces(&mut self, #[args] args: CleanupNoncesArgs);
 
     #[call]
-    fn cleanup_nonces(&mut self, args: CleanupNoncesArgs);
+    fn force_add_public_keys(&mut self, #[args] args: ForcePublicKeysArgs);
+    #[call]
+    fn force_remove_public_keys(&mut self, #[args] args: ForcePublicKeysArgs);
 
-    #[call]
-    fn force_add_public_keys(&mut self, args: ForcePublicKeysArgs);
-    #[call]
-    fn force_remove_public_keys(&mut self, args: ForcePublicKeysArgs);
+    fn is_account_locked(&self, #[args] args: AccountArgs) -> bool;
 
-    fn is_account_locked(&self, args: AccountArgs) -> bool;
+    /// Returns `bool` (decode it from the outcome).
+    #[call]
+    fn force_lock_account(&mut self, #[args] args: AccountArgs);
+    /// Returns `bool` (decode it from the outcome).
+    #[call]
+    fn force_unlock_account(&mut self, #[args] args: AccountArgs);
+    #[call]
+    fn force_disable_auth_by_predecessor_ids(&mut self, #[args] args: MultipleAccountsArgs);
+    #[call]
+    fn force_enable_auth_by_predecessor_ids(&mut self, #[args] args: MultipleAccountsArgs);
 
+    /// Returns `U128` (decode it from the outcome).
     #[call]
-    fn force_lock_account(&mut self, args: AccountArgs) -> bool;
+    fn ft_withdraw(&mut self, #[args] args: FtWithdrawArgs);
+    /// Returns `U128` (decode it from the outcome).
     #[call]
-    fn force_unlock_account(&mut self, args: AccountArgs) -> bool;
+    fn ft_force_withdraw(&mut self, #[args] args: FtForceWithdrawArgs);
+    /// Returns `Vec<U128>` (decode it from the outcome).
     #[call]
-    fn force_disable_auth_by_predecessor_ids(&mut self, args: MultipleAccountsArgs);
+    fn mt_withdraw(&mut self, #[args] args: MtWithdrawArgs);
+    /// Returns `bool` (decode it from the outcome).
     #[call]
-    fn force_enable_auth_by_predecessor_ids(&mut self, args: MultipleAccountsArgs);
-
-    #[call]
-    fn ft_withdraw(&mut self, args: FtWithdrawArgs) -> U128;
-    #[call]
-    fn ft_force_withdraw(&mut self, args: FtForceWithdrawArgs) -> U128;
-    #[call]
-    fn mt_withdraw(&mut self, args: MtWithdrawArgs) -> Vec<U128>;
-    #[call]
-    fn nft_withdraw(&mut self, args: NftWithdrawArgs) -> bool;
+    fn nft_withdraw(&mut self, #[args] args: NftWithdrawArgs);
 
     // NOTE: private method for testing purposes, not part of the public API
     #[call]
-    fn do_auth_call(&mut self, args: DoAuthCallArgs);
+    fn do_auth_call(&mut self, #[args] args: DoAuthCallArgs);
 }
 
 pub trait DefuseExt {
@@ -409,10 +410,10 @@ pub trait DefuseDeployerExt {
         name: impl AsRef<str>,
         config: DefuseConfig,
         wasm: impl Into<Vec<u8>>,
-    ) -> Near;
+    ) -> SigningNear;
 }
 
-impl DefuseDeployerExt for Near {
+impl DefuseDeployerExt for SigningNear {
     async fn deploy_defuse(
         &self,
         name: impl AsRef<str>,
@@ -435,7 +436,7 @@ impl DefuseDeployerExt for Near {
     }
 }
 
-impl DefuseExt for Near {
+impl DefuseExt for SigningNear {
     async fn defuse_add_public_key(
         &self,
         defuse: impl Into<AccountId>,
@@ -522,7 +523,6 @@ impl DefuseExt for Near {
                     .deposit(NearToken::from_yoctonear(1))
                     .gas(Gas::from_tgas(30)),
             )
-            .wait_until::<Final>()
             .await?;
         let salt = outcome.json::<Salt>()?;
         Ok((outcome.try_into()?, salt))
@@ -542,7 +542,6 @@ impl DefuseExt for Near {
                 .gas(Gas::from_tgas(300))
                 .deposit(NearToken::from_yoctonear(1)),
             )
-            .wait_until::<Final>()
             .await?;
         let salt = outcome.json::<Salt>()?;
         Ok((outcome.try_into()?, salt))
@@ -706,7 +705,6 @@ impl DefuseExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(30)),
             )
-            .wait_until::<Final>()
             .await?;
         let locked = res.json::<bool>()?;
 
@@ -727,7 +725,6 @@ impl DefuseExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(30)),
             )
-            .wait_until::<Final>()
             .await?;
         let unlocked = res.json::<bool>()?;
 
@@ -788,7 +785,6 @@ impl DefuseExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
         let transferred = res.json::<U128>()?.0;
         Ok((res.try_into()?, transferred))
@@ -818,7 +814,6 @@ impl DefuseExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
         Ok(res.json::<U128>()?.0)
     }
@@ -847,7 +842,6 @@ impl DefuseExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
         let transferred = res.json::<Vec<U128>>()?.into_iter().map(|x| x.0).collect();
         Ok((res.try_into()?, transferred))
@@ -875,7 +869,6 @@ impl DefuseExt for Near {
                 .deposit(NearToken::from_yoctonear(1))
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
         let transferred = res.json::<bool>()?;
         Ok((res.try_into()?, transferred))
@@ -889,7 +882,6 @@ impl DefuseExt for Near {
     ) -> Result<FinalExecutionOutcome> {
         self.transaction(defuse.into())
             .add_action(Defuse::do_auth_call(args).gas(gas))
-            .wait_until::<Final>()
             .await
             .map_err(Into::into)
     }
