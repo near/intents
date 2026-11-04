@@ -1,7 +1,7 @@
 use anyhow::Result;
 use defuse_outlayer_app::{
     State as OutlayerState,
-    client::{OaSetCodeArgs, OutlayerAppContract, OutlayerAppContractClient},
+    client::{AsHex, OutlayerAppContract, OutlayerAppContractClient},
 };
 use near_kit::{
     Gas, Near, NearToken,
@@ -66,12 +66,11 @@ impl OutlayerAppExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(target.as_ref())
             .add_action(
-                OutlayerAppContract::oa_set_code(OaSetCodeArgs {
-                    old_code_hash,
-                    new_code_hash,
-                    new_code_url: new_code_url.as_ref().into(),
-                })
-                .deposit(NearToken::from_yoctonear(1))
+                OutlayerAppContract::oa_set_code(
+                    AsHex(old_code_hash),
+                    AsHex(new_code_hash),
+                    new_code_url.as_ref(),
+                )
                 .gas(Gas::from_tgas(10)),
             )
             .wait_until::<Final>()
@@ -86,8 +85,7 @@ impl OutlayerAppExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(target.as_ref())
             .add_action(
-                OutlayerAppContract::oa_transfer_admin(new_admin_id.as_ref().into())
-                    .deposit(NearToken::from_yoctonear(1))
+                OutlayerAppContract::oa_transfer_admin(new_admin_id.as_ref())
                     .gas(Gas::from_tgas(30)),
             )
             .wait_until::<Final>()
