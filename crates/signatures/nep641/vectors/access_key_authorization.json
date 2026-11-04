@@ -1,0 +1,858 @@
+{
+  "nep413_prefix_tag": 2147484061,
+  "algorithm": "SHA_256(borsh((nep413_prefix_tag, nep413_payload)))",
+  "nep413_payloads": [
+    {
+      "name": "doctest_callback_url",
+      "description": "The `into_nep413_payload()` doctest, with a browser wallet callback URL.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "extension.near",
+        "path": [
+          "wallet.near",
+          "v1.signer"
+        ],
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": "https://wallet.com/callback",
+      "recipient": "mainnet: extension.near -> wallet.near -> v1.signer @ 2026-08-05T07:28:00Z",
+      "nonce": "039f8afb4ef2d76c621d3952f214bd2a080ce977ef351d52ff65a090eebbf72c",
+      "payload_json": "{\"message\":\"Hello, Near!\",\"nonce\":\"A5+K+07y12xiHTlS8hS9KggM6XfvNR1S/2WgkO679yw=\",\"recipient\":\"mainnet: extension.near -> wallet.near -> v1.signer @ 2026-08-05T07:28:00Z\",\"callbackUrl\":\"https://wallet.com/callback\"}",
+      "prehash_preimage": "9d0100800c00000048656c6c6f2c204e65617221039f8afb4ef2d76c621d3952f214bd2a080ce977ef351d52ff65a090eebbf72c4a0000006d61696e6e65743a20657874656e73696f6e2e6e656172202d3e2077616c6c65742e6e656172202d3e2076312e7369676e6572204020323032362d30382d30355430373a32383a30305a011b00000068747470733a2f2f77616c6c65742e636f6d2f63616c6c6261636b",
+      "prehash": "f89c1ec593c12c7caf9f22f980f60be38e16e68d627831eea9314913d292ed90",
+      "offchain_message_hash": "039f8afb4ef2d76c621d3952f214bd2a080ce977ef351d52ff65a090eebbf72c"
+    },
+    {
+      "name": "spec_example",
+      "description": "The `recipient` string printed in NEP-641 itself, with no callback URL.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "extension.near",
+        "path": [
+          "wallet.near",
+          "v1.signer"
+        ],
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": null,
+      "recipient": "mainnet: extension.near -> wallet.near -> v1.signer @ 2026-08-05T07:28:00Z",
+      "nonce": "039f8afb4ef2d76c621d3952f214bd2a080ce977ef351d52ff65a090eebbf72c",
+      "payload_json": "{\"message\":\"Hello, Near!\",\"nonce\":\"A5+K+07y12xiHTlS8hS9KggM6XfvNR1S/2WgkO679yw=\",\"recipient\":\"mainnet: extension.near -> wallet.near -> v1.signer @ 2026-08-05T07:28:00Z\"}",
+      "prehash_preimage": "9d0100800c00000048656c6c6f2c204e65617221039f8afb4ef2d76c621d3952f214bd2a080ce977ef351d52ff65a090eebbf72c4a0000006d61696e6e65743a20657874656e73696f6e2e6e656172202d3e2077616c6c65742e6e656172202d3e2076312e7369676e6572204020323032362d30382d30355430373a32383a30305a00",
+      "prehash": "37a55af1b0e1e2dd73f861214bbab5aa26805aac5da8fe723ac7c68554cc5f9d",
+      "offchain_message_hash": "039f8afb4ef2d76c621d3952f214bd2a080ce977ef351d52ff65a090eebbf72c"
+    },
+    {
+      "name": "no_callback_url",
+      "description": "No callback URL. The `Option` is a bare `0x00` in the Borsh preimage.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "wallet.near",
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": null,
+      "recipient": "mainnet: wallet.near @ 2026-08-05T07:28:00Z",
+      "nonce": "d98eb326e626ad325bfc4ff7d4e487d2c8cbd820a5a29683be6b931a3dd5a280",
+      "payload_json": "{\"message\":\"Hello, Near!\",\"nonce\":\"2Y6zJuYmrTJb/E/31OSH0sjL2CClopaDvmuTGj3VooA=\",\"recipient\":\"mainnet: wallet.near @ 2026-08-05T07:28:00Z\"}",
+      "prehash_preimage": "9d0100800c00000048656c6c6f2c204e65617221d98eb326e626ad325bfc4ff7d4e487d2c8cbd820a5a29683be6b931a3dd5a2802b0000006d61696e6e65743a2077616c6c65742e6e656172204020323032362d30382d30355430373a32383a30305a00",
+      "prehash": "c505f178a00129e3c08cfc31dcd355e281579b620cfa70cb7878f2805417e95a",
+      "offchain_message_hash": "d98eb326e626ad325bfc4ff7d4e487d2c8cbd820a5a29683be6b931a3dd5a280"
+    },
+    {
+      "name": "empty_callback_url",
+      "description": "A callback URL that is present but empty: `0x01` followed by a zero length prefix, not `0x00`.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "wallet.near",
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": "",
+      "recipient": "mainnet: wallet.near @ 2026-08-05T07:28:00Z",
+      "nonce": "d98eb326e626ad325bfc4ff7d4e487d2c8cbd820a5a29683be6b931a3dd5a280",
+      "payload_json": "{\"message\":\"Hello, Near!\",\"nonce\":\"2Y6zJuYmrTJb/E/31OSH0sjL2CClopaDvmuTGj3VooA=\",\"recipient\":\"mainnet: wallet.near @ 2026-08-05T07:28:00Z\",\"callbackUrl\":\"\"}",
+      "prehash_preimage": "9d0100800c00000048656c6c6f2c204e65617221d98eb326e626ad325bfc4ff7d4e487d2c8cbd820a5a29683be6b931a3dd5a2802b0000006d61696e6e65743a2077616c6c65742e6e656172204020323032362d30382d30355430373a32383a30305a0100000000",
+      "prehash": "6b2af09cf8e422312e53a88f1751143abb5b3343dab164dcf2e20fb2e01ffb2b",
+      "offchain_message_hash": "d98eb326e626ad325bfc4ff7d4e487d2c8cbd820a5a29683be6b931a3dd5a280"
+    },
+    {
+      "name": "path_empty",
+      "description": "Top-level authorization: `recipient` names the signer alone, with no arrow.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "wallet.near",
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": null,
+      "recipient": "mainnet: wallet.near @ 2026-08-05T07:28:00Z",
+      "nonce": "d98eb326e626ad325bfc4ff7d4e487d2c8cbd820a5a29683be6b931a3dd5a280",
+      "payload_json": "{\"message\":\"Hello, Near!\",\"nonce\":\"2Y6zJuYmrTJb/E/31OSH0sjL2CClopaDvmuTGj3VooA=\",\"recipient\":\"mainnet: wallet.near @ 2026-08-05T07:28:00Z\"}",
+      "prehash_preimage": "9d0100800c00000048656c6c6f2c204e65617221d98eb326e626ad325bfc4ff7d4e487d2c8cbd820a5a29683be6b931a3dd5a2802b0000006d61696e6e65743a2077616c6c65742e6e656172204020323032362d30382d30355430373a32383a30305a00",
+      "prehash": "c505f178a00129e3c08cfc31dcd355e281579b620cfa70cb7878f2805417e95a",
+      "offchain_message_hash": "d98eb326e626ad325bfc4ff7d4e487d2c8cbd820a5a29683be6b931a3dd5a280"
+    },
+    {
+      "name": "path_deep",
+      "description": "Four resolver hops: `recipient` joins them after the signer, bottom-top.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "leaf.near",
+        "path": [
+          "a.near",
+          "b.near",
+          "c.near",
+          "top.near"
+        ],
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": null,
+      "recipient": "mainnet: leaf.near -> a.near -> b.near -> c.near -> top.near @ 2026-08-05T07:28:00Z",
+      "nonce": "09dda31c24d6821641d18c2131c18cad88b56fc2852f8cd76dbfae7a2423590c",
+      "payload_json": "{\"message\":\"Hello, Near!\",\"nonce\":\"Cd2jHCTWghZB0YwhMcGMrYi1b8KFL4zXbb+ueiQjWQw=\",\"recipient\":\"mainnet: leaf.near -> a.near -> b.near -> c.near -> top.near @ 2026-08-05T07:28:00Z\"}",
+      "prehash_preimage": "9d0100800c00000048656c6c6f2c204e6561722109dda31c24d6821641d18c2131c18cad88b56fc2852f8cd76dbfae7a2423590c530000006d61696e6e65743a206c6561662e6e656172202d3e20612e6e656172202d3e20622e6e656172202d3e20632e6e656172202d3e20746f702e6e656172204020323032362d30382d30355430373a32383a30305a00",
+      "prehash": "34848b00b991d8f15aebc65ba8a45974d2e81f6c3e9f09e3178362dd9d68cef8",
+      "offchain_message_hash": "09dda31c24d6821641d18c2131c18cad88b56fc2852f8cd76dbfae7a2423590c"
+    },
+    {
+      "name": "timestamp_whole_second",
+      "description": "A timestamp that is already whole: truncation must neither add nor remove anything.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "wallet.near",
+        "timestamp": "2026-08-05T07:28:00Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": null,
+      "recipient": "mainnet: wallet.near @ 2026-08-05T07:28:00Z",
+      "nonce": "d74f6c10967f3458aecc8ae11e5feef032ddf73df20c465a3ed4690ddf62dafa",
+      "payload_json": "{\"message\":\"Hello, Near!\",\"nonce\":\"109sEJZ/NFiuzIrhHl/u8DLd9z3yDEZaPtRpDd9i2vo=\",\"recipient\":\"mainnet: wallet.near @ 2026-08-05T07:28:00Z\"}",
+      "prehash_preimage": "9d0100800c00000048656c6c6f2c204e65617221d74f6c10967f3458aecc8ae11e5feef032ddf73df20c465a3ed4690ddf62dafa2b0000006d61696e6e65743a2077616c6c65742e6e656172204020323032362d30382d30355430373a32383a30305a00",
+      "prehash": "57f019c4f332cc9852d765e127e8fdbd347f67f36606e0de9c963e87a62d3f45",
+      "offchain_message_hash": "d74f6c10967f3458aecc8ae11e5feef032ddf73df20c465a3ed4690ddf62dafa"
+    },
+    {
+      "name": "timestamp_epoch",
+      "description": "Subseconds are truncated down, so this timestamp reaches `recipient` as the bare epoch.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "wallet.near",
+        "timestamp": "1970-01-01T00:00:00.999999999Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": null,
+      "recipient": "mainnet: wallet.near @ 1970-01-01T00:00:00Z",
+      "nonce": "648ac6f9779d2d96f79d5add5c9043a181b223c11c0923301f92fd827238ef44",
+      "payload_json": "{\"message\":\"Hello, Near!\",\"nonce\":\"ZIrG+XedLZb3nVrdXJBDoYGyI8EcCSMwH5L9gnI470Q=\",\"recipient\":\"mainnet: wallet.near @ 1970-01-01T00:00:00Z\"}",
+      "prehash_preimage": "9d0100800c00000048656c6c6f2c204e65617221648ac6f9779d2d96f79d5add5c9043a181b223c11c0923301f92fd827238ef442b0000006d61696e6e65743a2077616c6c65742e6e656172204020313937302d30312d30315430303a30303a30305a00",
+      "prehash": "9ce515cb772f00ee9a6c0dfd9f2112e1c9d3bcf08ddc4a8720e37b2a66cd6322",
+      "offchain_message_hash": "648ac6f9779d2d96f79d5add5c9043a181b223c11c0923301f92fd827238ef44"
+    },
+    {
+      "name": "message_empty",
+      "description": "An empty payload becomes an empty NEP-413 `message`.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "wallet.near",
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": ""
+      },
+      "callback_url": null,
+      "recipient": "mainnet: wallet.near @ 2026-08-05T07:28:00Z",
+      "nonce": "a889e3085eb7727f50c3e7ff45959b2812f00a62d3291c64eba0e511f67b3cc2",
+      "payload_json": "{\"message\":\"\",\"nonce\":\"qInjCF63cn9Qw+f/RZWbKBLwCmLTKRxk66DlEfZ7PMI=\",\"recipient\":\"mainnet: wallet.near @ 2026-08-05T07:28:00Z\"}",
+      "prehash_preimage": "9d01008000000000a889e3085eb7727f50c3e7ff45959b2812f00a62d3291c64eba0e511f67b3cc22b0000006d61696e6e65743a2077616c6c65742e6e656172204020323032362d30382d30355430373a32383a30305a00",
+      "prehash": "05fab140d7c4ad9f2ac667a5233472d22984dc92e15b0d21edf63a7308a0e534",
+      "offchain_message_hash": "a889e3085eb7727f50c3e7ff45959b2812f00a62d3291c64eba0e511f67b3cc2"
+    },
+    {
+      "name": "message_unicode",
+      "description": "Multi-byte payload and callback URL: Borsh length prefixes are byte counts, not character counts.",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "wallet.near",
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "こんにちは, Near! 🌐"
+      },
+      "callback_url": "https://wallet.example/コールバック",
+      "recipient": "mainnet: wallet.near @ 2026-08-05T07:28:00Z",
+      "nonce": "5093a9d4d21705620cad6808927860aba363e51801854489b8bf15429d41a94a",
+      "payload_json": "{\"message\":\"こんにちは, Near! 🌐\",\"nonce\":\"UJOp1NIXBWIMrWgIknhgq6Nj5RgBhUSJuL8VQp1BqUo=\",\"recipient\":\"mainnet: wallet.near @ 2026-08-05T07:28:00Z\",\"callbackUrl\":\"https://wallet.example/コールバック\"}",
+      "prehash_preimage": "9d0100801b000000e38193e38293e381abe381a1e381af2c204e6561722120f09f8c905093a9d4d21705620cad6808927860aba363e51801854489b8bf15429d41a94a2b0000006d61696e6e65743a2077616c6c65742e6e656172204020323032362d30382d30355430373a32383a30305a012900000068747470733a2f2f77616c6c65742e6578616d706c652fe382b3e383bce383abe38390e38383e382af",
+      "prehash": "81136a6615f522b928354944d7530939fbe93f0189e578b3368343fe7fd82b05",
+      "offchain_message_hash": "5093a9d4d21705620cad6808927860aba363e51801854489b8bf15429d41a94a"
+    },
+    {
+      "name": "chain_testnet",
+      "description": "`chain_id` leads the `recipient` string.",
+      "message": {
+        "chain_id": "testnet",
+        "signer_id": "wallet.near",
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": null,
+      "recipient": "testnet: wallet.near @ 2026-08-05T07:28:00Z",
+      "nonce": "00bf85ed3d6d93d86984e6b8eb4a80503a3e9def3fb444d82c72f7385acfd6c9",
+      "payload_json": "{\"message\":\"Hello, Near!\",\"nonce\":\"AL+F7T1tk9hphOa460qAUDo+ne8/tETYLHL3OFrP1sk=\",\"recipient\":\"testnet: wallet.near @ 2026-08-05T07:28:00Z\"}",
+      "prehash_preimage": "9d0100800c00000048656c6c6f2c204e6561722100bf85ed3d6d93d86984e6b8eb4a80503a3e9def3fb444d82c72f7385acfd6c92b000000746573746e65743a2077616c6c65742e6e656172204020323032362d30382d30355430373a32383a30305a00",
+      "prehash": "32ac151134332a0a01a5ba56e984f49cbc632856a06a2484cc5506c69d077f8a",
+      "offchain_message_hash": "00bf85ed3d6d93d86984e6b8eb4a80503a3e9def3fb444d82c72f7385acfd6c9"
+    }
+  ],
+  "signed": [
+    {
+      "name": "ed25519_top_level",
+      "description": "Top-level authorization signed with a full-access ed25519 key.",
+      "curve": "ed25519",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "wallet.near",
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": null,
+      "access_key": "ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z",
+      "signature": "ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5",
+      "prehash": "c505f178a00129e3c08cfc31dcd355e281579b620cfa70cb7878f2805417e95a",
+      "implicit_account_id": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "verifies": true
+    },
+    {
+      "name": "ed25519_callback_url",
+      "description": "The same, with a callback URL in `via.extra`, which is part of the signed payload.",
+      "curve": "ed25519",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "wallet.near",
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": "https://wallet.example/cb",
+      "access_key": "ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z",
+      "signature": "ed25519:5c9aBjwx7wUuSFjubyLb9SEtKHoqSZdXGj5eG1N6Y6V9XP1RRfz9QcwauyrtovPDYWDQR5erStMvbQTSkLKdhFA3",
+      "prehash": "44e744c4db26e47789765d2a733ffe44fda993dff2b0b31a27a5142a5d1377f1",
+      "implicit_account_id": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{\"callback_url\":\"https://wallet.example/cb\"}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:5c9aBjwx7wUuSFjubyLb9SEtKHoqSZdXGj5eG1N6Y6V9XP1RRfz9QcwauyrtovPDYWDQR5erStMvbQTSkLKdhFA3\"}",
+      "verifies": true
+    },
+    {
+      "name": "ed25519_deep_path",
+      "description": "Delegated authorization, two resolver hops below the top-level resolver.",
+      "curve": "ed25519",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "extension.near",
+        "path": [
+          "wallet.near",
+          "v1.signer"
+        ],
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": null,
+      "access_key": "ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z",
+      "signature": "ed25519:1MJCwLvXhtjmNV18kzH7JuqG63r7Y6o13FZYALYk8ib74biwBbtnk1ZNLEh8aqr9PwgG9B64vZ7U8rtddUFMyUe",
+      "prehash": "37a55af1b0e1e2dd73f861214bbab5aa26805aac5da8fe723ac7c68554cc5f9d",
+      "implicit_account_id": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"extension.near\",\"path\":[\"wallet.near\",\"v1.signer\"],\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:1MJCwLvXhtjmNV18kzH7JuqG63r7Y6o13FZYALYk8ib74biwBbtnk1ZNLEh8aqr9PwgG9B64vZ7U8rtddUFMyUe\"}",
+      "verifies": true
+    },
+    {
+      "name": "secp256k1_top_level",
+      "description": "Top-level authorization signed with a full-access secp256k1 key.",
+      "curve": "secp256k1",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "wallet.near",
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": null,
+      "access_key": "secp256k1:tf9VjrKkBqpnHhBc5XNYHkYHkFvRPdW9sp4nSnT8MK91vLfqfTYg3mUw7thW2cYBiZh1HVSDRPK29rCqiw2hJfv",
+      "signature": "secp256k1:HcQ9hJfoes1twaNjS52iG1XQDFJ5pzQvbv5FbmqghnjxTFzuvGd7PbKq8rcmjJ2iXCSaD3o7HekYmiQruiY3noQFR",
+      "prehash": "c505f178a00129e3c08cfc31dcd355e281579b620cfa70cb7878f2805417e95a",
+      "implicit_account_id": "0xe471a8d4e306eefa74ba35df7500a4512aeb542c",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"secp256k1:tf9VjrKkBqpnHhBc5XNYHkYHkFvRPdW9sp4nSnT8MK91vLfqfTYg3mUw7thW2cYBiZh1HVSDRPK29rCqiw2hJfv\",\"signature\":\"secp256k1:HcQ9hJfoes1twaNjS52iG1XQDFJ5pzQvbv5FbmqghnjxTFzuvGd7PbKq8rcmjJ2iXCSaD3o7HekYmiQruiY3noQFR\"}",
+      "verifies": true
+    },
+    {
+      "name": "secp256k1_callback_url",
+      "description": "The same, with a callback URL.",
+      "curve": "secp256k1",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "wallet.near",
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": "https://wallet.example/cb",
+      "access_key": "secp256k1:tf9VjrKkBqpnHhBc5XNYHkYHkFvRPdW9sp4nSnT8MK91vLfqfTYg3mUw7thW2cYBiZh1HVSDRPK29rCqiw2hJfv",
+      "signature": "secp256k1:DaipC8oM8zBXNckfAnesEafgYvjEqqzMVUGpF5H1AVZiW79fgFnGcEXtw49ZMfx1DyaX3XLb9UGj2ofPYuSxowDwd",
+      "prehash": "44e744c4db26e47789765d2a733ffe44fda993dff2b0b31a27a5142a5d1377f1",
+      "implicit_account_id": "0xe471a8d4e306eefa74ba35df7500a4512aeb542c",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{\"callback_url\":\"https://wallet.example/cb\"}},\"access_key\":\"secp256k1:tf9VjrKkBqpnHhBc5XNYHkYHkFvRPdW9sp4nSnT8MK91vLfqfTYg3mUw7thW2cYBiZh1HVSDRPK29rCqiw2hJfv\",\"signature\":\"secp256k1:DaipC8oM8zBXNckfAnesEafgYvjEqqzMVUGpF5H1AVZiW79fgFnGcEXtw49ZMfx1DyaX3XLb9UGj2ofPYuSxowDwd\"}",
+      "verifies": true
+    },
+    {
+      "name": "secp256k1_deep_path",
+      "description": "Delegated secp256k1 authorization.",
+      "curve": "secp256k1",
+      "message": {
+        "chain_id": "mainnet",
+        "signer_id": "extension.near",
+        "path": [
+          "wallet.near",
+          "v1.signer"
+        ],
+        "timestamp": "2026-08-05T07:28:00.123456789Z",
+        "payload": "Hello, Near!"
+      },
+      "callback_url": null,
+      "access_key": "secp256k1:tf9VjrKkBqpnHhBc5XNYHkYHkFvRPdW9sp4nSnT8MK91vLfqfTYg3mUw7thW2cYBiZh1HVSDRPK29rCqiw2hJfv",
+      "signature": "secp256k1:A7J9JwLQNqJCUMAqU5hFCSdLK5GPzPdu1CfooLm1Chboqq7wLxhYPnoprE7xjqPv5DTmDUjRQwdmMwYjREd2NYX3D",
+      "prehash": "37a55af1b0e1e2dd73f861214bbab5aa26805aac5da8fe723ac7c68554cc5f9d",
+      "implicit_account_id": "0xe471a8d4e306eefa74ba35df7500a4512aeb542c",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"extension.near\",\"path\":[\"wallet.near\",\"v1.signer\"],\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"secp256k1:tf9VjrKkBqpnHhBc5XNYHkYHkFvRPdW9sp4nSnT8MK91vLfqfTYg3mUw7thW2cYBiZh1HVSDRPK29rCqiw2hJfv\",\"signature\":\"secp256k1:A7J9JwLQNqJCUMAqU5hFCSdLK5GPzPdu1CfooLm1Chboqq7wLxhYPnoprE7xjqPv5DTmDUjRQwdmMwYjREd2NYX3D\"}",
+      "verifies": true
+    }
+  ],
+  "verify_cases": [
+    {
+      "name": "curve_mismatch_ed25519_key",
+      "description": "An ed25519 access key with a secp256k1 signature. The curves must match.",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"secp256k1:HcQ9hJfoes1twaNjS52iG1XQDFJ5pzQvbv5FbmqghnjxTFzuvGd7PbKq8rcmjJ2iXCSaD3o7HekYmiQruiY3noQFR\"}",
+      "verifies": false
+    },
+    {
+      "name": "curve_mismatch_secp256k1_key",
+      "description": "The mirror case: a secp256k1 access key with an ed25519 signature.",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"secp256k1:tf9VjrKkBqpnHhBc5XNYHkYHkFvRPdW9sp4nSnT8MK91vLfqfTYg3mUw7thW2cYBiZh1HVSDRPK29rCqiw2hJfv\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "verifies": false
+    },
+    {
+      "name": "tampered_payload",
+      "description": "The payload is the NEP-413 `message`, and is also bound through the nonce.",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Goodbye, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "verifies": false
+    },
+    {
+      "name": "tampered_timestamp",
+      "description": "The timestamp reaches the signature through both the nonce and `recipient`.",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:29:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "verifies": false
+    },
+    {
+      "name": "tampered_chain_id",
+      "description": "`chain_id` leads the `recipient` string.",
+      "authorization": "{\"msg\":{\"chain_id\":\"testnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "verifies": false
+    },
+    {
+      "name": "tampered_signer_id",
+      "description": "`signer_id` is bound through both the nonce and `recipient`.",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"attacker.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "verifies": false
+    },
+    {
+      "name": "tampered_path",
+      "description": "A path appended to a top-level authorization, which is bound through both the nonce and `recipient`.",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"path\":[\"v1.signer\"],\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "verifies": false
+    },
+    {
+      "name": "tampered_callback_url",
+      "description": "A callback URL that was never signed for: `via.extra.callback_url` is part of the signed NEP-413 payload.",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{\"callback_url\":\"https://evil.example/cb\"}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "verifies": false
+    },
+    {
+      "name": "secp256k1_recovery_byte_out_of_range",
+      "description": "Byte 64 must be in `0..=3`, even though verification never recovers a public key. An implementation that verifies only the first 64 bytes accepts this.",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"secp256k1:tf9VjrKkBqpnHhBc5XNYHkYHkFvRPdW9sp4nSnT8MK91vLfqfTYg3mUw7thW2cYBiZh1HVSDRPK29rCqiw2hJfv\",\"signature\":\"secp256k1:HcQ9hJfoes1twaNjS52iG1XQDFJ5pzQvbv5FbmqghnjxTFzuvGd7PbKq8rcmjJ2iXCSaD3o7HekYmiQruiY3noQFV\"}",
+      "verifies": false
+    },
+    {
+      "name": "secp256k1_high_s",
+      "description": "The negated-S form of a signature that does verify: the same curve point, malleated.",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"secp256k1:tf9VjrKkBqpnHhBc5XNYHkYHkFvRPdW9sp4nSnT8MK91vLfqfTYg3mUw7thW2cYBiZh1HVSDRPK29rCqiw2hJfv\",\"signature\":\"secp256k1:HcQ9hJfoes1twaNjS52iG1XQDFJ5pzQvbv5FbmqghnjybZ1NsYe1wwzYdPvfN2w5aVyVZaQ5yzuLNokh8b4n6B4yd\"}",
+      "verifies": false
+    },
+    {
+      "name": "ed25519_small_order_key",
+      "description": "The order-8 generator as a public key. Low-order keys forge signatures for almost any message, and are rejected before any verification equation runs.",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:EQAqmjhcsBQhpBv5GJkYgEB7emGHZNoo1j1yAjiFLNvD\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "verifies": false
+    },
+    {
+      "name": "ed25519_non_canonical_s",
+      "description": "`s` set to the group order exactly, the smallest non-canonical scalar. `s` must be reduced.",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLpVbd3Xto6Ww2nrWDEwpDBtpZRFcYNomJXkmEAh98jYvs\"}",
+      "verifies": false
+    },
+    {
+      "name": "ed25519_non_canonical_r",
+      "description": "`R` encoded with `y >= p`. `R` is compared as bytes, so a non-canonical encoding can never match.",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:67rpwLCuS5DGA8KGZXKsVQ7dnPb9goRLoKfgGbLfQg8rYqE7BVqtN2wtEts8dUwkpYGc4dwearoDXbYnrrbGu9fy\"}",
+      "verifies": false
+    },
+    {
+      "name": "ed25519_torsion_public_key",
+      "description": "A public key carrying an order-8 torsion component, signed honestly. Verification here is cofactorless and rejects it; a cofactored verifier, which most high-level ed25519 libraries expose by default, accepts it. The key is not itself low order, so the small-order check does not catch it.",
+      "authorization": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:2zA5FscjhQRxoBFwPJB8AtKpM4abms4kbppoz98SmWfn\",\"signature\":\"ed25519:iz9AeAGF5t5FLX2fSEj4s2VRRs8xvMJqafucgVopdMo4Tw8mJhurBS2Rr96vu4zHCKMd8ZKMjSbQpAzAc3gowFe\"}",
+      "verifies": false
+    }
+  ],
+  "parse_cases": [
+    {
+      "name": "baseline",
+      "description": "The unmodified blob, exactly as the reference serializes it.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": true
+    },
+    {
+      "name": "baseline_with_path",
+      "description": "A blob whose `path` is present and non-empty.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"extension.near\",\"path\":[\"wallet.near\"],\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:5ehw3P2AnRcDaZ3v6wmqo8cZiZ3bFAgeeBfwyJK8a7Wn6kPuX19AXjEc6fumQZTfBLCFw7udqiDFudapRNkL6uMT\"}",
+      "parses": true
+    },
+    {
+      "name": "path_absent",
+      "description": "`msg.path` has `serde(default)`, so an absent path is an empty one.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": true
+    },
+    {
+      "name": "path_empty",
+      "description": "An explicitly empty `path`, the form the reference skips when serializing.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\",\"path\":[]},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": true
+    },
+    {
+      "name": "extra_empty",
+      "description": "No callback URL: `callback_url` has `serde(default)`.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": true
+    },
+    {
+      "name": "extra_absent",
+      "description": "`via` is adjacently tagged, so its content field is written unconditionally and is required on the way in.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\"},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": false
+    },
+    {
+      "name": "unknown_top_level_field",
+      "description": "`AccessKeyAuthorization` denies unknown fields, to reduce collisions with other authorization schemas.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\",\"surplus\":1}",
+      "parses": false
+    },
+    {
+      "name": "unknown_field_in_msg",
+      "description": "`OffchainMessage` carries no `deny_unknown_fields` of its own, so this is accepted.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\",\"surplus\":1},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": true
+    },
+    {
+      "name": "unknown_field_in_extra",
+      "description": "The `Nep413` variant body carries no `deny_unknown_fields` either.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{\"surplus\":1}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": true
+    },
+    {
+      "name": "unknown_field_in_via",
+      "description": "Adjacent tagging looks for the tag and content keys and ignores strangers.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{},\"surplus\":1},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": true
+    },
+    {
+      "name": "callback_url_null",
+      "description": "`null` reads into an `Option` as `None`, exactly like an absent key.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{\"callback_url\":null}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": true
+    },
+    {
+      "name": "callback_url_not_a_string",
+      "description": "`callback_url` is a string when present.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{\"callback_url\":7}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": false
+    },
+    {
+      "name": "extra_null",
+      "description": "The content field must be the variant body, not `null`.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":null},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": false
+    },
+    {
+      "name": "path_not_an_array",
+      "description": "`path` is a list of account IDs.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\",\"path\":\"wallet.near\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": false
+    },
+    {
+      "name": "unknown_schema",
+      "description": "`nep413` is the only signature schema defined today.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep999\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": false
+    },
+    {
+      "name": "via_not_an_object",
+      "description": "`via` is the adjacently-tagged object, not a bare tag string.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":\"nep413\",\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": false
+    },
+    {
+      "name": "missing_signature",
+      "description": "Every field except `msg.path` and `via.extra.callback_url` is required.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\"}",
+      "parses": false
+    },
+    {
+      "name": "missing_via",
+      "description": "`via` is required.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\",\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\"}",
+      "parses": false
+    },
+    {
+      "name": "uppercase_curve_prefix",
+      "description": "The curve prefix is matched literally here, unlike the case-insensitive `TypedCurve::parse_base58`.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"Ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": false
+    },
+    {
+      "name": "prefixless_key",
+      "description": "A bare base58 key, with no curve prefix.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": false
+    },
+    {
+      "name": "unknown_curve",
+      "description": "Curves outside the enum are rejected at parse time.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"p256:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": false
+    },
+    {
+      "name": "key_all_zero",
+      "description": "Base58 `1` is a zero byte, so this is a well-formed 32-byte key. Parsing validates the length, never the curve point: this one fails later, at verification.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:11111111111111111111111111111111\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": true
+    },
+    {
+      "name": "key_too_short",
+      "description": "Thirty-one zero bytes. Base58 keys are decoded to an exact length, never zero-padded.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:1111111111111111111111111111111\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": false
+    },
+    {
+      "name": "key_too_long",
+      "description": "The same length check from the other side.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z1\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": false
+    },
+    {
+      "name": "signature_wrong_length",
+      "description": "An ed25519 signature is exactly 64 bytes, not 32.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:11111111111111111111111111111111\"}",
+      "parses": false
+    },
+    {
+      "name": "timestamp_not_rfc3339",
+      "description": "`Timestamp` parses RFC-3339 only, not a bare nanosecond count.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"1785828480123456789\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": false
+    },
+    {
+      "name": "invalid_signer_id",
+      "description": "Account IDs are validated on deserialization.",
+      "blob": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"NOT A VALID ACCOUNT\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+      "parses": false
+    },
+    {
+      "name": "foreign_authorization_blob",
+      "description": "A blob meant for a contract-defined authorization schema must not parse as an access-key one.",
+      "blob": "{\"signed\":{\"message\":\"hello\"},\"proof\":\"0xdead\"}",
+      "parses": false
+    }
+  ],
+  "account_id_cases": {
+    "template": "{\"msg\":{\"chain_id\":\"mainnet\",\"signer_id\":\"wallet.near\",\"timestamp\":\"2026-08-05T07:28:00.123456789Z\",\"payload\":\"Hello, Near!\"},\"via\":{\"schema\":\"nep413\",\"extra\":{}},\"access_key\":\"ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z\",\"signature\":\"ed25519:imNKLBqejuwsmYYdfCkY6YAjtDuVKuKPJAsGGNiT8JLcbpnA8rDtfgByZ6T7j1tj4WXwoDo64jcBVrkPZf6Djd5\"}",
+    "cases": [
+      {
+        "account_id": "aa",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "a-a",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "a-aa",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "100",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "0o",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "com",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "near",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "bowen",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "b-o_w_e-n",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "b.owen",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "bro.wen",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "a.ha",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "a.b-a.ra",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "system",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "over.9000",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "google.com",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "illia.cheapaccounts.near",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "0o0ooo00oo00o",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "alex-skidanov",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "10-4.8-2",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "no_lols",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "0123456789012345678901234567890123456789012345678901234567890123",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "near.a",
+        "field": "signer_id",
+        "parses": true
+      },
+      {
+        "account_id": "a",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "A",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "Abc",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "-near",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "near-",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "-near-",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "near.",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": ".near",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "near@",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "@near",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "неар",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "@@@@@",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "0__0",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "0_-_0",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "..",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "a..near",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "nEar",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "_bowen",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "hello world",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "abcdefghijklmnopqrstuvwxyz.abcdefghijklmnopqrstuvwxyz.abcdefghijklmnopqrstuvwxyz",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "01234567890123456789012345678901234567890123456789012345678901234",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "some-complex-address@gmail.com",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "sub.buy_d1gitz@atata@b0-rg.c_0_m",
+        "field": "signer_id",
+        "parses": false
+      },
+      {
+        "account_id": "ok.near",
+        "field": "path",
+        "parses": true
+      },
+      {
+        "account_id": "-bad",
+        "field": "path",
+        "parses": false
+      }
+    ]
+  },
+  "implicit_accounts": [
+    {
+      "name": "ed25519_rfc8032",
+      "curve": "ed25519",
+      "public_key": "ed25519:FVen3X669xLzsi6N2V91DoiyzHzg1uAgqiT8jZ9nS96Z",
+      "implicit_account_id": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+    },
+    {
+      "name": "ed25519_schema_example",
+      "curve": "ed25519",
+      "public_key": "ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJugxm",
+      "implicit_account_id": "423df0a6640e9467769c55a573f15b9ee999dc8970048959c72890abf5cc3a8e"
+    },
+    {
+      "name": "ed25519_all_zero",
+      "curve": "ed25519",
+      "public_key": "ed25519:11111111111111111111111111111111",
+      "implicit_account_id": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "secp256k1_test_key",
+      "curve": "secp256k1",
+      "public_key": "secp256k1:tf9VjrKkBqpnHhBc5XNYHkYHkFvRPdW9sp4nSnT8MK91vLfqfTYg3mUw7thW2cYBiZh1HVSDRPK29rCqiw2hJfv",
+      "implicit_account_id": "0xe471a8d4e306eefa74ba35df7500a4512aeb542c"
+    },
+    {
+      "name": "secp256k1_schema_example",
+      "curve": "secp256k1",
+      "public_key": "secp256k1:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3",
+      "implicit_account_id": "0xbff77166b39599e54e391156eef7b8191e02be92"
+    }
+  ]
+}
