@@ -139,13 +139,7 @@ where
         self.sender
             .send(
                 self.mpc_contract_id.clone(),
-                vec![
-                    FunctionCall::from(sign)
-                        // `From<FunctionCallAction>` sets weight to 0,
-                        // keep the default one
-                        .unused_gas_weight(1)
-                        .into(),
-                ],
+                vec![FunctionCall::from(sign).into()],
             )
             .await
             .map_err(Error::Sender)
