@@ -14,12 +14,15 @@ use defuse_mpc_kdf::{
     crypto::Curve,
     schema::{Additive, WithSchema},
 };
-use defuse_near_promise::{AccountId, AccountIdRef, Gas, NearToken, actions::FunctionCall};
+use defuse_near_promise::{AccountId, AccountIdRef, Gas, actions::FunctionCall};
 use defuse_near_sender::{ArcNearSender, NearSender, SentTransaction};
 use impl_tools::autoimpl;
-use near_kit::{CryptoHash, Near, rpc::ExecutionStatus, transaction::ExecutedOptimistic};
+use near_kit::{
+    CryptoHash, Near, protocol::FunctionCallAction, rpc::ExecutionStatus,
+    transaction::ExecutedOptimistic,
+};
 
-use crate::contract::{MpcContract, Payload, PublicKeyArgs, SignArgs, SignRequest, SignResponse};
+use crate::contract::{MpcContract, Payload, SignRequest, SignResponse};
 
 /// MPC contract ID on Mainnet: `v1.signer`
 pub const MAINNET_MPC_CONTRACT_ID: &AccountIdRef = AccountIdRef::new_or_panic("v1.signer");
@@ -54,8 +57,9 @@ where
 
         let mpc_public_key = client
             .contract::<MpcContract>(&mpc_contract_id)
-            .public_key(PublicKeyArgs { domain_id })
-            .await?;
+            .public_key(domain_id)
+            .await
+            .map_err(near_kit::Error::from)?;
 
         Ok(Self {
             sender: sender.arced(),
@@ -122,20 +126,24 @@ where
     {
         const MPC_SIGN_GAS: Gas = Gas::from_tgas(15);
 
+        let sign = FunctionCallAction::try_from(
+            MpcContract::sign(SignRequest {
+                path: path.as_ref().into(),
+                payload,
+                domain_id: self.domain_id,
+            })
+            .gas(MPC_SIGN_GAS),
+        )
+        .map_err(near_kit::Error::from)?;
+
         self.sender
             .send(
                 self.mpc_contract_id.clone(),
                 vec![
-                    FunctionCall::name("sign")
-                        .attach_deposit(NearToken::from_yoctonear(1))
-                        .gas(MPC_SIGN_GAS)
-                        .args_json(SignArgs {
-                            request: SignRequest {
-                                path: path.as_ref().into(),
-                                payload,
-                                domain_id: self.domain_id,
-                            },
-                        })
+                    FunctionCall::from(sign)
+                        // `From<FunctionCallAction>` sets weight to 0,
+                        // keep the default one
+                        .unused_gas_weight(1)
                         .into(),
                 ],
             )
