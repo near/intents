@@ -33,9 +33,10 @@ use rand::{make_rng, rngs::SmallRng};
 #[cfg(feature = "tracing")]
 use tracing::{Span, instrument, record_all};
 
+use serde::Serialize;
+
 use crate::{
     actions::FunctionCall,
-    client::WExecuteExtensionArgs,
     nonces::ConcurrentNonces,
     relayer::{DynWalletRelayer, WalletRelayRequest, WalletRelayer},
 };
@@ -263,9 +264,10 @@ where
     #[cfg(feature = "near-kit")]
     #[must_use]
     #[inline]
-    pub fn with_client(mut self, client: near_kit::Near) -> Self {
+    pub fn with_client(mut self, client: impl AsRef<near_kit::Near>) -> Self {
+        let client = client.as_ref();
         self = self.with_chain_id(client.chain_id().as_str());
-        self.client = Some(client);
+        self.client = Some(client.clone());
         self
     }
 
@@ -878,6 +880,37 @@ impl<S: SignatureSchema> From<Wallet<S>> for AccountId {
     #[inline]
     fn from(wallet: Wallet<S>) -> Self {
         (&wallet).into()
+    }
+}
+
+/// Arguments for [`w_execute_extension()`](crate::contract::Wallet::w_execute_extension)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct WExecuteExtensionArgs<'a> {
+    pub request: Cow<'a, Request>,
+}
+
+impl<'a> From<&'a Request> for WExecuteExtensionArgs<'a> {
+    #[inline]
+    fn from(request: &'a Request) -> Self {
+        Self {
+            request: Cow::Borrowed(request),
+        }
+    }
+}
+
+impl<'a> From<Cow<'a, Request>> for WExecuteExtensionArgs<'a> {
+    #[inline]
+    fn from(request: Cow<'a, Request>) -> Self {
+        Self { request }
+    }
+}
+
+impl From<Request> for WExecuteExtensionArgs<'_> {
+    #[inline]
+    fn from(request: Request) -> Self {
+        Self {
+            request: Cow::Owned(request),
+        }
     }
 }
 
