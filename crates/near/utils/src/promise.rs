@@ -14,20 +14,10 @@ impl PromiseExt for Promise {
 pub type PromiseResult<T> = Result<T, near_sdk::PromiseError>;
 pub type PromiseJsonResult<T> = PromiseResult<Result<T, serde_json::Error>>;
 
-/// NOTE: The NEAR runtime limits the Wasm operand stack height to 16,384 entries
-/// (`max_stack_height` genesis parameter). Each recursive call to
-/// [`MaxJsonLength::max_json_length_at`] consumes stack entries for params,
-/// locals, operand depth, and gas metering overhead — the exact amount
-/// depends on the monomorphized `Args` type. Since different trait
-/// implementations produce different frame sizes, we use a conservative
-/// limit that stays well within budget across all reasonable type nesting.
-/// See the NEAR specification on contract preparation for details:
-/// <https://nomicon.io/RuntimeSpec/Preparation>
-pub const MAX_JSON_LENGTH_RECURSION_LIMIT: usize = 32;
-
 pub trait MaxJsonLength: DeserializeOwned {
     type Args;
 
+    #[inline]
     fn max_json_length_root(args: Self::Args) -> usize {
         Self::max_json_length_at(0, args)
     }
@@ -74,6 +64,7 @@ pub fn promise_result_checked_void(result_idx: u64) -> PromiseResult<()> {
 impl MaxJsonLength for bool {
     type Args = ();
 
+    #[inline]
     fn max_json_length_at(_depth: usize, _args: ()) -> usize {
         " false ".len()
     }
@@ -82,6 +73,7 @@ impl MaxJsonLength for bool {
 impl MaxJsonLength for U128 {
     type Args = ();
 
+    #[inline]
     fn max_json_length_at(_depth: usize, _args: ()) -> usize {
         " \"\" ".len() + "+340282366920938463463374607431768211455".len()
     }
@@ -95,10 +87,6 @@ where
 
     fn max_json_length_at(depth: usize, (length, item_args): (usize, T::Args)) -> usize {
         const INDENT_STEP: usize = "        ".len();
-
-        if depth >= MAX_JSON_LENGTH_RECURSION_LIMIT {
-            return usize::MAX;
-        }
 
         let ident = INDENT_STEP.saturating_mul(depth);
         let item_indent = ident.saturating_add(INDENT_STEP);
@@ -118,6 +106,7 @@ where
 {
     type Args = T::Args;
 
+    #[inline]
     fn max_json_length_at(depth: usize, args: Self::Args) -> usize {
         <Vec<T>>::max_json_length_at(depth, (N, args))
     }
@@ -200,13 +189,5 @@ mod tests {
 
         let compact = serde_json::to_string(&arr).unwrap();
         assert!(compact.len() <= max_len);
-    }
-
-    #[test]
-    fn test_depth_exceeds_limit_returns_max() {
-        assert_eq!(
-            Vec::<U128>::max_json_length_at(MAX_JSON_LENGTH_RECURSION_LIMIT + 1, (10, ())),
-            usize::MAX,
-        );
     }
 }
