@@ -1,8 +1,8 @@
 use anyhow::Result;
 use defuse_wallet_sdk::{Request, RequestMessage, client::WalletContract};
 use near_kit::{
-    Gas, Near, NearToken,
-    protocol::{AccountIdRef, StateInit},
+    AccountIdRef, Gas, NearToken, SigningNear,
+    protocol::{Action, StateInit},
     transaction::Final,
 };
 
@@ -29,7 +29,7 @@ pub trait WalletExt {
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
-impl WalletExt for Near {
+impl WalletExt for SigningNear {
     async fn w_execute_signed(
         &self,
         contract_id: impl AsRef<AccountIdRef>,
@@ -41,11 +41,11 @@ impl WalletExt for Near {
         let mut tx = self.transaction(contract_id.as_ref());
 
         if let Some(state_init) = state_init.into() {
-            tx = tx.state_init(state_init, NearToken::ZERO);
+            tx = tx.add_action(Action::state_init(state_init, NearToken::ZERO));
         }
 
         tx.add_action(
-            WalletContract::w_execute_signed((msg, proof.as_ref()).into())
+            WalletContract::w_execute_signed(msg, proof.as_ref())
                 .deposit(deposit)
                 .gas(Gas::from_tgas(300)),
         )
@@ -64,10 +64,10 @@ impl WalletExt for Near {
         let mut tx = self.transaction(contract_id.as_ref());
 
         if let Some(state_init) = state_init.into() {
-            tx = tx.state_init(state_init, NearToken::ZERO);
+            tx = tx.add_action(Action::state_init(state_init, NearToken::ZERO));
         }
         tx.add_action(
-            WalletContract::w_execute_extension(request.into())
+            WalletContract::w_execute_extension(request)
                 .deposit(deposit)
                 .gas(Gas::from_tgas(300)),
         )

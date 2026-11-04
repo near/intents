@@ -21,7 +21,7 @@ pub mod wallet;
 use crate::outcome::SuccessfulExecutionOutcome;
 use anyhow::Result;
 use near_kit::{
-    AccountId, Near,
+    AccountId, SigningNear,
     transaction::{Final, FunctionCall},
 };
 
@@ -33,7 +33,7 @@ pub trait FnCallTransaction {
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
-impl FnCallTransaction for Near {
+impl FnCallTransaction for SigningNear {
     async fn fn_call(
         &self,
         contract: impl Into<AccountId>,
