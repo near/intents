@@ -67,6 +67,8 @@ contract = [
 imt = ["defuse-core/imt"]
 far = ["imt"]
 
+# TODO: move `#[near_kit::contract]` client traits into a `client` module here,
+# as in `defuse-global-deployer` and `defuse-outlayer-app`.
 near-kit = ["defuse-core/near-kit", "defuse-near-promise/near-kit"]
 
 [dev-dependencies]
