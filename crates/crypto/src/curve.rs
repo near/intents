@@ -11,6 +11,7 @@ pub trait Curve {
     /// NOTE: implementations MAY require `msg` to be prehash (i.e. output
     /// of cryptographic hash function) of a fixed length and reject
     /// the signature otherwise. Check corresponding docs before using.
+    #[must_use = "check whether the signature is valid"]
     fn verify(public_key: &Self::PublicKey, msg: &[u8], signature: &Self::Signature) -> bool;
 }
 
@@ -27,6 +28,7 @@ pub trait RecoverableCurve: Curve {
     /// NOTE: implementations MAY require `msg` to be prehash (i.e. output
     /// of cryptographic hash function) of a fixed length and reject
     /// the signature otherwise. Check corresponding docs before using.
+    #[must_use = "check whether the recovered public key is valid"]
     fn recover(
         msg: &[u8],
         signature: &Self::Signature,
