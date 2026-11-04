@@ -2,10 +2,8 @@
 
 use std::collections::BTreeSet;
 
-use defuse_wallet::{RequestMessage, Timestamp};
+use defuse_wallet::{Request, RequestMessage, Timestamp};
 use near_kit::{AccountId, AccountIdRef, NearToken};
-
-pub use crate::WExecuteExtensionArgs;
 
 #[near_kit::contract]
 pub trait WalletContract {
@@ -13,7 +11,7 @@ pub trait WalletContract {
     fn w_execute_signed(&mut self, msg: &RequestMessage, proof: &str);
 
     #[call(deposit = NearToken::from_yoctonear(1))]
-    fn w_execute_extension(&mut self, #[args] args: WExecuteExtensionArgs<'_>);
+    fn w_execute_extension(&mut self, request: &Request);
 
     fn w_subwallet_id(&self) -> u32;
 

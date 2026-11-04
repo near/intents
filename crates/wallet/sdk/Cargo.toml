@@ -17,6 +17,7 @@ borsh.workspace = true
 impl-tools.workspace = true
 rand.workspace = true
 serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
 trait-variant.workspace = true
 
 bs58 = { workspace = true, optional = true }
@@ -57,7 +58,6 @@ hex-literal.workspace = true
 near-kit-sandbox.workspace = true
 rand = { workspace = true, features = ["sys_rng"] }
 rstest.workspace = true
-serde_json.workspace = true
 sha2.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }

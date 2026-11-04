@@ -273,7 +273,7 @@ const _: () = {
                 args: value.args,
                 deposit: value.deposit,
                 gas: value.gas,
-                gas_weight: 0,
+                gas_weight: default_gas_weight(),
             }
         }
     }

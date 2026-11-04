@@ -33,8 +33,6 @@ use rand::{make_rng, rngs::SmallRng};
 #[cfg(feature = "tracing")]
 use tracing::{Span, instrument, record_all};
 
-use serde::Serialize;
-
 use crate::{
     actions::FunctionCall,
     nonces::ConcurrentNonces,
@@ -636,7 +634,7 @@ where
                             FunctionCall::name("w_execute_extension")
                                 .attach_deposit(NearToken::from_yoctonear(1))
                                 .gas(request.estimate_gas())
-                                .args_json(WExecuteExtensionArgs::from(request)),
+                                .args_json(serde_json::json!({ "request": request })),
                         )
                         .into()
                 },
@@ -880,37 +878,6 @@ impl<S: SignatureSchema> From<Wallet<S>> for AccountId {
     #[inline]
     fn from(wallet: Wallet<S>) -> Self {
         (&wallet).into()
-    }
-}
-
-/// Arguments for [`w_execute_extension()`](crate::contract::Wallet::w_execute_extension)
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct WExecuteExtensionArgs<'a> {
-    pub request: Cow<'a, Request>,
-}
-
-impl<'a> From<&'a Request> for WExecuteExtensionArgs<'a> {
-    #[inline]
-    fn from(request: &'a Request) -> Self {
-        Self {
-            request: Cow::Borrowed(request),
-        }
-    }
-}
-
-impl<'a> From<Cow<'a, Request>> for WExecuteExtensionArgs<'a> {
-    #[inline]
-    fn from(request: Cow<'a, Request>) -> Self {
-        Self { request }
-    }
-}
-
-impl From<Request> for WExecuteExtensionArgs<'_> {
-    #[inline]
-    fn from(request: Request) -> Self {
-        Self {
-            request: Cow::Owned(request),
-        }
     }
 }
 
