@@ -1,8 +1,8 @@
 use anyhow::Result;
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_global_deployer::{
-    AsWrap, State as DeployerState,
-    client::{GdApproveArgs, GlobalDeployerContract, GlobalDeployerContractClient},
+    AsHex, AsWrap, State as DeployerState,
+    client::{GlobalDeployerContract, GlobalDeployerContractClient},
 };
 use near_kit::{
     Gas, Near, NearToken,
@@ -80,11 +80,10 @@ impl GlobalDeployerExt for Near {
 
         self.transaction(target.as_ref())
             .add_action(
-                GlobalDeployerContract::gd_approve(GdApproveArgs {
-                    old_hash: old_hash.into(),
-                    new_hash: Sha256::digest(&code).into(),
-                })
-                .deposit(NearToken::from_yoctonear(1))
+                GlobalDeployerContract::gd_approve(
+                    AsHex(old_hash.into()),
+                    AsHex(Sha256::digest(&code).into()),
+                )
                 .gas(Gas::from_tgas(10)),
             )
             .add_action(
@@ -105,12 +104,8 @@ impl GlobalDeployerExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(target.as_ref())
             .add_action(
-                GlobalDeployerContract::gd_approve(GdApproveArgs {
-                    old_hash: old_hash.into(),
-                    new_hash: new_hash.into(),
-                })
-                .deposit(NearToken::from_yoctonear(1))
-                .gas(Gas::from_tgas(10)),
+                GlobalDeployerContract::gd_approve(AsHex(old_hash.into()), AsHex(new_hash.into()))
+                    .gas(Gas::from_tgas(10)),
             )
             .wait_until::<Final>()
             .await?
@@ -142,8 +137,7 @@ impl GlobalDeployerExt for Near {
     ) -> anyhow::Result<SuccessfulExecutionOutcome> {
         self.transaction(target.as_ref())
             .add_action(
-                GlobalDeployerContract::gd_transfer_ownership(new_owner.as_ref().into())
-                    .deposit(NearToken::from_yoctonear(1))
+                GlobalDeployerContract::gd_transfer_ownership(new_owner.as_ref())
                     .gas(Gas::from_tgas(30)),
             )
             .wait_until::<Final>()

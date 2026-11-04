@@ -9,8 +9,8 @@ use defuse_sandbox::{
         global_deployer::{
             GDDeployerExt, GlobalDeployerExt,
             contract::{
-                ApprovalReason, AsWrap, Error, GdEvent, State as DeployerState,
-                client::{GdApproveArgs, GlobalDeployerContract},
+                ApprovalReason, AsHex, AsWrap, Error, GdEvent, State as DeployerState,
+                client::GlobalDeployerContract,
             },
         },
     },
@@ -175,9 +175,8 @@ async fn test_gd_init(#[future(awt)] deployer_env: DeployerEnv) {
                 .deposit(NearToken::from_yoctonear(1)),
         )
         .add_action(
-            GlobalDeployerContract::gd_transfer_ownership(root.account_id().into())
-                .gas(Gas::from_tgas(30))
-                .deposit(NearToken::from_yoctonear(1)),
+            GlobalDeployerContract::gd_transfer_ownership(root.account_id())
+                .gas(Gas::from_tgas(30)),
         )
         .delete_key(
             implicit
@@ -956,12 +955,8 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
     owner
         .transaction(controller_instance.contract_id())
         .add_action(
-            GlobalDeployerContract::gd_approve(GdApproveArgs {
-                old_hash: storage.code_hash,
-                new_hash: new_hash.into(),
-            })
-            .deposit(NearToken::from_yoctonear(1))
-            .gas(Gas::from_tgas(10)),
+            GlobalDeployerContract::gd_approve(AsHex(storage.code_hash), AsHex(new_hash.into()))
+                .gas(Gas::from_tgas(10)),
         )
         .add_action(
             GlobalDeployerContract::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
@@ -1051,11 +1046,10 @@ async fn test_post_deploy_fails_when_approval_changed(
                 .gas(Gas::from_tgas(140)),
         )
         .add_action(
-            GlobalDeployerContract::gd_approve(GdApproveArgs {
-                old_hash: deployer_hash.into(),
-                new_hash: mt_stub_hash.into(),
-            })
-            .deposit(NearToken::from_yoctonear(1))
+            GlobalDeployerContract::gd_approve(
+                AsHex(deployer_hash.into()),
+                AsHex(mt_stub_hash.into()),
+            )
             .gas(Gas::from_tgas(10)),
         )
         .wait_until::<Final>()
