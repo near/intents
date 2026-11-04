@@ -111,6 +111,7 @@ client = ["near-kit", "near-kit/contracts"]
 [dev-dependencies]
 defuse-nep641 = { path = ".", features = ["abi", "borsh", "digest", "serde", "near-kit", "resolver", "tracing"] }
 
+hex.workspace = true
 hex-literal.workspace = true
 near-kit-sandbox.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
