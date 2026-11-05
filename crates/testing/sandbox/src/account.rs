@@ -1,8 +1,9 @@
 use defuse_core::crypto::ed25519::Ed25519PublicKey;
 use near_kit::{
     NearToken, SigningNear,
-    protocol::{Action, FunctionCallAction},
+    protocol::Action,
     signer::{InMemorySigner, SecretKey},
+    transaction::FunctionCall,
 };
 
 pub trait Account {
@@ -19,7 +20,7 @@ pub trait Account {
         name: impl AsRef<str>,
         balance: NearToken,
         code: impl Into<Vec<u8>>,
-        init_call: impl Into<Option<FunctionCallAction>>,
+        init_call: impl Into<Option<FunctionCall>>,
     ) -> anyhow::Result<SigningNear>;
 }
 
@@ -79,7 +80,7 @@ impl Account for SigningNear {
         name: impl AsRef<str>,
         balance: NearToken,
         code: impl Into<Vec<u8>>,
-        init_call: impl Into<Option<FunctionCallAction>>,
+        init_call: impl Into<Option<FunctionCall>>,
     ) -> anyhow::Result<Self> {
         let secret_key = SecretKey::generate_ed25519();
         let account_id = self
@@ -95,7 +96,7 @@ impl Account for SigningNear {
             .add_action(Action::deploy_contract(code));
 
         if let Some(init_call) = init_call.into() {
-            tx = tx.add_action(Action::FunctionCall(init_call));
+            tx = tx.add_action(init_call);
         }
 
         tx.await?.result().map_err(|e| {

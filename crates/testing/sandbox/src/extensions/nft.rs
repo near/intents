@@ -1,8 +1,8 @@
 use near_contract_standards::non_fungible_token::{Token, metadata::NFTContractMetadata};
 use near_kit::{
     AccountIdRef, Gas, NearToken, SigningNear,
-    protocol::{Action, FunctionCallAction},
     standards::{NftContractMetadata, NonFungibleToken, NonFungibleTokenClient},
+    transaction::FunctionCall,
 };
 use serde_json::json;
 
@@ -38,16 +38,14 @@ impl NftAdminExt for SigningNear {
                 token_name,
                 NearToken::from_near(100),
                 wasm,
-                Some(FunctionCallAction {
-                    method_name: "new".to_string(),
-                    args: serde_json::to_vec(&json!({
-                        "owner_id": owner_id.as_ref(),
-                        "metadata": metadata
-                    }))
-                    .unwrap(),
-                    gas: Gas::from_tgas(30),
-                    deposit: NearToken::from_near(0),
-                }),
+                Some(
+                    FunctionCall::new("new")
+                        .args(json!({
+                            "owner_id": owner_id.as_ref(),
+                            "metadata": metadata
+                        }))
+                        .gas(Gas::from_tgas(30)),
+                ),
             )
             .await
             .unwrap();
@@ -62,25 +60,24 @@ impl NftAdminExt for SigningNear {
         token_owner_id: impl AsRef<AccountIdRef>,
     ) -> anyhow::Result<Token> {
         self.transaction(collection.as_ref())
-            .add_action(Action::FunctionCall(FunctionCallAction {
-                method_name: "nft_mint".to_string(),
-                args: serde_json::to_vec(&json!({
-                    "token_id": token_id.as_ref(),
-                    "token_owner_id": token_owner_id.as_ref(),
-                    "token_metadata": NftContractMetadata {
-                        spec: String::default(),
-                        name: String::default(),
-                        symbol: String::default(),
-                        icon: None,
-                        base_uri: None,
-                        reference: None,
-                        reference_hash: None
-                    },
-                }))
-                .unwrap(),
-                gas: Gas::from_tgas(50),
-                deposit: NearToken::from_near(1),
-            }))
+            .add_action(
+                FunctionCall::new("nft_mint")
+                    .args(json!({
+                        "token_id": token_id.as_ref(),
+                        "token_owner_id": token_owner_id.as_ref(),
+                        "token_metadata": NftContractMetadata {
+                            spec: String::default(),
+                            name: String::default(),
+                            symbol: String::default(),
+                            icon: None,
+                            base_uri: None,
+                            reference: None,
+                            reference_hash: None
+                        },
+                    }))
+                    .gas(Gas::from_tgas(50))
+                    .deposit(NearToken::from_near(1)),
+            )
             .await?
             .json()
             .map_err(Into::into)

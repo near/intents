@@ -15,8 +15,8 @@ use defuse_core::{
 };
 use defuse_serde_utils::base64::AsBase64;
 use near_kit::{
-    AccountId, AccountIdRef, Gas, NearToken, SigningNear, protocol::FunctionCallAction,
-    rpc::FinalExecutionOutcome,
+    AccountId, AccountIdRef, Gas, NearToken, SigningNear, rpc::FinalExecutionOutcome,
+    transaction::FunctionCall,
 };
 use near_sdk::json_types::U128;
 use serde_json::json;
@@ -338,12 +338,11 @@ impl DefuseDeployerExt for SigningNear {
             name,
             NearToken::from_near(100),
             wasm,
-            Some(FunctionCallAction {
-                method_name: "new".to_string(),
-                args: json!({"config": config}).to_string().as_bytes().to_vec(),
-                gas: Gas::from_tgas(30),
-                deposit: NearToken::from_near(0),
-            }),
+            Some(
+                FunctionCall::new("new")
+                    .args(json!({"config": config}))
+                    .gas(Gas::from_tgas(30)),
+            ),
         )
         .await
         .unwrap()

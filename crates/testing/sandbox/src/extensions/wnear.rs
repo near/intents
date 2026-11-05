@@ -1,8 +1,9 @@
 use anyhow::Result;
 use near_kit::{
     AccountId, Gas, NearToken, SigningNear,
-    protocol::{Action, FunctionCallAction},
+    protocol::Action,
     standards::{FungibleToken, FungibleTokenClient},
+    transaction::FunctionCall,
 };
 
 use crate::{account::Account, outcome::SuccessfulExecutionOutcome};
@@ -37,12 +38,11 @@ impl WNearDeployerExt for SigningNear {
         account
             .transaction(account.account_id())
             .add_action(Action::deploy_contract(wasm))
-            .add_action(Action::FunctionCall(FunctionCallAction {
-                method_name: "new".to_string(),
-                args: vec![],
-                gas: Gas::from_tgas(10),
-                deposit: NearToken::from_near(0),
-            }))
+            .add_action(
+                FunctionCall::new("new")
+                    .args_raw(Vec::new())
+                    .gas(Gas::from_tgas(10)),
+            )
             .await
             .unwrap()
             .result()
