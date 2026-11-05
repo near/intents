@@ -1,19 +1,17 @@
 use anyhow::Result;
-use defuse_poa_factory::contract::Role;
+use defuse_poa_factory::{IdDigest, PayloadHash, Withdrawal, contract::Role};
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_kit::{
     AccountId, AccountIdRef, Gas, NearToken, SigningNear,
-    protocol::FunctionCallAction,
     signer::PublicKey,
     standards::{FungibleToken, FungibleTokenClient},
+    transaction::FunctionCall,
 };
 use near_sdk::json_types::U128;
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
 
 use crate::{account::Account, outcome::SuccessfulExecutionOutcome};
-
-pub use defuse_poa_factory::{IdDigest, PayloadHash, Withdrawal, contract};
 
 pub const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
 
@@ -94,9 +92,8 @@ impl PoaFactoryDeployerExt for SigningNear {
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         wasm: impl Into<Vec<u8>>,
     ) -> PoaFactoryClient<Self> {
-        let action = FunctionCallAction {
-            method_name: "new".to_string(),
-            args: serde_json::to_vec(&json!({
+        let action = FunctionCall::new("new")
+            .args(json!({
                 "super_admins": super_admins.into_iter().collect::<HashSet<_>>(),
                 "admins": admins
                     .into_iter()
@@ -107,10 +104,7 @@ impl PoaFactoryDeployerExt for SigningNear {
                     .map(|(role, grantees)| (role, grantees.into_iter().collect::<HashSet<_>>()))
                     .collect::<HashMap<_, _>>(),
             }))
-            .unwrap(),
-            gas: Gas::from_tgas(30),
-            deposit: NearToken::from_near(0),
-        };
+            .gas(Gas::from_tgas(30));
 
         let account = self
             .deploy_sub_contract(name, NearToken::from_near(10), wasm, Some(action))
