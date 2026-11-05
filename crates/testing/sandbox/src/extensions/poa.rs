@@ -1,5 +1,5 @@
 use anyhow::Result;
-use defuse_poa_factory::{IdDigest, PayloadHash, Withdrawal, contract::Role};
+use defuse_poa_factory::contract::Role;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_kit::{
     AccountId, AccountIdRef, Gas, NearToken, SigningNear,
@@ -12,6 +12,8 @@ use serde_json::json;
 use std::collections::{HashMap, HashSet};
 
 use crate::{account::Account, outcome::SuccessfulExecutionOutcome};
+
+pub use defuse_poa_factory::{IdDigest, PayloadHash, Withdrawal, contract};
 
 pub const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
 
