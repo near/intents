@@ -3,22 +3,14 @@ use std::collections::BTreeMap;
 use anyhow::Result;
 use defuse::core::tokens::imt::ImtTokens;
 use defuse_core::amounts::Amounts;
-use near_kit::{AccountId, Gas, Near, NearToken, protocol::AccountIdRef};
-use serde::Serialize;
+use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear};
 
 use crate::{extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};
 
-#[derive(Serialize)]
-pub struct ImtBurnArgs<'a> {
-    pub minter_id: &'a AccountIdRef,
-    pub tokens: ImtTokens,
-    pub memo: Option<String>,
-}
-
 #[near_kit::contract]
 pub trait ImtBurnerContract {
-    #[call]
-    fn imt_burn(&mut self, args: ImtBurnArgs);
+    #[call(deposit = NearToken::from_yoctonear(1))]
+    fn imt_burn(&mut self, minter_id: &AccountIdRef, tokens: ImtTokens, memo: Option<String>);
 }
 
 pub trait DefuseImtExt {
@@ -31,7 +23,7 @@ pub trait DefuseImtExt {
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
-impl DefuseImtExt for Near {
+impl DefuseImtExt for SigningNear {
     async fn defuse_imt_burn(
         &self,
         defuse: impl Into<AccountId>,
@@ -48,13 +40,8 @@ impl DefuseImtExt for Near {
 
         self.fn_call(
             defuse,
-            ImtBurnerContract::imt_burn(ImtBurnArgs {
-                minter_id: minter_id.as_ref(),
-                tokens,
-                memo: memo.into(),
-            })
-            .deposit(NearToken::from_yoctonear(1))
-            .gas(Gas::from_tgas(30)),
+            ImtBurnerContract::imt_burn(minter_id.as_ref(), tokens, memo.into())
+                .gas(Gas::from_tgas(30)),
         )
         .await
     }

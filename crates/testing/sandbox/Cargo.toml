@@ -26,6 +26,7 @@ defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call
 defuse-global-deployer = { workspace = true, features = ["near-kit", "near-contract"], optional = true }
 defuse-outlayer-app = { workspace = true, features = ["near-kit", "borsh", "near-contract"], optional = true }
 defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
+defuse-serde-utils = { workspace = true, optional = true, features = ["base64"] }
 defuse-test-utils = { workspace = true, optional = true }
 defuse-wallet-sdk = { workspace = true, optional = true, features = ["near-kit"] }
 
@@ -33,7 +34,7 @@ defuse-wallet-sdk = { workspace = true, optional = true, features = ["near-kit"]
 ignored = ["near-sdk"] # needed only for unit-tesing
 
 [features]
-defuse = ["dep:defuse", "dep:defuse-test-utils"]
+defuse = ["dep:defuse", "dep:defuse-serde-utils", "dep:defuse-test-utils"]
 deployer = ["dep:defuse-global-deployer"]
 escrow = ["dep:defuse-escrow-swap"]
 imt = ["defuse", "defuse-test-utils?/imt", "defuse/imt"]

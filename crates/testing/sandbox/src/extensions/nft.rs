@@ -1,22 +1,22 @@
 use near_contract_standards::non_fungible_token::{Token, metadata::NFTContractMetadata};
 use near_kit::{
-    Gas, Near, NearToken,
-    protocol::{AccountIdRef, Action, FunctionCallAction},
-    standards::{NftContractMetadata, NonFungibleToken},
+    AccountIdRef, Gas, NearToken, SigningNear,
+    protocol::{Action, FunctionCallAction},
+    standards::{NftContractMetadata, NonFungibleToken, NonFungibleTokenClient},
     transaction::Final,
 };
 use serde_json::json;
 
 use crate::account::Account;
 
-pub trait NftAdminExt {
+pub trait NftAdminExt: Sized {
     async fn deploy_vanilla_nft_issuer(
         &self,
         token_name: impl AsRef<str>,
         owner_id: impl AsRef<AccountIdRef>,
         metadata: &NFTContractMetadata,
         wasm: impl Into<Vec<u8>>,
-    ) -> NonFungibleToken;
+    ) -> NonFungibleTokenClient<Self>;
 
     async fn mint_nft(
         &self,
@@ -26,14 +26,14 @@ pub trait NftAdminExt {
     ) -> anyhow::Result<Token>;
 }
 
-impl NftAdminExt for Near {
+impl NftAdminExt for SigningNear {
     async fn deploy_vanilla_nft_issuer(
         &self,
         token_name: impl AsRef<str>,
         owner_id: impl AsRef<AccountIdRef>,
         metadata: &NFTContractMetadata,
         wasm: impl Into<Vec<u8>>,
-    ) -> NonFungibleToken {
+    ) -> NonFungibleTokenClient<Self> {
         let account = self
             .deploy_sub_contract(
                 token_name,
@@ -53,7 +53,7 @@ impl NftAdminExt for Near {
             .await
             .unwrap();
 
-        self.nft(account.account_id())
+        self.contract::<NonFungibleToken>(account.account_id())
     }
 
     async fn mint_nft(
