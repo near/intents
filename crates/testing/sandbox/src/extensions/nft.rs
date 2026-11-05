@@ -3,7 +3,6 @@ use near_kit::{
     AccountIdRef, Gas, NearToken, SigningNear,
     protocol::{Action, FunctionCallAction},
     standards::{NftContractMetadata, NonFungibleToken, NonFungibleTokenClient},
-    transaction::Final,
 };
 use serde_json::json;
 
@@ -82,7 +81,6 @@ impl NftAdminExt for SigningNear {
                 gas: Gas::from_tgas(50),
                 deposit: NearToken::from_near(1),
             }))
-            .wait_until::<Final>()
             .await?
             .json()
             .map_err(Into::into)

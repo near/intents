@@ -3,7 +3,6 @@ use near_kit::{
     AccountId, Gas, NearToken, SigningNear,
     protocol::{Action, FunctionCallAction},
     standards::{FungibleToken, FungibleTokenClient},
-    transaction::Final,
 };
 
 use crate::{account::Account, outcome::SuccessfulExecutionOutcome};
@@ -44,7 +43,6 @@ impl WNearDeployerExt for SigningNear {
                 gas: Gas::from_tgas(10),
                 deposit: NearToken::from_near(0),
             }))
-            .wait_until::<Final>()
             .await
             .unwrap()
             .result()
@@ -74,7 +72,6 @@ impl WNearExt for SigningNear {
                     .deposit(amount)
                     .gas(Gas::from_tgas(10)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }

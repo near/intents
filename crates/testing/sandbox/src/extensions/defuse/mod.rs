@@ -16,7 +16,7 @@ use defuse_core::{
 use defuse_serde_utils::base64::AsBase64;
 use near_kit::{
     AccountId, AccountIdRef, Gas, NearToken, SigningNear, protocol::FunctionCallAction,
-    rpc::FinalExecutionOutcome, transaction::Final,
+    rpc::FinalExecutionOutcome,
 };
 use near_sdk::json_types::U128;
 use serde_json::json;
@@ -414,7 +414,6 @@ impl DefuseExt for SigningNear {
         let outcome = self
             .transaction(defuse.into())
             .add_action(Defuse::update_current_salt().gas(Gas::from_tgas(30)))
-            .wait_until::<Final>()
             .await?;
         let salt = outcome.json::<Salt>()?;
         Ok((outcome.try_into()?, salt))
@@ -431,7 +430,6 @@ impl DefuseExt for SigningNear {
                 Defuse::invalidate_salts(&salts.into_iter().collect::<Vec<_>>())
                     .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
         let salt = outcome.json::<Salt>()?;
         Ok((outcome.try_into()?, salt))
@@ -573,7 +571,6 @@ impl DefuseExt for SigningNear {
         let res = self
             .transaction(defuse.into())
             .add_action(Defuse::force_lock_account(account_id.as_ref()).gas(Gas::from_tgas(30)))
-            .wait_until::<Final>()
             .await?;
         let locked = res.json::<bool>()?;
 
@@ -588,7 +585,6 @@ impl DefuseExt for SigningNear {
         let res = self
             .transaction(defuse.into())
             .add_action(Defuse::force_unlock_account(account_id.as_ref()).gas(Gas::from_tgas(30)))
-            .wait_until::<Final>()
             .await?;
         let unlocked = res.json::<bool>()?;
 
@@ -646,7 +642,6 @@ impl DefuseExt for SigningNear {
                 )
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
         let transferred = res.json::<U128>()?.0;
         Ok((res.try_into()?, transferred))
@@ -675,7 +670,6 @@ impl DefuseExt for SigningNear {
                 )
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
         Ok(res.json::<U128>()?.0)
     }
@@ -703,7 +697,6 @@ impl DefuseExt for SigningNear {
                 )
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
         let transferred = res.json::<Vec<U128>>()?.into_iter().map(|x| x.0).collect();
         Ok((res.try_into()?, transferred))
@@ -730,7 +723,6 @@ impl DefuseExt for SigningNear {
                 )
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
         let transferred = res.json::<bool>()?;
         Ok((res.try_into()?, transferred))
@@ -745,7 +737,6 @@ impl DefuseExt for SigningNear {
     ) -> Result<FinalExecutionOutcome> {
         self.transaction(defuse.into())
             .add_action(Defuse::do_auth_call(signer_id.as_ref(), auth_call).gas(gas))
-            .wait_until::<Final>()
             .await
             .map_err(Into::into)
     }

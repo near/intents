@@ -3,7 +3,6 @@ use near_kit::{
     NearToken, SigningNear,
     protocol::{Action, FunctionCallAction},
     signer::{InMemorySigner, SecretKey},
-    transaction::Final,
 };
 
 pub trait Account {
@@ -45,8 +44,7 @@ impl Account for SigningNear {
             tx = tx.add_action(Action::transfer(balance));
         }
 
-        tx.wait_until::<Final>()
-            .await
+        tx.await
             .unwrap()
             .result()
             .expect("failed to create subaccount");
@@ -67,7 +65,6 @@ impl Account for SigningNear {
         if let Some(balance) = balance.into() {
             self.transaction(&account_id)
                 .add_action(Action::transfer(balance))
-                .wait_until::<Final>()
                 .await
                 .unwrap()
                 .result()
@@ -101,7 +98,7 @@ impl Account for SigningNear {
             tx = tx.add_action(Action::FunctionCall(init_call));
         }
 
-        tx.wait_until::<Final>().await?.result().map_err(|e| {
+        tx.await?.result().map_err(|e| {
             anyhow::anyhow!("failed to deploy sub contract to '{account_id}': {e:?}")
         })?;
 
