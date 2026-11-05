@@ -16,8 +16,7 @@ use defuse_sandbox::{
             },
             nep245::{MtEvent, MtTransferEvent},
         },
-        mt::MtOnTransferArgs,
-        mt::{Mt, MtBalanceOfArgs, MtBatchBalanceOfArgs, MtBatchTransferCallArgs, MtExt},
+        mt::{Mt, MtExt},
     },
     kit::{
         AccountId, Gas, Near, NearToken,
@@ -31,7 +30,7 @@ use defuse_test_utils::{
     wasms::MT_RECEIVER_STUB_WASM,
 };
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::events::AsNep297Event;
+use near_sdk::{events::AsNep297Event, json_types::U128};
 use rstest::rstest;
 use std::{borrow::Cow, sync::Arc};
 use strum::IntoEnumIterator;
@@ -158,13 +157,11 @@ async fn run_resolve_gas_test(
     author_account
         .mt_on_transfer(
             env.defuse.contract_id(),
-            MtOnTransferArgs {
-                sender_id: user_account.account_id(),
-                previous_owner_ids: &vec![author_account.account_id().clone(); token_ids.len()],
-                token_ids: &token_ids,
-                amounts: &amounts,
-                msg: "",
-            },
+            user_account.account_id(),
+            vec![author_account.account_id().clone(); token_ids.len()],
+            &token_ids,
+            amounts.iter().copied(),
+            "",
         )
         .await
         .inspect_err(|e| {
@@ -374,23 +371,18 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
     author_account
         .mt_on_transfer(
             env.defuse.contract_id(),
-            MtOnTransferArgs {
-                sender_id: user.account_id(),
-                previous_owner_ids: &vec![author_account.account_id().clone(); token_ids.len()],
-                token_ids: &token_ids,
-                amounts: &amounts,
-                msg: "",
-            },
+            user.account_id(),
+            vec![author_account.account_id().clone(); token_ids.len()],
+            &token_ids,
+            amounts.iter().copied(),
+            "",
         )
         .await
         .unwrap();
 
     let balance_before = env
         .contract::<Mt>(env.defuse.contract_id())
-        .mt_balance_of(MtBalanceOfArgs {
-            account_id: user.account_id(),
-            token_id: &defuse_token_ids[0],
-        })
+        .mt_balance_of(user.account_id(), &defuse_token_ids[0])
         .await
         .unwrap();
 
@@ -418,10 +410,7 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
 
     let balance_after = env
         .contract::<Mt>(env.defuse.contract_id())
-        .mt_balance_of(MtBalanceOfArgs {
-            account_id: user.account_id(),
-            token_id: &defuse_token_ids[0],
-        })
+        .mt_balance_of(user.account_id(), &defuse_token_ids[0])
         .await
         .unwrap();
 
@@ -482,23 +471,18 @@ async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(aw
     author_account
         .mt_on_transfer(
             env.defuse.contract_id(),
-            MtOnTransferArgs {
-                sender_id: user.account_id(),
-                previous_owner_ids: &vec![author_account.account_id().clone(); token_ids.len()],
-                token_ids: &token_ids,
-                amounts: &amounts,
-                msg: "",
-            },
+            user.account_id(),
+            vec![author_account.account_id().clone(); token_ids.len()],
+            &token_ids,
+            amounts.iter().copied(),
+            "",
         )
         .await
         .unwrap();
 
     let balances_of = async |account_id| {
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_batch_balance_of(MtBatchBalanceOfArgs {
-                account_id,
-                token_ids: &defuse_token_ids,
-            })
+            .mt_batch_balance_of(account_id, &defuse_token_ids)
             .await
             .unwrap()
     };
@@ -510,15 +494,14 @@ async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(aw
     let execution_result = user
         .transaction(env.defuse.contract_id())
         .add_action(
-            Mt::mt_batch_transfer_call(MtBatchTransferCallArgs {
-                receiver_id: receiver_stub.account_id(),
-                token_ids: &defuse_token_ids,
-                amounts: &amounts,
-                approvals: None,
-                memo: None,
-                msg: &serde_json::to_string(&MTReceiverMode::RefundAll).unwrap(),
-            })
-            .deposit(NearToken::from_yoctonear(1))
+            Mt::mt_batch_transfer_call(
+                receiver_stub.account_id(),
+                &defuse_token_ids,
+                &amounts.iter().copied().map(U128).collect::<Vec<_>>(),
+                None,
+                None,
+                &serde_json::to_string(&MTReceiverMode::RefundAll).unwrap(),
+            )
             .gas(Gas::from_tgas(300)),
         )
         .wait_until::<Final>()

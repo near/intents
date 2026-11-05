@@ -12,7 +12,7 @@ use defuse_sandbox::{
                 token_id::{TokenId, nep141::Nep141TokenId},
             },
         },
-        mt::{Mt, MtBalanceOfArgs, MtExt},
+        mt::{Mt, MtExt},
     },
     kit::AccountId,
 };
@@ -40,10 +40,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.account_id(),
-                token_id: &ft.to_string(),
-            })
+            .mt_balance_of(user.account_id(), &ft.to_string())
             .await
             .unwrap()
             .0,
@@ -97,10 +94,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
     {
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user.account_id(),
-                    token_id: &ft.to_string(),
-                })
+                .mt_balance_of(user.account_id(), &ft.to_string())
                 .await
                 .unwrap()
                 .0,
@@ -121,10 +115,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user.account_id(),
-                    token_id: &ft.to_string(),
-                })
+                .mt_balance_of(user.account_id(), &ft.to_string())
                 .await
                 .unwrap()
                 .0,
@@ -132,10 +123,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
         );
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: &receiver_id,
-                    token_id: &ft.to_string(),
-                })
+                .mt_balance_of(&receiver_id, &ft.to_string())
                 .await
                 .unwrap()
                 .0,
@@ -164,10 +152,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user.account_id(),
-                    token_id: &ft.to_string(),
-                })
+                .mt_balance_of(user.account_id(), &ft.to_string())
                 .await
                 .unwrap()
                 .0,
@@ -175,10 +160,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
         );
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: &receiver_id,
-                    token_id: &ft.to_string(),
-                })
+                .mt_balance_of(&receiver_id, &ft.to_string())
                 .await
                 .unwrap()
                 .0,
@@ -229,10 +211,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user.account_id(),
-                    token_id: &ft.to_string(),
-                })
+                .mt_balance_of(user.account_id(), &ft.to_string())
                 .await
                 .unwrap()
                 .0,
@@ -240,10 +219,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
         );
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: &receiver_id,
-                    token_id: &ft.to_string(),
-                })
+                .mt_balance_of(&receiver_id, &ft.to_string())
                 .await
                 .unwrap()
                 .0,

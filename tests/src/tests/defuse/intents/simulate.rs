@@ -26,7 +26,7 @@ use defuse_sandbox::{
             },
             tokens::DepositMessage,
         },
-        mt::{Mt, MtBalanceOfArgs, MtExt},
+        mt::{Mt, MtExt},
         nft::NftAdminExt,
         wnear::WNearExt,
     },
@@ -112,10 +112,7 @@ async fn simulate_ft_withdraw_intent(#[future(awt)] env: Env) {
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &ft1_token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &ft1_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -181,10 +178,7 @@ async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
     // Verify wNEAR balance in Defuse
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &wnear_token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &wnear_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -275,10 +269,7 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &nft_token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &nft_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -355,10 +346,7 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
     // Verify balance in first Defuse contract
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &ft1_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &ft1_id.to_string())
             .await
             .unwrap()
             .0,
@@ -386,10 +374,7 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
     assert_eq!(
         defuse2
             .contract::<Mt>(defuse2.account_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &nep245_token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &nep245_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -459,10 +444,7 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
     // Verify wNEAR balance in Defuse
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &wnear_token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &wnear_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -524,10 +506,7 @@ async fn simulate_token_diff_intent(#[future(awt)] env: Env) {
     // Verify initial balances
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &ft1_token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &ft1_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -535,10 +514,7 @@ async fn simulate_token_diff_intent(#[future(awt)] env: Env) {
     );
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user2.account_id(),
-                token_id: &ft2_token_id.to_string()
-            })
+            .mt_balance_of(user2.account_id(), &ft2_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -718,10 +694,7 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
     // Verify wNEAR balance
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &wnear_token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &wnear_token_id.to_string())
             .await
             .unwrap()
             .0,

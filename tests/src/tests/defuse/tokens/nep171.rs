@@ -8,7 +8,7 @@ use defuse_sandbox::{
             },
             tokens::DepositMessage,
         },
-        mt::{Mt, MtBalanceOfArgs, MtExt},
+        mt::{Mt, MtExt},
         nft::NftAdminExt,
     },
     kit::{Gas, NearToken, transaction::Final},
@@ -131,10 +131,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             async {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
-                        .mt_balance_of(MtBalanceOfArgs {
-                            account_id: user2.account_id(),
-                            token_id: &nft1_mt_token_id,
-                        })
+                        .mt_balance_of(user2.account_id(), &nft1_mt_token_id)
                         .await
                         .unwrap()
                         .0,
@@ -144,10 +141,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             async {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
-                        .mt_balance_of(MtBalanceOfArgs {
-                            account_id: user3.account_id(),
-                            token_id: &nft1_mt_token_id,
-                        })
+                        .mt_balance_of(user3.account_id(), &nft1_mt_token_id)
                         .await
                         .unwrap()
                         .0,
@@ -188,10 +182,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             async {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
-                        .mt_balance_of(MtBalanceOfArgs {
-                            account_id: user3.account_id(),
-                            token_id: &nft2_mt_token_id,
-                        })
+                        .mt_balance_of(user3.account_id(), &nft2_mt_token_id)
                         .await
                         .unwrap()
                         .0,
@@ -201,10 +192,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             async {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
-                        .mt_balance_of(MtBalanceOfArgs {
-                            account_id: user1.account_id(),
-                            token_id: &nft2_mt_token_id,
-                        })
+                        .mt_balance_of(user1.account_id(), &nft2_mt_token_id)
                         .await
                         .unwrap()
                         .0,
@@ -284,10 +272,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             async {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
-                        .mt_balance_of(MtBalanceOfArgs {
-                            account_id: user3.account_id(),
-                            token_id: &nft1_mt_token_id,
-                        })
+                        .mt_balance_of(user3.account_id(), &nft1_mt_token_id)
                         .await
                         .unwrap()
                         .0,
@@ -321,10 +306,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
             async {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
-                        .mt_balance_of(MtBalanceOfArgs {
-                            account_id: user3.account_id(),
-                            token_id: &nft1_mt_token_id,
-                        })
+                        .mt_balance_of(user3.account_id(), &nft1_mt_token_id)
                         .await
                         .unwrap()
                         .0,

@@ -1,10 +1,8 @@
 use anyhow::Result;
 use core::str;
 use defuse_nep245::{Token, TokenId};
-use near_kit::{AccountId, Gas, Near, NearToken, protocol::AccountIdRef, transaction::Final};
+use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear, transaction::Final};
 use near_sdk::json_types::U128;
-use serde::Serialize;
-use serde_with::{DisplayFromStr, serde_as};
 use std::{
     fmt::Display,
     ops::{Bound, RangeBounds},
@@ -12,132 +10,77 @@ use std::{
 
 use crate::{extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};
 
-#[derive(Serialize)]
-pub struct MtTokenArgs<'a> {
-    pub token_ids: &'a [TokenId],
-}
-
-#[derive(Serialize)]
-pub struct MtBalanceOfArgs<'a> {
-    pub account_id: &'a AccountIdRef,
-    pub token_id: &'a str,
-}
-
-#[derive(Serialize)]
-pub struct MtBatchBalanceOfArgs<'a> {
-    pub account_id: &'a AccountIdRef,
-    pub token_ids: &'a [TokenId],
-}
-
-#[derive(Serialize)]
-pub struct MtSupplyArgs<'a> {
-    pub token_id: &'a str,
-}
-
-#[derive(Serialize)]
-pub struct MtBatchSupplyArgs<'a> {
-    pub token_ids: &'a [TokenId],
-}
-
-#[serde_as]
-#[derive(Serialize)]
-pub struct MtTransferArgs<'a> {
-    pub receiver_id: &'a AccountIdRef,
-    pub token_id: &'a str,
-    #[serde_as(as = "DisplayFromStr")]
-    pub amount: u128,
-    pub approval: Option<(AccountId, u64)>,
-    pub memo: Option<String>,
-}
-
-#[serde_as]
-#[derive(Serialize)]
-pub struct MtBatchTransferArgs<'a> {
-    pub receiver_id: &'a AccountIdRef,
-    pub token_ids: &'a [TokenId],
-    #[serde_as(as = "&[DisplayFromStr]")]
-    pub amounts: &'a [u128],
-    pub approvals: Option<Vec<Option<(AccountId, u64)>>>,
-    pub memo: Option<String>,
-}
-
-#[serde_as]
-#[derive(Serialize)]
-pub struct MtTransferCallArgs<'a> {
-    pub receiver_id: &'a AccountIdRef,
-    pub token_id: &'a str,
-    #[serde_as(as = "DisplayFromStr")]
-    pub amount: u128,
-    pub approval: Option<(AccountId, u64)>,
-    pub memo: Option<String>,
-    pub msg: &'a str,
-}
-
-#[serde_as]
-#[derive(Serialize)]
-pub struct MtBatchTransferCallArgs<'a> {
-    pub receiver_id: &'a AccountIdRef,
-    pub token_ids: &'a [TokenId],
-    #[serde_as(as = "&[DisplayFromStr]")]
-    pub amounts: &'a [u128],
-    pub approvals: Option<Vec<Option<(AccountId, u64)>>>,
-    pub memo: Option<String>,
-    pub msg: &'a str,
-}
-
-#[serde_as]
-#[derive(Serialize)]
-pub struct MtTokensArgs {
-    #[serde_as(as = "Option<DisplayFromStr>")]
-    pub from_index: Option<u128>,
-    pub limit: Option<usize>,
-}
-
-#[serde_as]
-#[derive(Serialize)]
-pub struct MtTokensForOwnerArgs<'a> {
-    pub account_id: &'a AccountIdRef,
-    #[serde_as(as = "Option<DisplayFromStr>")]
-    pub from_index: Option<u128>,
-    pub limit: Option<usize>,
-}
-
-#[serde_as]
-#[derive(Serialize)]
-pub struct MtOnTransferArgs<'a> {
-    pub sender_id: &'a AccountIdRef,
-    pub previous_owner_ids: &'a [AccountId],
-    pub token_ids: &'a [TokenId],
-    #[serde_as(as = "&[DisplayFromStr]")]
-    pub amounts: &'a [u128],
-    pub msg: &'a str,
-}
-
+/// NEP-245 bindings, see [`defuse_nep245`]
 #[near_kit::contract]
 pub trait Mt {
-    fn mt_token(&self, args: MtTokenArgs) -> Vec<Option<Token>>;
-    fn mt_balance_of(&self, args: MtBalanceOfArgs) -> U128;
-    fn mt_batch_balance_of(&self, args: MtBatchBalanceOfArgs) -> Vec<U128>;
-    fn mt_supply(&self, args: MtSupplyArgs) -> Option<U128>;
-    fn mt_batch_supply(&self, args: MtBatchSupplyArgs) -> Vec<Option<U128>>;
+    fn mt_token(&self, token_ids: &[TokenId]) -> Vec<Option<Token>>;
+    fn mt_balance_of(&self, account_id: &AccountIdRef, token_id: &str) -> U128;
+    fn mt_batch_balance_of(&self, account_id: &AccountIdRef, token_ids: &[TokenId]) -> Vec<U128>;
+    fn mt_supply(&self, token_id: &str) -> Option<U128>;
+    fn mt_batch_supply(&self, token_ids: &[TokenId]) -> Vec<Option<U128>>;
 
-    fn mt_tokens(&self, args: MtTokensArgs) -> Vec<Token>;
-    fn mt_tokens_for_owner(&self, args: MtTokensForOwnerArgs) -> Vec<Token>;
+    fn mt_tokens(&self, from_index: Option<U128>, limit: Option<u32>) -> Vec<Token>;
+    fn mt_tokens_for_owner(
+        &self,
+        account_id: &AccountIdRef,
+        from_index: Option<U128>,
+        limit: Option<u32>,
+    ) -> Vec<Token>;
 
+    #[call(deposit = NearToken::from_yoctonear(1))]
+    fn mt_transfer(
+        &mut self,
+        receiver_id: &AccountIdRef,
+        token_id: &str,
+        amount: U128,
+        approval: Option<(AccountId, u64)>,
+        memo: Option<&str>,
+    );
+
+    #[call(deposit = NearToken::from_yoctonear(1))]
+    fn mt_batch_transfer(
+        &mut self,
+        receiver_id: &AccountIdRef,
+        token_ids: &[TokenId],
+        amounts: &[U128],
+        approvals: Option<Vec<Option<(AccountId, u64)>>>,
+        memo: Option<&str>,
+    );
+
+    /// Returns `Vec<U128>`
+    #[call(deposit = NearToken::from_yoctonear(1))]
+    fn mt_transfer_call(
+        &mut self,
+        receiver_id: &AccountIdRef,
+        token_id: &str,
+        amount: U128,
+        approval: Option<(AccountId, u64)>,
+        memo: Option<&str>,
+        msg: &str,
+    );
+
+    /// Returns `Vec<U128>`
+    #[call(deposit = NearToken::from_yoctonear(1))]
+    fn mt_batch_transfer_call(
+        &mut self,
+        receiver_id: &AccountIdRef,
+        token_ids: &[TokenId],
+        amounts: &[U128],
+        approvals: Option<Vec<Option<(AccountId, u64)>>>,
+        memo: Option<&str>,
+        msg: &str,
+    );
+
+    /// Returns `Vec<U128>`
     #[call]
-    fn mt_transfer(&mut self, args: MtTransferArgs);
-
-    #[call]
-    fn mt_batch_transfer(&mut self, args: MtBatchTransferArgs);
-
-    #[call]
-    fn mt_transfer_call(&mut self, args: MtTransferCallArgs);
-
-    #[call]
-    fn mt_batch_transfer_call(&mut self, args: MtBatchTransferCallArgs);
-
-    #[call]
-    fn mt_on_transfer(&mut self, args: MtOnTransferArgs);
+    fn mt_on_transfer(
+        &mut self,
+        sender_id: &AccountIdRef,
+        previous_owner_ids: &[AccountId],
+        token_ids: &[TokenId],
+        amounts: &[U128],
+        msg: &str,
+    );
 }
 
 pub trait MtExt {
@@ -195,11 +138,15 @@ pub trait MtExt {
     async fn mt_on_transfer(
         &self,
         contract: impl Into<AccountId>,
-        args: MtOnTransferArgs,
+        sender_id: impl AsRef<AccountIdRef>,
+        previous_owner_ids: impl IntoIterator<Item = AccountId>,
+        token_ids: impl IntoIterator<Item = impl Into<TokenId>>,
+        amounts: impl IntoIterator<Item = u128>,
+        msg: impl AsRef<str>,
     ) -> Result<(SuccessfulExecutionOutcome, Vec<U128>)>;
 }
 
-fn range_to_pagination(range: impl RangeBounds<usize>) -> (Option<u128>, Option<usize>) {
+fn range_to_pagination(range: impl RangeBounds<usize>) -> (Option<U128>, Option<u32>) {
     let from = match range.start_bound() {
         Bound::Included(v) => Some(*v),
         Bound::Excluded(v) => Some(*v + 1),
@@ -215,10 +162,13 @@ fn range_to_pagination(range: impl RangeBounds<usize>) -> (Option<u128>, Option<
         (None, Some(v)) => Some(v),
         (Some(f), Some(t)) => Some(t - f),
     };
-    (from.map(|v| v.try_into().unwrap()), limit)
+    (
+        from.map(|v| U128(v.try_into().unwrap())),
+        limit.map(|v| v.try_into().unwrap()),
+    )
 }
 
-impl MtExt for Near {
+impl MtExt for SigningNear {
     async fn mt_transfer(
         &self,
         contract: impl Into<AccountId>,
@@ -229,14 +179,13 @@ impl MtExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.fn_call(
             contract,
-            Mt::mt_transfer(MtTransferArgs {
-                receiver_id: receiver_id.as_ref(),
-                token_id: token_id.into().as_ref(),
-                amount,
-                approval: None,
-                memo: memo.into(),
-            })
-            .deposit(NearToken::from_yoctonear(1))
+            Mt::mt_transfer(
+                receiver_id.as_ref(),
+                token_id.into().as_str(),
+                U128(amount),
+                None,
+                memo.into().as_deref(),
+            )
             .gas(Gas::from_tgas(30)),
         )
         .await
@@ -252,14 +201,13 @@ impl MtExt for Near {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(contract.into())
             .add_action(
-                Mt::mt_batch_transfer(MtBatchTransferArgs {
-                    receiver_id: receiver_id.as_ref(),
-                    token_ids: &token_ids.into_iter().map(Into::into).collect::<Vec<_>>(),
-                    amounts: &amounts.into_iter().collect::<Vec<_>>(),
-                    approvals: None,
-                    memo: memo.into(),
-                })
-                .deposit(NearToken::from_yoctonear(1))
+                Mt::mt_batch_transfer(
+                    receiver_id.as_ref(),
+                    &token_ids.into_iter().map(Into::into).collect::<Vec<_>>(),
+                    &amounts.into_iter().map(U128).collect::<Vec<_>>(),
+                    None,
+                    memo.into().as_deref(),
+                )
                 .gas(Gas::from_tgas(300)),
             )
             .wait_until::<Final>()
@@ -279,15 +227,14 @@ impl MtExt for Near {
         let outcome = self
             .transaction(contract.into())
             .add_action(
-                Mt::mt_transfer_call(MtTransferCallArgs {
-                    receiver_id: receiver_id.as_ref(),
-                    token_id: token_id.into().as_ref(),
-                    amount,
-                    approval: None,
-                    memo: memo.into(),
-                    msg: &msg.to_string(),
-                })
-                .deposit(NearToken::from_yoctonear(1))
+                Mt::mt_transfer_call(
+                    receiver_id.as_ref(),
+                    token_id.into().as_str(),
+                    U128(amount),
+                    None,
+                    memo.into().as_deref(),
+                    &msg.to_string(),
+                )
                 .gas(Gas::from_tgas(300)),
             )
             .wait_until::<Final>()
@@ -310,15 +257,14 @@ impl MtExt for Near {
         let outcome = self
             .transaction(contract.into())
             .add_action(
-                Mt::mt_batch_transfer_call(MtBatchTransferCallArgs {
-                    receiver_id: receiver_id.as_ref(),
-                    token_ids: &token_ids.into_iter().map(Into::into).collect::<Vec<_>>(),
-                    amounts: &amounts.into_iter().collect::<Vec<_>>(),
-                    approvals: None,
-                    memo: memo.into(),
-                    msg: &msg.to_string(),
-                })
-                .deposit(NearToken::from_yoctonear(1))
+                Mt::mt_batch_transfer_call(
+                    receiver_id.as_ref(),
+                    &token_ids.into_iter().map(Into::into).collect::<Vec<_>>(),
+                    &amounts.into_iter().map(U128).collect::<Vec<_>>(),
+                    None,
+                    memo.into().as_deref(),
+                    &msg.to_string(),
+                )
                 .gas(Gas::from_tgas(300)),
             )
             .wait_until::<Final>()
@@ -336,7 +282,7 @@ impl MtExt for Near {
     ) -> anyhow::Result<Vec<Token>> {
         let (from_index, limit) = range_to_pagination(range);
         self.contract::<Mt>(contract.into())
-            .mt_tokens(MtTokensArgs { from_index, limit })
+            .mt_tokens(from_index, limit)
             .await
             .map_err(Into::into)
     }
@@ -349,11 +295,7 @@ impl MtExt for Near {
     ) -> anyhow::Result<Vec<Token>> {
         let (from_index, limit) = range_to_pagination(range);
         self.contract::<Mt>(contract.into())
-            .mt_tokens_for_owner(MtTokensForOwnerArgs {
-                account_id: account_id.as_ref(),
-                from_index,
-                limit,
-            })
+            .mt_tokens_for_owner(account_id.as_ref(), from_index, limit)
             .await
             .map_err(Into::into)
     }
@@ -361,14 +303,23 @@ impl MtExt for Near {
     async fn mt_on_transfer(
         &self,
         contract: impl Into<AccountId>,
-        args: MtOnTransferArgs<'_>,
+        sender_id: impl AsRef<AccountIdRef>,
+        previous_owner_ids: impl IntoIterator<Item = AccountId>,
+        token_ids: impl IntoIterator<Item = impl Into<TokenId>>,
+        amounts: impl IntoIterator<Item = u128>,
+        msg: impl AsRef<str>,
     ) -> Result<(SuccessfulExecutionOutcome, Vec<U128>)> {
         let res = self
             .transaction(contract.into())
             .add_action(
-                Mt::mt_on_transfer(args)
-                    .deposit(NearToken::from_near(0))
-                    .gas(Gas::from_tgas(300)),
+                Mt::mt_on_transfer(
+                    sender_id.as_ref(),
+                    &previous_owner_ids.into_iter().collect::<Vec<_>>(),
+                    &token_ids.into_iter().map(Into::into).collect::<Vec<_>>(),
+                    &amounts.into_iter().map(U128).collect::<Vec<_>>(),
+                    msg.as_ref(),
+                )
+                .gas(Gas::from_tgas(300)),
             )
             .wait_until::<Final>()
             .await?;

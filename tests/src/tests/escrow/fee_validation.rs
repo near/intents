@@ -16,7 +16,7 @@ use defuse_sandbox::{
                 action::{FillAction, TransferAction, TransferMessage},
             },
         },
-        mt::{Mt, MtBalanceOfArgs},
+        mt::Mt,
     },
     kit::{
         AccountId, Near,
@@ -305,10 +305,10 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
 
     let collector_balance = env
         .contract::<Mt>(env.verifier.contract_id())
-        .mt_balance_of(MtBalanceOfArgs {
-            account_id: env.fee_collectors[0].account_id(),
-            token_id: &dst_verifier_asset.to_string(),
-        })
+        .mt_balance_of(
+            env.fee_collectors[0].account_id(),
+            &dst_verifier_asset.to_string(),
+        )
         .await
         .unwrap()
         .0;

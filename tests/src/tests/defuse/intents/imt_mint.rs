@@ -13,7 +13,7 @@ use defuse_sandbox::{
                 tokens::MAX_TOKEN_ID_LEN,
             },
         },
-        mt::{Mt, MtBalanceOfArgs, MtExt},
+        mt::{Mt, MtExt},
     },
     kit::{AccountId, Gas, NearToken},
 };
@@ -61,10 +61,7 @@ async fn imt_mint_intent(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.account_id(),
-                token_id: &mt_id.to_string()
-            })
+            .mt_balance_of(user.account_id(), &mt_id.to_string())
             .await
             .unwrap()
             .0,
@@ -183,10 +180,7 @@ async fn imt_mint_intent_to_defuse(
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: defuse2.account_id(),
-                    token_id: &mt_token.to_string(),
-                })
+                .mt_balance_of(defuse2.account_id(), &mt_token.to_string())
                 .await
                 .unwrap()
                 .0,
@@ -210,10 +204,7 @@ async fn imt_mint_intent_to_defuse(
 
         assert_eq!(
             env.contract::<Mt>(defuse2.account_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: &other_user_id,
-                    token_id: &defuse_ft1.to_string(),
-                })
+                .mt_balance_of(&other_user_id, &defuse_ft1.to_string())
                 .await
                 .unwrap()
                 .0,
@@ -302,10 +293,7 @@ async fn imt_mint_intent_with_msg_to_receiver_smc(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.account_id(),
-                token_id: &mt_token.to_string(),
-            })
+            .mt_balance_of(user.account_id(), &mt_token.to_string())
             .await
             .unwrap()
             .0,
@@ -314,10 +302,7 @@ async fn imt_mint_intent_with_msg_to_receiver_smc(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: mt_receiver.account_id(),
-                token_id: &mt_token.to_string(),
-            })
+            .mt_balance_of(mt_receiver.account_id(), &mt_token.to_string())
             .await
             .unwrap()
             .0,

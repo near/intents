@@ -12,7 +12,7 @@ use defuse_sandbox::{
                 token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
             },
         },
-        mt::{Mt, MtBatchBalanceOfArgs},
+        mt::Mt,
     },
     kit::{
         AccountId, Gas, Near,
@@ -263,13 +263,13 @@ pub async fn show_verifier_balances(
         .map(|account_id| async move {
             let balances = near
                 .contract::<Mt>(verifier)
-                .mt_batch_balance_of(MtBatchBalanceOfArgs {
+                .mt_batch_balance_of(
                     account_id,
-                    token_ids: &token_ids
+                    &token_ids
                         .iter()
                         .map(ToString::to_string)
                         .collect::<Vec<_>>(),
-                })
+                )
                 .await?;
             anyhow::Ok((account_id, balances))
         })

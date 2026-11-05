@@ -9,7 +9,7 @@ use defuse_sandbox::extensions::{
         },
         tokens::{DepositAction, DepositMessage, ExecuteIntents},
     },
-    mt::{Mt, MtBalanceOfArgs},
+    mt::Mt,
     poa::PoAFactoryExt,
 };
 use near_sdk::json_types::U128;
@@ -33,10 +33,7 @@ async fn deposit_withdraw(#[future(awt)] env: Env) {
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.account_id(),
-                token_id: &ft_id,
-            })
+            .mt_balance_of(user.account_id(), &ft_id)
             .await
             .unwrap()
             .0,
@@ -62,10 +59,7 @@ async fn deposit_withdraw(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.account_id(),
-                        token_id: &ft_id,
-                    })
+                    .mt_balance_of(user.account_id(), &ft_id)
                     .await
                     .unwrap()
                     .0,
@@ -106,10 +100,7 @@ async fn poa_deposit(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.account_id(),
-                        token_id: &ft_id,
-                    })
+                    .mt_balance_of(user.account_id(), &ft_id)
                     .await
                     .unwrap()
                     .0,
@@ -189,10 +180,7 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.account_id(),
-                        token_id: &ft_id,
-                    })
+                    .mt_balance_of(user.account_id(), &ft_id)
                     .await
                     .unwrap()
                     .0,
@@ -202,10 +190,7 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .mt_balance_of(MtBalanceOfArgs {
-                        account_id: other_user.account_id(),
-                        token_id: &ft_id,
-                    })
+                    .mt_balance_of(other_user.account_id(), &ft_id)
                     .await
                     .unwrap()
                     .0,
@@ -283,10 +268,7 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.account_id(),
-                        token_id: &ft_id,
-                    })
+                    .mt_balance_of(user.account_id(), &ft_id)
                     .await
                     .unwrap()
                     .0,
@@ -338,10 +320,7 @@ async fn ft_force_withdraw(
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.account_id(),
-                        token_id: &ft_id,
-                    })
+                    .mt_balance_of(user.account_id(), &ft_id)
                     .await
                     .unwrap()
                     .0,
@@ -384,10 +363,7 @@ async fn ft_force_withdraw(
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.account_id(),
-                        token_id: &ft_id,
-                    })
+                    .mt_balance_of(user.account_id(), &ft_id)
                     .await
                     .unwrap()
                     .0,

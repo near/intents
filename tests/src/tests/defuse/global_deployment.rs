@@ -1,10 +1,7 @@
 use std::collections::BTreeMap;
 
 use defuse_sandbox::{
-    extensions::{
-        mt::{MtExt, MtOnTransferArgs},
-        mt_receiver::MtReceiverStubDeployerExt,
-    },
+    extensions::{mt::MtExt, mt_receiver::MtReceiverStubDeployerExt},
     kit::NearToken,
     nep616::DeployDeterministicAccountExt,
 };
@@ -53,13 +50,11 @@ async fn different_states_produce_different_addresses(
     let (_, refunds_a) = env
         .mt_on_transfer(
             account_a.clone(),
-            MtOnTransferArgs {
-                sender_id: env.account_id(),
-                previous_owner_ids: &[],
-                token_ids: &["token1".to_string()],
-                amounts: &[100],
-                msg: &accept_all_msg,
-            },
+            env.account_id(),
+            [],
+            ["token1".to_string()],
+            [100],
+            &accept_all_msg,
         )
         .await?;
     assert_eq!(refunds_a, vec![U128(0)], "AcceptAll should return 0 refund");
@@ -67,13 +62,11 @@ async fn different_states_produce_different_addresses(
     let (_, refunds_b) = env
         .mt_on_transfer(
             account_b,
-            MtOnTransferArgs {
-                sender_id: env.account_id(),
-                previous_owner_ids: &[],
-                token_ids: &["token1".to_string()],
-                amounts: &[200],
-                msg: &accept_all_msg,
-            },
+            env.account_id(),
+            [],
+            ["token1".to_string()],
+            [200],
+            &accept_all_msg,
         )
         .await?;
     assert_eq!(refunds_b, vec![U128(0)], "AcceptAll should return 0 refund");
@@ -82,13 +75,11 @@ async fn different_states_produce_different_addresses(
     let (_, refunds_refund) = env
         .mt_on_transfer(
             account_a,
-            MtOnTransferArgs {
-                sender_id: env.account_id(),
-                previous_owner_ids: &[],
-                token_ids: &["token1".to_string()],
-                amounts: &[500],
-                msg: &refund_all_msg,
-            },
+            env.account_id(),
+            [],
+            ["token1".to_string()],
+            [500],
+            &refund_all_msg,
         )
         .await?;
     assert_eq!(refunds_refund, vec![U128(500)]);
