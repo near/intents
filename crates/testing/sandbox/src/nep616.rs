@@ -2,7 +2,6 @@ use anyhow::Result;
 use near_kit::{
     AccountId, NearToken, SigningNear,
     protocol::{Action, GlobalContractId, StateInit, StateInitV1},
-    transaction::Final,
 };
 use std::collections::BTreeMap;
 
@@ -31,7 +30,6 @@ impl DeployDeterministicAccountExt for SigningNear {
 
         self.transaction(&account_id)
             .add_action(Action::state_init(si, deposit))
-            .wait_until::<Final>()
             .await?
             .result()?;
 

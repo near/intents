@@ -4,7 +4,6 @@ use near_kit::{
     AccountIdRef, NearToken, SigningNear,
     protocol::{Action, GlobalContractId, PublishMode},
     signer::SecretKey,
-    transaction::Final,
 };
 
 pub trait GlobalContract {
@@ -38,7 +37,6 @@ impl GlobalContract for SigningNear {
             .add_action(Action::transfer(balance))
             .add_action(Action::add_full_access_key(secret_key.public_key()))
             .add_action(Action::publish(code, PublishMode::Updatable))
-            .wait_until::<Final>()
             .await?
             .result()?;
 
@@ -59,7 +57,6 @@ impl GlobalContract for SigningNear {
             .add_action(Action::create_account())
             .add_action(Action::transfer(balance))
             .add_action(Action::publish(code, PublishMode::Immutable))
-            .wait_until::<Final>()
             .await?
             .result()?;
 

@@ -4,9 +4,7 @@ use defuse_global_deployer::{
     AsHex, AsWrap, State as DeployerState,
     client::{GlobalDeployerContract, GlobalDeployerContractClient},
 };
-use near_kit::{
-    AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId, transaction::Final,
-};
+use near_kit::{AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId};
 
 use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
 
@@ -89,7 +87,6 @@ impl GlobalDeployerExt for SigningNear {
                     .deposit(NearToken::from_near(50))
                     .gas(Gas::from_tgas(290)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }
@@ -105,7 +102,6 @@ impl GlobalDeployerExt for SigningNear {
                 GlobalDeployerContract::gd_approve(AsHex(old_hash.into()), AsHex(new_hash.into()))
                     .gas(Gas::from_tgas(10)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }
@@ -123,7 +119,6 @@ impl GlobalDeployerExt for SigningNear {
                     .deposit(deposit)
                     .gas(Gas::from_tgas(290)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }
@@ -138,7 +133,6 @@ impl GlobalDeployerExt for SigningNear {
                 GlobalDeployerContract::gd_transfer_ownership(new_owner.as_ref())
                     .gas(Gas::from_tgas(30)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }

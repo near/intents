@@ -3,9 +3,7 @@ use defuse_outlayer_app::{
     State as OutlayerState,
     client::{AsHex, OutlayerAppContract, OutlayerAppContractClient},
 };
-use near_kit::{
-    AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId, transaction::Final,
-};
+use near_kit::{AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId};
 
 use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
 
@@ -71,7 +69,6 @@ impl OutlayerAppExt for SigningNear {
                 )
                 .gas(Gas::from_tgas(10)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }
@@ -86,7 +83,6 @@ impl OutlayerAppExt for SigningNear {
                 OutlayerAppContract::oa_transfer_admin(new_admin_id.as_ref())
                     .gas(Gas::from_tgas(30)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }

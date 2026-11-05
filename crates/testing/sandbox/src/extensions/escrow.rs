@@ -1,6 +1,6 @@
 use anyhow::Result;
 use defuse_escrow_swap::{Params, Storage};
-use near_kit::{AccountIdRef, Gas, SigningNear, transaction::Final};
+use near_kit::{AccountIdRef, Gas, SigningNear};
 
 use crate::outcome::SuccessfulExecutionOutcome;
 
@@ -41,7 +41,6 @@ impl EscrowExt for SigningNear {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(escrow_id.as_ref())
             .add_action(Escrow::es_close(&params).gas(Gas::from_tgas(300)))
-            .wait_until::<Final>()
             .await?
             .try_into()
     }
@@ -53,7 +52,6 @@ impl EscrowExt for SigningNear {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(escrow_id.as_ref())
             .add_action(Escrow::es_lost_found(&params).gas(Gas::from_tgas(300)))
-            .wait_until::<Final>()
             .await?
             .try_into()
     }

@@ -20,10 +20,7 @@ pub mod wallet;
 
 use crate::outcome::SuccessfulExecutionOutcome;
 use anyhow::Result;
-use near_kit::{
-    AccountId, SigningNear,
-    transaction::{Final, FunctionCall},
-};
+use near_kit::{AccountId, SigningNear, transaction::FunctionCall};
 
 pub trait FnCallTransaction {
     async fn fn_call(
@@ -41,7 +38,6 @@ impl FnCallTransaction for SigningNear {
     ) -> Result<SuccessfulExecutionOutcome> {
         self.transaction(contract.into())
             .add_action(action)
-            .wait_until::<Final>()
             .await?
             .try_into()
     }

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use core::str;
 use defuse_nep245::{Token, TokenId};
-use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear, transaction::Final};
+use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear};
 use near_sdk::json_types::U128;
 use std::{
     fmt::Display,
@@ -210,7 +210,6 @@ impl MtExt for SigningNear {
                 )
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?
             .try_into()
     }
@@ -237,7 +236,6 @@ impl MtExt for SigningNear {
                 )
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
 
         let res = outcome.json::<Vec<U128>>()?;
@@ -267,7 +265,6 @@ impl MtExt for SigningNear {
                 )
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
 
         let res = outcome.json::<Vec<U128>>()?;
@@ -321,7 +318,6 @@ impl MtExt for SigningNear {
                 )
                 .gas(Gas::from_tgas(300)),
             )
-            .wait_until::<Final>()
             .await?;
         let amounts = res.json::<Vec<U128>>()?;
         Ok((res.try_into()?, amounts))

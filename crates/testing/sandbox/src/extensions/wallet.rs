@@ -3,7 +3,6 @@ use defuse_wallet_sdk::{Request, RequestMessage, client::WalletContract};
 use near_kit::{
     AccountIdRef, Gas, NearToken, SigningNear,
     protocol::{Action, StateInit},
-    transaction::Final,
 };
 
 pub use defuse_wallet_sdk as sdk;
@@ -49,7 +48,6 @@ impl WalletExt for SigningNear {
                 .deposit(deposit)
                 .gas(Gas::from_tgas(300)),
         )
-        .wait_until::<Final>()
         .await?
         .try_into()
     }
@@ -71,7 +69,6 @@ impl WalletExt for SigningNear {
                 .deposit(deposit)
                 .gas(Gas::from_tgas(300)),
         )
-        .wait_until::<Final>()
         .await?
         .try_into()
     }
