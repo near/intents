@@ -14,7 +14,7 @@ use defuse_sandbox::{
                 token_id::{TokenId, nep141::Nep141TokenId},
             },
         },
-        mt::{Mt, MtBatchBalanceOfArgs},
+        mt::Mt,
     },
     kit::{Near, protocol::AccountIdRef},
 };
@@ -34,10 +34,7 @@ async fn balance_of(
     token_id: &str,
 ) -> u128 {
     near.contract::<Mt>(defuse_id.as_ref())
-        .mt_batch_balance_of(MtBatchBalanceOfArgs {
-            account_id: account_id.as_ref(),
-            token_ids: &[token_id.to_string()],
-        })
+        .mt_batch_balance_of(account_id.as_ref(), &[token_id.to_string()])
         .await
         .unwrap()
         .into_iter()

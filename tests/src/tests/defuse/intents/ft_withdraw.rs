@@ -9,7 +9,7 @@ use defuse_sandbox::{
                 token_id::{TokenId, nep141::Nep141TokenId},
             },
         },
-        mt::{Mt, MtBalanceOfArgs},
+        mt::Mt,
         wnear::WNearExt,
     },
     kit::{AccountId, Gas, NearToken, transaction::Final},
@@ -46,10 +46,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user.account_id(),
-                    token_id: &token_id,
-                })
+                .mt_balance_of(user.account_id(), &token_id)
                 .await
                 .unwrap()
                 .0,
@@ -87,10 +84,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.account_id(),
-                        token_id: &token_id,
-                    })
+                    .mt_balance_of(user.account_id(), &token_id)
                     .await
                     .unwrap()
                     .0,
@@ -205,10 +199,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.account_id(),
-                        token_id: &token_id,
-                    })
+                    .mt_balance_of(user.account_id(), &token_id)
                     .await
                     .unwrap()
                     .0,
@@ -218,10 +209,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.account_id(),
-                        token_id: &wnear_token_id,
-                    })
+                    .mt_balance_of(user.account_id(), &wnear_token_id)
                     .await
                     .unwrap()
                     .0,
@@ -302,10 +290,7 @@ async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
             async {
                 assert_eq!(
                     env.contract::<Mt>(env.defuse.contract_id())
-                        .mt_balance_of(MtBalanceOfArgs {
-                            account_id: user.account_id(),
-                            token_id: &ft1,
-                        })
+                        .mt_balance_of(user.account_id(), &ft1)
                         .await
                         .unwrap()
                         .0,
@@ -327,10 +312,7 @@ async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
             async {
                 assert_eq!(
                     env.contract::<Mt>(defuse2.account_id())
-                        .mt_balance_of(MtBalanceOfArgs {
-                            account_id: &other_user_id,
-                            token_id: &ft1,
-                        })
+                        .mt_balance_of(&other_user_id, &ft1)
                         .await
                         .unwrap()
                         .0,
@@ -371,10 +353,7 @@ async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(env.defuse.contract_id())
-                    .mt_balance_of(MtBalanceOfArgs {
-                        account_id: user.account_id(),
-                        token_id: &ft1,
-                    })
+                    .mt_balance_of(user.account_id(), &ft1)
                     .await
                     .unwrap()
                     .0,
@@ -396,10 +375,7 @@ async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
         async {
             assert_eq!(
                 env.contract::<Mt>(defuse2.account_id())
-                    .mt_balance_of(MtBalanceOfArgs {
-                        account_id: &other_user_id,
-                        token_id: &ft1,
-                    })
+                    .mt_balance_of(&other_user_id, &ft1)
                     .await
                     .unwrap()
                     .0,

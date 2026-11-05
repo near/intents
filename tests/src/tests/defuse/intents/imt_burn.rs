@@ -7,7 +7,7 @@ use defuse_sandbox::extensions::{
             token_id::{TokenId, imt::ImtTokenId, nep141::Nep141TokenId},
         },
     },
-    mt::{Mt, MtBalanceOfArgs},
+    mt::Mt,
 };
 use rstest::rstest;
 
@@ -65,10 +65,7 @@ async fn imt_burn_intent(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: other_user.account_id(),
-                token_id: &mt_id.to_string()
-            })
+            .mt_balance_of(other_user.account_id(), &mt_id.to_string())
             .await
             .unwrap()
             .0,

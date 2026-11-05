@@ -10,7 +10,7 @@ use defuse_sandbox::{
                 token_id::{TokenId, nep141::Nep141TokenId},
             },
         },
-        mt::{Mt, MtBatchBalanceOfArgs},
+        mt::Mt,
     },
     kit::{AccountId, Near},
 };
@@ -263,10 +263,7 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_batch_balance_of(MtBatchBalanceOfArgs {
-                    account_id: account.account.account_id(),
-                    token_ids: &tokens,
-                })
+                .mt_batch_balance_of(account.account.account_id(), &tokens)
                 .await
                 .unwrap(),
             balances
@@ -351,10 +348,10 @@ async fn invariant_violated(#[future(awt)] env: Env) {
     // balances should stay the same
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_batch_balance_of(MtBatchBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_ids: &[ft1_token_id.to_string(), ft2_token_id.to_string()],
-            })
+            .mt_batch_balance_of(
+                user1.account_id(),
+                &[ft1_token_id.to_string(), ft2_token_id.to_string()]
+            )
             .await
             .unwrap(),
         [U128(1000), U128(0)]
@@ -362,10 +359,10 @@ async fn invariant_violated(#[future(awt)] env: Env) {
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_batch_balance_of(MtBatchBalanceOfArgs {
-                account_id: user2.account_id(),
-                token_ids: &[ft1_token_id.to_string(), ft2_token_id.to_string()],
-            })
+            .mt_batch_balance_of(
+                user2.account_id(),
+                &[ft1_token_id.to_string(), ft2_token_id.to_string()]
+            )
             .await
             .unwrap(),
         [U128(0), U128(2000)]
@@ -516,10 +513,10 @@ async fn solver_user_closure(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_batch_balance_of(MtBatchBalanceOfArgs {
-                account_id: user.account_id(),
-                token_ids: &[token_in.to_string(), token_out.to_string()],
-            })
+            .mt_batch_balance_of(
+                user.account_id(),
+                &[token_in.to_string(), token_out.to_string()]
+            )
             .await
             .unwrap(),
         [
@@ -530,10 +527,10 @@ async fn solver_user_closure(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_batch_balance_of(MtBatchBalanceOfArgs {
-                account_id: solver.account_id(),
-                token_ids: &[token_in.to_string(), token_out.to_string()],
-            })
+            .mt_batch_balance_of(
+                solver.account_id(),
+                &[token_in.to_string(), token_out.to_string()]
+            )
             .await
             .unwrap(),
         [

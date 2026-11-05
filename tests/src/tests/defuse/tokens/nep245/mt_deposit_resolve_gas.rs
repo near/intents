@@ -14,7 +14,7 @@ use defuse_sandbox::{
             nep245::{MtBurnEvent, MtEvent, MtMintEvent},
             tokens::{DepositAction, DepositMessage},
         },
-        mt::{Mt, MtOnTransferArgs},
+        mt::Mt,
     },
     kit::{
         AccountId, Gas, Near, NearToken,
@@ -201,13 +201,13 @@ async fn run_deposit_resolve_gas_test(
     let execution_result = author_account
         .transaction(env.defuse.contract_id()) // defuse contract receives the deposit
         .add_action(
-            Mt::mt_on_transfer(MtOnTransferArgs {
-                sender_id: author_account.account_id(), // sender_id (who the tokens are being deposited for)
-                previous_owner_ids: &vec![author_account.account_id().clone(); token_count],
-                token_ids: &token_ids,
-                amounts: &amounts,
-                msg: &serde_json::to_string(&deposit_message).unwrap(),
-            })
+            Mt::mt_on_transfer(
+                author_account.account_id(), // sender_id (who the tokens are being deposited for)
+                &vec![author_account.account_id().clone(); token_count],
+                &token_ids,
+                &amounts.iter().copied().map(U128).collect::<Vec<_>>(),
+                &serde_json::to_string(&deposit_message).unwrap(),
+            )
             .gas(Gas::from_tgas(300)),
         )
         .await
@@ -392,13 +392,13 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
     let execution_result = author_account
         .transaction(env.defuse.contract_id())
         .add_action(
-            Mt::mt_on_transfer(MtOnTransferArgs {
-                sender_id: author_account.account_id(),
-                previous_owner_ids: &[author_account.account_id().clone()],
-                token_ids: &["testtoken1".to_string()],
-                amounts: &[amount],
-                msg: &serde_json::to_string(&deposit_message).unwrap(),
-            })
+            Mt::mt_on_transfer(
+                author_account.account_id(),
+                &[author_account.account_id().clone()],
+                &["testtoken1".to_string()],
+                &[U128(amount)],
+                &serde_json::to_string(&deposit_message).unwrap(),
+            )
             .gas(Gas::from_tgas(300)),
         )
         .await
@@ -501,13 +501,13 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
     author_account
         .transaction(env.defuse.contract_id())
         .add_action(
-            Mt::mt_on_transfer(MtOnTransferArgs {
-                sender_id: author_account.account_id(),
-                previous_owner_ids: &[author_account.account_id().clone()],
-                token_ids: std::slice::from_ref(&token_id),
-                amounts: &[RECEIVER_BALANCE],
-                msg: &serde_json::to_string(&pre_fund_message).unwrap(),
-            })
+            Mt::mt_on_transfer(
+                author_account.account_id(),
+                &[author_account.account_id().clone()],
+                std::slice::from_ref(&token_id),
+                &[U128(RECEIVER_BALANCE)],
+                &serde_json::to_string(&pre_fund_message).unwrap(),
+            )
             .gas(Gas::from_tgas(300)),
         )
         .await
@@ -530,13 +530,13 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
     let execution_result = author_account
         .transaction(env.defuse.contract_id())
         .add_action(
-            Mt::mt_on_transfer(MtOnTransferArgs {
-                sender_id: author_account.account_id(),
-                previous_owner_ids: &vec![author_account.account_id().clone(); TOKEN_COUNT],
-                token_ids: &token_ids,
-                amounts: &amounts,
-                msg: &serde_json::to_string(&deposit_message).unwrap(),
-            })
+            Mt::mt_on_transfer(
+                author_account.account_id(),
+                &vec![author_account.account_id().clone(); TOKEN_COUNT],
+                &token_ids,
+                &amounts.map(U128),
+                &serde_json::to_string(&deposit_message).unwrap(),
+            )
             .gas(Gas::from_tgas(300)),
         )
         .await

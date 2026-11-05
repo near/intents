@@ -12,7 +12,7 @@ use defuse_sandbox::extensions::{
             token_id::{TokenId, nep141::Nep141TokenId},
         },
     },
-    mt::{Mt, MtBalanceOfArgs, MtExt},
+    mt::{Mt, MtExt},
 };
 use defuse_test_utils::fixtures::public_key;
 use near_sdk::events::AsNep297Event;
@@ -136,10 +136,7 @@ async fn test_lock_account(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: locked_account.account_id(),
-                token_id: &ft1.to_string(),
-            })
+            .mt_balance_of(locked_account.account_id(), &ft1.to_string())
             .await
             .unwrap()
             .0,
@@ -233,10 +230,7 @@ async fn test_lock_account(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: locked_account.account_id(),
-                token_id: &ft1.to_string(),
-            })
+            .mt_balance_of(locked_account.account_id(), &ft1.to_string())
             .await
             .unwrap()
             .0,
@@ -252,10 +246,7 @@ async fn test_lock_account(
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: locked_account.account_id(),
-                    token_id: &ft1.to_string(),
-                })
+                .mt_balance_of(locked_account.account_id(), &ft1.to_string())
                 .await
                 .unwrap()
                 .0,
@@ -278,10 +269,7 @@ async fn test_lock_account(
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: locked_account.account_id(),
-                    token_id: &ft1.to_string(),
-                })
+                .mt_balance_of(locked_account.account_id(), &ft1.to_string())
                 .await
                 .unwrap()
                 .0,
@@ -311,10 +299,7 @@ async fn test_lock_account(
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: unlocked_account.account_id(),
-                    token_id: &ft1.to_string(),
-                })
+                .mt_balance_of(unlocked_account.account_id(), &ft1.to_string())
                 .await
                 .unwrap()
                 .0,
@@ -324,10 +309,7 @@ async fn test_lock_account(
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: locked_account.account_id(),
-                    token_id: &ft1.to_string(),
-                })
+                .mt_balance_of(locked_account.account_id(), &ft1.to_string())
                 .await
                 .unwrap()
                 .0,
@@ -432,10 +414,7 @@ async fn test_lock_account(
             .expect("account is now unlocked and outgoing transfers should be allowed");
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: locked_account.account_id(),
-                    token_id: &ft1.to_string(),
-                })
+                .mt_balance_of(locked_account.account_id(), &ft1.to_string())
                 .await
                 .unwrap()
                 .0,
@@ -443,10 +422,7 @@ async fn test_lock_account(
         );
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: unlocked_account.account_id(),
-                    token_id: &ft1.to_string(),
-                })
+                .mt_balance_of(unlocked_account.account_id(), &ft1.to_string())
                 .await
                 .unwrap()
                 .0,

@@ -16,7 +16,7 @@ use defuse_sandbox::{
                 tokens::TransferEvent,
             },
         },
-        mt::{Mt, MtBalanceOfArgs},
+        mt::Mt,
     },
     kit::{AccountId, CryptoHash, protocol::AccountIdRef},
     sandbox::SandboxConfig,
@@ -144,10 +144,7 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
     // Verify balances haven't changed (simulate is a view method)
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.account_id(),
-                token_id: &ft_id.to_string()
-            })
+            .mt_balance_of(user.account_id(), &ft_id.to_string())
             .await
             .unwrap()
             .0,
@@ -155,10 +152,7 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
     );
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: other_user.account_id(),
-                token_id: &ft_id.to_string()
-            })
+            .mt_balance_of(other_user.account_id(), &ft_id.to_string())
             .await
             .unwrap()
             .0,
@@ -223,10 +217,7 @@ async fn webauthn() {
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.account_id(),
-                token_id: &ft_id.to_string()
-            })
+            .mt_balance_of(user.account_id(), &ft_id.to_string())
             .await
             .unwrap()
             .0,
@@ -234,10 +225,7 @@ async fn webauthn() {
     );
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: SIGNER_ID,
-                token_id: &ft_id.to_string()
-            })
+            .mt_balance_of(SIGNER_ID, &ft_id.to_string())
             .await
             .unwrap()
             .0,
