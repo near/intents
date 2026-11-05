@@ -5,30 +5,28 @@ use defuse_global_deployer::{
     client::{GlobalDeployerContract, GlobalDeployerContractClient},
 };
 use near_kit::{
-    Gas, Near, NearToken,
-    protocol::{AccountIdRef, GlobalContractId},
-    transaction::Final,
+    AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId, transaction::Final,
 };
 
 use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
 
 pub use defuse_global_deployer as contract;
 
-pub trait GDDeployerExt {
+pub trait GDDeployerExt: Sized {
     /// Deploy a new `global-deployer` instance via `StateInit`.
     async fn deploy_gd_instance(
         &self,
         global_contract_id: GlobalContractId,
         state: DeployerState<'_>,
-    ) -> Result<GlobalDeployerContractClient>;
+    ) -> Result<GlobalDeployerContractClient<Self>>;
 }
 
-impl GDDeployerExt for Near {
+impl GDDeployerExt for SigningNear {
     async fn deploy_gd_instance(
         &self,
         global_contract_id: GlobalContractId,
         state: DeployerState<'_>,
-    ) -> Result<GlobalDeployerContractClient> {
+    ) -> Result<GlobalDeployerContractClient<Self>> {
         Ok(self.contract::<GlobalDeployerContract>(
             self.deploy_deterministic_account(
                 global_contract_id,
@@ -69,7 +67,7 @@ pub trait GlobalDeployerExt {
     ) -> anyhow::Result<SuccessfulExecutionOutcome>;
 }
 
-impl GlobalDeployerExt for Near {
+impl GlobalDeployerExt for SigningNear {
     async fn gd_approve_and_deploy(
         &self,
         target: impl AsRef<AccountIdRef>,

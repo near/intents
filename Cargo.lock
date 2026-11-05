@@ -1689,6 +1689,7 @@ dependencies = [
  "defuse-nep245",
  "defuse-outlayer-app",
  "defuse-poa-factory",
+ "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-wallet-sdk",
  "near-contract-standards",

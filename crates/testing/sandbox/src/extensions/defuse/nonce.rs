@@ -5,6 +5,7 @@ use defuse_core::{
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
 };
 use defuse_test_utils::random::{Rng, RngExt, TestRng};
+use near_kit::Viewer;
 
 pub trait ExtractNonceExt {
     fn extract_nonce(&self) -> Result<Nonce, serde_json::Error>;
@@ -18,10 +19,14 @@ impl ExtractNonceExt for MultiPayload {
     }
 }
 
-pub async fn generate_unique_nonce(
-    defuse_contract: &DefuseClient,
+pub async fn generate_unique_nonce<C>(
+    defuse_contract: &DefuseClient<C>,
     deadline: Option<Timestamp>,
-) -> anyhow::Result<Nonce> {
+) -> anyhow::Result<Nonce>
+where
+    C: Viewer + Clone + 'static,
+    C::ViewError: std::error::Error + Send + Sync + 'static,
+{
     let deadline = deadline.unwrap_or_else(|| Timestamp::now() + std::time::Duration::from_mins(2));
 
     let salt = defuse_contract.current_salt().await?;

@@ -9,7 +9,7 @@ use defuse_core::{
     crypto::ed25519::{Ed25519PublicKey, Ed25519Signature},
     payload::nep413::SignedNep413Payload,
 };
-use near_kit::{Near, protocol::AccountIdRef};
+use near_kit::{AccountIdRef, SigningNear, Viewer};
 use serde::Serialize;
 use serde_json;
 
@@ -26,13 +26,15 @@ pub trait DefuseSignerExt {
     where
         T: Serialize;
 
-    async fn sign_defuse_payload_default<T>(
+    async fn sign_defuse_payload_default<T, C>(
         &self,
-        defuse_contract: &DefuseClient,
+        defuse_contract: &DefuseClient<C>,
         intents: impl IntoIterator<Item = T>,
     ) -> anyhow::Result<MultiPayload>
     where
         T: Into<Intent>,
+        C: Viewer + Clone + 'static,
+        C::ViewError: std::error::Error + Send + Sync + 'static,
     {
         let deadline = Timestamp::now() + std::time::Duration::from_mins(2);
         let nonce = generate_unique_nonce(defuse_contract, Some(deadline)).await?;
@@ -51,7 +53,7 @@ pub trait DefuseSignerExt {
     }
 }
 
-impl DefuseSignerExt for Near {
+impl DefuseSignerExt for SigningNear {
     async fn sign_defuse_message<T>(
         &self,
         defuse_contract: impl AsRef<AccountIdRef>,
@@ -73,7 +75,12 @@ impl DefuseSignerExt for Near {
         .recipient(defuse_contract.as_ref())
         .nonce(nonce);
 
-        let signed = self.sign_message(payload.clone().into()).await.unwrap();
+        let signed = self
+            .signer()
+            .key()
+            .sign_nep413(self.account_id(), &payload.clone().into())
+            .await
+            .unwrap();
 
         MultiPayload::Nep413(SignedNep413Payload {
             payload,

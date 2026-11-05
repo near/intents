@@ -4,30 +4,28 @@ use defuse_outlayer_app::{
     client::{AsHex, OutlayerAppContract, OutlayerAppContractClient},
 };
 use near_kit::{
-    Gas, Near, NearToken,
-    protocol::{AccountIdRef, GlobalContractId},
-    transaction::Final,
+    AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId, transaction::Final,
 };
 
 use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
 
 pub use defuse_outlayer_app as contract;
 
-pub trait OutlayerAppDeployerExt {
+pub trait OutlayerAppDeployerExt: Sized {
     /// Deploy a new `outlayer-app` instance via `StateInit`.
     async fn deploy_outlayer_app(
         &self,
         global_contract_id: GlobalContractId,
         state: OutlayerState<'static>,
-    ) -> OutlayerAppContractClient;
+    ) -> OutlayerAppContractClient<Self>;
 }
 
-impl OutlayerAppDeployerExt for Near {
+impl OutlayerAppDeployerExt for SigningNear {
     async fn deploy_outlayer_app(
         &self,
         global_contract_id: GlobalContractId,
         state: OutlayerState<'static>,
-    ) -> OutlayerAppContractClient {
+    ) -> OutlayerAppContractClient<Self> {
         self.contract::<OutlayerAppContract>(
             self.deploy_deterministic_account(
                 global_contract_id,
@@ -56,7 +54,7 @@ pub trait OutlayerAppExt {
     ) -> Result<SuccessfulExecutionOutcome>;
 }
 
-impl OutlayerAppExt for Near {
+impl OutlayerAppExt for SigningNear {
     async fn oa_set_code(
         &self,
         target: impl AsRef<AccountIdRef>,
