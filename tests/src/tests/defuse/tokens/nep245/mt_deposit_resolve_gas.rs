@@ -17,7 +17,7 @@ use defuse_sandbox::{
         mt::Mt,
     },
     kit::{
-        AccountId, Gas, Near, NearToken,
+        AccountId, Gas, SigningNear, NearToken,
         rpc::{ActionView, ExecutionStatus, ReceiptContent},
         transaction::Final,
     },
@@ -42,7 +42,7 @@ enum TokenIdGenerationMode {
     Long,
 }
 
-async fn make_author_account(mode: TokenIdGenerationMode, env: &Env) -> Near {
+async fn make_author_account(mode: TokenIdGenerationMode, env: &Env) -> SigningNear {
     match mode {
         TokenIdGenerationMode::Short => {
             // Use root account directly: 0.test
@@ -67,7 +67,7 @@ async fn make_author_account(mode: TokenIdGenerationMode, env: &Env) -> Near {
 
 fn make_defuse_token_ids(
     mode: TokenIdGenerationMode,
-    author_account: &Near,
+    author_account: &SigningNear,
     token_ids: &[String],
 ) -> Vec<String> {
     match mode {
@@ -176,7 +176,7 @@ async fn run_deposit_resolve_gas_test(
     gen_mode: TokenIdGenerationMode,
     token_count: usize,
     env: Arc<Env>,
-    author_account: Near,
+    author_account: SigningNear,
     receiver_id: AccountId,
     rng: Arc<tokio::sync::Mutex<impl Rng>>,
 ) -> anyhow::Result<()> {

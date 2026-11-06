@@ -3,7 +3,7 @@ use defuse_sandbox::{
     extensions::{
         acl::AccessControllableExt,
         defuse::{
-            DefuseExt, HasPublicKeyArgs,
+            DefuseExt,
             contract::Role,
             core::{
                 PublicKey,
@@ -89,10 +89,7 @@ async fn test_force_add_public_keys(
             for public_key in keys {
                 assert!(
                     env.defuse
-                        .has_public_key(HasPublicKeyArgs {
-                            account_id,
-                            public_key,
-                        })
+                        .has_public_key(account_id, public_key)
                         .await
                         .unwrap(),
                     "Public key {public_key:?} not found for account {account_id}",
@@ -178,10 +175,7 @@ async fn test_force_add_and_remove_public_keys(
             for public_key in keys {
                 assert!(
                     !env.defuse
-                        .has_public_key(HasPublicKeyArgs {
-                            account_id,
-                            public_key,
-                        })
+                        .has_public_key(account_id, public_key)
                         .await
                         .unwrap(),
                     "Public key {public_key:?} found for account {account_id}",

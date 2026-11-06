@@ -3,7 +3,7 @@
 use defuse_sandbox::{
     extensions::{
         defuse::{
-            DefuseExt, DefuseSignerExt, MultiPayloadArgs,
+            DefuseExt, DefuseSignerExt,
             core::{
                 fees::Pips,
                 intents::token_diff::{TokenDeltas, TokenDiff},
@@ -12,7 +12,7 @@ use defuse_sandbox::{
         },
         mt::Mt,
     },
-    kit::{AccountId, Near},
+    kit::{AccountId, SigningNear},
 };
 use near_sdk::json_types::U128;
 use rstest::rstest;
@@ -197,7 +197,7 @@ async fn swap_many(
 type FtBalances<'a> = BTreeMap<&'a AccountId, i128>;
 
 struct AccountFtDiff<'a> {
-    account: &'a Near,
+    account: &'a SigningNear,
     init_balances: FtBalances<'a>,
     diff: Vec<TokenDeltas>,
     result_balances: FtBalances<'a>,
@@ -237,7 +237,7 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
 
     // simulate
     env.defuse
-        .simulate_intents(MultiPayloadArgs { signed: &signed })
+        .simulate_intents(&signed)
         .await
         .unwrap()
         .into_result()
@@ -330,7 +330,7 @@ async fn invariant_violated(#[future(awt)] env: Env) {
 
     assert_eq!(
         env.defuse
-            .simulate_intents(MultiPayloadArgs { signed: &signed })
+            .simulate_intents(&signed)
             .await
             .unwrap()
             .invariant_violated
@@ -439,9 +439,7 @@ async fn solver_user_closure(
     // simulate before returning quote
     let simulation_before_return_quote = env
         .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[solver_commitment.clone()],
-        })
+        .simulate_intents(&[solver_commitment.clone()])
         .await
         .unwrap();
     println!(
@@ -495,9 +493,7 @@ async fn solver_user_closure(
 
     // simulating both solver's and user's intents now should succeed
     env.defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[solver_commitment.clone(), user_commitment.clone()],
-        })
+        .simulate_intents(&[solver_commitment.clone(), user_commitment.clone()])
         .await
         .unwrap()
         .into_result()

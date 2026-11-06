@@ -12,7 +12,7 @@ use defuse_sandbox::{
         mt::Mt,
         wnear::WNearExt,
     },
-    kit::{Gas, NearToken, transaction::Final},
+    kit::{Gas, NearToken, standards::FungibleToken, transaction::Final},
 };
 use rstest::rstest;
 
@@ -75,7 +75,7 @@ async fn native_withdraw_intent(
     .await
     .expect("failed to wrap NEAR");
 
-    env.ft(env.wnear.contract_id())
+    env.contract::<FungibleToken>(env.wnear.contract_id())
         .transfer_call(
             env.defuse.contract_id(),
             total_amount_yocto,

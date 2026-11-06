@@ -5,7 +5,7 @@ use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::{
     extensions::{
         defuse::{
-            DefuseExt, DefuseSignerExt, MultiPayloadArgs,
+            DefuseExt, DefuseSignerExt,
             core::{
                 Nonce, Timestamp,
                 accounts::{AccountEvent, NonceEvent},
@@ -104,9 +104,7 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
         .await;
     let result = env
         .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[transfer_intent_payload.clone()],
-        })
+        .simulate_intents(&[transfer_intent_payload.clone()])
         .await
         .unwrap();
 

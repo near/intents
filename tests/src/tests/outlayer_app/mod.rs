@@ -6,7 +6,7 @@ use defuse_sandbox::{
         contract::{OaEvent, State as OutlayerState},
     },
     kit::{
-        Near, NearToken,
+        NearToken, SigningNear,
         protocol::{GlobalContractId, PublishMode},
         transaction::Final,
     },
@@ -19,12 +19,12 @@ use rstest::{fixture, rstest};
 const EXAMPLE_URL: &str = "https://example.com/contract.wasm";
 
 pub struct OutlayerAppEnv {
-    pub root: Near,
+    pub root: SigningNear,
     pub global_id: GlobalContractId,
 }
 
 #[fixture]
-pub async fn outlayer_app_env(#[future(awt)] root: Near) -> OutlayerAppEnv {
+pub async fn outlayer_app_env(#[future(awt)] root: SigningNear) -> OutlayerAppEnv {
     root.publish(OUTLAYER_APP_WASM.clone(), PublishMode::Immutable)
         .wait_until::<Final>()
         .await

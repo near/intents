@@ -16,7 +16,7 @@ use defuse_sandbox::{
     },
     global_contract::GlobalContract,
     kit::{
-        Gas, Near, NearToken,
+        Gas, NearToken, SigningNear,
         protocol::{Action, GlobalContractId, UseGlobalContractAction},
         rpc::ExecutionStatus,
         transaction::{Final, FunctionCall},
@@ -38,12 +38,12 @@ use crate::utils::wasms::DEPLOYER_WASM;
 static SUB_COUNTER: AtomicU32 = AtomicU32::new(0);
 
 pub struct DeployerEnv {
-    pub root: Near,
+    pub root: SigningNear,
     pub deployer_global_id: GlobalContractId,
 }
 
 #[fixture]
-pub async fn deployer_env(#[future(awt)] root: Near) -> DeployerEnv {
+pub async fn deployer_env(#[future(awt)] root: SigningNear) -> DeployerEnv {
     let deployer_global_id = root
         .deploy_immutable_global_contract(
             root.account_id().sub_account("deployer").unwrap(),
@@ -132,7 +132,9 @@ async fn test_deploy_controller_instance(
     assert_eq!(
         GlobalContractId::CodeHash(
             *root
-                .account(controller_instance.contract_id())
+                .near()
+                .rpc()
+                .view_account(controller_instance.contract_id(), Finality::Final)
                 .await
                 .unwrap()
                 .global_contract_hash
@@ -237,7 +239,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
     let owner = root.create_subaccount("dummy", initial_balance).await;
 
     assert_eq!(
-        root.balance(owner.account_id()).await.unwrap().total,
+        root.near().balance(owner.account_id()).await.unwrap().total,
         initial_balance
     );
 
@@ -250,7 +252,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
         .unwrap();
 
     assert_eq!(
-        root.balance(controller_instance.contract_id())
+        root.near().balance(controller_instance.contract_id())
             .await
             .unwrap()
             .total,
@@ -278,7 +280,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
         .await
         .assert_err_contains("NEAR to cover storage cost");
 
-    let after = root.balance(owner.account_id()).await.unwrap().total;
+    let after = root.near().balance(owner.account_id()).await.unwrap().total;
 
     // NOTE: we expect the storage deposit to be refunded lets account for 10% less because
     // some balance is used to cover fees
@@ -717,7 +719,7 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
     let owner = root.create_implicit(initial_balance).await;
 
     assert_eq!(
-        root.balance(owner.account_id()).await.unwrap().total,
+        root.near().balance(owner.account_id()).await.unwrap().total,
         initial_balance
     );
 
@@ -730,7 +732,7 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
         .unwrap();
 
     assert_eq!(
-        root.balance(controller_instance.contract_id())
+        root.near().balance(controller_instance.contract_id())
             .await
             .unwrap()
             .total,
@@ -758,7 +760,7 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
         .unwrap();
 
     assert!(
-        root.balance(controller_instance.contract_id())
+        root.near().balance(controller_instance.contract_id())
             .await
             .unwrap()
             .total
@@ -884,7 +886,7 @@ async fn test_post_deploy_does_not_run_on_failed_deploy(
 
     // Instance has 0 balance
     assert_eq!(
-        root.balance(controller_instance.contract_id())
+        root.near().balance(controller_instance.contract_id())
             .await
             .unwrap()
             .total,
@@ -1101,7 +1103,7 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
         .unwrap();
 
     assert_eq!(
-        root.balance(controller_instance.contract_id())
+        root.near().balance(controller_instance.contract_id())
             .await
             .unwrap()
             .total,
@@ -1119,7 +1121,7 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
         .unwrap();
 
     assert_eq!(
-        root.balance(controller_instance.contract_id())
+        root.near().balance(controller_instance.contract_id())
             .await
             .unwrap()
             .total,
@@ -1195,10 +1197,10 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
     // Create 50 accounts that will each transfer 4 NEAR (200 NEAR total)
     let num_senders = 50u128;
     let transfer_amount = NearToken::from_near(4);
-    let senders: Vec<Near> =
+    let senders: Vec<SigningNear> =
         join_all((0..num_senders).map(|_| root.create_implicit(NearToken::from_near(10)))).await;
 
-    let owner_balance_before_deploy = root.balance(owner.account_id()).await.unwrap().total;
+    let owner_balance_before_deploy = root.near().balance(owner.account_id()).await.unwrap().total;
 
     let deploy_deposit = NearToken::from_near(50);
 
@@ -1228,7 +1230,7 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
         mt_stub_hash,
     );
 
-    let owner_balance_after = root.balance(owner.account_id()).await.unwrap().total;
+    let owner_balance_after = root.near().balance(owner.account_id()).await.unwrap().total;
     // Some transfers land between gd_deploy and gd_post_deploy, inflating
     // account_balance well above initial_balance + attached_deposit. The refund
     // cap `min(excess, attached_deposit)` limits refund to 50 NEAR
@@ -1243,6 +1245,7 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
 
     let owner_spent = owner_balance_before_deploy.saturating_sub(owner_balance_after);
     let contract_balance_after = root
+        .near()
         .balance(controller_instance.contract_id())
         .await
         .unwrap()

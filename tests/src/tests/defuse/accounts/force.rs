@@ -1,8 +1,7 @@
 use defuse_sandbox::extensions::{
     acl::AccessControllableExt,
     defuse::{
-        AccountArgs, DefuseExt, DefuseSignerExt, ExtractNonceExt, HasPublicKeyArgs,
-        IsNonceUsedArgs,
+        AsBase64, DefuseExt, DefuseSignerExt, ExtractNonceExt,
         contract::Role,
         core::{
             DefuseError, PublicKey,
@@ -67,9 +66,7 @@ async fn test_lock_account(
                 .expect_err("user2 doesn't have UnrestrictedAccountLocker role");
             assert!(
                 !env.defuse
-                    .is_account_locked(AccountArgs {
-                        account_id: locked_account.account_id(),
-                    })
+                    .is_account_locked(locked_account.account_id())
                     .await
                     .unwrap(),
                 "account shouldn't be locked after failed attempt to lock it",
@@ -105,9 +102,7 @@ async fn test_lock_account(
 
             assert!(
                 env.defuse
-                    .is_account_locked(AccountArgs {
-                        account_id: locked_account.account_id(),
-                    })
+                    .is_account_locked(locked_account.account_id())
                     .await
                     .unwrap(),
                 "account should be locked",
@@ -124,9 +119,7 @@ async fn test_lock_account(
 
             assert!(
                 env.defuse
-                    .is_account_locked(AccountArgs {
-                        account_id: locked_account.account_id(),
-                    })
+                    .is_account_locked(locked_account.account_id())
                     .await
                     .unwrap(),
                 "account should be locked",
@@ -154,10 +147,7 @@ async fn test_lock_account(
 
         assert!(
             !env.defuse
-                .has_public_key(HasPublicKeyArgs {
-                    account_id: locked_account.account_id(),
-                    public_key: &public_key,
-                })
+                .has_public_key(locked_account.account_id(), &public_key)
                 .await
                 .unwrap()
         );
@@ -176,10 +166,7 @@ async fn test_lock_account(
 
         assert!(
             env.defuse
-                .has_public_key(HasPublicKeyArgs {
-                    account_id: locked_account.account_id(),
-                    public_key: &locked_pk,
-                })
+                .has_public_key(locked_account.account_id(), &locked_pk)
                 .await
                 .unwrap()
         );
@@ -333,10 +320,7 @@ async fn test_lock_account(
 
         assert!(
             !env.defuse
-                .is_nonce_used(IsNonceUsedArgs {
-                    account_id: locked_account.account_id(),
-                    nonce: &nonce,
-                })
+                .is_nonce_used(locked_account.account_id(), AsBase64(nonce))
                 .await
                 .unwrap()
         );
@@ -352,9 +336,7 @@ async fn test_lock_account(
                 .expect_err("user2 doesn't have UnrestrictedAccountUnlocker role");
             assert!(
                 env.defuse
-                    .is_account_locked(AccountArgs {
-                        account_id: locked_account.account_id(),
-                    })
+                    .is_account_locked(locked_account.account_id())
                     .await
                     .unwrap(),
                 "account should still be locked after failed attempt to unlock it",
@@ -390,9 +372,7 @@ async fn test_lock_account(
 
             assert!(
                 !env.defuse
-                    .is_account_locked(AccountArgs {
-                        account_id: locked_account.account_id(),
-                    })
+                    .is_account_locked(locked_account.account_id())
                     .await
                     .unwrap(),
                 "account should be unlocked",
@@ -459,9 +439,7 @@ async fn test_force_set_auth_by_predecessor_id(
                 ));
             assert!(
                 env.defuse
-                    .is_auth_by_predecessor_id_enabled(AccountArgs {
-                        account_id: user_account.account_id(),
-                    })
+                    .is_auth_by_predecessor_id_enabled(user_account.account_id())
                     .await
                     .unwrap()
             );
@@ -499,9 +477,7 @@ async fn test_force_set_auth_by_predecessor_id(
 
             assert!(
                 !env.defuse
-                    .is_auth_by_predecessor_id_enabled(AccountArgs {
-                        account_id: user_account.account_id(),
-                    })
+                    .is_auth_by_predecessor_id_enabled(user_account.account_id())
                     .await
                     .unwrap()
             );
@@ -517,10 +493,7 @@ async fn test_force_set_auth_by_predecessor_id(
 
         assert!(
             !env.defuse
-                .has_public_key(HasPublicKeyArgs {
-                    account_id: user_account.account_id(),
-                    public_key: &public_key,
-                })
+                .has_public_key(user_account.account_id(), &public_key)
                 .await
                 .unwrap()
         );
@@ -543,9 +516,7 @@ async fn test_force_set_auth_by_predecessor_id(
                 ));
             assert!(
                 !env.defuse
-                    .is_auth_by_predecessor_id_enabled(AccountArgs {
-                        account_id: user_account.account_id(),
-                    })
+                    .is_auth_by_predecessor_id_enabled(user_account.account_id())
                     .await
                     .unwrap()
             );
@@ -583,9 +554,7 @@ async fn test_force_set_auth_by_predecessor_id(
 
             assert!(
                 env.defuse
-                    .is_auth_by_predecessor_id_enabled(AccountArgs {
-                        account_id: user_account.account_id(),
-                    })
+                    .is_auth_by_predecessor_id_enabled(user_account.account_id())
                     .await
                     .unwrap()
             );
@@ -601,10 +570,7 @@ async fn test_force_set_auth_by_predecessor_id(
 
         assert!(
             env.defuse
-                .has_public_key(HasPublicKeyArgs {
-                    account_id: user_account.account_id(),
-                    public_key: &public_key,
-                })
+                .has_public_key(user_account.account_id(), &public_key)
                 .await
                 .unwrap()
         );

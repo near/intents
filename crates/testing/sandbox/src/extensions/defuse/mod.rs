@@ -13,7 +13,7 @@ use defuse::{
 use defuse_core::{
     Nonce, PublicKey, Salt, fees::Pips, intents::auth::AuthCall, payload::multi::MultiPayload,
 };
-use defuse_serde_utils::base64::AsBase64;
+pub use defuse_serde_utils::base64::AsBase64;
 use near_kit::{
     AccountId, AccountIdRef, Gas, NearToken, SigningNear, rpc::FinalExecutionOutcome,
     transaction::FunctionCall,

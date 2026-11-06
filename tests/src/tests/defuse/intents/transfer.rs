@@ -255,7 +255,7 @@ async fn transfer_intent_to_defuse(#[future(awt)] env: Env) {
             },
             async {
                 assert_eq!(
-                    ft.balance_of(env.defuse.contract_id()).await.unwrap().raw(),
+                    ft.balance_of(env.defuse.contract_id()).await.unwrap(),
                     1000
                 );
             },

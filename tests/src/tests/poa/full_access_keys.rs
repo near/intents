@@ -3,18 +3,15 @@ use defuse_sandbox::{
     extensions::{
         FnCallTransaction,
         acl::AccessControllableExt,
-        poa::{
-            AccessKeyToTokensArgs, PoAFactoryExt, PoaFactory, PoaFactoryClient,
-            PoaFactoryDeployerExt, contract::Role,
-        },
+        poa::{PoAFactoryExt, PoaFactory, PoaFactoryClient, PoaFactoryDeployerExt, contract::Role},
     },
-    kit::{Gas, Near, NearToken, rpc::AccessKeyPermissionView, signer::SecretKey},
+    kit::{Gas, NearToken, SigningNear, rpc::AccessKeyPermissionView, signer::SecretKey},
     root,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::POA_FACTORY_WASM};
 use rstest::rstest;
 
-async fn deploy_factory(root: &Near) -> PoaFactoryClient {
+async fn deploy_factory(root: &SigningNear) -> PoaFactoryClient {
     root.deploy_poa_factory(
         "poa-factory",
         [root.account_id().clone()],
@@ -30,7 +27,7 @@ async fn deploy_factory(root: &Near) -> PoaFactoryClient {
 
 #[rstest]
 #[tokio::test]
-async fn add_full_access_key_to_tokens(#[future(awt)] root: Near) {
+async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
     let factory = deploy_factory(&root).await;
     let tokens = ["ft1", "ft2", "ft3"];
     let mut token_ids = Vec::new();
@@ -57,10 +54,10 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: Near) {
 
     dao.fn_call(
         factory.contract_id(),
-        PoaFactory::add_full_access_key_to_tokens(AccessKeyToTokensArgs {
-            public_key: public_key.clone(),
-            tokens: tokens.into_iter().map(str::to_string).collect(),
-        })
+        PoaFactory::add_full_access_key_to_tokens(
+            public_key.clone(),
+            tokens.into_iter().map(str::to_string).collect(),
+        )
         .deposit(NearToken::from_yoctonear(1))
         .gas(Gas::from_tgas(100)),
     )
@@ -88,10 +85,10 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: Near) {
 
     dao.fn_call(
         factory.contract_id(),
-        PoaFactory::delete_key_from_tokens(AccessKeyToTokensArgs {
-            public_key: public_key.clone(),
-            tokens: tokens.into_iter().map(str::to_string).collect(),
-        })
+        PoaFactory::delete_key_from_tokens(
+            public_key.clone(),
+            tokens.into_iter().map(str::to_string).collect(),
+        )
         .deposit(NearToken::from_yoctonear(1))
         .gas(Gas::from_tgas(100)),
     )
@@ -107,7 +104,7 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: Near) {
 
 #[rstest]
 #[tokio::test]
-async fn add_full_access_key_to_tokens_requires_deployed_tokens(#[future(awt)] root: Near) {
+async fn add_full_access_key_to_tokens_requires_deployed_tokens(#[future(awt)] root: SigningNear) {
     let factory = deploy_factory(&root).await;
     let token = root
         .poa_factory_deploy_token(factory.contract_id(), "ft1", None)
@@ -117,10 +114,10 @@ async fn add_full_access_key_to_tokens_requires_deployed_tokens(#[future(awt)] r
     let undeployed_token = "missing";
     root.fn_call(
         factory.contract_id(),
-        PoaFactory::add_full_access_key_to_tokens(AccessKeyToTokensArgs {
-            public_key: SecretKey::generate_ed25519().public_key(),
-            tokens: vec!["ft1".to_string(), undeployed_token.to_string()],
-        })
+        PoaFactory::add_full_access_key_to_tokens(
+            SecretKey::generate_ed25519().public_key(),
+            vec!["ft1".to_string(), undeployed_token.to_string()],
+        )
         .deposit(NearToken::from_yoctonear(1))
         .gas(Gas::from_tgas(100)),
     )

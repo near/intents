@@ -3,10 +3,10 @@ mod full_access_keys;
 use defuse_sandbox::{
     account::Account,
     extensions::poa::{
-        IdDigest, PayloadHash, PoAFactoryExt, PoaFactoryClient, PoaFactoryDeployerExt,
-        PoaGetWithdrawalArgs, Withdrawal, contract::Role,
+        IdDigest, PayloadHash, PoAFactoryExt, PoaFactoryClient, PoaFactoryDeployerExt, Withdrawal,
+        contract::Role,
     },
-    kit::{Near, NearToken},
+    kit::{NearToken, SigningNear},
     root,
 };
 use defuse_test_utils::wasms::POA_FACTORY_WASM;
@@ -15,7 +15,7 @@ use rstest::rstest;
 
 #[rstest]
 #[tokio::test]
-async fn deploy_mint(#[future(awt)] root: Near) {
+async fn deploy_mint(#[future(awt)] root: SigningNear) {
     let user = root
         .create_subaccount("user1", NearToken::from_near(10))
         .await;
@@ -90,7 +90,7 @@ async fn deploy_mint(#[future(awt)] root: Near) {
     assert_eq!(balance, 1000);
 }
 
-async fn deploy_factory_with_all_roles(root: &Near) -> PoaFactoryClient {
+async fn deploy_factory_with_all_roles(root: &SigningNear) -> PoaFactoryClient {
     root.deploy_poa_factory(
         "poa-factory",
         [root.account_id().clone()],
@@ -125,7 +125,7 @@ fn id(byte: u8) -> IdDigest {
 
 #[rstest]
 #[tokio::test]
-async fn record_withdrawal_and_reject_duplicate(#[future(awt)] root: Near) {
+async fn record_withdrawal_and_reject_duplicate(#[future(awt)] root: SigningNear) {
     let unauthorized = root
         .create_subaccount("unauth", NearToken::from_near(10))
         .await;
@@ -144,7 +144,7 @@ async fn record_withdrawal_and_reject_duplicate(#[future(awt)] root: Near) {
         .unwrap();
 
     let stored = poa_factory
-        .get_withdrawal(PoaGetWithdrawalArgs { withdrawal_id: w1 })
+        .get_withdrawal(w1)
         .await
         .unwrap()
         .expect("withdrawal must be stored");
@@ -163,18 +163,12 @@ async fn record_withdrawal_and_reject_duplicate(#[future(awt)] root: Near) {
     root.poa_factory_remove_withdrawals(poa_factory.contract_id(), vec![w1])
         .await
         .unwrap();
-    assert!(
-        poa_factory
-            .get_withdrawal(PoaGetWithdrawalArgs { withdrawal_id: w1 })
-            .await
-            .unwrap()
-            .is_none()
-    );
+    assert!(poa_factory.get_withdrawal(w1).await.unwrap().is_none());
 }
 
 #[rstest]
 #[tokio::test]
-async fn update_withdrawal(#[future(awt)] root: Near) {
+async fn update_withdrawal(#[future(awt)] root: SigningNear) {
     let unauthorized = root
         .create_subaccount("unauth-upd", NearToken::from_near(10))
         .await;
@@ -243,9 +237,7 @@ async fn update_withdrawal(#[future(awt)] root: Near) {
     .unwrap();
 
     let stored = poa_factory
-        .get_withdrawal(PoaGetWithdrawalArgs {
-            withdrawal_id: w_upd,
-        })
+        .get_withdrawal(w_upd)
         .await
         .unwrap()
         .expect("withdrawal must still exist");

@@ -2,7 +2,7 @@ use crate::tests::defuse::env::{Env, env};
 use defuse_sandbox::{
     extensions::{
         defuse::{
-            AccountArgs, DefuseExt, DefuseSignerExt, ToEventLog,
+            DefuseExt, DefuseSignerExt, ToEventLog,
             core::{
                 DefuseError,
                 accounts::AccountEvent,
@@ -51,9 +51,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
     {
         assert!(
             env.defuse
-                .is_auth_by_predecessor_id_enabled(AccountArgs {
-                    account_id: user.account_id(),
-                })
+                .is_auth_by_predecessor_id_enabled(user.account_id())
                 .await
                 .unwrap()
         );
@@ -75,9 +73,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
 
         assert!(
             !env.defuse
-                .is_auth_by_predecessor_id_enabled(AccountArgs {
-                    account_id: user.account_id(),
-                })
+                .is_auth_by_predecessor_id_enabled(user.account_id())
                 .await
                 .unwrap()
         );
@@ -188,9 +184,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
 
         assert!(
             env.defuse
-                .is_auth_by_predecessor_id_enabled(AccountArgs {
-                    account_id: user.account_id()
-                })
+                .is_auth_by_predecessor_id_enabled(user.account_id())
                 .await
                 .unwrap()
         );
