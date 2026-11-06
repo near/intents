@@ -140,8 +140,8 @@ near-account-id = "3.0.0"
 near-contract-standards = "5.30.0"
 near-gas = "0.3.7"
 near-global-contracts = "0.3.2"
-near-kit = { version = "0.30.0-rc.4", default-features = false }
-near-kit-sandbox = "0.30.0-rc.4"
+near-kit = { version = "0.30.0-rc.6", default-features = false }
+near-kit-sandbox = "0.30.0-rc.6"
 near-plugins = "0.5.3"
 near-sdk = "5.30.0"
 near-sdk-env = "0.1.8"
