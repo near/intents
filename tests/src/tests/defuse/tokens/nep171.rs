@@ -11,7 +11,7 @@ use defuse_sandbox::{
         mt::{Mt, MtExt},
         nft::NftAdminExt,
     },
-    kit::{Gas, NearToken, standards::NonFungibleToken, transaction::Final},
+    kit::{Gas, NearToken, protocol::Action, standards::NonFungibleToken},
 };
 use defuse_test_utils::wasms::NON_FUNGIBLE_TOKEN_WASM;
 use near_contract_standards::non_fungible_token::{
@@ -38,7 +38,7 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
     );
 
     env.transaction(user1.account_id())
-        .transfer(NearToken::from_near(100))
+        .add_action(Action::transfer(NearToken::from_near(100)))
         .await
         .unwrap();
 
@@ -112,8 +112,6 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                         .unwrap(),
                 )
                 .gas(Gas::from_tgas(300))
-                .send()
-                .wait_until::<Final>()
                 .await
                 .unwrap();
 
@@ -163,8 +161,6 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                         .unwrap(),
                 )
                 .gas(Gas::from_tgas(300))
-                .send()
-                .wait_until::<Final>()
                 .await
                 .unwrap();
 

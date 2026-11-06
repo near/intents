@@ -12,7 +12,9 @@ use defuse_sandbox::{
         mt::Mt,
         wnear::WNearExt,
     },
-    kit::{AccountId, Gas, NearToken, standards::FungibleToken, transaction::Final},
+    kit::{
+        AccountId, Gas, NearToken, protocol::Action, rpc::Finality, standards::FungibleToken,
+    },
 };
 use defuse_test_utils::wasms::DEFUSE_WASM;
 use rstest::rstest;
@@ -119,7 +121,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
 
     // send user some near
     env.transaction(user.account_id())
-        .transfer(STORAGE_DEPOSIT)
+        .add_action(Action::transfer(STORAGE_DEPOSIT))
         .await
         .unwrap();
 
@@ -136,12 +138,15 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
             String::new(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
         .unwrap();
 
-    let old_defuse_balance = env.account(env.defuse.contract_id()).await.unwrap().amount;
+    let rpc = env.near().rpc();
+    let old_defuse_balance = rpc
+        .view_account(env.defuse.contract_id(), Finality::Final)
+        .await
+        .unwrap()
+        .amount;
 
     // too large min_gas specified
     let too_large_min_gas_payload = user
@@ -192,7 +197,11 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
     futures::join!(
         async {
             assert!(
-                env.account(env.defuse.contract_id()).await.unwrap().amount >= old_defuse_balance,
+                rpc.view_account(env.defuse.contract_id(), Finality::Final)
+                    .await
+                    .unwrap()
+                    .amount
+                    >= old_defuse_balance,
                 "contract balance must not decrease"
             );
         },

@@ -10,9 +10,11 @@ use defuse_sandbox::{
             },
         },
     },
-    kit::{NearToken, protocol::Action},
+    kit::{
+        NearToken, protocol::FunctionCallAction, transaction::FunctionCall as KitFunctionCall,
+    },
 };
-use near_sdk::{Gas as NearGas, json_types::U128};
+use near_sdk::Gas as NearGas;
 
 use crate::{
     tests::defuse::env::{Env, env},
@@ -21,11 +23,9 @@ use crate::{
 use rstest::rstest;
 
 // TODO: remove when into_fn_call_action is added to CallBuilder
-pub fn into_fn_call_action(action: Action) -> NearAction {
-    let Action::FunctionCall(action) = action else {
-        panic!("Expected Action::FunctionCall, got {action:?}");
-    };
-    NearAction::FunctionCall(action.into())
+pub fn into_fn_call_action(call: impl Into<KitFunctionCall>) -> NearAction {
+    let action = FunctionCallAction::try_from(call.into()).unwrap();
+    NearAction::FunctionCall(FunctionCall::from(action).unused_gas_weight(0))
 }
 
 #[rstest]
@@ -46,10 +46,10 @@ async fn multiple_actions_with_admin_call(
     )
     .await;
 
-    ft1.transfer(env.defuse.contract_id(), amount)
+    ft1.transfer(env.defuse.contract_id(), amount, None)
         .await
         .expect("Failed to transfer tokens to defuse");
-    ft2.transfer(env.defuse.contract_id(), amount)
+    ft2.transfer(env.defuse.contract_id(), amount, None)
         .await
         .expect("Failed to transfer tokens to defuse");
 
@@ -70,31 +70,21 @@ async fn multiple_actions_with_admin_call(
     let first_promise = [NearPromise::new(ft1.contract_id())
         .add_action(into_fn_call_action(
             ft1.storage_deposit(admin.account_id(), storage)
-                .gas(NearGas::from_tgas(100))
-                .into_action()
-                .unwrap(),
+                .gas(NearGas::from_tgas(100)),
         ))
         .add_action(into_fn_call_action(
-            ft1.transfer(admin.account_id(), U128(amount))
-                .gas(NearGas::from_tgas(100))
-                .deposit(NearToken::from_yoctonear(1))
-                .into_action()
-                .unwrap(),
+            ft1.transfer(admin.account_id(), amount, None)
+                .gas(NearGas::from_tgas(100)),
         ))];
 
     let second_promise = [NearPromise::new(ft2.contract_id())
         .add_action(into_fn_call_action(
             ft2.storage_deposit(admin.account_id(), storage)
-                .gas(NearGas::from_tgas(100))
-                .into_action()
-                .unwrap(),
+                .gas(NearGas::from_tgas(100)),
         ))
         .add_action(into_fn_call_action(
-            ft2.transfer(admin.account_id(), U128(amount))
-                .gas(NearGas::from_tgas(100))
-                .deposit(NearToken::from_yoctonear(1))
-                .into_action()
-                .unwrap(),
+            ft2.transfer(admin.account_id(), amount, None)
+                .gas(NearGas::from_tgas(100)),
         ))];
 
     let promises = [first_promise, second_promise].concat();
@@ -225,7 +215,7 @@ async fn admin_call_with_gas_exceeding_action(
     )
     .await;
 
-    ft.transfer(env.defuse.contract_id(), amount)
+    ft.transfer(env.defuse.contract_id(), amount, None)
         .await
         .expect("Failed to transfer tokens to defuse");
 
@@ -235,11 +225,8 @@ async fn admin_call_with_gas_exceeding_action(
 
     let promise = [
         NearPromise::new(ft.contract_id()).add_action(into_fn_call_action(
-            ft.transfer(admin.account_id(), U128(amount))
-                .gas(NearGas::from_tgas(500))
-                .deposit(NearToken::from_yoctonear(1))
-                .into_action()
-                .unwrap(),
+            ft.transfer(admin.account_id(), amount, None)
+                .gas(NearGas::from_tgas(500)),
         )),
     ];
 

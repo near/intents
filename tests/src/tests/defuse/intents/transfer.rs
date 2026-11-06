@@ -241,7 +241,7 @@ async fn transfer_intent_to_defuse(#[future(awt)] env: Env) {
                 );
             },
             async {
-                assert!(ft.balance_of(defuse2.account_id()).await.unwrap().is_zero());
+                assert_eq!(ft.balance_of(defuse2.account_id()).await.unwrap(), 0);
             },
             async {
                 assert_eq!(
