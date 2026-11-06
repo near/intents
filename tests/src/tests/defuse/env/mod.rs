@@ -17,7 +17,7 @@ use defuse_sandbox::{
             core::PublicKey as DefusePublicKey,
             tokens::{DepositAction, DepositMessage},
         },
-        poa::{PoaFactoryClient, PoAFactoryExt},
+        poa::{PoAFactoryExt, PoaFactoryClient},
     },
     kit::{
         AccountId, AccountIdRef, Gas, NearToken, SigningNear,
