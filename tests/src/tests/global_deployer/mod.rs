@@ -3,7 +3,7 @@ mod deploy_escrow_swap;
 
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_sandbox::{
-    account::Account,
+    account::AccountExt,
     extensions::{
         FnCallTransaction,
         global_deployer::{
@@ -14,11 +14,11 @@ use defuse_sandbox::{
             },
         },
     },
-    global_contract::GlobalContract,
+    global_contract::GlobalContractExt,
     kit::{
         Gas, NearToken, SigningNear,
         protocol::{Action, GlobalContractId, UseGlobalContractAction},
-        rpc::ExecutionStatus,
+        rpc::{ExecutionStatus, Finality},
         transaction::{Final, FunctionCall},
     },
     root,
@@ -129,12 +129,10 @@ async fn test_deploy_controller_instance(
         *upgradeable_instance_state.owner_id
     );
 
+    let rpc = root.near().rpc();
     assert_eq!(
         GlobalContractId::CodeHash(
-            *root
-                .near()
-                .rpc()
-                .view_account(controller_instance.contract_id(), Finality::Final)
+            *rpc.view_account(controller_instance.contract_id(), Finality::Final)
                 .await
                 .unwrap()
                 .global_contract_hash
@@ -145,8 +143,7 @@ async fn test_deploy_controller_instance(
     );
 
     assert_eq!(
-        &root
-            .account(mutable_controller_instance.contract_id())
+        &rpc.view_account(mutable_controller_instance.contract_id(), Finality::Final)
             .await
             .unwrap()
             .global_contract_account_id
@@ -180,22 +177,18 @@ async fn test_gd_init(#[future(awt)] deployer_env: DeployerEnv) {
             GlobalDeployerContract::gd_transfer_ownership(root.account_id())
                 .gas(Gas::from_tgas(30)),
         )
-        .delete_key(
-            implicit
-                .public_key()
-                .expect("implicit account must have a key"),
-        )
-        .wait_until::<Final>()
+        .add_action(Action::delete_key(implicit.signer().public_key()))
         .await
         .unwrap()
         .result()
         .unwrap();
 
     let controller = root.contract::<GlobalDeployerContract>(implicit.account_id().clone());
+    let rpc = root.near().rpc();
 
     assert_eq!(controller.gd_owner_id().await.unwrap(), *root.account_id());
     assert!(
-        root.access_keys(implicit.account_id())
+        rpc.view_access_key_list(implicit.account_id(), Finality::Final)
             .await
             .unwrap()
             .keys
@@ -220,10 +213,13 @@ async fn test_gd_init(#[future(awt)] deployer_env: DeployerEnv) {
     );
 
     assert_eq!(
-        root.global_contract(implicit.account_id())
-            .await
-            .unwrap()
-            .code,
+        rpc.view_global_contract_code(
+            GlobalContractId::AccountId(implicit.account_id().clone()),
+            Finality::Final,
+        )
+        .await
+        .unwrap()
+        .code,
         *DEPLOYER_WASM
     );
 }
@@ -252,7 +248,8 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
         .unwrap();
 
     assert_eq!(
-        root.near().balance(controller_instance.contract_id())
+        root.near()
+            .balance(controller_instance.contract_id())
             .await
             .unwrap()
             .total,
@@ -732,7 +729,8 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
         .unwrap();
 
     assert_eq!(
-        root.near().balance(controller_instance.contract_id())
+        root.near()
+            .balance(controller_instance.contract_id())
             .await
             .unwrap()
             .total,
@@ -760,7 +758,8 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
         .unwrap();
 
     assert!(
-        root.near().balance(controller_instance.contract_id())
+        root.near()
+            .balance(controller_instance.contract_id())
             .await
             .unwrap()
             .total
@@ -886,7 +885,8 @@ async fn test_post_deploy_does_not_run_on_failed_deploy(
 
     // Instance has 0 balance
     assert_eq!(
-        root.near().balance(controller_instance.contract_id())
+        root.near()
+            .balance(controller_instance.contract_id())
             .await
             .unwrap()
             .total,
@@ -1103,7 +1103,8 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
         .unwrap();
 
     assert_eq!(
-        root.near().balance(controller_instance.contract_id())
+        root.near()
+            .balance(controller_instance.contract_id())
             .await
             .unwrap()
             .total,
@@ -1121,7 +1122,8 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
         .unwrap();
 
     assert_eq!(
-        root.near().balance(controller_instance.contract_id())
+        root.near()
+            .balance(controller_instance.contract_id())
             .await
             .unwrap()
             .total,

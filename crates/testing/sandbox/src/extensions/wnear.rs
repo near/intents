@@ -6,7 +6,7 @@ use near_kit::{
     transaction::FunctionCall,
 };
 
-use crate::{account::Account, outcome::SuccessfulExecutionOutcome};
+use crate::{account::AccountExt, outcome::SuccessfulExecutionOutcome};
 
 #[near_kit::contract]
 pub trait WNear {

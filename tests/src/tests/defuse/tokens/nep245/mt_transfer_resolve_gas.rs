@@ -7,7 +7,7 @@ use defuse_core::tokens::BATCH_MAX_TOKENS;
 use defuse_near_utils::REFUND_MEMO;
 use defuse_randomness::Rng;
 use defuse_sandbox::{
-    account::Account,
+    account::AccountExt,
     extensions::{
         defuse::{
             core::{

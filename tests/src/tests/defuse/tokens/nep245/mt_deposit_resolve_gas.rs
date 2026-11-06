@@ -8,7 +8,7 @@ use defuse_core::{intents::tokens::NotifyOnTransfer, tokens::BATCH_MAX_TOKENS};
 use defuse_near_utils::{REFUND_MEMO, TOTAL_LOG_LENGTH_LIMIT};
 use defuse_randomness::Rng;
 use defuse_sandbox::{
-    account::Account,
+    account::AccountExt,
     extensions::{
         defuse::{
             nep245::{MtBurnEvent, MtEvent, MtMintEvent},

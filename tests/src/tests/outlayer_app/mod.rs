@@ -1,6 +1,6 @@
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_sandbox::{
-    account::Account,
+    account::AccountExt,
     extensions::outlayer_app::{
         OutlayerAppDeployerExt, OutlayerAppExt,
         contract::{OaEvent, State as OutlayerState},

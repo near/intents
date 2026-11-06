@@ -14,7 +14,7 @@ use near_kit_sandbox::Sandbox;
 use rstest::fixture;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use crate::account::Account;
+use crate::account::AccountExt;
 
 #[fixture]
 pub async fn root(#[default(NearToken::from_near(100_000))] amount: NearToken) -> SigningNear {

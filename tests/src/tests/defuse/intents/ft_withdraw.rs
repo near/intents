@@ -298,16 +298,10 @@ async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
                 );
             },
             async {
-                assert_eq!(
-                    ft.balance_of(env.defuse.contract_id()).await.unwrap(),
-                    600
-                );
+                assert_eq!(ft.balance_of(env.defuse.contract_id()).await.unwrap(), 600);
             },
             async {
-                assert_eq!(
-                    ft.balance_of(defuse2.account_id()).await.unwrap(),
-                    400
-                );
+                assert_eq!(ft.balance_of(defuse2.account_id()).await.unwrap(), 400);
             },
             async {
                 assert_eq!(
@@ -361,16 +355,10 @@ async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
             );
         },
         async {
-            assert_eq!(
-                ft.balance_of(env.defuse.contract_id()).await.unwrap(),
-                0
-            );
+            assert_eq!(ft.balance_of(env.defuse.contract_id()).await.unwrap(), 0);
         },
         async {
-            assert_eq!(
-                ft.balance_of(defuse2.account_id()).await.unwrap(),
-                1000
-            );
+            assert_eq!(ft.balance_of(defuse2.account_id()).await.unwrap(), 1000);
         },
         async {
             assert_eq!(

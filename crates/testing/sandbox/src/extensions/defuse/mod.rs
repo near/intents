@@ -21,7 +21,9 @@ use near_kit::{
 use near_sdk::json_types::U128;
 use serde_json::json;
 
-use crate::{account::Account, extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};
+use crate::{
+    account::AccountExt, extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome,
+};
 
 pub use event::*;
 #[cfg(feature = "imt")]
@@ -410,12 +412,11 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
     ) -> Result<(SuccessfulExecutionOutcome, Salt)> {
-        let outcome = self
-            .transaction(defuse.into())
-            .add_action(Defuse::update_current_salt().gas(Gas::from_tgas(30)))
-            .await?;
-        let salt = outcome.json::<Salt>()?;
-        Ok((outcome.try_into()?, salt))
+        self.fn_call_json(
+            defuse,
+            Defuse::update_current_salt().gas(Gas::from_tgas(30)),
+        )
+        .await
     }
 
     async fn defuse_invalidate_salts(
@@ -423,15 +424,12 @@ impl DefuseExt for SigningNear {
         defuse: impl Into<AccountId>,
         salts: impl IntoIterator<Item = Salt>,
     ) -> Result<(SuccessfulExecutionOutcome, Salt)> {
-        let outcome = self
-            .transaction(defuse.into())
-            .add_action(
-                Defuse::invalidate_salts(&salts.into_iter().collect::<Vec<_>>())
-                    .gas(Gas::from_tgas(300)),
-            )
-            .await?;
-        let salt = outcome.json::<Salt>()?;
-        Ok((outcome.try_into()?, salt))
+        self.fn_call_json(
+            defuse,
+            Defuse::invalidate_salts(&salts.into_iter().collect::<Vec<_>>())
+                .gas(Gas::from_tgas(300)),
+        )
+        .await
     }
 
     async fn defuse_admin_call(
@@ -567,13 +565,11 @@ impl DefuseExt for SigningNear {
         defuse: impl Into<AccountId>,
         account_id: impl AsRef<AccountIdRef>,
     ) -> Result<(SuccessfulExecutionOutcome, bool)> {
-        let res = self
-            .transaction(defuse.into())
-            .add_action(Defuse::force_lock_account(account_id.as_ref()).gas(Gas::from_tgas(30)))
-            .await?;
-        let locked = res.json::<bool>()?;
-
-        Ok((res.try_into()?, locked))
+        self.fn_call_json(
+            defuse,
+            Defuse::force_lock_account(account_id.as_ref()).gas(Gas::from_tgas(30)),
+        )
+        .await
     }
 
     async fn defuse_force_unlock_account(
@@ -581,13 +577,11 @@ impl DefuseExt for SigningNear {
         defuse: impl Into<AccountId>,
         account_id: impl AsRef<AccountIdRef>,
     ) -> Result<(SuccessfulExecutionOutcome, bool)> {
-        let res = self
-            .transaction(defuse.into())
-            .add_action(Defuse::force_unlock_account(account_id.as_ref()).gas(Gas::from_tgas(30)))
-            .await?;
-        let unlocked = res.json::<bool>()?;
-
-        Ok((res.try_into()?, unlocked))
+        self.fn_call_json(
+            defuse,
+            Defuse::force_unlock_account(account_id.as_ref()).gas(Gas::from_tgas(30)),
+        )
+        .await
     }
 
     async fn defuse_force_enable_auth_by_predecessor_ids(
@@ -629,9 +623,9 @@ impl DefuseExt for SigningNear {
         memo: Option<String>,
         msg: Option<String>,
     ) -> Result<(SuccessfulExecutionOutcome, u128)> {
-        let res = self
-            .transaction(defuse.into())
-            .add_action(
+        let (outcome, U128(transferred)) = self
+            .fn_call_json(
+                defuse,
                 Defuse::ft_withdraw(
                     token.as_ref(),
                     receiver_id.as_ref(),
@@ -642,8 +636,7 @@ impl DefuseExt for SigningNear {
                 .gas(Gas::from_tgas(300)),
             )
             .await?;
-        let transferred = res.json::<U128>()?.0;
-        Ok((res.try_into()?, transferred))
+        Ok((outcome, transferred))
     }
 
     async fn defuse_ft_force_withdraw(
@@ -683,9 +676,9 @@ impl DefuseExt for SigningNear {
         memo: Option<String>,
         msg: Option<String>,
     ) -> Result<(SuccessfulExecutionOutcome, Vec<u128>)> {
-        let res = self
-            .transaction(defuse.into())
-            .add_action(
+        let (outcome, transferred): (_, Vec<U128>) = self
+            .fn_call_json(
+                defuse,
                 Defuse::mt_withdraw(
                     token.as_ref(),
                     receiver_id.as_ref(),
@@ -697,8 +690,7 @@ impl DefuseExt for SigningNear {
                 .gas(Gas::from_tgas(300)),
             )
             .await?;
-        let transferred = res.json::<Vec<U128>>()?.into_iter().map(|x| x.0).collect();
-        Ok((res.try_into()?, transferred))
+        Ok((outcome, transferred.into_iter().map(|x| x.0).collect()))
     }
 
     async fn defuse_nft_withdraw(
@@ -710,21 +702,18 @@ impl DefuseExt for SigningNear {
         memo: Option<String>,
         msg: Option<String>,
     ) -> Result<(SuccessfulExecutionOutcome, bool)> {
-        let res = self
-            .transaction(defuse.into())
-            .add_action(
-                Defuse::nft_withdraw(
-                    token.as_ref(),
-                    receiver_id.as_ref(),
-                    token_id.as_ref(),
-                    memo,
-                    msg,
-                )
-                .gas(Gas::from_tgas(300)),
+        self.fn_call_json(
+            defuse,
+            Defuse::nft_withdraw(
+                token.as_ref(),
+                receiver_id.as_ref(),
+                token_id.as_ref(),
+                memo,
+                msg,
             )
-            .await?;
-        let transferred = res.json::<bool>()?;
-        Ok((res.try_into()?, transferred))
+            .gas(Gas::from_tgas(300)),
+        )
+        .await
     }
 
     async fn defuse_do_auth_call(

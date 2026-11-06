@@ -6,7 +6,7 @@ use near_kit::{
     transaction::FunctionCall,
 };
 
-pub trait Account {
+pub trait AccountExt {
     async fn create_subaccount(
         &self,
         name: impl AsRef<str>,
@@ -24,7 +24,7 @@ pub trait Account {
     ) -> anyhow::Result<SigningNear>;
 }
 
-impl Account for SigningNear {
+impl AccountExt for SigningNear {
     async fn create_subaccount(
         &self,
         name: impl AsRef<str>,

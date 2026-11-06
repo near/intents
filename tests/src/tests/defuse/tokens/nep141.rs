@@ -201,10 +201,7 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
             );
         },
         async {
-            assert_eq!(
-                ft.balance_of(other_user.account_id()).await.unwrap(),
-                600
-            );
+            assert_eq!(ft.balance_of(other_user.account_id()).await.unwrap(), 600);
         },
     );
 }
@@ -331,10 +328,7 @@ async fn ft_force_withdraw(
             );
         },
         async {
-            assert_eq!(
-                ft.balance_of(other_user.account_id()).await.unwrap(),
-                0
-            );
+            assert_eq!(ft.balance_of(other_user.account_id()).await.unwrap(), 0);
         },
     );
 
@@ -374,10 +368,7 @@ async fn ft_force_withdraw(
             );
         },
         async {
-            assert_eq!(
-                ft.balance_of(other_user.account_id()).await.unwrap(),
-                1000
-            );
+            assert_eq!(ft.balance_of(other_user.account_id()).await.unwrap(), 1000);
         },
     );
 }

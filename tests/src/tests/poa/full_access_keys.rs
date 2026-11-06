@@ -1,9 +1,9 @@
 use defuse_sandbox::{
-    account::Account,
+    account::AccountExt,
     extensions::{
         FnCallTransaction,
         acl::AccessControllableExt,
-        poa::{PoAFactoryExt, PoaFactory, PoaFactoryClient, PoaFactoryDeployerExt, contract::Role},
+        poa::{PoaFactory, PoaFactoryClient, PoaFactoryDeployerExt, PoAFactoryExt, contract::Role},
     },
     kit::{Gas, NearToken, SigningNear, rpc::AccessKeyPermissionView, signer::SecretKey},
     root,

@@ -14,7 +14,7 @@ use defuse_sandbox::{
         wnear::WNearDeployerExt,
     },
     global_contract::GlobalContract,
-    kit::{SigningNear, NearToken, protocol::GlobalContractId, standards::FungibleToken},
+    kit::{Near, NearToken, protocol::GlobalContractId, standards::FungibleToken},
     root,
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, ESCROW_SWAP_WASM, POA_FACTORY_WASM, WNEAR_WASM};
@@ -23,7 +23,7 @@ use impl_tools::autoimpl;
 use rstest::fixture;
 
 #[fixture]
-pub async fn env(#[future(awt)] root: SigningNear) -> Env {
+pub async fn env(#[future(awt)] root: Near) -> Env {
     Env::new(root).await
 }
 
@@ -33,14 +33,14 @@ pub struct Env {
     pub verifier: DefuseClient,
     pub src_ft: FungibleToken,
     pub dst_ft: FungibleToken,
-    pub maker: SigningNear,
-    pub takers: [SigningNear; 3],
-    pub fee_collectors: [SigningNear; 3],
-    root: SigningNear,
+    pub maker: Near,
+    pub takers: [Near; 3],
+    pub fee_collectors: [Near; 3],
+    root: Near,
 }
 
 impl Env {
-    pub async fn new(root: SigningNear) -> Self {
+    pub async fn new(root: Near) -> Self {
         let (
             escrow_global_id,
             verifier,
@@ -112,7 +112,7 @@ impl Env {
         }
     }
 
-    async fn deploy_global_escrow_swap(root: &SigningNear) -> GlobalContractId {
+    async fn deploy_global_escrow_swap(root: &Near) -> GlobalContractId {
         let account_id = root.account_id().sub_account("escrow-swap").unwrap();
         root.deploy_upgradable_global_contract(
             account_id,
@@ -123,7 +123,7 @@ impl Env {
         .unwrap()
     }
 
-    async fn deploy_verifier(root: &SigningNear) -> DefuseClient {
+    async fn deploy_verifier(root: &Near) -> DefuseClient {
         let wnear = root.deploy_wrap_near("wnear", WNEAR_WASM.clone()).await;
         let defuse = root
             .deploy_defuse(
@@ -143,7 +143,7 @@ impl Env {
         defuse.contract::<Defuse>(defuse.account_id())
     }
 
-    async fn deploy_poa_factory(root: &SigningNear) -> PoaFactoryClient {
+    async fn deploy_poa_factory(root: &Near) -> PoaFactoryClient {
         root.deploy_poa_factory(
             "poa-factory",
             [root.account_id().clone()],
