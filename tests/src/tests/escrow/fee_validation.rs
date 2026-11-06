@@ -16,11 +16,12 @@ use defuse_sandbox::{
                 action::{FillAction, TransferAction, TransferMessage},
             },
         },
-        mt::{Mt, MtBalanceOfArgs},
+        mt::Mt,
     },
     kit::{
-        AccountId, Near,
+        AccountId, SigningNear,
         protocol::{StateInit, StateInitV1},
+        standards::FungibleToken,
     },
 };
 use near_sdk::json_types::U128;
@@ -222,7 +223,12 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
         partial_fills_allowed: true,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
-        taker_whitelist: env.takers.iter().map(Near::account_id).cloned().collect(),
+        taker_whitelist: env
+            .takers
+            .iter()
+            .map(SigningNear::account_id)
+            .cloned()
+            .collect(),
         protocol_fees: ProtocolFees {
             fee: Pips::from_percent(1).unwrap(),
             surplus: Pips::from_percent(100).unwrap(),
@@ -243,7 +249,7 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
 
     let deposited = env
         .maker
-        .ft(env.src_ft.contract_id())
+        .contract::<FungibleToken>(env.src_ft.contract_id())
         .transfer_call(
             env.verifier.contract_id(),
             MAKER_AMOUNT,
@@ -274,7 +280,7 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
     // Taker fills at price "2" — sends 20,000 dst tokens for 10,000 src
     // surplus = taker_dst_used - src_out * maker_price = 20,000 - 10,000 = 10,000
     let deposited_on_fill = env.takers[0]
-        .ft(env.dst_ft.contract_id())
+        .contract::<FungibleToken>(env.dst_ft.contract_id())
         .transfer_call(
             env.verifier.contract_id(),
             TAKER_AMOUNT,
@@ -305,10 +311,10 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
 
     let collector_balance = env
         .contract::<Mt>(env.verifier.contract_id())
-        .mt_balance_of(MtBalanceOfArgs {
-            account_id: env.fee_collectors[0].account_id(),
-            token_id: &dst_verifier_asset.to_string(),
-        })
+        .mt_balance_of(
+            env.fee_collectors[0].account_id(),
+            &dst_verifier_asset.to_string(),
+        )
         .await
         .unwrap()
         .0;
