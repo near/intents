@@ -5,13 +5,17 @@ use defuse_sandbox::{
         acl::AccessControllableExt,
         poa::{PoAFactoryExt, PoaFactory, PoaFactoryClient, PoaFactoryDeployerExt, contract::Role},
     },
-    kit::{Gas, NearToken, SigningNear, rpc::AccessKeyPermissionView, signer::SecretKey},
+    kit::{
+        Gas, NearToken, SigningNear,
+        rpc::{AccessKeyPermissionView, Finality},
+        signer::SecretKey,
+    },
     root,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::POA_FACTORY_WASM};
 use rstest::rstest;
 
-async fn deploy_factory(root: &SigningNear) -> PoaFactoryClient {
+async fn deploy_factory(root: &SigningNear) -> PoaFactoryClient<SigningNear> {
     root.deploy_poa_factory(
         "poa-factory",
         [root.account_id().clone()],
@@ -29,6 +33,7 @@ async fn deploy_factory(root: &SigningNear) -> PoaFactoryClient {
 #[tokio::test]
 async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
     let factory = deploy_factory(&root).await;
+    let rpc = root.near().rpc();
     let tokens = ["ft1", "ft2", "ft3"];
     let mut token_ids = Vec::new();
     for name in tokens {
@@ -37,7 +42,7 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
             .await
             .unwrap();
         assert!(
-            root.access_keys(token.contract_id())
+            rpc.view_access_key_list(token.contract_id(), Finality::Final)
                 .await
                 .unwrap()
                 .keys
@@ -58,7 +63,6 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
             public_key.clone(),
             tokens.into_iter().map(str::to_string).collect(),
         )
-        .deposit(NearToken::from_yoctonear(1))
         .gas(Gas::from_tgas(100)),
     )
     .await
@@ -66,16 +70,20 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
 
     // The factory detaches its promises, so verify the resulting keys on every token.
     for token_id in &token_ids {
-        let keys = root.access_keys(token_id).await.unwrap().keys;
+        let keys = rpc
+            .view_access_key_list(token_id, Finality::Final)
+            .await
+            .unwrap()
+            .keys;
         assert_eq!(keys.len(), 1);
-        assert_eq!(keys[0].public_key.full_pubkey(), Some(&public_key));
+        assert_eq!(keys[0].public_key.as_full(), Some(&public_key));
         assert!(matches!(
             keys[0].access_key.permission,
             AccessKeyPermissionView::FullAccess
         ));
     }
     assert!(
-        root.access_keys(factory.contract_id())
+        rpc.view_access_key_list(factory.contract_id(), Finality::Final)
             .await
             .unwrap()
             .keys
@@ -89,7 +97,6 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
             public_key.clone(),
             tokens.into_iter().map(str::to_string).collect(),
         )
-        .deposit(NearToken::from_yoctonear(1))
         .gas(Gas::from_tgas(100)),
     )
     .await
@@ -97,7 +104,11 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
 
     // The factory detaches its promises, so verify the resulting keys on every token.
     for token_id in token_ids {
-        let keys = root.access_keys(&token_id).await.unwrap().keys;
+        let keys = rpc
+            .view_access_key_list(&token_id, Finality::Final)
+            .await
+            .unwrap()
+            .keys;
         assert!(keys.is_empty());
     }
 }
@@ -118,14 +129,15 @@ async fn add_full_access_key_to_tokens_requires_deployed_tokens(#[future(awt)] r
             SecretKey::generate_ed25519().public_key(),
             vec!["ft1".to_string(), undeployed_token.to_string()],
         )
-        .deposit(NearToken::from_yoctonear(1))
         .gas(Gas::from_tgas(100)),
     )
     .await
     .assert_err_contains(format!("token '{undeployed_token}' is not deployed"));
 
     assert!(
-        root.access_keys(token.contract_id())
+        root.near()
+            .rpc()
+            .view_access_key_list(token.contract_id(), Finality::Final)
             .await
             .unwrap()
             .keys

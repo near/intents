@@ -53,15 +53,17 @@ async fn deploy_mint(#[future(awt)] root: SigningNear) {
         .await
         .unwrap_err();
 
-    assert!(ft1.balance_of(user.account_id()).await.unwrap().is_zero());
+    assert_eq!(ft1.balance_of(user.account_id()).await.unwrap(), 0);
 
-    try_join!(
+    let (root_deposit, user_deposit) = try_join!(
         ft1.storage_deposit(root.account_id(), NearToken::from_near(1))
             .into_future(),
         ft1.storage_deposit(user.account_id(), NearToken::from_near(1))
             .into_future()
     )
     .unwrap();
+    root_deposit.result().unwrap();
+    user_deposit.result().unwrap();
 
     user.poa_factory_ft_deposit(
         poa_factory.contract_id(),
@@ -85,12 +87,10 @@ async fn deploy_mint(#[future(awt)] root: SigningNear) {
     .await
     .unwrap();
 
-    let balance: u128 = ft1.balance_of(user.account_id()).await.unwrap().into();
-
-    assert_eq!(balance, 1000);
+    assert_eq!(ft1.balance_of(user.account_id()).await.unwrap(), 1000);
 }
 
-async fn deploy_factory_with_all_roles(root: &SigningNear) -> PoaFactoryClient {
+async fn deploy_factory_with_all_roles(root: &SigningNear) -> PoaFactoryClient<SigningNear> {
     root.deploy_poa_factory(
         "poa-factory",
         [root.account_id().clone()],
