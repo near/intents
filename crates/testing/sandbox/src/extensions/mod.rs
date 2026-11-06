@@ -21,6 +21,7 @@ pub mod wallet;
 use crate::outcome::SuccessfulExecutionOutcome;
 use anyhow::Result;
 use near_kit::{AccountId, SigningNear, transaction::FunctionCall};
+use serde::de::DeserializeOwned;
 
 pub trait FnCallTransaction {
     async fn fn_call(
@@ -28,6 +29,12 @@ pub trait FnCallTransaction {
         contract: impl Into<AccountId>,
         action: FunctionCall,
     ) -> Result<SuccessfulExecutionOutcome>;
+
+    async fn fn_call_json<T: DeserializeOwned>(
+        &self,
+        contract: impl Into<AccountId>,
+        action: FunctionCall,
+    ) -> Result<(SuccessfulExecutionOutcome, T)>;
 }
 
 impl FnCallTransaction for SigningNear {
@@ -40,5 +47,15 @@ impl FnCallTransaction for SigningNear {
             .add_action(action)
             .await?
             .try_into()
+    }
+
+    async fn fn_call_json<T: DeserializeOwned>(
+        &self,
+        contract: impl Into<AccountId>,
+        action: FunctionCall,
+    ) -> Result<(SuccessfulExecutionOutcome, T)> {
+        let outcome = self.transaction(contract.into()).add_action(action).await?;
+        let value = outcome.json::<T>()?;
+        Ok((outcome.try_into()?, value))
     }
 }

@@ -1,7 +1,7 @@
 mod full_access_keys;
 
 use defuse_sandbox::{
-    account::Account,
+    account::AccountExt,
     extensions::poa::{
         IdDigest, PayloadHash, PoAFactoryExt, PoaFactoryClient, PoaFactoryDeployerExt, Withdrawal,
         contract::Role,

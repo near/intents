@@ -223,9 +223,9 @@ impl MtExt for SigningNear {
         memo: impl Into<Option<String>>,
         msg: impl Display,
     ) -> Result<(SuccessfulExecutionOutcome, Vec<u128>)> {
-        let outcome = self
-            .transaction(contract.into())
-            .add_action(
+        let (outcome, res): (_, Vec<U128>) = self
+            .fn_call_json(
+                contract,
                 Mt::mt_transfer_call(
                     receiver_id.as_ref(),
                     token_id.into().as_str(),
@@ -237,10 +237,7 @@ impl MtExt for SigningNear {
                 .gas(Gas::from_tgas(300)),
             )
             .await?;
-
-        let res = outcome.json::<Vec<U128>>()?;
-
-        Ok((outcome.try_into()?, res.into_iter().map(|n| n.0).collect()))
+        Ok((outcome, res.into_iter().map(|n| n.0).collect()))
     }
 
     async fn mt_batch_transfer_call(
@@ -252,9 +249,9 @@ impl MtExt for SigningNear {
         memo: impl Into<Option<String>>,
         msg: impl Display,
     ) -> Result<(SuccessfulExecutionOutcome, Vec<u128>)> {
-        let outcome = self
-            .transaction(contract.into())
-            .add_action(
+        let (outcome, res): (_, Vec<U128>) = self
+            .fn_call_json(
+                contract,
                 Mt::mt_batch_transfer_call(
                     receiver_id.as_ref(),
                     &token_ids.into_iter().map(Into::into).collect::<Vec<_>>(),
@@ -266,10 +263,7 @@ impl MtExt for SigningNear {
                 .gas(Gas::from_tgas(300)),
             )
             .await?;
-
-        let res = outcome.json::<Vec<U128>>()?;
-
-        Ok((outcome.try_into()?, res.into_iter().map(|n| n.0).collect()))
+        Ok((outcome, res.into_iter().map(|n| n.0).collect()))
     }
 
     async fn mt_tokens(
@@ -306,20 +300,17 @@ impl MtExt for SigningNear {
         amounts: impl IntoIterator<Item = u128>,
         msg: impl AsRef<str>,
     ) -> Result<(SuccessfulExecutionOutcome, Vec<U128>)> {
-        let res = self
-            .transaction(contract.into())
-            .add_action(
-                Mt::mt_on_transfer(
-                    sender_id.as_ref(),
-                    &previous_owner_ids.into_iter().collect::<Vec<_>>(),
-                    &token_ids.into_iter().map(Into::into).collect::<Vec<_>>(),
-                    &amounts.into_iter().map(U128).collect::<Vec<_>>(),
-                    msg.as_ref(),
-                )
-                .gas(Gas::from_tgas(300)),
+        self.fn_call_json(
+            contract,
+            Mt::mt_on_transfer(
+                sender_id.as_ref(),
+                &previous_owner_ids.into_iter().collect::<Vec<_>>(),
+                &token_ids.into_iter().map(Into::into).collect::<Vec<_>>(),
+                &amounts.into_iter().map(U128).collect::<Vec<_>>(),
+                msg.as_ref(),
             )
-            .await?;
-        let amounts = res.json::<Vec<U128>>()?;
-        Ok((res.try_into()?, amounts))
+            .gas(Gas::from_tgas(300)),
+        )
+        .await
     }
 }

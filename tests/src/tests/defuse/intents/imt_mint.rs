@@ -1,6 +1,6 @@
 use defuse_fees::Pips;
 use defuse_sandbox::{
-    account::Account,
+    account::AccountExt,
     extensions::{
         defuse::{
             DefuseDeployerExt, DefuseExt, DefuseSignerExt, ToEventLog,

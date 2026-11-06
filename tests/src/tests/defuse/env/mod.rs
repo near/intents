@@ -10,14 +10,14 @@ use arbitrary::Unstructured;
 use defuse_core::crypto::ed25519::Ed25519PublicKey;
 use defuse_randomness::{RngExt, make_true_rng};
 use defuse_sandbox::{
-    account::Account,
+    account::AccountExt,
     extensions::{
         defuse::{
             DefuseClient, DefuseExt,
             core::PublicKey as DefusePublicKey,
             tokens::{DepositAction, DepositMessage},
         },
-        poa::{PoAFactoryExt, PoaFactoryClient},
+        poa::{PoaFactoryClient, PoAFactoryExt},
     },
     kit::{
         AccountId, AccountIdRef, Gas, NearToken, SigningNear,

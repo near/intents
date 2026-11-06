@@ -6,7 +6,7 @@ use near_kit::{
     signer::SecretKey,
 };
 
-pub trait GlobalContract {
+pub trait GlobalContractExt {
     async fn deploy_upgradable_global_contract(
         &self,
         target: impl AsRef<AccountIdRef>,
@@ -22,7 +22,7 @@ pub trait GlobalContract {
     ) -> Result<GlobalContractId>;
 }
 
-impl GlobalContract for SigningNear {
+impl GlobalContractExt for SigningNear {
     async fn deploy_upgradable_global_contract(
         &self,
         target: impl AsRef<AccountIdRef>,

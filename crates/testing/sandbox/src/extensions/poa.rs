@@ -11,7 +11,7 @@ use near_sdk::json_types::U128;
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
 
-use crate::{account::Account, outcome::SuccessfulExecutionOutcome};
+use crate::{account::AccountExt, outcome::SuccessfulExecutionOutcome};
 
 pub use defuse_poa_factory::{IdDigest, PayloadHash, Withdrawal, contract};
 

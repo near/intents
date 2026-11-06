@@ -1,5 +1,5 @@
 use defuse_sandbox::{
-    account::Account,
+    account::AccountExt,
     extensions::{
         defuse::{
             DefuseDeployerExt, DefuseExt, DefuseSignerExt, ToEventLog,
@@ -254,10 +254,7 @@ async fn transfer_intent_to_defuse(#[future(awt)] env: Env) {
                 );
             },
             async {
-                assert_eq!(
-                    ft.balance_of(env.defuse.contract_id()).await.unwrap(),
-                    1000
-                );
+                assert_eq!(ft.balance_of(env.defuse.contract_id()).await.unwrap(), 1000);
             },
         );
     }

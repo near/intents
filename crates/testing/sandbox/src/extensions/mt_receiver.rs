@@ -1,7 +1,7 @@
 use anyhow::Result;
 use near_kit::{NearToken, SigningNear, protocol::GlobalContractId};
 
-use crate::global_contract::GlobalContract;
+use crate::global_contract::GlobalContractExt;
 
 #[near_kit::contract]
 pub trait MtReceiverStub {

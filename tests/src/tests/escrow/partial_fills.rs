@@ -12,10 +12,10 @@ use defuse_sandbox::{
                 token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
             },
         },
-        mt::Mt,
+        mt::{Mt, MtBatchBalanceOfArgs},
     },
     kit::{
-        AccountId, Gas, SigningNear,
+        AccountId, Gas, Near,
         protocol::{AccountIdRef, StateInit, StateInitV1},
         transaction::Final,
     },
@@ -70,7 +70,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
         // taker_whitelist: Default::default(),
-        taker_whitelist: env.takers.iter().map(SigningNear::account_id).cloned().collect(),
+        taker_whitelist: env.takers.iter().map(Near::account_id).cloned().collect(),
         protocol_fees: ProtocolFees {
             fee: Pips::from_percent(1).unwrap(),
             surplus: Pips::from_percent(10).unwrap(),
@@ -80,7 +80,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
         integrator_fees: env
             .fee_collectors
             .iter()
-            .map(SigningNear::account_id)
+            .map(Near::account_id)
             .cloned()
             .enumerate()
             .map(|(percent, a)| {
@@ -107,8 +107,8 @@ async fn partial_fills(#[future(awt)] env: Env) {
         env.verifier.contract_id(),
         [escrow.contract_id(), env.maker.account_id()]
             .into_iter()
-            .chain(env.takers.iter().map(SigningNear::account_id))
-            .chain(env.fee_collectors.iter().map(SigningNear::account_id))
+            .chain(env.takers.iter().map(Near::account_id))
+            .chain(env.fee_collectors.iter().map(Near::account_id))
             .map(AsRef::as_ref),
         &[&src_verifier_asset, &dst_verifier_asset],
     )
@@ -119,7 +119,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
         for amount in [MAKER_AMOUNT - 100, 100] {
             let deposited = env
                 .maker
-                .contract::<FungibleToken>(env.src_ft.contract_id().clone())
+                .ft(env.src_ft.contract_id().clone())
                 .transfer_call(
                     env.verifier.contract_id().clone(),
                     amount,
@@ -152,8 +152,8 @@ async fn partial_fills(#[future(awt)] env: Env) {
                 env.verifier.contract_id(),
                 [escrow.contract_id(), env.maker.account_id()]
                     .into_iter()
-                    .chain(env.takers.iter().map(SigningNear::account_id))
-                    .chain(env.fee_collectors.iter().map(SigningNear::account_id))
+                    .chain(env.takers.iter().map(Near::account_id))
+                    .chain(env.fee_collectors.iter().map(Near::account_id))
                     .map(AsRef::as_ref),
                 &[&src_verifier_asset, &dst_verifier_asset],
             )
@@ -168,7 +168,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
     {
         for (taker, amount) in env.takers.iter().zip([10000_u128, 5000, 20000]) {
             let deposited = taker
-                .contract::<FungibleToken>(env.dst_ft.contract_id().clone())
+                .ft(env.dst_ft.contract_id().clone())
                 .transfer_call(
                     env.verifier.contract_id().clone(),
                     amount,
@@ -210,8 +210,8 @@ async fn partial_fills(#[future(awt)] env: Env) {
                 env.verifier.contract_id(),
                 [escrow.contract_id(), env.maker.account_id()]
                     .into_iter()
-                    .chain(env.takers.iter().map(SigningNear::account_id))
-                    .chain(env.fee_collectors.iter().map(SigningNear::account_id))
+                    .chain(env.takers.iter().map(Near::account_id))
+                    .chain(env.fee_collectors.iter().map(Near::account_id))
                     .map(AsRef::as_ref),
                 &[&src_verifier_asset, &dst_verifier_asset],
             )
@@ -237,8 +237,8 @@ async fn partial_fills(#[future(awt)] env: Env) {
             env.verifier.contract_id(),
             [escrow.contract_id(), env.maker.account_id()]
                 .into_iter()
-                .chain(env.takers.iter().map(SigningNear::account_id))
-                .chain(env.fee_collectors.iter().map(SigningNear::account_id))
+                .chain(env.takers.iter().map(Near::account_id))
+                .chain(env.fee_collectors.iter().map(Near::account_id))
                 .map(AsRef::as_ref),
             &[&src_verifier_asset, &dst_verifier_asset],
         )
@@ -253,7 +253,7 @@ async fn partial_fills(#[future(awt)] env: Env) {
 }
 
 pub async fn show_verifier_balances(
-    near: &SigningNear,
+    near: &Near,
     verifier: &AccountId,
     accounts: impl IntoIterator<Item = &AccountIdRef>,
     token_ids: &[&TokenId],
@@ -263,13 +263,13 @@ pub async fn show_verifier_balances(
         .map(|account_id| async move {
             let balances = near
                 .contract::<Mt>(verifier)
-                .mt_batch_balance_of(
+                .mt_batch_balance_of(MtBatchBalanceOfArgs {
                     account_id,
-                    &token_ids
+                    token_ids: &token_ids
                         .iter()
                         .map(ToString::to_string)
                         .collect::<Vec<_>>(),
-                )
+                })
                 .await?;
             anyhow::Ok((account_id, balances))
         })
@@ -287,7 +287,7 @@ pub async fn show_verifier_balances(
     }
 }
 
-async fn maybe_view_escrow(root: &SigningNear, escrow: &EscrowClient) {
+async fn maybe_view_escrow(root: &Near, escrow: &EscrowClient) {
     let Ok(account) = root.account(escrow.contract_id()).await else {
         println!("{} does not exist", escrow.contract_id());
         return;

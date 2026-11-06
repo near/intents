@@ -6,7 +6,7 @@ use near_kit::{
 };
 use serde_json::json;
 
-use crate::account::Account;
+use crate::account::AccountExt;
 
 pub trait NftAdminExt: Sized {
     async fn deploy_vanilla_nft_issuer(
