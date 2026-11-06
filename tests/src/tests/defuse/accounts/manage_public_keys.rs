@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use defuse_sandbox::extensions::defuse::{
-    DefuseExt, HasPublicKeyArgs,
+    DefuseExt,
     core::{
         PublicKey,
         accounts::{AccountEvent, PublicKeyEvent},
@@ -28,10 +28,7 @@ async fn test_add_public_key(
 
     assert!(
         !env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user.account_id(),
-                public_key: &public_key,
-            })
+            .has_public_key(user.account_id(), &public_key)
             .await
             .unwrap()
     );
@@ -54,10 +51,7 @@ async fn test_add_public_key(
 
     assert!(
         env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user.account_id(),
-                public_key: &public_key,
-            })
+            .has_public_key(user.account_id(), &public_key)
             .await
             .unwrap()
     );
@@ -80,10 +74,7 @@ async fn test_add_and_remove_public_key(
 
     assert!(
         env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user.account_id(),
-                public_key: &public_key,
-            })
+            .has_public_key(user.account_id(), &public_key)
             .await
             .unwrap()
     );
@@ -106,10 +97,7 @@ async fn test_add_and_remove_public_key(
 
     assert!(
         !env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user.account_id(),
-                public_key: &public_key,
-            })
+            .has_public_key(user.account_id(), &public_key)
             .await
             .unwrap()
     );

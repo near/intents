@@ -19,7 +19,7 @@ use defuse_sandbox::{
         mt::{Mt, MtExt},
     },
     kit::{
-        AccountId, Gas, Near, NearToken,
+        AccountId, Gas, NearToken, SigningNear,
         protocol::{ActionError, ActionErrorKind, FunctionCallError},
         rpc::ExecutionStatus,
         transaction::Final,
@@ -45,7 +45,7 @@ enum GenerationMode {
     LongestPossible,
 }
 
-async fn make_account(mode: GenerationMode, env: &Env, user: &Near) -> Near {
+async fn make_account(mode: GenerationMode, env: &Env, user: &SigningNear) -> SigningNear {
     match mode {
         GenerationMode::ShortestPossible => {
             env.transaction(user.account_id())
@@ -124,8 +124,8 @@ async fn run_resolve_gas_test(
     gen_mode: GenerationMode,
     token_count: usize,
     env: Arc<Env>,
-    user_account: Near,
-    author_account: Near,
+    user_account: SigningNear,
+    author_account: SigningNear,
     rng: Arc<tokio::sync::Mutex<impl Rng>>,
 ) -> anyhow::Result<()> {
     println!("token count: {token_count}");

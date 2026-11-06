@@ -12,7 +12,7 @@ use defuse_sandbox::{
         mt::Mt,
         wnear::WNearExt,
     },
-    kit::{AccountId, Gas, NearToken, transaction::Final},
+    kit::{AccountId, Gas, NearToken, standards::FungibleToken, transaction::Final},
 };
 use defuse_test_utils::wasms::DEFUSE_WASM;
 use rstest::rstest;
@@ -92,7 +92,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
             );
         },
         async {
-            assert_eq!(ft.balance_of(&other_user_id).await.unwrap().raw(), 0);
+            assert_eq!(ft.balance_of(&other_user_id).await.unwrap(), 0);
         }
     );
 
@@ -129,7 +129,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
         .unwrap();
 
     // deposit wNEAR
-    user.ft(env.wnear.contract_id())
+    user.contract::<FungibleToken>(env.wnear.contract_id())
         .transfer_call(
             env.defuse.contract_id(),
             STORAGE_DEPOSIT.as_yoctonear(),
@@ -218,7 +218,7 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
             );
         },
         async {
-            assert_eq!(ft.balance_of(&other_user_id).await.unwrap().raw(), 1000);
+            assert_eq!(ft.balance_of(&other_user_id).await.unwrap(), 1000);
         },
     );
 }
@@ -299,13 +299,13 @@ async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
             },
             async {
                 assert_eq!(
-                    ft.balance_of(env.defuse.contract_id()).await.unwrap().raw(),
+                    ft.balance_of(env.defuse.contract_id()).await.unwrap(),
                     600
                 );
             },
             async {
                 assert_eq!(
-                    ft.balance_of(defuse2.account_id()).await.unwrap().raw(),
+                    ft.balance_of(defuse2.account_id()).await.unwrap(),
                     400
                 );
             },
@@ -362,13 +362,13 @@ async fn ft_withdraw_intent_msg(#[future(awt)] env: Env) {
         },
         async {
             assert_eq!(
-                ft.balance_of(env.defuse.contract_id()).await.unwrap().raw(),
+                ft.balance_of(env.defuse.contract_id()).await.unwrap(),
                 0
             );
         },
         async {
             assert_eq!(
-                ft.balance_of(defuse2.account_id()).await.unwrap().raw(),
+                ft.balance_of(defuse2.account_id()).await.unwrap(),
                 1000
             );
         },

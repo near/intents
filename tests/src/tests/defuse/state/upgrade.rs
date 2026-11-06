@@ -4,7 +4,7 @@ use defuse_sandbox::{
     extensions::{
         acl::AccessControllableExt,
         defuse::{
-            DefuseExt, DefuseSignerExt, HasPublicKeyArgs,
+            DefuseExt, DefuseSignerExt,
             contract::Role,
             core::{
                 PublicKey as DefusePublicKey,
@@ -16,7 +16,7 @@ use defuse_sandbox::{
         },
         mt::Mt,
     },
-    kit::{Near, protocol::AccountIdRef},
+    kit::{SigningNear, protocol::AccountIdRef},
 };
 use defuse_test_utils::wasms::DEFUSE_WASM;
 use rstest::rstest;
@@ -28,7 +28,7 @@ use crate::{
 };
 
 async fn balance_of(
-    near: &Near,
+    near: &SigningNear,
     defuse_id: impl AsRef<AccountIdRef>,
     account_id: impl AsRef<AccountIdRef>,
     token_id: &str,
@@ -69,7 +69,7 @@ async fn test_upgrade_with_persistence(
 
     let token_id = TokenId::Nep141(Nep141TokenId::new(ft.contract_id().clone())).to_string();
 
-    let get_pubkey = |near: &Near| {
+    let get_pubkey = |near: &SigningNear| {
         let near_pubkey = near.public_key().expect("must have signer");
         DefusePublicKey::Ed25519(Ed25519PublicKey(
             *near_pubkey
@@ -110,10 +110,7 @@ async fn test_upgrade_with_persistence(
         async {
             assert!(
                 env.defuse
-                    .has_public_key(HasPublicKeyArgs {
-                        account_id: user1.account_id(),
-                        public_key: &user1_pubkey,
-                    })
+                    .has_public_key(user1.account_id(), &user1_pubkey)
                     .await
                     .unwrap()
             );
@@ -121,10 +118,7 @@ async fn test_upgrade_with_persistence(
         async {
             assert!(
                 env.defuse
-                    .has_public_key(HasPublicKeyArgs {
-                        account_id: user2.account_id(),
-                        public_key: &user2_pubkey,
-                    })
+                    .has_public_key(user2.account_id(), &user2_pubkey)
                     .await
                     .unwrap()
             );
@@ -169,10 +163,7 @@ async fn test_upgrade_with_persistence(
         async {
             assert!(
                 env.defuse
-                    .has_public_key(HasPublicKeyArgs {
-                        account_id: user1.account_id(),
-                        public_key: &user1_pubkey,
-                    })
+                    .has_public_key(user1.account_id(), &user1_pubkey)
                     .await
                     .unwrap()
             );
@@ -180,10 +171,7 @@ async fn test_upgrade_with_persistence(
         async {
             assert!(
                 env.defuse
-                    .has_public_key(HasPublicKeyArgs {
-                        account_id: user2.account_id(),
-                        public_key: &user2_pubkey,
-                    })
+                    .has_public_key(user2.account_id(), &user2_pubkey)
                     .await
                     .unwrap()
             );

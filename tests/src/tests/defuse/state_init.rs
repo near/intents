@@ -4,8 +4,7 @@ use defuse_randomness::Rng;
 use defuse_sandbox::{
     extensions::{
         defuse::{
-            DefuseDeployerExt, DefuseExt, DefuseSignerExt, DoAuthCallArgs,
-            contract::{
+            DefuseDeployerExt, DefuseExt, DefuseSignerExt, contract::{
                 Contract as DefuseContract,
                 config::{DefuseConfig, RolesConfig},
             },
@@ -224,10 +223,7 @@ async fn benchmark_gas_used_by_do_auth_call_callback(
     defuse
         .defuse_do_auth_call(
             defuse.account_id(),
-            DoAuthCallArgs {
-                signer_id: &account,
-                auth_call: &intent,
-            },
+            &account, &intent,
             callback_gas,
         )
         .await
@@ -432,10 +428,7 @@ async fn test_auth_call_state_init_via_do_auth_call(
                 let result = defuse
                     .defuse_do_auth_call(
                         defuse.account_id(),
-                        DoAuthCallArgs {
-                            signer_id: &account_id,
-                            auth_call: &auth_intent,
-                        },
+                        &account_id, &auth_intent,
                         callback_gas,
                     )
                     .await

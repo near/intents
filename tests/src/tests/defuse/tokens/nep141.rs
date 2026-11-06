@@ -1,16 +1,19 @@
-use defuse_sandbox::extensions::{
-    acl::AccessControllableExt,
-    defuse::{
-        DefuseExt, DefuseSignerExt,
-        contract::Role,
-        core::{
-            intents::tokens::FtWithdraw,
-            token_id::{TokenId, nep141::Nep141TokenId},
+use defuse_sandbox::{
+    extensions::{
+        acl::AccessControllableExt,
+        defuse::{
+            DefuseExt, DefuseSignerExt,
+            contract::Role,
+            core::{
+                intents::tokens::FtWithdraw,
+                token_id::{TokenId, nep141::Nep141TokenId},
+            },
+            tokens::{DepositAction, DepositMessage, ExecuteIntents},
         },
-        tokens::{DepositAction, DepositMessage, ExecuteIntents},
+        mt::Mt,
+        poa::PoAFactoryExt,
     },
-    mt::Mt,
-    poa::PoAFactoryExt,
+    kit::standards::FungibleToken,
 };
 use near_sdk::json_types::U128;
 use rstest::rstest;
@@ -67,7 +70,7 @@ async fn deposit_withdraw(#[future(awt)] env: Env) {
             );
         },
         async {
-            assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 1000);
+            assert_eq!(ft.balance_of(user.account_id()).await.unwrap(), 1000);
         },
     );
 }
@@ -95,7 +98,7 @@ async fn poa_deposit(#[future(awt)] env: Env) {
 
     futures::join!(
         async {
-            assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 0);
+            assert_eq!(ft.balance_of(user.account_id()).await.unwrap(), 0);
         },
         async {
             assert_eq!(
@@ -150,7 +153,7 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
         .unwrap();
 
     assert_eq!(
-        user.ft(ft.contract_id())
+        user.contract::<FungibleToken>(ft.contract_id())
             .transfer_call(
                 env.defuse.contract_id(),
                 1000u128,
@@ -175,7 +178,7 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
     let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone())).to_string();
     futures::join!(
         async {
-            assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 0);
+            assert_eq!(ft.balance_of(user.account_id()).await.unwrap(), 0);
         },
         async {
             assert_eq!(
@@ -199,7 +202,7 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
         },
         async {
             assert_eq!(
-                ft.balance_of(other_user.account_id()).await.unwrap().raw(),
+                ft.balance_of(other_user.account_id()).await.unwrap(),
                 600
             );
         },
@@ -242,7 +245,7 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
         .unwrap();
 
     assert_eq!(
-        user.ft(ft.contract_id())
+        user.contract::<FungibleToken>(ft.contract_id())
             .transfer_call(
                 env.defuse.contract_id(),
                 1000u128,
@@ -276,7 +279,7 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
             );
         },
         async {
-            assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 1000);
+            assert_eq!(ft.balance_of(user.account_id()).await.unwrap(), 1000);
         },
     );
 }
@@ -329,7 +332,7 @@ async fn ft_force_withdraw(
         },
         async {
             assert_eq!(
-                ft.balance_of(other_user.account_id()).await.unwrap().raw(),
+                ft.balance_of(other_user.account_id()).await.unwrap(),
                 0
             );
         },
@@ -372,7 +375,7 @@ async fn ft_force_withdraw(
         },
         async {
             assert_eq!(
-                ft.balance_of(other_user.account_id()).await.unwrap().raw(),
+                ft.balance_of(other_user.account_id()).await.unwrap(),
                 1000
             );
         },
@@ -467,7 +470,7 @@ async fn ft_force_withdraw(
 //         .result()
 //         .unwrap();
 
-//     assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 1000);
+//     assert_eq!(ft.balance_of(user.account_id()).await.unwrap(), 1000);
 
 //     let intents = match &expectation.intent_transfer_amount {
 //         Some(amount) => vec![
@@ -522,7 +525,7 @@ async fn ft_force_withdraw(
 //     futures::join!(
 //         async {
 //             assert_eq!(
-//                 ft.balance_of(user.account_id()).await.unwrap().raw(),
+//                 ft.balance_of(user.account_id()).await.unwrap(),
 //                 expectation.expected_sender_ft_balance
 //             );
 //         },
