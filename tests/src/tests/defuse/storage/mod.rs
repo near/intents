@@ -62,7 +62,7 @@ async fn storage_deposit_success(
     );
 
     // For intents contract to have a balance in wnear, we make a storage deposit for it
-    futures::try_join!(
+    let (wnear_deposit, ft_deposit) = futures::try_join!(
         env.wnear
             .storage_deposit(env.defuse.contract_id(), NearToken::from_near(1))
             .into_future(),
@@ -70,6 +70,8 @@ async fn storage_deposit_success(
             .into_future(),
     )
     .unwrap();
+    wnear_deposit.result().unwrap();
+    ft_deposit.result().unwrap();
 
     {
         futures::join!(
@@ -172,7 +174,7 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(#[future(awt)] env
     }
 
     // For intents contract to have a balance in wnear, we make a storage deposit for it
-    futures::try_join!(
+    let (wnear_deposit, ft_deposit) = futures::try_join!(
         env.wnear
             .storage_deposit(env.defuse.contract_id(), NearToken::from_near(1))
             .into_future(),
@@ -180,6 +182,8 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(#[future(awt)] env
             .into_future(),
     )
     .unwrap();
+    wnear_deposit.result().unwrap();
+    ft_deposit.result().unwrap();
 
     {
         futures::join!(

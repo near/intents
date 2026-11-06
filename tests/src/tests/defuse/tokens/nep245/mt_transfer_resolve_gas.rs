@@ -251,6 +251,8 @@ async fn mt_transfer_resolve_gas(#[future(awt)] env: Env, rng: impl Rng) {
         env.transaction(env.defuse.contract_id())
             .add_action(Action::transfer(NearToken::from_near(1000)))
             .await
+            .unwrap()
+            .result()
             .unwrap();
 
         let author_account = make_account(gen_mode, &env, &user).await;
@@ -323,6 +325,8 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
     env.transaction(env.defuse.contract_id())
         .add_action(Action::transfer(NearToken::from_near(1000)))
         .await
+        .unwrap()
+        .result()
         .unwrap();
 
     let author_account = env.create_implicit(NearToken::from_near(1000)).await;
@@ -435,6 +439,8 @@ async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(aw
     env.transaction(env.defuse.contract_id())
         .add_action(Action::transfer(NearToken::from_near(1000)))
         .await
+        .unwrap()
+        .result()
         .unwrap();
 
     let author_account = env.create_implicit(NearToken::from_near(1000)).await;
