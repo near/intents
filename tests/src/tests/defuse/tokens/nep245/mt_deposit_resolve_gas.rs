@@ -17,7 +17,7 @@ use defuse_sandbox::{
         mt::Mt,
     },
     kit::{
-        AccountId, Gas, SigningNear, NearToken,
+        AccountId, Gas, NearToken, SigningNear,
         rpc::{ActionView, ExecutionStatus, ReceiptContent},
         transaction::Final,
     },
