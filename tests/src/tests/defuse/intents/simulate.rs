@@ -32,8 +32,8 @@ use defuse_sandbox::{
     },
     kit::{
         Gas, NearToken,
+        protocol::Action,
         standards::{FungibleToken, NonFungibleToken},
-        transaction::Final,
     },
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
@@ -170,8 +170,6 @@ async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
         .unwrap();
 
@@ -216,7 +214,7 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
         futures::join!(env.create_named_user("nft_issuer_admin"), env.create_user());
 
     env.transaction(user1.account_id())
-        .transfer(NearToken::from_near(100))
+        .add_action(Action::transfer(NearToken::from_near(100)))
         .await
         .unwrap();
 
@@ -260,8 +258,6 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
             user1.account_id().as_str(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
         .unwrap();
 
@@ -328,7 +324,7 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
 
     // Register user1's public key on defuse2
     user1
-        .defuse_add_public_key(defuse2.account_id(), user1.signer().unwrap().public_key())
+        .defuse_add_public_key(defuse2.account_id(), user1.signer().public_key())
         .await
         .unwrap();
 
@@ -430,8 +426,6 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
         .unwrap();
 
@@ -668,8 +662,6 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
         .unwrap();
 

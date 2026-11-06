@@ -20,7 +20,7 @@ use defuse_sandbox::{
     },
     kit::{
         AccountId, Gas, NearToken, SigningNear,
-        protocol::{ActionError, ActionErrorKind, FunctionCallError},
+        protocol::{Action, ActionError, ActionErrorKind, FunctionCallError},
         rpc::ExecutionStatus,
         transaction::Final,
     },
@@ -49,7 +49,7 @@ async fn make_account(mode: GenerationMode, env: &Env, user: &SigningNear) -> Si
     match mode {
         GenerationMode::ShortestPossible => {
             env.transaction(user.account_id())
-                .transfer(NearToken::from_near(1000))
+                .add_action(Action::transfer(NearToken::from_near(1000)))
                 .await
                 .unwrap()
                 .result()
@@ -58,7 +58,7 @@ async fn make_account(mode: GenerationMode, env: &Env, user: &SigningNear) -> Si
         }
         GenerationMode::LongestPossible => {
             env.transaction(env.defuse.contract_id())
-                .transfer(NearToken::from_near(1000))
+                .add_action(Action::transfer(NearToken::from_near(1000)))
                 .await
                 .unwrap()
                 .result()
@@ -249,7 +249,7 @@ async fn mt_transfer_resolve_gas(#[future(awt)] env: Env, rng: impl Rng) {
         let user = env.create_user().await;
 
         env.transaction(env.defuse.contract_id())
-            .transfer(NearToken::from_near(1000))
+            .add_action(Action::transfer(NearToken::from_near(1000)))
             .await
             .unwrap();
 
@@ -321,7 +321,7 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
     let user = env.create_named_user("u").await;
 
     env.transaction(env.defuse.contract_id())
-        .transfer(NearToken::from_near(1000))
+        .add_action(Action::transfer(NearToken::from_near(1000)))
         .await
         .unwrap();
 
@@ -433,7 +433,7 @@ const REPRO_TOKEN_ID_PREFIX_LEN: usize = 2;
 #[ignore = "no longer reproducible: requires more than BATCH_MAX_TOKENS=10 tokens"]
 async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(awt)] env: Env) {
     env.transaction(env.defuse.contract_id())
-        .transfer(NearToken::from_near(1000))
+        .add_action(Action::transfer(NearToken::from_near(1000)))
         .await
         .unwrap();
 
@@ -441,8 +441,8 @@ async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(aw
     let user = env.create_implicit(NearToken::from_near(1000)).await;
     let receiver_stub = env.create_implicit(NearToken::from_near(100)).await;
     receiver_stub
-        .deploy(MT_RECEIVER_STUB_WASM.to_vec())
-        .wait_until::<Final>()
+        .transaction(receiver_stub.account_id())
+        .add_action(Action::deploy_contract(MT_RECEIVER_STUB_WASM.to_vec()))
         .await
         .unwrap()
         .result()
