@@ -85,7 +85,9 @@ async fn native_withdraw_intent(
         )
         .gas(Gas::from_tgas(300))
         .await
-        .expect("failed to deposit wNEAR to user2");
+        .expect("failed to deposit wNEAR to user2")
+        .result()
+        .unwrap();
 
     // withdraw native NEAR to corresponding receivers
     let withdraw_payload = other_user

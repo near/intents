@@ -171,6 +171,8 @@ async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
         )
         .gas(Gas::from_tgas(300))
         .await
+        .unwrap()
+        .result()
         .unwrap();
 
     // Verify wNEAR balance in Defuse
@@ -216,6 +218,8 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
     env.transaction(user1.account_id())
         .add_action(Action::transfer(NearToken::from_near(100)))
         .await
+        .unwrap()
+        .result()
         .unwrap();
 
     let nft_contract = user1
@@ -259,6 +263,8 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
         )
         .gas(Gas::from_tgas(300))
         .await
+        .unwrap()
+        .result()
         .unwrap();
 
     assert_eq!(
@@ -427,6 +433,8 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
         )
         .gas(Gas::from_tgas(300))
         .await
+        .unwrap()
+        .result()
         .unwrap();
 
     // Verify wNEAR balance in Defuse
@@ -663,6 +671,8 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
         )
         .gas(Gas::from_tgas(300))
         .await
+        .unwrap()
+        .result()
         .unwrap();
 
     // Verify wNEAR balance

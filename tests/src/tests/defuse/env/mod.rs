@@ -216,7 +216,8 @@ impl Env {
     ) -> Result<()> {
         self.transaction(account_id)
             .add_action(Action::transfer(amount))
-            .await?;
+            .await?
+            .result()?;
         Ok(())
     }
 }
