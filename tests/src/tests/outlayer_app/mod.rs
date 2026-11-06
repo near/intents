@@ -7,8 +7,7 @@ use defuse_sandbox::{
     },
     kit::{
         NearToken, SigningNear,
-        protocol::{GlobalContractId, PublishMode},
-        transaction::Final,
+        protocol::{Action, GlobalContractId, PublishMode},
     },
     root,
 };
@@ -25,8 +24,11 @@ pub struct OutlayerAppEnv {
 
 #[fixture]
 pub async fn outlayer_app_env(#[future(awt)] root: SigningNear) -> OutlayerAppEnv {
-    root.publish(OUTLAYER_APP_WASM.clone(), PublishMode::Immutable)
-        .wait_until::<Final>()
+    root.transaction(root.account_id())
+        .add_action(Action::publish(
+            OUTLAYER_APP_WASM.clone(),
+            PublishMode::Immutable,
+        ))
         .await
         .unwrap()
         .result()

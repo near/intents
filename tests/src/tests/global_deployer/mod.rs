@@ -1113,9 +1113,7 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
 
     // Pre-fund the deterministic account so it has enough for storage
     root.transaction(controller_instance.contract_id())
-        .transfer(NearToken::from_near(50))
-        .send()
-        .wait_until::<Final>()
+        .add_action(Action::transfer(NearToken::from_near(50)))
         .await
         .unwrap()
         .result()
@@ -1218,7 +1216,7 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
     });
     let transfer_futs = senders.iter().map(|s| {
         s.transaction(controller_instance.contract_id())
-            .transfer(transfer_amount)
+            .add_action(Action::transfer(transfer_amount))
             .into_future()
     });
 
