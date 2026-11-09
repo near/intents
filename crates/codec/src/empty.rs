@@ -37,18 +37,14 @@ impl IoEncoder<()> for Empty {
 
 impl IoDecoder<()> for Empty {
     #[inline]
-    fn from_reader<R>(mut reader: R) -> io::Result<()>
+    fn from_reader<R>(reader: R) -> io::Result<()>
     where
         R: io::Read,
     {
-        match reader.read_exact(&mut [0u8; 1]) {
-            Ok(()) => Err(Error::new(ErrorKind::InvalidData, ERR_NOT_EMPTY)),
-            Err(err) => {
-                if err.kind() == ErrorKind::UnexpectedEof {
-                    return Ok(());
-                }
-                Err(err)
-            }
+        match reader.bytes().next() {
+            None => Ok(()),
+            Some(Ok(_)) => Err(Error::new(ErrorKind::InvalidData, ERR_NOT_EMPTY)),
+            Some(Err(err)) => Err(err),
         }
     }
 

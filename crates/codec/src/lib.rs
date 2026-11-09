@@ -141,9 +141,8 @@ pub trait IoDecoder<T> {
     /// Applies the same format and validation rules as [`from_reader`](Self::from_reader).
     ///
     /// In contrast to [`from_reader`](Self::from_reader), this method allows optimized
-    /// implementations to avoid unnecessary allocations when possible. However, when
-    ///
-    /// It's recommended to use [`from_str`](Self::from_str) when `&str` is already available:
+    /// implementations to avoid unnecessary allocations when possible. Nevertheless, it's
+    /// still recommended to use [`from_str`](Self::from_str) when `&str` is already available:
     /// this allows optimized implementations to also skip UTF-8 validation when needed.
     ///
     /// # Errors
