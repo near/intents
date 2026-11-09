@@ -6,7 +6,7 @@ use defuse_borsh_utils::{AsWrap, BorshDeserializeAs, BorshSerializeAs, Same};
 
 use crate::{IoDecoder, IoEncoder};
 
-/// A codec for [borsh](::borsh).
+/// A codec for [borsh].
 ///
 /// # Example
 ///
