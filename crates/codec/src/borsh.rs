@@ -67,8 +67,8 @@ mod tests {
 
     #[rstest]
     #[case::empty(&[])]
-    #[case::whitespace(&[1, 2])]
-    fn invalid_input(#[case] bytes: &[u8]) {
+    #[case::excessive(&[1, 2])]
+    fn invalid_input_u8(#[case] bytes: &[u8]) {
         <Borsh as IoDecoder<u8>>::from_slice(bytes).unwrap_err();
     }
 }
