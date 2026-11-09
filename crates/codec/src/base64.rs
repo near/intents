@@ -32,9 +32,6 @@ use crate::{IoDecoder, IoEncoder};
 /// let decoded: Vec<u8> = <Base64>::from_slice(encoded).unwrap();
 /// assert_eq!(decoded, value);
 /// ```
-// TODO: add support for:
-// * custom alphabets
-// * Pad/NoPad? strict?
 pub struct Base64<ALPHABET: Alphabet = Standard, PADDING: Padding = Padded>(
     PhantomData<(ALPHABET, PADDING)>,
 );
@@ -46,7 +43,7 @@ where
 {
     #[inline]
     const fn engine() -> GeneralPurpose {
-        GeneralPurpose::new(&ALPHABET::CHARSET, GeneralPurposeConfig::new())
+        GeneralPurpose::new(&ALPHABET::CHARSET, PADDING::CONFIG)
     }
 }
 
