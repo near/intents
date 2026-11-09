@@ -3,7 +3,7 @@ use std::{borrow::Borrow, fmt::Debug};
 use crate::{IoDecoder, IoEncoder};
 
 #[allow(dead_code)]
-pub(crate) fn assert_roundtrip<C, T>(value: &T)
+pub fn assert_roundtrip<C, T>(value: &T)
 where
     T: ToOwned + PartialEq + Debug + ?Sized,
     C: IoEncoder<T> + IoDecoder<T::Owned>,
