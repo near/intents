@@ -41,7 +41,7 @@ where
 
 impl<T, ALPHABET> IoDecoder<T> for Base58<ALPHABET>
 where
-    T: TryFrom<Vec<u8>>, // TODO: remove display bound
+    T: TryFrom<Vec<u8>>,
     ALPHABET: Alphabet,
 {
     #[inline]

@@ -90,7 +90,6 @@ where
         R: io::Read,
     {
         let engine = Self::engine();
-        // TODO: add tests for non-padded?...
         let mut reader = DecoderReader::new(reader, &engine);
 
         let mut buf = Vec::new();
