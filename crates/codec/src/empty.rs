@@ -41,6 +41,7 @@ impl IoDecoder<()> for Empty {
     where
         R: io::Read,
     {
+        #[allow(clippy::unbuffered_bytes)]
         match reader.bytes().next() {
             None => Ok(()),
             Some(Ok(_)) => Err(Error::new(ErrorKind::InvalidData, ERR_NOT_EMPTY)),
