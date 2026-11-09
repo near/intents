@@ -30,7 +30,6 @@ where
     where
         W: io::Write,
     {
-        // TODO: optimize to avoid allocations
         writer.write_all(&::bs58::encode::EncodeBuilder::new(value, ALPHABET::CHARSET).into_vec())
     }
 
@@ -50,7 +49,6 @@ where
     where
         R: io::Read,
     {
-        // TODO: optimize to avoid this allocation?
         let mut buf = Vec::new();
         reader.read_to_end(&mut buf)?;
         Self::from_slice(buf)
@@ -109,11 +107,9 @@ impl Alphabet for Flickr {
 }
 
 mod sealed {
-    use super::*;
-
     pub trait Sealed {}
-    impl Sealed for Bitcoin {}
-    impl Sealed for Monero {}
-    impl Sealed for Ripple {}
-    impl Sealed for Flickr {}
+    impl Sealed for super::Bitcoin {}
+    impl Sealed for super::Monero {}
+    impl Sealed for super::Ripple {}
+    impl Sealed for super::Flickr {}
 }

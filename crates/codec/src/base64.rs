@@ -173,14 +173,13 @@ impl Padding for Unpadded {
 }
 
 mod sealed {
-    use super::*;
     pub trait Sealed {}
-    impl Sealed for Standard {}
-    impl Sealed for UrlSafe {}
-    impl Sealed for Crypt {}
-    impl Sealed for Bcrypt {}
-    impl Sealed for ImapMutf7 {}
-    impl Sealed for BinHex {}
-    impl Sealed for Padded {}
-    impl Sealed for Unpadded {}
+    impl Sealed for super::Standard {}
+    impl Sealed for super::UrlSafe {}
+    impl Sealed for super::Crypt {}
+    impl Sealed for super::Bcrypt {}
+    impl Sealed for super::ImapMutf7 {}
+    impl Sealed for super::BinHex {}
+    impl Sealed for super::Padded {}
+    impl Sealed for super::Unpadded {}
 }

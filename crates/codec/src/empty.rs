@@ -28,6 +28,11 @@ impl IoEncoder<()> for Empty {
     {
         Ok(())
     }
+
+    #[inline]
+    fn encoded_len(_value: &()) -> io::Result<usize> {
+        Ok(0)
+    }
 }
 
 impl IoDecoder<()> for Empty {
@@ -37,7 +42,7 @@ impl IoDecoder<()> for Empty {
         R: io::Read,
     {
         match reader.read_exact(&mut [0u8; 1]) {
-            Ok(_) => Err(Error::new(ErrorKind::InvalidData, ERR_NOT_EMPTY)),
+            Ok(()) => Err(Error::new(ErrorKind::InvalidData, ERR_NOT_EMPTY)),
             Err(err) => {
                 if err.kind() == ErrorKind::UnexpectedEof {
                     return Ok(());

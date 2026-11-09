@@ -1225,7 +1225,6 @@ dependencies = [
  "document-features",
  "hex",
  "rstest",
- "serde",
  "serde_json",
  "serde_with",
 ]

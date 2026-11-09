@@ -13,7 +13,6 @@ borsh = { workspace = true, optional = true }
 bs58 = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
 hex = { workspace = true, optional = true }
-serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true }
 
@@ -35,7 +34,7 @@ borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
 hex = ["dep:hex"]
 
 ## Enables [`json`] support.
-json = ["dep:serde", "dep:serde_json", "dep:serde_with"]
+json = ["dep:serde_json", "dep:serde_with"]
 
 [dev-dependencies]
 defuse-codec = { path = ".", features = ["base58", "base64", "borsh", "hex", "json"] }

@@ -32,7 +32,7 @@ where
     where
         W: io::Write,
     {
-        writer.write_all(hex::encode(value).as_bytes()).map(|_| ())
+        writer.write_all(hex::encode(value).as_bytes())
     }
 
     #[inline]
