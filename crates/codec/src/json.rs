@@ -106,6 +106,13 @@ mod tests {
     }
 
     #[rstest]
+    #[case::leading(" \n{}")]
+    #[case::trailing("{} \n")]
+    fn whitespace_ok(#[case] input: &str) {
+        <Json as IoDecoder<serde_json::Value>>::from_str(input).unwrap();
+    }
+
+    #[rstest]
     #[case::whitespace(b" ")]
     #[case::newline(b"\n")]
     #[case::nul(b"nul")]

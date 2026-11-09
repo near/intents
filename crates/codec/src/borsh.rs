@@ -58,3 +58,17 @@ where
         borsh::from_slice(bytes.as_ref()).map(AsWrap::<T, As>::into_inner)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case::empty(&[])]
+    #[case::whitespace(&[1, 2])]
+    fn invalid_input(#[case] bytes: &[u8]) {
+        <Borsh as IoDecoder<u8>>::from_slice(bytes).unwrap_err();
+    }
+}
