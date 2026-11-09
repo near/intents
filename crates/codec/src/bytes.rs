@@ -1,4 +1,4 @@
-use std::{fmt::Display, io};
+use std::io;
 
 use crate::{IoDecoder, IoEncoder};
 
@@ -38,7 +38,7 @@ where
 
 impl<T> IoDecoder<T> for AsBytes
 where
-    T: TryFrom<Vec<u8>, Error: Display>,
+    T: TryFrom<Vec<u8>>,
 {
     #[inline]
     fn from_reader<R>(mut reader: R) -> io::Result<T>
@@ -47,6 +47,13 @@ where
     {
         let mut buf = Vec::new();
         reader.read_to_end(&mut buf)?;
-        T::try_from(buf).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))
+
+        let length = buf.len();
+        T::try_from(buf).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("can't convert a byte vector of length {length} to the output type"),
+            )
+        })
     }
 }

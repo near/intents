@@ -77,3 +77,44 @@ where
             .map_err(Into::into)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+    use serde_with::DisplayFromStr;
+
+    use crate::test_utils::assert_roundtrip;
+
+    use super::*;
+
+    #[rstest]
+    #[case::empty("")]
+    #[case::dot(".")]
+    #[case::test("test")]
+    #[case::hello("Hello, Near!")]
+    fn roundtrip_str(#[case] v: &str) {
+        assert_roundtrip::<Json, _>(v);
+    }
+
+    #[rstest]
+    #[case::zero(0)]
+    #[case::one(1)]
+    #[case::value(123)]
+    #[case::max(u128::MAX)]
+    fn roundtrip_u128(#[case] v: u128) {
+        assert_roundtrip::<Json<DisplayFromStr>, _>(&v);
+    }
+
+    #[rstest]
+    #[case::whitespace(b" ")]
+    #[case::newline(b"\n")]
+    #[case::nul(b"nul")]
+    #[case::mixed(b"12.\"three\"")]
+    #[case::leading_chars(b"1{}")]
+    #[case::leading_chars(b"a{}")]
+    #[case::trailing_chars(b"{}1")]
+    #[case::trailing_chars(b"{}a")]
+    fn invalid_input(#[case] bytes: &[u8]) {
+        <Json as IoDecoder<serde_json::Value>>::from_slice(bytes).unwrap_err();
+    }
+}

@@ -1,6 +1,6 @@
 //! Base58 encoding
 
-use std::{fmt::Display, io, marker::PhantomData};
+use std::{io, marker::PhantomData};
 
 use crate::{IoDecoder, IoEncoder};
 
@@ -41,7 +41,7 @@ where
 
 impl<T, ALPHABET> IoDecoder<T> for Base58<ALPHABET>
 where
-    T: TryFrom<Vec<u8>, Error: Display>,
+    T: TryFrom<Vec<u8>>, // TODO: remove display bound
     ALPHABET: Alphabet,
 {
     #[inline]
@@ -60,7 +60,13 @@ where
             .into_vec()
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
 
-        T::try_from(buf).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))
+        let length = buf.len();
+        T::try_from(buf).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("can't convert a byte vector of length {length} to the output type"),
+            )
+        })
     }
 }
 
@@ -112,4 +118,51 @@ mod sealed {
     impl Sealed for super::Monero {}
     impl Sealed for super::Ripple {}
     impl Sealed for super::Flickr {}
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use crate::test_utils::assert_roundtrip;
+
+    use super::*;
+
+    #[rstest]
+    #[case::empty(b"")]
+    #[case::dot(b".")]
+    #[case::test(b"test")]
+    #[case::hello(b"Hello, Near!")]
+    #[case::hash(&[42u8; 32])]
+    fn roundtrip_array<const N: usize>(#[case] v: &[u8; N]) {
+        assert_roundtrip::<Base58, _>(v);
+    }
+
+    #[rstest]
+    #[case::empty(b"")]
+    #[case::dot(b".")]
+    #[case::test(b"test")]
+    #[case::hello(b"Hello, Near!")]
+    #[case::hash(&[42u8; 32])]
+    fn roundtrip_slice(#[case] v: &[u8]) {
+        assert_roundtrip::<Base58, _>(v);
+    }
+
+    #[rstest]
+    #[case::empty("")]
+    #[case::dot(".")]
+    #[case::test("test")]
+    #[case::hello("Hello, Near!")]
+    fn roundtrip_str(#[case] v: &str) {
+        assert_roundtrip::<Base58, _>(v);
+    }
+
+    #[rstest]
+    #[case::whitespace(b" ")]
+    #[case::newline(b"\n")]
+    #[case::leading_whitespace(b" 29d2S7vB453rNYFdR5Ycwt7y9haRT5fwVwL9zTmBhfV2")]
+    #[case::trailing_whitespace(b"29d2S7vB453rNYFdR5Ycwt7y9haRT5fwVwL9zTmBhfV2 ")]
+    fn invalid_input(#[case] bytes: &[u8]) {
+        <Base58 as IoDecoder<Vec<u8>>>::from_slice(bytes).unwrap_err();
+    }
 }

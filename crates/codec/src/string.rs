@@ -58,3 +58,39 @@ where
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use crate::test_utils::assert_roundtrip;
+
+    use super::*;
+
+    #[rstest]
+    #[case::empty("")]
+    #[case::dot(".")]
+    #[case::test("test")]
+    #[case::hello("Hello, Near!")]
+    fn roundtrip_str(#[case] v: &str) {
+        assert_roundtrip::<DisplayFromStr, _>(v);
+    }
+
+    #[rstest]
+    #[case::zero(0)]
+    #[case::one(1)]
+    #[case::value(123)]
+    #[case::max(u128::MAX)]
+    fn roundtrip_u128(#[case] v: u128) {
+        assert_roundtrip::<DisplayFromStr, _>(&v);
+    }
+
+    #[rstest]
+    #[case::whitespace(b" ")]
+    #[case::newline(b"\n")]
+    #[case::leading_whitespace(b" 123")]
+    #[case::trailing_whitespace(b"123 ")]
+    fn invalid_input(#[case] bytes: &[u8]) {
+        <DisplayFromStr as IoDecoder<u128>>::from_slice(bytes).unwrap_err();
+    }
+}

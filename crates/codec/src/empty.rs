@@ -14,7 +14,7 @@ use crate::{IoDecoder, IoEncoder};
 /// let encoded = Empty::to_vec(&()).unwrap();
 /// assert!(encoded.is_empty());
 ///
-/// let _ = Empty::from_slice(b"").unwrap();
+/// let () = Empty::from_slice(b"").unwrap();
 ///
 /// Empty::from_slice(b"not empty").expect_err("input must be empty");
 /// ```

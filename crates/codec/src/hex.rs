@@ -1,6 +1,6 @@
 //! Hex encoding
 
-use std::{fmt::Display, io};
+use std::io;
 
 use crate::{IoDecoder, IoEncoder};
 
@@ -48,7 +48,7 @@ where
 
 impl<T> IoDecoder<T> for Hex
 where
-    T: TryFrom<Vec<u8>, Error: Display>,
+    T: TryFrom<Vec<u8>>,
 {
     #[inline]
     fn from_reader<R>(mut reader: R) -> io::Result<T>
@@ -65,6 +65,60 @@ where
         // TODO: use `const-hex` or `faster-hex` crates instead?
         let buf =
             hex::decode(bytes).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
-        T::try_from(buf).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))
+
+        let length = buf.len();
+        T::try_from(buf).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("can't convert a byte vector of length {length} to the output type"),
+            )
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use crate::test_utils::assert_roundtrip;
+
+    use super::*;
+
+    #[rstest]
+    #[case::empty(b"")]
+    #[case::dot(b".")]
+    #[case::test(b"test")]
+    #[case::hello(b"Hello, Near!")]
+    #[case::hash(&[42u8; 32])]
+    fn roundtrip_array<const N: usize>(#[case] v: &[u8; N]) {
+        assert_roundtrip::<Hex, _>(v);
+    }
+
+    #[rstest]
+    #[case::empty(b"")]
+    #[case::dot(b".")]
+    #[case::test(b"test")]
+    #[case::hello(b"Hello, Near!")]
+    #[case::hash(&[42u8; 32])]
+    fn roundtrip_slice(#[case] v: &[u8]) {
+        assert_roundtrip::<Hex, _>(v);
+    }
+
+    #[rstest]
+    #[case::empty("")]
+    #[case::dot(".")]
+    #[case::test("test")]
+    #[case::hello("Hello, Near!")]
+    fn roundtrip_str(#[case] v: &str) {
+        assert_roundtrip::<Hex, _>(v);
+    }
+
+    #[rstest]
+    #[case::whitespace(b" ")]
+    #[case::newline(b"\n")]
+    #[case::leading_whitespace(b" 48656c6c6f2c204e65617221")]
+    #[case::trailing_whitespace(b"48656c6c6f2c204e65617221 ")]
+    fn invalid_input(#[case] bytes: &[u8]) {
+        <Hex as IoDecoder<Vec<u8>>>::from_slice(bytes).unwrap_err();
     }
 }

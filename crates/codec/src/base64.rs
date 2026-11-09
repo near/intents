@@ -1,7 +1,6 @@
 //! Base64 encoding
 
 use std::{
-    fmt::Display,
     io::{self, Read, Write},
     marker::PhantomData,
 };
@@ -81,7 +80,7 @@ where
 
 impl<T, ALPHABET, PADDING> IoDecoder<T> for Base64<ALPHABET, PADDING>
 where
-    T: TryFrom<Vec<u8>, Error: Display>,
+    T: TryFrom<Vec<u8>>,
     ALPHABET: Alphabet,
     PADDING: Padding,
 {
@@ -91,11 +90,19 @@ where
         R: io::Read,
     {
         let engine = Self::engine();
+        // TODO: add tests for non-padded?...
         let mut reader = DecoderReader::new(reader, &engine);
 
         let mut buf = Vec::new();
         reader.read_to_end(&mut buf)?;
-        T::try_from(buf).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))
+
+        let length = buf.len();
+        T::try_from(buf).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("can't convert a byte vector of length {length} to the output type"),
+            )
+        })
     }
 
     #[inline]
@@ -104,7 +111,13 @@ where
             .decode(bytes)
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
 
-        T::try_from(buf).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))
+        let length = buf.len();
+        T::try_from(buf).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("can't convert a byte vector of length {length} to the output type"),
+            )
+        })
     }
 }
 
@@ -182,4 +195,51 @@ mod sealed {
     impl Sealed for super::BinHex {}
     impl Sealed for super::Padded {}
     impl Sealed for super::Unpadded {}
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use crate::test_utils::assert_roundtrip;
+
+    use super::*;
+
+    #[rstest]
+    #[case::empty(b"")]
+    #[case::dot(b".")]
+    #[case::test(b"test")]
+    #[case::hello(b"Hello, Near!")]
+    #[case::hash(&[42u8; 32])]
+    fn roundtrip_array<const N: usize>(#[case] v: &[u8; N]) {
+        assert_roundtrip::<Base64, _>(v);
+    }
+
+    #[rstest]
+    #[case::empty(b"")]
+    #[case::dot(b".")]
+    #[case::test(b"test")]
+    #[case::hello(b"Hello, Near!")]
+    #[case::hash(&[42u8; 32])]
+    fn roundtrip_slice(#[case] v: &[u8]) {
+        assert_roundtrip::<Base64, _>(v);
+    }
+
+    #[rstest]
+    #[case::empty("")]
+    #[case::dot(".")]
+    #[case::test("test")]
+    #[case::hello("Hello, Near!")]
+    fn roundtrip_str(#[case] v: &str) {
+        assert_roundtrip::<Base64, _>(v);
+    }
+
+    #[rstest]
+    #[case::whitespace(b" ")]
+    #[case::newline(b"\n")]
+    #[case::leading_whitespace(b" AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")]
+    #[case::trailing_whitespace(b"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= ")]
+    fn invalid_input(#[case] bytes: &[u8]) {
+        <Base64 as IoDecoder<Vec<u8>>>::from_slice(bytes).unwrap_err();
+    }
 }
