@@ -48,7 +48,7 @@ where
     where
         R: io::Read,
     {
-        // TODO: optimize to allocation?
+        // TODO: optimize to avoid this allocation?
         let mut buf = Vec::new();
         reader.read_to_end(&mut buf)?;
         Self::from_slice(buf)
@@ -58,7 +58,6 @@ where
     fn from_slice(bytes: impl AsRef<[u8]>) -> io::Result<T> {
         let buf = bs58::decode(bytes)
             .into_vec()
-            // TODO: add context?
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
 
         T::try_from(buf).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))
