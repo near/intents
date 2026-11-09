@@ -61,7 +61,7 @@ pub struct Same;
 
 impl<T> BorshSerializeAs<T> for Same
 where
-    T: BorshSerialize,
+    T: BorshSerialize + ?Sized,
 {
     #[inline]
     fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>
@@ -119,6 +119,7 @@ impl<T, As: ?Sized> From<T> for AsWrap<T, As> {
     }
 }
 
+#[inline]
 pub fn to_vec_as<T, As>(source: &T) -> io::Result<Vec<u8>>
 where
     As: BorshSerializeAs<T> + ?Sized,
@@ -156,10 +157,12 @@ const _: () = {
         T: borsh::BorshSchema,
         As: ?Sized,
     {
+        #[inline]
         fn declaration() -> Declaration {
             T::declaration()
         }
 
+        #[inline]
         fn add_definitions_recursively(definitions: &mut BTreeMap<Declaration, Definition>) {
             T::add_definitions_recursively(definitions);
         }
@@ -416,7 +419,7 @@ impl_borsh_serde_as_for_tuple!(0:T0 as As0,1:T1 as As1,2:T2 as As2,3:T3 as As3,4
 impl_borsh_serde_as_for_tuple!(0:T0 as As0,1:T1 as As1,2:T2 as As2,3:T3 as As3,4:T4 as As4,5:T5 as As5,6:T6 as As6,7:T7 as As7,8:T8 as As8);
 impl_borsh_serde_as_for_tuple!(0:T0 as As0,1:T1 as As1,2:T2 as As2,3:T3 as As3,4:T4 as As4,5:T5 as As5,6:T6 as As6,7:T7 as As7,8:T8 as As8,9:T9 as As9);
 
-pub struct FromInto<T: ?Sized>(PhantomData<T>);
+pub struct FromInto<T>(PhantomData<T>);
 
 impl<T, U> BorshSerializeAs<T> for FromInto<U>
 where
@@ -445,10 +448,11 @@ where
     }
 }
 
-pub struct FromIntoRef<T: ?Sized>(PhantomData<T>);
+pub struct FromIntoRef<T>(PhantomData<T>);
 
 impl<T, U> BorshSerializeAs<T> for FromIntoRef<U>
 where
+    T: ?Sized,
     for<'a> &'a T: Into<U>,
     U: BorshSerialize,
 {
@@ -474,7 +478,7 @@ where
     }
 }
 
-pub struct TryFromInto<T: ?Sized>(PhantomData<T>);
+pub struct TryFromInto<T>(PhantomData<T>);
 
 impl<T, U> BorshSerializeAs<T> for TryFromInto<U>
 where
@@ -535,7 +539,7 @@ pub struct Remainder;
 
 impl<T> BorshSerializeAs<T> for Remainder
 where
-    T: AsRef<[u8]>,
+    T: AsRef<[u8]> + ?Sized,
 {
     #[inline]
     fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>

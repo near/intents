@@ -11,6 +11,7 @@ where
     I: TryFrom<u64> + BorshSerialize,
     I::Error: Display,
 {
+    #[inline]
     fn serialize_as<W>(source: &Duration, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -26,6 +27,7 @@ where
     I: TryInto<u64> + BorshDeserialize,
     I::Error: Display,
 {
+    #[inline]
     fn deserialize_as<R>(reader: &mut R) -> io::Result<Duration>
     where
         R: io::Read,
@@ -44,6 +46,7 @@ where
     I: TryFrom<u128> + BorshSerialize,
     I::Error: Display,
 {
+    #[inline]
     fn serialize_as<W>(source: &Duration, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -59,6 +62,7 @@ where
     I: TryInto<u64> + BorshDeserialize,
     I::Error: Display,
 {
+    #[inline]
     fn deserialize_as<R>(reader: &mut R) -> io::Result<Duration>
     where
         R: io::Read,
@@ -77,6 +81,7 @@ where
     I: TryFrom<u128> + BorshSerialize,
     I::Error: Display,
 {
+    #[inline]
     fn serialize_as<W>(source: &Duration, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -92,6 +97,7 @@ where
     I: TryInto<u64> + BorshDeserialize,
     I::Error: Display,
 {
+    #[inline]
     fn deserialize_as<R>(reader: &mut R) -> io::Result<Duration>
     where
         R: io::Read,
@@ -110,6 +116,7 @@ where
     I: TryFrom<u128> + BorshSerialize,
     I::Error: Display,
 {
+    #[inline]
     fn serialize_as<W>(source: &Duration, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -125,6 +132,7 @@ where
     I: TryInto<u64> + BorshDeserialize,
     I::Error: Display,
 {
+    #[inline]
     fn deserialize_as<R>(reader: &mut R) -> io::Result<Duration>
     where
         R: io::Read,

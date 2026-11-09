@@ -1,0 +1,60 @@
+use std::io::{self, Error, ErrorKind};
+
+use crate::{IoDecoder, IoEncoder};
+
+/// A codec for empty data.
+///
+/// Encoding produces no bytes, while decoding expects the input to be empty.
+///
+/// # Examples
+///
+/// ```rust
+/// use defuse_codec::{IoDecoder, IoEncoder, Empty};
+///
+/// let encoded = Empty::to_vec(&()).unwrap();
+/// assert!(encoded.is_empty());
+///
+/// let _ = Empty::from_slice(b"").unwrap();
+///
+/// Empty::from_slice(b"not empty").expect_err("input must be empty");
+/// ```
+pub struct Empty;
+
+impl IoEncoder<()> for Empty {
+    #[inline]
+    fn to_writer<W>(_writer: W, _value: &()) -> io::Result<()>
+    where
+        W: io::Write,
+    {
+        Ok(())
+    }
+}
+
+impl IoDecoder<()> for Empty {
+    #[inline]
+    fn from_reader<R>(mut reader: R) -> io::Result<()>
+    where
+        R: io::Read,
+    {
+        match reader.read_exact(&mut [0u8; 1]) {
+            Ok(_) => Err(Error::new(ErrorKind::InvalidData, ERR_NOT_EMPTY)),
+            Err(err) => {
+                if err.kind() == ErrorKind::UnexpectedEof {
+                    return Ok(());
+                }
+                Err(err)
+            }
+        }
+    }
+
+    #[inline]
+    fn from_slice(bytes: impl AsRef<[u8]>) -> io::Result<()> {
+        if !bytes.as_ref().is_empty() {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, ERR_NOT_EMPTY));
+        }
+
+        Ok(())
+    }
+}
+
+const ERR_NOT_EMPTY: &str = "expected input to be empty";
