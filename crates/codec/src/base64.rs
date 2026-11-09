@@ -8,7 +8,7 @@ use std::{
 use base64::{
     Engine,
     engine::{
-        GeneralPurpose, GeneralPurposeConfig,
+        Config, GeneralPurpose, GeneralPurposeConfig,
         general_purpose::{NO_PAD, PAD},
     },
     read::DecoderReader,
@@ -72,9 +72,12 @@ where
 
     #[inline]
     fn encoded_len(value: &T) -> io::Result<usize> {
-        base64::encoded_len(value.as_ref().len(), true)
-            .ok_or(io::ErrorKind::OutOfMemory)
-            .map_err(Into::into)
+        base64::encoded_len(
+            value.as_ref().len(),
+            Self::engine().config().encode_padding(),
+        )
+        .ok_or(io::ErrorKind::OutOfMemory)
+        .map_err(Into::into)
     }
 }
 
