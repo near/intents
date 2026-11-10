@@ -40,10 +40,7 @@ where
     ALPHABET: Alphabet,
     PADDING: Padding,
 {
-    #[inline]
-    const fn engine() -> GeneralPurpose {
-        GeneralPurpose::new(&ALPHABET::CHARSET, PADDING::CONFIG)
-    }
+    const ENGINE: GeneralPurpose = GeneralPurpose::new(&ALPHABET::CHARSET, PADDING::CONFIG);
 }
 
 impl<T, ALPHABET, PADDING> IoEncoder<T> for Base64<ALPHABET, PADDING>
@@ -57,8 +54,7 @@ where
     where
         W: io::Write,
     {
-        let engine = Self::engine();
-        let mut writer = EncoderWriter::new(writer, &engine);
+        let mut writer = EncoderWriter::new(writer, &Self::ENGINE);
         writer.write_all(value.as_ref())?;
         writer.finish().map(|_| ())
     }
@@ -72,12 +68,9 @@ where
 
     #[inline]
     fn encoded_len(value: &T) -> io::Result<usize> {
-        base64::encoded_len(
-            value.as_ref().len(),
-            Self::engine().config().encode_padding(),
-        )
-        .ok_or(io::ErrorKind::OutOfMemory)
-        .map_err(Into::into)
+        base64::encoded_len(value.as_ref().len(), Self::ENGINE.config().encode_padding())
+            .ok_or(io::ErrorKind::OutOfMemory)
+            .map_err(Into::into)
     }
 }
 
@@ -92,8 +85,7 @@ where
     where
         R: io::Read,
     {
-        let engine = Self::engine();
-        let mut reader = DecoderReader::new(reader, &engine);
+        let mut reader = DecoderReader::new(reader, &Self::ENGINE);
 
         let mut buf = Vec::new();
         reader.read_to_end(&mut buf)?;
@@ -109,7 +101,7 @@ where
 
     #[inline]
     fn from_slice(bytes: impl AsRef<[u8]>) -> io::Result<T> {
-        let buf = Self::engine()
+        let buf = Self::ENGINE
             .decode(bytes)
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
 
