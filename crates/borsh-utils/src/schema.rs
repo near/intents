@@ -13,10 +13,12 @@ macro_rules! impl_borsh_schema_as {
         where
             I: borsh::BorshSchema,
         {
+            #[inline]
             fn declaration_as() -> borsh::schema::Declaration {
                 <I as borsh::BorshSchema>::declaration()
             }
 
+            #[inline]
             fn add_definitions_recursively_as(
                 definitions: &mut std::collections::BTreeMap<
                     borsh::schema::Declaration,
@@ -31,6 +33,7 @@ macro_rules! impl_borsh_schema_as {
 pub(crate) use impl_borsh_schema_as;
 
 impl<T: ?Sized> As<T> {
+    #[inline]
     pub fn declaration<U: ?Sized>() -> Declaration
     where
         T: BorshSchemaAs<U>,
@@ -38,6 +41,7 @@ impl<T: ?Sized> As<T> {
         T::declaration_as()
     }
 
+    #[inline]
     pub fn add_definitions_recursively<U: ?Sized>(
         definitions: &mut BTreeMap<Declaration, Definition>,
     ) where

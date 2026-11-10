@@ -20,6 +20,7 @@ members = [
   "crates/bitmap",
   "crates/borsh-utils",
   "crates/cli-utils",
+  "crates/codec",
   "crates/crypto",
   "crates/digest",
   "crates/io-utils",
@@ -90,6 +91,7 @@ defuse-wallet-webauthn-p256.path = "contracts/wallet/signatures/webauthn/p256"
 defuse-bitmap.path = "crates/bitmap"
 defuse-borsh-utils.path = "crates/borsh-utils"
 defuse-cli-utils = { path = "crates/cli-utils", default-features = false }
+defuse-codec.path = "crates/codec"
 defuse-crypto = { path = "crates/crypto", default-features = false }
 defuse-digest.path = "crates/digest"
 defuse-io-utils.path = "crates/io-utils"
@@ -165,6 +167,7 @@ curve25519-dalek = "5.0.0"
 derive_more = "2.0"
 digest = { version = "0.11", default-features = false }
 digest-io = "0.1.0"
+document-features = "0.2"
 ed25519-dalek = { version = "3.0.0", default-features = false }
 futures = "0.3"
 futures-util = "0.3"
