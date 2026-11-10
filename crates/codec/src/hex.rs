@@ -28,11 +28,16 @@ where
     T: AsRef<[u8]> + ?Sized,
 {
     #[inline]
-    fn to_writer<W>(mut writer: W, value: &T) -> io::Result<()>
+    fn to_writer<W>(writer: W, value: &T) -> io::Result<()>
     where
         W: io::Write,
     {
-        writer.write_all(hex::encode(value).as_bytes())
+        AsBytes::to_writer(writer, &hex::encode(value))
+    }
+
+    #[inline]
+    fn to_vec(value: &T) -> io::Result<Vec<u8>> {
+        Ok(hex::encode(value).into_bytes())
     }
 
     #[inline]

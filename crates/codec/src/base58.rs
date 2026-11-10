@@ -2,6 +2,8 @@
 
 use std::{io, marker::PhantomData};
 
+use bs58::{decode::DecodeBuilder, encode::EncodeBuilder};
+
 use crate::{AsBytes, IoDecoder, IoEncoder};
 
 /// Base58 codec.
@@ -26,16 +28,19 @@ where
     ALPHABET: Alphabet,
 {
     #[inline]
-    fn to_writer<W>(mut writer: W, value: &T) -> io::Result<()>
+    fn to_writer<W>(writer: W, value: &T) -> io::Result<()>
     where
         W: io::Write,
     {
-        writer.write_all(&::bs58::encode::EncodeBuilder::new(value, ALPHABET::CHARSET).into_vec())
+        AsBytes::to_writer(
+            writer,
+            &EncodeBuilder::new(value, ALPHABET::CHARSET).into_vec(),
+        )
     }
 
     #[inline]
     fn to_vec(value: &T) -> io::Result<Vec<u8>> {
-        Ok(::bs58::encode::EncodeBuilder::new(value, ALPHABET::CHARSET).into_vec())
+        Ok(EncodeBuilder::new(value, ALPHABET::CHARSET).into_vec())
     }
 }
 
@@ -56,7 +61,7 @@ where
 
     #[inline]
     fn from_slice(bytes: impl AsRef<[u8]>) -> io::Result<T> {
-        let buf = ::bs58::decode::DecodeBuilder::new(bytes, ALPHABET::CHARSET)
+        let buf = DecodeBuilder::new(bytes, ALPHABET::CHARSET)
             .into_vec()
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
 
