@@ -11,7 +11,7 @@ pub struct State {
 }
 
 impl BorshDeserializeAs<State> for VersionedState<'_> {
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<State>
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<State>
     where
         R: io::Read,
     {

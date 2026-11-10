@@ -28,7 +28,7 @@ where
     I::Error: Display,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<Duration>
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<Duration>
     where
         R: io::Read,
     {
@@ -63,7 +63,7 @@ where
     I::Error: Display,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<Duration>
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<Duration>
     where
         R: io::Read,
     {
@@ -98,7 +98,7 @@ where
     I::Error: Display,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<Duration>
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<Duration>
     where
         R: io::Read,
     {
@@ -133,7 +133,7 @@ where
     I::Error: Display,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<Duration>
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<Duration>
     where
         R: io::Read,
     {

@@ -26,6 +26,8 @@ pub use self::{bytes::*, empty::*, string::*};
 
 use std::io;
 
+const ERR_NOT_EMPTY: &str = "leftover bytes"; // TODO
+
 /// A **data format** for encoding values of type `T`.
 pub trait IoEncoder<T: ?Sized> {
     /// Encode a value directly to writer.
@@ -105,6 +107,7 @@ pub trait IoEncoder<T: ?Sized> {
 /// Implementations MUST validate the **entire** input according to the codec's
 /// rules and reject unexpected trailing data.
 pub trait IoDecoder<T> {
+    // TODO: On success, reader SHOULD ...?
     /// Decode a value from the complete input supplied by `reader`.
     ///
     /// On success, reader MUST be consumed until EOF. Trailing data is permitted
@@ -159,6 +162,7 @@ pub trait IoDecoder<T> {
     /// assert_eq!(value, 12);
     /// ```
     #[inline]
+    // TODO: &mut &[u8]
     fn from_slice(bytes: impl AsRef<[u8]>) -> io::Result<T> {
         Self::from_reader(bytes.as_ref())
     }

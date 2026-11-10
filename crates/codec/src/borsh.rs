@@ -4,7 +4,7 @@ use std::{io, marker::PhantomData};
 
 use defuse_borsh_utils::{AsWrap, BorshDeserializeAs, BorshSerializeAs, Same};
 
-use crate::{IoDecoder, IoEncoder};
+use crate::{ERR_NOT_EMPTY, IoDecoder, IoEncoder};
 
 /// A codec for [borsh].
 ///
@@ -50,12 +50,23 @@ where
     where
         R: io::Read,
     {
-        borsh::from_reader(&mut reader).map(AsWrap::<T, As>::into_inner)
+        let value = As::deserialize_reader_as(&mut reader)?;
+        #[allow(clippy::unbuffered_bytes)]
+        match reader.bytes().next() {
+            None => Ok(value),
+            Some(Ok(_)) => Err(io::Error::new(io::ErrorKind::InvalidData, ERR_NOT_EMPTY)),
+            Some(Err(err)) => Err(err),
+        }
     }
 
     #[inline]
     fn from_slice(bytes: impl AsRef<[u8]>) -> io::Result<T> {
-        borsh::from_slice(bytes.as_ref()).map(AsWrap::<T, As>::into_inner)
+        let mut bytes = bytes.as_ref();
+        let value = As::deserialize_as(&mut bytes)?;
+        if !bytes.is_empty() {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, ERR_NOT_EMPTY));
+        }
+        Ok(value)
     }
 }
 

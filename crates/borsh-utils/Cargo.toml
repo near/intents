@@ -8,8 +8,6 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-io-utils.workspace = true
-
 array-util.workspace = true
 borsh.workspace = true
 impl-tools.workspace = true

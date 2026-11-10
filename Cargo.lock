@@ -1196,7 +1196,6 @@ version = "0.1.0"
 dependencies = [
  "array-util",
  "borsh",
- "defuse-io-utils",
  "impl-tools 0.12.0",
 ]
 

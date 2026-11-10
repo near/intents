@@ -2,14 +2,13 @@
 
 use std::{
     fmt::{self, Display},
-    io::{self, Read},
+    io,
     marker::PhantomData,
     rc::Rc,
     sync::Arc,
 };
 
 use borsh::{self, BorshDeserialize, BorshSerialize};
-use defuse_io_utils::ReadExt;
 use impl_tools::autoimpl;
 
 #[cfg(feature = "schema")]
@@ -27,7 +26,12 @@ pub trait BorshSerializeAs<T: ?Sized> {
 }
 
 pub trait BorshDeserializeAs<T> {
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<T>
+    #[inline]
+    fn deserialize_as(buf: &mut &[u8]) -> io::Result<T> {
+        Self::deserialize_reader_as(buf)
+    }
+
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<T>
     where
         R: io::Read;
 }
@@ -51,7 +55,7 @@ impl<T: ?Sized> As<T> {
         T: BorshDeserializeAs<U>,
         R: io::Read,
     {
-        T::deserialize_as(reader)
+        T::deserialize_reader_as(reader)
     }
 }
 
@@ -77,7 +81,12 @@ where
     T: BorshDeserialize,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<T>
+    fn deserialize_as(buf: &mut &[u8]) -> io::Result<T> {
+        T::deserialize(buf)
+    }
+
+    #[inline]
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<T>
     where
         R: io::Read,
     {
@@ -132,8 +141,13 @@ where
     As: BorshDeserializeAs<T> + ?Sized,
 {
     #[inline]
+    fn deserialize(buf: &mut &[u8]) -> io::Result<Self> {
+        As::deserialize_as(buf).map(Self::new)
+    }
+
+    #[inline]
     fn deserialize_reader<R: io::Read>(reader: &mut R) -> io::Result<Self> {
-        As::deserialize_as(reader).map(Self::new)
+        As::deserialize_reader_as(reader).map(Self::new)
     }
 }
 
@@ -240,7 +254,12 @@ where
     As: BorshDeserializeAs<T>,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<Option<T>>
+    fn deserialize_as(buf: &mut &[u8]) -> io::Result<Option<T>> {
+        Ok(Option::<AsWrap<T, As>>::deserialize(buf)?.map(AsWrap::into_inner))
+    }
+
+    #[inline]
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<Option<T>>
     where
         R: io::Read,
     {
@@ -266,7 +285,14 @@ where
     As: BorshDeserializeAs<T> + ?Sized,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<Box<T>>
+    fn deserialize_as(buf: &mut &[u8]) -> io::Result<Box<T>> {
+        AsWrap::<T, As>::deserialize(buf)
+            .map(AsWrap::into_inner)
+            .map(Box::new)
+    }
+
+    #[inline]
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<Box<T>>
     where
         R: io::Read,
     {
@@ -294,7 +320,14 @@ where
     As: BorshDeserializeAs<T> + ?Sized,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<Rc<T>>
+    fn deserialize_as(buf: &mut &[u8]) -> io::Result<Rc<T>> {
+        AsWrap::<T, As>::deserialize(buf)
+            .map(AsWrap::into_inner)
+            .map(Rc::new)
+    }
+
+    #[inline]
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<Rc<T>>
     where
         R: io::Read,
     {
@@ -322,7 +355,14 @@ where
     As: BorshDeserializeAs<T> + ?Sized,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<Arc<T>>
+    fn deserialize_as(buf: &mut &[u8]) -> io::Result<Arc<T>> {
+        AsWrap::<T, As>::deserialize(buf)
+            .map(AsWrap::into_inner)
+            .map(Arc::new)
+    }
+
+    #[inline]
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<Arc<T>>
     where
         R: io::Read,
     {
@@ -363,12 +403,17 @@ where
     As: BorshDeserializeAs<T>,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<[T; N]>
+    fn deserialize_as(buf: &mut &[u8]) -> io::Result<[T; N]> {
+        array_util::try_from_fn(|_i| As::deserialize_as(buf))
+    }
+
+    #[inline]
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<[T; N]>
     where
         R: io::Read,
     {
         // TODO: replace with [`core::array::try_from_fn`](https://github.com/rust-lang/rust/issues/89379) when stabilized
-        array_util::try_from_fn(|_i| As::deserialize_as(reader))
+        array_util::try_from_fn(|_i| As::deserialize_reader_as(reader))
     }
 }
 
@@ -397,12 +442,19 @@ macro_rules! impl_borsh_serde_as_for_tuple {
         )+
         {
             #[inline]
-            fn deserialize_as<R>(reader: &mut R) -> io::Result<($($t,)+)>
+            fn deserialize_as(buf: &mut &[u8]) -> io::Result<($($t,)+)> {
+                Ok(($(
+                    $a::deserialize_as(buf)?,
+                )+))
+            }
+
+            #[inline]
+            fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<($($t,)+)>
             where
                 R: io::Read,
             {
                 Ok(($(
-                    $a::deserialize_as(reader)?,
+                    $a::deserialize_reader_as(reader)?,
                 )+))
             }
         }
@@ -440,7 +492,12 @@ where
     U: BorshDeserialize + Into<T>,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<T>
+    fn deserialize_as(buf: &mut &[u8]) -> io::Result<T> {
+        U::deserialize(buf).map(Into::into)
+    }
+
+    #[inline]
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<T>
     where
         R: io::Read,
     {
@@ -470,7 +527,12 @@ where
     U: BorshDeserialize + Into<T>,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<T>
+    fn deserialize_as(buf: &mut &[u8]) -> io::Result<T> {
+        U::deserialize(buf).map(Into::into)
+    }
+
+    #[inline]
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<T>
     where
         R: io::Read,
     {
@@ -505,7 +567,15 @@ where
     <U as TryInto<T>>::Error: Display,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<T>
+    fn deserialize_as(buf: &mut &[u8]) -> io::Result<T> {
+        U::deserialize(buf).and_then(|v| {
+            v.try_into()
+                .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))
+        })
+    }
+
+    #[inline]
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<T>
     where
         R: io::Read,
     {
@@ -515,8 +585,6 @@ where
         })
     }
 }
-
-pub struct Or<T1: ?Sized, T2: ?Sized>(PhantomData<T1>, PhantomData<T2>);
 
 /// Reads/writes all remaining bytes without a length prefix.
 ///
@@ -556,7 +624,7 @@ where
     T::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<T>
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<T>
     where
         R: io::Read,
     {
@@ -564,22 +632,6 @@ where
         reader.read_to_end(&mut buf)?;
         buf.try_into()
             .map_err(|err: T::Error| io::Error::new(io::ErrorKind::InvalidData, err))
-    }
-}
-
-impl<T, As1, As2> BorshDeserializeAs<T> for Or<As1, As2>
-where
-    As1: BorshDeserializeAs<T> + ?Sized,
-    As2: BorshDeserializeAs<T> + ?Sized,
-{
-    #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<T>
-    where
-        R: io::Read,
-    {
-        let mut buf = Vec::new();
-        As1::deserialize_as(&mut reader.tee(&mut buf))
-            .or_else(|_| As2::deserialize_as(&mut buf.chain(reader)))
     }
 }
 

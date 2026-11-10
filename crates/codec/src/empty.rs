@@ -1,6 +1,6 @@
 use std::io::{self, Error, ErrorKind};
 
-use crate::{IoDecoder, IoEncoder};
+use crate::{ERR_NOT_EMPTY, IoDecoder, IoEncoder};
 
 /// A codec for empty data.
 ///
@@ -58,5 +58,3 @@ impl IoDecoder<()> for Empty {
         Ok(())
     }
 }
-
-const ERR_NOT_EMPTY: &str = "expected input to be empty";
