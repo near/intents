@@ -9,7 +9,6 @@ repository.workspace = true
 
 [dependencies]
 base64 = { workspace = true, optional = true }
-borsh = { workspace = true, optional = true }
 bs58 = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
 hex = { workspace = true, optional = true }
@@ -28,7 +27,7 @@ base58 = ["dep:bs58"]
 base64 = ["dep:base64"]
 
 ## Enables [`borsh`] support.
-borsh = ["dep:borsh", "dep:defuse-borsh-utils"]
+borsh = ["dep:defuse-borsh-utils"]
 
 ## Enables [`hex`] support.
 hex = ["dep:hex"]

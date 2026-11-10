@@ -2,11 +2,11 @@
 
 use std::{io, marker::PhantomData};
 
-use defuse_borsh_utils::{AsWrap, BorshDeserializeAs, BorshSerializeAs, Same};
+use defuse_borsh_utils::{BorshDeserializeAs, BorshSerializeAs, Same};
 
 use crate::{ERR_TRAILING_BYTES, IoDecoder, IoEncoder};
 
-/// A codec for [borsh].
+/// A codec for borsh.
 ///
 /// # Example
 ///
@@ -28,16 +28,18 @@ where
     As: BorshSerializeAs<T> + ?Sized,
 {
     #[inline]
-    fn to_writer<W>(writer: W, value: &T) -> io::Result<()>
+    fn to_writer<W>(mut writer: W, value: &T) -> io::Result<()>
     where
         W: io::Write,
     {
-        borsh::to_writer(writer, &AsWrap::<&T, &As>::new(value))
+        As::serialize_as(value, &mut writer)
     }
 
     #[inline]
     fn to_vec(value: &T) -> io::Result<Vec<u8>> {
-        borsh::to_vec(&AsWrap::<&T, &As>::new(value))
+        let mut buf = Vec::with_capacity(1024);
+        As::serialize_as(value, &mut buf)?;
+        Ok(buf)
     }
 }
 

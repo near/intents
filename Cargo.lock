@@ -1217,7 +1217,6 @@ name = "defuse-codec"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
- "borsh",
  "bs58 0.5.1",
  "defuse-borsh-utils",
  "defuse-codec",
