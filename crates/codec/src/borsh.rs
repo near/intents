@@ -34,13 +34,6 @@ where
     {
         As::serialize_as(value, &mut writer)
     }
-
-    #[inline]
-    fn to_vec(value: &T) -> io::Result<Vec<u8>> {
-        let mut buf = Vec::with_capacity(1024);
-        As::serialize_as(value, &mut buf)?;
-        Ok(buf)
-    }
 }
 
 impl<T, As> IoDecoder<T> for Borsh<As>
