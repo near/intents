@@ -26,7 +26,7 @@ pub use self::{bytes::*, empty::*, string::*};
 
 use std::io;
 
-const ERR_NOT_EMPTY: &str = "leftover bytes"; // TODO
+const ERR_TRAILING_BYTES: &str = "unexpected trailing bytes";
 
 /// A **data format** for encoding values of type `T`.
 pub trait IoEncoder<T: ?Sized> {
@@ -104,14 +104,13 @@ pub trait IoEncoder<T: ?Sized> {
 /// A **data format** for decoding values of type `T`.
 ///
 /// Each decoding method treats its input as a complete encoding of one value.
-/// Implementations MUST validate the **entire** input according to the codec's
-/// rules and reject unexpected trailing data.
+/// Implementations SHOULD validate the **entire** input according to the
+/// codec's rules and reject unexpected trailing data.
 pub trait IoDecoder<T> {
-    // TODO: On success, reader SHOULD ...?
     /// Decode a value from the complete input supplied by `reader`.
     ///
-    /// On success, reader MUST be consumed until EOF. Trailing data is permitted
-    /// only when codec's rules allow it, and MUST also be consumed.
+    /// On success, reader SHOULD be consumed until EOF. Trailing data is permitted
+    /// only when codec's rules allow it, and SHOULD also be consumed.
     ///
     /// This method MAY block waiting for EOF. For persistent streams, supply a
     /// reader bounded to one message.
@@ -131,9 +130,10 @@ pub trait IoDecoder<T> {
     /// ```rust
     /// use defuse_codec::{IoDecoder, borsh::Borsh};
     ///
-    /// let buf: &[u8] = &[12, 0, 0, 0, 0, 0, 0, 0];
-    /// let value: u64 = <Borsh>::from_reader(buf).unwrap();
-    /// assert_eq!(value, 12);
+    /// let value: u16 = <Borsh>::from_reader([1, 0].as_slice()).unwrap();
+    /// assert_eq!(value, 1);
+    ///
+    /// <Borsh as IoDecoder<u16>>::from_reader([1, 0, 99].as_slice()).expect_err("trailing bytes");
     /// ```
     fn from_reader<R>(reader: R) -> io::Result<T>
     where
@@ -158,11 +158,12 @@ pub trait IoDecoder<T> {
     /// ```rust
     /// use defuse_codec::{IoDecoder, borsh::Borsh};
     ///
-    /// let value: u64 = <Borsh>::from_slice([12, 0, 0, 0, 0, 0, 0, 0]).unwrap();
-    /// assert_eq!(value, 12);
+    /// let value: u16 = <Borsh>::from_slice([1, 0]).unwrap();
+    /// assert_eq!(value, 1);
+    ///
+    /// <Borsh as IoDecoder<u16>>::from_slice([1, 0, 99]).expect_err("input must not contain trailing bytes");
     /// ```
     #[inline]
-    // TODO: &mut &[u8]
     fn from_slice(bytes: impl AsRef<[u8]>) -> io::Result<T> {
         Self::from_reader(bytes.as_ref())
     }
@@ -182,9 +183,16 @@ pub trait IoDecoder<T> {
     /// # Example
     ///
     /// ```rust
-    /// use defuse_codec::{IoDecoder, DisplayFromStr};
+    /// use defuse_codec::{IoDecoder, DisplayFromStr, json::Json};
     ///
-    /// let value: u8 = DisplayFromStr::from_str("42").unwrap();
+    /// let value: u32 = DisplayFromStr::from_str("42").unwrap();
+    /// assert_eq!(value, 42);
+    ///
+    /// // <u32 as FromStr> doesn't permit trailing chars
+    /// <DisplayFromStr as IoDecoder<u32>>::from_str("42\n").expect_err("trailing chars");
+    ///
+    /// // JSON allows leading and trailing whitespaces and newlines
+    /// let value: u32 = <Json>::from_str("\n 42 \n").unwrap();
     /// assert_eq!(value, 42);
     /// ```
     #[inline]

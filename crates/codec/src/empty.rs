@@ -1,6 +1,6 @@
 use std::io::{self, Error, ErrorKind};
 
-use crate::{ERR_NOT_EMPTY, IoDecoder, IoEncoder};
+use crate::{ERR_TRAILING_BYTES, IoDecoder, IoEncoder};
 
 /// A codec for empty data.
 ///
@@ -44,7 +44,7 @@ impl IoDecoder<()> for Empty {
         #[allow(clippy::unbuffered_bytes)]
         match reader.bytes().next() {
             None => Ok(()),
-            Some(Ok(_)) => Err(Error::new(ErrorKind::InvalidData, ERR_NOT_EMPTY)),
+            Some(Ok(_)) => Err(Error::new(ErrorKind::InvalidData, ERR_TRAILING_BYTES)),
             Some(Err(err)) => Err(err),
         }
     }
@@ -52,7 +52,10 @@ impl IoDecoder<()> for Empty {
     #[inline]
     fn from_slice(bytes: impl AsRef<[u8]>) -> io::Result<()> {
         if !bytes.as_ref().is_empty() {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, ERR_NOT_EMPTY));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                ERR_TRAILING_BYTES,
+            ));
         }
 
         Ok(())
