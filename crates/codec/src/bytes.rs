@@ -18,6 +18,22 @@ use crate::{IoDecoder, IoEncoder};
 /// ```
 pub struct AsBytes;
 
+impl AsBytes {
+    #[inline]
+    pub(crate) fn try_from_vec<T>(v: Vec<u8>) -> io::Result<T>
+    where
+        T: TryFrom<Vec<u8>>,
+    {
+        let length = v.len();
+        T::try_from(v).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("can't convert a byte vector of length {length} to the output type"),
+            )
+        })
+    }
+}
+
 impl<T> IoEncoder<T> for AsBytes
 where
     T: AsRef<[u8]> + ?Sized,
@@ -47,13 +63,6 @@ where
     {
         let mut buf = Vec::new();
         reader.read_to_end(&mut buf)?;
-
-        let length = buf.len();
-        T::try_from(buf).map_err(|_| {
-            io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("can't convert a byte vector of length {length} to the output type"),
-            )
-        })
+        Self::try_from_vec(buf)
     }
 }

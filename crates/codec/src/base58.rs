@@ -2,7 +2,7 @@
 
 use std::{io, marker::PhantomData};
 
-use crate::{IoDecoder, IoEncoder};
+use crate::{AsBytes, IoDecoder, IoEncoder};
 
 /// Base58 codec.
 ///
@@ -60,13 +60,7 @@ where
             .into_vec()
             .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
 
-        let length = buf.len();
-        T::try_from(buf).map_err(|_| {
-            io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("can't convert a byte vector of length {length} to the output type"),
-            )
-        })
+        AsBytes::try_from_vec(buf)
     }
 }
 
