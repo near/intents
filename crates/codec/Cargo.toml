@@ -1,0 +1,41 @@
+lints.workspace = true
+
+[package]
+name = "defuse-codec"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+base64 = { workspace = true, optional = true }
+bs58 = { workspace = true, optional = true }
+defuse-borsh-utils = { workspace = true, optional = true }
+hex = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+serde_with = { workspace = true, optional = true }
+
+document-features = { workspace = true, optional = true }
+
+[features]
+#! #### Provided codecs
+
+## Enables [`base58`] support.
+base58 = ["dep:bs58"]
+
+## Enables [`base64`] support.
+base64 = ["dep:base64"]
+
+## Enables [`borsh`] support.
+borsh = ["dep:defuse-borsh-utils"]
+
+## Enables [`hex`] support.
+hex = ["dep:hex"]
+
+## Enables [`json`] support.
+json = ["dep:serde_json", "dep:serde_with"]
+
+[dev-dependencies]
+defuse-codec = { path = ".", features = ["base58", "base64", "borsh", "hex", "json"] }
+
+rstest.workspace = true
