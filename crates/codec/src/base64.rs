@@ -64,6 +64,11 @@ where
     }
 
     #[inline]
+    fn to_string(value: &T) -> io::Result<String> {
+        Ok(Self::ENGINE.encode(value))
+    }
+
+    #[inline]
     fn encoded_len(value: &T) -> io::Result<usize> {
         base64::encoded_len(value.as_ref().len(), Self::ENGINE.config().encode_padding())
             .ok_or(io::ErrorKind::OutOfMemory)
@@ -186,7 +191,7 @@ mod tests {
     #[case::hello(b"Hello, Near!")]
     #[case::hash(&[42u8; 32])]
     fn roundtrip_array<const N: usize>(#[case] v: &[u8; N]) {
-        assert_roundtrip::<Base64, _>(v);
+        assert_roundtrip::<Base64, _>(v, None);
     }
 
     #[rstest]
@@ -196,7 +201,7 @@ mod tests {
     #[case::hello(b"Hello, Near!")]
     #[case::hash(&[42u8; 32])]
     fn roundtrip_slice(#[case] v: &[u8]) {
-        assert_roundtrip::<Base64, _>(v);
+        assert_roundtrip::<Base64, _>(v, None);
     }
 
     #[rstest]
@@ -205,7 +210,7 @@ mod tests {
     #[case::test("test")]
     #[case::hello("Hello, Near!")]
     fn roundtrip_str(#[case] v: &str) {
-        assert_roundtrip::<Base64, _>(v);
+        assert_roundtrip::<Base64, _>(v, None);
     }
 
     #[rstest]

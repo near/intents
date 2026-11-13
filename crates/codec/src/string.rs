@@ -16,6 +16,7 @@ use crate::{IoDecoder, IoEncoder};
 /// let decoded: u8 = DisplayFromStr::from_slice(encoded).unwrap();
 /// assert_eq!(decoded, value);
 /// ```
+#[non_exhaustive]
 pub struct DisplayFromStr;
 
 impl<T> IoEncoder<T> for DisplayFromStr
@@ -28,6 +29,11 @@ where
         W: io::Write,
     {
         write!(writer, "{value}")
+    }
+
+    #[inline]
+    fn to_string(value: &T) -> io::Result<String> {
+        Ok(value.to_string())
     }
 }
 
@@ -73,7 +79,7 @@ mod tests {
     #[case::test("test")]
     #[case::hello("Hello, Near!")]
     fn roundtrip_str(#[case] v: &str) {
-        assert_roundtrip::<DisplayFromStr, _>(v);
+        assert_roundtrip::<DisplayFromStr, _>(v, None);
     }
 
     #[rstest]
@@ -82,7 +88,7 @@ mod tests {
     #[case::value(123)]
     #[case::max(u128::MAX)]
     fn roundtrip_u128(#[case] v: u128) {
-        assert_roundtrip::<DisplayFromStr, _>(&v);
+        assert_roundtrip::<DisplayFromStr, _>(&v, None);
     }
 
     #[rstest]

@@ -20,9 +20,10 @@ mod empty;
 pub mod hex;
 #[cfg(feature = "json")]
 pub mod json;
+mod lines;
 mod string;
 
-pub use self::{bytes::*, empty::*, string::*};
+pub use self::{bytes::*, empty::*, lines::*, string::*};
 
 use std::io;
 
@@ -61,6 +62,26 @@ pub trait IoEncoder<T: ?Sized> {
         let mut buf = Vec::new();
         Self::to_writer(&mut buf, value)?;
         Ok(buf)
+    }
+
+    /// Encode a value into a string.
+    ///
+    /// This is the same as using [`to_vec`](Self::to_vec) and then [`String::from_utf8`],
+    /// but codec implementations may use an optimized version given their encoding guarantees.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use defuse_codec::{IoEncoder, json::Json};
+    ///
+    /// let encoded = <Json>::to_string(&[1, 2, 3]).unwrap();
+    /// assert_eq!(encoded, "[1,2,3]");
+    /// ```
+    #[inline]
+    fn to_string(value: &T) -> io::Result<String> {
+        Self::to_vec(value)?
+            .try_into()
+            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))
     }
 
     /// Returns the exact length (in bytes) of the to-be-encoded value.
@@ -116,7 +137,8 @@ pub trait IoDecoder<T> {
     /// reader bounded to one message.
     ///
     /// It's recommended to use [`from_str`](Self::from_str) or [`from_slice`](Self::from_slice)
-    /// when the data is already loaded in-memory.
+    /// when the data is already loaded in-memory, or [`from_buf_read`](Self::from_buf_read) when
+    /// the reader is already buffered.
     ///
     /// # Errors
     ///
@@ -139,11 +161,41 @@ pub trait IoDecoder<T> {
     where
         R: io::Read;
 
-    /// Decode a value from the entire slice of bytes.
+    /// Decode a value from the complete input supplied by buffered `reader`.
     ///
     /// Applies the same format and validation rules as [`from_reader`](Self::from_reader).
     ///
-    /// In contrast to [`from_reader`](Self::from_reader), this method allows optimized
+    /// In contrast to [`from_reader`](Self::from_reader), this method allows implementations to
+    /// use caller's existing buffer instead of wrapping it in another [`io::BufReader`] when needed.
+    /// Nevertheless, it's  still recommended to use [`from_str`](Self::from_str) or
+    /// [`from_slice`](Self::from_slice) when the data is already loaded in-memory.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the input is invalid according to the codec's rules,
+    /// including trailing data that those rules do not permit.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use defuse_codec::{IoDecoder, Lines};
+    ///
+    /// let value: Vec<String> = <Lines>::from_buf_read(b"Hello,\nNear!\n\nIt's\nme...\n\n\n".as_slice()).unwrap();
+    /// assert_eq!(value, &["Hello,", "Near!", "", "It's", "me...", "", ""]);
+    /// ```
+    #[inline]
+    fn from_buf_read<R>(reader: R) -> io::Result<T>
+    where
+        R: io::BufRead,
+    {
+        Self::from_reader(reader)
+    }
+
+    /// Decode a value from the entire slice of bytes.
+    ///
+    /// Applies the same format and validation rules as [`from_buf_read`](Self::from_buf_read).
+    ///
+    /// In contrast to [`from_buf_read`](Self::from_buf_read), this method allows optimized
     /// implementations to avoid unnecessary allocations when possible. Nevertheless, it's
     /// still recommended to use [`from_str`](Self::from_str) when `&str` is already available:
     /// this allows optimized implementations to also skip UTF-8 validation when needed.
@@ -165,7 +217,7 @@ pub trait IoDecoder<T> {
     /// ```
     #[inline]
     fn from_slice(bytes: impl AsRef<[u8]>) -> io::Result<T> {
-        Self::from_reader(bytes.as_ref())
+        Self::from_buf_read(bytes.as_ref())
     }
 
     /// Decodes a value from the entire string.

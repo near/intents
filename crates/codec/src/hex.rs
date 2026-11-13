@@ -21,6 +21,7 @@ use crate::{AsBytes, IoDecoder, IoEncoder};
 // TODO: add support for:
 // * Lower/Upper/CheckSum format?
 // * optional "0x" prefix and whether to enforce it on decode?
+#[non_exhaustive]
 pub struct Hex;
 
 impl<T> IoEncoder<T> for Hex
@@ -37,7 +38,12 @@ where
 
     #[inline]
     fn to_vec(value: &T) -> io::Result<Vec<u8>> {
-        Ok(hex::encode(value).into_bytes())
+        Self::to_string(value).map(Into::into)
+    }
+
+    #[inline]
+    fn to_string(value: &T) -> io::Result<String> {
+        Ok(hex::encode(value))
     }
 
     #[inline]
@@ -90,7 +96,7 @@ mod tests {
     #[case::hello(b"Hello, Near!")]
     #[case::hash(&[42u8; 32])]
     fn roundtrip_array<const N: usize>(#[case] v: &[u8; N]) {
-        assert_roundtrip::<Hex, _>(v);
+        assert_roundtrip::<Hex, _>(v, None);
     }
 
     #[rstest]
@@ -100,7 +106,7 @@ mod tests {
     #[case::hello(b"Hello, Near!")]
     #[case::hash(&[42u8; 32])]
     fn roundtrip_slice(#[case] v: &[u8]) {
-        assert_roundtrip::<Hex, _>(v);
+        assert_roundtrip::<Hex, _>(v, None);
     }
 
     #[rstest]
@@ -109,7 +115,7 @@ mod tests {
     #[case::test("test")]
     #[case::hello("Hello, Near!")]
     fn roundtrip_str(#[case] v: &str) {
-        assert_roundtrip::<Hex, _>(v);
+        assert_roundtrip::<Hex, _>(v, None);
     }
 
     #[rstest]

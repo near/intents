@@ -42,6 +42,11 @@ where
     fn to_vec(value: &T) -> io::Result<Vec<u8>> {
         Ok(EncodeBuilder::new(value, ALPHABET::CHARSET).into_vec())
     }
+
+    #[inline]
+    fn to_string(value: &T) -> io::Result<String> {
+        Ok(EncodeBuilder::new(value, ALPHABET::CHARSET).into_string())
+    }
 }
 
 impl<T, ALPHABET> IoDecoder<T> for Base58<ALPHABET>
@@ -134,7 +139,7 @@ mod tests {
     #[case::hello(b"Hello, Near!")]
     #[case::hash(&[42u8; 32])]
     fn roundtrip_array<const N: usize>(#[case] v: &[u8; N]) {
-        assert_roundtrip::<Base58, _>(v);
+        assert_roundtrip::<Base58, _>(v, None);
     }
 
     #[rstest]
@@ -144,7 +149,7 @@ mod tests {
     #[case::hello(b"Hello, Near!")]
     #[case::hash(&[42u8; 32])]
     fn roundtrip_slice(#[case] v: &[u8]) {
-        assert_roundtrip::<Base58, _>(v);
+        assert_roundtrip::<Base58, _>(v, None);
     }
 
     #[rstest]
@@ -153,7 +158,7 @@ mod tests {
     #[case::test("test")]
     #[case::hello("Hello, Near!")]
     fn roundtrip_str(#[case] v: &str) {
-        assert_roundtrip::<Base58, _>(v);
+        assert_roundtrip::<Base58, _>(v, None);
     }
 
     #[rstest]
