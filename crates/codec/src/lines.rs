@@ -54,6 +54,7 @@ where
     E: ?Sized + for<'a> IoEncoder<<&'a I as IntoIterator>::Item>,
     I: ?Sized,
 {
+    #[inline]
     fn to_writer<W>(mut writer: W, value: &I) -> io::Result<()>
     where
         W: io::Write,
@@ -67,6 +68,7 @@ where
         Ok(())
     }
 
+    #[inline]
     fn to_vec(value: &I) -> io::Result<Vec<u8>> {
         let mut buf = Vec::new();
         for item in value {
