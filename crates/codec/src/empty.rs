@@ -18,6 +18,7 @@ use crate::{ERR_TRAILING_BYTES, IoDecoder, IoEncoder};
 ///
 /// Empty::from_slice(b"not empty").expect_err("input must be empty");
 /// ```
+#[non_exhaustive]
 pub struct Empty;
 
 impl IoEncoder<()> for Empty {
@@ -27,6 +28,11 @@ impl IoEncoder<()> for Empty {
         W: io::Write,
     {
         Ok(())
+    }
+
+    #[inline]
+    fn to_string(_value: &()) -> io::Result<String> {
+        Ok(String::new())
     }
 
     #[inline]

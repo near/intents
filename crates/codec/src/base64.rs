@@ -64,6 +64,11 @@ where
     }
 
     #[inline]
+    fn to_string(value: &T) -> io::Result<String> {
+        Ok(Self::ENGINE.encode(value))
+    }
+
+    #[inline]
     fn encoded_len(value: &T) -> io::Result<usize> {
         base64::encoded_len(value.as_ref().len(), Self::ENGINE.config().encode_padding())
             .ok_or(io::ErrorKind::OutOfMemory)
@@ -180,32 +185,32 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case::empty(b"")]
-    #[case::dot(b".")]
-    #[case::test(b"test")]
-    #[case::hello(b"Hello, Near!")]
-    #[case::hash(&[42u8; 32])]
-    fn roundtrip_array<const N: usize>(#[case] v: &[u8; N]) {
-        assert_roundtrip::<Base64, _>(v);
+    #[case::empty(b"", b"")]
+    #[case::dot(b".", b"Lg==")]
+    #[case::word(b"test", b"dGVzdA==")]
+    #[case::hello(b"Hello, Near!", b"SGVsbG8sIE5lYXIh")]
+    #[case::hash(&[42u8; 32], b"KioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKio=")]
+    fn roundtrip_array<const N: usize>(#[case] v: &[u8; N], #[case] encoded: &[u8]) {
+        assert_roundtrip::<Base64, _>(v, Some(encoded));
     }
 
     #[rstest]
-    #[case::empty(b"")]
-    #[case::dot(b".")]
-    #[case::test(b"test")]
-    #[case::hello(b"Hello, Near!")]
-    #[case::hash(&[42u8; 32])]
-    fn roundtrip_slice(#[case] v: &[u8]) {
-        assert_roundtrip::<Base64, _>(v);
+    #[case::empty(b"", b"")]
+    #[case::dot(b".", b"Lg==")]
+    #[case::word(b"test", b"dGVzdA==")]
+    #[case::hello(b"Hello, Near!", b"SGVsbG8sIE5lYXIh")]
+    #[case::hash(&[42u8; 32], b"KioqKioqKioqKioqKioqKioqKioqKioqKioqKioqKio=")]
+    fn roundtrip_slice(#[case] v: &[u8], #[case] encoded: &[u8]) {
+        assert_roundtrip::<Base64, _>(v, Some(encoded));
     }
 
     #[rstest]
-    #[case::empty("")]
-    #[case::dot(".")]
-    #[case::test("test")]
-    #[case::hello("Hello, Near!")]
-    fn roundtrip_str(#[case] v: &str) {
-        assert_roundtrip::<Base64, _>(v);
+    #[case::empty("", b"")]
+    #[case::dot(".", b"Lg==")]
+    #[case::word("test", b"dGVzdA==")]
+    #[case::hello("Hello, Near!", b"SGVsbG8sIE5lYXIh")]
+    fn roundtrip_str(#[case] v: &str, #[case] encoded: &[u8]) {
+        assert_roundtrip::<Base64, _>(v, Some(encoded));
     }
 
     #[rstest]

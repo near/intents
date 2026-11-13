@@ -47,6 +47,11 @@ where
     fn to_vec(value: &T) -> io::Result<Vec<u8>> {
         serde_json::to_vec(&SerializeAsWrap::<T, As>::new(value)).map_err(Into::into)
     }
+
+    #[inline]
+    fn to_string(value: &T) -> io::Result<String> {
+        serde_json::to_string(&SerializeAsWrap::<T, As>::new(value)).map_err(Into::into)
+    }
 }
 
 impl<T, As> IoDecoder<T> for Json<As>
@@ -88,21 +93,21 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case::empty("")]
-    #[case::dot(".")]
-    #[case::test("test")]
-    #[case::hello("Hello, Near!")]
-    fn roundtrip_str(#[case] v: &str) {
-        assert_roundtrip::<Json, _>(v);
+    #[case::empty("", br#""""#)]
+    #[case::dot(".", br#"".""#)]
+    #[case::word("test", br#""test""#)]
+    #[case::hello("Hello, Near!", br#""Hello, Near!""#)]
+    fn roundtrip_str(#[case] v: &str, #[case] encoded: &[u8]) {
+        assert_roundtrip::<Json, _>(v, Some(encoded));
     }
 
     #[rstest]
-    #[case::zero(0)]
-    #[case::one(1)]
-    #[case::value(123)]
-    #[case::max(u128::MAX)]
-    fn roundtrip_u128(#[case] v: u128) {
-        assert_roundtrip::<Json<DisplayFromStr>, _>(&v);
+    #[case::zero(0, br#""0""#)]
+    #[case::one(1, br#""1""#)]
+    #[case::value(123, br#""123""#)]
+    #[case::max(u128::MAX, br#""340282366920938463463374607431768211455""#)]
+    fn roundtrip_u128(#[case] v: u128, #[case] encoded: &[u8]) {
+        assert_roundtrip::<Json<DisplayFromStr>, _>(&v, Some(encoded));
     }
 
     #[rstest]

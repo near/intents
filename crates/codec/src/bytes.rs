@@ -16,6 +16,7 @@ use crate::{IoDecoder, IoEncoder};
 /// let decoded: String = AsBytes::from_slice(encoded).unwrap();
 /// assert_eq!(decoded, value);
 /// ```
+#[non_exhaustive]
 pub struct AsBytes;
 
 impl AsBytes {
