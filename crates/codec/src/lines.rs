@@ -8,7 +8,7 @@ use crate::{DisplayFromStr, IoDecoder, IoEncoder};
 
 /// A codec for collection of items encoded as separate UTF-8 lines using the inner codec `T`.
 ///
-/// Each encoded item MUST be a valid UTF-8 and MUST NOT contain `\n` or end with '\r'.
+/// Each encoded item MUST be a valid UTF-8 and MUST NOT contain LF (`\n`) or end with CR (`\r`).
 /// A newline is written after every item, including empty items.
 ///
 /// Decoding accepts LF and CRLF line endings, following [`str::lines`].
