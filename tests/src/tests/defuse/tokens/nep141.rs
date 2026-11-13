@@ -7,14 +7,15 @@ use defuse_sandbox::extensions::{
             intents::tokens::FtWithdraw,
             token_id::{TokenId, nep141::Nep141TokenId},
         },
-        tokens::{DepositAction, DepositMessage, ExecuteIntents},
+        tokens::{DEPOSIT_MEMO, DepositAction, DepositMessage, ExecuteIntents},
     },
-    mt::{Mt, MtBalanceOfArgs},
+    mt::{Mt, MtBalanceOfArgs, MtSupplyArgs},
     poa::PoAFactoryExt,
 };
 use near_sdk::json_types::U128;
 use rstest::rstest;
 
+use super::{ENC_MEMO, mt_mint_log, mt_mint_logs, receipt_failure};
 use crate::tests::defuse::env::{Env, env};
 
 #[rstest]
@@ -121,7 +122,116 @@ async fn poa_deposit(#[future(awt)] env: Env) {
 
 #[rstest]
 #[tokio::test]
-async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
+async fn deposit_with_memo(#[future(awt)] env: Env) {
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
+
+    env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
+        .await;
+
+    // a message with a memo and no action: `to_string()` must keep the memo
+    let (used, outcome) = env
+        .defuse_ft_deposit(
+            ft.contract_id(),
+            1000,
+            DepositMessage::new(user.account_id().clone())
+                .with_memo(ENC_MEMO)
+                .to_string(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(used, 1000);
+
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone())).to_string();
+    assert_eq!(
+        mt_mint_logs(&outcome),
+        [mt_mint_log(
+            user.account_id(),
+            std::slice::from_ref(&ft_id),
+            &[1000],
+            ENC_MEMO
+        )]
+    );
+    assert_eq!(
+        env.contract::<Mt>(env.defuse.contract_id())
+            .mt_balance_of(MtBalanceOfArgs {
+                account_id: user.account_id(),
+                token_id: &ft_id,
+            })
+            .await
+            .unwrap()
+            .0,
+        1000
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn deposit_with_reserved_memo_is_refunded(#[future(awt)] env: Env) {
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
+
+    env.initial_ft_storage_deposit(vec![user.account_id()], vec![ft.contract_id()])
+        .await;
+
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone())).to_string();
+    let mt = env.contract::<Mt>(env.defuse.contract_id());
+    let supply = async || {
+        mt.mt_supply(MtSupplyArgs { token_id: &ft_id })
+            .await
+            .unwrap()
+            .map_or(0, |s| s.0)
+    };
+    let (supply_before, verifier_ft_before, sender_ft_before) = (
+        supply().await,
+        ft.balance_of(env.defuse.contract_id()).await.unwrap().raw(),
+        ft.balance_of(env.account_id()).await.unwrap().raw(),
+    );
+
+    let (used, outcome) = env
+        .defuse_ft_deposit(
+            ft.contract_id(),
+            1000,
+            DepositMessage::new(user.account_id().clone())
+                .with_memo("refund")
+                .to_string(),
+        )
+        .await
+        .unwrap();
+
+    // refused before crediting: the token refunds everything, nothing is minted
+    assert_eq!(used, 0);
+    assert!(
+        receipt_failure(&outcome, env.defuse.contract_id())
+            .unwrap()
+            .contains("deposit memo `refund` is reserved")
+    );
+    assert!(mt_mint_logs(&outcome).is_empty());
+    assert_eq!(
+        mt.mt_balance_of(MtBalanceOfArgs {
+            account_id: user.account_id(),
+            token_id: &ft_id,
+        })
+        .await
+        .unwrap()
+        .0,
+        0
+    );
+    // no unbacked balance: the supply and the Verifier's real balance are unchanged
+    assert_eq!(supply().await, supply_before);
+    assert_eq!(
+        ft.balance_of(env.defuse.contract_id()).await.unwrap().raw(),
+        verifier_ft_before
+    );
+    assert_eq!(
+        ft.balance_of(env.account_id()).await.unwrap().raw(),
+        sender_ft_before
+    );
+}
+
+#[rstest]
+#[case::no_memo(None)]
+#[case::memo(Some(ENC_MEMO))]
+#[tokio::test]
+async fn deposit_withdraw_intent(#[future(awt)] env: Env, #[case] memo: Option<&str>) {
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
@@ -158,30 +268,38 @@ async fn deposit_withdraw_intent(#[future(awt)] env: Env) {
         .await
         .unwrap();
 
-    assert_eq!(
-        user.ft(ft.contract_id())
-            .transfer_call(
-                env.defuse.contract_id(),
-                1000u128,
-                DepositMessage {
-                    receiver_id: user.account_id().clone(),
-                    action: Some(DepositAction::Execute(ExecuteIntents {
-                        execute_intents: [withdraw_intent_payload].into(),
-                        // another promise will be created for `execute_intents()`
-                        refund_if_fails: false,
-                    })),
-                }
-                .to_string()
-            )
-            .await
-            .unwrap()
-            .json::<U128>()
-            .unwrap()
-            .0,
-        1000
-    );
+    let outcome = user
+        .ft(ft.contract_id())
+        .transfer_call(
+            env.defuse.contract_id(),
+            1000u128,
+            DepositMessage {
+                receiver_id: user.account_id().clone(),
+                memo: memo.map(Into::into),
+                action: Some(DepositAction::Execute(ExecuteIntents {
+                    execute_intents: [withdraw_intent_payload].into(),
+                    // another promise will be created for `execute_intents()`
+                    refund_if_fails: false,
+                })),
+            }
+            .to_string(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(outcome.json::<U128>().unwrap().0, 1000);
 
     let ft_id = TokenId::from(Nep141TokenId::new(ft.contract_id().clone())).to_string();
+
+    // the deposit is minted with the message's memo, or "deposit" without one
+    assert_eq!(
+        mt_mint_logs(&outcome),
+        [mt_mint_log(
+            user.account_id(),
+            std::slice::from_ref(&ft_id),
+            &[1000],
+            memo.unwrap_or(DEPOSIT_MEMO),
+        )]
+    );
     futures::join!(
         async {
             assert_eq!(ft.balance_of(user.account_id()).await.unwrap().raw(), 0);
@@ -263,6 +381,7 @@ async fn deposit_withdraw_intent_refund(#[future(awt)] env: Env) {
                 1000u128,
                 DepositMessage {
                     receiver_id: user.account_id().clone(),
+                    memo: None,
                     action: Some(DepositAction::Execute(ExecuteIntents {
                         execute_intents: [overflow_withdraw_payload].into(),
                         refund_if_fails: true,

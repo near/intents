@@ -40,11 +40,13 @@ use defuse_sandbox::extensions::{
             token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
         },
         nep245::Token,
+        tokens::DepositMessage,
     },
     mt::{Mt, MtBalanceOfArgs},
 };
 use defuse_test_utils::wasms::DEFUSE_WASM;
 
+use super::{ENC_MEMO, mt_mint_log};
 use crate::{
     sandbox::extensions::mt::MtExt,
     tests::defuse::env::{Env, env},
@@ -1779,3 +1781,92 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
 //         "User should have: 2000 (second refund) = 2000 of token2 (all refunded)"
 //     );
 // }
+
+#[rstest]
+#[tokio::test]
+async fn mt_batch_deposit_with_memo(#[future(awt)] env: Env) {
+    let (user, ft1, ft2) =
+        futures::join!(env.create_user(), env.create_token(), env.create_token());
+
+    env.initial_ft_storage_deposit(
+        vec![user.account_id()],
+        vec![ft1.contract_id(), ft2.contract_id()],
+    )
+    .await;
+    env.defuse_ft_deposit_to(ft1.contract_id(), 1000, user.account_id(), None)
+        .await
+        .unwrap();
+    env.defuse_ft_deposit_to(ft2.contract_id(), 1000, user.account_id(), None)
+        .await
+        .unwrap();
+
+    // a second Verifier receives the batch; `env.defuse` acts as its NEP-245 token
+    let defuse2 = env
+        .deploy_defuse(
+            "defuse2",
+            DefuseConfig {
+                wnear_id: env.wnear.contract_id().clone(),
+                fees: FeesConfig {
+                    fee: Pips::ZERO,
+                    fee_collector: env.account_id().clone(),
+                },
+                roles: RolesConfig::default(),
+            },
+            DEFUSE_WASM.clone(),
+        )
+        .await;
+
+    let ft1_id = TokenId::Nep141(Nep141TokenId::new(ft1.contract_id().clone()));
+    let ft2_id = TokenId::Nep141(Nep141TokenId::new(ft2.contract_id().clone()));
+
+    let (outcome, used) = user
+        .mt_batch_transfer_call(
+            env.defuse.contract_id(),
+            defuse2.account_id(),
+            [ft1_id.to_string(), ft2_id.to_string()],
+            [100, 200],
+            None,
+            DepositMessage::new(user.account_id().clone()).with_memo(ENC_MEMO),
+        )
+        .await
+        .unwrap();
+    assert_eq!(used, [100, 200]);
+
+    // one mint for the whole batch, with the memo
+    let [id1, id2] = [&ft1_id, &ft2_id].map(|id| {
+        TokenId::Nep245(Nep245TokenId::new(
+            env.defuse.contract_id().to_owned(),
+            id.to_string(),
+        ))
+        .to_string()
+    });
+    let mints: Vec<_> = outcome
+        .logs()
+        .into_iter()
+        .filter(|log| log.contains(r#""event":"mt_mint""#))
+        .collect();
+    assert_eq!(
+        mints,
+        [mt_mint_log(
+            user.account_id(),
+            &[id1.clone(), id2.clone()],
+            &[100, 200],
+            ENC_MEMO
+        )]
+    );
+
+    let defuse2_mt = env.contract::<Mt>(defuse2.account_id());
+    for (token_id, amount) in [(&id1, 100), (&id2, 200)] {
+        assert_eq!(
+            defuse2_mt
+                .mt_balance_of(MtBalanceOfArgs {
+                    account_id: user.account_id(),
+                    token_id,
+                })
+                .await
+                .unwrap()
+                .0,
+            amount
+        );
+    }
+}
