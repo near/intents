@@ -7,7 +7,7 @@ use crate::{
 use defuse_sandbox::extensions::{
     acl::AccessControllableExt,
     defuse::{
-        DefuseExt, SaltArgs,
+        DefuseExt,
         contract::Role,
         core::{accounts::SaltRotationEvent, events::DefuseEvent},
     },
@@ -64,9 +64,7 @@ async fn update_current_salt(
 
         let (current_salt, prev_salt_is_valid) = futures::try_join!(
             env.defuse.current_salt().into_future(),
-            env.defuse
-                .is_valid_salt(SaltArgs { salt: prev_salt })
-                .into_future()
+            env.defuse.is_valid_salt(prev_salt).into_future()
         )
         .unwrap();
 
@@ -128,12 +126,7 @@ async fn invalidate_salts(
 
         assert!(res.logs().contains(&event));
 
-        assert!(
-            !env.defuse
-                .is_valid_salt(SaltArgs { salt: prev_salt })
-                .await
-                .unwrap()
-        );
+        assert!(!env.defuse.is_valid_salt(prev_salt).await.unwrap());
     }
 
     // invalidate current salt by salt manager
@@ -153,12 +146,7 @@ async fn invalidate_salts(
 
         assert!(res.logs().contains(&event));
 
-        assert!(
-            !env.defuse
-                .is_valid_salt(SaltArgs { salt: prev_salt })
-                .await
-                .unwrap()
-        );
+        assert!(!env.defuse.is_valid_salt(prev_salt).await.unwrap());
         assert_ne!(prev_salt, current_salt);
     }
 }

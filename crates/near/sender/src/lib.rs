@@ -140,9 +140,13 @@ impl NearSender for dyn DynNearSender + '_ {
 
 #[cfg(feature = "near-kit")]
 const _: () = {
-    use near_kit::{Error, Near, protocol::Action, rpc::SendTxResponse};
+    use near_kit::{
+        Error, SigningNear, TxSender,
+        rpc::SendTxResponse,
+        transaction::{Included, WaitLevel},
+    };
 
-    impl NearSender for Near {
+    impl<W: WaitLevel> NearSender for SigningNear<W> {
         type Error = Error;
 
         #[inline]
@@ -155,18 +159,13 @@ const _: () = {
             receiver_id: AccountId,
             actions: Vec<NearAction>,
         ) -> Result<SentTransaction, Self::Error> {
-            use near_kit::transaction::{Included, TransactionBuilder};
-
-            actions
-                .into_iter()
-                .map(Action::from)
-                .fold(
-                    self.transaction(receiver_id),
-                    TransactionBuilder::add_action,
-                )
-                .wait_until::<Included>()
-                .await
-                .map(Into::into)
+            TxSender::send(
+                &self.wait_until::<Included>(),
+                receiver_id,
+                actions.into_iter().map(Into::into).collect(),
+            )
+            .await
+            .map(Into::into)
         }
     }
 

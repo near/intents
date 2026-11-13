@@ -12,7 +12,7 @@ use defuse_sandbox::{
         },
         mt::{Mt, MtBatchBalanceOfArgs},
     },
-    kit::{AccountId, Near},
+    kit::{AccountId, SigningNear},
 };
 use near_sdk::json_types::U128;
 use rstest::rstest;
@@ -197,7 +197,7 @@ async fn swap_many(
 type FtBalances<'a> = BTreeMap<&'a AccountId, i128>;
 
 struct AccountFtDiff<'a> {
-    account: &'a Near,
+    account: &'a SigningNear,
     init_balances: FtBalances<'a>,
     diff: Vec<TokenDeltas>,
     result_balances: FtBalances<'a>,

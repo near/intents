@@ -55,7 +55,8 @@ where
         let mpc_public_key = client
             .contract::<MpcContract>(&mpc_contract_id)
             .public_key(PublicKeyArgs { domain_id })
-            .await?;
+            .await
+            .map_err(near_kit::Error::from)?;
 
         Ok(Self {
             sender: sender.arced(),

@@ -15,8 +15,8 @@ use defuse_sandbox::{
         mt::{Mt, MtBatchBalanceOfArgs},
     },
     kit::{
-        AccountId, Gas, Near,
-        protocol::{AccountIdRef, StateInit, StateInitV1},
+        AccountId, AccountIdRef, Gas, Near,
+        protocol::{StateInit, StateInitV1},
         transaction::Final,
     },
 };
