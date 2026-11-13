@@ -8,8 +8,8 @@ use crate::{DisplayFromStr, IoDecoder, IoEncoder};
 
 /// A codec for collection of items encoded as separate UTF-8 lines using the inner codec `T`.
 ///
-/// Each encoded item MUST be a valid UTF-8 and MUST NOT contain `\n`. A newline is written after
-/// every item, including empty items.
+/// Each encoded item MUST be a valid UTF-8 and MUST NOT contain `\n` or end with '\r'.
+/// A newline is written after every item, including empty items.
 ///
 /// Decoding accepts LF and CRLF line endings, following [`str::lines`].
 ///
@@ -27,10 +27,32 @@ use crate::{DisplayFromStr, IoDecoder, IoEncoder};
 /// ```
 pub struct Lines<T: ?Sized = DisplayFromStr>(PhantomData<T>);
 
+impl<E: ?Sized> Lines<E> {
+    fn encode_line<T>(mut buf: &mut Vec<u8>, value: &T) -> io::Result<()>
+    where
+        E: IoEncoder<T>,
+    {
+        let l = buf.len();
+        E::to_writer(&mut buf, value)?;
+        // `impl io::Writer for Vec<u8>` only appends to end, so we need to check only appended part
+        let s = str::from_utf8(&buf[l..])
+            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
+        if s.as_bytes().contains(&b'\n') || s.as_bytes().ends_with(b"\r") {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "encoded UTF-8 line MUST NOT contain LF or end with CR",
+            ));
+        }
+        buf.push(b'\n');
+        Ok(())
+    }
+}
+
 impl<I, E> IoEncoder<I> for Lines<E>
 where
     for<'a> &'a I: IntoIterator,
-    for<'a> E: IoEncoder<<&'a I as IntoIterator>::Item>,
+    E: ?Sized + for<'a> IoEncoder<<&'a I as IntoIterator>::Item>,
+    I: ?Sized,
 {
     fn to_writer<W>(mut writer: W, value: &I) -> io::Result<()>
     where
@@ -39,16 +61,8 @@ where
         let mut buf = Vec::new();
         for item in value {
             buf.clear();
-            E::to_writer(&mut buf, &item)?;
-            str::from_utf8(&buf).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
-            if buf.contains(&b'\n') {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "encoded line must not contain a newline",
-                ));
-            }
+            Self::encode_line(&mut buf, &item)?;
             writer.write_all(&buf)?;
-            writer.write_all(b"\n")?;
         }
         Ok(())
     }
@@ -56,17 +70,7 @@ where
     fn to_vec(value: &I) -> io::Result<Vec<u8>> {
         let mut buf = Vec::new();
         for item in value {
-            let l = buf.len();
-            E::to_writer(&mut buf, &item)?;
-            str::from_utf8(&buf[l..])
-                .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
-            if buf[l..].contains(&b'\n') {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "encoded line must not contain a newline",
-                ));
-            }
-            buf.push(b'\n');
+            Self::encode_line(&mut buf, &item)?;
         }
         Ok(buf)
     }
@@ -85,7 +89,7 @@ where
 impl<I, D> IoDecoder<I> for Lines<D>
 where
     I: IntoIterator + FromIterator<<I as IntoIterator>::Item>,
-    D: IoDecoder<I::Item>,
+    D: IoDecoder<I::Item> + ?Sized,
 {
     #[inline]
     fn from_reader<R>(reader: R) -> io::Result<I>
@@ -158,6 +162,7 @@ mod tests {
 
     #[rstest]
     #[case::newline(b"invalid\nline")]
+    #[case::last_carriage_return(b"line\r")]
     #[case::invalid_utf8(b"valid\xff")]
     #[case::incomplete_utf8(b"\xe2\x82")]
     fn lines_reject_invalid_item(#[case] item: &[u8]) {
