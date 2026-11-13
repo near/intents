@@ -21,6 +21,7 @@ use crate::{AsBytes, IoDecoder, IoEncoder};
 // TODO: add support for:
 // * Lower/Upper/CheckSum format?
 // * optional "0x" prefix and whether to enforce it on decode?
+#[non_exhaustive]
 pub struct Hex;
 
 impl<T> IoEncoder<T> for Hex
@@ -37,7 +38,12 @@ where
 
     #[inline]
     fn to_vec(value: &T) -> io::Result<Vec<u8>> {
-        Ok(hex::encode(value).into_bytes())
+        Self::to_string(value).map(Into::into)
+    }
+
+    #[inline]
+    fn to_string(value: &T) -> io::Result<String> {
+        Ok(hex::encode(value))
     }
 
     #[inline]
@@ -84,32 +90,32 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case::empty(b"")]
-    #[case::dot(b".")]
-    #[case::test(b"test")]
-    #[case::hello(b"Hello, Near!")]
-    #[case::hash(&[42u8; 32])]
-    fn roundtrip_array<const N: usize>(#[case] v: &[u8; N]) {
-        assert_roundtrip::<Hex, _>(v);
+    #[case::empty(b"", b"")]
+    #[case::dot(b".", b"2e")]
+    #[case::word(b"test", b"74657374")]
+    #[case::hello(b"Hello, Near!", b"48656c6c6f2c204e65617221")]
+    #[case::hash(&[42u8; 32], b"2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a")]
+    fn roundtrip_array<const N: usize>(#[case] v: &[u8; N], #[case] encoded: &[u8]) {
+        assert_roundtrip::<Hex, _>(v, Some(encoded));
     }
 
     #[rstest]
-    #[case::empty(b"")]
-    #[case::dot(b".")]
-    #[case::test(b"test")]
-    #[case::hello(b"Hello, Near!")]
-    #[case::hash(&[42u8; 32])]
-    fn roundtrip_slice(#[case] v: &[u8]) {
-        assert_roundtrip::<Hex, _>(v);
+    #[case::empty(b"", b"")]
+    #[case::dot(b".", b"2e")]
+    #[case::word(b"test", b"74657374")]
+    #[case::hello(b"Hello, Near!", b"48656c6c6f2c204e65617221")]
+    #[case::hash(&[42u8; 32], b"2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a")]
+    fn roundtrip_slice(#[case] v: &[u8], #[case] encoded: &[u8]) {
+        assert_roundtrip::<Hex, _>(v, Some(encoded));
     }
 
     #[rstest]
-    #[case::empty("")]
-    #[case::dot(".")]
-    #[case::test("test")]
-    #[case::hello("Hello, Near!")]
-    fn roundtrip_str(#[case] v: &str) {
-        assert_roundtrip::<Hex, _>(v);
+    #[case::empty("", b"")]
+    #[case::dot(".", b"2e")]
+    #[case::word("test", b"74657374")]
+    #[case::hello("Hello, Near!", b"48656c6c6f2c204e65617221")]
+    fn roundtrip_str(#[case] v: &str, #[case] encoded: &[u8]) {
+        assert_roundtrip::<Hex, _>(v, Some(encoded));
     }
 
     #[rstest]
