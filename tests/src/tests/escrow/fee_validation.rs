@@ -20,11 +20,11 @@ use defuse_sandbox::{
     },
     kit::{
         AccountId, SigningNear,
+        json_types::U128,
         protocol::{StateInit, StateInitV1},
         standards::FungibleToken,
     },
 };
-use near_sdk::json_types::U128;
 use rstest::rstest;
 use std::{
     collections::{BTreeMap, BTreeSet},

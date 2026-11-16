@@ -13,9 +13,8 @@ use defuse_sandbox::{
         mt::Mt,
         poa::PoAFactoryExt,
     },
-    kit::standards::FungibleToken,
+    kit::{json_types::U128, standards::FungibleToken},
 };
-use near_sdk::json_types::U128;
 use rstest::rstest;
 
 use crate::tests::defuse::env::{Env, env};

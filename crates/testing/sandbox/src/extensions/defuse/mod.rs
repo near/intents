@@ -15,10 +15,9 @@ use defuse_core::{
 };
 pub use defuse_serde_utils::base64::AsBase64;
 use near_kit::{
-    AccountId, AccountIdRef, Gas, NearToken, SigningNear, rpc::FinalExecutionOutcome,
-    transaction::FunctionCall,
+    AccountId, AccountIdRef, Gas, NearToken, SigningNear, json_types::U128,
+    rpc::FinalExecutionOutcome, transaction::FunctionCall,
 };
-use near_sdk::json_types::U128;
 use serde_json::json;
 
 use crate::{account::AccountExt, extensions::FnCallTransaction, outcome::CheckedOutcome};

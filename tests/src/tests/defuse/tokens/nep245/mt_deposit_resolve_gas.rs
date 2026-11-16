@@ -18,6 +18,7 @@ use defuse_sandbox::{
     },
     kit::{
         AccountId, Gas, NearToken, SigningNear,
+        json_types::U128,
         rpc::{ActionView, ExecutionStatus, ReceiptContent},
         transaction::Final,
     },
@@ -27,7 +28,7 @@ use defuse_test_utils::{
     wasms::MT_RECEIVER_STUB_WASM,
 };
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::{events::AsNep297Event, json_types::U128};
+use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 use std::{borrow::Cow, sync::Arc};
 

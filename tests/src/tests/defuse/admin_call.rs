@@ -10,10 +10,12 @@ use defuse_sandbox::{
             },
         },
     },
-    kit::{NearToken, protocol::FunctionCallAction, transaction::FunctionCall as KitFunctionCall},
+    kit::{
+        Gas as NearGas, NearToken, protocol::FunctionCallAction,
+        transaction::FunctionCall as KitFunctionCall,
+    },
     outcome::IntoChecked,
 };
-use near_sdk::Gas as NearGas;
 
 use crate::{
     tests::defuse::env::{Env, env},
