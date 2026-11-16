@@ -183,11 +183,7 @@ const _: () = {
     impl From<SentTransaction> for SendTxResponse {
         #[inline]
         fn from(value: SentTransaction) -> Self {
-            Self {
-                transaction_hash: value.tx_hash.into(),
-                sender_id: value.sender_id,
-                outcome: None,
-            }
+            Self::new(value.tx_hash.into(), value.sender_id, None)
         }
     }
 };
