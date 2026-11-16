@@ -18,6 +18,7 @@ use defuse_sandbox::{
         protocol::{GlobalContractId, StateInit, StateInitV1},
         rpc::ExecutionStatus,
     },
+    outcome::IntoChecked,
 };
 use defuse_test_utils::{
     random::rng,
@@ -224,6 +225,7 @@ async fn benchmark_gas_used_by_do_auth_call_callback(
     defuse
         .defuse_do_auth_call(defuse.account_id(), &account, &intent, callback_gas)
         .await
+        .into_checked()
         .unwrap();
 }
 

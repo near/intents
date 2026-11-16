@@ -1,7 +1,7 @@
 use anyhow::Result;
-use near_kit::{AccountId, AccountIdRef, Gas, SigningNear, rpc::FinalExecutionOutcome};
+use near_kit::{AccountId, AccountIdRef, Gas, SigningNear};
 
-use crate::extensions::FnCallTransaction;
+use crate::{extensions::FnCallTransaction, outcome::CheckedOutcome};
 
 #[near_kit::contract]
 pub trait AccessControllable {
@@ -18,7 +18,7 @@ pub trait AccessControllableExt {
         contract_id: impl Into<AccountId>,
         role: impl Into<String>,
         account_id: impl AsRef<AccountIdRef>,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 }
 
 impl AccessControllableExt for SigningNear {
@@ -27,7 +27,7 @@ impl AccessControllableExt for SigningNear {
         contract_id: impl Into<AccountId>,
         role: impl Into<String>,
         account_id: impl AsRef<AccountIdRef>,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(
             contract_id,
             AccessControllable::acl_grant_role(&role.into(), account_id.as_ref())

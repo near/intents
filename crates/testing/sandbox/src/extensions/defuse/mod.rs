@@ -21,7 +21,7 @@ use near_kit::{
 use near_sdk::json_types::U128;
 use serde_json::json;
 
-use crate::{account::AccountExt, extensions::FnCallTransaction};
+use crate::{account::AccountExt, extensions::FnCallTransaction, outcome::CheckedOutcome};
 
 pub use event::*;
 #[cfg(feature = "imt")]
@@ -155,41 +155,41 @@ pub trait DefuseExt {
         &self,
         defuse: impl Into<AccountId>,
         public_key: impl Into<PublicKey>,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn defuse_remove_public_key(
         &self,
         defuse: impl Into<AccountId>,
         public_key: impl Into<PublicKey>,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn defuse_disable_auth_by_predecessor_id(
         &self,
         defuse: impl Into<AccountId>,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn defuse_set_fee(
         &self,
         defuse: impl Into<AccountId>,
         fee: Pips,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn defuse_set_fee_collector(
         &self,
         defuse: impl Into<AccountId>,
         fee_collector: impl AsRef<AccountIdRef>,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn defuse_update_current_salt(
         &self,
         defuse: impl Into<AccountId>,
-    ) -> Result<(FinalExecutionOutcome, Salt)>;
+    ) -> Result<(CheckedOutcome, Salt)>;
 
     async fn defuse_invalidate_salts(
         &self,
         defuse: impl Into<AccountId>,
         salts: impl IntoIterator<Item = Salt>,
-    ) -> Result<(FinalExecutionOutcome, Salt)>;
+    ) -> Result<(CheckedOutcome, Salt)>;
 
     async fn defuse_admin_call(
         &self,
@@ -197,73 +197,73 @@ pub trait DefuseExt {
         promises: &[NearPromise],
         deposit: &NearToken,
         gas: Gas,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn defuse_execute_intents(
         &self,
         defuse: impl Into<AccountId>,
         signed: impl IntoIterator<Item = MultiPayload>,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn defuse_simulate_and_execute_intents(
         &self,
         defuse: impl Into<AccountId>,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> Result<(FinalExecutionOutcome, SimulationOutput)>;
+    ) -> Result<(CheckedOutcome, SimulationOutput)>;
 
     async fn defuse_add_relayer_key(
         &self,
         defuse: impl Into<AccountId>,
         public_key: &PublicKey,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn defuse_delete_relayer_key(
         &self,
         defuse: impl Into<AccountId>,
         public_key: &PublicKey,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn defuse_cleanup_nonces(
         &self,
         defuse: impl Into<AccountId>,
         nonces: impl IntoIterator<Item = (AccountId, impl IntoIterator<Item = Nonce>)>,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn defuse_force_add_public_keys(
         &self,
         defuse: impl Into<AccountId>,
         public_keys: impl IntoIterator<Item = (AccountId, impl IntoIterator<Item = PublicKey>)>,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn defuse_force_remove_public_keys(
         &self,
         defuse: impl Into<AccountId>,
         public_keys: impl IntoIterator<Item = (AccountId, impl IntoIterator<Item = PublicKey>)>,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn defuse_force_lock_account(
         &self,
         defuse: impl Into<AccountId>,
         account_id: impl AsRef<AccountIdRef>,
-    ) -> Result<(FinalExecutionOutcome, bool)>;
+    ) -> Result<(CheckedOutcome, bool)>;
 
     async fn defuse_force_unlock_account(
         &self,
         defuse: impl Into<AccountId>,
         account_id: impl AsRef<AccountIdRef>,
-    ) -> Result<(FinalExecutionOutcome, bool)>;
+    ) -> Result<(CheckedOutcome, bool)>;
 
     async fn defuse_force_disable_auth_by_predecessor_ids(
         &self,
         defuse: impl Into<AccountId>,
         account_ids: impl IntoIterator<Item: Into<AccountId>>,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn defuse_force_enable_auth_by_predecessor_ids(
         &self,
         defuse: impl Into<AccountId>,
         account_ids: impl IntoIterator<Item: Into<AccountId>>,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn defuse_ft_withdraw(
         &self,
@@ -273,7 +273,7 @@ pub trait DefuseExt {
         amount: u128,
         memo: Option<String>,
         msg: Option<String>,
-    ) -> Result<(FinalExecutionOutcome, u128)>;
+    ) -> Result<(CheckedOutcome, u128)>;
 
     #[allow(clippy::too_many_arguments)]
     async fn defuse_ft_force_withdraw(
@@ -297,7 +297,7 @@ pub trait DefuseExt {
         amounts: impl IntoIterator<Item = u128>,
         memo: Option<String>,
         msg: Option<String>,
-    ) -> Result<(FinalExecutionOutcome, Vec<u128>)>;
+    ) -> Result<(CheckedOutcome, Vec<u128>)>;
 
     async fn defuse_nft_withdraw(
         &self,
@@ -307,7 +307,7 @@ pub trait DefuseExt {
         token_id: impl AsRef<str>,
         memo: Option<String>,
         msg: Option<String>,
-    ) -> Result<(FinalExecutionOutcome, bool)>;
+    ) -> Result<(CheckedOutcome, bool)>;
 
     async fn defuse_do_auth_call(
         &self,
@@ -354,7 +354,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         public_key: impl Into<PublicKey>,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(
             defuse,
             Defuse::add_public_key(public_key.into()).gas(Gas::from_tgas(30)),
@@ -366,7 +366,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         public_key: impl Into<PublicKey>,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(
             defuse,
             Defuse::remove_public_key(public_key.into()).gas(Gas::from_tgas(30)),
@@ -377,7 +377,7 @@ impl DefuseExt for SigningNear {
     async fn defuse_disable_auth_by_predecessor_id(
         &self,
         defuse: impl Into<AccountId>,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(
             defuse,
             Defuse::disable_auth_by_predecessor_id().gas(Gas::from_tgas(30)),
@@ -389,7 +389,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         fee: Pips,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(defuse, Defuse::set_fee(fee).gas(Gas::from_tgas(30)))
             .await
     }
@@ -398,7 +398,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         fee_collector: impl AsRef<AccountIdRef>,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(
             defuse,
             Defuse::set_fee_collector(fee_collector.as_ref()).gas(Gas::from_tgas(30)),
@@ -409,7 +409,7 @@ impl DefuseExt for SigningNear {
     async fn defuse_update_current_salt(
         &self,
         defuse: impl Into<AccountId>,
-    ) -> Result<(FinalExecutionOutcome, Salt)> {
+    ) -> Result<(CheckedOutcome, Salt)> {
         self.fn_call_json(
             defuse,
             Defuse::update_current_salt().gas(Gas::from_tgas(30)),
@@ -421,7 +421,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         salts: impl IntoIterator<Item = Salt>,
-    ) -> Result<(FinalExecutionOutcome, Salt)> {
+    ) -> Result<(CheckedOutcome, Salt)> {
         self.fn_call_json(
             defuse,
             Defuse::invalidate_salts(&salts.into_iter().collect::<Vec<_>>())
@@ -436,7 +436,7 @@ impl DefuseExt for SigningNear {
         promises: &[NearPromise],
         deposit: &NearToken,
         gas: Gas,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(
             defuse,
             Defuse::admin_call(promises).deposit(*deposit).gas(gas),
@@ -448,7 +448,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         signed: impl IntoIterator<Item = MultiPayload>,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(
             defuse,
             Defuse::execute_intents(&signed.into_iter().collect::<Vec<_>>())
@@ -461,7 +461,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> Result<(FinalExecutionOutcome, SimulationOutput)> {
+    ) -> Result<(CheckedOutcome, SimulationOutput)> {
         let defuse_id = defuse.into();
         let signed: Vec<MultiPayload> = intents.into_iter().collect();
 
@@ -480,7 +480,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         public_key: &PublicKey,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(
             defuse,
             Defuse::add_relayer_key(*public_key).gas(Gas::from_tgas(30)),
@@ -492,7 +492,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         public_key: &PublicKey,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(
             defuse,
             Defuse::delete_relayer_key(*public_key).gas(Gas::from_tgas(30)),
@@ -504,7 +504,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         nonces: impl IntoIterator<Item = (AccountId, impl IntoIterator<Item = Nonce>)>,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(
             defuse,
             Defuse::cleanup_nonces(
@@ -522,7 +522,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         public_keys: impl IntoIterator<Item = (AccountId, impl IntoIterator<Item = PublicKey>)>,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(
             defuse,
             Defuse::force_add_public_keys(
@@ -542,7 +542,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         public_keys: impl IntoIterator<Item = (AccountId, impl IntoIterator<Item = PublicKey>)>,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(
             defuse,
             Defuse::force_remove_public_keys(
@@ -562,7 +562,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         account_id: impl AsRef<AccountIdRef>,
-    ) -> Result<(FinalExecutionOutcome, bool)> {
+    ) -> Result<(CheckedOutcome, bool)> {
         self.fn_call_json(
             defuse,
             Defuse::force_lock_account(account_id.as_ref()).gas(Gas::from_tgas(30)),
@@ -574,7 +574,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         account_id: impl AsRef<AccountIdRef>,
-    ) -> Result<(FinalExecutionOutcome, bool)> {
+    ) -> Result<(CheckedOutcome, bool)> {
         self.fn_call_json(
             defuse,
             Defuse::force_unlock_account(account_id.as_ref()).gas(Gas::from_tgas(30)),
@@ -586,7 +586,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         account_ids: impl IntoIterator<Item: Into<AccountId>>,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(
             defuse,
             Defuse::force_enable_auth_by_predecessor_ids(
@@ -601,7 +601,7 @@ impl DefuseExt for SigningNear {
         &self,
         defuse: impl Into<AccountId>,
         account_ids: impl IntoIterator<Item: Into<AccountId>>,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.fn_call(
             defuse,
             Defuse::force_disable_auth_by_predecessor_ids(
@@ -620,7 +620,7 @@ impl DefuseExt for SigningNear {
         amount: u128,
         memo: Option<String>,
         msg: Option<String>,
-    ) -> Result<(FinalExecutionOutcome, u128)> {
+    ) -> Result<(CheckedOutcome, u128)> {
         let (outcome, U128(transferred)) = self
             .fn_call_json(
                 defuse,
@@ -673,7 +673,7 @@ impl DefuseExt for SigningNear {
         amounts: impl IntoIterator<Item = u128>,
         memo: Option<String>,
         msg: Option<String>,
-    ) -> Result<(FinalExecutionOutcome, Vec<u128>)> {
+    ) -> Result<(CheckedOutcome, Vec<u128>)> {
         let (outcome, transferred): (_, Vec<U128>) = self
             .fn_call_json(
                 defuse,
@@ -699,7 +699,7 @@ impl DefuseExt for SigningNear {
         token_id: impl AsRef<str>,
         memo: Option<String>,
         msg: Option<String>,
-    ) -> Result<(FinalExecutionOutcome, bool)> {
+    ) -> Result<(CheckedOutcome, bool)> {
         self.fn_call_json(
             defuse,
             Defuse::nft_withdraw(

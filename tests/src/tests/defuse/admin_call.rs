@@ -11,6 +11,7 @@ use defuse_sandbox::{
         },
     },
     kit::{NearToken, protocol::FunctionCallAction, transaction::FunctionCall as KitFunctionCall},
+    outcome::IntoChecked,
 };
 use near_sdk::Gas as NearGas;
 
@@ -46,14 +47,12 @@ async fn multiple_actions_with_admin_call(
 
     ft1.transfer(env.defuse.contract_id(), amount, None)
         .await
-        .expect("Failed to transfer tokens to defuse")
-        .result()
-        .unwrap();
+        .into_checked()
+        .expect("Failed to transfer tokens to defuse");
     ft2.transfer(env.defuse.contract_id(), amount, None)
         .await
-        .expect("Failed to transfer tokens to defuse")
-        .result()
-        .unwrap();
+        .into_checked()
+        .expect("Failed to transfer tokens to defuse");
 
     assert_eq!(
         ft1.balance_of(env.defuse.contract_id()).await.unwrap(),
@@ -219,9 +218,8 @@ async fn admin_call_with_gas_exceeding_action(
 
     ft.transfer(env.defuse.contract_id(), amount, None)
         .await
-        .expect("Failed to transfer tokens to defuse")
-        .result()
-        .unwrap();
+        .into_checked()
+        .expect("Failed to transfer tokens to defuse");
 
     env.acl_grant_role(env.defuse.contract_id(), Role::DAO, admin.account_id())
         .await

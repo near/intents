@@ -3,12 +3,12 @@ use defuse_outlayer_app::{
     State as OutlayerState,
     client::{AsHex, OutlayerAppContract, OutlayerAppContractClient},
 };
-use near_kit::{
-    AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId,
-    rpc::FinalExecutionOutcome,
-};
+use near_kit::{AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId};
 
-use crate::nep616::DeployDeterministicAccountExt;
+use crate::{
+    nep616::DeployDeterministicAccountExt,
+    outcome::{CheckedOutcome, IntoChecked},
+};
 
 pub use defuse_outlayer_app as contract;
 
@@ -46,13 +46,13 @@ pub trait OutlayerAppExt {
         old_code_hash: [u8; 32],
         new_code_hash: [u8; 32],
         new_code_url: impl AsRef<str>,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn oa_transfer_admin(
         &self,
         target: impl AsRef<AccountIdRef>,
         new_admin_id: impl AsRef<AccountIdRef>,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 }
 
 impl OutlayerAppExt for SigningNear {
@@ -62,7 +62,7 @@ impl OutlayerAppExt for SigningNear {
         old_code_hash: [u8; 32],
         new_code_hash: [u8; 32],
         new_code_url: impl AsRef<str>,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.transaction(target.as_ref())
             .add_action(
                 OutlayerAppContract::oa_set_code(
@@ -72,23 +72,21 @@ impl OutlayerAppExt for SigningNear {
                 )
                 .gas(Gas::from_tgas(10)),
             )
-            .await?
-            .checked()
-            .map_err(Into::into)
+            .await
+            .into_checked()
     }
 
     async fn oa_transfer_admin(
         &self,
         target: impl AsRef<AccountIdRef>,
         new_admin_id: impl AsRef<AccountIdRef>,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.transaction(target.as_ref())
             .add_action(
                 OutlayerAppContract::oa_transfer_admin(new_admin_id.as_ref())
                     .gas(Gas::from_tgas(30)),
             )
-            .await?
-            .checked()
-            .map_err(Into::into)
+            .await
+            .into_checked()
     }
 }

@@ -9,6 +9,7 @@ use defuse_sandbox::{
         NearToken, SigningNear,
         protocol::{Action, GlobalContractId, PublishMode},
     },
+    outcome::IntoChecked,
     root,
 };
 use defuse_test_utils::wasms::OUTLAYER_APP_WASM;
@@ -30,8 +31,7 @@ pub async fn outlayer_app_env(#[future(awt)] root: SigningNear) -> OutlayerAppEn
             PublishMode::Immutable,
         ))
         .await
-        .unwrap()
-        .result()
+        .into_checked()
         .unwrap();
 
     OutlayerAppEnv {

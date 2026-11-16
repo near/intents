@@ -6,6 +6,8 @@ use near_kit::{
     signer::SecretKey,
 };
 
+use crate::outcome::IntoChecked;
+
 pub trait GlobalContractExt {
     async fn deploy_upgradable_global_contract(
         &self,
@@ -37,8 +39,8 @@ impl GlobalContractExt for SigningNear {
             .add_action(Action::transfer(balance))
             .add_action(Action::add_full_access_key(secret_key.public_key()))
             .add_action(Action::publish(code, PublishMode::Updatable))
-            .await?
-            .result()?;
+            .await
+            .into_checked()?;
 
         Ok(GlobalContractId::AccountId(account_id.into()))
     }
@@ -57,8 +59,8 @@ impl GlobalContractExt for SigningNear {
             .add_action(Action::create_account())
             .add_action(Action::transfer(balance))
             .add_action(Action::publish(code, PublishMode::Immutable))
-            .await?
-            .result()?;
+            .await
+            .into_checked()?;
 
         Ok(id)
     }

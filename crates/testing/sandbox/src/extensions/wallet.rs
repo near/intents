@@ -3,8 +3,9 @@ use defuse_wallet_sdk::{Request, RequestMessage, client::WalletContract};
 use near_kit::{
     AccountIdRef, Gas, NearToken, SigningNear,
     protocol::{Action, StateInit},
-    rpc::FinalExecutionOutcome,
 };
+
+use crate::outcome::{CheckedOutcome, IntoChecked};
 
 pub use defuse_wallet_sdk as sdk;
 
@@ -16,7 +17,7 @@ pub trait WalletExt {
         msg: &RequestMessage,
         proof: impl AsRef<str>,
         deposit: NearToken,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn w_execute_extension(
         &self,
@@ -24,7 +25,7 @@ pub trait WalletExt {
         state_init: impl Into<Option<StateInit>>,
         request: &Request,
         deposit: NearToken,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 }
 
 impl WalletExt for SigningNear {
@@ -35,7 +36,7 @@ impl WalletExt for SigningNear {
         msg: &RequestMessage,
         proof: impl AsRef<str>,
         deposit: NearToken,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         let mut tx = self.transaction(contract_id.as_ref());
 
         if let Some(state_init) = state_init.into() {
@@ -47,9 +48,8 @@ impl WalletExt for SigningNear {
                 .deposit(deposit)
                 .gas(Gas::from_tgas(300)),
         )
-        .await?
-        .checked()
-        .map_err(Into::into)
+        .await
+        .into_checked()
     }
 
     async fn w_execute_extension(
@@ -58,7 +58,7 @@ impl WalletExt for SigningNear {
         state_init: impl Into<Option<StateInit>>,
         request: &Request,
         deposit: NearToken,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         let mut tx = self.transaction(contract_id.as_ref());
 
         if let Some(state_init) = state_init.into() {
@@ -69,8 +69,7 @@ impl WalletExt for SigningNear {
                 .deposit(deposit)
                 .gas(Gas::from_tgas(300)),
         )
-        .await?
-        .checked()
-        .map_err(Into::into)
+        .await
+        .into_checked()
     }
 }
