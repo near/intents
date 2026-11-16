@@ -1,8 +1,7 @@
 use anyhow::Result;
 use core::str;
 use defuse_nep245::{Token, TokenId};
-use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear};
-use near_sdk::json_types::U128;
+use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear, json_types::U128};
 use std::{
     fmt::Display,
     ops::{Bound, RangeBounds},

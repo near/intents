@@ -11,7 +11,7 @@ use defuse_sandbox::{
         mt::{Mt, MtExt},
         nft::NftAdminExt,
     },
-    kit::{Gas, NearToken, protocol::Action, standards::NonFungibleToken},
+    kit::{Gas, NearToken, json_types::Base64VecU8, protocol::Action, standards::NonFungibleToken},
     outcome::IntoChecked,
 };
 use defuse_test_utils::wasms::NON_FUNGIBLE_TOKEN_WASM;
@@ -19,7 +19,6 @@ use near_contract_standards::non_fungible_token::{
     Token,
     metadata::{NFT_METADATA_SPEC, NFTContractMetadata},
 };
-use near_sdk::json_types::Base64VecU8;
 use rstest::rstest;
 use std::collections::HashMap;
 

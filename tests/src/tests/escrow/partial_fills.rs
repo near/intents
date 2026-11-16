@@ -16,6 +16,7 @@ use defuse_sandbox::{
     },
     kit::{
         AccountId, AccountIdRef, Gas, SigningNear,
+        json_types::U128,
         protocol::{StateInit, StateInitV1},
         rpc::Finality,
         standards::FungibleToken,
@@ -23,7 +24,6 @@ use defuse_sandbox::{
 };
 use futures::{TryStreamExt, stream::FuturesOrdered};
 use itertools::Itertools;
-use near_sdk::json_types::U128;
 use std::time::Duration;
 
 use rstest::rstest;

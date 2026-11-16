@@ -3,11 +3,11 @@ use defuse_poa_factory::contract::Role;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_kit::{
     AccountId, AccountIdRef, Gas, NearToken, SigningNear,
+    json_types::U128,
     signer::PublicKey,
     standards::{FungibleToken, FungibleTokenClient},
     transaction::FunctionCall,
 };
-use near_sdk::json_types::U128;
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
 

@@ -2,11 +2,10 @@ use std::collections::BTreeMap;
 
 use defuse_sandbox::{
     extensions::{mt::MtExt, mt_receiver::MtReceiverStubDeployerExt},
-    kit::NearToken,
+    kit::{NearToken, json_types::U128},
     nep616::DeployDeterministicAccountExt,
 };
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::json_types::U128;
 use rstest::rstest;
 
 use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
