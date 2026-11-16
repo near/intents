@@ -81,7 +81,7 @@ async fn test_force_add_public_keys(
 
         // the number of emitted events should be equal to the number of added public keys
         assert_eq!(
-            result.logs().len(),
+            result.logs().count(),
             public_keys.values().map(HashSet::len).sum::<usize>()
         );
 
@@ -105,7 +105,7 @@ async fn test_force_add_public_keys(
                     .to_nep297_event()
                     .to_event_log();
 
-                assert!(result.logs().contains(&event));
+                assert!(result.logs().any(|log| log == event));
             }
         }
     }
@@ -167,7 +167,7 @@ async fn test_force_add_and_remove_public_keys(
 
         // the number of emitted events should be equal to the number of removed public keys
         assert_eq!(
-            result.logs().len(),
+            result.logs().count(),
             public_keys.values().map(HashSet::len).sum::<usize>()
         );
 
@@ -192,7 +192,7 @@ async fn test_force_add_and_remove_public_keys(
                 .to_nep297_event()
                 .to_event_log();
 
-                assert!(result.logs().contains(&event));
+                assert!(result.logs().any(|log| log == event));
             }
         }
     }

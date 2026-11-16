@@ -18,9 +18,8 @@ pub mod poa;
 #[cfg(feature = "wallet")]
 pub mod wallet;
 
-use crate::outcome::SuccessfulExecutionOutcome;
 use anyhow::Result;
-use near_kit::{AccountId, SigningNear, transaction::FunctionCall};
+use near_kit::{AccountId, SigningNear, rpc::FinalExecutionOutcome, transaction::FunctionCall};
 use serde::de::DeserializeOwned;
 
 pub trait FnCallTransaction {
@@ -28,13 +27,13 @@ pub trait FnCallTransaction {
         &self,
         contract: impl Into<AccountId>,
         action: FunctionCall,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<FinalExecutionOutcome>;
 
     async fn fn_call_json<T: DeserializeOwned>(
         &self,
         contract: impl Into<AccountId>,
         action: FunctionCall,
-    ) -> Result<(SuccessfulExecutionOutcome, T)>;
+    ) -> Result<(FinalExecutionOutcome, T)>;
 }
 
 impl FnCallTransaction for SigningNear {
@@ -42,20 +41,25 @@ impl FnCallTransaction for SigningNear {
         &self,
         contract: impl Into<AccountId>,
         action: FunctionCall,
-    ) -> Result<SuccessfulExecutionOutcome> {
+    ) -> Result<FinalExecutionOutcome> {
         self.transaction(contract.into())
             .add_action(action)
             .await?
-            .try_into()
+            .checked()
+            .map_err(Into::into)
     }
 
     async fn fn_call_json<T: DeserializeOwned>(
         &self,
         contract: impl Into<AccountId>,
         action: FunctionCall,
-    ) -> Result<(SuccessfulExecutionOutcome, T)> {
-        let outcome = self.transaction(contract.into()).add_action(action).await?;
+    ) -> Result<(FinalExecutionOutcome, T)> {
+        let outcome = self
+            .transaction(contract.into())
+            .add_action(action)
+            .await?
+            .checked()?;
         let value = outcome.json::<T>()?;
-        Ok((outcome.try_into()?, value))
+        Ok((outcome, value))
     }
 }

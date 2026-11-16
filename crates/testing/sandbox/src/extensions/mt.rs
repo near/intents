@@ -1,14 +1,14 @@
 use anyhow::Result;
 use core::str;
 use defuse_nep245::{Token, TokenId};
-use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear};
+use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear, rpc::FinalExecutionOutcome};
 use near_sdk::json_types::U128;
 use std::{
     fmt::Display,
     ops::{Bound, RangeBounds},
 };
 
-use crate::{extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};
+use crate::extensions::FnCallTransaction;
 
 /// NEP-245 bindings, see [`defuse_nep245`]
 #[near_kit::contract]
@@ -91,7 +91,7 @@ pub trait MtExt {
         token_id: impl Into<TokenId>,
         amount: u128,
         memo: impl Into<Option<String>>,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<FinalExecutionOutcome>;
 
     async fn mt_batch_transfer(
         &self,
@@ -100,7 +100,7 @@ pub trait MtExt {
         token_ids: impl IntoIterator<Item = impl Into<TokenId>>,
         amounts: impl IntoIterator<Item = u128>,
         memo: impl Into<Option<String>>,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<FinalExecutionOutcome>;
 
     async fn mt_transfer_call(
         &self,
@@ -110,7 +110,7 @@ pub trait MtExt {
         amount: u128,
         memo: impl Into<Option<String>>,
         msg: impl Display,
-    ) -> Result<(SuccessfulExecutionOutcome, Vec<u128>)>;
+    ) -> Result<(FinalExecutionOutcome, Vec<u128>)>;
 
     async fn mt_batch_transfer_call(
         &self,
@@ -120,7 +120,7 @@ pub trait MtExt {
         amounts: impl IntoIterator<Item = u128>,
         memo: impl Into<Option<String>>,
         msg: impl Display,
-    ) -> Result<(SuccessfulExecutionOutcome, Vec<u128>)>;
+    ) -> Result<(FinalExecutionOutcome, Vec<u128>)>;
 
     async fn mt_tokens(
         &self,
@@ -143,7 +143,7 @@ pub trait MtExt {
         token_ids: impl IntoIterator<Item = impl Into<TokenId>>,
         amounts: impl IntoIterator<Item = u128>,
         msg: impl AsRef<str>,
-    ) -> Result<(SuccessfulExecutionOutcome, Vec<U128>)>;
+    ) -> Result<(FinalExecutionOutcome, Vec<U128>)>;
 }
 
 fn range_to_pagination(range: impl RangeBounds<usize>) -> (Option<U128>, Option<u32>) {
@@ -176,7 +176,7 @@ impl MtExt for SigningNear {
         token_id: impl Into<TokenId>,
         amount: u128,
         memo: impl Into<Option<String>>,
-    ) -> Result<SuccessfulExecutionOutcome> {
+    ) -> Result<FinalExecutionOutcome> {
         self.fn_call(
             contract,
             Mt::mt_transfer(
@@ -198,7 +198,7 @@ impl MtExt for SigningNear {
         token_ids: impl IntoIterator<Item = impl Into<TokenId>>,
         amounts: impl IntoIterator<Item = u128>,
         memo: impl Into<Option<String>>,
-    ) -> Result<SuccessfulExecutionOutcome> {
+    ) -> Result<FinalExecutionOutcome> {
         self.transaction(contract.into())
             .add_action(
                 Mt::mt_batch_transfer(
@@ -211,7 +211,8 @@ impl MtExt for SigningNear {
                 .gas(Gas::from_tgas(300)),
             )
             .await?
-            .try_into()
+            .checked()
+            .map_err(Into::into)
     }
 
     async fn mt_transfer_call(
@@ -222,7 +223,7 @@ impl MtExt for SigningNear {
         amount: u128,
         memo: impl Into<Option<String>>,
         msg: impl Display,
-    ) -> Result<(SuccessfulExecutionOutcome, Vec<u128>)> {
+    ) -> Result<(FinalExecutionOutcome, Vec<u128>)> {
         let (outcome, res): (_, Vec<U128>) = self
             .fn_call_json(
                 contract,
@@ -248,7 +249,7 @@ impl MtExt for SigningNear {
         amounts: impl IntoIterator<Item = u128>,
         memo: impl Into<Option<String>>,
         msg: impl Display,
-    ) -> Result<(SuccessfulExecutionOutcome, Vec<u128>)> {
+    ) -> Result<(FinalExecutionOutcome, Vec<u128>)> {
         let (outcome, res): (_, Vec<U128>) = self
             .fn_call_json(
                 contract,
@@ -299,7 +300,7 @@ impl MtExt for SigningNear {
         token_ids: impl IntoIterator<Item = impl Into<TokenId>>,
         amounts: impl IntoIterator<Item = u128>,
         msg: impl AsRef<str>,
-    ) -> Result<(SuccessfulExecutionOutcome, Vec<U128>)> {
+    ) -> Result<(FinalExecutionOutcome, Vec<U128>)> {
         self.fn_call_json(
             contract,
             Mt::mt_on_transfer(

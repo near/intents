@@ -47,7 +47,7 @@ async fn test_add_public_key(
     .to_nep297_event()
     .to_event_log();
 
-    assert_eq!(result.logs(), [event]);
+    itertools::assert_equal(result.logs(), [event]);
 
     assert!(
         env.defuse
@@ -93,7 +93,7 @@ async fn test_add_and_remove_public_key(
     .to_nep297_event()
     .to_event_log();
 
-    assert_eq!(result.logs(), [event]);
+    itertools::assert_equal(result.logs(), [event]);
 
     assert!(
         !env.defuse

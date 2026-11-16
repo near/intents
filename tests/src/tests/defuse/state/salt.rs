@@ -60,7 +60,7 @@ async fn update_current_salt(
         .to_nep297_event()
         .to_event_log();
 
-        assert!(res.logs().contains(&event));
+        assert!(res.logs().any(|log| log == event));
 
         let (current_salt, prev_salt_is_valid) = futures::try_join!(
             env.defuse.current_salt().into_future(),
@@ -124,7 +124,7 @@ async fn invalidate_salts(
         .to_nep297_event()
         .to_event_log();
 
-        assert!(res.logs().contains(&event));
+        assert!(res.logs().any(|log| log == event));
 
         assert!(!env.defuse.is_valid_salt(prev_salt).await.unwrap());
     }
@@ -144,7 +144,7 @@ async fn invalidate_salts(
         .to_nep297_event()
         .to_event_log();
 
-        assert!(res.logs().contains(&event));
+        assert!(res.logs().any(|log| log == event));
 
         assert!(!env.defuse.is_valid_salt(prev_salt).await.unwrap());
         assert_ne!(prev_salt, current_salt);

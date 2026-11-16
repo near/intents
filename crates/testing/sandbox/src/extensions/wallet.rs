@@ -3,11 +3,10 @@ use defuse_wallet_sdk::{Request, RequestMessage, client::WalletContract};
 use near_kit::{
     AccountIdRef, Gas, NearToken, SigningNear,
     protocol::{Action, StateInit},
+    rpc::FinalExecutionOutcome,
 };
 
 pub use defuse_wallet_sdk as sdk;
-
-use crate::outcome::SuccessfulExecutionOutcome;
 
 pub trait WalletExt {
     async fn w_execute_signed(
@@ -17,7 +16,7 @@ pub trait WalletExt {
         msg: &RequestMessage,
         proof: impl AsRef<str>,
         deposit: NearToken,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<FinalExecutionOutcome>;
 
     async fn w_execute_extension(
         &self,
@@ -25,7 +24,7 @@ pub trait WalletExt {
         state_init: impl Into<Option<StateInit>>,
         request: &Request,
         deposit: NearToken,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<FinalExecutionOutcome>;
 }
 
 impl WalletExt for SigningNear {
@@ -36,7 +35,7 @@ impl WalletExt for SigningNear {
         msg: &RequestMessage,
         proof: impl AsRef<str>,
         deposit: NearToken,
-    ) -> Result<SuccessfulExecutionOutcome> {
+    ) -> Result<FinalExecutionOutcome> {
         let mut tx = self.transaction(contract_id.as_ref());
 
         if let Some(state_init) = state_init.into() {
@@ -49,7 +48,8 @@ impl WalletExt for SigningNear {
                 .gas(Gas::from_tgas(300)),
         )
         .await?
-        .try_into()
+        .checked()
+        .map_err(Into::into)
     }
 
     async fn w_execute_extension(
@@ -58,7 +58,7 @@ impl WalletExt for SigningNear {
         state_init: impl Into<Option<StateInit>>,
         request: &Request,
         deposit: NearToken,
-    ) -> Result<SuccessfulExecutionOutcome> {
+    ) -> Result<FinalExecutionOutcome> {
         let mut tx = self.transaction(contract_id.as_ref());
 
         if let Some(state_init) = state_init.into() {
@@ -70,6 +70,7 @@ impl WalletExt for SigningNear {
                 .gas(Gas::from_tgas(300)),
         )
         .await?
-        .try_into()
+        .checked()
+        .map_err(Into::into)
     }
 }

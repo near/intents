@@ -98,7 +98,7 @@ async fn test_lock_account(
             .to_nep297_event()
             .to_event_log();
 
-            assert_eq!(res.logs(), [event]);
+            itertools::assert_equal(res.logs(), [event]);
 
             assert!(
                 env.defuse
@@ -368,7 +368,7 @@ async fn test_lock_account(
             .to_nep297_event()
             .to_event_log();
 
-            assert_eq!(res.logs(), [event]);
+            itertools::assert_equal(res.logs(), [event]);
 
             assert!(
                 !env.defuse
@@ -473,7 +473,7 @@ async fn test_force_set_auth_by_predecessor_id(
             .to_nep297_event()
             .to_event_log();
 
-            assert_eq!(result.logs(), [event]);
+            itertools::assert_equal(result.logs(), [event]);
 
             assert!(
                 !env.defuse
@@ -550,7 +550,7 @@ async fn test_force_set_auth_by_predecessor_id(
             .to_nep297_event()
             .to_event_log();
 
-            assert_eq!(result.logs(), [event]);
+            itertools::assert_equal(result.logs(), [event]);
 
             assert!(
                 env.defuse
