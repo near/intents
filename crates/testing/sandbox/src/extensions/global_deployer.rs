@@ -4,12 +4,12 @@ use defuse_global_deployer::{
     AsHex, AsWrap, State as DeployerState,
     client::{GlobalDeployerContract, GlobalDeployerContractClient},
 };
-use near_kit::{
-    AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId,
-    rpc::FinalExecutionOutcome,
-};
+use near_kit::{AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId};
 
-use crate::nep616::DeployDeterministicAccountExt;
+use crate::{
+    nep616::DeployDeterministicAccountExt,
+    outcome::{CheckedOutcome, IntoChecked},
+};
 
 pub use defuse_global_deployer as contract;
 
@@ -45,27 +45,27 @@ pub trait GlobalDeployerExt {
         target: impl AsRef<AccountIdRef>,
         old_hash: impl Into<[u8; 32]>,
         new_code: &[u8],
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn gd_approve(
         &self,
         target: impl AsRef<AccountIdRef>,
         old_hash: impl Into<[u8; 32]>,
         new_hash: impl Into<[u8; 32]>,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn gd_deploy(
         &self,
         target: impl AsRef<AccountIdRef>,
         code: &[u8],
         deposit: NearToken,
-    ) -> Result<FinalExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn gd_transfer_ownership(
         &self,
         target: impl AsRef<AccountIdRef>,
         new_owner: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<FinalExecutionOutcome>;
+    ) -> anyhow::Result<CheckedOutcome>;
 }
 
 impl GlobalDeployerExt for SigningNear {
@@ -74,7 +74,7 @@ impl GlobalDeployerExt for SigningNear {
         target: impl AsRef<AccountIdRef>,
         old_hash: impl Into<[u8; 32]>,
         new_code: &[u8],
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         let code = new_code.to_vec();
 
         self.transaction(target.as_ref())
@@ -90,9 +90,8 @@ impl GlobalDeployerExt for SigningNear {
                     .deposit(NearToken::from_near(50))
                     .gas(Gas::from_tgas(290)),
             )
-            .await?
-            .checked()
-            .map_err(Into::into)
+            .await
+            .into_checked()
     }
 
     async fn gd_approve(
@@ -100,15 +99,14 @@ impl GlobalDeployerExt for SigningNear {
         target: impl AsRef<AccountIdRef>,
         old_hash: impl Into<[u8; 32]>,
         new_hash: impl Into<[u8; 32]>,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         self.transaction(target.as_ref())
             .add_action(
                 GlobalDeployerContract::gd_approve(AsHex(old_hash.into()), AsHex(new_hash.into()))
                     .gas(Gas::from_tgas(10)),
             )
-            .await?
-            .checked()
-            .map_err(Into::into)
+            .await
+            .into_checked()
     }
 
     async fn gd_deploy(
@@ -116,7 +114,7 @@ impl GlobalDeployerExt for SigningNear {
         target: impl AsRef<AccountIdRef>,
         code: &[u8],
         deposit: NearToken,
-    ) -> Result<FinalExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         let code = code.to_vec();
         self.transaction(target.as_ref())
             .add_action(
@@ -124,23 +122,21 @@ impl GlobalDeployerExt for SigningNear {
                     .deposit(deposit)
                     .gas(Gas::from_tgas(290)),
             )
-            .await?
-            .checked()
-            .map_err(Into::into)
+            .await
+            .into_checked()
     }
 
     async fn gd_transfer_ownership(
         &self,
         target: impl AsRef<AccountIdRef>,
         new_owner: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<FinalExecutionOutcome> {
+    ) -> anyhow::Result<CheckedOutcome> {
         self.transaction(target.as_ref())
             .add_action(
                 GlobalDeployerContract::gd_transfer_ownership(new_owner.as_ref())
                     .gas(Gas::from_tgas(30)),
             )
-            .await?
-            .checked()
-            .map_err(Into::into)
+            .await
+            .into_checked()
     }
 }

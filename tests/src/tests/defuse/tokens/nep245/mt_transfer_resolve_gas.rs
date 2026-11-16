@@ -24,6 +24,7 @@ use defuse_sandbox::{
         rpc::ExecutionStatus,
         transaction::Final,
     },
+    outcome::IntoChecked,
 };
 use defuse_test_utils::{
     random::{gen_random_string, random_bytes, rng},
@@ -51,8 +52,7 @@ async fn make_account(mode: GenerationMode, env: &Env, user: &SigningNear) -> Si
             env.transaction(user.account_id())
                 .add_action(Action::transfer(NearToken::from_near(1000)))
                 .await
-                .unwrap()
-                .result()
+                .into_checked()
                 .unwrap();
             user.clone()
         }
@@ -60,8 +60,7 @@ async fn make_account(mode: GenerationMode, env: &Env, user: &SigningNear) -> Si
             env.transaction(env.defuse.contract_id())
                 .add_action(Action::transfer(NearToken::from_near(1000)))
                 .await
-                .unwrap()
-                .result()
+                .into_checked()
                 .unwrap();
 
             env.create_implicit(NearToken::from_near(1000)).await
@@ -251,8 +250,7 @@ async fn mt_transfer_resolve_gas(#[future(awt)] env: Env, rng: impl Rng) {
         env.transaction(env.defuse.contract_id())
             .add_action(Action::transfer(NearToken::from_near(1000)))
             .await
-            .unwrap()
-            .result()
+            .into_checked()
             .unwrap();
 
         let author_account = make_account(gen_mode, &env, &user).await;
@@ -325,8 +323,7 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit(
     env.transaction(env.defuse.contract_id())
         .add_action(Action::transfer(NearToken::from_near(1000)))
         .await
-        .unwrap()
-        .result()
+        .into_checked()
         .unwrap();
 
     let author_account = env.create_implicit(NearToken::from_near(1000)).await;
@@ -439,8 +436,7 @@ async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(aw
     env.transaction(env.defuse.contract_id())
         .add_action(Action::transfer(NearToken::from_near(1000)))
         .await
-        .unwrap()
-        .result()
+        .into_checked()
         .unwrap();
 
     let author_account = env.create_implicit(NearToken::from_near(1000)).await;
@@ -450,8 +446,7 @@ async fn mt_batch_transfer_call_rejects_at_refund_log_limit_boundary(#[future(aw
         .transaction(receiver_stub.account_id())
         .add_action(Action::deploy_contract(MT_RECEIVER_STUB_WASM.to_vec()))
         .await
-        .unwrap()
-        .result()
+        .into_checked()
         .unwrap();
 
     let token_ids: Vec<String> = std::iter::once(REPRO_FIRST_TOKEN_ID_LEN)

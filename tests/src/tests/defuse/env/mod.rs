@@ -24,6 +24,7 @@ use defuse_sandbox::{
         protocol::Action,
         standards::{FungibleToken, FungibleTokenClient},
     },
+    outcome::IntoChecked,
     root,
 };
 use futures::future::{FutureExt, try_join_all};
@@ -204,8 +205,7 @@ impl Env {
             .transaction(self.defuse_near.account_id())
             .add_action(Action::deploy_contract(wasm))
             .await
-            .unwrap()
-            .result()
+            .into_checked()
             .unwrap();
     }
 
@@ -216,8 +216,8 @@ impl Env {
     ) -> Result<()> {
         self.transaction(account_id)
             .add_action(Action::transfer(amount))
-            .await?
-            .result()?;
+            .await
+            .into_checked()?;
         Ok(())
     }
 }

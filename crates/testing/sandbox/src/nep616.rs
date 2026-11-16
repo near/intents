@@ -3,6 +3,8 @@ use near_kit::{
     AccountId, NearToken, SigningNear,
     protocol::{Action, GlobalContractId, StateInit, StateInitV1},
 };
+
+use crate::outcome::IntoChecked;
 use std::collections::BTreeMap;
 
 pub trait DeployDeterministicAccountExt {
@@ -30,8 +32,8 @@ impl DeployDeterministicAccountExt for SigningNear {
 
         self.transaction(&account_id)
             .add_action(Action::state_init(si, deposit))
-            .await?
-            .result()?;
+            .await
+            .into_checked()?;
 
         Ok(account_id)
     }
