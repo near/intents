@@ -332,7 +332,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         .await
         .unwrap();
 
-    assert_eq!(
+    itertools::assert_equal(
         result.logs(),
         vec![
             GdEvent::Transfer {
@@ -347,7 +347,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
             }
             .to_nep297_event()
             .to_event_log(),
-        ]
+        ],
     );
 
     assert_eq!(
@@ -386,7 +386,7 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
         .unwrap();
 
     let deployed_hash = Sha256::digest(&*DEPLOYER_WASM);
-    assert_eq!(
+    itertools::assert_equal(
         result.logs(),
         vec![
             GdEvent::Deploy {
@@ -400,7 +400,7 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
             }
             .to_nep297_event()
             .to_event_log(),
-        ]
+        ],
     );
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
@@ -449,7 +449,7 @@ async fn test_deploy_event_old_hash_after_upgrade(
         .await
         .unwrap();
 
-    assert_eq!(
+    itertools::assert_equal(
         result.logs(),
         vec![
             GdEvent::Approve {
@@ -469,7 +469,7 @@ async fn test_deploy_event_old_hash_after_upgrade(
             }
             .to_nep297_event()
             .to_event_log(),
-        ]
+        ],
     );
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,

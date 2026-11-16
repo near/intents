@@ -3,9 +3,9 @@ use std::collections::BTreeMap;
 use anyhow::Result;
 use defuse::core::tokens::imt::ImtTokens;
 use defuse_core::amounts::Amounts;
-use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear};
+use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear, rpc::FinalExecutionOutcome};
 
-use crate::{extensions::FnCallTransaction, outcome::SuccessfulExecutionOutcome};
+use crate::extensions::FnCallTransaction;
 
 #[near_kit::contract]
 pub trait ImtBurnerContract {
@@ -20,7 +20,7 @@ pub trait DefuseImtExt {
         minter_id: impl AsRef<AccountIdRef>,
         tokens: impl IntoIterator<Item = (impl Into<String>, u128)>,
         memo: impl Into<Option<String>>,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<FinalExecutionOutcome>;
 }
 
 impl DefuseImtExt for SigningNear {
@@ -30,7 +30,7 @@ impl DefuseImtExt for SigningNear {
         minter_id: impl AsRef<AccountIdRef>,
         tokens: impl IntoIterator<Item = (impl Into<String>, u128)>,
         memo: impl Into<Option<String>>,
-    ) -> Result<SuccessfulExecutionOutcome> {
+    ) -> Result<FinalExecutionOutcome> {
         let tokens: ImtTokens = Amounts::new(
             tokens
                 .into_iter()

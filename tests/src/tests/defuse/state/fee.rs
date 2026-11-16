@@ -66,7 +66,7 @@ async fn set_fee(
         .to_nep297_event()
         .to_event_log();
 
-        assert!(res.logs().contains(&event));
+        assert!(res.logs().any(|log| log == event));
 
         let current_fee = env.defuse.fee().await.unwrap();
 
@@ -116,7 +116,7 @@ async fn set_fee_collector(
         .to_nep297_event()
         .to_event_log();
 
-        assert!(res.logs().contains(&event));
+        assert!(res.logs().any(|log| log == event));
 
         let current_collector = env.defuse.fee_collector().await.unwrap();
 

@@ -116,7 +116,7 @@ async fn test_event_set_code(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
         .await
         .unwrap();
 
-    assert_eq!(
+    itertools::assert_equal(
         result.logs(),
         vec![
             OaEvent::SetCode {
@@ -124,8 +124,8 @@ async fn test_event_set_code(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
                 url: new_url.into(),
             }
             .to_nep297_event()
-            .to_event_log()
-        ]
+            .to_event_log(),
+        ],
     );
 }
 
@@ -147,7 +147,7 @@ async fn test_event_transfer_admin(#[future(awt)] outlayer_app_env: OutlayerAppE
         .await
         .unwrap();
 
-    assert_eq!(
+    itertools::assert_equal(
         result.logs(),
         vec![
             OaEvent::TransferAdmin {
@@ -156,6 +156,6 @@ async fn test_event_transfer_admin(#[future(awt)] outlayer_app_env: OutlayerAppE
             }
             .to_nep297_event()
             .to_event_log(),
-        ]
+        ],
     );
 }

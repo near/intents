@@ -1,8 +1,6 @@
 use anyhow::Result;
 use defuse_escrow_swap::{Params, Storage};
-use near_kit::{AccountIdRef, Gas, SigningNear};
-
-use crate::outcome::SuccessfulExecutionOutcome;
+use near_kit::{AccountIdRef, Gas, SigningNear, rpc::FinalExecutionOutcome};
 
 pub use defuse_escrow_swap as contract;
 
@@ -24,13 +22,13 @@ pub trait EscrowExt {
         &self,
         escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<FinalExecutionOutcome>;
 
     async fn es_lost_found(
         &self,
         escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<FinalExecutionOutcome>;
 }
 
 impl EscrowExt for SigningNear {
@@ -38,21 +36,23 @@ impl EscrowExt for SigningNear {
         &self,
         escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
-    ) -> Result<SuccessfulExecutionOutcome> {
+    ) -> Result<FinalExecutionOutcome> {
         self.transaction(escrow_id.as_ref())
             .add_action(Escrow::es_close(&params).gas(Gas::from_tgas(300)))
             .await?
-            .try_into()
+            .checked()
+            .map_err(Into::into)
     }
 
     async fn es_lost_found(
         &self,
         escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
-    ) -> Result<SuccessfulExecutionOutcome> {
+    ) -> Result<FinalExecutionOutcome> {
         self.transaction(escrow_id.as_ref())
             .add_action(Escrow::es_lost_found(&params).gas(Gas::from_tgas(300)))
             .await?
-            .try_into()
+            .checked()
+            .map_err(Into::into)
     }
 }

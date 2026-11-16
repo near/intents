@@ -75,7 +75,7 @@ async fn execute_add_public_key_intent(
             .to_event_log(),
     ];
 
-    assert_eq!(result.logs(), events);
+    itertools::assert_equal(result.logs(), events);
 }
 
 #[rstest]

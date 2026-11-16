@@ -69,7 +69,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
             .to_nep297_event()
             .to_event_log();
 
-        assert_eq!(result.logs(), [event]);
+        itertools::assert_equal(result.logs(), [event]);
 
         assert!(
             !env.defuse
@@ -180,7 +180,7 @@ async fn auth_by_predecessor_id(#[future(awt)] env: Env) {
             .await
             .unwrap();
 
-        assert_eq!(result.logs(), enable_auth_payload.to_event_log());
+        itertools::assert_equal(result.logs(), enable_auth_payload.to_event_log());
 
         assert!(
             env.defuse

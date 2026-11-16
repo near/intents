@@ -222,7 +222,7 @@ async fn run_resolve_gas_test(
             .is_empty(),
     );
 
-    let longest_emited_log = res.logs().iter().map(String::len).max().unwrap();
+    let longest_emited_log = res.logs().map(str::len).max().unwrap();
 
     assert_eq!(
         longest_emited_log, expected_transfer_log,
