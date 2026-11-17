@@ -1757,7 +1757,6 @@ dependencies = [
  "multi-token-receiver-stub",
  "near-account-id",
  "near-contract-standards",
- "near-sdk",
  "rstest",
  "serde_json",
  "strum 0.28.0",

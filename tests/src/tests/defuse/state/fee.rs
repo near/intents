@@ -3,6 +3,7 @@ use crate::{
     utils::asserts::ResultAssertsExt,
 };
 use defuse_sandbox::{
+    AsNep297Event,
     extensions::{
         acl::AccessControllableExt,
         defuse::{
@@ -17,7 +18,6 @@ use defuse_sandbox::{
     kit::AccountId,
 };
 use futures::FutureExt;
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 
 #[rstest]

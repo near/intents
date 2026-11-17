@@ -7,6 +7,7 @@ use defuse_core::tokens::BATCH_MAX_TOKENS;
 use defuse_near_utils::REFUND_MEMO;
 use defuse_randomness::Rng;
 use defuse_sandbox::{
+    AsNep297Event,
     account::AccountExt,
     extensions::{
         defuse::{
@@ -32,7 +33,6 @@ use defuse_test_utils::{
     wasms::MT_RECEIVER_STUB_WASM,
 };
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 use std::{borrow::Cow, sync::Arc};
 use strum::IntoEnumIterator;

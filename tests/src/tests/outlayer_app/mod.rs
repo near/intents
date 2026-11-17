@@ -1,5 +1,6 @@
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_sandbox::{
+    AsNep297Event,
     account::AccountExt,
     extensions::outlayer_app::{
         OutlayerAppDeployerExt, OutlayerAppExt,
@@ -13,7 +14,6 @@ use defuse_sandbox::{
     root,
 };
 use defuse_test_utils::wasms::OUTLAYER_APP_WASM;
-use near_sdk::events::AsNep297Event;
 use rstest::{fixture, rstest};
 
 const EXAMPLE_URL: &str = "https://example.com/contract.wasm";
