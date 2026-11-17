@@ -5,6 +5,7 @@ use crate::{
 use defuse_sandbox::extensions::defuse::{
     DefuseExt, DefuseSignerExt, core::intents::tokens::StorageDeposit,
 };
+use futures::FutureExt;
 use rstest::rstest;
 
 const MIN_FT_STORAGE_DEPOSIT_VALUE: NearToken =
@@ -62,16 +63,15 @@ async fn storage_deposit_success(
     );
 
     // For intents contract to have a balance in wnear, we make a storage deposit for it
-    let (wnear_deposit, ft_deposit) = futures::try_join!(
+    futures::join!(
         env.wnear
             .storage_deposit(env.defuse.contract_id(), NearToken::from_near(1))
-            .into_future(),
+            .into_future()
+            .map(|r| r.unwrap().checked().unwrap()),
         ft.storage_deposit(user.account_id(), NearToken::from_near(1))
-            .into_future(),
-    )
-    .unwrap();
-    wnear_deposit.result().unwrap();
-    ft_deposit.result().unwrap();
+            .into_future()
+            .map(|r| r.unwrap().checked().unwrap()),
+    );
 
     {
         futures::join!(
@@ -174,16 +174,15 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(#[future(awt)] env
     }
 
     // For intents contract to have a balance in wnear, we make a storage deposit for it
-    let (wnear_deposit, ft_deposit) = futures::try_join!(
+    futures::join!(
         env.wnear
             .storage_deposit(env.defuse.contract_id(), NearToken::from_near(1))
-            .into_future(),
+            .into_future()
+            .map(|r| r.unwrap().checked().unwrap()),
         ft.storage_deposit(user.account_id(), NearToken::from_near(1))
-            .into_future(),
-    )
-    .unwrap();
-    wnear_deposit.result().unwrap();
-    ft_deposit.result().unwrap();
+            .into_future()
+            .map(|r| r.unwrap().checked().unwrap()),
+    );
 
     {
         futures::join!(

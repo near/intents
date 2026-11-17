@@ -965,7 +965,7 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
         )
         .await
         .unwrap()
-        .result()
+        .checked()
         .assert_err_contains("NEAR to cover storage cost");
 
     // code_hash unchanged after failed deploy
@@ -1066,7 +1066,7 @@ async fn test_post_deploy_fails_when_approval_changed(
         "gd_post_deploy callback should have failed"
     );
 
-    result.result().unwrap();
+    result.checked().unwrap();
 
     // code_hash should be unchanged — the callback was rejected so state was not updated
     assert_eq!(

@@ -10,7 +10,7 @@ use defuse_sandbox::{
     root,
 };
 use defuse_test_utils::wasms::POA_FACTORY_WASM;
-use futures::try_join;
+use futures::{FutureExt, join};
 use rstest::rstest;
 
 #[rstest]
@@ -55,15 +55,14 @@ async fn deploy_mint(#[future(awt)] root: SigningNear) {
 
     assert_eq!(ft1.balance_of(user.account_id()).await.unwrap(), 0);
 
-    let (root_deposit, user_deposit) = try_join!(
+    join!(
         ft1.storage_deposit(root.account_id(), NearToken::from_near(1))
-            .into_future(),
+            .into_future()
+            .map(|r| r.unwrap().checked().unwrap()),
         ft1.storage_deposit(user.account_id(), NearToken::from_near(1))
             .into_future()
-    )
-    .unwrap();
-    root_deposit.checked().unwrap();
-    user_deposit.checked().unwrap();
+            .map(|r| r.unwrap().checked().unwrap()),
+    );
 
     user.poa_factory_ft_deposit(
         poa_factory.contract_id(),

@@ -176,7 +176,7 @@ impl Env {
                             ft.storage_deposit(account_id, TOKEN_STORAGE_DEPOSIT)
                                 .into_future()
                                 .map(move |r| {
-                                    r.context(format!(
+                                    r.map(|o| o.checked().unwrap()).context(format!(
                                         "{token}::storage_deposit({{\"account_id\": \"{account_id}\"}})"
                                     ))
                                 })

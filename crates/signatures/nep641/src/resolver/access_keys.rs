@@ -217,7 +217,7 @@ mod tests {
             .wait_until::<Final>() // wait for finalization
             .await
             .unwrap()
-            .result()
+            .checked()
             .unwrap();
         near = near.with_signer(InMemorySigner::new(near.account_id(), new_key));
 

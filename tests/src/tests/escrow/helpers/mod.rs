@@ -18,7 +18,11 @@ use defuse_sandbox::{
     root,
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, ESCROW_SWAP_WASM, POA_FACTORY_WASM, WNEAR_WASM};
-use futures::{future::try_join_all, try_join};
+use futures::{
+    FutureExt,
+    future::{join_all, try_join_all},
+    try_join,
+};
 use impl_tools::autoimpl;
 use rstest::fixture;
 
@@ -71,12 +75,12 @@ impl Env {
         )
         .unwrap();
 
-        try_join_all([&src_ft, &dst_ft].into_iter().map(|ft| {
+        join_all([&src_ft, &dst_ft].into_iter().map(|ft| {
             ft.storage_deposit(verifier.contract_id(), NearToken::from_millinear(2))
                 .into_future()
+                .map(|r| r.unwrap().checked().unwrap())
         }))
-        .await
-        .unwrap();
+        .await;
 
         try_join_all(
             [

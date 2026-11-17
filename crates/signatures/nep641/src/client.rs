@@ -11,6 +11,8 @@ use crate::AuthorizationResolution;
 #[near_kit::contract]
 pub trait AuthResolverContract {
     /// See [`w_resolve_auth()`](crate::AuthResolver::w_resolve_auth) method.
+    ///
+    /// Takes `#[args]`, since `#[near_kit::contract]` doesn't allow serde attributes on parameters.
     fn w_resolve_auth(&self, #[args] args: WResolveAuthArgs<'_>) -> AuthorizationResolution;
 }
 
