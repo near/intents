@@ -13,6 +13,7 @@ members = [
   "contracts/wallet",
   "contracts/wallet/signatures/ed25519",
   "contracts/wallet/signatures/no-sign",
+  "contracts/wallet/signatures/stellar",
   "contracts/wallet/signatures/webauthn",
   "contracts/wallet/signatures/webauthn/ed25519",
   "contracts/wallet/signatures/webauthn/p256",
@@ -84,6 +85,7 @@ defuse-poa-token.path = "contracts/poa/token"
 defuse-wallet.path = "contracts/wallet"
 defuse-wallet-ed25519.path = "contracts/wallet/signatures/ed25519"
 defuse-wallet-no-sign.path = "contracts/wallet/signatures/no-sign"
+defuse-wallet-stellar.path = "contracts/wallet/signatures/stellar"
 defuse-wallet-webauthn.path = "contracts/wallet/signatures/webauthn"
 defuse-wallet-webauthn-ed25519.path = "contracts/wallet/signatures/webauthn/ed25519"
 defuse-wallet-webauthn-p256.path = "contracts/wallet/signatures/webauthn/p256"

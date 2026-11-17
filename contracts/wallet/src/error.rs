@@ -7,11 +7,20 @@ use crate::NonceError;
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum ContractError {
+    #[error("duplicate fungible token metadata requirement for '{0}'")]
+    DuplicateFtMetadata(AccountId),
+
     #[error("extension '{0}' is already enabled")]
     ExtensionEnabled(AccountId),
 
     #[error("extension '{0}' is not enabled")]
     ExtensionNotEnabled(AccountId),
+
+    #[error("fungible token metadata does not match")]
+    FtMetadataMismatch,
+
+    #[error("total gas weight for checked promise exceeds u64::MAX")]
+    GasWeightOverflow,
 
     #[error("message is from the future")]
     FromTheFuture,

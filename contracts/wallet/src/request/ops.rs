@@ -1,12 +1,27 @@
 use near_account_id::AccountId;
 
+use crate::Gas;
+
+/// Gas reserved for each token `ft_metadata()` call made for
+/// [`WalletOp::RequireFtMetadata`].
+pub const FT_METADATA_GAS: Gas = Gas::from_tgas(10);
+
+/// Gas reserved for each wallet callback that checks `ft_metadata()`, in
+/// addition to the gas of the promise it creates.
+pub const FT_METADATA_CALLBACK_GAS: Gas = Gas::from_tgas(10);
+
 /// An internal operation to perform on wallet-contract's [state](crate::State).
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
-    serde(tag = "op", content = "payload", rename_all = "snake_case")
+    serde(
+        tag = "op",
+        content = "payload",
+        rename_all = "snake_case",
+        deny_unknown_fields
+    )
 )]
 #[cfg_attr(
     feature = "borsh",
@@ -31,6 +46,18 @@ pub enum WalletOp {
     ///
     /// If this extension is not currently enabled, the contract MUST panic.
     RemoveExtension { account_id: AccountId } = 2,
+
+    /// Create this request's promises to `token_id` only after its NEP-148
+    /// `ft_metadata()` returns exactly these `decimals` and `symbol`;
+    /// otherwise they are not created.
+    ///
+    /// Readable signing messages require it to show NEP-141 transfer amounts
+    /// with decimals and symbol. At most one per token in a request.
+    RequireFtMetadata {
+        token_id: AccountId,
+        decimals: u8,
+        symbol: String,
+    } = 3,
 }
 
 impl WalletOp {
@@ -60,6 +87,19 @@ impl WalletOp {
     pub fn remove_extension(account_id: impl Into<AccountId>) -> Self {
         Self::RemoveExtension {
             account_id: account_id.into(),
+        }
+    }
+
+    #[inline]
+    pub fn require_ft_metadata(
+        token_id: impl Into<AccountId>,
+        decimals: u8,
+        symbol: impl Into<String>,
+    ) -> Self {
+        Self::RequireFtMetadata {
+            token_id: token_id.into(),
+            decimals,
+            symbol: symbol.into(),
         }
     }
 }

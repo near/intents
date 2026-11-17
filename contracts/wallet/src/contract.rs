@@ -16,15 +16,23 @@ use defuse_nep641::{AuthResolver, AuthorizationResolution};
 use defuse_time::Timestamp;
 use impl_tools::autoimpl;
 use near_account_id::{AccountId, AccountIdRef};
-use near_sdk::{FunctionError, Promise, env, ext_contract};
+use near_sdk::{FunctionError, GasWeight, NearToken, Promise, env, ext_contract};
 
 pub use crate::ContractError as Error;
 use crate::{
-    Request, RequestMessage, SignatureSchema, State, WalletAuthorization, WalletOp,
+    FT_METADATA_CALLBACK_GAS, FT_METADATA_GAS, Request, RequestMessage, SignatureSchema, State,
+    WalletAuthorization, WalletOp,
     events::{Actor, WalletEvent},
 };
 
 pub type Result<T, E = Error> = ::core::result::Result<T, E>;
+
+/// Longest `ft_metadata()` result read by the wallet; longer results fail
+/// the check.
+pub const MAX_FT_METADATA_LEN: usize = 32 * 1024;
+
+/// Token, decimals and symbol of each [`WalletOp::RequireFtMetadata`].
+type FtMetadataRequirements = Vec<(AccountId, u8, String)>;
 
 /// Wallet contract interface.
 ///
@@ -222,22 +230,49 @@ where
     }
 
     fn execute_request(&mut self, request: Request, actor: &Actor<'_>) -> Result<()> {
+        let mut ft_metadata = FtMetadataRequirements::new();
         for op in request.internal {
-            self.execute_op(op, actor.as_ref())?;
+            self.execute_op(op, actor.as_ref(), &mut ft_metadata)?;
         }
 
         for promise in request.external {
-            Self::build_promise(promise)?.detach();
+            Self::check_promise(&promise)?;
+            match ft_metadata
+                .iter()
+                .find(|(token_id, ..)| *token_id == promise.receiver_id)
+            {
+                Some((_, decimals, symbol)) => {
+                    promise_after_ft_metadata(&promise, *decimals, symbol)?
+                }
+                None => promise.build(),
+            }
+            .detach();
         }
 
         Ok(())
     }
 
-    fn execute_op(&mut self, op: WalletOp, actor: Actor<'_>) -> Result<()> {
+    fn execute_op(
+        &mut self,
+        op: WalletOp,
+        actor: Actor<'_>,
+        ft_metadata: &mut FtMetadataRequirements,
+    ) -> Result<()> {
         match op {
             WalletOp::SetSignatureMode { enable } => self.set_signature_mode(enable, actor),
             WalletOp::AddExtension { account_id } => self.add_extension(account_id, actor),
             WalletOp::RemoveExtension { account_id } => self.remove_extension(&account_id, actor),
+            WalletOp::RequireFtMetadata {
+                token_id,
+                decimals,
+                symbol,
+            } => {
+                if ft_metadata.iter().any(|(other, ..)| *other == token_id) {
+                    return Err(Error::DuplicateFtMetadata(token_id));
+                }
+                ft_metadata.push((token_id, decimals, symbol));
+                Ok(())
+            }
         }
     }
 
@@ -302,7 +337,7 @@ where
         Ok(())
     }
 
-    fn build_promise(p: NearPromise) -> Result<Promise> {
+    fn check_promise(p: &NearPromise) -> Result<()> {
         // check for no self-calls
         if p.receiver_id == env::current_account_id() {
             return Err(Error::SelfCallsNotAllowed);
@@ -325,8 +360,69 @@ where
             return Err(Error::UnsupportedPromiseAction);
         }
 
-        Ok(p.build())
+        Ok(())
     }
+
+    /// Callback of [`WalletOp::RequireFtMetadata`]: create `promise` only if
+    /// the `ft_metadata()` result has exactly these `decimals` and `symbol`.
+    #[doc(hidden)]
+    pub fn w_on_ft_metadata(decimals: u8, symbol: &str, promise: NearPromise) {
+        Self::on_ft_metadata(decimals, symbol, promise).unwrap_or_else(|err| err.panic());
+    }
+
+    fn on_ft_metadata(decimals: u8, symbol: &str, promise: NearPromise) -> Result<()> {
+        #[derive(::serde::Deserialize)]
+        struct FtMetadata {
+            decimals: u8,
+            symbol: String,
+        }
+
+        let metadata = env::promise_result_checked(0, MAX_FT_METADATA_LEN)
+            .ok()
+            .and_then(|data| serde_json::from_slice::<FtMetadata>(&data).ok())
+            .ok_or(Error::FtMetadataMismatch)?;
+        if metadata.decimals != decimals || metadata.symbol != symbol {
+            return Err(Error::FtMetadataMismatch);
+        }
+        Self::check_promise(&promise)?;
+        promise.build().detach();
+        Ok(())
+    }
+}
+
+/// Call the token's `ft_metadata()`, then create `p` in
+/// `w_on_ft_metadata()` if it has these `decimals` and `symbol`.
+///
+/// Unused gas is shared as without the check: `ft_metadata()` gets only
+/// its static gas, and the callback gets the total weight of `p`'s calls.
+fn promise_after_ft_metadata(p: &NearPromise, decimals: u8, symbol: &str) -> Result<Promise> {
+    let weight = p
+        .actions
+        .iter()
+        .filter_map(|action| match action {
+            NearAction::FunctionCall(call) => Some(call.gas_weight),
+            _ => None,
+        })
+        .try_fold(0, u64::checked_add)
+        .ok_or(Error::GasWeightOverflow)?;
+    let gas = p.estimate_gas().saturating_add(FT_METADATA_CALLBACK_GAS);
+    let check = Promise::new(p.receiver_id.clone()).function_call(
+        "ft_metadata",
+        Vec::new(),
+        NearToken::ZERO,
+        FT_METADATA_GAS,
+    );
+    let args = borsh::to_vec(&(decimals, symbol, p))
+        .unwrap_or_else(|_| unreachable!("borsh: failed to serialize"));
+    Ok(check.then(
+        Promise::new(env::current_account_id()).function_call_weight(
+            "w_on_ft_metadata",
+            args,
+            NearToken::ZERO,
+            gas,
+            GasWeight(weight),
+        ),
+    ))
 }
 
 impl<S> AuthResolver for WalletImpl<S>
@@ -502,6 +598,7 @@ macro_rules! wallet {
             ///
             /// SHOULD be `#[payable]` and accept ANY attached deposit.
             #[payable]
+            #[deny_unknown_arguments]
             fn w_execute_signed(
                 &mut self,
                 msg: $crate::RequestMessage,
@@ -514,6 +611,7 @@ macro_rules! wallet {
             ///
             /// Requires at least 1yN attached.
             #[payable]
+            #[deny_unknown_arguments]
             fn w_execute_extension(&mut self, request: $crate::Request) {
                 self.0.w_execute_extension(request);
             }
@@ -562,6 +660,7 @@ macro_rules! wallet {
         #[$crate::near_sdk::near]
         impl $crate::offchain::AuthResolver for $contract {
             /// Resolve offchain authorization.
+            #[deny_unknown_arguments]
             fn w_resolve_auth(
                 &self,
                 path: ::std::vec::Vec<$crate::AccountId>,
@@ -570,5 +669,142 @@ macro_rules! wallet {
                 self.0.w_resolve_auth(path, authorization)
             }
         }
+
+        #[$crate::near_sdk::near]
+        impl $contract {
+            /// Callback of `WalletOp::RequireFtMetadata`: create `promise`
+            /// only if the token's `ft_metadata()` has exactly these
+            /// `decimals` and `symbol`.
+            #[private]
+            pub fn w_on_ft_metadata(
+                &self,
+                #[serializer(borsh)] decimals: u8,
+                #[serializer(borsh)] symbol: ::std::string::String,
+                #[serializer(borsh)] promise: $crate::NearPromise,
+            ) {
+                $crate::contract::WalletImpl::<$schema>::w_on_ft_metadata(decimals, &symbol, promise);
+            }
+        }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use defuse_near_promise::actions::FunctionCall;
+    use near_sdk::{
+        mock::MockAction,
+        test_utils::{VMContextBuilder, get_created_receipts},
+        testing_env,
+    };
+
+    use super::*;
+
+    #[test]
+    fn ft_metadata_check_keeps_gas_weights() {
+        testing_env!(
+            VMContextBuilder::new()
+                .current_account_id("wallet.near".parse().unwrap())
+                .build()
+        );
+        let p = NearPromise::new("token.near".parse::<AccountId>().unwrap())
+            .function_call(FunctionCall::name("ft_transfer").unused_gas_weight(2))
+            .transfer(NearToken::from_yoctonear(1))
+            .function_call(FunctionCall::name("other").unused_gas_weight(997));
+        promise_after_ft_metadata(&p, 6, "USDC").unwrap().detach();
+
+        let calls: Vec<_> = get_created_receipts()
+            .into_iter()
+            .flat_map(|receipt| receipt.actions)
+            .filter_map(|action| match action {
+                MockAction::FunctionCallWeight {
+                    method_name,
+                    prepaid_gas,
+                    gas_weight,
+                    ..
+                } => Some((
+                    String::from_utf8(method_name).unwrap(),
+                    prepaid_gas,
+                    gas_weight.0,
+                )),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            calls,
+            [
+                ("ft_metadata".to_owned(), FT_METADATA_GAS, 0),
+                (
+                    "w_on_ft_metadata".to_owned(),
+                    p.estimate_gas().saturating_add(FT_METADATA_CALLBACK_GAS),
+                    999,
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn ft_metadata_check_rejects_weight_overflow_before_creating_receipts() {
+        testing_env!(VMContextBuilder::new().build());
+        let p = NearPromise::new("token.near".parse::<AccountId>().unwrap())
+            .function_call(FunctionCall::name("first").unused_gas_weight(u64::MAX))
+            .function_call(FunctionCall::name("second").unused_gas_weight(1));
+        assert!(matches!(
+            promise_after_ft_metadata(&p, 6, "USDC"),
+            Err(Error::GasWeightOverflow)
+        ));
+        assert!(get_created_receipts().is_empty());
+    }
+    struct RejectSignatures;
+    impl SignatureSchema for RejectSignatures {
+        type PublicKey = ();
+        fn verify_request_msg((): &(), _: &RequestMessage, _: &str) -> bool {
+            false
+        }
+        fn verify_offchain_msg((): &(), _: &defuse_nep641::OffchainMessage, _: &str) -> bool {
+            false
+        }
+    }
+
+    #[test]
+    fn metadata_result_failures_never_create_the_transfer() {
+        use near_sdk::{PromiseResult, RuntimeFeesConfig, test_vm_config};
+        let promise = NearPromise::new("recipient.near".parse::<AccountId>().unwrap())
+            .transfer(NearToken::from_yoctonear(1));
+        for data in [
+            b"not JSON".to_vec(),
+            br#"{"decimals":6,"symbol":"USDC","symbol":"FAKE"}"#.to_vec(),
+            br#"{"decimals":6,"decimals":24,"symbol":"USDC"}"#.to_vec(),
+            br#"{"decimals":24,"symbol":"USDC"}"#.to_vec(),
+            br#"{"decimals":6,"symbol":"FAKE"}"#.to_vec(),
+            vec![b' '; MAX_FT_METADATA_LEN + 1],
+        ]
+        .into_iter()
+        .map(PromiseResult::Successful)
+        .chain([PromiseResult::Failed])
+        {
+            testing_env!(
+                VMContextBuilder::new().build(),
+                test_vm_config(),
+                RuntimeFeesConfig::test(),
+                std::collections::HashMap::default(),
+                vec![data]
+            );
+            assert!(matches!(
+                WalletImpl::<RejectSignatures>::on_ft_metadata(6, "USDC", promise.clone()),
+                Err(Error::FtMetadataMismatch)
+            ));
+            assert!(get_created_receipts().is_empty());
+        }
+        testing_env!(
+            VMContextBuilder::new().build(),
+            test_vm_config(),
+            RuntimeFeesConfig::test(),
+            std::collections::HashMap::default(),
+            vec![PromiseResult::Successful(
+                br#"{"decimals":6,"symbol":"USDC"}"#.to_vec()
+            )]
+        );
+        WalletImpl::<RejectSignatures>::on_ft_metadata(6, "USDC", promise).unwrap();
+        assert_eq!(get_created_receipts().len(), 1);
+    }
 }

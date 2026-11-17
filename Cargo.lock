@@ -1955,6 +1955,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-wallet-stellar"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "defuse-crypto",
+ "defuse-nep641",
+ "defuse-sep53",
+ "defuse-wallet",
+ "defuse-wallet-sdk",
+ "defuse-wallet-stellar",
+ "near-kit",
+ "near-kit-sandbox",
+ "near-sdk",
+ "rand 0.10.3",
+ "serde_json",
+ "sha2 0.11.1",
+ "stellar-strkey",
+ "thiserror 2.0.21",
+ "tokio",
+]
+
+[[package]]
 name = "defuse-wallet-webauthn"
 version = "0.1.0"
 dependencies = [

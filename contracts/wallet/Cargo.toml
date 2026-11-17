@@ -27,7 +27,7 @@ near-sdk = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_json = { workspace = true, optional = true }
-serde_with = { workspace = true, optional = true }
+serde_with = { workspace = true, features = ["base64"], optional = true }
 
 [features]
 default = ["std"]
@@ -71,6 +71,9 @@ json = [
   "serde",
 ]
 near-kit = ["defuse-near-promise/near-kit", "defuse-nep641/near-kit"]
+# StateInit construction in the promise model requires Borsh support.
+# Function arguments are shown in their original key order.
+readable-message = ["borsh", "json", "serde_json/preserve_order", "std"]
 schemars-v0_8 = [
   "defuse-near-promise/schemars-v0_8",
   "defuse-nep641/schemars-v0_8",
@@ -101,7 +104,7 @@ near-contract = [
 ]
 
 [dev-dependencies]
-defuse-wallet = { path = ".", features = ["abi", "arbitrary", "borsh", "digest", "schemars-v0_8", "serde", "near-contract"] }
+defuse-wallet = { path = ".", features = ["abi", "arbitrary", "borsh", "digest", "schemars-v0_8", "serde", "near-contract", "readable-message"] }
 
 bs58.workspace = true
 hex-literal.workspace = true

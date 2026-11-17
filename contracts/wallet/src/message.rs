@@ -27,7 +27,8 @@ pub type ChainId = String;
     ::cfg_eval::cfg_eval,
     ::serde_with::serde_as,
     derive(::serde::Serialize, ::serde::Deserialize),
-    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema))
+    cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
+    serde(deny_unknown_fields)
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -211,7 +212,7 @@ impl RequestMessage {
     feature = "serde",
     derive(::serde::Serialize, ::serde::Deserialize),
     cfg_attr(feature = "schemars-v0_8", derive(::schemars::JsonSchema)),
-    serde(rename_all = "snake_case")
+    serde(rename_all = "snake_case", deny_unknown_fields)
 )]
 #[cfg_attr(feature = "arbitrary", derive(::arbitrary::Arbitrary))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -219,6 +220,10 @@ pub enum WalletAuthorization {
     /// Authorize via signature.
     Signature {
         /// Offchain Message
+        #[cfg_attr(
+            feature = "serde",
+            serde(deserialize_with = "crate::serde_adapters::offchain")
+        )]
         msg: OffchainMessage,
         /// Proof (i.e. signature)
         proof: String,
@@ -310,5 +315,113 @@ mod tests {
     fn json_hash(#[case] json: &str, #[case] hash: [u8; 32]) {
         let msg: RequestMessage = serde_json::from_str(json).unwrap();
         assert_eq!(msg.hash(), hash);
+    }
+
+    /// Signed messages reject fields that verification would ignore.
+    #[test]
+    fn unknown_fields_are_rejected() {
+        let request: serde_json::Value = serde_json::from_str(
+            r#"{"chain_id":"mainnet","signer_id":"alice.near","nonce":1,"created_at":"1970-01-01T00:00:00Z","timeout_secs":60,"request":{"internal":[{"op":"add_extension","payload":{"account_id":"bob.near"}}],"external":[{"receiver_id":"bob.near","actions":[{"action":"transfer","payload":{"amount":"1"}},{"action":"function_call","payload":{"function_name":"f"}},{"action":"deterministic_state_init","payload":{"state_init":{"V1":{"code":{"account_id":"code.near"},"data":{}}}}}]}]}}"#,
+        )
+        .unwrap();
+        serde_json::from_value::<RequestMessage>(request.clone()).unwrap();
+        for pointer in [
+            "",
+            "/request",
+            "/request/internal/0",
+            "/request/internal/0/payload",
+            "/request/external/0",
+            "/request/external/0/actions/0",
+            "/request/external/0/actions/0/payload",
+            "/request/external/0/actions/1/payload",
+            "/request/external/0/actions/2/payload",
+            "/request/external/0/actions/2/payload/state_init/V1",
+            "/request/external/0/actions/2/payload/state_init/V1/code",
+        ] {
+            let mut request = request.clone();
+            request
+                .pointer_mut(pointer)
+                .and_then(serde_json::Value::as_object_mut)
+                .unwrap()
+                .insert("max_spend".to_owned(), "1".into());
+            assert!(
+                serde_json::from_value::<RequestMessage>(request).is_err(),
+                "accepted at {pointer:?}"
+            );
+        }
+
+        // Storage keys that decode to the same bytes.
+        let duplicate = r#"{"chain_id":"mainnet","signer_id":"alice.near","nonce":1,"created_at":"1970-01-01T00:00:00Z","timeout_secs":60,"request":{"external":[{"receiver_id":"bob.near","actions":[{"action":"deterministic_state_init","payload":{"state_init":{"V1":{"code":{"account_id":"code.near"},"data":{"AA==":"AQ==","AA":"Ag=="}}}}}]}]}}"#;
+        assert!(serde_json::from_str::<RequestMessage>(duplicate).is_err());
+        assert!(
+            serde_json::from_str::<WalletAuthorization>(
+                r#"{"extension":{"account_id":"a.near","authorization":"","payload":"","expires_at":"1"}}"#
+            )
+            .is_err()
+        );
+
+        let auth: serde_json::Value = serde_json::from_str(
+            r#"{"chain_id":"mainnet","signer_id":"alice.near","path":[],"timestamp":"1970-01-01T00:00:00Z","payload":"x"}"#,
+        )
+        .unwrap();
+        serde_json::from_value::<WalletAuthorization>(serde_json::json!({
+            "signature": { "msg": auth, "proof": "" }
+        }))
+        .unwrap();
+        let mut auth = auth;
+        auth.as_object_mut()
+            .unwrap()
+            .insert("expires_at".to_owned(), "1".into());
+        assert!(
+            serde_json::from_value::<WalletAuthorization>(serde_json::json!({
+                "signature": { "msg": auth, "proof": "" }
+            }))
+            .is_err()
+        );
+    }
+
+    /// Absent fields take their schema defaults; `null` is rejected, except
+    /// for the optional `refund_to`, where it means absent (clients mirror this).
+    #[test]
+    fn null_is_not_a_default() {
+        fn check<T: serde::de::DeserializeOwned + PartialEq + core::fmt::Debug>(
+            json: &str,
+            pointer: &str,
+        ) {
+            let value: serde_json::Value = serde_json::from_str(json).unwrap();
+            let (parent, key) = pointer.rsplit_once('/').unwrap();
+            let mut absent = value.clone();
+            absent
+                .pointer_mut(parent)
+                .and_then(serde_json::Value::as_object_mut)
+                .unwrap()
+                .remove(key)
+                .unwrap();
+            let absent = serde_json::from_value::<T>(absent).unwrap();
+            let mut null = value;
+            *null.pointer_mut(pointer).unwrap() = serde_json::Value::Null;
+            match serde_json::from_value::<T>(null) {
+                Ok(null) => assert!(pointer.ends_with("/refund_to") && null == absent),
+                Err(_) => assert!(!pointer.ends_with("/refund_to"), "{pointer}"),
+            }
+        }
+        let request = r#"{"chain_id":"mainnet","signer_id":"alice.near","nonce":1,"created_at":"1970-01-01T00:00:00Z","timeout_secs":60,"pay_for_gas":false,"request":{"internal":[],"external":[{"receiver_id":"bob.near","refund_to":"carol.near","actions":[{"action":"function_call","payload":{"function_name":"f","args":"e30=","deposit":"1","gas":"2","gas_weight":"3"}},{"action":"deterministic_state_init","payload":{"state_init":{"V1":{"code":{"account_id":"code.near"},"data":{}}},"deposit":"4"}}]}]}}"#;
+        for pointer in [
+            "/pay_for_gas",
+            "/request/internal",
+            "/request/external",
+            "/request/external/0/refund_to",
+            "/request/external/0/actions/0/payload/args",
+            "/request/external/0/actions/0/payload/deposit",
+            "/request/external/0/actions/0/payload/gas",
+            "/request/external/0/actions/0/payload/gas_weight",
+            "/request/external/0/actions/1/payload/deposit",
+        ] {
+            check::<RequestMessage>(request, pointer);
+        }
+        check::<WalletAuthorization>(
+            r#"{"signature":{"msg":{"chain_id":"mainnet","signer_id":"alice.near","path":["a.near"],"timestamp":"1970-01-01T00:00:00Z","payload":"x"},"proof":""}}"#,
+            "/signature/msg/path",
+        );
     }
 }
