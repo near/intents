@@ -1,4 +1,5 @@
 use defuse_sandbox::{
+    account::AccountExt,
     extensions::{
         defuse::{
             DefuseExt, DefuseSignerExt, ToEventLog,
@@ -12,7 +13,7 @@ use defuse_sandbox::{
         mt::Mt,
         wnear::WNearExt,
     },
-    kit::{Gas, NearToken, rpc::Finality, standards::FungibleToken},
+    kit::{Gas, NearToken, standards::FungibleToken},
 };
 use rstest::rstest;
 
@@ -54,9 +55,7 @@ async fn native_withdraw_intent(
         let mut result = vec![];
         for (account, _) in &amounts_to_withdraw {
             let balance = env
-                .near()
-                .rpc()
-                .view_account(account, Finality::Final)
+                .account(account)
                 .await
                 .map_or(NearToken::ZERO, |a| a.amount);
 
@@ -127,13 +126,7 @@ async fn native_withdraw_intent(
     // Check balances of NEAR on the blockchain
     for ((receiver_id, amount), initial_balance) in amounts_to_withdraw.iter().zip(initial_balances)
     {
-        let balance = env
-            .near()
-            .rpc()
-            .view_account(receiver_id, Finality::Final)
-            .await
-            .unwrap()
-            .amount;
+        let balance = env.account(receiver_id).await.unwrap().amount;
 
         assert!(
             balance == initial_balance.checked_add(*amount).unwrap(),

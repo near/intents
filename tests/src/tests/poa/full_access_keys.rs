@@ -5,11 +5,7 @@ use defuse_sandbox::{
         acl::AccessControllableExt,
         poa::{PoAFactoryExt, PoaFactory, PoaFactoryClient, PoaFactoryDeployerExt, contract::Role},
     },
-    kit::{
-        Gas, NearToken, SigningNear,
-        rpc::{AccessKeyPermissionView, Finality},
-        signer::SecretKey,
-    },
+    kit::{Gas, NearToken, SigningNear, rpc::AccessKeyPermissionView, signer::SecretKey},
     root,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::POA_FACTORY_WASM};
@@ -33,7 +29,6 @@ async fn deploy_factory(root: &SigningNear) -> PoaFactoryClient<SigningNear> {
 #[tokio::test]
 async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
     let factory = deploy_factory(&root).await;
-    let rpc = root.near().rpc();
     let tokens = ["ft1", "ft2", "ft3"];
     let mut token_ids = Vec::new();
     for name in tokens {
@@ -42,7 +37,7 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
             .await
             .unwrap();
         assert!(
-            rpc.view_access_key_list(token.contract_id(), Finality::Final)
+            root.access_keys(token.contract_id())
                 .await
                 .unwrap()
                 .keys
@@ -67,11 +62,7 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
 
     // The factory detaches its promises, so verify the resulting keys on every token.
     for token_id in &token_ids {
-        let keys = rpc
-            .view_access_key_list(token_id, Finality::Final)
-            .await
-            .unwrap()
-            .keys;
+        let keys = root.access_keys(token_id).await.unwrap().keys;
         assert_eq!(keys.len(), 1);
         assert_eq!(keys[0].public_key.as_full(), Some(&public_key));
         assert!(matches!(
@@ -80,7 +71,7 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
         ));
     }
     assert!(
-        rpc.view_access_key_list(factory.contract_id(), Finality::Final)
+        root.access_keys(factory.contract_id())
             .await
             .unwrap()
             .keys
@@ -98,11 +89,7 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
 
     // The factory detaches its promises, so verify the resulting keys on every token.
     for token_id in token_ids {
-        let keys = rpc
-            .view_access_key_list(&token_id, Finality::Final)
-            .await
-            .unwrap()
-            .keys;
+        let keys = root.access_keys(&token_id).await.unwrap().keys;
         assert!(keys.is_empty());
     }
 }
@@ -129,9 +116,7 @@ async fn add_full_access_key_to_tokens_requires_deployed_tokens(#[future(awt)] r
     .assert_err_contains(format!("token '{undeployed_token}' is not deployed"));
 
     assert!(
-        root.near()
-            .rpc()
-            .view_access_key_list(token.contract_id(), Finality::Final)
+        root.access_keys(token.contract_id())
             .await
             .unwrap()
             .keys

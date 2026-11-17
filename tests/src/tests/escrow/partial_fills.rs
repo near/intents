@@ -1,4 +1,5 @@
 use defuse_sandbox::{
+    account::AccountExt,
     extensions::{
         defuse::{
             core::intents::tokens::NotifyOnTransfer,
@@ -18,7 +19,6 @@ use defuse_sandbox::{
         AccountId, AccountIdRef, Gas, SigningNear,
         json_types::U128,
         protocol::{StateInit, StateInitV1},
-        rpc::Finality,
         standards::FungibleToken,
     },
 };
@@ -290,12 +290,7 @@ pub async fn show_verifier_balances(
 }
 
 async fn maybe_view_escrow(root: &SigningNear, escrow: &EscrowClient<SigningNear>) {
-    let Ok(account) = root
-        .near()
-        .rpc()
-        .view_account(escrow.contract_id(), Finality::Final)
-        .await
-    else {
+    let Ok(account) = root.account(escrow.contract_id()).await else {
         println!("{} does not exist", escrow.contract_id());
         return;
     };
