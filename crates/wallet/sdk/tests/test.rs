@@ -7,7 +7,7 @@ use defuse_wallet::{NearPromise, Request, WalletOp, actions::FunctionCall};
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
 use defuse_wallet_sdk::{Gas, NearToken, WalletBuilder, client::WalletContract};
 use futures::{
-    StreamExt, TryStreamExt, future,
+    FutureExt, StreamExt, TryStreamExt, future,
     stream::{self, FuturesUnordered},
 };
 use near_kit::{
@@ -82,7 +82,7 @@ async fn rotate(
         .wait_until::<Final>()
         .await
         .unwrap()
-        .result()
+        .checked()
         .expect("key rotation failed");
 
     master
@@ -93,7 +93,7 @@ async fn rotate(
         .wait_until::<Final>()
         .await
         .unwrap()
-        .result()
+        .checked()
         .expect_err("signature should be disabled");
 
     let extension = extension.as_extension_of(master);
@@ -106,7 +106,7 @@ async fn rotate(
         .wait_until::<Final>()
         .await
         .unwrap()
-        .result()
+        .checked()
         .expect("extension should be able to execute requests on behalf of root");
 }
 
@@ -136,7 +136,7 @@ async fn w_init(
         .wait_until::<Final>()
         .await
         .unwrap()
-        .result()
+        .checked()
         .unwrap();
 
     near.contract::<WalletContract>(near.account_id())
@@ -145,7 +145,7 @@ async fn w_init(
         }]))
         .await
         .unwrap()
-        .result()
+        .checked()
         .expect_err("cannot accidentally delete itself from extension");
 
     near.contract::<WalletContract>(near.account_id())
@@ -154,7 +154,7 @@ async fn w_init(
         }]))
         .await
         .unwrap()
-        .result()
+        .checked()
         .unwrap();
 
     extension
@@ -166,7 +166,7 @@ async fn w_init(
         .wait_until::<Final>()
         .await
         .unwrap()
-        .result()
+        .checked()
         .unwrap();
 
     assert_eq!(
@@ -294,18 +294,15 @@ async fn near() -> SigningNear {
                 .pretty()
                 .init();
 
-            for outcome in future::try_join_all(
+            future::join_all(
                 [&**WALLET_ED25519_WASM, &**WALLET_NO_SIGN_WASM].map(|wasm| {
                     near.transaction(near.account_id())
                         .add_action(Action::publish(wasm, PublishMode::Immutable))
                         .into_future()
+                        .map(|r| r.unwrap().checked().unwrap())
                 }),
             )
-            .await
-            .expect("failed to deploy global contracts by hash")
-            {
-                outcome.result().expect("failed to deploy global contract");
-            }
+            .await;
         })
         .await;
 

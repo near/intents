@@ -264,8 +264,10 @@ where
     #[inline]
     pub fn with_client(mut self, client: impl AsRef<near_kit::Near>) -> Self {
         let client = client.as_ref();
+
         self = self.with_chain_id(client.chain_id().as_str());
         self.client = Some(client.clone());
+
         self
     }
 
