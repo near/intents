@@ -8,7 +8,7 @@ use near_kit::{
     AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId, rpc::CheckedOutcome,
 };
 
-use crate::nep616::DeployDeterministicAccountExt;
+use crate::{extensions::FnCallTransaction, nep616::DeployDeterministicAccountExt};
 
 pub use defuse_global_deployer as contract;
 
@@ -100,14 +100,12 @@ impl GlobalDeployerExt for SigningNear {
         old_hash: impl Into<[u8; 32]>,
         new_hash: impl Into<[u8; 32]>,
     ) -> Result<CheckedOutcome> {
-        self.transaction(target.as_ref())
-            .add_action(
-                GlobalDeployerContract::gd_approve(AsHex(old_hash.into()), AsHex(new_hash.into()))
-                    .gas(Gas::from_tgas(10)),
-            )
-            .await?
-            .checked()
-            .map_err(Into::into)
+        self.fn_call(
+            target.as_ref(),
+            GlobalDeployerContract::gd_approve(AsHex(old_hash.into()), AsHex(new_hash.into()))
+                .gas(Gas::from_tgas(10)),
+        )
+        .await
     }
 
     async fn gd_deploy(
@@ -117,15 +115,13 @@ impl GlobalDeployerExt for SigningNear {
         deposit: NearToken,
     ) -> Result<CheckedOutcome> {
         let code = code.to_vec();
-        self.transaction(target.as_ref())
-            .add_action(
-                GlobalDeployerContract::gd_deploy(AsWrap::new(code))
-                    .deposit(deposit)
-                    .gas(Gas::from_tgas(290)),
-            )
-            .await?
-            .checked()
-            .map_err(Into::into)
+        self.fn_call(
+            target.as_ref(),
+            GlobalDeployerContract::gd_deploy(AsWrap::new(code))
+                .deposit(deposit)
+                .gas(Gas::from_tgas(290)),
+        )
+        .await
     }
 
     async fn gd_transfer_ownership(
@@ -133,13 +129,11 @@ impl GlobalDeployerExt for SigningNear {
         target: impl AsRef<AccountIdRef>,
         new_owner: impl AsRef<AccountIdRef>,
     ) -> anyhow::Result<CheckedOutcome> {
-        self.transaction(target.as_ref())
-            .add_action(
-                GlobalDeployerContract::gd_transfer_ownership(new_owner.as_ref())
-                    .gas(Gas::from_tgas(30)),
-            )
-            .await?
-            .checked()
-            .map_err(Into::into)
+        self.fn_call(
+            target.as_ref(),
+            GlobalDeployerContract::gd_transfer_ownership(new_owner.as_ref())
+                .gas(Gas::from_tgas(30)),
+        )
+        .await
     }
 }

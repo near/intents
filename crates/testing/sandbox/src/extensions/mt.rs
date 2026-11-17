@@ -209,20 +209,18 @@ impl MtExt for SigningNear {
         amounts: impl IntoIterator<Item = u128>,
         memo: impl Into<Option<String>>,
     ) -> Result<CheckedOutcome> {
-        self.transaction(contract.into())
-            .add_action(
-                Mt::mt_batch_transfer(
-                    receiver_id.as_ref(),
-                    &token_ids.into_iter().map(Into::into).collect::<Vec<_>>(),
-                    &amounts.into_iter().map(U128).collect::<Vec<_>>(),
-                    None,
-                    memo.into().as_deref(),
-                )
-                .gas(Gas::from_tgas(300)),
+        self.fn_call(
+            contract,
+            Mt::mt_batch_transfer(
+                receiver_id.as_ref(),
+                &token_ids.into_iter().map(Into::into).collect::<Vec<_>>(),
+                &amounts.into_iter().map(U128).collect::<Vec<_>>(),
+                None,
+                memo.into().as_deref(),
             )
-            .await?
-            .checked()
-            .map_err(Into::into)
+            .gas(Gas::from_tgas(300)),
+        )
+        .await
     }
 
     async fn mt_transfer_call(
