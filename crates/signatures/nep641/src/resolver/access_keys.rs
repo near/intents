@@ -203,14 +203,10 @@ mod tests {
         assert_eq!(PAYLOAD, resolved, "resolved invalid payload");
 
         let new_key = SecretKey::generate_ed25519();
+        let new_signer = InMemorySigner::implicit(new_key.clone()).unwrap();
         // check on other account
         resolver
-            .resolve_auth(
-                InMemorySigner::implicit(new_key.clone())
-                    .unwrap()
-                    .account_id(),
-                &authorization,
-            )
+            .resolve_auth(new_signer.account_id(), &authorization)
             .await
             .expect_err("authorization must be invalid only for non-signer accounts");
 

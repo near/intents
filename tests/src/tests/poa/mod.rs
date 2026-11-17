@@ -62,8 +62,8 @@ async fn deploy_mint(#[future(awt)] root: SigningNear) {
             .into_future()
     )
     .unwrap();
-    root_deposit.result().unwrap();
-    user_deposit.result().unwrap();
+    root_deposit.checked().unwrap();
+    user_deposit.checked().unwrap();
 
     user.poa_factory_ft_deposit(
         poa_factory.contract_id(),
