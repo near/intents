@@ -1,5 +1,6 @@
 use crate::tests::defuse::env::{Env, env};
 use defuse_sandbox::{
+    AsNep297Event,
     extensions::{
         defuse::{
             DefuseExt, DefuseSignerExt, ToEventLog,
@@ -17,7 +18,6 @@ use defuse_sandbox::{
     kit::AccountId,
 };
 use defuse_test_utils::asserts::ResultAssertsExt;
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 

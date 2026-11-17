@@ -8,6 +8,7 @@ pub mod outcome;
 
 pub use near_kit as kit;
 pub use near_kit_sandbox as sandbox;
+pub use near_sdk::events::AsNep297Event;
 
 use near_kit::{NearToken, SigningNear};
 use near_kit_sandbox::Sandbox;

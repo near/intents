@@ -1,17 +1,19 @@
 use defuse_core::payload::Payload;
-use defuse_sandbox::extensions::defuse::{
-    DefuseExt, DefuseSignerExt, ExtractNonceExt, ToEventLog,
-    core::{
-        PublicKey,
-        accounts::{AccountEvent, PublicKeyEvent},
-        events::DefuseEvent,
-        intents::{
-            MaybeIntentEvent,
-            account::{AddPublicKey, RemovePublicKey},
+use defuse_sandbox::{
+    AsNep297Event,
+    extensions::defuse::{
+        DefuseExt, DefuseSignerExt, ExtractNonceExt, ToEventLog,
+        core::{
+            PublicKey,
+            accounts::{AccountEvent, PublicKeyEvent},
+            events::DefuseEvent,
+            intents::{
+                MaybeIntentEvent,
+                account::{AddPublicKey, RemovePublicKey},
+            },
         },
     },
 };
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 

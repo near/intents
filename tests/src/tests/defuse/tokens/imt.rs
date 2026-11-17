@@ -1,4 +1,5 @@
 use defuse_sandbox::{
+    AsNep297Event,
     extensions::defuse::{
         DefuseExt, DefuseImtExt, DefuseSignerExt,
         core::{
@@ -14,7 +15,6 @@ use defuse_sandbox::{
     },
     extensions::mt::Mt,
 };
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 

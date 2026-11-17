@@ -3,6 +3,7 @@ mod deploy_escrow_swap;
 
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_sandbox::{
+    AsNep297Event,
     account::AccountExt,
     extensions::{
         FnCallTransaction,
@@ -26,7 +27,6 @@ use defuse_sandbox::{
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::MT_RECEIVER_STUB_WASM};
 use futures::future::join_all;
-use near_sdk::events::AsNep297Event;
 use rstest::{fixture, rstest};
 use std::{
     future::IntoFuture,

@@ -1,20 +1,22 @@
-use defuse_sandbox::extensions::{
-    acl::AccessControllableExt,
-    defuse::{
-        AsBase64, DefuseExt, DefuseSignerExt, ExtractNonceExt,
-        contract::Role,
-        core::{
-            DefuseError, PublicKey,
-            accounts::AccountEvent,
-            events::DefuseEvent,
-            intents::{Intent, MaybeIntentEvent, account::SetAuthByPredecessorId},
-            token_id::{TokenId, nep141::Nep141TokenId},
+use defuse_sandbox::{
+    AsNep297Event,
+    extensions::{
+        acl::AccessControllableExt,
+        defuse::{
+            AsBase64, DefuseExt, DefuseSignerExt, ExtractNonceExt,
+            contract::Role,
+            core::{
+                DefuseError, PublicKey,
+                accounts::AccountEvent,
+                events::DefuseEvent,
+                intents::{Intent, MaybeIntentEvent, account::SetAuthByPredecessorId},
+                token_id::{TokenId, nep141::Nep141TokenId},
+            },
         },
+        mt::{Mt, MtExt},
     },
-    mt::{Mt, MtExt},
 };
 use defuse_test_utils::fixtures::public_key;
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 

@@ -1,5 +1,6 @@
 use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::{
+    AsNep297Event,
     extensions::{
         acl::AccessControllableExt,
         defuse::{
@@ -16,7 +17,6 @@ use defuse_sandbox::{
     kit::AccountId,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, fixtures::public_key, random::rng};
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 use std::{
     borrow::Cow,

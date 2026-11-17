@@ -4,16 +4,18 @@ use crate::{
     tests::defuse::env::{Env, env},
     utils::asserts::ResultAssertsExt,
 };
-use defuse_sandbox::extensions::{
-    acl::AccessControllableExt,
-    defuse::{
-        DefuseExt,
-        contract::Role,
-        core::{accounts::SaltRotationEvent, events::DefuseEvent},
+use defuse_sandbox::{
+    AsNep297Event,
+    extensions::{
+        acl::AccessControllableExt,
+        defuse::{
+            DefuseExt,
+            contract::Role,
+            core::{accounts::SaltRotationEvent, events::DefuseEvent},
+        },
     },
 };
 use futures::FutureExt;
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 
 #[rstest]

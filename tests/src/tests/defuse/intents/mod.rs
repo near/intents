@@ -3,6 +3,7 @@
 use defuse_core::{intents::MaybeIntentEvent, payload::Payload};
 use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::{
+    AsNep297Event,
     extensions::{
         defuse::{
             DefuseExt, DefuseSignerExt,
@@ -22,7 +23,6 @@ use defuse_sandbox::{
     sandbox::Sandbox,
 };
 use defuse_test_utils::random::rng;
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 
