@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, ensure};
 use defuse_wallet_sdk::{Request, RequestMessage, client::WalletContract};
 use near_kit::{
     AccountIdRef, Gas, NearToken, SigningNear,
@@ -36,9 +36,14 @@ impl WalletExt for SigningNear {
         proof: impl AsRef<str>,
         deposit: NearToken,
     ) -> Result<CheckedOutcome> {
-        let mut tx = self.transaction(contract_id.as_ref());
+        let contract_id = contract_id.as_ref();
+        let mut tx = self.transaction(contract_id);
 
         if let Some(state_init) = state_init.into() {
+            ensure!(
+                state_init.derive_account_id() == contract_id,
+                "invalid state_init"
+            );
             tx = tx.add_action(Action::state_init(state_init, NearToken::ZERO));
         }
 
@@ -59,9 +64,14 @@ impl WalletExt for SigningNear {
         request: &Request,
         deposit: NearToken,
     ) -> Result<CheckedOutcome> {
-        let mut tx = self.transaction(contract_id.as_ref());
+        let contract_id = contract_id.as_ref();
+        let mut tx = self.transaction(contract_id);
 
         if let Some(state_init) = state_init.into() {
+            ensure!(
+                state_init.derive_account_id() == contract_id,
+                "invalid state_init"
+            );
             tx = tx.add_action(Action::state_init(state_init, NearToken::ZERO));
         }
         tx.add_action(
