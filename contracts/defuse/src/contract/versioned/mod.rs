@@ -69,7 +69,7 @@ impl MaybeVersionedContractStorage {
 }
 
 impl BorshDeserializeAs<ContractStorage> for MaybeVersionedContractStorage {
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<ContractStorage>
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<ContractStorage>
     where
         R: io::Read,
     {

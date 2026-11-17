@@ -35,7 +35,7 @@ macro_rules! borsh_as {
             I::Error: Display,
         {
             #[inline]
-            fn deserialize_as<R>(reader: &mut R) -> io::Result<Timestamp>
+            fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<Timestamp>
             where
                 R: io::Read,
             {
@@ -198,7 +198,7 @@ mod tests {
     {
         let mut buf = Vec::new();
         As::serialize_as(orig, &mut buf).expect("serialize_as");
-        let deserialized = As::deserialize_as(&mut buf.as_slice()).expect("deserialize_as");
+        let deserialized = As::deserialize_reader_as(&mut buf.as_slice()).expect("deserialize_as");
         assert_eq!(
             &deserialized, orig,
             "deserialized value differs from the original one"
