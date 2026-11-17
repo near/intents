@@ -14,13 +14,20 @@ use crate::extensions::FnCallTransaction;
 /// NEP-245 bindings, see [`defuse_nep245`]
 #[near_kit::contract]
 pub trait Mt {
+    /// See [`mt_token()`](defuse_nep245::MultiTokenCore::mt_token) method.
     fn mt_token(&self, token_ids: &[TokenId]) -> Vec<Option<Token>>;
+    /// See [`mt_balance_of()`](defuse_nep245::MultiTokenCore::mt_balance_of) method.
     fn mt_balance_of(&self, account_id: &AccountIdRef, token_id: &str) -> U128;
+    /// See [`mt_batch_balance_of()`](defuse_nep245::MultiTokenCore::mt_batch_balance_of) method.
     fn mt_batch_balance_of(&self, account_id: &AccountIdRef, token_ids: &[TokenId]) -> Vec<U128>;
+    /// See [`mt_supply()`](defuse_nep245::MultiTokenCore::mt_supply) method.
     fn mt_supply(&self, token_id: &str) -> Option<U128>;
+    /// See [`mt_batch_supply()`](defuse_nep245::MultiTokenCore::mt_batch_supply) method.
     fn mt_batch_supply(&self, token_ids: &[TokenId]) -> Vec<Option<U128>>;
 
+    /// See [`mt_tokens()`](defuse_nep245::enumeration::MultiTokenEnumeration::mt_tokens) method.
     fn mt_tokens(&self, from_index: Option<U128>, limit: Option<u32>) -> Vec<Token>;
+    /// See [`mt_tokens_for_owner()`](defuse_nep245::enumeration::MultiTokenEnumeration::mt_tokens_for_owner) method.
     fn mt_tokens_for_owner(
         &self,
         account_id: &AccountIdRef,
@@ -28,6 +35,7 @@ pub trait Mt {
         limit: Option<u32>,
     ) -> Vec<Token>;
 
+    /// See [`mt_transfer()`](defuse_nep245::MultiTokenCore::mt_transfer) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn mt_transfer(
         &mut self,
@@ -38,6 +46,7 @@ pub trait Mt {
         memo: Option<&str>,
     );
 
+    /// See [`mt_batch_transfer()`](defuse_nep245::MultiTokenCore::mt_batch_transfer) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn mt_batch_transfer(
         &mut self,
@@ -48,7 +57,7 @@ pub trait Mt {
         memo: Option<&str>,
     );
 
-    /// Returns `Vec<U128>`
+    /// See [`mt_transfer_call()`](defuse_nep245::MultiTokenCore::mt_transfer_call) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn mt_transfer_call(
         &mut self,
@@ -60,7 +69,7 @@ pub trait Mt {
         msg: &str,
     );
 
-    /// Returns `Vec<U128>`
+    /// See [`mt_batch_transfer_call()`](defuse_nep245::MultiTokenCore::mt_batch_transfer_call) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn mt_batch_transfer_call(
         &mut self,
@@ -72,7 +81,7 @@ pub trait Mt {
         msg: &str,
     );
 
-    /// Returns `Vec<U128>`
+    /// See [`mt_on_transfer()`](defuse_nep245::receiver::MultiTokenReceiver::mt_on_transfer) method.
     #[call]
     fn mt_on_transfer(
         &mut self,

@@ -7,7 +7,7 @@ use crate::extensions::FnCallTransaction;
 pub trait AccessControllable {
     fn acl_has_role(&self, role: &str, account_id: &AccountIdRef) -> bool;
 
-    /// Returns `Option<bool>`
+    /// Returns [`Option<bool>`]
     #[call]
     fn acl_grant_role(&mut self, role: &str, account_id: &AccountIdRef);
 }

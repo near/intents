@@ -6,13 +6,14 @@ pub use defuse_escrow_swap as contract;
 
 #[near_kit::contract]
 pub trait Escrow {
+    /// See [`es_view()`](defuse_escrow_swap::Escrow::es_view) method.
     fn es_view(&self) -> Storage;
 
-    /// Returns `bool`
+    /// See [`es_close()`](defuse_escrow_swap::Escrow::es_close) method.
     #[call]
     fn es_close(&mut self, params: &Params);
 
-    /// Returns `bool`
+    /// See [`es_lost_found()`](defuse_escrow_swap::Escrow::es_lost_found) method.
     #[call]
     fn es_lost_found(&mut self, params: &Params);
 }

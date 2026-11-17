@@ -35,75 +35,100 @@ pub use defuse_nep245 as nep245;
 
 #[near_kit::contract]
 pub trait Defuse {
+    /// See [`fee()`](defuse::fees::FeesManager::fee) method.
     fn fee(&self) -> Pips;
+    /// See [`fee_collector()`](defuse::fees::FeesManager::fee_collector) method.
     fn fee_collector(&self) -> AccountId;
 
+    /// See [`has_public_key()`](defuse::accounts::AccountManager::has_public_key) method.
     fn has_public_key(&self, account_id: &AccountIdRef, public_key: &PublicKey) -> bool;
+    /// See [`public_keys_of()`](defuse::accounts::AccountManager::public_keys_of) method.
     fn public_keys_of(&self, account_id: &AccountIdRef) -> HashSet<PublicKey>;
 
+    /// See [`is_nonce_used()`](defuse::accounts::AccountManager::is_nonce_used) method.
     fn is_nonce_used(&self, account_id: &AccountIdRef, nonce: AsBase64<Nonce>) -> bool;
+    /// See [`is_auth_by_predecessor_id_enabled()`](defuse::accounts::AccountManager::is_auth_by_predecessor_id_enabled) method.
     fn is_auth_by_predecessor_id_enabled(&self, account_id: &AccountIdRef) -> bool;
 
+    /// See [`add_public_key()`](defuse::accounts::AccountManager::add_public_key) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn add_public_key(&mut self, public_key: PublicKey);
+    /// See [`remove_public_key()`](defuse::accounts::AccountManager::remove_public_key) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn remove_public_key(&mut self, public_key: PublicKey);
 
+    /// See [`disable_auth_by_predecessor_id()`](defuse::accounts::AccountManager::disable_auth_by_predecessor_id) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn disable_auth_by_predecessor_id(&mut self);
 
+    /// See [`set_fee()`](defuse::fees::FeesManager::set_fee) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn set_fee(&mut self, fee: Pips);
+    /// See [`set_fee_collector()`](defuse::fees::FeesManager::set_fee_collector) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn set_fee_collector(&mut self, fee_collector: &AccountIdRef);
 
+    /// See [`current_salt()`](defuse::salts::SaltManager::current_salt) method.
     fn current_salt(&self) -> Salt;
+    /// See [`is_valid_salt()`](defuse::salts::SaltManager::is_valid_salt) method.
     fn is_valid_salt(&self, salt: Salt) -> bool;
 
-    /// Returns `Salt`
+    /// See [`update_current_salt()`](defuse::salts::SaltManager::update_current_salt) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn update_current_salt(&mut self);
-    /// Returns `Salt`
+    /// See [`invalidate_salts()`](defuse::salts::SaltManager::invalidate_salts) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn invalidate_salts(&mut self, salts: &[Salt]);
 
+    /// See [`admin_call()`](defuse::admin_call::AdminCallManager::admin_call) method.
     #[call]
     fn admin_call(&mut self, promises: &[NearPromise]);
 
+    /// See [`simulate_intents()`](defuse::intents::Intents::simulate_intents) method.
     fn simulate_intents(&self, signed: &[MultiPayload]) -> SimulationOutput;
 
+    /// See [`execute_intents()`](defuse::intents::Intents::execute_intents) method.
     #[call]
     fn execute_intents(&mut self, signed: &[MultiPayload]);
 
+    /// See [`add_relayer_key()`](defuse::intents::RelayerKeys::add_relayer_key) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn add_relayer_key(&mut self, public_key: PublicKey);
+    /// See [`do_add_relayer_key()`](defuse::intents::RelayerKeys::do_add_relayer_key) method.
     #[call]
     fn do_add_relayer_key(&mut self, public_key: PublicKey);
+    /// See [`delete_relayer_key()`](defuse::intents::RelayerKeys::delete_relayer_key) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn delete_relayer_key(&mut self, public_key: PublicKey);
 
+    /// See [`cleanup_nonces()`](defuse::garbage_collector::GarbageCollector::cleanup_nonces) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn cleanup_nonces(&mut self, nonces: &[(AccountId, Vec<AsBase64<Nonce>>)]);
 
+    /// See [`force_add_public_keys()`](defuse::far::ForcePublicKeyManager::force_add_public_keys) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn force_add_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>);
+    /// See [`force_remove_public_keys()`](defuse::far::ForcePublicKeyManager::force_remove_public_keys) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn force_remove_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>);
 
+    /// See [`is_account_locked()`](defuse::accounts::ForceAccountManager::is_account_locked) method.
     fn is_account_locked(&self, account_id: &AccountIdRef) -> bool;
 
-    /// Returns `bool`
+    /// See [`force_lock_account()`](defuse::accounts::ForceAccountManager::force_lock_account) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn force_lock_account(&mut self, account_id: &AccountIdRef);
-    /// Returns `bool`
+    /// See [`force_unlock_account()`](defuse::accounts::ForceAccountManager::force_unlock_account) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn force_unlock_account(&mut self, account_id: &AccountIdRef);
+    /// See [`force_disable_auth_by_predecessor_ids()`](defuse::accounts::ForceAccountManager::force_disable_auth_by_predecessor_ids) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn force_disable_auth_by_predecessor_ids(&mut self, account_ids: &[AccountId]);
+    /// See [`force_enable_auth_by_predecessor_ids()`](defuse::accounts::ForceAccountManager::force_enable_auth_by_predecessor_ids) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn force_enable_auth_by_predecessor_ids(&mut self, account_ids: &[AccountId]);
 
-    /// Returns `U128`
+    /// See [`ft_withdraw()`](defuse::tokens::nep141::FungibleTokenWithdrawer::ft_withdraw) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn ft_withdraw(
         &mut self,
@@ -113,7 +138,7 @@ pub trait Defuse {
         memo: Option<String>,
         msg: Option<String>,
     );
-    /// Returns `U128`
+    /// See [`ft_force_withdraw()`](defuse::tokens::nep141::FungibleTokenForceWithdrawer::ft_force_withdraw) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn ft_force_withdraw(
         &mut self,
@@ -124,7 +149,7 @@ pub trait Defuse {
         memo: Option<String>,
         msg: Option<String>,
     );
-    /// Returns `Vec<U128>`
+    /// See [`mt_withdraw()`](defuse::tokens::nep245::MultiTokenWithdrawer::mt_withdraw) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn mt_withdraw(
         &mut self,
@@ -135,7 +160,7 @@ pub trait Defuse {
         memo: Option<String>,
         msg: Option<String>,
     );
-    /// Returns `bool`
+    /// See [`nft_withdraw()`](defuse::tokens::nep171::NonFungibleTokenWithdrawer::nft_withdraw) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn nft_withdraw(
         &mut self,
@@ -147,6 +172,7 @@ pub trait Defuse {
     );
 
     // NOTE: private method for testing purposes, not part of the public API
+    /// See [`do_auth_call()`](defuse::contract::Contract::do_auth_call) method.
     #[call]
     fn do_auth_call(&mut self, signer_id: &AccountIdRef, auth_call: &AuthCall);
 }
@@ -286,7 +312,7 @@ pub trait DefuseExt {
         amount: u128,
         memo: Option<String>,
         msg: Option<String>,
-    ) -> Result<u128>;
+    ) -> Result<(CheckedOutcome, u128)>;
 
     #[allow(clippy::too_many_arguments)]
     async fn defuse_mt_withdraw(
@@ -647,10 +673,10 @@ impl DefuseExt for SigningNear {
         amount: u128,
         memo: Option<String>,
         msg: Option<String>,
-    ) -> Result<u128> {
-        let res = self
-            .transaction(defuse.into())
-            .add_action(
+    ) -> Result<(CheckedOutcome, u128)> {
+        let (outcome, U128(transferred)) = self
+            .fn_call_json(
+                defuse,
                 Defuse::ft_force_withdraw(
                     owner_id.as_ref(),
                     token.as_ref(),
@@ -662,7 +688,7 @@ impl DefuseExt for SigningNear {
                 .gas(Gas::from_tgas(300)),
             )
             .await?;
-        Ok(res.json::<U128>()?.0)
+        Ok((outcome, transferred))
     }
 
     async fn defuse_mt_withdraw(
