@@ -107,10 +107,10 @@ pub trait Defuse {
 
     /// See [`force_add_public_keys()`](defuse::far::ForcePublicKeyManager::force_add_public_keys) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
-    fn force_add_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>);
+    fn force_add_public_keys(&mut self, public_keys: &HashMap<AccountId, HashSet<PublicKey>>);
     /// See [`force_remove_public_keys()`](defuse::far::ForcePublicKeyManager::force_remove_public_keys) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
-    fn force_remove_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>);
+    fn force_remove_public_keys(&mut self, public_keys: &HashMap<AccountId, HashSet<PublicKey>>);
 
     /// See [`is_account_locked()`](defuse::accounts::ForceAccountManager::is_account_locked) method.
     fn is_account_locked(&self, account_id: &AccountIdRef) -> bool;
@@ -135,8 +135,8 @@ pub trait Defuse {
         token: &AccountIdRef,
         receiver_id: &AccountIdRef,
         amount: U128,
-        memo: Option<String>,
-        msg: Option<String>,
+        memo: Option<&str>,
+        msg: Option<&str>,
     );
     /// See [`ft_force_withdraw()`](defuse::tokens::nep141::FungibleTokenForceWithdrawer::ft_force_withdraw) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
@@ -146,8 +146,8 @@ pub trait Defuse {
         token: &AccountIdRef,
         receiver_id: &AccountIdRef,
         amount: U128,
-        memo: Option<String>,
-        msg: Option<String>,
+        memo: Option<&str>,
+        msg: Option<&str>,
     );
     /// See [`mt_withdraw()`](defuse::tokens::nep245::MultiTokenWithdrawer::mt_withdraw) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
@@ -157,8 +157,8 @@ pub trait Defuse {
         receiver_id: &AccountIdRef,
         token_ids: &[String],
         amounts: &[U128],
-        memo: Option<String>,
-        msg: Option<String>,
+        memo: Option<&str>,
+        msg: Option<&str>,
     );
     /// See [`nft_withdraw()`](defuse::tokens::nep171::NonFungibleTokenWithdrawer::nft_withdraw) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
@@ -167,8 +167,8 @@ pub trait Defuse {
         token: &AccountIdRef,
         receiver_id: &AccountIdRef,
         token_id: &str,
-        memo: Option<String>,
-        msg: Option<String>,
+        memo: Option<&str>,
+        msg: Option<&str>,
     );
 
     // NOTE: private method for testing purposes, not part of the public API
@@ -553,7 +553,7 @@ impl DefuseExt for SigningNear {
         self.fn_call(
             defuse,
             Defuse::force_add_public_keys(
-                public_keys
+                &public_keys
                     .into_iter()
                     .map(|(account_id, public_keys)| {
                         (account_id, public_keys.into_iter().collect())
@@ -573,7 +573,7 @@ impl DefuseExt for SigningNear {
         self.fn_call(
             defuse,
             Defuse::force_remove_public_keys(
-                public_keys
+                &public_keys
                     .into_iter()
                     .map(|(account_id, public_keys)| {
                         (account_id, public_keys.into_iter().collect())
@@ -655,8 +655,8 @@ impl DefuseExt for SigningNear {
                     token.as_ref(),
                     receiver_id.as_ref(),
                     U128(amount),
-                    memo,
-                    msg,
+                    memo.as_deref(),
+                    msg.as_deref(),
                 )
                 .gas(Gas::from_tgas(300)),
             )
@@ -682,8 +682,8 @@ impl DefuseExt for SigningNear {
                     token.as_ref(),
                     receiver_id.as_ref(),
                     U128(amount),
-                    memo,
-                    msg,
+                    memo.as_deref(),
+                    msg.as_deref(),
                 )
                 .gas(Gas::from_tgas(300)),
             )
@@ -709,8 +709,8 @@ impl DefuseExt for SigningNear {
                     receiver_id.as_ref(),
                     &token_ids.into_iter().map(Into::into).collect::<Vec<_>>(),
                     &amounts.into_iter().map(U128).collect::<Vec<_>>(),
-                    memo,
-                    msg,
+                    memo.as_deref(),
+                    msg.as_deref(),
                 )
                 .gas(Gas::from_tgas(300)),
             )
@@ -733,8 +733,8 @@ impl DefuseExt for SigningNear {
                 token.as_ref(),
                 receiver_id.as_ref(),
                 token_id.as_ref(),
-                memo,
-                msg,
+                memo.as_deref(),
+                msg.as_deref(),
             )
             .gas(Gas::from_tgas(300)),
         )

@@ -11,7 +11,7 @@ use crate::extensions::FnCallTransaction;
 pub trait ImtBurnerContract {
     /// See [`imt_burn()`](defuse::tokens::imt::ImtBurner::imt_burn) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
-    fn imt_burn(&mut self, minter_id: &AccountIdRef, tokens: ImtTokens, memo: Option<String>);
+    fn imt_burn(&mut self, minter_id: &AccountIdRef, tokens: &ImtTokens, memo: Option<&str>);
 }
 
 pub trait DefuseImtExt {
@@ -41,7 +41,7 @@ impl DefuseImtExt for SigningNear {
 
         self.fn_call(
             defuse,
-            ImtBurnerContract::imt_burn(minter_id.as_ref(), tokens, memo.into())
+            ImtBurnerContract::imt_burn(minter_id.as_ref(), &tokens, memo.into().as_deref())
                 .gas(Gas::from_tgas(30)),
         )
         .await
