@@ -12,7 +12,7 @@ use near_kit::{
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
 
-use crate::account::AccountExt;
+use crate::{account::AccountExt, extensions::FnCallTransaction};
 
 pub use defuse_poa_factory::{IdDigest, PayloadHash, Withdrawal, contract};
 
@@ -182,14 +182,13 @@ impl PoAFactoryExt for SigningNear {
         metadata: impl Into<Option<FungibleTokenMetadata>>,
     ) -> Result<FungibleTokenClient<Self>> {
         let factory = factory.as_ref();
-        self.transaction(factory)
-            .add_action(
-                PoaFactory::deploy_token(token.as_ref(), metadata.into().as_ref())
-                    .deposit(POA_TOKEN_INIT_BALANCE)
-                    .gas(Gas::from_tgas(300)),
-            )
-            .await?
-            .checked()?;
+        self.fn_call(
+            factory,
+            PoaFactory::deploy_token(token.as_ref(), metadata.into().as_ref())
+                .deposit(POA_TOKEN_INIT_BALANCE)
+                .gas(Gas::from_tgas(300)),
+        )
+        .await?;
 
         Ok(self.contract::<FungibleToken>(factory.sub_account(token)?))
     }
@@ -203,21 +202,19 @@ impl PoAFactoryExt for SigningNear {
         msg: Option<String>,
         memo: Option<String>,
     ) -> Result<CheckedOutcome> {
-        self.transaction(factory.as_ref())
-            .add_action(
-                PoaFactory::ft_deposit(
-                    token.as_ref(),
-                    owner_id.as_ref(),
-                    U128(amount),
-                    msg.as_deref(),
-                    memo.as_deref(),
-                )
-                .deposit(NearToken::from_millinear(4))
-                .gas(Gas::from_tgas(300)),
+        self.fn_call(
+            factory.as_ref(),
+            PoaFactory::ft_deposit(
+                token.as_ref(),
+                owner_id.as_ref(),
+                U128(amount),
+                msg.as_deref(),
+                memo.as_deref(),
             )
-            .await?
-            .checked()
-            .map_err(Into::into)
+            .deposit(NearToken::from_millinear(4))
+            .gas(Gas::from_tgas(300)),
+        )
+        .await
     }
 
     async fn poa_factory_record_withdrawal(
@@ -226,13 +223,11 @@ impl PoAFactoryExt for SigningNear {
         withdrawal_id: IdDigest,
         withdrawal: Withdrawal,
     ) -> Result<CheckedOutcome> {
-        self.transaction(factory.as_ref())
-            .add_action(
-                PoaFactory::record_withdrawal(withdrawal_id, &withdrawal).gas(Gas::from_tgas(30)),
-            )
-            .await?
-            .checked()
-            .map_err(Into::into)
+        self.fn_call(
+            factory.as_ref(),
+            PoaFactory::record_withdrawal(withdrawal_id, &withdrawal).gas(Gas::from_tgas(30)),
+        )
+        .await
     }
 
     async fn poa_factory_update_withdrawal(
@@ -243,20 +238,18 @@ impl PoAFactoryExt for SigningNear {
         new_payload_hash: PayloadHash,
         metadata: impl Into<String>,
     ) -> Result<CheckedOutcome> {
-        self.transaction(factory.as_ref())
-            .add_action(
-                PoaFactory::update_withdrawal(
-                    withdrawal_id,
-                    prev_payload_hash,
-                    new_payload_hash,
-                    &metadata.into(),
-                )
-                .deposit(NearToken::from_yoctonear(4))
-                .gas(Gas::from_tgas(30)),
+        self.fn_call(
+            factory.as_ref(),
+            PoaFactory::update_withdrawal(
+                withdrawal_id,
+                prev_payload_hash,
+                new_payload_hash,
+                &metadata.into(),
             )
-            .await?
-            .checked()
-            .map_err(Into::into)
+            .deposit(NearToken::from_yoctonear(4))
+            .gas(Gas::from_tgas(30)),
+        )
+        .await
     }
 
     async fn poa_factory_remove_withdrawals(
@@ -264,11 +257,11 @@ impl PoAFactoryExt for SigningNear {
         factory: impl AsRef<AccountIdRef>,
         withdrawal_ids: Vec<IdDigest>,
     ) -> Result<CheckedOutcome> {
-        self.transaction(factory.as_ref())
-            .add_action(PoaFactory::remove_withdrawals(&withdrawal_ids).gas(Gas::from_tgas(30)))
-            .await?
-            .checked()
-            .map_err(Into::into)
+        self.fn_call(
+            factory.as_ref(),
+            PoaFactory::remove_withdrawals(&withdrawal_ids).gas(Gas::from_tgas(30)),
+        )
+        .await
     }
 
     async fn poa_factory_remove_deposits(
@@ -276,10 +269,10 @@ impl PoAFactoryExt for SigningNear {
         factory: impl AsRef<AccountIdRef>,
         deposit_ids: Vec<IdDigest>,
     ) -> Result<CheckedOutcome> {
-        self.transaction(factory.as_ref())
-            .add_action(PoaFactory::remove_deposits(&deposit_ids).gas(Gas::from_tgas(30)))
-            .await?
-            .checked()
-            .map_err(Into::into)
+        self.fn_call(
+            factory.as_ref(),
+            PoaFactory::remove_deposits(&deposit_ids).gas(Gas::from_tgas(30)),
+        )
+        .await
     }
 }

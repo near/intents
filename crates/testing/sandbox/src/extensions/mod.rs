@@ -54,12 +54,9 @@ impl FnCallTransaction for SigningNear {
         contract: impl Into<AccountId>,
         action: FunctionCall,
     ) -> Result<(CheckedOutcome, T)> {
-        let outcome = self
-            .transaction(contract.into())
-            .add_action(action)
-            .await?
-            .checked()?;
+        let outcome = self.fn_call(contract, action).await?;
         let value = outcome.json::<T>()?;
+
         Ok((outcome, value))
     }
 }

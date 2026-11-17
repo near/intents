@@ -2,6 +2,8 @@ use anyhow::Result;
 use defuse_escrow_swap::{Params, Storage};
 use near_kit::{AccountIdRef, Gas, SigningNear, rpc::CheckedOutcome};
 
+use crate::extensions::FnCallTransaction;
+
 pub use defuse_escrow_swap as contract;
 
 #[near_kit::contract]
@@ -38,11 +40,11 @@ impl EscrowExt for SigningNear {
         escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
     ) -> Result<CheckedOutcome> {
-        self.transaction(escrow_id.as_ref())
-            .add_action(Escrow::es_close(&params).gas(Gas::from_tgas(300)))
-            .await?
-            .checked()
-            .map_err(Into::into)
+        self.fn_call(
+            escrow_id.as_ref(),
+            Escrow::es_close(&params).gas(Gas::from_tgas(300)),
+        )
+        .await
     }
 
     async fn es_lost_found(
@@ -50,10 +52,10 @@ impl EscrowExt for SigningNear {
         escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
     ) -> Result<CheckedOutcome> {
-        self.transaction(escrow_id.as_ref())
-            .add_action(Escrow::es_lost_found(&params).gas(Gas::from_tgas(300)))
-            .await?
-            .checked()
-            .map_err(Into::into)
+        self.fn_call(
+            escrow_id.as_ref(),
+            Escrow::es_lost_found(&params).gas(Gas::from_tgas(300)),
+        )
+        .await
     }
 }

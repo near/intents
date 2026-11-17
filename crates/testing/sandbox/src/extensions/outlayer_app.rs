@@ -7,7 +7,7 @@ use near_kit::{
     AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId, rpc::CheckedOutcome,
 };
 
-use crate::nep616::DeployDeterministicAccountExt;
+use crate::{extensions::FnCallTransaction, nep616::DeployDeterministicAccountExt};
 
 pub use defuse_outlayer_app as contract;
 
@@ -62,18 +62,16 @@ impl OutlayerAppExt for SigningNear {
         new_code_hash: [u8; 32],
         new_code_url: impl AsRef<str>,
     ) -> Result<CheckedOutcome> {
-        self.transaction(target.as_ref())
-            .add_action(
-                OutlayerAppContract::oa_set_code(
-                    AsHex(old_code_hash),
-                    AsHex(new_code_hash),
-                    new_code_url.as_ref(),
-                )
-                .gas(Gas::from_tgas(10)),
+        self.fn_call(
+            target.as_ref(),
+            OutlayerAppContract::oa_set_code(
+                AsHex(old_code_hash),
+                AsHex(new_code_hash),
+                new_code_url.as_ref(),
             )
-            .await?
-            .checked()
-            .map_err(Into::into)
+            .gas(Gas::from_tgas(10)),
+        )
+        .await
     }
 
     async fn oa_transfer_admin(
@@ -81,13 +79,10 @@ impl OutlayerAppExt for SigningNear {
         target: impl AsRef<AccountIdRef>,
         new_admin_id: impl AsRef<AccountIdRef>,
     ) -> Result<CheckedOutcome> {
-        self.transaction(target.as_ref())
-            .add_action(
-                OutlayerAppContract::oa_transfer_admin(new_admin_id.as_ref())
-                    .gas(Gas::from_tgas(30)),
-            )
-            .await?
-            .checked()
-            .map_err(Into::into)
+        self.fn_call(
+            target.as_ref(),
+            OutlayerAppContract::oa_transfer_admin(new_admin_id.as_ref()).gas(Gas::from_tgas(30)),
+        )
+        .await
     }
 }

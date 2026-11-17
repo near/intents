@@ -6,7 +6,7 @@ use near_kit::{
 };
 use serde_json::json;
 
-use crate::account::AccountExt;
+use crate::{account::AccountExt, extensions::FnCallTransaction};
 
 pub trait NftAdminExt: Sized {
     async fn deploy_vanilla_nft_issuer(
@@ -59,27 +59,26 @@ impl NftAdminExt for SigningNear {
         token_id: impl AsRef<str>,
         token_owner_id: impl AsRef<AccountIdRef>,
     ) -> anyhow::Result<Token> {
-        self.transaction(collection.as_ref())
-            .add_action(
-                FunctionCall::new("nft_mint")
-                    .args(json!({
-                        "token_id": token_id.as_ref(),
-                        "token_owner_id": token_owner_id.as_ref(),
-                        "token_metadata": NftContractMetadata {
-                            spec: String::default(),
-                            name: String::default(),
-                            symbol: String::default(),
-                            icon: None,
-                            base_uri: None,
-                            reference: None,
-                            reference_hash: None
-                        },
-                    }))
-                    .gas(Gas::from_tgas(50))
-                    .deposit(NearToken::from_near(1)),
-            )
-            .await?
-            .json()
-            .map_err(Into::into)
+        self.fn_call_json(
+            collection.as_ref(),
+            FunctionCall::new("nft_mint")
+                .args(json!({
+                    "token_id": token_id.as_ref(),
+                    "token_owner_id": token_owner_id.as_ref(),
+                    "token_metadata": NftContractMetadata {
+                        spec: String::default(),
+                        name: String::default(),
+                        symbol: String::default(),
+                        icon: None,
+                        base_uri: None,
+                        reference: None,
+                        reference_hash: None
+                    },
+                }))
+                .gas(Gas::from_tgas(50))
+                .deposit(NearToken::from_near(1)),
+        )
+        .await
+        .map(|(_, token)| token)
     }
 }

@@ -7,7 +7,7 @@ use near_kit::{
     transaction::FunctionCall,
 };
 
-use crate::account::AccountExt;
+use crate::{account::AccountExt, extensions::FnCallTransaction};
 
 #[near_kit::contract]
 pub trait WNear {
@@ -67,14 +67,12 @@ impl WNearExt for SigningNear {
         contract_id: impl Into<AccountId>,
         amount: NearToken,
     ) -> Result<CheckedOutcome> {
-        self.transaction(contract_id.into())
-            .add_action(
-                WNear::near_deposit()
-                    .deposit(amount)
-                    .gas(Gas::from_tgas(10)),
-            )
-            .await?
-            .checked()
-            .map_err(Into::into)
+        self.fn_call(
+            contract_id,
+            WNear::near_deposit()
+                .deposit(amount)
+                .gas(Gas::from_tgas(10)),
+        )
+        .await
     }
 }
