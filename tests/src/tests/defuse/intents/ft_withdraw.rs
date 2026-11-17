@@ -13,7 +13,6 @@ use defuse_sandbox::{
         wnear::WNearExt,
     },
     kit::{AccountId, Gas, NearToken, protocol::Action, rpc::Finality, standards::FungibleToken},
-    outcome::IntoChecked,
 };
 use defuse_test_utils::wasms::DEFUSE_WASM;
 use rstest::rstest;
@@ -122,7 +121,8 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
     env.transaction(user.account_id())
         .add_action(Action::transfer(STORAGE_DEPOSIT))
         .await
-        .into_checked()
+        .unwrap()
+        .checked()
         .unwrap();
 
     // wrap NEAR
@@ -139,7 +139,8 @@ async fn ft_withdraw_intent(#[future(awt)] env: Env) {
         )
         .gas(Gas::from_tgas(300))
         .await
-        .into_checked()
+        .unwrap()
+        .checked()
         .unwrap();
 
     let rpc = env.near().rpc();

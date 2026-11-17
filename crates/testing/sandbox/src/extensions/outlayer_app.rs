@@ -3,12 +3,11 @@ use defuse_outlayer_app::{
     State as OutlayerState,
     client::{AsHex, OutlayerAppContract, OutlayerAppContractClient},
 };
-use near_kit::{AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId};
-
-use crate::{
-    nep616::DeployDeterministicAccountExt,
-    outcome::{CheckedOutcome, IntoChecked},
+use near_kit::{
+    AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId, rpc::CheckedOutcome,
 };
+
+use crate::nep616::DeployDeterministicAccountExt;
 
 pub use defuse_outlayer_app as contract;
 
@@ -72,8 +71,9 @@ impl OutlayerAppExt for SigningNear {
                 )
                 .gas(Gas::from_tgas(10)),
             )
-            .await
-            .into_checked()
+            .await?
+            .checked()
+            .map_err(Into::into)
     }
 
     async fn oa_transfer_admin(
@@ -86,7 +86,8 @@ impl OutlayerAppExt for SigningNear {
                 OutlayerAppContract::oa_transfer_admin(new_admin_id.as_ref())
                     .gas(Gas::from_tgas(30)),
             )
-            .await
-            .into_checked()
+            .await?
+            .checked()
+            .map_err(Into::into)
     }
 }

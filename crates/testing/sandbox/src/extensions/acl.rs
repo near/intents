@@ -1,7 +1,7 @@
 use anyhow::Result;
-use near_kit::{AccountId, AccountIdRef, Gas, SigningNear};
+use near_kit::{AccountId, AccountIdRef, Gas, SigningNear, rpc::CheckedOutcome};
 
-use crate::{extensions::FnCallTransaction, outcome::CheckedOutcome};
+use crate::extensions::FnCallTransaction;
 
 #[near_kit::contract]
 pub trait AccessControllable {

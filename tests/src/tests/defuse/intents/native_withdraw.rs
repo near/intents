@@ -13,7 +13,6 @@ use defuse_sandbox::{
         wnear::WNearExt,
     },
     kit::{Gas, NearToken, rpc::Finality, standards::FungibleToken},
-    outcome::IntoChecked,
 };
 use rstest::rstest;
 
@@ -86,8 +85,9 @@ async fn native_withdraw_intent(
         )
         .gas(Gas::from_tgas(300))
         .await
-        .into_checked()
-        .expect("failed to deposit wNEAR to user2");
+        .expect("failed to deposit wNEAR to user2")
+        .checked()
+        .unwrap();
 
     // withdraw native NEAR to corresponding receivers
     let withdraw_payload = other_user

@@ -19,10 +19,8 @@ pub mod poa;
 pub mod wallet;
 
 use anyhow::Result;
-use near_kit::{AccountId, SigningNear, transaction::FunctionCall};
+use near_kit::{AccountId, SigningNear, rpc::CheckedOutcome, transaction::FunctionCall};
 use serde::de::DeserializeOwned;
-
-use crate::outcome::{CheckedOutcome, IntoChecked};
 
 pub trait FnCallTransaction {
     async fn fn_call(
@@ -46,8 +44,9 @@ impl FnCallTransaction for SigningNear {
     ) -> Result<CheckedOutcome> {
         self.transaction(contract.into())
             .add_action(action)
-            .await
-            .into_checked()
+            .await?
+            .checked()
+            .map_err(Into::into)
     }
 
     async fn fn_call_json<T: DeserializeOwned>(
@@ -58,8 +57,8 @@ impl FnCallTransaction for SigningNear {
         let outcome = self
             .transaction(contract.into())
             .add_action(action)
-            .await
-            .into_checked()?;
+            .await?
+            .checked()?;
         let value = outcome.json::<T>()?;
         Ok((outcome, value))
     }

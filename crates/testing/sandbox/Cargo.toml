@@ -19,7 +19,6 @@ near-sdk = { workspace = true, features = ["non-contract-usage"] }
 rstest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-serde_with.workspace = true
 
 defuse = { workspace = true, optional = true, features = ["contract", "near-kit"] }
 defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }
