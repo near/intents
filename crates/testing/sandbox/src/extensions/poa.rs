@@ -20,12 +20,15 @@ pub const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
 
 #[near_kit::contract]
 pub trait PoaFactory {
+    /// See [`deploy_token()`](defuse_poa_factory::PoaFactory::deploy_token) method.
     #[call]
     fn deploy_token(&mut self, token: &str, metadata: Option<FungibleTokenMetadata>);
 
+    /// See [`set_metadata()`](defuse_poa_factory::PoaFactory::set_metadata) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn set_metadata(&mut self, token: &str, metadata: FungibleTokenMetadata);
 
+    /// See [`ft_deposit()`](defuse_poa_factory::PoaFactory::ft_deposit) method.
     #[call]
     fn ft_deposit(
         &mut self,
@@ -36,11 +39,11 @@ pub trait PoaFactory {
         memo: Option<String>,
     );
 
-    /// Requires non-zero deposit
+    /// See [`record_withdrawal()`](defuse_poa_factory::PoaFactory::record_withdrawal) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn record_withdrawal(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal);
 
-    /// Requires non-zero deposit
+    /// See [`update_withdrawal()`](defuse_poa_factory::PoaFactory::update_withdrawal) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn update_withdrawal(
         &mut self,
@@ -50,20 +53,26 @@ pub trait PoaFactory {
         metadata: String,
     );
 
+    /// See [`remove_withdrawals()`](defuse_poa_factory::PoaFactory::remove_withdrawals) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn remove_withdrawals(&mut self, withdrawal_ids: Vec<IdDigest>);
 
+    /// See [`remove_deposits()`](defuse_poa_factory::PoaFactory::remove_deposits) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn remove_deposits(&mut self, deposit_ids: Vec<IdDigest>);
 
+    /// See [`get_withdrawal()`](defuse_poa_factory::PoaFactory::get_withdrawal) method.
     fn get_withdrawal(&self, withdrawal_id: IdDigest) -> Option<Withdrawal>;
 
+    /// See [`add_full_access_key_to_tokens()`](defuse_poa_factory::PoaFactory::add_full_access_key_to_tokens) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn add_full_access_key_to_tokens(&mut self, public_key: PublicKey, tokens: Vec<String>);
 
+    /// See [`delete_key_from_tokens()`](defuse_poa_factory::PoaFactory::delete_key_from_tokens) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn delete_key_from_tokens(&mut self, public_key: PublicKey, tokens: Vec<String>);
 
+    /// See [`tokens()`](defuse_poa_factory::PoaFactory::tokens) method.
     fn tokens(&self) -> HashMap<String, AccountId>;
 }
 

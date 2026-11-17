@@ -7,6 +7,7 @@ pub use defuse_serde_utils::hex::AsHex;
 
 #[near_kit::contract]
 pub trait OutlayerAppContract {
+    /// See [`oa_set_code()`](crate::contract::OutlayerApp::oa_set_code) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn oa_set_code(
         &mut self,
@@ -15,10 +16,14 @@ pub trait OutlayerAppContract {
         new_code_url: &str,
     );
 
+    /// See [`oa_transfer_admin()`](crate::contract::OutlayerApp::oa_transfer_admin) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn oa_transfer_admin(&mut self, new_admin_id: &AccountIdRef);
 
+    /// See [`oa_admin_id()`](crate::contract::OutlayerApp::oa_admin_id) method.
     fn oa_admin_id(&self) -> AccountId;
+    /// See [`oa_code_hash()`](crate::contract::OutlayerApp::oa_code_hash) method.
     fn oa_code_hash(&self) -> AsHex<[u8; 32]>;
+    /// See [`oa_code_url()`](crate::contract::OutlayerApp::oa_code_url) method.
     fn oa_code_url(&self) -> String;
 }

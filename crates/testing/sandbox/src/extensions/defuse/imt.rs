@@ -9,6 +9,7 @@ use crate::extensions::FnCallTransaction;
 
 #[near_kit::contract]
 pub trait ImtBurnerContract {
+    /// See [`imt_burn()`](defuse::tokens::imt::ImtBurner::imt_burn) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
     fn imt_burn(&mut self, minter_id: &AccountIdRef, tokens: ImtTokens, memo: Option<String>);
 }
