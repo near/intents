@@ -1,7 +1,8 @@
 use defuse_core::crypto::ed25519::Ed25519PublicKey;
 use near_kit::{
-    NearToken, SigningNear,
+    AccountIdRef, Error, NearToken, SigningNear,
     protocol::Action,
+    rpc::{AccessKeyListView, AccountBalance, AccountView, Finality, RpcError},
     signer::{InMemorySigner, SecretKey},
     transaction::FunctionCall,
 };
@@ -22,6 +23,15 @@ pub trait AccountExt {
         code: impl Into<Vec<u8>>,
         init_call: impl Into<Option<FunctionCall>>,
     ) -> anyhow::Result<SigningNear>;
+
+    async fn balance(&self, account_id: impl AsRef<AccountIdRef>) -> Result<AccountBalance, Error>;
+
+    async fn account(&self, account_id: impl AsRef<AccountIdRef>) -> Result<AccountView, RpcError>;
+
+    async fn access_keys(
+        &self,
+        account_id: impl AsRef<AccountIdRef>,
+    ) -> Result<AccessKeyListView, RpcError>;
 }
 
 impl AccountExt for SigningNear {
@@ -104,5 +114,26 @@ impl AccountExt for SigningNear {
         })?;
 
         Ok(self.with_signer(InMemorySigner::new(account_id, secret_key)))
+    }
+
+    async fn balance(&self, account_id: impl AsRef<AccountIdRef>) -> Result<AccountBalance, Error> {
+        self.near().balance(account_id.as_ref()).await
+    }
+
+    async fn account(&self, account_id: impl AsRef<AccountIdRef>) -> Result<AccountView, RpcError> {
+        self.near()
+            .rpc()
+            .view_account(account_id.as_ref(), Finality::Final)
+            .await
+    }
+
+    async fn access_keys(
+        &self,
+        account_id: impl AsRef<AccountIdRef>,
+    ) -> Result<AccessKeyListView, RpcError> {
+        self.near()
+            .rpc()
+            .view_access_key_list(account_id.as_ref(), Finality::Final)
+            .await
     }
 }

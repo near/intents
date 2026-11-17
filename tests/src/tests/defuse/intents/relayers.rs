@@ -1,13 +1,11 @@
 use defuse_core::PublicKey;
 use defuse_sandbox::{
+    account::AccountExt,
     extensions::{
         acl::AccessControllableExt,
         defuse::{DefuseExt, contract::Role},
     },
-    kit::{
-        rpc::Finality,
-        signer::{InMemorySigner, SecretKey},
-    },
+    kit::signer::{InMemorySigner, SecretKey},
 };
 use rstest::rstest;
 
@@ -86,12 +84,7 @@ async fn relayer_keys(
         .await
         .assert_err_contains("key not found");
 
-    let access_keys = env
-        .near()
-        .rpc()
-        .view_access_key_list(env.defuse.contract_id(), Finality::Final)
-        .await
-        .unwrap();
+    let access_keys = env.access_keys(env.defuse.contract_id()).await.unwrap();
     dbg!(&access_keys);
     assert!(!access_keys.keys.is_empty());
 }

@@ -1,4 +1,5 @@
 use defuse_sandbox::{
+    account::AccountExt,
     extensions::{
         acl::AccessControllableExt,
         defuse::{
@@ -108,12 +109,7 @@ async fn multiple_actions_with_admin_call(
         .await
         .unwrap();
 
-    let defuse_balance_before = env
-        .near()
-        .balance(env.defuse.contract_id())
-        .await
-        .unwrap()
-        .total;
+    let defuse_balance_before = env.balance(env.defuse.contract_id()).await.unwrap().total;
 
     admin
         .defuse_admin_call(
@@ -125,12 +121,7 @@ async fn multiple_actions_with_admin_call(
         .await
         .unwrap();
 
-    let defuse_balance_after = env
-        .near()
-        .balance(env.defuse.contract_id())
-        .await
-        .unwrap()
-        .total;
+    let defuse_balance_after = env.balance(env.defuse.contract_id()).await.unwrap().total;
 
     // Both `storage_deposit`s are paid out of the contract's own balance.
     assert!(defuse_balance_after < defuse_balance_before);
@@ -167,12 +158,7 @@ async fn transfer_near_with_admin_call(
         .await
         .assert_err_contains("Insufficient permissions for method");
 
-    let receiver_balance_before = env
-        .near()
-        .balance(receiver.account_id())
-        .await
-        .unwrap()
-        .total;
+    let receiver_balance_before = env.balance(receiver.account_id()).await.unwrap().total;
 
     // grant DAO role
     env.acl_grant_role(env.defuse.contract_id(), Role::DAO, admin.account_id())
@@ -189,12 +175,7 @@ async fn transfer_near_with_admin_call(
         .await
         .unwrap();
 
-    let receiver_balance_after = env
-        .near()
-        .balance(receiver.account_id())
-        .await
-        .unwrap()
-        .total;
+    let receiver_balance_after = env.balance(receiver.account_id()).await.unwrap().total;
 
     assert_eq!(
         receiver_balance_after,
@@ -313,13 +294,8 @@ async fn admin_call_refunds_failed_deposit_to_contract(
         })),
     ];
 
-    let defuse_before = env
-        .near()
-        .balance(env.defuse.contract_id())
-        .await
-        .unwrap()
-        .total;
-    let admin_before = env.near().balance(admin.account_id()).await.unwrap().total;
+    let defuse_before = env.balance(env.defuse.contract_id()).await.unwrap().total;
+    let admin_before = env.balance(admin.account_id()).await.unwrap().total;
 
     // Promises are detached
     admin
@@ -332,13 +308,8 @@ async fn admin_call_refunds_failed_deposit_to_contract(
         .await
         .unwrap();
 
-    let defuse_after = env
-        .near()
-        .balance(env.defuse.contract_id())
-        .await
-        .unwrap()
-        .total;
-    let admin_after = env.near().balance(admin.account_id()).await.unwrap().total;
+    let defuse_after = env.balance(env.defuse.contract_id()).await.unwrap().total;
+    let admin_after = env.balance(admin.account_id()).await.unwrap().total;
 
     assert!(admin_before.saturating_sub(admin_after) >= deposit);
     assert!(defuse_after.saturating_sub(defuse_before) >= deposit);
