@@ -18,7 +18,6 @@ use defuse_sandbox::{
             tokens::{DepositAction, DepositMessage},
         },
         poa::{PoAFactoryExt, PoaFactoryClient},
-        wallet::sdk::near_sdk::account_id::arbitrary::ArbitraryNamedAccountId,
     },
     kit::{
         AccountId, AccountIdRef, Gas, NearToken, SigningNear,
@@ -30,6 +29,7 @@ use defuse_sandbox::{
 };
 use futures::future::{FutureExt, try_join_all};
 use impl_tools::autoimpl;
+use near_account_id::arbitrary::ArbitraryNamedAccountId;
 use rstest::fixture;
 
 const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_near(1);

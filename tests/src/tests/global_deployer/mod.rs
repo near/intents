@@ -25,7 +25,7 @@ use defuse_sandbox::{
     root,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::MT_RECEIVER_STUB_WASM};
-use futures::future::join_all;
+use futures::{FutureExt, future::join_all};
 use rstest::{fixture, rstest};
 use std::{
     future::IntoFuture,
@@ -1214,6 +1214,7 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
         s.transaction(controller_instance.contract_id())
             .add_action(Action::transfer(transfer_amount))
             .into_future()
+            .map(|r| r.unwrap().checked().unwrap())
     });
 
     tokio::time::sleep(Duration::from_millis(50)).await;
