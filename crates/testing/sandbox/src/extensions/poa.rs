@@ -22,11 +22,11 @@ pub const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
 pub trait PoaFactory {
     /// See [`deploy_token()`](defuse_poa_factory::PoaFactory::deploy_token) method.
     #[call]
-    fn deploy_token(&mut self, token: &str, metadata: Option<FungibleTokenMetadata>);
+    fn deploy_token(&mut self, token: &str, metadata: Option<&FungibleTokenMetadata>);
 
     /// See [`set_metadata()`](defuse_poa_factory::PoaFactory::set_metadata) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
-    fn set_metadata(&mut self, token: &str, metadata: FungibleTokenMetadata);
+    fn set_metadata(&mut self, token: &str, metadata: &FungibleTokenMetadata);
 
     /// See [`ft_deposit()`](defuse_poa_factory::PoaFactory::ft_deposit) method.
     #[call]
@@ -35,13 +35,13 @@ pub trait PoaFactory {
         token: &str,
         owner_id: &AccountIdRef,
         amount: U128,
-        msg: Option<String>,
-        memo: Option<String>,
+        msg: Option<&str>,
+        memo: Option<&str>,
     );
 
     /// See [`record_withdrawal()`](defuse_poa_factory::PoaFactory::record_withdrawal) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
-    fn record_withdrawal(&mut self, withdrawal_id: IdDigest, withdrawal: Withdrawal);
+    fn record_withdrawal(&mut self, withdrawal_id: IdDigest, withdrawal: &Withdrawal);
 
     /// See [`update_withdrawal()`](defuse_poa_factory::PoaFactory::update_withdrawal) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
@@ -50,27 +50,27 @@ pub trait PoaFactory {
         withdrawal_id: IdDigest,
         prev_payload_hash: PayloadHash,
         new_payload_hash: PayloadHash,
-        metadata: String,
+        metadata: &str,
     );
 
     /// See [`remove_withdrawals()`](defuse_poa_factory::PoaFactory::remove_withdrawals) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
-    fn remove_withdrawals(&mut self, withdrawal_ids: Vec<IdDigest>);
+    fn remove_withdrawals(&mut self, withdrawal_ids: &[IdDigest]);
 
     /// See [`remove_deposits()`](defuse_poa_factory::PoaFactory::remove_deposits) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
-    fn remove_deposits(&mut self, deposit_ids: Vec<IdDigest>);
+    fn remove_deposits(&mut self, deposit_ids: &[IdDigest]);
 
     /// See [`get_withdrawal()`](defuse_poa_factory::PoaFactory::get_withdrawal) method.
     fn get_withdrawal(&self, withdrawal_id: IdDigest) -> Option<Withdrawal>;
 
     /// See [`add_full_access_key_to_tokens()`](defuse_poa_factory::PoaFactory::add_full_access_key_to_tokens) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
-    fn add_full_access_key_to_tokens(&mut self, public_key: PublicKey, tokens: Vec<String>);
+    fn add_full_access_key_to_tokens(&mut self, public_key: &PublicKey, tokens: &[String]);
 
     /// See [`delete_key_from_tokens()`](defuse_poa_factory::PoaFactory::delete_key_from_tokens) method.
     #[call(deposit = NearToken::from_yoctonear(1))]
-    fn delete_key_from_tokens(&mut self, public_key: PublicKey, tokens: Vec<String>);
+    fn delete_key_from_tokens(&mut self, public_key: &PublicKey, tokens: &[String]);
 
     /// See [`tokens()`](defuse_poa_factory::PoaFactory::tokens) method.
     fn tokens(&self) -> HashMap<String, AccountId>;
@@ -184,7 +184,7 @@ impl PoAFactoryExt for SigningNear {
         let factory = factory.as_ref();
         self.transaction(factory)
             .add_action(
-                PoaFactory::deploy_token(token.as_ref(), metadata.into())
+                PoaFactory::deploy_token(token.as_ref(), metadata.into().as_ref())
                     .deposit(POA_TOKEN_INIT_BALANCE)
                     .gas(Gas::from_tgas(300)),
             )
@@ -205,9 +205,15 @@ impl PoAFactoryExt for SigningNear {
     ) -> Result<CheckedOutcome> {
         self.transaction(factory.as_ref())
             .add_action(
-                PoaFactory::ft_deposit(token.as_ref(), owner_id.as_ref(), U128(amount), msg, memo)
-                    .deposit(NearToken::from_millinear(4))
-                    .gas(Gas::from_tgas(300)),
+                PoaFactory::ft_deposit(
+                    token.as_ref(),
+                    owner_id.as_ref(),
+                    U128(amount),
+                    msg.as_deref(),
+                    memo.as_deref(),
+                )
+                .deposit(NearToken::from_millinear(4))
+                .gas(Gas::from_tgas(300)),
             )
             .await?
             .checked()
@@ -222,7 +228,7 @@ impl PoAFactoryExt for SigningNear {
     ) -> Result<CheckedOutcome> {
         self.transaction(factory.as_ref())
             .add_action(
-                PoaFactory::record_withdrawal(withdrawal_id, withdrawal).gas(Gas::from_tgas(30)),
+                PoaFactory::record_withdrawal(withdrawal_id, &withdrawal).gas(Gas::from_tgas(30)),
             )
             .await?
             .checked()
@@ -243,7 +249,7 @@ impl PoAFactoryExt for SigningNear {
                     withdrawal_id,
                     prev_payload_hash,
                     new_payload_hash,
-                    metadata.into(),
+                    &metadata.into(),
                 )
                 .deposit(NearToken::from_yoctonear(4))
                 .gas(Gas::from_tgas(30)),
@@ -259,7 +265,7 @@ impl PoAFactoryExt for SigningNear {
         withdrawal_ids: Vec<IdDigest>,
     ) -> Result<CheckedOutcome> {
         self.transaction(factory.as_ref())
-            .add_action(PoaFactory::remove_withdrawals(withdrawal_ids).gas(Gas::from_tgas(30)))
+            .add_action(PoaFactory::remove_withdrawals(&withdrawal_ids).gas(Gas::from_tgas(30)))
             .await?
             .checked()
             .map_err(Into::into)
@@ -271,7 +277,7 @@ impl PoAFactoryExt for SigningNear {
         deposit_ids: Vec<IdDigest>,
     ) -> Result<CheckedOutcome> {
         self.transaction(factory.as_ref())
-            .add_action(PoaFactory::remove_deposits(deposit_ids).gas(Gas::from_tgas(30)))
+            .add_action(PoaFactory::remove_deposits(&deposit_ids).gas(Gas::from_tgas(30)))
             .await?
             .checked()
             .map_err(Into::into)

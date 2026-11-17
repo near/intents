@@ -59,11 +59,8 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
 
     dao.fn_call(
         factory.contract_id(),
-        PoaFactory::add_full_access_key_to_tokens(
-            public_key.clone(),
-            tokens.into_iter().map(str::to_string).collect(),
-        )
-        .gas(Gas::from_tgas(100)),
+        PoaFactory::add_full_access_key_to_tokens(&public_key, &tokens.map(str::to_string))
+            .gas(Gas::from_tgas(100)),
     )
     .await
     .unwrap();
@@ -93,11 +90,8 @@ async fn add_full_access_key_to_tokens(#[future(awt)] root: SigningNear) {
 
     dao.fn_call(
         factory.contract_id(),
-        PoaFactory::delete_key_from_tokens(
-            public_key.clone(),
-            tokens.into_iter().map(str::to_string).collect(),
-        )
-        .gas(Gas::from_tgas(100)),
+        PoaFactory::delete_key_from_tokens(&public_key, &tokens.map(str::to_string))
+            .gas(Gas::from_tgas(100)),
     )
     .await
     .unwrap();
@@ -126,8 +120,8 @@ async fn add_full_access_key_to_tokens_requires_deployed_tokens(#[future(awt)] r
     root.fn_call(
         factory.contract_id(),
         PoaFactory::add_full_access_key_to_tokens(
-            SecretKey::generate_ed25519().public_key(),
-            vec!["ft1".to_string(), undeployed_token.to_string()],
+            &SecretKey::generate_ed25519().public_key(),
+            &["ft1".to_string(), undeployed_token.to_string()],
         )
         .gas(Gas::from_tgas(100)),
     )

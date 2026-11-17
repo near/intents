@@ -42,7 +42,7 @@ pub trait Mt {
         receiver_id: &AccountIdRef,
         token_id: &str,
         amount: U128,
-        approval: Option<(AccountId, u64)>,
+        approval: Option<(&AccountIdRef, u64)>,
         memo: Option<&str>,
     );
 
@@ -53,7 +53,7 @@ pub trait Mt {
         receiver_id: &AccountIdRef,
         token_ids: &[TokenId],
         amounts: &[U128],
-        approvals: Option<Vec<Option<(AccountId, u64)>>>,
+        approvals: Option<&[Option<(AccountId, u64)>]>,
         memo: Option<&str>,
     );
 
@@ -64,7 +64,7 @@ pub trait Mt {
         receiver_id: &AccountIdRef,
         token_id: &str,
         amount: U128,
-        approval: Option<(AccountId, u64)>,
+        approval: Option<(&AccountIdRef, u64)>,
         memo: Option<&str>,
         msg: &str,
     );
@@ -76,7 +76,7 @@ pub trait Mt {
         receiver_id: &AccountIdRef,
         token_ids: &[TokenId],
         amounts: &[U128],
-        approvals: Option<Vec<Option<(AccountId, u64)>>>,
+        approvals: Option<&[Option<(AccountId, u64)>]>,
         memo: Option<&str>,
         msg: &str,
     );
