@@ -1,16 +1,15 @@
 use anyhow::Result;
 use core::str;
 use defuse_nep245::{Token, TokenId};
-use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear, json_types::U128};
+use near_kit::{
+    AccountId, AccountIdRef, Gas, NearToken, SigningNear, json_types::U128, rpc::CheckedOutcome,
+};
 use std::{
     fmt::Display,
     ops::{Bound, RangeBounds},
 };
 
-use crate::{
-    extensions::FnCallTransaction,
-    outcome::{CheckedOutcome, IntoChecked},
-};
+use crate::extensions::FnCallTransaction;
 
 /// NEP-245 bindings, see [`defuse_nep245`]
 #[near_kit::contract]
@@ -212,8 +211,9 @@ impl MtExt for SigningNear {
                 )
                 .gas(Gas::from_tgas(300)),
             )
-            .await
-            .into_checked()
+            .await?
+            .checked()
+            .map_err(Into::into)
     }
 
     async fn mt_transfer_call(

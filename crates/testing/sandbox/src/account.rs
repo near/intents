@@ -6,8 +6,6 @@ use near_kit::{
     transaction::FunctionCall,
 };
 
-use crate::outcome::IntoChecked;
-
 pub trait AccountExt {
     async fn create_subaccount(
         &self,
@@ -48,7 +46,8 @@ impl AccountExt for SigningNear {
         }
 
         tx.await
-            .into_checked()
+            .unwrap()
+            .checked()
             .expect("failed to create subaccount");
 
         self.with_signer(InMemorySigner::new(account_id, secret_key))
@@ -68,7 +67,8 @@ impl AccountExt for SigningNear {
             self.transaction(&account_id)
                 .add_action(Action::transfer(balance))
                 .await
-                .into_checked()
+                .unwrap()
+                .checked()
                 .expect("implicit account funding failed");
         }
 
@@ -99,7 +99,7 @@ impl AccountExt for SigningNear {
             tx = tx.add_action(init_call);
         }
 
-        tx.await.into_checked().map_err(|e| {
+        tx.await?.checked().map_err(|e| {
             anyhow::anyhow!("failed to deploy sub contract to '{account_id}': {e:?}")
         })?;
 

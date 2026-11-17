@@ -22,7 +22,6 @@ use defuse_sandbox::{
         rpc::{ExecutionStatus, Finality},
         transaction::{Final, FunctionCall},
     },
-    outcome::IntoChecked,
     root,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::MT_RECEIVER_STUB_WASM};
@@ -180,7 +179,8 @@ async fn test_gd_init(#[future(awt)] deployer_env: DeployerEnv) {
         )
         .add_action(Action::delete_key(implicit.signer().public_key()))
         .await
-        .into_checked()
+        .unwrap()
+        .checked()
         .unwrap();
 
     let controller = root.contract::<GlobalDeployerContract>(implicit.account_id().clone());
@@ -1115,7 +1115,8 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
     root.transaction(controller_instance.contract_id())
         .add_action(Action::transfer(NearToken::from_near(50)))
         .await
-        .into_checked()
+        .unwrap()
+        .checked()
         .unwrap();
 
     assert_eq!(

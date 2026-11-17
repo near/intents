@@ -4,12 +4,11 @@ use defuse_global_deployer::{
     AsHex, AsWrap, State as DeployerState,
     client::{GlobalDeployerContract, GlobalDeployerContractClient},
 };
-use near_kit::{AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId};
-
-use crate::{
-    nep616::DeployDeterministicAccountExt,
-    outcome::{CheckedOutcome, IntoChecked},
+use near_kit::{
+    AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId, rpc::CheckedOutcome,
 };
+
+use crate::nep616::DeployDeterministicAccountExt;
 
 pub use defuse_global_deployer as contract;
 
@@ -90,8 +89,9 @@ impl GlobalDeployerExt for SigningNear {
                     .deposit(NearToken::from_near(50))
                     .gas(Gas::from_tgas(290)),
             )
-            .await
-            .into_checked()
+            .await?
+            .checked()
+            .map_err(Into::into)
     }
 
     async fn gd_approve(
@@ -105,8 +105,9 @@ impl GlobalDeployerExt for SigningNear {
                 GlobalDeployerContract::gd_approve(AsHex(old_hash.into()), AsHex(new_hash.into()))
                     .gas(Gas::from_tgas(10)),
             )
-            .await
-            .into_checked()
+            .await?
+            .checked()
+            .map_err(Into::into)
     }
 
     async fn gd_deploy(
@@ -122,8 +123,9 @@ impl GlobalDeployerExt for SigningNear {
                     .deposit(deposit)
                     .gas(Gas::from_tgas(290)),
             )
-            .await
-            .into_checked()
+            .await?
+            .checked()
+            .map_err(Into::into)
     }
 
     async fn gd_transfer_ownership(
@@ -136,7 +138,8 @@ impl GlobalDeployerExt for SigningNear {
                 GlobalDeployerContract::gd_transfer_ownership(new_owner.as_ref())
                     .gas(Gas::from_tgas(30)),
             )
-            .await
-            .into_checked()
+            .await?
+            .checked()
+            .map_err(Into::into)
     }
 }

@@ -12,7 +12,6 @@ use defuse_sandbox::{
         nft::NftAdminExt,
     },
     kit::{Gas, NearToken, json_types::Base64VecU8, protocol::Action, standards::NonFungibleToken},
-    outcome::IntoChecked,
 };
 use defuse_test_utils::wasms::NON_FUNGIBLE_TOKEN_WASM;
 use near_contract_standards::non_fungible_token::{
@@ -40,7 +39,8 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
     env.transaction(user1.account_id())
         .add_action(Action::transfer(NearToken::from_near(100)))
         .await
-        .into_checked()
+        .unwrap()
+        .checked()
         .unwrap();
 
     let existing_tokens = env.mt_tokens(env.defuse.contract_id(), ..).await.unwrap();
@@ -114,7 +114,8 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                 )
                 .gas(Gas::from_tgas(300))
                 .await
-                .into_checked()
+                .unwrap()
+                .checked()
                 .unwrap();
 
             let nft1_data = nft_issuer_contract
@@ -164,7 +165,8 @@ async fn transfer_nft_to_verifier(#[future(awt)] env: Env) {
                 )
                 .gas(Gas::from_tgas(300))
                 .await
-                .into_checked()
+                .unwrap()
+                .checked()
                 .unwrap();
 
             let nft2_data = nft_issuer_contract

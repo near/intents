@@ -2,14 +2,12 @@ use anyhow::Result;
 use near_kit::{
     AccountId, Gas, NearToken, SigningNear,
     protocol::Action,
+    rpc::CheckedOutcome,
     standards::{FungibleToken, FungibleTokenClient},
     transaction::FunctionCall,
 };
 
-use crate::{
-    account::AccountExt,
-    outcome::{CheckedOutcome, IntoChecked},
-};
+use crate::account::AccountExt;
 
 #[near_kit::contract]
 pub trait WNear {
@@ -47,7 +45,8 @@ impl WNearDeployerExt for SigningNear {
                     .gas(Gas::from_tgas(10)),
             )
             .await
-            .into_checked()
+            .unwrap()
+            .checked()
             .unwrap();
 
         self.contract::<FungibleToken>(account.account_id())
@@ -74,7 +73,8 @@ impl WNearExt for SigningNear {
                     .deposit(amount)
                     .gas(Gas::from_tgas(10)),
             )
-            .await
-            .into_checked()
+            .await?
+            .checked()
+            .map_err(Into::into)
     }
 }

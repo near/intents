@@ -3,9 +3,8 @@ use defuse_wallet_sdk::{Request, RequestMessage, client::WalletContract};
 use near_kit::{
     AccountIdRef, Gas, NearToken, SigningNear,
     protocol::{Action, StateInit},
+    rpc::CheckedOutcome,
 };
-
-use crate::outcome::{CheckedOutcome, IntoChecked};
 
 pub use defuse_wallet_sdk as sdk;
 
@@ -48,8 +47,9 @@ impl WalletExt for SigningNear {
                 .deposit(deposit)
                 .gas(Gas::from_tgas(300)),
         )
-        .await
-        .into_checked()
+        .await?
+        .checked()
+        .map_err(Into::into)
     }
 
     async fn w_execute_extension(
@@ -69,7 +69,8 @@ impl WalletExt for SigningNear {
                 .deposit(deposit)
                 .gas(Gas::from_tgas(300)),
         )
-        .await
-        .into_checked()
+        .await?
+        .checked()
+        .map_err(Into::into)
     }
 }

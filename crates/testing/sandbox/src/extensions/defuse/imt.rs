@@ -3,9 +3,9 @@ use std::collections::BTreeMap;
 use anyhow::Result;
 use defuse::core::tokens::imt::ImtTokens;
 use defuse_core::amounts::Amounts;
-use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear};
+use near_kit::{AccountId, AccountIdRef, Gas, NearToken, SigningNear, rpc::CheckedOutcome};
 
-use crate::{extensions::FnCallTransaction, outcome::CheckedOutcome};
+use crate::extensions::FnCallTransaction;
 
 #[near_kit::contract]
 pub trait ImtBurnerContract {
