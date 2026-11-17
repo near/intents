@@ -1768,6 +1768,7 @@ dependencies = [
  "impl-tools 0.13.0",
  "itertools",
  "multi-token-receiver-stub",
+ "near-account-id",
  "near-contract-standards",
  "rstest",
  "serde_json",
