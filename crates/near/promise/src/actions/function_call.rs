@@ -265,6 +265,8 @@ const fn is_default_gas_weight(gas_weight: &u64) -> bool {
 const _: () = {
     use near_kit::protocol::FunctionCallAction;
 
+    /// [`FunctionCallAction`] has no gas weight: its `gas` is exact, so zero
+    /// [`gas_weight`](field@FunctionCall::gas_weight) is used.
     impl From<FunctionCallAction> for FunctionCall {
         #[inline]
         fn from(value: FunctionCallAction) -> Self {
@@ -273,7 +275,7 @@ const _: () = {
                 args: value.args,
                 deposit: value.deposit,
                 gas: value.gas,
-                gas_weight: default_gas_weight(),
+                gas_weight: 0,
             }
         }
     }
