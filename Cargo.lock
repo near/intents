@@ -1703,6 +1703,7 @@ dependencies = [
  "defuse-nep245",
  "defuse-outlayer-app",
  "defuse-poa-factory",
+ "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-wallet-sdk",
  "near-contract-standards",
@@ -1712,7 +1713,6 @@ dependencies = [
  "rstest",
  "serde",
  "serde_json",
- "serde_with",
 ]
 
 [[package]]
@@ -1768,8 +1768,8 @@ dependencies = [
  "impl-tools 0.13.0",
  "itertools",
  "multi-token-receiver-stub",
+ "near-account-id",
  "near-contract-standards",
- "near-sdk",
  "rstest",
  "serde_json",
  "strum 0.28.0",
@@ -1936,7 +1936,6 @@ dependencies = [
  "defuse-nep641",
  "defuse-wallet",
  "defuse-wallet-ed25519",
- "derive_more",
  "futures",
  "hex-literal",
  "impl-tools 0.13.0",
@@ -3692,32 +3691,19 @@ dependencies = [
 
 [[package]]
 name = "near-kit"
-version = "0.20.1"
+version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "294bd31dcea04d2ae423cf2d499737ebabd6d8da04eeba5a13f1c45a646ea0cf"
+checksum = "2b9e8834c1e450283eb955d18a792e8aeddcbe8a6bf81b2ba7eb86996ad711c9"
 dependencies = [
  "base64 0.23.1",
  "borsh",
- "bs58 0.5.1",
- "ed25519-dalek 3.0.0",
- "getrandom 0.4.3",
  "gloo-timers",
- "hex",
  "hyper",
- "js-sys",
- "k256",
- "ml-dsa",
- "near-account-id",
- "near-gas",
- "near-global-contracts",
  "near-kit-macros",
- "near-token",
+ "near-kit-primitives",
  "reqwest",
  "serde",
  "serde_json",
- "serde_with",
- "sha2 0.11.1",
- "sha3 0.12.0",
  "thiserror 2.0.21",
  "tokio",
  "tracing",
@@ -3725,9 +3711,9 @@ dependencies = [
 
 [[package]]
 name = "near-kit-macros"
-version = "0.14.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5565d050a154d4431f767e17786758e65a511aa1b6ac9a6169942b6774f7831"
+checksum = "c0e3d0a984d533aa2aab5cb4e3a900bf03337874a97e78553f4ac2b308c83f20"
 dependencies = [
  "proc-macro-crate 3.5.0",
  "proc-macro2",
@@ -3736,10 +3722,39 @@ dependencies = [
 ]
 
 [[package]]
-name = "near-kit-sandbox"
-version = "0.20.1"
+name = "near-kit-primitives"
+version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aca5ab2abe52c3b2ab6160c79593e30d904171aad603f6981ed7d96d3d9489dc"
+checksum = "46302647d545f79a70e8b1158d90dd96ad522f0a968c0b55887d9495326e7c55"
+dependencies = [
+ "base64 0.23.1",
+ "borsh",
+ "bs58 0.5.1",
+ "ed25519-dalek 3.0.0",
+ "getrandom 0.4.3",
+ "hex",
+ "js-sys",
+ "k256",
+ "ml-dsa",
+ "near-account-id",
+ "near-gas",
+ "near-global-contracts",
+ "near-sdk-core",
+ "near-token",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "sha2 0.11.1",
+ "sha3 0.12.0",
+ "thiserror 2.0.21",
+ "tracing",
+]
+
+[[package]]
+name = "near-kit-sandbox"
+version = "0.31.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2baea1a946c63c07f333f6582922b028a96f9c97ce0de4c36d4f6fa822a44170"
 dependencies = [
  "libc",
  "near-kit",
@@ -4475,7 +4490,7 @@ version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e67ba7e9b2b56446f1d419b1d807906278ffa1a658a8a5d8a39dcb1f5a78614f"
 dependencies = [
- "toml_edit 0.25.17+spec-1.1.0",
+ "toml_edit 0.25.18+spec-1.1.0",
 ]
 
 [[package]]
@@ -6151,9 +6166,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.25.17+spec-1.1.0"
+version = "0.25.18+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3641d5bbb5349a79e1020a242d251efbc546ad8048d133958323ce9c40a9c9c"
+checksum = "1ec6e78bd70db9420d8d212fa9dc97f116448a1ceff5d00eabb991d407e21396"
 dependencies = [
  "indexmap 2.14.2",
  "toml_datetime 1.1.2+spec-1.1.0",

@@ -1,4 +1,5 @@
 use defuse_sandbox::{
+    AsNep297Event,
     extensions::defuse::{
         DefuseExt, DefuseImtExt, DefuseSignerExt,
         core::{
@@ -12,9 +13,8 @@ use defuse_sandbox::{
             token_id::{TokenId, imt::ImtTokenId, nep141::Nep141TokenId},
         },
     },
-    extensions::mt::{Mt, MtBalanceOfArgs},
+    extensions::mt::Mt,
 };
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 
@@ -58,10 +58,7 @@ async fn imt_burn_call(
 
         assert_eq!(
             env.contract::<Mt>(env.defuse.contract_id())
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user2.account_id(),
-                    token_id: &imt_id.to_string(),
-                })
+                .mt_balance_of(user2.account_id(), &imt_id.to_string())
                 .await
                 .unwrap()
                 .0,
@@ -81,10 +78,7 @@ async fn imt_burn_call(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user2.account_id(),
-                token_id: &imt_id.to_string(),
-            })
+            .mt_balance_of(user2.account_id(), &imt_id.to_string())
             .await
             .unwrap()
             .0,

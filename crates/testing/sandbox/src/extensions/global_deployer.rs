@@ -1,34 +1,32 @@
 use anyhow::Result;
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_global_deployer::{
-    AsWrap, State as DeployerState,
-    client::{GdApproveArgs, GlobalDeployerContract, GlobalDeployerContractClient},
+    AsHex, AsWrap, State as DeployerState,
+    client::{GlobalDeployerContract, GlobalDeployerContractClient},
 };
 use near_kit::{
-    Gas, Near, NearToken,
-    protocol::{AccountIdRef, GlobalContractId},
-    transaction::Final,
+    AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId, rpc::CheckedOutcome,
 };
 
-use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
+use crate::{extensions::FnCallTransaction, nep616::DeployDeterministicAccountExt};
 
 pub use defuse_global_deployer as contract;
 
-pub trait GDDeployerExt {
+pub trait GDDeployerExt: Sized {
     /// Deploy a new `global-deployer` instance via `StateInit`.
     async fn deploy_gd_instance(
         &self,
         global_contract_id: GlobalContractId,
         state: DeployerState<'_>,
-    ) -> Result<GlobalDeployerContractClient>;
+    ) -> Result<GlobalDeployerContractClient<Self>>;
 }
 
-impl GDDeployerExt for Near {
+impl GDDeployerExt for SigningNear {
     async fn deploy_gd_instance(
         &self,
         global_contract_id: GlobalContractId,
         state: DeployerState<'_>,
-    ) -> Result<GlobalDeployerContractClient> {
+    ) -> Result<GlobalDeployerContractClient<Self>> {
         Ok(self.contract::<GlobalDeployerContract>(
             self.deploy_deterministic_account(
                 global_contract_id,
@@ -46,45 +44,44 @@ pub trait GlobalDeployerExt {
         target: impl AsRef<AccountIdRef>,
         old_hash: impl Into<[u8; 32]>,
         new_code: &[u8],
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn gd_approve(
         &self,
         target: impl AsRef<AccountIdRef>,
         old_hash: impl Into<[u8; 32]>,
         new_hash: impl Into<[u8; 32]>,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn gd_deploy(
         &self,
         target: impl AsRef<AccountIdRef>,
         code: &[u8],
         deposit: NearToken,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn gd_transfer_ownership(
         &self,
         target: impl AsRef<AccountIdRef>,
         new_owner: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<SuccessfulExecutionOutcome>;
+    ) -> anyhow::Result<CheckedOutcome>;
 }
 
-impl GlobalDeployerExt for Near {
+impl GlobalDeployerExt for SigningNear {
     async fn gd_approve_and_deploy(
         &self,
         target: impl AsRef<AccountIdRef>,
         old_hash: impl Into<[u8; 32]>,
         new_code: &[u8],
-    ) -> Result<SuccessfulExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         let code = new_code.to_vec();
 
         self.transaction(target.as_ref())
             .add_action(
-                GlobalDeployerContract::gd_approve(GdApproveArgs {
-                    old_hash: old_hash.into(),
-                    new_hash: Sha256::digest(&code).into(),
-                })
-                .deposit(NearToken::from_yoctonear(1))
+                GlobalDeployerContract::gd_approve(
+                    AsHex(old_hash.into()),
+                    AsHex(Sha256::digest(&code).into()),
+                )
                 .gas(Gas::from_tgas(10)),
             )
             .add_action(
@@ -92,9 +89,9 @@ impl GlobalDeployerExt for Near {
                     .deposit(NearToken::from_near(50))
                     .gas(Gas::from_tgas(290)),
             )
-            .wait_until::<Final>()
             .await?
-            .try_into()
+            .checked()
+            .map_err(Into::into)
     }
 
     async fn gd_approve(
@@ -102,19 +99,13 @@ impl GlobalDeployerExt for Near {
         target: impl AsRef<AccountIdRef>,
         old_hash: impl Into<[u8; 32]>,
         new_hash: impl Into<[u8; 32]>,
-    ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(target.as_ref())
-            .add_action(
-                GlobalDeployerContract::gd_approve(GdApproveArgs {
-                    old_hash: old_hash.into(),
-                    new_hash: new_hash.into(),
-                })
-                .deposit(NearToken::from_yoctonear(1))
+    ) -> Result<CheckedOutcome> {
+        self.fn_call(
+            target.as_ref(),
+            GlobalDeployerContract::gd_approve(AsHex(old_hash.into()), AsHex(new_hash.into()))
                 .gas(Gas::from_tgas(10)),
-            )
-            .wait_until::<Final>()
-            .await?
-            .try_into()
+        )
+        .await
     }
 
     async fn gd_deploy(
@@ -122,32 +113,27 @@ impl GlobalDeployerExt for Near {
         target: impl AsRef<AccountIdRef>,
         code: &[u8],
         deposit: NearToken,
-    ) -> Result<SuccessfulExecutionOutcome> {
+    ) -> Result<CheckedOutcome> {
         let code = code.to_vec();
-        self.transaction(target.as_ref())
-            .add_action(
-                GlobalDeployerContract::gd_deploy(AsWrap::new(code))
-                    .deposit(deposit)
-                    .gas(Gas::from_tgas(290)),
-            )
-            .wait_until::<Final>()
-            .await?
-            .try_into()
+        self.fn_call(
+            target.as_ref(),
+            GlobalDeployerContract::gd_deploy(AsWrap::new(code))
+                .deposit(deposit)
+                .gas(Gas::from_tgas(290)),
+        )
+        .await
     }
 
     async fn gd_transfer_ownership(
         &self,
         target: impl AsRef<AccountIdRef>,
         new_owner: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<SuccessfulExecutionOutcome> {
-        self.transaction(target.as_ref())
-            .add_action(
-                GlobalDeployerContract::gd_transfer_ownership(new_owner.as_ref().into())
-                    .deposit(NearToken::from_yoctonear(1))
-                    .gas(Gas::from_tgas(30)),
-            )
-            .wait_until::<Final>()
-            .await?
-            .try_into()
+    ) -> anyhow::Result<CheckedOutcome> {
+        self.fn_call(
+            target.as_ref(),
+            GlobalDeployerContract::gd_transfer_ownership(new_owner.as_ref())
+                .gas(Gas::from_tgas(30)),
+        )
+        .await
     }
 }

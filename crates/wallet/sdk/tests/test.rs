@@ -5,17 +5,17 @@ use std::{env, fs, path::Path, sync::LazyLock};
 use defuse_nep641::{JsonPayload, resolver::RpcResolver};
 use defuse_wallet::{NearPromise, Request, WalletOp, actions::FunctionCall};
 use defuse_wallet_ed25519::{WalletEd25519, WalletEd25519Signer, crypto::ed25519::ed25519_dalek};
-use defuse_wallet_sdk::{
-    Gas, NearToken, WalletBuilder,
-    client::{WExecuteExtensionArgs, WExecuteSignedArgs, WalletContract},
-};
+use defuse_wallet_sdk::{Gas, NearToken, WalletBuilder, client::WalletContract};
 use futures::{
-    StreamExt, TryStreamExt, future,
+    FutureExt, StreamExt, TryStreamExt, future,
     stream::{self, FuturesUnordered},
-    try_join,
 };
-use near_kit::{CryptoHash, Near, protocol::PublishMode, transaction::Final};
-use near_kit_sandbox::SandboxConfig;
+use near_kit::{
+    CryptoHash, SigningNear,
+    protocol::{Action, PublishMode},
+    transaction::Final,
+};
+use near_kit_sandbox::Sandbox;
 use rand::{rand_core::UnwrapErr, rngs::SysRng};
 use rstest::{fixture, rstest};
 use sha2::{Digest, Sha256};
@@ -28,7 +28,7 @@ type Wallet = defuse_wallet_sdk::Wallet<WalletEd25519>;
 #[tokio::test]
 #[awt]
 async fn rotate(
-    #[future] near: Near,
+    #[future] near: SigningNear,
 
     #[from(wallet)]
     #[future]
@@ -58,40 +58,42 @@ async fn rotate(
                                         NearPromise::new(master.real_account_id()).function_call(
                                             FunctionCall::name("w_execute_extension")
                                                 .attach_deposit(NearToken::from_yoctonear(1))
-                                                .args_json(WExecuteExtensionArgs::from(
-                                                    Request::from(WalletOp::SetSignatureMode {
-                                                        enable: false,
-                                                    }),
-                                                ))
+                                                .args_json(serde_json::json!({
+                                                    "request": Request::from(
+                                                        WalletOp::SetSignatureMode {
+                                                            enable: false,
+                                                        },
+                                                    ),
+                                                }))
                                                 .gas(Gas::from_tgas(10)),
                                         ),
                                     )
                                     .await
                                     .unwrap();
 
-                                WExecuteSignedArgs::from((msg, proof))
+                                serde_json::json!({ "msg": msg, "proof": proof })
                             })
                             .gas(Gas::from_tgas(20)),
                     )]),
         )
         .await
         .unwrap()
-        .status(&near)
+        .status(near.near())
         .wait_until::<Final>()
         .await
         .unwrap()
-        .result()
+        .checked()
         .expect("key rotation failed");
 
     master
         .sign_and_send(Request::new())
         .await
         .unwrap()
-        .status(&near)
+        .status(near.near())
         .wait_until::<Final>()
         .await
         .unwrap()
-        .result()
+        .checked()
         .expect_err("signature should be disabled");
 
     let extension = extension.as_extension_of(master);
@@ -100,11 +102,11 @@ async fn rotate(
         .sign_and_send(Request::new())
         .await
         .unwrap()
-        .status(&near)
+        .status(near.near())
         .wait_until::<Final>()
         .await
         .unwrap()
-        .result()
+        .checked()
         .expect("extension should be able to execute requests on behalf of root");
 }
 
@@ -112,7 +114,7 @@ async fn rotate(
 #[tokio::test]
 #[awt]
 async fn w_init(
-    #[future] near: Near,
+    #[future] near: SigningNear,
 
     #[from(wallet)]
     #[future]
@@ -122,7 +124,10 @@ async fn w_init(
     #[future]
     receiver: Wallet,
 ) {
-    near.deploy_from(CryptoHash::from(*WALLET_NO_SIGN_CODE_HASH))
+    near.transaction(near.account_id())
+        .add_action(Action::deploy_from(CryptoHash::from(
+            *WALLET_NO_SIGN_CODE_HASH,
+        )))
         .add_action(
             near_kit::transaction::FunctionCall::new("w_init")
                 .gas(Gas::from_tgas(5))
@@ -131,35 +136,25 @@ async fn w_init(
         .wait_until::<Final>()
         .await
         .unwrap()
-        .result()
+        .checked()
         .unwrap();
 
     near.contract::<WalletContract>(near.account_id())
-        .w_execute_extension(
-            Request::new()
-                .internal([WalletOp::RemoveExtension {
-                    account_id: near.account_id().into(),
-                }])
-                .into(),
-        )
-        .deposit(NearToken::from_yoctonear(1))
+        .w_execute_extension(&Request::new().internal([WalletOp::RemoveExtension {
+            account_id: near.account_id().into(),
+        }]))
         .await
         .unwrap()
-        .result()
+        .checked()
         .expect_err("cannot accidentally delete itself from extension");
 
     near.contract::<WalletContract>(near.account_id())
-        .w_execute_extension(
-            Request::new()
-                .internal([WalletOp::AddExtension {
-                    account_id: extension.account_id().clone(),
-                }])
-                .into(),
-        )
-        .deposit(NearToken::from_yoctonear(1))
+        .w_execute_extension(&Request::new().internal([WalletOp::AddExtension {
+            account_id: extension.account_id().clone(),
+        }]))
         .await
         .unwrap()
-        .result()
+        .checked()
         .unwrap();
 
     extension
@@ -167,15 +162,16 @@ async fn w_init(
         .sign_and_send(NearPromise::new(receiver.account_id()).transfer(NearToken::from_near(5)))
         .await
         .unwrap()
-        .status(&near)
+        .status(near.near())
         .wait_until::<Final>()
         .await
         .unwrap()
-        .result()
+        .checked()
         .unwrap();
 
     assert_eq!(
-        near.balance(receiver.account_id())
+        near.near()
+            .balance(receiver.account_id())
             .await
             .expect("implicit account should be created by incoming transfer")
             .total,
@@ -223,7 +219,7 @@ async fn w_resolve_auth(
 #[awt]
 async fn wallet(
     #[default(WalletBuilder::new())] builder: WalletBuilder,
-    #[future] near: Near,
+    #[future] near: SigningNear,
 ) -> Wallet {
     builder
         .build(
@@ -243,7 +239,7 @@ async fn extension(
     #[future]
     ext: Wallet,
 
-    #[future] near: Near,
+    #[future] near: SigningNear,
 ) -> Wallet {
     // recursively create chain of extensions
     let wallets = stream::unfold(ext, |ext| async {
@@ -273,8 +269,8 @@ async fn extension(
 
 #[fixture]
 #[awt]
-async fn resolver(#[default(0)] depth: usize, #[future] near: Near) -> RpcResolver {
-    RpcResolver::new(near.rpc().clone())
+async fn resolver(#[default(0)] depth: usize, #[future] near: SigningNear) -> RpcResolver {
+    RpcResolver::new(near.near().rpc().clone())
         .await
         .expect("failed to initialize RPC resolver")
         .with_max_sub_authorizations(depth)
@@ -282,13 +278,14 @@ async fn resolver(#[default(0)] depth: usize, #[future] near: Near) -> RpcResolv
 }
 
 #[fixture]
-async fn near() -> Near {
+async fn near() -> SigningNear {
     static DEPLOY: OnceCell<()> = OnceCell::const_new();
 
-    let near = SandboxConfig::shared()
+    let near = Sandbox::builder()
+        .shared()
         .await
         .expect("failed to start sandbox")
-        .client();
+        .root_account();
 
     DEPLOY
         .get_or_init(|| async {
@@ -297,13 +294,15 @@ async fn near() -> Near {
                 .pretty()
                 .init();
 
-            try_join!(
-                near.publish(&**WALLET_ED25519_WASM, PublishMode::Immutable)
-                    .into_future(),
-                near.publish(&**WALLET_NO_SIGN_WASM, PublishMode::Immutable)
-                    .into_future(),
+            future::join_all(
+                [&**WALLET_ED25519_WASM, &**WALLET_NO_SIGN_WASM].map(|wasm| {
+                    near.transaction(near.account_id())
+                        .add_action(Action::publish(wasm, PublishMode::Immutable))
+                        .into_future()
+                        .map(|r| r.unwrap().checked().unwrap())
+                }),
             )
-            .expect("failed to deploy global contracts by hash");
+            .await;
         })
         .await;
 

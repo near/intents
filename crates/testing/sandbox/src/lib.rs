@@ -4,26 +4,27 @@ pub mod account;
 pub mod extensions;
 pub mod global_contract;
 pub mod nep616;
-pub mod outcome;
 
 pub use near_kit as kit;
 pub use near_kit_sandbox as sandbox;
+pub use near_sdk::events::AsNep297Event;
 
-use near_kit::{Near, NearToken};
-use near_kit_sandbox::SandboxConfig;
+use near_kit::{NearToken, SigningNear};
+use near_kit_sandbox::Sandbox;
 use rstest::fixture;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use crate::account::Account;
+use crate::account::AccountExt;
 
 #[fixture]
-pub async fn root(#[default(NearToken::from_near(100_000))] amount: NearToken) -> Near {
+pub async fn root(#[default(NearToken::from_near(100_000))] amount: NearToken) -> SigningNear {
     static SUB_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-    SandboxConfig::shared()
+    Sandbox::builder()
+        .shared()
         .await
         .expect("failed to start sandbox")
-        .client()
+        .root_account()
         .create_subaccount(
             SUB_COUNTER.fetch_add(1, Ordering::Relaxed).to_string(),
             amount,

@@ -1,7 +1,7 @@
 use anyhow::Result;
-use near_kit::{Near, NearToken, protocol::GlobalContractId};
+use near_kit::{NearToken, SigningNear, protocol::GlobalContractId};
 
-use crate::global_contract::GlobalContract;
+use crate::global_contract::GlobalContractExt;
 
 #[near_kit::contract]
 pub trait MtReceiverStub {
@@ -16,7 +16,7 @@ pub trait MtReceiverStubDeployerExt {
     ) -> Result<GlobalContractId>;
 }
 
-impl MtReceiverStubDeployerExt for Near {
+impl MtReceiverStubDeployerExt for SigningNear {
     async fn deploy_mt_receiver_stub_global(
         &self,
         name: impl AsRef<str>,

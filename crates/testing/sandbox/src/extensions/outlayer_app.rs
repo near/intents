@@ -1,33 +1,31 @@
 use anyhow::Result;
 use defuse_outlayer_app::{
     State as OutlayerState,
-    client::{OaSetCodeArgs, OutlayerAppContract, OutlayerAppContractClient},
+    client::{AsHex, OutlayerAppContract, OutlayerAppContractClient},
 };
 use near_kit::{
-    Gas, Near, NearToken,
-    protocol::{AccountIdRef, GlobalContractId},
-    transaction::Final,
+    AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId, rpc::CheckedOutcome,
 };
 
-use crate::{nep616::DeployDeterministicAccountExt, outcome::SuccessfulExecutionOutcome};
+use crate::{extensions::FnCallTransaction, nep616::DeployDeterministicAccountExt};
 
 pub use defuse_outlayer_app as contract;
 
-pub trait OutlayerAppDeployerExt {
+pub trait OutlayerAppDeployerExt: Sized {
     /// Deploy a new `outlayer-app` instance via `StateInit`.
     async fn deploy_outlayer_app(
         &self,
         global_contract_id: GlobalContractId,
         state: OutlayerState<'static>,
-    ) -> OutlayerAppContractClient;
+    ) -> OutlayerAppContractClient<Self>;
 }
 
-impl OutlayerAppDeployerExt for Near {
+impl OutlayerAppDeployerExt for SigningNear {
     async fn deploy_outlayer_app(
         &self,
         global_contract_id: GlobalContractId,
         state: OutlayerState<'static>,
-    ) -> OutlayerAppContractClient {
+    ) -> OutlayerAppContractClient<Self> {
         self.contract::<OutlayerAppContract>(
             self.deploy_deterministic_account(
                 global_contract_id,
@@ -47,51 +45,44 @@ pub trait OutlayerAppExt {
         old_code_hash: [u8; 32],
         new_code_hash: [u8; 32],
         new_code_url: impl AsRef<str>,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn oa_transfer_admin(
         &self,
         target: impl AsRef<AccountIdRef>,
         new_admin_id: impl AsRef<AccountIdRef>,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 }
 
-impl OutlayerAppExt for Near {
+impl OutlayerAppExt for SigningNear {
     async fn oa_set_code(
         &self,
         target: impl AsRef<AccountIdRef>,
         old_code_hash: [u8; 32],
         new_code_hash: [u8; 32],
         new_code_url: impl AsRef<str>,
-    ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(target.as_ref())
-            .add_action(
-                OutlayerAppContract::oa_set_code(OaSetCodeArgs {
-                    old_code_hash,
-                    new_code_hash,
-                    new_code_url: new_code_url.as_ref().into(),
-                })
-                .deposit(NearToken::from_yoctonear(1))
-                .gas(Gas::from_tgas(10)),
+    ) -> Result<CheckedOutcome> {
+        self.fn_call(
+            target.as_ref(),
+            OutlayerAppContract::oa_set_code(
+                AsHex(old_code_hash),
+                AsHex(new_code_hash),
+                new_code_url.as_ref(),
             )
-            .wait_until::<Final>()
-            .await?
-            .try_into()
+            .gas(Gas::from_tgas(10)),
+        )
+        .await
     }
 
     async fn oa_transfer_admin(
         &self,
         target: impl AsRef<AccountIdRef>,
         new_admin_id: impl AsRef<AccountIdRef>,
-    ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(target.as_ref())
-            .add_action(
-                OutlayerAppContract::oa_transfer_admin(new_admin_id.as_ref().into())
-                    .deposit(NearToken::from_yoctonear(1))
-                    .gas(Gas::from_tgas(30)),
-            )
-            .wait_until::<Final>()
-            .await?
-            .try_into()
+    ) -> Result<CheckedOutcome> {
+        self.fn_call(
+            target.as_ref(),
+            OutlayerAppContract::oa_transfer_admin(new_admin_id.as_ref()).gas(Gas::from_tgas(30)),
+        )
+        .await
     }
 }

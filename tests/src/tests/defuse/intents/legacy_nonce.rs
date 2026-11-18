@@ -8,7 +8,7 @@ use defuse_sandbox::extensions::{
             token_id::{TokenId, nep141::Nep141TokenId},
         },
     },
-    mt::{Mt, MtBalanceOfArgs},
+    mt::Mt,
 };
 
 use defuse_test_utils::random::make_arbitrary;
@@ -42,10 +42,7 @@ async fn execute_intent_with_legacy_nonce(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -53,10 +50,7 @@ async fn execute_intent_with_legacy_nonce(
     );
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user2.account_id(),
-                token_id: &token_id.to_string()
-            })
+            .mt_balance_of(user2.account_id(), &token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -93,10 +87,7 @@ async fn execute_intent_with_legacy_nonce(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -105,10 +96,7 @@ async fn execute_intent_with_legacy_nonce(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user2.account_id(),
-                token_id: &token_id.to_string()
-            })
+            .mt_balance_of(user2.account_id(), &token_id.to_string())
             .await
             .unwrap()
             .0,

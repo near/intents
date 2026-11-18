@@ -35,7 +35,6 @@ use tracing::{Span, instrument, record_all};
 
 use crate::{
     actions::FunctionCall,
-    client::WExecuteExtensionArgs,
     nonces::ConcurrentNonces,
     relayer::{DynWalletRelayer, WalletRelayRequest, WalletRelayer},
 };
@@ -263,9 +262,12 @@ where
     #[cfg(feature = "near-kit")]
     #[must_use]
     #[inline]
-    pub fn with_client(mut self, client: near_kit::Near) -> Self {
+    pub fn with_client(mut self, client: impl AsRef<near_kit::Near>) -> Self {
+        let client = client.as_ref();
+
         self = self.with_chain_id(client.chain_id().as_str());
-        self.client = Some(client);
+        self.client = Some(client.clone());
+
         self
     }
 
@@ -634,7 +636,7 @@ where
                             FunctionCall::name("w_execute_extension")
                                 .attach_deposit(NearToken::from_yoctonear(1))
                                 .gas(request.estimate_gas())
-                                .args_json(WExecuteExtensionArgs::from(request)),
+                                .args_json(serde_json::json!({ "request": request })),
                         )
                         .into()
                 },

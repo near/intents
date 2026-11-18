@@ -3,6 +3,7 @@ use crate::{
     utils::asserts::ResultAssertsExt,
 };
 use defuse_sandbox::{
+    AsNep297Event,
     extensions::{
         acl::AccessControllableExt,
         defuse::{
@@ -17,7 +18,6 @@ use defuse_sandbox::{
     kit::AccountId,
 };
 use futures::FutureExt;
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 
 #[rstest]
@@ -66,7 +66,7 @@ async fn set_fee(
         .to_nep297_event()
         .to_event_log();
 
-        assert!(res.logs().contains(&event));
+        assert!(res.logs().any(|log| log == event));
 
         let current_fee = env.defuse.fee().await.unwrap();
 
@@ -116,7 +116,7 @@ async fn set_fee_collector(
         .to_nep297_event()
         .to_event_log();
 
-        assert!(res.logs().contains(&event));
+        assert!(res.logs().any(|log| log == event));
 
         let current_collector = env.defuse.fee_collector().await.unwrap();
 

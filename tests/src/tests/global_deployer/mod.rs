@@ -3,29 +3,29 @@ mod deploy_escrow_swap;
 
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_sandbox::{
-    account::Account,
+    AsNep297Event,
+    account::AccountExt,
     extensions::{
         FnCallTransaction,
         global_deployer::{
             GDDeployerExt, GlobalDeployerExt,
             contract::{
-                ApprovalReason, AsWrap, Error, GdEvent, State as DeployerState,
-                client::{GdApproveArgs, GlobalDeployerContract},
+                ApprovalReason, AsHex, AsWrap, Error, GdEvent, State as DeployerState,
+                client::GlobalDeployerContract,
             },
         },
     },
-    global_contract::GlobalContract,
+    global_contract::GlobalContractExt,
     kit::{
-        Gas, Near, NearToken,
+        Gas, NearToken, SigningNear,
         protocol::{Action, GlobalContractId, UseGlobalContractAction},
-        rpc::ExecutionStatus,
+        rpc::{ExecutionStatus, Finality},
         transaction::{Final, FunctionCall},
     },
     root,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::MT_RECEIVER_STUB_WASM};
-use futures::future::join_all;
-use near_sdk::events::AsNep297Event;
+use futures::{FutureExt, future::join_all};
 use rstest::{fixture, rstest};
 use std::{
     future::IntoFuture,
@@ -38,12 +38,12 @@ use crate::utils::wasms::DEPLOYER_WASM;
 static SUB_COUNTER: AtomicU32 = AtomicU32::new(0);
 
 pub struct DeployerEnv {
-    pub root: Near,
+    pub root: SigningNear,
     pub deployer_global_id: GlobalContractId,
 }
 
 #[fixture]
-pub async fn deployer_env(#[future(awt)] root: Near) -> DeployerEnv {
+pub async fn deployer_env(#[future(awt)] root: SigningNear) -> DeployerEnv {
     let deployer_global_id = root
         .deploy_immutable_global_contract(
             root.account_id().sub_account("deployer").unwrap(),
@@ -175,19 +175,13 @@ async fn test_gd_init(#[future(awt)] deployer_env: DeployerEnv) {
                 .deposit(NearToken::from_yoctonear(1)),
         )
         .add_action(
-            GlobalDeployerContract::gd_transfer_ownership(root.account_id().into())
-                .gas(Gas::from_tgas(30))
-                .deposit(NearToken::from_yoctonear(1)),
+            GlobalDeployerContract::gd_transfer_ownership(root.account_id())
+                .gas(Gas::from_tgas(30)),
         )
-        .delete_key(
-            implicit
-                .public_key()
-                .expect("implicit account must have a key"),
-        )
-        .wait_until::<Final>()
+        .add_action(Action::delete_key(implicit.signer().public_key()))
         .await
         .unwrap()
-        .result()
+        .checked()
         .unwrap();
 
     let controller = root.contract::<GlobalDeployerContract>(implicit.account_id().clone());
@@ -219,7 +213,12 @@ async fn test_gd_init(#[future(awt)] deployer_env: DeployerEnv) {
     );
 
     assert_eq!(
-        root.global_contract(implicit.account_id())
+        root.near()
+            .rpc()
+            .view_global_contract_code(
+                GlobalContractId::AccountId(implicit.account_id().clone()),
+                Finality::Final,
+            )
             .await
             .unwrap()
             .code,
@@ -334,7 +333,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         .await
         .unwrap();
 
-    assert_eq!(
+    itertools::assert_equal(
         result.logs(),
         vec![
             GdEvent::Transfer {
@@ -349,7 +348,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
             }
             .to_nep297_event()
             .to_event_log(),
-        ]
+        ],
     );
 
     assert_eq!(
@@ -388,7 +387,7 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
         .unwrap();
 
     let deployed_hash = Sha256::digest(&*DEPLOYER_WASM);
-    assert_eq!(
+    itertools::assert_equal(
         result.logs(),
         vec![
             GdEvent::Deploy {
@@ -402,7 +401,7 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
             }
             .to_nep297_event()
             .to_event_log(),
-        ]
+        ],
     );
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
@@ -451,7 +450,7 @@ async fn test_deploy_event_old_hash_after_upgrade(
         .await
         .unwrap();
 
-    assert_eq!(
+    itertools::assert_equal(
         result.logs(),
         vec![
             GdEvent::Approve {
@@ -471,7 +470,7 @@ async fn test_deploy_event_old_hash_after_upgrade(
             }
             .to_nep297_event()
             .to_event_log(),
-        ]
+        ],
     );
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap().0,
@@ -956,12 +955,8 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
     owner
         .transaction(controller_instance.contract_id())
         .add_action(
-            GlobalDeployerContract::gd_approve(GdApproveArgs {
-                old_hash: storage.code_hash,
-                new_hash: new_hash.into(),
-            })
-            .deposit(NearToken::from_yoctonear(1))
-            .gas(Gas::from_tgas(10)),
+            GlobalDeployerContract::gd_approve(AsHex(storage.code_hash), AsHex(new_hash.into()))
+                .gas(Gas::from_tgas(10)),
         )
         .add_action(
             GlobalDeployerContract::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
@@ -970,7 +965,7 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
         )
         .await
         .unwrap()
-        .result()
+        .checked()
         .assert_err_contains("NEAR to cover storage cost");
 
     // code_hash unchanged after failed deploy
@@ -1051,11 +1046,10 @@ async fn test_post_deploy_fails_when_approval_changed(
                 .gas(Gas::from_tgas(140)),
         )
         .add_action(
-            GlobalDeployerContract::gd_approve(GdApproveArgs {
-                old_hash: deployer_hash.into(),
-                new_hash: mt_stub_hash.into(),
-            })
-            .deposit(NearToken::from_yoctonear(1))
+            GlobalDeployerContract::gd_approve(
+                AsHex(deployer_hash.into()),
+                AsHex(mt_stub_hash.into()),
+            )
             .gas(Gas::from_tgas(10)),
         )
         .wait_until::<Final>()
@@ -1072,7 +1066,7 @@ async fn test_post_deploy_fails_when_approval_changed(
         "gd_post_deploy callback should have failed"
     );
 
-    result.result().unwrap();
+    result.checked().unwrap();
 
     // code_hash should be unchanged — the callback was rejected so state was not updated
     assert_eq!(
@@ -1116,12 +1110,10 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
 
     // Pre-fund the deterministic account so it has enough for storage
     root.transaction(controller_instance.contract_id())
-        .transfer(NearToken::from_near(50))
-        .send()
-        .wait_until::<Final>()
+        .add_action(Action::transfer(NearToken::from_near(50)))
         .await
         .unwrap()
-        .result()
+        .checked()
         .unwrap();
 
     assert_eq!(
@@ -1201,7 +1193,7 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
     // Create 50 accounts that will each transfer 4 NEAR (200 NEAR total)
     let num_senders = 50u128;
     let transfer_amount = NearToken::from_near(4);
-    let senders: Vec<Near> =
+    let senders: Vec<SigningNear> =
         join_all((0..num_senders).map(|_| root.create_implicit(NearToken::from_near(10)))).await;
 
     let owner_balance_before_deploy = root.balance(owner.account_id()).await.unwrap().total;
@@ -1220,8 +1212,9 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
     });
     let transfer_futs = senders.iter().map(|s| {
         s.transaction(controller_instance.contract_id())
-            .transfer(transfer_amount)
+            .add_action(Action::transfer(transfer_amount))
             .into_future()
+            .map(|r| r.unwrap().checked().unwrap())
     });
 
     tokio::time::sleep(Duration::from_millis(50)).await;

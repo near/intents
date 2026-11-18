@@ -1,35 +1,37 @@
 use defuse_digest::{Digest, sha2::Sha256};
 use defuse_sandbox::{
-    account::Account,
+    AsNep297Event,
+    account::AccountExt,
     extensions::outlayer_app::{
         OutlayerAppDeployerExt, OutlayerAppExt,
         contract::{OaEvent, State as OutlayerState},
     },
     kit::{
-        Near, NearToken,
-        protocol::{GlobalContractId, PublishMode},
-        transaction::Final,
+        NearToken, SigningNear,
+        protocol::{Action, GlobalContractId, PublishMode},
     },
     root,
 };
 use defuse_test_utils::wasms::OUTLAYER_APP_WASM;
-use near_sdk::events::AsNep297Event;
 use rstest::{fixture, rstest};
 
 const EXAMPLE_URL: &str = "https://example.com/contract.wasm";
 
 pub struct OutlayerAppEnv {
-    pub root: Near,
+    pub root: SigningNear,
     pub global_id: GlobalContractId,
 }
 
 #[fixture]
-pub async fn outlayer_app_env(#[future(awt)] root: Near) -> OutlayerAppEnv {
-    root.publish(OUTLAYER_APP_WASM.clone(), PublishMode::Immutable)
-        .wait_until::<Final>()
+pub async fn outlayer_app_env(#[future(awt)] root: SigningNear) -> OutlayerAppEnv {
+    root.transaction(root.account_id())
+        .add_action(Action::publish(
+            OUTLAYER_APP_WASM.clone(),
+            PublishMode::Immutable,
+        ))
         .await
         .unwrap()
-        .result()
+        .checked()
         .unwrap();
 
     OutlayerAppEnv {
@@ -114,7 +116,7 @@ async fn test_event_set_code(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
         .await
         .unwrap();
 
-    assert_eq!(
+    itertools::assert_equal(
         result.logs(),
         vec![
             OaEvent::SetCode {
@@ -122,8 +124,8 @@ async fn test_event_set_code(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
                 url: new_url.into(),
             }
             .to_nep297_event()
-            .to_event_log()
-        ]
+            .to_event_log(),
+        ],
     );
 }
 
@@ -145,7 +147,7 @@ async fn test_event_transfer_admin(#[future(awt)] outlayer_app_env: OutlayerAppE
         .await
         .unwrap();
 
-    assert_eq!(
+    itertools::assert_equal(
         result.logs(),
         vec![
             OaEvent::TransferAdmin {
@@ -154,6 +156,6 @@ async fn test_event_transfer_admin(#[future(awt)] outlayer_app_env: OutlayerAppE
             }
             .to_nep297_event()
             .to_event_log(),
-        ]
+        ],
     );
 }

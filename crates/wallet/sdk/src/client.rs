@@ -1,99 +1,38 @@
 //! Bindings to [`Wallet`](defuse_wallet::contract::Wallet) contract
 
-use std::{borrow::Cow, collections::BTreeSet};
+use std::collections::BTreeSet;
 
 use defuse_wallet::{Request, RequestMessage, Timestamp};
-use derive_more::From;
-use near_kit::{AccountId, protocol::AccountIdRef};
-use serde::Serialize;
+use near_kit::{AccountId, AccountIdRef, NearToken};
 
 #[near_kit::contract]
 pub trait WalletContract {
+    /// See [`w_execute_signed()`](defuse_wallet::contract::Wallet::w_execute_signed) method.
     #[call]
-    fn w_execute_signed(&mut self, args: WExecuteSignedArgs<'_>);
+    fn w_execute_signed(&mut self, msg: &RequestMessage, proof: &str);
 
-    #[call]
-    fn w_execute_extension(&mut self, args: WExecuteExtensionArgs<'_>);
+    /// See [`w_execute_extension()`](defuse_wallet::contract::Wallet::w_execute_extension) method.
+    #[call(deposit = NearToken::from_yoctonear(1))]
+    fn w_execute_extension(&mut self, request: &Request);
 
+    /// See [`w_subwallet_id()`](defuse_wallet::contract::Wallet::w_subwallet_id) method.
     fn w_subwallet_id(&self) -> u32;
 
+    /// See [`w_is_signature_allowed()`](defuse_wallet::contract::Wallet::w_is_signature_allowed) method.
     fn w_is_signature_allowed(&self) -> bool;
 
+    /// See [`w_public_key()`](defuse_wallet::contract::Wallet::w_public_key) method.
     fn w_public_key(&self) -> String;
 
-    fn w_is_extension_enabled(&self, args: WIsExtensionEnabledArgs<'_>) -> bool;
+    /// See [`w_is_extension_enabled()`](defuse_wallet::contract::Wallet::w_is_extension_enabled) method.
+    fn w_is_extension_enabled(&self, account_id: &AccountIdRef) -> bool;
 
+    /// See [`w_extensions()`](defuse_wallet::contract::Wallet::w_extensions) method.
     fn w_extensions(&self) -> BTreeSet<AccountId>;
 
+    /// See [`w_timeout_secs()`](defuse_wallet::contract::Wallet::w_timeout_secs) method.
     fn w_timeout_secs(&self) -> u32;
 
+    /// See [`w_last_cleaned_at()`](defuse_wallet::contract::Wallet::w_last_cleaned_at) method.
     fn w_last_cleaned_at(&self) -> Timestamp;
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct WExecuteSignedArgs<'a> {
-    pub msg: Cow<'a, RequestMessage>,
-    pub proof: Cow<'a, str>,
-}
-
-impl<'a, P> From<(RequestMessage, P)> for WExecuteSignedArgs<'a>
-where
-    P: Into<Cow<'a, str>>,
-{
-    #[inline]
-    fn from((msg, proof): (RequestMessage, P)) -> Self {
-        Self {
-            msg: Cow::Owned(msg),
-            proof: proof.into(),
-        }
-    }
-}
-
-impl<'a, P> From<(&'a RequestMessage, P)> for WExecuteSignedArgs<'a>
-where
-    P: Into<Cow<'a, str>>,
-{
-    #[inline]
-    fn from((msg, proof): (&'a RequestMessage, P)) -> Self {
-        Self {
-            msg: Cow::Borrowed(msg),
-            proof: proof.into(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct WExecuteExtensionArgs<'a> {
-    pub request: Cow<'a, Request>,
-}
-
-impl<'a> From<&'a Request> for WExecuteExtensionArgs<'a> {
-    #[inline]
-    fn from(request: &'a Request) -> Self {
-        Self {
-            request: Cow::Borrowed(request),
-        }
-    }
-}
-
-impl<'a> From<Cow<'a, Request>> for WExecuteExtensionArgs<'a> {
-    #[inline]
-    fn from(request: Cow<'a, Request>) -> Self {
-        Self { request }
-    }
-}
-
-impl From<Request> for WExecuteExtensionArgs<'_> {
-    #[inline]
-    fn from(request: Request) -> Self {
-        Self {
-            request: Cow::Owned(request),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, From)]
-#[from(forward)]
-pub struct WIsExtensionEnabledArgs<'a> {
-    pub account_id: Cow<'a, AccountIdRef>,
 }

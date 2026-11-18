@@ -3,19 +3,17 @@ use std::borrow::Cow;
 use defuse_mpc_kdf::crypto::{
     ed25519::Ed25519PublicKey, secp256k1::Secp256k1UncompressedPublicKey,
 };
+use near_kit::NearToken;
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
 
 #[near_kit::contract]
 pub trait MpcContract {
-    fn public_key(&self, args: PublicKeyArgs) -> PublicKey;
-    #[call]
-    fn sign(&mut self, args: SignArgs<'_>) -> SignResponse;
-}
+    fn public_key(&self, domain_id: u64) -> PublicKey;
 
-#[derive(Serialize)]
-pub struct PublicKeyArgs {
-    pub domain_id: u64,
+    /// Returns [`SignResponse`]
+    #[call(deposit = NearToken::from_yoctonear(1))]
+    fn sign(&mut self, request: SignRequest<'_>);
 }
 
 #[derive(Deserialize)]
@@ -23,11 +21,6 @@ pub struct PublicKeyArgs {
 pub enum PublicKey {
     Secp256k1(Secp256k1UncompressedPublicKey),
     Ed25519(Ed25519PublicKey),
-}
-
-#[derive(Serialize)]
-pub struct SignArgs<'a> {
-    pub request: SignRequest<'a>,
 }
 
 #[derive(Serialize)]
