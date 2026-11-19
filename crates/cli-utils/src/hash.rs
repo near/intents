@@ -127,11 +127,21 @@ mod tests {
         hex::decode(hex_str).unwrap().try_into().unwrap()
     }
 
-    fn temp_file(name: &str, contents: &[u8]) -> PathBuf {
-        let path =
-            std::env::temp_dir().join(format!("defuse-cli-utils-{name}-{}", std::process::id()));
-        fs::write(&path, contents).unwrap();
-        path
+    /// Creates a directory that no other process or test owns: `create_dir`
+    /// fails if the path already exists, so a collision picks the next name.
+    fn unique_temp_dir(name: &str) -> PathBuf {
+        for attempt in 0u32.. {
+            let path = std::env::temp_dir().join(format!(
+                "defuse-cli-utils-{name}-{}-{attempt}",
+                std::process::id()
+            ));
+            match fs::create_dir(&path) {
+                Ok(()) => return path,
+                Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => {}
+                Err(err) => panic!("create {}: {err}", path.display()),
+            }
+        }
+        unreachable!()
     }
 
     #[test]
@@ -221,17 +231,21 @@ mod tests {
 
     #[test]
     fn hash_of_file_is_sha256_of_its_contents() {
-        let path = temp_file("hash-of-file", b"hello");
-        let hash = HashSource::<Sha256>::File(path.clone()).hash();
-        fs::remove_file(&path).unwrap();
+        let dir = unique_temp_dir("hash-of-file");
+        let path = dir.join("input");
+        fs::write(&path, b"hello").unwrap();
+        let hash = HashSource::<Sha256>::File(path).hash();
+        fs::remove_dir_all(&dir).unwrap();
         assert_eq!(hash.unwrap(), output(HELLO_SHA256_HEX));
     }
 
     #[test]
     fn hash_of_missing_file_names_the_path() {
-        let path =
-            std::env::temp_dir().join(format!("defuse-cli-utils-missing-{}", std::process::id()));
+        // a path inside a fresh, empty directory is guaranteed not to exist
+        let dir = unique_temp_dir("missing");
+        let path = dir.join("missing");
         let err = HashSource::<Sha256>::File(path.clone()).hash().unwrap_err();
+        fs::remove_dir_all(&dir).unwrap();
         assert!(
             format!("{err:#}").contains(&path.display().to_string()),
             "{err:#}"
