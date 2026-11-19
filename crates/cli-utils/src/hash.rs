@@ -127,21 +127,32 @@ mod tests {
         hex::decode(hex_str).unwrap().try_into().unwrap()
     }
 
-    /// Creates a directory that no other process or test owns: `create_dir`
-    /// fails if the path already exists, so a collision picks the next name.
-    fn unique_temp_dir(name: &str) -> PathBuf {
-        for attempt in 0u32.. {
-            let path = std::env::temp_dir().join(format!(
-                "defuse-cli-utils-{name}-{}-{attempt}",
-                std::process::id()
-            ));
-            match fs::create_dir(&path) {
-                Ok(()) => return path,
-                Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => {}
-                Err(err) => panic!("create {}: {err}", path.display()),
+    /// A directory that no other process or test owns, removed on drop, so it
+    /// is cleaned up even if the test panics. `create_dir` fails if the path
+    /// already exists, so a collision moves on to the next name.
+    struct TempDir(PathBuf);
+
+    impl TempDir {
+        fn new(name: &str) -> Self {
+            for attempt in 0u32.. {
+                let path = std::env::temp_dir().join(format!(
+                    "defuse-cli-utils-{name}-{}-{attempt}",
+                    std::process::id()
+                ));
+                match fs::create_dir(&path) {
+                    Ok(()) => return Self(path),
+                    Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => {}
+                    Err(err) => panic!("create {}: {err}", path.display()),
+                }
             }
+            unreachable!()
         }
-        unreachable!()
+    }
+
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
     }
 
     #[test]
@@ -231,21 +242,19 @@ mod tests {
 
     #[test]
     fn hash_of_file_is_sha256_of_its_contents() {
-        let dir = unique_temp_dir("hash-of-file");
-        let path = dir.join("input");
+        let dir = TempDir::new("hash-of-file");
+        let path = dir.0.join("input");
         fs::write(&path, b"hello").unwrap();
         let hash = HashSource::<Sha256>::File(path).hash();
-        fs::remove_dir_all(&dir).unwrap();
         assert_eq!(hash.unwrap(), output(HELLO_SHA256_HEX));
     }
 
     #[test]
     fn hash_of_missing_file_names_the_path() {
         // a path inside a fresh, empty directory is guaranteed not to exist
-        let dir = unique_temp_dir("missing");
-        let path = dir.join("missing");
+        let dir = TempDir::new("missing");
+        let path = dir.0.join("missing");
         let err = HashSource::<Sha256>::File(path.clone()).hash().unwrap_err();
-        fs::remove_dir_all(&dir).unwrap();
         assert!(
             format!("{err:#}").contains(&path.display().to_string()),
             "{err:#}"
