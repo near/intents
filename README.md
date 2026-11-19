@@ -41,6 +41,17 @@ The name defuse is an old name for the smart contract that we use to execute int
 
 ### Building and running
 
+#### Prerequisites
+
+The toolchain is pinned in `rust-toolchain` (Rust 1.97.1, with clippy, rustfmt and the `wasm32-unknown-unknown` target). rustup installs it automatically on the first cargo command.
+
+The CI jobs also use these tools. Install them if you want to run the same checks locally:
+
+- `taplo` 0.10.0, for `make check-fmt`
+- `cargo-machete` 0.9.2, for `make check-unused-deps`
+- `cargo-near` 0.22.0, for reproducible contract builds (`REPRODUCIBLE=1`)
+- On Linux, `libudev-dev`, which `cargo-near` needs
+
 You can obtain a working copy of the smart contract and the ABI from [the releases page](https://github.com/near/intents/releases/).
 
 Alternatively, you can build this smart contract yourself.
