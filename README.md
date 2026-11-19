@@ -78,7 +78,7 @@ The tests will use data created prior to migration combined with newly created d
 Run clippy linter:
 
 ```shell
-make clippy
+make check
 ```
 
 After building, the artifacts of the build will be in the `res` directory.
