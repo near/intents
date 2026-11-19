@@ -16,6 +16,9 @@ digest-io = { workspace = true, optional = true }
 hex = { workspace = true, optional = true }
 impl-tools = { workspace = true, optional = true }
 
+[dev-dependencies]
+sha2.workspace = true
+
 [features]
 hash = [
   "dep:anyhow",
