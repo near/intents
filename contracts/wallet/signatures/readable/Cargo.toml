@@ -1,0 +1,16 @@
+lints.workspace = true
+
+[package]
+name = "defuse-wallet-readable"
+edition.workspace = true
+version = "0.1.0"
+rust-version.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+defuse-wallet = { workspace = true, features = ["borsh", "json", "serde"] }
+serde = { workspace = true, features = ["derive"] }
+# Function arguments are shown in their original key order.
+serde_json = { workspace = true, features = ["preserve_order"] }
+thiserror.workspace = true

@@ -1,0 +1,65 @@
+lints.workspace = true
+
+[package]
+name = "defuse-wallet-solana"
+edition.workspace = true
+version = "0.1.0"
+rust-version.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bs58.workspace = true
+defuse-crypto = { workspace = true, features = ["borsh", "ed25519", "fmt"] }
+defuse-wallet = { workspace = true, features = ["borsh", "digest", "json", "serde"] }
+defuse-wallet-readable.workspace = true
+thiserror = { workspace = true, optional = true }
+
+defuse-wallet-sdk = { workspace = true, optional = true }
+near-sdk = { workspace = true, optional = true }
+
+[features]
+abi = ["defuse-crypto/abi", "defuse-wallet/abi", "near-sdk?/abi"]
+
+signer = ["defuse-crypto/signing", "dep:defuse-wallet-sdk", "dep:thiserror"]
+
+contract = [
+  "defuse-crypto/borsh",
+  "defuse-wallet/near-contract",
+  "dep:near-sdk",
+]
+
+[dev-dependencies]
+defuse-wallet-solana = { path = ".", features = ["abi", "signer", "contract"] }
+serde_json.workspace = true
+
+defuse-nep641 = { workspace = true, features = ["resolver"] }
+near-kit.workspace = true
+near-kit-sandbox.workspace = true
+rand = { workspace = true, features = ["sys_rng"] }
+sha2.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }
+
+near-sdk = { workspace = true, features = ["unit-testing"] }
+
+[package.metadata.near.reproducible_build]
+image = "sourcescan/cargo-near:0.22.0-rust-1.97.1"
+image_digest = "sha256:7467038bdddc86484b73b416eeadce926ff59013e128e53dec5a19e1cb4b2234"
+passed_env = []
+container_build_command = [
+  "cargo",
+  "near",
+  "build",
+  "non-reproducible-wasm",
+  "--locked",
+  "--no-default-features",
+  "--features=contract",
+  "--abi-features=abi,contract",
+]
+
+[package.metadata.cargo-machete]
+# needed for `wallet!` macro, since `#[near(...)]` doesn't support re-exports
+ignored = ["near-sdk"]

@@ -1924,6 +1924,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-wallet-readable"
+version = "0.1.0"
+dependencies = [
+ "defuse-wallet",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "defuse-wallet-sdk"
 version = "0.1.0"
 dependencies = [
@@ -1952,6 +1962,27 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "trait-variant",
+]
+
+[[package]]
+name = "defuse-wallet-solana"
+version = "0.1.0"
+dependencies = [
+ "bs58 0.5.1",
+ "defuse-crypto",
+ "defuse-nep641",
+ "defuse-wallet",
+ "defuse-wallet-readable",
+ "defuse-wallet-sdk",
+ "defuse-wallet-solana",
+ "near-kit",
+ "near-kit-sandbox",
+ "near-sdk",
+ "rand 0.10.3",
+ "serde_json",
+ "sha2 0.11.1",
+ "thiserror 2.0.21",
+ "tokio",
 ]
 
 [[package]]
