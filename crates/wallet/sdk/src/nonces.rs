@@ -66,6 +66,7 @@ where
     type Item = u32;
 
     /// Always returns the next nonce ready to use.
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         Some(self.next())
     }
