@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use defuse_mpc_kdf::crypto::{
     ed25519::Ed25519PublicKey, secp256k1::Secp256k1UncompressedPublicKey,
 };
-use near_kit::NearToken;
+use near_kit::{Gas, NearToken};
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
 
@@ -12,7 +12,7 @@ pub trait MpcContract {
     fn public_key(&self, domain_id: u64) -> PublicKey;
 
     /// Returns [`SignResponse`]
-    #[call(deposit = NearToken::from_yoctonear(1))]
+    #[call(deposit = NearToken::from_yoctonear(1), gas = Gas::from_tgas(15))]
     fn sign(&mut self, request: SignRequest<'_>);
 }
 

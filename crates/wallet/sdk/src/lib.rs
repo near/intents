@@ -4,7 +4,6 @@
 pub mod client;
 #[cfg(feature = "mpc")]
 pub use defuse_mpc_signer as mpc;
-use defuse_near_sender::{NearSender, SentTransaction};
 use defuse_wallet::{actions::NearAction, offchain::OffchainMessage};
 mod nonces;
 pub mod relayer;
@@ -883,6 +882,35 @@ impl<S: SignatureSchema> From<Wallet<S>> for AccountId {
     }
 }
 
+#[cfg(feature = "near-kit")]
+const _: () = {
+    use near_kit::{MaybeSend, TxSender};
+
+    impl<S: SignatureSchema> TxSender for Wallet<S> {
+        type Output = ;
+
+        type SendError;
+
+        #[inline]
+        fn account_id(&self) -> &AccountId {
+            self.account_id()
+        }
+
+        #[inline]
+        fn chain_id(&self) -> &near_kit::protocol::ChainId {
+            self.chain_id()
+        }
+
+        fn send(
+            &self,
+            receiver_id: AccountId,
+            actions: Vec<near_kit::protocol::Action>,
+        ) -> impl Future<Output = Result<Self::Output, Self::SendError>>
+        + MaybeSend {
+            todo!()
+        }
+    }
+};
 impl<S> NearSender for Wallet<S>
 where
     S: SignatureSchema,

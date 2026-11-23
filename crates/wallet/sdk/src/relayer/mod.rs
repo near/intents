@@ -10,8 +10,8 @@ use std::{
     sync::Arc,
 };
 
+use ::near_kit::rpc::SendTxResponse;
 use async_trait::async_trait;
-use defuse_near_sender::SentTransaction;
 use impl_tools::autoimpl;
 
 /// Relayer for [`Wallet`](crate::Wallet) requests
@@ -28,7 +28,7 @@ pub trait WalletRelayer: Sync {
     async fn relay_wallet_msg(
         &self,
         request: WalletRelayRequest,
-    ) -> Result<SentTransaction, Self::Error>;
+    ) -> Result<SendTxResponse, Self::Error>;
 }
 
 #[async_trait]
@@ -36,7 +36,7 @@ pub(crate) trait DynWalletRelayer: Send + Sync {
     async fn dyn_relay_signed_msg(
         &self,
         request: WalletRelayRequest,
-    ) -> anyhow::Result<SentTransaction>;
+    ) -> anyhow::Result<SendTxResponse>;
 }
 
 #[async_trait]

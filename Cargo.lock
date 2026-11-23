@@ -1486,7 +1486,6 @@ dependencies = [
  "defuse-crypto",
  "defuse-mpc-kdf",
  "defuse-near-promise",
- "defuse-near-sender",
  "impl-tools 0.13.0",
  "near-kit",
  "serde",
@@ -1517,21 +1516,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
-]
-
-[[package]]
-name = "defuse-near-sender"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "cfg_eval",
- "defuse-near-promise",
- "impl-tools 0.13.0",
- "near-kit",
- "schemars 0.8.22",
- "serde",
- "serde_with",
- "trait-variant",
 ]
 
 [[package]]
@@ -1932,7 +1916,6 @@ dependencies = [
  "borsh",
  "bs58 0.5.1",
  "defuse-mpc-signer",
- "defuse-near-sender",
  "defuse-nep641",
  "defuse-wallet",
  "defuse-wallet-ed25519",
@@ -3691,9 +3674,9 @@ dependencies = [
 
 [[package]]
 name = "near-kit"
-version = "0.31.1"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b9e8834c1e450283eb955d18a792e8aeddcbe8a6bf81b2ba7eb86996ad711c9"
+checksum = "ddae2f3070eb3495aece74e85a7b0d2e05e3cdbc603eff5b4e61fb550a3f614a"
 dependencies = [
  "base64 0.23.1",
  "borsh",
@@ -3723,9 +3706,9 @@ dependencies = [
 
 [[package]]
 name = "near-kit-primitives"
-version = "0.31.1"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46302647d545f79a70e8b1158d90dd96ad522f0a968c0b55887d9495326e7c55"
+checksum = "0dc7a5eac4771dda18cc5f867fd8948fd782f2d676e1ce79a23882373b8abd70"
 dependencies = [
  "base64 0.23.1",
  "borsh",
@@ -3752,9 +3735,9 @@ dependencies = [
 
 [[package]]
 name = "near-kit-sandbox"
-version = "0.31.1"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2baea1a946c63c07f333f6582922b028a96f9c97ce0de4c36d4f6fa822a44170"
+checksum = "1ca19526ae6f3ec49fba395d6445327a9b4f9f47e59dcc0ecacce64eb9def564"
 dependencies = [
  "libc",
  "near-kit",
