@@ -281,7 +281,13 @@ async fn check_lockout_and_rotation(
 
     let extension = recipient.as_extension_of(wallet);
 
-    execute(near, &extension, Request::new()).await;
+    // The extension call runs in a detached receipt. Observe its effect on the original wallet.
+    let added = near.account_id();
+    assert!(!contract.w_extensions().await.unwrap().contains(added));
+
+    execute(near, &extension, WalletOp::add_extension(added.clone())).await;
+
+    assert!(contract.w_extensions().await.unwrap().contains(added));
 
     let authorization = extension.sign_offchain_msg(payload, None).await.unwrap();
 
@@ -376,6 +382,15 @@ async fn check_ft_transfer(
     check_ft_bootstrap(near, wallet, recipient, wasm).await;
 }
 
+/// Isolate each FT account, including when the sandbox is reused.
+fn fresh_ft_state_init(ft_hash: [u8; 32]) -> StateInit {
+    let mut init = StateInitV1::code(ft_hash);
+    init.data
+        .insert(b"test_run".to_vec(), rand::random::<[u8; 8]>().to_vec());
+
+    init.into()
+}
+
 /// A token is created, initialized and transferred in one promise.
 async fn check_ft_bootstrap(
     near: &Near,
@@ -391,15 +406,20 @@ async fn check_ft_bootstrap(
         .result()
         .unwrap();
 
-    let mut init = StateInitV1::code(ft_hash);
-    // Unique account for each run, also on a reused sandbox.
-    init.data
-        .insert(b"test_run".to_vec(), rand::random::<[u8; 8]>().to_vec());
+    check_state_init_deposit(
+        near,
+        wallet,
+        &fresh_ft_state_init(ft_hash),
+        recipient.account_id(),
+    )
+    .await;
 
-    let init = StateInit::from(init);
+    let init = fresh_ft_state_init(ft_hash);
     let token = init.derive_account_id();
+    assert!(!near.account_exists(&token).await.unwrap());
+
     let create = NearPromise::new(token.clone())
-        .deterministic_state_init(init.clone(), NearToken::ZERO)
+        .deterministic_state_init(init, NearToken::ZERO)
         // Storage for the token state written by `new_default_meta`.
         .transfer(NearToken::from_millinear(100))
         .function_call(
@@ -419,8 +439,6 @@ async fn check_ft_bootstrap(
                 .attach_deposit(NearToken::from_millinear(10))
                 .gas(Gas::from_tgas(30)),
         );
-
-    check_state_init_deposit(near, wallet, &init, recipient.account_id()).await;
 
     let bootstrap = create.function_call(ft_transfer(recipient.account_id()));
     execute(near, wallet, bootstrap).await.result().unwrap();
@@ -465,7 +483,7 @@ async fn check_state_init_deposit(
             .any(|r| { format!("{:?}", r.outcome.status).contains("LackBalanceForState") }),
         "{outcome:?}"
     );
-    assert!(near.account(&token).await.is_err());
+    assert!(!near.account_exists(&token).await.unwrap());
     assert_eq!(
         near.balance(refund_to).await.unwrap().total,
         before.saturating_add(deposit)
