@@ -19,10 +19,7 @@ use std::{
     collections::BTreeSet,
     error::Error as StdError,
     iter, mem,
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicBool, Ordering::Relaxed},
-    },
+    sync::{Arc, Mutex},
     time::Duration,
 };
 
@@ -130,8 +127,6 @@ impl WalletBuilder {
         Wallet {
             account_id: state_init.derive_account_id(),
             state_init: state_init.into(),
-            #[cfg(feature = "near-kit")]
-            initialized: Arc::new(AtomicBool::new(false)),
             as_extension_chain: Vec::new(),
             timeout: self.timeout,
             nonces: Arc::new(Mutex::new(ConcurrentNonces::new(make_rng()))),
@@ -180,9 +175,6 @@ pub struct Wallet<S: SignatureSchema> {
     account_id: AccountId,
     /// Initialization state for real account ID
     state_init: Arc<StateInit>,
-    /// Whether real account ID is known to be already initialized on-chain
-    #[cfg(feature = "near-kit")]
-    initialized: Arc<AtomicBool>,
     /// Currently configured extension chain
     as_extension_chain: Vec<AccountId>,
 
@@ -240,12 +232,6 @@ where
     pub fn with_chain_id(mut self, chain_id: impl Into<ChainId>) -> Self {
         let old_chain_id = mem::replace(&mut self.chain_id, chain_id.into());
         if self.chain_id != old_chain_id {
-            #[cfg(feature = "near-kit")]
-            {
-                // same wallet account ID on different chain might not have been
-                // initialized yet
-                self.initialized = Arc::new(AtomicBool::new(false));
-            }
             // same wallet instances on different chains keep track of their own nonces
             self.nonces = Arc::new(Mutex::new(ConcurrentNonces::new(make_rng())));
 
@@ -666,23 +652,9 @@ const _: () = {
                 .expect("relayer was not configured, use `with_relayer()` to set one")
         }
 
-        /// Mark wallet's [real account ID](Self::real_account_id) as already
-        /// initilized, so that future requests won't include unnecessary
-        /// [state init](Self::deterministic_state_init).
-        #[must_use]
-        #[inline]
-        pub fn as_initialized_unchecked(mut self) -> Self {
-            self.initialized = Arc::new(AtomicBool::new(true));
-            self
-        }
-
         /// Check if [real account ID](Self::real_account_id) is initialized on-chain.
         async fn check_initialized(&self) -> Result<bool> {
             use near_kit::rpc::{BlockReference, Finality, RpcError};
-
-            if self.initialized.load(Relaxed) {
-                return Ok(true);
-            }
 
             let initialized = match self
                 .client()
@@ -702,9 +674,6 @@ const _: () = {
                 Err(err) => return Err(err.into()),
             };
 
-            if initialized {
-                self.initialized.store(true, Relaxed);
-            }
             Ok(initialized)
         }
 
@@ -755,8 +724,6 @@ const _: () = {
                 ));
             }
 
-            self.initialized.store(true, Relaxed);
-
             Ok(())
         }
 
@@ -769,17 +736,13 @@ const _: () = {
         /// This method panics if relayer is not [configured](Self::with_relayer)
         /// for this wallet.
         pub async fn sign_and_send(&self, request: impl Into<Request>) -> Result<SendTxResponse> {
-            if let Some(relayer) = self.try_relayer() {} // TODO
             // check before signing if relayer is set
             let relayer = self.relayer();
 
             let (msg, proof) = self.sign(request).await?;
 
-            let mut req = WalletRelayRequest::new(msg, proof);
-
-            if !self.initialized.load(Relaxed) {
-                req = req.deterministic_state_init(self.deterministic_state_init().clone());
-            }
+            let req = WalletRelayRequest::new(msg, proof)
+                .deterministic_state_init(self.deterministic_state_init().clone());
 
             relayer.relay_wallet_msg(req).await.context("relayer")
         }
@@ -919,35 +882,4 @@ const _: () = {
             )
         }
     }
-
-    // TODO: what if relayer is used?
-    // impl<S: SignatureSchema> WithWaitLevel for Wallet<S> {
-    //     type At<L: WaitLevel>;
-
-    //     fn wait_until<L: WaitLevel>(&self) -> Self::At<L> {
-    //         todo!()
-    //     }
-    // }
 };
-// TODO: impl AsRef<Near>
-
-// impl<S> NearSender for Wallet<S>
-// where
-//     S: SignatureSchema,
-// {
-//     type Error = anyhow::Error;
-
-//     #[inline]
-//     fn account_id(&self) -> Cow<'_, AccountIdRef> {
-//         self.account_id().into()
-//     }
-
-//     async fn send(
-//         &self,
-//         receiver_id: AccountId,
-//         actions: Vec<NearAction>,
-//     ) -> Result<SentTransaction, Self::Error> {
-//         self.sign_and_send(NearPromise::new(receiver_id).add_actions(actions))
-//             .await
-//     }
-// }
