@@ -1,7 +1,7 @@
 use near_kit::{
     Error, SigningNear,
     protocol::Action,
-    rpc::SendTxResponse,
+    rpc::{BlockReference, Finality, RpcError, SendTxResponse},
     transaction::{Included, WaitLevel},
 };
 
@@ -40,7 +40,21 @@ impl<W: WaitLevel> WalletRelayer for SigningNear<W> {
             .max_nonce_retries(u32::MAX)
             .transaction(&request.msg.signer_id);
 
-        if let Some(state_init) = request.deterministic_state_init {
+        let initialized = match self
+            .near()
+            .rpc()
+            .view_account(tx.receiver_id(), BlockReference::Finality(Finality::Final))
+            .await
+        {
+            Ok(account) => account.has_contract(),
+            Err(RpcError::AccountNotFound { .. } | RpcError::UninitializedAccount { .. }) => false,
+            Err(err) => return Err(err.into()),
+        };
+
+        if !initialized {
+            let Some(state_init) = request.deterministic_state_init else {
+                return Err(Error::Validation("uninitialized account".to_string()));
+            };
             if state_init.derive_account_id() != request.msg.signer_id {
                 return Err(Error::Validation("invalid state_init".to_string()));
             }
@@ -51,7 +65,6 @@ impl<W: WaitLevel> WalletRelayer for SigningNear<W> {
                 NearToken::ZERO,
             ));
         }
-        // TODO: check if not initialized and state init is not given
 
         tx = tx.add_action(
             WalletContract::w_execute_signed(&request.msg, &request.proof).gas(MAX_GAS),
