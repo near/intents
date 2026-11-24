@@ -12,7 +12,7 @@ defuse-crypto = { workspace = true, features = ["ed25519", "secp256k1", "serde"]
 defuse-mpc-kdf = { workspace = true, features = ["ed25519", "secp256k1"] }
 
 impl-tools.workspace = true
-near-kit = { workspace = true, features = ["contracts"] }
+near-kit = { workspace = true, default-features = false, features = ["contracts"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 serde_with = { workspace = true, features = ["hex"] }

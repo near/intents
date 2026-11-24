@@ -17,7 +17,7 @@ digest-io.workspace = true
 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 cfg_eval = { workspace = true, optional = true }
-near-kit = { workspace = true, optional = true }
+near-kit-primitives = { workspace = true, default-features = false, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, features = ["base64"], optional = true }
@@ -26,7 +26,7 @@ serde_with = { workspace = true, features = ["base64"], optional = true }
 abi = ["borsh-schema", "schemars-v0_8"]
 arbitrary = ["dep:arbitrary"]
 borsh-schema = ["borsh/unstable__schema"]
-near-kit = ["dep:near-kit"]
+near-kit = ["dep:near-kit-primitives"]
 serde = ["dep:cfg_eval", "dep:serde", "dep:serde_with"]
 schemars-v0_8 = ["dep:schemars", "serde", "serde_with?/schemars_0_8"]
 

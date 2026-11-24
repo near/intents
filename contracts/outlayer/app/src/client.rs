@@ -1,11 +1,11 @@
 //! Bindings for [`OutlayerApp`](crate::contract::OutlayerApp) contract.
 
 use near_account_id::{AccountId, AccountIdRef};
-use near_kit::NearToken;
+use near_kit_primitives::{NearToken, contract};
 
 pub use defuse_serde_utils::hex::AsHex;
 
-#[near_kit::contract]
+#[contract]
 pub trait OutlayerAppContract {
     /// See [`oa_set_code()`](crate::contract::OutlayerApp::oa_set_code) method.
     #[call(deposit = NearToken::from_yoctonear(1))]

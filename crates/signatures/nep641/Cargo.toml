@@ -24,7 +24,7 @@ digest-io = { workspace = true, optional = true }
 futures = { workspace = true, features = ["std"], optional = true }
 hex = { workspace = true, optional = true }
 itertools = { workspace = true, optional = true }
-near-kit = { workspace = true, optional = true }
+near-kit = { workspace = true, default-features = false, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_json = { workspace = true, optional = true }

@@ -21,7 +21,7 @@ trait-variant.workspace = true
 
 bs58 = { workspace = true, optional = true }
 defuse-mpc-signer = { workspace = true, optional = true }
-near-kit = { workspace = true, default-features = false, optional = true }
+near-kit = { workspace = true, default-features = false, features = ["contracts", "rpc"], optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 tokio = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }

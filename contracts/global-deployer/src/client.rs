@@ -3,9 +3,9 @@
 use defuse_borsh_utils::{AsWrap, Remainder};
 use defuse_serde_utils::hex::AsHex;
 use near_account_id::{AccountId, AccountIdRef};
-use near_kit::NearToken;
+use near_kit_primitives::{NearToken, contract};
 
-#[near_kit::contract]
+#[contract]
 pub trait GlobalDeployerContract {
     /// See [`gd_approve()`](crate::contract::GlobalDeployer::gd_approve) method.
     #[call(deposit = NearToken::from_yoctonear(1))]

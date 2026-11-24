@@ -28,7 +28,7 @@ impl From<NearToken> for Transfer {
 
 #[cfg(feature = "near-kit")]
 const _: () = {
-    use near_kit::protocol::TransferAction;
+    use near_kit_primitives::protocol::TransferAction;
 
     impl From<TransferAction> for Transfer {
         #[inline]
