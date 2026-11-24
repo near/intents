@@ -141,7 +141,7 @@ near-contract-standards = "5.30.0"
 near-gas = "0.3.7"
 near-global-contracts = "0.3.2"
 # TODO: near-kit-primitives
-near-kit = { git = "https://github.com/r-near/near-kit-rs", tag = "near-kit-v0.34.0-rc.1", default-features = false}
+near-kit = { git = "https://github.com/r-near/near-kit-rs", tag = "near-kit-v0.34.0-rc.1", default-features = false }
 near-kit-macros = { git = "https://github.com/r-near/near-kit-rs", tag = "near-kit-v0.34.0-rc.1" }
 near-kit-primitives = { git = "https://github.com/r-near/near-kit-rs", tag = "near-kit-v0.34.0-rc.1" }
 near-kit-sandbox = { git = "https://github.com/r-near/near-kit-rs", tag = "near-kit-v0.34.0-rc.1" }
