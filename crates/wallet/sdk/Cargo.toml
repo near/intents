@@ -29,17 +29,9 @@ tracing = { workspace = true, optional = true }
 [features]
 default = ["mpc", "near-kit"]
 
-near-kit = [
-  "defuse-wallet/near-kit",
-  "dep:near-kit",
-  "dep:tokio",
-  "tokio/time",
-]
-mpc = ["dep:defuse-mpc-signer"]
-schemars-v0_8 = [
-  "defuse-wallet/schemars-v0_8",
-  "dep:schemars",
-]
+near-kit = ["defuse-wallet/near-kit", "dep:near-kit", "dep:tokio", "tokio/time"]
+mpc = ["dep:defuse-mpc-signer", "near-kit"]
+schemars-v0_8 = ["defuse-wallet/schemars-v0_8", "dep:schemars"]
 tracing = [
   "defuse-mpc-signer?/tracing",
   "dep:bs58",

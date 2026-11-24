@@ -3674,9 +3674,8 @@ dependencies = [
 
 [[package]]
 name = "near-kit"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ddae2f3070eb3495aece74e85a7b0d2e05e3cdbc603eff5b4e61fb550a3f614a"
+version = "0.34.0-rc.1"
+source = "git+https://github.com/r-near/near-kit-rs?tag=near-kit-v0.34.0-rc.1#9337addcda5d1c6b3d70695cbb4034440cd86529"
 dependencies = [
  "base64 0.23.1",
  "borsh",
@@ -3694,9 +3693,8 @@ dependencies = [
 
 [[package]]
 name = "near-kit-macros"
-version = "0.15.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0e3d0a984d533aa2aab5cb4e3a900bf03337874a97e78553f4ac2b308c83f20"
+version = "0.16.0-rc.1"
+source = "git+https://github.com/r-near/near-kit-rs?tag=near-kit-v0.34.0-rc.1#9337addcda5d1c6b3d70695cbb4034440cd86529"
 dependencies = [
  "proc-macro-crate 3.5.0",
  "proc-macro2",
@@ -3706,9 +3704,8 @@ dependencies = [
 
 [[package]]
 name = "near-kit-primitives"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dc7a5eac4771dda18cc5f867fd8948fd782f2d676e1ce79a23882373b8abd70"
+version = "0.34.0-rc.1"
+source = "git+https://github.com/r-near/near-kit-rs?tag=near-kit-v0.34.0-rc.1#9337addcda5d1c6b3d70695cbb4034440cd86529"
 dependencies = [
  "base64 0.23.1",
  "borsh",
@@ -3735,9 +3732,8 @@ dependencies = [
 
 [[package]]
 name = "near-kit-sandbox"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ca19526ae6f3ec49fba395d6445327a9b4f9f47e59dcc0ecacce64eb9def564"
+version = "0.34.0-rc.1"
+source = "git+https://github.com/r-near/near-kit-rs?tag=near-kit-v0.34.0-rc.1#9337addcda5d1c6b3d70695cbb4034440cd86529"
 dependencies = [
  "libc",
  "near-kit",

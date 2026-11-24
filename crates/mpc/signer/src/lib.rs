@@ -89,7 +89,7 @@ where
 
         #[cfg(feature = "tracing")]
         tracing::debug!(
-            tx.hash = %CryptoHash::from(sent.tx_hash),
+            tx.hash = %CryptoHash::from(sent.transaction_hash),
             tx.sender_id = %sent.sender_id,
             "{}::sign() transaction sent",
             self.mpc_contract_id,
