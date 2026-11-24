@@ -1485,7 +1485,6 @@ version = "0.1.0"
 dependencies = [
  "defuse-crypto",
  "defuse-mpc-kdf",
- "defuse-near-promise",
  "impl-tools 0.13.0",
  "near-kit",
  "serde",

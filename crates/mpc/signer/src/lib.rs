@@ -14,11 +14,9 @@ use defuse_mpc_kdf::{
     crypto::Curve,
     schema::{Additive, WithSchema},
 };
-use defuse_near_promise::{AccountId, AccountIdRef};
-// use defuse_near_sender::{ArcNearSender, NearSender, SentTransaction};
 use impl_tools::autoimpl;
 use near_kit::{
-    CryptoHash, Near, TxSender,
+    AccountId, AccountIdRef, CryptoHash, Near, TxSender,
     rpc::{ExecutionStatus, SendTxResponse},
     transaction::ExecutedOptimistic,
 };
