@@ -405,7 +405,6 @@ where
         self.timeout
     }
 
-    // TODO: .sign_external()?
     /// Sign on-chain request to be executed on behalf of
     /// [effective account ID](Self::account_id).
     ///
@@ -417,7 +416,7 @@ where
     /// [`.deterministic_state_init()`](Wallet::deterministic_state_init).
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
         account_id = %self.account_id(),
-        // TODO: pay_for_gas
+        // TODO: msg.pay_for_gas?
         msg.chain_id = self.chain_id(),
         msg.signer_id = %self.real_account_id(),
         msg.nonce,
