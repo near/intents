@@ -595,7 +595,7 @@ impl<S: SignatureSchema> From<Wallet<S>> for AccountId {
 #[cfg(feature = "near-kit")]
 const _: () = {
     use defuse_wallet::actions::NearAction;
-    use near_kit::{MaybeSend, Near, TxSender, protocol::Action, rpc::SendTxResponse};
+    use near_kit::{Near, TxSender, protocol::Action, rpc::SendTxResponse};
 
     use crate::relayer::{WalletRelayRequest, WalletRelayer};
 
@@ -867,19 +867,18 @@ const _: () = {
             self.chain_id()
         }
 
-        fn send(
+        async fn send(
             &self,
             receiver_id: AccountId,
             actions: Vec<Action>,
-        ) -> impl Future<Output = Result<Self::Output, Self::SendError>> + MaybeSend {
-            self.sign_and_send(
-                NearPromise::new(receiver_id).add_actions(
-                    actions
-                        .into_iter()
-                        .map(NearAction::from_kit)
-                        .map(|o| o.unwrap()), // TODO
-                ),
-            )
+        ) -> Result<Self::Output, Self::SendError> {
+            let actions = actions
+                .into_iter()
+                .map(|a| NearAction::from_kit(a).context("unsupported action"))
+                .collect::<Result<Vec<_>, _>>()?;
+
+            self.sign_and_send(NearPromise::new(receiver_id).add_actions(actions))
+                .await
         }
     }
 };
