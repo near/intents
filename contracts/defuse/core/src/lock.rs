@@ -230,7 +230,7 @@ where
     As: BorshDeserializeAs<T>,
 {
     #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<Lock<T>>
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<Lock<T>>
     where
         R: io::Read,
     {

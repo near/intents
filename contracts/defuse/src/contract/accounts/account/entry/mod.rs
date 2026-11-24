@@ -108,7 +108,7 @@ impl MaybeVersionedAccountEntry {
 }
 
 impl BorshDeserializeAs<Lock<Account>> for MaybeVersionedAccountEntry {
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<Lock<Account>>
+    fn deserialize_reader_as<R>(reader: &mut R) -> io::Result<Lock<Account>>
     where
         R: io::Read,
     {

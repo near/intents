@@ -152,7 +152,9 @@ impl Account {
 fn has_implicit_public_key(account: &AccountIdRef) -> bool {
     match account.get_account_type() {
         AccountType::NearImplicitAccount | AccountType::EthImplicitAccount => true,
-        AccountType::NamedAccount | AccountType::NearDeterministicAccount => false,
+        AccountType::NamedAccount
+        | AccountType::NearDeterministicAccount
+        | AccountType::UniversalAccount => false,
     }
 }
 
@@ -242,5 +244,23 @@ mod tests {
             Account::new(b"prefix".to_vec(), AccountIdRef::new_or_panic("alice.near"),)
                 .is_implicit_public_key_removed()
         );
+    }
+
+    #[test]
+    fn near_deterministic_account_has_no_implicit_public_key() {
+        let account_id = AccountIdRef::new_or_panic("0s0123456789abcdef0123456789abcdef01234567");
+        assert_eq!(
+            account_id.get_account_type(),
+            AccountType::NearDeterministicAccount
+        );
+        assert!(Account::new(b"prefix".to_vec(), account_id).is_implicit_public_key_removed());
+    }
+
+    #[test]
+    fn universal_account_has_no_implicit_public_key() {
+        let account_id =
+            AccountIdRef::new_or_panic("0u000g40r40m30e209185gr38e1w8124gk2gahc5rr34d1p70x3rfg");
+        assert_eq!(account_id.get_account_type(), AccountType::UniversalAccount);
+        assert!(Account::new(b"prefix".to_vec(), account_id).is_implicit_public_key_removed());
     }
 }

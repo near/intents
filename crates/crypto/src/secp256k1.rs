@@ -176,7 +176,6 @@ const _: () = {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[derive(
-    Debug,
     Clone,
     Copy,
     PartialEq,
@@ -301,7 +300,6 @@ impl TryFrom<&Secp256k1UncompressedPublicKey> for Secp256k1CompressedPublicKey {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[derive(
-    Debug,
     Clone,
     Copy,
     PartialEq,
@@ -404,7 +402,6 @@ impl TryFrom<&Secp256k1CompressedPublicKey> for Secp256k1UncompressedPublicKey {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[derive(
-    Debug,
     Clone,
     Copy,
     PartialEq,
@@ -483,7 +480,6 @@ impl TryFrom<&Secp256k1Signature> for Signature {
     cfg_attr(feature = "borsh-schema", derive(::borsh::BorshSchema))
 )]
 #[derive(
-    Debug,
     Clone,
     Copy,
     PartialEq,
@@ -580,7 +576,7 @@ impl TryFrom<&Secp256k1RecoverableSignature> for Signature {
 #[cfg(feature = "fmt")]
 const _: () = {
     use core::{
-        fmt::{self, Display},
+        fmt::{self, Debug, Display},
         str::FromStr,
     };
 
@@ -594,6 +590,13 @@ const _: () = {
         #[inline]
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             f.write_str(&Secp256k1::to_base58(self.0))
+        }
+    }
+
+    impl Debug for Secp256k1CompressedPublicKey {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
         }
     }
 
@@ -613,6 +616,13 @@ const _: () = {
         }
     }
 
+    impl Debug for Secp256k1UncompressedPublicKey {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
+        }
+    }
+
     impl FromStr for Secp256k1UncompressedPublicKey {
         type Err = ParseCurveError;
 
@@ -629,6 +639,13 @@ const _: () = {
         }
     }
 
+    impl Debug for Secp256k1Signature {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
+        }
+    }
+
     impl FromStr for Secp256k1Signature {
         type Err = ParseCurveError;
 
@@ -642,6 +659,13 @@ const _: () = {
         #[inline]
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             f.write_str(&Secp256k1::to_base58(self.0))
+        }
+    }
+
+    impl Debug for Secp256k1RecoverableSignature {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            Display::fmt(self, f)
         }
     }
 
