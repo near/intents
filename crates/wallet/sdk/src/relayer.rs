@@ -147,7 +147,6 @@ impl<W: WaitLevel> WalletRelayer for SigningNear<W> {
         .await
         .map_err(|_| Error::Validation("expired".to_string()))
         .flatten()
-        .map(Into::into)
     }
 }
 
