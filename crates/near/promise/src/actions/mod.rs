@@ -37,6 +37,7 @@ pub enum NearAction {
     /// [`Transfer`]
     Transfer(Transfer) = 3,
 
+    // TODO: replace with UniversalStateInit
     /// [`DeterministicStateInit`]
     DeterministicStateInit(DeterministicStateInit) = 11,
 }
@@ -109,8 +110,8 @@ const _: () = {
             Some(match action {
                 Action::FunctionCall(a) => Self::FunctionCall(a.into()),
                 Action::Transfer(a) => Self::Transfer(a.into()),
+                // TODO: replace with UniversalStateInit
                 Action::DeterministicStateInit(a) => Self::DeterministicStateInit(a.into()),
-                // TODO: UniversalStateInit
                 _ => return None,
             })
         }
