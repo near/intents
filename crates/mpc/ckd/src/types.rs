@@ -1,3 +1,4 @@
+#[cfg(feature = "fmt")]
 use std::{fmt, str::FromStr};
 
 use blstrs::{G1Affine, G2Affine};
