@@ -51,7 +51,7 @@ schemars-v0_8 = [
 _contract = ["borsh", "near-contract"]
 
 [dev-dependencies]
-defuse-outlayer-app = { path = ".", features = ["abi", "arbitrary", "borsh", "digest", "near-kit", "serde", "near-contract", "_contract"] }
+defuse-outlayer-app = { path = ".", features = ["arbitrary", "borsh", "digest", "near-kit", "serde", "schemars-v0_8", "near-contract", "_contract"] }
 
 hex-literal.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
