@@ -1,7 +1,7 @@
-use defuse_near_sender::SentTransaction;
 use near_kit::{
     Error, SigningNear,
     protocol::Action,
+    rpc::SendTxResponse,
     transaction::{Included, WaitLevel},
 };
 
@@ -10,12 +10,6 @@ use crate::{
     client::WalletContract,
     relayer::{WalletRelayRequest, WalletRelayer},
 };
-
-// TODO: remove once https://github.com/near/nearcore/pull/15461 is on mainnet
-/// Only assist with at most 1yN: it's enough for a single permissioned
-/// action on Near: most contracts require 1yN of attached deposit to
-/// ensure predecessor is not using Function Call access key
-const MAX_ASSIST_DEPOSIT: NearToken = NearToken::from_yoctonear(1);
 
 // TODO: change to 1 PGas
 const MAX_GAS: Gas = Gas::from_tgas(300);
@@ -31,7 +25,7 @@ impl<W: WaitLevel> WalletRelayer for SigningNear<W> {
     async fn relay_wallet_msg(
         &self,
         request: WalletRelayRequest,
-    ) -> Result<SentTransaction, Self::Error> {
+    ) -> Result<SendTxResponse, Self::Error> {
         if request.msg.chain_id != self.near().chain_id().as_str() {
             return Err(Error::Validation("invalid chain_id".to_string()));
         }
@@ -57,11 +51,10 @@ impl<W: WaitLevel> WalletRelayer for SigningNear<W> {
                 NearToken::ZERO,
             ));
         }
+        // TODO: check if not initialized and state init is not given
 
         tx = tx.add_action(
-            WalletContract::w_execute_signed(&request.msg, &request.proof)
-                .deposit(request.msg.request.total_deposit().min(MAX_ASSIST_DEPOSIT))
-                .gas(MAX_GAS),
+            WalletContract::w_execute_signed(&request.msg, &request.proof).gas(MAX_GAS),
         );
 
         tokio::time::timeout(

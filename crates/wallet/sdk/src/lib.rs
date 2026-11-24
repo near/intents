@@ -4,8 +4,10 @@
 pub mod client;
 #[cfg(feature = "mpc")]
 pub use defuse_mpc_signer as mpc;
-use defuse_wallet::{actions::NearAction, offchain::OffchainMessage};
+use defuse_wallet::offchain::OffchainMessage;
+use serde_json::json;
 mod nonces;
+#[cfg(feature = "near-kit")]
 pub mod relayer;
 mod signer;
 
@@ -14,7 +16,6 @@ pub use self::signer::*;
 pub use defuse_wallet::*;
 
 use std::{
-    borrow::Cow,
     collections::BTreeSet,
     error::Error as StdError,
     iter, mem,
@@ -32,11 +33,7 @@ use rand::{make_rng, rngs::SmallRng};
 #[cfg(feature = "tracing")]
 use tracing::{Span, instrument, record_all};
 
-use crate::{
-    actions::FunctionCall,
-    nonces::ConcurrentNonces,
-    relayer::{DynWalletRelayer, WalletRelayRequest, WalletRelayer},
-};
+use crate::{actions::FunctionCall, nonces::ConcurrentNonces};
 
 /// `mainnet` chain id
 pub const MAINNET: &str = "mainnet";
@@ -133,6 +130,7 @@ impl WalletBuilder {
         Wallet {
             account_id: state_init.derive_account_id(),
             state_init: state_init.into(),
+            #[cfg(feature = "near-kit")]
             initialized: Arc::new(AtomicBool::new(false)),
             as_extension_chain: Vec::new(),
             timeout: self.timeout,
@@ -141,6 +139,7 @@ impl WalletBuilder {
             signer: Arc::new(signer),
             #[cfg(feature = "near-kit")]
             client: None,
+            #[cfg(feature = "near-kit")]
             relayer: None,
             #[cfg(feature = "mpc")]
             mpc_contract_id: Some(mpc::MAINNET_MPC_CONTRACT_ID.to_owned()),
@@ -181,7 +180,8 @@ pub struct Wallet<S: SignatureSchema> {
     account_id: AccountId,
     /// Initialization state for real account ID
     state_init: Arc<StateInit>,
-    // Whether real account ID is known to be already initialized on-chain
+    /// Whether real account ID is known to be already initialized on-chain
+    #[cfg(feature = "near-kit")]
     initialized: Arc<AtomicBool>,
     /// Currently configured extension chain
     as_extension_chain: Vec<AccountId>,
@@ -201,7 +201,8 @@ pub struct Wallet<S: SignatureSchema> {
     client: Option<near_kit::Near>,
 
     /// Relayer
-    relayer: Option<Arc<dyn DynWalletRelayer>>,
+    #[cfg(feature = "near-kit")]
+    relayer: Option<Arc<dyn self::relayer::DynWalletRelayer>>,
 
     /// Account ID of MPC contract
     #[cfg(feature = "mpc")]
@@ -239,9 +240,12 @@ where
     pub fn with_chain_id(mut self, chain_id: impl Into<ChainId>) -> Self {
         let old_chain_id = mem::replace(&mut self.chain_id, chain_id.into());
         if self.chain_id != old_chain_id {
-            // same wallet account ID on different chain might not have been
-            // initialized yet
-            self.initialized = Arc::new(AtomicBool::new(false));
+            #[cfg(feature = "near-kit")]
+            {
+                // same wallet account ID on different chain might not have been
+                // initialized yet
+                self.initialized = Arc::new(AtomicBool::new(false));
+            }
             // same wallet instances on different chains keep track of their own nonces
             self.nonces = Arc::new(Mutex::new(ConcurrentNonces::new(make_rng())));
 
@@ -255,35 +259,6 @@ where
         self
     }
 
-    /// Configure Near client for this wallet.
-    ///
-    /// This also [resets chain ID](Self::with_chain_id) with client's one.
-    #[cfg(feature = "near-kit")]
-    #[must_use]
-    #[inline]
-    pub fn with_client(mut self, client: impl AsRef<near_kit::Near>) -> Self {
-        let client = client.as_ref();
-
-        self = self.with_chain_id(client.chain_id().as_str());
-        self.client = Some(client.clone());
-
-        self
-    }
-
-    /// Configure [relayer](WalletRelayer) for this wallet.
-    ///
-    /// This is currently required for [`.sign_and_send()`](Self::sign_and_send) to work.
-    #[must_use]
-    #[inline]
-    pub fn with_relayer<R>(mut self, relayer: R) -> Self
-    where
-        R: WalletRelayer + 'static,
-        R::Error: StdError + Send + Sync + 'static,
-    {
-        self.relayer = Some(Arc::new(relayer));
-        self
-    }
-
     /// Configure MPC contract ID for this wallet.
     /// See [`.mpc_signer()`](Self::mpc_signer) method.
     #[cfg(feature = "mpc")]
@@ -291,16 +266,6 @@ where
     #[inline]
     pub fn with_mpc_contract_id(mut self, mpc_contract_id: impl Into<AccountId>) -> Self {
         self.mpc_contract_id = Some(mpc_contract_id.into());
-        self
-    }
-
-    /// Mark wallet's [real account ID](Self::real_account_id) as already
-    /// initilized, so that future requests won't include unnecessary
-    /// [state init](Self::deterministic_state_init).
-    #[must_use]
-    #[inline]
-    pub fn as_initialized_unchecked(mut self) -> Self {
-        self.initialized = Arc::new(AtomicBool::new(true));
         self
     }
 
@@ -454,116 +419,7 @@ where
         self.timeout
     }
 
-    #[cfg(feature = "near-kit")]
-    #[inline]
-    fn try_client(&self) -> Option<near_kit::Near> {
-        self.client.clone()
-    }
-
-    #[cfg(feature = "near-kit")]
-    #[track_caller]
-    #[inline]
-    fn client(&self) -> near_kit::Near {
-        self.try_client()
-            .expect("client was not configured, use `with_client()` to set one")
-    }
-
-    #[inline]
-    fn try_relayer(&self) -> Option<&dyn DynWalletRelayer> {
-        self.relayer.as_deref()
-    }
-
-    #[track_caller]
-    #[inline]
-    fn relayer(&self) -> &dyn DynWalletRelayer {
-        self.try_relayer()
-            .expect("relayer was not configured, use `with_relayer()` to set one")
-    }
-
-    #[cfg(feature = "near-kit")]
-    /// Check if [real account ID](Self::real_account_id) is initialized on-chain.
-    async fn check_initialized(&self) -> Result<bool> {
-        use near_kit::rpc::{BlockReference, Finality, RpcError};
-
-        if self.initialized.load(Relaxed) {
-            return Ok(true);
-        }
-
-        let initialized = match self
-            .client()
-            .rpc()
-            .view_account(
-                self.real_account_id(),
-                // check at final block, so that we're sure about it and
-                // offchain authorizations can be resolved, as well.
-                BlockReference::Finality(Finality::Final),
-            )
-            .await
-        {
-            Ok(account) => account.has_contract(),
-            Err(RpcError::AccountNotFound { .. }) => false,
-            Err(err) => return Err(err.into()),
-        };
-
-        if initialized {
-            self.initialized.store(true, Relaxed);
-        }
-        Ok(initialized)
-    }
-
-    #[cfg(feature = "near-kit")]
-    /// Initialize [real account ID](Self::account_id) by sending empty [`Request`].
-    ///
-    /// # Panics
-    ///
-    /// This method panics when called on wallet with non-empty configured
-    /// [extension chain](Self::as_extension_of).
-    pub async fn initialize(&self) -> Result<()> {
-        use near_kit::{rpc::ExecutionStatus, transaction::Final};
-
-        assert!(
-            self.as_extension_chain().is_empty(),
-            "Cannot initialize a wallet with non-empty extension chain. Use `.as_self()` and initialize the real account ID",
-        );
-
-        // sync before sending on-chain txs
-        if self.check_initialized().await? {
-            return Ok(());
-        }
-
-        // initialize real account ID by sending an empty request
-        let output = self
-            .sign_and_send(Request::new())
-            .await?
-            .status(&self.client())
-            // wait for finalization
-            .wait_until::<Final>()
-            .await?;
-
-        let initialized = output
-            .receipts_outcome
-            .iter()
-            // look for a successfull receipt on real account ID with non-empty logs, as it
-            // should contain `signed_request` event
-            .any(|o| {
-                matches!(o.outcome.status, ExecutionStatus::SuccessValue(_))
-                    && !o.outcome.logs.is_empty()
-                    && o.outcome.executor_id == *self.real_account_id()
-            });
-
-        if !initialized {
-            return Err(anyhow::anyhow!(
-                "transaction {} did not initialize the wallet {}",
-                output.transaction_hash(),
-                self.real_account_id(),
-            ));
-        }
-
-        self.initialized.store(true, Relaxed);
-
-        Ok(())
-    }
-
+    // TODO: .sign_external()?
     /// Sign on-chain request to be executed on behalf of
     /// [effective account ID](Self::account_id).
     ///
@@ -575,6 +431,7 @@ where
     /// [`.deterministic_state_init()`](Wallet::deterministic_state_init).
     #[cfg_attr(feature = "tracing", instrument(skip_all, fields(
         account_id = %self.account_id(),
+        // TODO: pay_for_gas
         msg.chain_id = self.chain_id(),
         msg.signer_id = %self.real_account_id(),
         msg.nonce,
@@ -635,7 +492,7 @@ where
                             FunctionCall::name("w_execute_extension")
                                 .attach_deposit(NearToken::from_yoctonear(1))
                                 .gas(request.estimate_gas())
-                                .args_json(serde_json::json!({ "request": request })),
+                                .args_json(json!({ "request": request })),
                         )
                         .into()
                 },
@@ -643,30 +500,7 @@ where
         }
     }
 
-    /// [Sign](Self::sign) the given on-chain [request](Request) to be
-    /// executed on behalf of [effective account ID](Self::account_id) and
-    /// relay it.
-    ///
-    /// # Panics
-    ///
-    /// This method panics if relayer is not [configured](Self::with_relayer)
-    /// for this wallet.
-    pub async fn sign_and_send(&self, request: impl Into<Request>) -> Result<SentTransaction> {
-        // check before signing if relayer is set
-        let relayer = self.relayer();
-
-        let (msg, proof) = self.sign(request).await?;
-
-        let mut req = WalletRelayRequest::new(msg, proof);
-
-        if !self.initialized.load(Relaxed) {
-            req = req.deterministic_state_init(self.deterministic_state_init().clone());
-        }
-
-        relayer.relay_wallet_msg(req).await.context("relayer")
-    }
-
-    /// Sign offchain payload and return an authorization blob, as per NEP-641.
+    /// Sign offchain payload and return an authorization blob, as per [NEP-641](https://github.com/near/NEPs/blob/master/neps/nep-0641.md).
     ///
     /// Optional `path` argument allows to specify a path from [effective account ID](Self::account_id)
     /// to top-level resolver ID. Empty path means that the returned authorization is top-level itself.
@@ -684,12 +518,6 @@ where
         payload: impl Into<String>,
         path: impl IntoIterator<Item = AccountId>,
     ) -> Result<String> {
-        assert!(
-            self.initialized.load(Relaxed),
-            "The real wallet ID is not known to be initialized and MAY fail to resolve offchain \
-            authorization due to current limitations of Near RPC. Use `.initialize()`",
-        );
-
         let msg = OffchainMessage {
             chain_id: self.chain_id().clone(),
             // signer is the real account ID
@@ -747,110 +575,6 @@ where
             .into()
     }
 
-    #[allow(clippy::doc_markdown)]
-    /// Create a new MPC signer for curve with given domain that can sign
-    /// arbitrary payloads on behalf of [effective account ID](Self::account_id).
-    ///
-    /// # Panics
-    ///
-    /// This method panics if [MPC contract ID](Self::with_mpc_contract_id),
-    /// [relayer](Self::with_relayer) and [client](Self::with_client) are not
-    /// configured for this wallet.
-    ///
-    /// # Examples
-    ///
-    /// On-chain MPC signer currently supports `ed25519` and `secp256k1` curves:
-    ///
-    /// ## EdDSA
-    ///
-    /// ```rust,no_run
-    /// use defuse_wallet_sdk::mpc::kdf::{
-    ///     DeriveExt, crypto::{Curve, ed25519::Ed25519},
-    /// };
-    /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
-    /// # use defuse_wallet_ed25519::{
-    /// #   WalletEd25519, WalletEd25519Signer,
-    /// #   crypto::ed25519::ed25519_dalek::SigningKey,
-    /// # };
-    /// # #[tokio::main(flavor = "local")]
-    /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
-    /// # let wallet = Wallet::<WalletEd25519>::new(
-    /// #     [0u8; 32],
-    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32])),
-    /// # );
-    ///
-    /// // prepare signer for Ed25519 curve
-    /// let signer = wallet.mpc_signer::<Ed25519>(1).await?;
-    ///
-    /// // derive public key
-    /// let path = "derivation path";
-    /// let public_key = signer.derive_public_key(path);
-    ///
-    /// // sign arbitrary message
-    /// let msg = b"some message";
-    /// let signature = signer.derive_sign(path, msg).await?;
-    ///
-    /// assert!(Ed25519::verify(&public_key, msg, &signature));
-    /// # Ok(()) }
-    /// ```
-    ///
-    /// ## ECDSA
-    ///
-    /// ```rust,no_run
-    /// use defuse_wallet_sdk::mpc::kdf::{
-    ///     DeriveExt,
-    ///     crypto::{RecoverableCurve, secp256k1::Secp256k1},
-    /// };
-    /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
-    /// # use defuse_wallet_ed25519::{
-    /// #   WalletEd25519, WalletEd25519Signer,
-    /// #   crypto::ed25519::ed25519_dalek::SigningKey,
-    /// # };
-    /// # use hex_literal::hex;
-    /// # #[tokio::main(flavor = "local")]
-    /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
-    /// # let wallet = Wallet::<WalletEd25519>::new(
-    /// #     [0u8; 32],
-    /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32])),
-    /// # );
-    ///
-    /// // prepare signer for secp256k1 curve
-    /// let signer = wallet.mpc_signer::<Secp256k1>(0).await?;
-    ///
-    /// // derive public key
-    /// let path = "derivation path";
-    /// let public_key = signer.derive_public_key(path);
-    ///
-    /// // sign **32-byte prehash** (recoverable)
-    /// let prehash = hex!("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08");
-    /// let (signature, recovery_id) = signer.derive_sign_recoverable(path, &prehash).await?;
-    ///
-    /// assert_eq!(
-    ///     Secp256k1::recover(&prehash, &signature, recovery_id),
-    ///     Some(public_key),
-    /// );
-    /// # Ok(()) }
-    /// ```
-    #[cfg(all(feature = "mpc", feature = "near-kit"))]
-    pub async fn mpc_signer<C>(
-        &self,
-        domain_id: u64,
-    ) -> Result<mpc::MpcOnChainSigner<C>, mpc::Error>
-    where
-        C: mpc::OnChainNearMpcCurve,
-        S: 'static,
-    {
-        mpc::MpcOnChainSigner::from_domain_id(
-            self.clone(),
-            self.mpc_contract_id.clone().expect(
-                "mpc_contract_id is not configured, use `with_mpc_contract_id()` to set one",
-            ),
-            domain_id,
-            self.client(),
-        )
-        .await
-    }
-
     /// Reseed the nonces and invalidate the current block. Use it in case of a collision.
     #[inline]
     pub fn reseed_nonces(&self) {
@@ -884,12 +608,291 @@ impl<S: SignatureSchema> From<Wallet<S>> for AccountId {
 
 #[cfg(feature = "near-kit")]
 const _: () = {
-    use near_kit::{MaybeSend, TxSender};
+    use defuse_wallet::actions::NearAction;
+    use near_kit::{MaybeSend, Near, TxSender, protocol::Action, rpc::SendTxResponse};
+
+    use crate::relayer::{WalletRelayRequest, WalletRelayer};
+
+    impl<S: SignatureSchema> Wallet<S> {
+        /// Configure Near client for this wallet.
+        ///
+        /// This also [resets chain ID](Self::with_chain_id) with client's one.
+        #[must_use]
+        #[inline]
+        pub fn with_client(mut self, client: impl AsRef<Near>) -> Self {
+            let client = client.as_ref();
+
+            self = self.with_chain_id(client.chain_id().as_str());
+            self.client = Some(client.clone());
+
+            self
+        }
+
+        /// Configure [relayer](WalletRelayer) for this wallet.
+        ///
+        /// This is currently required for [`.sign_and_send()`](Self::sign_and_send) to work.
+        #[must_use]
+        #[inline]
+        pub fn with_relayer<R>(mut self, relayer: R) -> Self
+        where
+            R: WalletRelayer + 'static,
+            R::Error: StdError + Send + Sync + 'static,
+        {
+            self.relayer = Some(Arc::new(relayer));
+            self
+        }
+
+        #[inline]
+        fn try_client(&self) -> Option<near_kit::Near> {
+            self.client.clone()
+        }
+
+        #[track_caller]
+        #[inline]
+        fn client(&self) -> near_kit::Near {
+            self.try_client()
+                .expect("client was not configured, use `with_client()` to set one")
+        }
+
+        #[inline]
+        fn try_relayer(&self) -> Option<&dyn self::relayer::DynWalletRelayer> {
+            self.relayer.as_deref()
+        }
+
+        #[track_caller]
+        #[inline]
+        fn relayer(&self) -> &dyn self::relayer::DynWalletRelayer {
+            self.try_relayer()
+                .expect("relayer was not configured, use `with_relayer()` to set one")
+        }
+
+        /// Mark wallet's [real account ID](Self::real_account_id) as already
+        /// initilized, so that future requests won't include unnecessary
+        /// [state init](Self::deterministic_state_init).
+        #[must_use]
+        #[inline]
+        pub fn as_initialized_unchecked(mut self) -> Self {
+            self.initialized = Arc::new(AtomicBool::new(true));
+            self
+        }
+
+        /// Check if [real account ID](Self::real_account_id) is initialized on-chain.
+        async fn check_initialized(&self) -> Result<bool> {
+            use near_kit::rpc::{BlockReference, Finality, RpcError};
+
+            if self.initialized.load(Relaxed) {
+                return Ok(true);
+            }
+
+            let initialized = match self
+                .client()
+                .rpc()
+                .view_account(
+                    self.real_account_id(),
+                    // check at final block, so that we're sure about it and
+                    // offchain authorizations can be resolved, as well.
+                    BlockReference::Finality(Finality::Final),
+                )
+                .await
+            {
+                Ok(account) => account.has_contract(),
+                Err(RpcError::AccountNotFound { .. } | RpcError::UninitializedAccount { .. }) => {
+                    false
+                }
+                Err(err) => return Err(err.into()),
+            };
+
+            if initialized {
+                self.initialized.store(true, Relaxed);
+            }
+            Ok(initialized)
+        }
+
+        /// Initialize [real account ID](Self::account_id) by sending empty [`Request`].
+        ///
+        /// # Panics
+        ///
+        /// This method panics when called on wallet with non-empty configured
+        /// [extension chain](Self::as_extension_of).
+        pub async fn initialize(&self) -> Result<()> {
+            use near_kit::{rpc::ExecutionStatus, transaction::Final};
+
+            assert!(
+                self.as_extension_chain().is_empty(),
+                "Cannot initialize a wallet with non-empty extension chain. Use `.as_self()` and initialize the real account ID",
+            );
+
+            // sync before sending on-chain txs
+            if self.check_initialized().await? {
+                return Ok(());
+            }
+
+            // initialize real account ID by sending an empty request
+            let sent = self.sign_and_send(Request::new()).await?;
+            let output = self
+                .client()
+                .tx_status(&sent.transaction_hash, sent.sender_id)
+                // wait for finalization
+                .wait_until::<Final>()
+                .await?;
+
+            let initialized = output
+                .receipts_outcome
+                .iter()
+                // look for a successfull receipt on real account ID with non-empty logs, as it
+                // should contain `signed_request` event
+                .any(|o| {
+                    matches!(o.outcome.status, ExecutionStatus::SuccessValue(_))
+                        && !o.outcome.logs.is_empty()
+                        && o.outcome.executor_id == *self.real_account_id()
+                });
+
+            if !initialized {
+                return Err(anyhow::anyhow!(
+                    "transaction {} did not initialize the wallet {}",
+                    output.transaction_hash(),
+                    self.real_account_id(),
+                ));
+            }
+
+            self.initialized.store(true, Relaxed);
+
+            Ok(())
+        }
+
+        /// [Sign](Self::sign) the given on-chain [request](Request) to be
+        /// executed on behalf of [effective account ID](Self::account_id) and
+        /// relay it.
+        ///
+        /// # Panics
+        ///
+        /// This method panics if relayer is not [configured](Self::with_relayer)
+        /// for this wallet.
+        pub async fn sign_and_send(&self, request: impl Into<Request>) -> Result<SendTxResponse> {
+            if let Some(relayer) = self.try_relayer() {} // TODO
+            // check before signing if relayer is set
+            let relayer = self.relayer();
+
+            let (msg, proof) = self.sign(request).await?;
+
+            let mut req = WalletRelayRequest::new(msg, proof);
+
+            if !self.initialized.load(Relaxed) {
+                req = req.deterministic_state_init(self.deterministic_state_init().clone());
+            }
+
+            relayer.relay_wallet_msg(req).await.context("relayer")
+        }
+
+        #[allow(clippy::doc_markdown)]
+        /// Create a new MPC signer for curve with given domain that can sign
+        /// arbitrary payloads on behalf of [effective account ID](Self::account_id).
+        ///
+        /// # Panics
+        ///
+        /// This method panics if [MPC contract ID](Self::with_mpc_contract_id),
+        /// [relayer](Self::with_relayer) and [client](Self::with_client) are not
+        /// configured for this wallet.
+        ///
+        /// # Examples
+        ///
+        /// On-chain MPC signer currently supports `ed25519` and `secp256k1` curves:
+        ///
+        /// ## EdDSA
+        ///
+        /// ```rust,no_run
+        /// use defuse_wallet_sdk::mpc::kdf::{
+        ///     DeriveExt, crypto::{Curve, ed25519::Ed25519},
+        /// };
+        /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
+        /// # use defuse_wallet_ed25519::{
+        /// #   WalletEd25519, WalletEd25519Signer,
+        /// #   crypto::ed25519::ed25519_dalek::SigningKey,
+        /// # };
+        /// # #[tokio::main(flavor = "local")]
+        /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
+        /// # let wallet = Wallet::<WalletEd25519>::new(
+        /// #     [0u8; 32],
+        /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32])),
+        /// # );
+        ///
+        /// // prepare signer for Ed25519 curve
+        /// let signer = wallet.mpc_signer::<Ed25519>(1).await?;
+        ///
+        /// // derive public key
+        /// let path = "derivation path";
+        /// let public_key = signer.derive_public_key(path);
+        ///
+        /// // sign arbitrary message
+        /// let msg = b"some message";
+        /// let signature = signer.derive_sign(path, msg).await?;
+        ///
+        /// assert!(Ed25519::verify(&public_key, msg, &signature));
+        /// # Ok(()) }
+        /// ```
+        ///
+        /// ## ECDSA
+        ///
+        /// ```rust,no_run
+        /// use defuse_wallet_sdk::mpc::kdf::{
+        ///     DeriveExt,
+        ///     crypto::{RecoverableCurve, secp256k1::Secp256k1},
+        /// };
+        /// # use defuse_wallet_sdk::{Wallet, AccountIdRef};
+        /// # use defuse_wallet_ed25519::{
+        /// #   WalletEd25519, WalletEd25519Signer,
+        /// #   crypto::ed25519::ed25519_dalek::SigningKey,
+        /// # };
+        /// # use hex_literal::hex;
+        /// # #[tokio::main(flavor = "local")]
+        /// # async fn main() -> Result<(), Box<dyn core::error::Error>> {
+        /// # let wallet = Wallet::<WalletEd25519>::new(
+        /// #     [0u8; 32],
+        /// #     WalletEd25519Signer(SigningKey::from_bytes(&[0u8; 32])),
+        /// # );
+        ///
+        /// // prepare signer for secp256k1 curve
+        /// let signer = wallet.mpc_signer::<Secp256k1>(0).await?;
+        ///
+        /// // derive public key
+        /// let path = "derivation path";
+        /// let public_key = signer.derive_public_key(path);
+        ///
+        /// // sign **32-byte prehash** (recoverable)
+        /// let prehash = hex!("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08");
+        /// let (signature, recovery_id) = signer.derive_sign_recoverable(path, &prehash).await?;
+        ///
+        /// assert_eq!(
+        ///     Secp256k1::recover(&prehash, &signature, recovery_id),
+        ///     Some(public_key),
+        /// );
+        /// # Ok(()) }
+        /// ```
+        #[cfg(feature = "mpc")]
+        pub async fn mpc_signer<C>(
+            &self,
+            domain_id: u64,
+        ) -> Result<mpc::MpcOnChainSigner<C, Self>, mpc::Error>
+        where
+            C: mpc::OnChainNearMpcCurve,
+            S: 'static,
+        {
+            mpc::MpcOnChainSigner::from_domain_id(
+                self.clone(),
+                self.mpc_contract_id.clone().expect(
+                    "mpc_contract_id is not configured, use `with_mpc_contract_id()` to set one",
+                ),
+                domain_id,
+                self.client(),
+            )
+            .await
+        }
+    }
 
     impl<S: SignatureSchema> TxSender for Wallet<S> {
-        type Output = ;
+        type Output = SendTxResponse;
 
-        type SendError;
+        type SendError = anyhow::Error;
 
         #[inline]
         fn account_id(&self) -> &AccountId {
@@ -897,37 +900,54 @@ const _: () = {
         }
 
         #[inline]
-        fn chain_id(&self) -> &near_kit::protocol::ChainId {
+        fn chain_id(&self) -> &str {
             self.chain_id()
         }
 
         fn send(
             &self,
             receiver_id: AccountId,
-            actions: Vec<near_kit::protocol::Action>,
-        ) -> impl Future<Output = Result<Self::Output, Self::SendError>>
-        + MaybeSend {
-            todo!()
+            actions: Vec<Action>,
+        ) -> impl Future<Output = Result<Self::Output, Self::SendError>> + MaybeSend {
+            self.sign_and_send(
+                NearPromise::new(receiver_id).add_actions(
+                    actions
+                        .into_iter()
+                        .map(NearAction::from_kit)
+                        .map(|o| o.unwrap()), // TODO
+                ),
+            )
         }
     }
+
+    // TODO: what if relayer is used?
+    // impl<S: SignatureSchema> WithWaitLevel for Wallet<S> {
+    //     type At<L: WaitLevel>;
+
+    //     fn wait_until<L: WaitLevel>(&self) -> Self::At<L> {
+    //         todo!()
+    //     }
+    // }
 };
-impl<S> NearSender for Wallet<S>
-where
-    S: SignatureSchema,
-{
-    type Error = anyhow::Error;
+// TODO: impl AsRef<Near>
 
-    #[inline]
-    fn account_id(&self) -> Cow<'_, AccountIdRef> {
-        self.account_id().into()
-    }
+// impl<S> NearSender for Wallet<S>
+// where
+//     S: SignatureSchema,
+// {
+//     type Error = anyhow::Error;
 
-    async fn send(
-        &self,
-        receiver_id: AccountId,
-        actions: Vec<NearAction>,
-    ) -> Result<SentTransaction, Self::Error> {
-        self.sign_and_send(NearPromise::new(receiver_id).add_actions(actions))
-            .await
-    }
-}
+//     #[inline]
+//     fn account_id(&self) -> Cow<'_, AccountIdRef> {
+//         self.account_id().into()
+//     }
+
+//     async fn send(
+//         &self,
+//         receiver_id: AccountId,
+//         actions: Vec<NearAction>,
+//     ) -> Result<SentTransaction, Self::Error> {
+//         self.sign_and_send(NearPromise::new(receiver_id).add_actions(actions))
+//             .await
+//     }
+// }

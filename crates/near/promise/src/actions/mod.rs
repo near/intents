@@ -103,6 +103,19 @@ const _: () = {
 const _: () = {
     use near_kit::protocol::Action;
 
+    impl NearAction {
+        #[inline]
+        pub fn from_kit(action: Action) -> Option<Self> {
+            Some(match action {
+                Action::FunctionCall(a) => Self::FunctionCall(a.into()),
+                Action::Transfer(a) => Self::Transfer(a.into()),
+                Action::DeterministicStateInit(a) => Self::DeterministicStateInit(a.into()),
+                // TODO: UniversalStateInit
+                _ => return None,
+            })
+        }
+    }
+
     impl From<NearAction> for Action {
         #[inline]
         fn from(value: NearAction) -> Self {

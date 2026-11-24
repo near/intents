@@ -20,6 +20,8 @@ use impl_tools::autoimpl;
 pub trait WalletRelayer: Sync {
     type Error: Debug + Display;
 
+    // TODO: chain_id
+
     // TODO: ask for compensation?
     // async fn cover_gas_costs(&self, gas: Gas) -> Result<Vec<NearPromise>, Self::Error>;
 
@@ -48,7 +50,7 @@ where
     async fn dyn_relay_signed_msg(
         &self,
         request: WalletRelayRequest,
-    ) -> anyhow::Result<SentTransaction> {
+    ) -> anyhow::Result<SendTxResponse> {
         self.relay_wallet_msg(request).await.map_err(Into::into)
     }
 }
@@ -59,7 +61,7 @@ impl WalletRelayer for dyn DynWalletRelayer + '_ {
     async fn relay_wallet_msg(
         &self,
         request: WalletRelayRequest,
-    ) -> Result<SentTransaction, Self::Error> {
+    ) -> Result<SendTxResponse, Self::Error> {
         self.dyn_relay_signed_msg(request).await
     }
 }
