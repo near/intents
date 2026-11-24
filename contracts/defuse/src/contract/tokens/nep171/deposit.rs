@@ -13,7 +13,7 @@ use near_sdk::{AccountId, FunctionError, PromiseOrValue, env, near};
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
-    tokens::{DepositAction, DepositMessage},
+    tokens::{DepositAction, DepositMessage, deposit_mint_memo},
 };
 
 #[near]
@@ -37,6 +37,7 @@ impl NonFungibleTokenReceiver for Contract {
 
         let DepositMessage {
             receiver_id,
+            memo,
             action,
         } = if msg.is_empty() {
             DepositMessage::new(sender_id)
@@ -47,7 +48,9 @@ impl NonFungibleTokenReceiver for Contract {
         let core_token_id: TokenId =
             Nep171TokenId::new(env::predecessor_account_id(), token_id).into();
 
-        self.deposit(receiver_id, [(core_token_id, 1)], Some("deposit"))
+        let memo = deposit_mint_memo(memo.as_deref()).unwrap_or_else(|e| panic!("{e}"));
+
+        self.deposit(receiver_id, [(core_token_id, 1)], Some(memo))
             .unwrap_or_else(|err| err.panic());
 
         let Some(action) = action else {

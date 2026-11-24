@@ -20,8 +20,8 @@ use defuse_sandbox::{
         poa::{PoAFactoryExt, PoaFactoryClient},
     },
     kit::{
-        AccountId, Gas, Near, NearToken, protocol::AccountIdRef, standards::FungibleToken,
-        transaction::Final,
+        AccountId, Gas, Near, NearToken, protocol::AccountIdRef, rpc::FinalExecutionOutcome,
+        standards::FungibleToken, transaction::Final,
     },
     root,
 };
@@ -68,24 +68,30 @@ impl Env {
             msg = msg.with_action(action);
         }
 
-        if self
-            .ft(AccountId::from(token_id))
-            .transfer_call(
-                self.defuse.contract_id(),
-                amount,
-                serde_json::to_string(&msg).unwrap(),
-            )
-            .gas(Gas::from_tgas(300))
-            .send()
-            .wait_until::<Final>()
-            .await?
-            .json::<U128>()
-            .map(|v| v.0)?
-            != amount
-        {
+        let (used, _) = self
+            .defuse_ft_deposit(token_id, amount, serde_json::to_string(&msg).unwrap())
+            .await?;
+        if used != amount {
             return Err(anyhow!("refunded"));
         }
         Ok(())
+    }
+
+    pub async fn defuse_ft_deposit(
+        &self,
+        token_id: &AccountIdRef,
+        amount: u128,
+        msg: impl Into<String>,
+    ) -> anyhow::Result<(u128, FinalExecutionOutcome)> {
+        let outcome = self
+            .ft(AccountId::from(token_id))
+            .transfer_call(self.defuse.contract_id(), amount, msg)
+            .gas(Gas::from_tgas(300))
+            .send()
+            .wait_until::<Final>()
+            .await?;
+        let used = outcome.json::<U128>()?.0;
+        Ok((used, outcome))
     }
 
     pub async fn create_named_token(&self, name: impl AsRef<str>) -> FungibleToken {
