@@ -9,3 +9,6 @@ repository.workspace = true
 
 [dependencies]
 bnum.workspace = true
+
+[dev-dependencies]
+rstest.workspace = true
