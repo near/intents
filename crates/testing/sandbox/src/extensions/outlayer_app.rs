@@ -4,7 +4,7 @@ use defuse_outlayer_app::{
     client::{AsHex, OutlayerAppContract, OutlayerAppContractClient},
 };
 use near_kit::{
-    AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId, rpc::CheckedOutcome,
+    AccountIdRef, NearToken, SigningNear, protocol::GlobalContractId, rpc::CheckedOutcome,
 };
 
 use crate::{extensions::FnCallTransaction, nep616::DeployDeterministicAccountExt};
@@ -68,8 +68,7 @@ impl OutlayerAppExt for SigningNear {
                 AsHex(old_code_hash),
                 AsHex(new_code_hash),
                 new_code_url.as_ref(),
-            )
-            .gas(Gas::from_tgas(10)),
+            ),
         )
         .await
     }
@@ -81,7 +80,7 @@ impl OutlayerAppExt for SigningNear {
     ) -> Result<CheckedOutcome> {
         self.fn_call(
             target.as_ref(),
-            OutlayerAppContract::oa_transfer_admin(new_admin_id.as_ref()).gas(Gas::from_tgas(30)),
+            OutlayerAppContract::oa_transfer_admin(new_admin_id.as_ref()),
         )
         .await
     }

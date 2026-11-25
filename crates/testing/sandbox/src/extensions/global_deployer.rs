@@ -77,13 +77,10 @@ impl GlobalDeployerExt for SigningNear {
         let code = new_code.to_vec();
 
         self.transaction(target.as_ref())
-            .add_action(
-                GlobalDeployerContract::gd_approve(
-                    AsHex(old_hash.into()),
-                    AsHex(Sha256::digest(&code).into()),
-                )
-                .gas(Gas::from_tgas(10)),
-            )
+            .add_action(GlobalDeployerContract::gd_approve(
+                AsHex(old_hash.into()),
+                AsHex(Sha256::digest(&code).into()),
+            ))
             .add_action(
                 GlobalDeployerContract::gd_deploy(AsWrap::new(code))
                     .deposit(NearToken::from_near(50))
@@ -102,8 +99,7 @@ impl GlobalDeployerExt for SigningNear {
     ) -> Result<CheckedOutcome> {
         self.fn_call(
             target.as_ref(),
-            GlobalDeployerContract::gd_approve(AsHex(old_hash.into()), AsHex(new_hash.into()))
-                .gas(Gas::from_tgas(10)),
+            GlobalDeployerContract::gd_approve(AsHex(old_hash.into()), AsHex(new_hash.into())),
         )
         .await
     }
@@ -131,8 +127,7 @@ impl GlobalDeployerExt for SigningNear {
     ) -> anyhow::Result<CheckedOutcome> {
         self.fn_call(
             target.as_ref(),
-            GlobalDeployerContract::gd_transfer_ownership(new_owner.as_ref())
-                .gas(Gas::from_tgas(30)),
+            GlobalDeployerContract::gd_transfer_ownership(new_owner.as_ref()),
         )
         .await
     }

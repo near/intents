@@ -174,10 +174,9 @@ async fn test_gd_init(#[future(awt)] deployer_env: DeployerEnv) {
                 .gas(Gas::from_tgas(5))
                 .deposit(NearToken::from_yoctonear(1)),
         )
-        .add_action(
-            GlobalDeployerContract::gd_transfer_ownership(root.account_id())
-                .gas(Gas::from_tgas(30)),
-        )
+        .add_action(GlobalDeployerContract::gd_transfer_ownership(
+            root.account_id(),
+        ))
         .add_action(Action::delete_key(implicit.signer().public_key()))
         .await
         .unwrap()
@@ -954,10 +953,10 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
     // First attempt: gd_approve_and_deploy with insufficient deposit (1 NEAR)
     owner
         .transaction(controller_instance.contract_id())
-        .add_action(
-            GlobalDeployerContract::gd_approve(AsHex(storage.code_hash), AsHex(new_hash.into()))
-                .gas(Gas::from_tgas(10)),
-        )
+        .add_action(GlobalDeployerContract::gd_approve(
+            AsHex(storage.code_hash),
+            AsHex(new_hash.into()),
+        ))
         .add_action(
             GlobalDeployerContract::gd_deploy(AsWrap::new(DEPLOYER_WASM.clone()))
                 .deposit(NearToken::from_near(1))
@@ -1045,13 +1044,10 @@ async fn test_post_deploy_fails_when_approval_changed(
                 .deposit(NearToken::from_near(50))
                 .gas(Gas::from_tgas(140)),
         )
-        .add_action(
-            GlobalDeployerContract::gd_approve(
-                AsHex(deployer_hash.into()),
-                AsHex(mt_stub_hash.into()),
-            )
-            .gas(Gas::from_tgas(10)),
-        )
+        .add_action(GlobalDeployerContract::gd_approve(
+            AsHex(deployer_hash.into()),
+            AsHex(mt_stub_hash.into()),
+        ))
         .wait_until::<Final>()
         .await
         .unwrap();
