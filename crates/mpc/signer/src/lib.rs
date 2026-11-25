@@ -95,7 +95,7 @@ where
 
         let tx_outcome = self
             .client
-            .tx_status(&sent.transaction_hash, &sent.sender_id)
+            .tx_status(&sent.transaction_hash, sent.sender_id)
             // wait for `mpc_contract_id::sign()` receipt to execute
             .wait_until::<ExecutedOptimistic>()
             .await?;

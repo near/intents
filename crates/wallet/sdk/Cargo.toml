@@ -40,6 +40,8 @@ tracing = [
 ]
 
 [dev-dependencies]
+defuse-wallet-sdk = { path = ".", features = ["mpc", "near-kit"] }
+
 defuse-nep641 = { workspace = true, features = ["resolver", "tracing"] }
 defuse-wallet-ed25519 = { workspace = true, features = ["signer"] }
 futures.workspace = true

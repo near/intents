@@ -1918,6 +1918,7 @@ dependencies = [
  "defuse-nep641",
  "defuse-wallet",
  "defuse-wallet-ed25519",
+ "defuse-wallet-sdk",
  "futures",
  "hex-literal",
  "impl-tools 0.13.0",
