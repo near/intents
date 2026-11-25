@@ -4,6 +4,7 @@ mod types;
 pub use self::types::*;
 
 pub use blstrs;
+pub use secrecy;
 
 use blstrs::{G1Affine, G1Projective, G2Affine, Scalar};
 use defuse_mpc_kdf::schema::Schema;
@@ -13,7 +14,8 @@ use pairing::group::{ff::Field, prime::PrimeCurveAffine};
 use rand_core::CryptoRng;
 
 pub const SECRET_LEN: usize = G1Affine::compressed_size();
-pub type Secret = [u8; SECRET_LEN];
+
+pub type Secret = secrecy::SecretBox<[u8; SECRET_LEN]>;
 
 // TODO: derive(ZeroizeOnDrop) once this PR is released:
 // https://github.com/filecoin-project/blstrs/pull/66
@@ -148,7 +150,7 @@ impl AppPrivateKey {
             return None;
         }
 
-        Some(secret.to_compressed())
+        Some(Secret::init_with(|| secret.to_compressed()))
     }
 
     /// Decrypt a secret from given response **without** [verifying](Self::decrypt_verify)
@@ -164,7 +166,7 @@ impl AppPrivateKey {
     pub fn decrypt_unchecked(&self, resp: CkdResponse) -> Option<Secret> {
         let secret = self.decrypt(resp)?;
 
-        Some(secret.to_compressed())
+        Some(Secret::init_with(|| secret.to_compressed()))
     }
 
     #[must_use = "use decrypted secret"]
@@ -440,6 +442,7 @@ fn hash_point(mpc_public_key: &G2Affine, app_id: &[u8; 32]) -> G1Projective {
 mod tests {
     use hex_literal::hex;
     use rstest::rstest;
+    use secrecy::ExposeSecret;
 
     use super::*;
 
@@ -555,7 +558,8 @@ mod tests {
 
         // 5. App decrypts the response and verifies that it was derived correctly
         assert_eq!(
-            sk.decrypt_verify(mpc_public_key, predecessor_id, path, resp),
+            sk.decrypt_verify(mpc_public_key, predecessor_id, path, resp)
+                .map(|s| *s.expose_secret()),
             Some(secret)
         );
     }

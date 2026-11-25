@@ -18,8 +18,8 @@ derive_more = { workspace = true, features = ["as_ref", "from", "into"] }
 near-account-id.workspace = true
 pairing.workspace = true
 rand_core.workspace = true
+secrecy.workspace = true
 thiserror.workspace = true
-# zeroize = { workspace = true, features = ["derive"] }
 
 cfg_eval = { workspace = true, optional = true }
 defuse-crypto = { workspace = true, optional = true }
