@@ -37,6 +37,7 @@ pub enum NearAction {
     /// [`Transfer`]
     Transfer(Transfer) = 3,
 
+    // TODO: replace with UniversalStateInit
     /// [`DeterministicStateInit`]
     DeterministicStateInit(DeterministicStateInit) = 11,
 }
@@ -101,7 +102,20 @@ const _: () = {
 
 #[cfg(feature = "near-kit")]
 const _: () = {
-    use near_kit::protocol::Action;
+    use near_kit_primitives::protocol::Action;
+
+    impl NearAction {
+        #[inline]
+        pub fn from_kit(action: Action) -> Option<Self> {
+            Some(match action {
+                Action::FunctionCall(a) => Self::FunctionCall(a.into()),
+                Action::Transfer(a) => Self::Transfer(a.into()),
+                // TODO: replace with UniversalStateInit
+                Action::DeterministicStateInit(a) => Self::DeterministicStateInit(a.into()),
+                _ => return None,
+            })
+        }
+    }
 
     impl From<NearAction> for Action {
         #[inline]

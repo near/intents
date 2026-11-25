@@ -84,16 +84,12 @@ impl RpcResolver {
             // Account exists but it doesn't have this public key added as an access key -> reject.
             // Even if this is an implicit account ID derived from this public key, it could have
             // been deleted by the owner.
-            //
-            // TODO: A Universal Implicit AccountId can be first "created" by incoming transfer,
-            // and only later initialized via StateInit. So, we need to fetch account's metadata
-            // and fallback to `Err(AccountNotFound(_))` branch below if "initialized" flag is
-            // not set.
             Err(RpcError::AccessKeyNotFound { .. }) => false,
 
-            // Account doesn't exist on-chain yet -> allow only if it's an implicit account derived
-            // from this public key, since it can be initialized any time in the future.
-            Err(RpcError::AccountNotFound { .. }) => {
+            // Account doesn't exist on-chain or has not been initialized yet -> allow only if it's
+            // an implicit account derived from this public key, since it can be initialized any time
+            // in the future.
+            Err(RpcError::AccountNotFound { .. } | RpcError::UninitializedAccount { .. }) => {
                 // TODO: or check if we have `self.state_inits.get(&account_id)` with this public
                 // key added, since it can be just one of them
                 auth.access_key.to_implicit_account_id() == *account_id

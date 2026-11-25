@@ -7,18 +7,17 @@ pub use self::convert::*;
 
 pub use defuse_mpc_kdf as kdf;
 
-use std::{borrow::Cow, cell::LazyCell, error::Error as StdError, fmt::Debug};
+use std::{cell::LazyCell, error::Error as StdError, fmt::Debug};
 
 use defuse_mpc_kdf::{
     DeriveExt, DeriveSigner, RecoverableDeriveSigner, TweakSchema,
     crypto::Curve,
     schema::{Additive, WithSchema},
 };
-use defuse_near_promise::{AccountId, AccountIdRef, Gas, actions::FunctionCall};
-use defuse_near_sender::{ArcNearSender, NearSender, SentTransaction};
 use impl_tools::autoimpl;
 use near_kit::{
-    CryptoHash, Near, protocol::FunctionCallAction, rpc::ExecutionStatus,
+    AccountId, AccountIdRef, CryptoHash, Near, TxSender,
+    rpc::{ExecutionStatus, SendTxResponse},
     transaction::ExecutedOptimistic,
 };
 
@@ -28,9 +27,9 @@ use crate::contract::{MpcContract, Payload, SignRequest, SignResponse};
 pub const MAINNET_MPC_CONTRACT_ID: &AccountIdRef = AccountIdRef::new_or_panic("v1.signer");
 
 /// On-chain MPC signer.
-#[autoimpl(Clone where C::PublicKey: trait)]
-pub struct MpcOnChainSigner<C: Curve> {
-    sender: ArcNearSender,
+#[autoimpl(Clone where C::PublicKey: trait, S: trait)]
+pub struct MpcOnChainSigner<C: Curve, S> {
+    sender: S,
 
     mpc_contract_id: AccountId,
     mpc_public_key: C::PublicKey,
@@ -39,20 +38,18 @@ pub struct MpcOnChainSigner<C: Curve> {
     client: Near,
 }
 
-impl<C> MpcOnChainSigner<C>
+impl<C, S> MpcOnChainSigner<C, S>
 where
     C: OnChainNearMpcCurve,
+    S: TxSender,
+    S::SendError: Into<Box<dyn StdError + Send + Sync + 'static>>,
 {
-    pub async fn from_domain_id<S>(
+    pub async fn from_domain_id(
         sender: S,
         mpc_contract_id: impl Into<AccountId>,
         domain_id: u64,
         client: Near,
-    ) -> Result<Self, Error>
-    where
-        S: NearSender + 'static,
-        S::Error: Into<Box<dyn StdError + Send + Sync>>,
-    {
+    ) -> Result<Self, Error> {
         let mpc_contract_id = mpc_contract_id.into();
 
         let mpc_public_key = client
@@ -62,7 +59,7 @@ where
             .map_err(near_kit::Error::from)?;
 
         Ok(Self {
-            sender: sender.arced(),
+            sender,
             mpc_contract_id,
             mpc_public_key: C::extract_public_key(mpc_public_key)
                 .ok_or(Error::InvalidDomain(domain_id))?,
@@ -73,7 +70,7 @@ where
 
     /// Get predecessor ID on behalf of which messages will be singed.
     #[inline]
-    pub fn predecessor_id(&self) -> Cow<'_, AccountIdRef> {
+    pub fn predecessor_id(&self) -> &AccountId {
         self.sender.account_id()
     }
 
@@ -90,14 +87,15 @@ where
 
         #[cfg(feature = "tracing")]
         tracing::debug!(
-            tx.hash = %CryptoHash::from(sent.tx_hash),
+            tx.hash = %sent.transaction_hash,
             tx.sender_id = %sent.sender_id,
             "{}::sign() transaction sent",
             self.mpc_contract_id,
         );
 
-        let tx_outcome = sent
-            .status(&self.client)
+        let tx_outcome = self
+            .client
+            .tx_status(&sent.transaction_hash, sent.sender_id)
             // wait for `mpc_contract_id::sign()` receipt to execute
             .wait_until::<ExecutedOptimistic>()
             .await?;
@@ -120,36 +118,35 @@ where
         &self,
         path: impl AsRef<str>,
         payload: Payload<'_>,
-    ) -> Result<SentTransaction, Error>
+    ) -> Result<SendTxResponse, Error>
     where
         C::PublicKey: Sync,
     {
-        const MPC_SIGN_GAS: Gas = Gas::from_tgas(15);
-
-        let sign = FunctionCallAction::try_from(
-            MpcContract::sign(SignRequest {
-                path: path.as_ref().into(),
-                payload,
-                domain_id: self.domain_id,
-            })
-            .gas(MPC_SIGN_GAS),
-        )
-        .map_err(near_kit::Error::from)?;
-
         self.sender
             .send(
                 self.mpc_contract_id.clone(),
-                vec![FunctionCall::from(sign).into()],
+                [MpcContract::sign(SignRequest {
+                    path: path.as_ref().into(),
+                    payload,
+                    domain_id: self.domain_id,
+                })
+                .into_action()
+                .expect("args")]
+                .into(),
             )
             .await
+            .map(Into::into)
+            .map_err(Into::into)
             .map_err(Error::Sender)
     }
 }
 
-impl<C, P> DeriveSigner<C, P> for MpcOnChainSigner<C>
+impl<C, P, S> DeriveSigner<C, P> for MpcOnChainSigner<C, S>
 where
     C: OnChainNearMpcCurve<PublicKey: Clone + Send + Sync>,
     P: AsRef<str> + AsRef<[u8]>,
+    S: TxSender,
+    S::SendError: Into<Box<dyn StdError + Send + Sync + 'static>>,
 {
     type Error = Error;
 
@@ -192,10 +189,12 @@ where
     }
 }
 
-impl<C, P> RecoverableDeriveSigner<C, P> for MpcOnChainSigner<C>
+impl<C, P, S> RecoverableDeriveSigner<C, P> for MpcOnChainSigner<C, S>
 where
     C: RecoverableOnChainNearMpcCurve<PublicKey: Clone + PartialEq + Send + Sync, RecoveryId: Copy>,
     P: AsRef<str> + AsRef<[u8]>,
+    S: TxSender,
+    S::SendError: Into<Box<dyn StdError + Send + Sync + 'static>>,
 {
     #[cfg_attr(feature = "tracing", tracing::instrument(skip_all, fields(
         mpc_contract_id = %self.mpc_contract_id,

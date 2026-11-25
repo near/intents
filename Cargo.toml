@@ -39,7 +39,6 @@ members = [
   "crates/near/controller",
   "crates/near/nep245",
   "crates/near/promise",
-  "crates/near/sender",
   "crates/near/utils",
   "crates/near/wnear",
 
@@ -110,7 +109,6 @@ defuse-admin-utils.path = "crates/near/admin-utils"
 defuse-auth-call.path = "crates/near/auth-call"
 defuse-controller.path = "crates/near/controller"
 defuse-near-promise.path = "crates/near/promise"
-defuse-near-sender = { path = "crates/near/sender", default-features = false }
 defuse-near-utils.path = "crates/near/utils"
 defuse-nep245.path = "crates/near/nep245"
 defuse-wnear.path = "crates/near/wnear"
@@ -129,7 +127,7 @@ defuse-tip191.path = "crates/signatures/tip191"
 defuse-ton-connect = { path = "crates/signatures/ton-connect", default-features = false }
 defuse-webauthn = { path = "crates/signatures/webauthn", default-features = false }
 
-defuse-wallet-sdk.path = "crates/wallet/sdk"
+defuse-wallet-sdk = { path = "crates/wallet/sdk", default-features = false }
 
 defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
@@ -142,8 +140,9 @@ near-account-id = "3.0.0"
 near-contract-standards = "5.30.0"
 near-gas = "0.3.7"
 near-global-contracts = "0.3.2"
-near-kit = { version = "0.31.1", default-features = false }
-near-kit-sandbox = "0.31.1"
+near-kit = { version = "0.34", default-features = false }
+near-kit-primitives = { version = "0.34", default-features = false }
+near-kit-sandbox = { version = "0.34", default-features = false }
 near-plugins = "0.5.3"
 near-sdk = "5.30.0"
 near-sdk-env = "0.1.8"

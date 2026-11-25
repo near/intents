@@ -1398,7 +1398,7 @@ dependencies = [
  "defuse-serde-utils",
  "hex-literal",
  "near-account-id",
- "near-kit",
+ "near-kit-primitives",
  "near-sdk",
  "schemars 0.8.22",
  "serde",
@@ -1485,8 +1485,6 @@ version = "0.1.0"
 dependencies = [
  "defuse-crypto",
  "defuse-mpc-kdf",
- "defuse-near-promise",
- "defuse-near-sender",
  "impl-tools 0.13.0",
  "near-kit",
  "serde",
@@ -1509,7 +1507,7 @@ dependencies = [
  "near-account-id",
  "near-gas",
  "near-global-contracts",
- "near-kit",
+ "near-kit-primitives",
  "near-sdk",
  "near-token",
  "rstest",
@@ -1517,21 +1515,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
-]
-
-[[package]]
-name = "defuse-near-sender"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "cfg_eval",
- "defuse-near-promise",
- "impl-tools 0.13.0",
- "near-kit",
- "schemars 0.8.22",
- "serde",
- "serde_with",
- "trait-variant",
 ]
 
 [[package]]
@@ -1575,7 +1558,7 @@ dependencies = [
  "defuse-nep461",
  "digest-io",
  "hex-literal",
- "near-kit",
+ "near-kit-primitives",
  "rstest",
  "schemars 0.8.22",
  "serde",
@@ -1637,7 +1620,7 @@ dependencies = [
  "defuse-serde-utils",
  "hex-literal",
  "near-account-id",
- "near-kit",
+ "near-kit-primitives",
  "near-sdk",
  "schemars 0.8.22",
  "serde",
@@ -1932,10 +1915,10 @@ dependencies = [
  "borsh",
  "bs58 0.5.1",
  "defuse-mpc-signer",
- "defuse-near-sender",
  "defuse-nep641",
  "defuse-wallet",
  "defuse-wallet-ed25519",
+ "defuse-wallet-sdk",
  "futures",
  "hex-literal",
  "impl-tools 0.13.0",
@@ -3691,9 +3674,9 @@ dependencies = [
 
 [[package]]
 name = "near-kit"
-version = "0.31.1"
+version = "0.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b9e8834c1e450283eb955d18a792e8aeddcbe8a6bf81b2ba7eb86996ad711c9"
+checksum = "9b472fce219f03e1d9cdf6bfac264e876d2abdfdd03c95dafe8b08be9eccb8af"
 dependencies = [
  "base64 0.23.1",
  "borsh",
@@ -3711,9 +3694,9 @@ dependencies = [
 
 [[package]]
 name = "near-kit-macros"
-version = "0.15.1"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0e3d0a984d533aa2aab5cb4e3a900bf03337874a97e78553f4ac2b308c83f20"
+checksum = "156790b67e5a25e8340e7ccfe0937fc31c9996c23fa01a5bafa4536a488174cf"
 dependencies = [
  "proc-macro-crate 3.5.0",
  "proc-macro2",
@@ -3723,9 +3706,9 @@ dependencies = [
 
 [[package]]
 name = "near-kit-primitives"
-version = "0.31.1"
+version = "0.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46302647d545f79a70e8b1158d90dd96ad522f0a968c0b55887d9495326e7c55"
+checksum = "711accd6ae9ee5697d3275e3710b4167fce19d9956a99747276c40839984fecc"
 dependencies = [
  "base64 0.23.1",
  "borsh",
@@ -3739,6 +3722,7 @@ dependencies = [
  "near-account-id",
  "near-gas",
  "near-global-contracts",
+ "near-kit-macros",
  "near-sdk-core",
  "near-token",
  "serde",
@@ -3752,9 +3736,9 @@ dependencies = [
 
 [[package]]
 name = "near-kit-sandbox"
-version = "0.31.1"
+version = "0.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2baea1a946c63c07f333f6582922b028a96f9c97ce0de4c36d4f6fa822a44170"
+checksum = "fa7e40a17694f595acebd12a66494d8cf0415bf686ebaa600056971643baec86"
 dependencies = [
  "libc",
  "near-kit",

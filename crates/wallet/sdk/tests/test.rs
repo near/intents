@@ -38,7 +38,7 @@ async fn rotate(
     #[future]
     extension: Wallet,
 ) {
-    master
+    let sent = master
         .sign_and_send(
             Request::new()
                 .internal([WalletOp::AddExtension {
@@ -77,19 +77,18 @@ async fn rotate(
                     )]),
         )
         .await
-        .unwrap()
-        .status(near.near())
+        .unwrap();
+    near.near()
+        .tx_status(&sent.transaction_hash, sent.sender_id)
         .wait_until::<Final>()
         .await
         .unwrap()
         .checked()
         .expect("key rotation failed");
 
-    master
-        .sign_and_send(Request::new())
-        .await
-        .unwrap()
-        .status(near.near())
+    let sent = master.sign_and_send(Request::new()).await.unwrap();
+    near.near()
+        .tx_status(&sent.transaction_hash, sent.sender_id)
         .wait_until::<Final>()
         .await
         .unwrap()
@@ -98,11 +97,9 @@ async fn rotate(
 
     let extension = extension.as_extension_of(master);
 
-    extension
-        .sign_and_send(Request::new())
-        .await
-        .unwrap()
-        .status(near.near())
+    let sent = extension.sign_and_send(Request::new()).await.unwrap();
+    near.near()
+        .tx_status(&sent.transaction_hash, sent.sender_id)
         .wait_until::<Final>()
         .await
         .unwrap()
@@ -157,12 +154,13 @@ async fn w_init(
         .checked()
         .unwrap();
 
-    extension
+    let sent = extension
         .as_extension_of(near.account_id())
         .sign_and_send(NearPromise::new(receiver.account_id()).transfer(NearToken::from_near(5)))
         .await
-        .unwrap()
-        .status(near.near())
+        .unwrap();
+    near.near()
+        .tx_status(&sent.transaction_hash, sent.sender_id)
         .wait_until::<Final>()
         .await
         .unwrap()

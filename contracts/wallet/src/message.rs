@@ -83,6 +83,17 @@ pub struct RequestMessage {
     /// usage and, hopefully, fit into ZBA limits.
     pub nonce: u32,
 
+    /// Timestamp when this request was created (in RFC-3339 format).
+    ///
+    /// # Optimal lag
+    ///
+    /// The contract ensures that `now() - timeout <= created_at <= now()`,
+    /// where `now()` is the current block timestamp. Due to the desentralized
+    /// nature of consensus in blockchains, block timestamps usually lag a
+    /// bit behind the actual time when it's produced. As a result, clients
+    /// are recommended to set `created_at` slightly (e.g. 60 seconds) before
+    /// the actual time of signing, so that it doesn't fail on-chain if it
+    /// arrives too fast.
     #[cfg_attr(
         feature = "arbitrary",
         arbitrary(with = ::arbitrary_with::As::<RangeNanos::<0>>::arbitrary),
@@ -101,20 +112,12 @@ pub struct RequestMessage {
             )))
         )
     )]
-
-    /// Timestamp when this request was created (in RFC-3339 format).
-    ///
-    /// # Optimal lag
-    ///
-    /// The contract ensures that `now() - timeout <= created_at <= now()`,
-    /// where `now()` is the current block timestamp. Due to the desentralized
-    /// nature of consensus in blockchains, block timestamps usually lag a
-    /// bit behind the actual time when it's produced. As a result, clients
-    /// are recommended to set `created_at` slightly (e.g. 60 seconds) before
-    /// the actual time of signing, so that it doesn't fail on-chain if it
-    /// arrives too fast.
     pub created_at: Timestamp,
 
+    /// Maximum timeout for validity of this request after `created_at`.
+    ///
+    /// The actual timeout for the request is `min(msg.timeout, contract.timeout)`
+    /// to prevent replay attacks.
     #[cfg_attr(
         feature = "borsh",
         borsh(
@@ -134,10 +137,6 @@ pub struct RequestMessage {
         serde_as(as = "DurationSeconds"),
         serde(rename = "timeout_secs")
     )]
-    /// Maximum timeout for validity of this request after `created_at`.
-    ///
-    /// The actual timeout for the request is `min(msg.timeout, contract.timeout)`
-    /// to prevent replay attacks.
     pub timeout: Duration,
 
     /// Request to execute
