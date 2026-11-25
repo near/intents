@@ -594,7 +594,12 @@ impl<S: SignatureSchema> From<Wallet<S>> for AccountId {
 #[cfg(feature = "near-kit")]
 const _: () = {
     use defuse_wallet::actions::NearAction;
-    use near_kit::{Near, TxSender, protocol::Action, rpc::SendTxResponse};
+    use near_kit::{
+        Near, TxSender,
+        protocol::Action,
+        rpc::{AccountState, BlockReference, ExecutionStatus, Finality, RpcError, SendTxResponse},
+        transaction::Final,
+    };
 
     use crate::relayer::{WalletRelayRequest, WalletRelayer};
 
@@ -653,8 +658,6 @@ const _: () = {
 
         /// Check if [real account ID](Self::real_account_id) is initialized on-chain.
         async fn check_initialized(&self) -> Result<bool> {
-            use near_kit::rpc::{BlockReference, Finality, RpcError};
-
             let initialized = match self
                 .client()
                 .rpc()
@@ -666,7 +669,7 @@ const _: () = {
                 )
                 .await
             {
-                Ok(account) => account.has_contract(),
+                Ok(account) => matches!(account.state, AccountState::Initialized),
                 Err(RpcError::AccountNotFound { .. } | RpcError::UninitializedAccount { .. }) => {
                     false
                 }
@@ -676,15 +679,13 @@ const _: () = {
             Ok(initialized)
         }
 
-        /// Initialize [real account ID](Self::account_id) by sending empty [`Request`].
+        /// Initialize [real account ID](Self::real_account_id) by sending empty [`Request`].
         ///
         /// # Panics
         ///
         /// This method panics when called on wallet with non-empty configured
         /// [extension chain](Self::as_extension_of).
         pub async fn initialize(&self) -> Result<()> {
-            use near_kit::{rpc::ExecutionStatus, transaction::Final};
-
             assert!(
                 self.as_extension_chain().is_empty(),
                 "Cannot initialize a wallet with non-empty extension chain. Use `.as_self()` and initialize the real account ID",

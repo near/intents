@@ -12,7 +12,7 @@ use impl_tools::autoimpl;
 use near_kit::{
     Error, Gas, NearToken, SigningNear,
     protocol::Action,
-    rpc::{BlockReference, Finality, RpcError, SendTxResponse},
+    rpc::{AccountState, BlockReference, Finality, RpcError, SendTxResponse},
     transaction::{Included, WaitLevel},
 };
 use serde::{Deserialize, Serialize};
@@ -111,7 +111,7 @@ impl<W: WaitLevel> WalletRelayer for SigningNear<W> {
             .view_account(tx.receiver_id(), BlockReference::Finality(Finality::Final))
             .await
         {
-            Ok(account) => account.has_contract(),
+            Ok(account) => matches!(account.state, AccountState::Initialized),
             Err(RpcError::AccountNotFound { .. } | RpcError::UninitializedAccount { .. }) => false,
             Err(err) => return Err(err.into()),
         };
