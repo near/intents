@@ -139,13 +139,22 @@ impl<W: WaitLevel> WalletRelayer for SigningNear<W> {
             request
                 .msg
                 .duration_left()
-                .ok_or_else(|| Error::Validation("expired or from the future".to_string()))?
+                .ok_or_else(|| Error::InvalidTx(InvalidTxError::Expired.into()))?
                 // add more buffer for short-living requests
                 .saturating_add(BLOCKCHAIN_LAG),
             tx,
         )
         .await
-        .map_err(|_| Error::InvalidTx(InvalidTxError::Expired.into()))
+        .map_err(|_| {
+            Error::Rpc(
+                RpcError::Timeout {
+                    message: "request timeout exceeded while waiting for RPC response".to_string(),
+                    transaction_hash: None,
+                    cause: None,
+                }
+                .into(),
+            )
+        })
         .flatten()
     }
 }
