@@ -698,14 +698,14 @@ const _: () = {
 
             // initialize real account ID by sending an empty request
             let sent = self.sign_and_send(Request::new()).await?;
-            let output = self
+            let outcome = self
                 .client()
                 .tx_status(&sent.transaction_hash, sent.sender_id)
                 // wait for finalization
                 .wait_until::<Final>()
                 .await?;
 
-            let initialized = output
+            let initialized = outcome
                 .receipts_outcome
                 .iter()
                 // look for a successfull receipt on real account ID with non-empty logs, as it
@@ -719,7 +719,7 @@ const _: () = {
             if !initialized {
                 return Err(anyhow::anyhow!(
                     "transaction {} did not initialize the wallet {}",
-                    output.transaction_hash(),
+                    outcome.transaction_hash(),
                     self.real_account_id(),
                 ));
             }
