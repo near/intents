@@ -1439,6 +1439,7 @@ version = "0.1.0"
 dependencies = [
  "impl-tools 0.13.0",
  "near-sdk",
+ "rstest",
 ]
 
 [[package]]
