@@ -11,7 +11,7 @@ use defuse_wallet::{RequestMessage, StateInit};
 use impl_tools::autoimpl;
 use near_kit::{
     Error, Gas, NearToken, SigningNear,
-    protocol::Action,
+    protocol::{Action, InvalidTxError},
     rpc::{AccountState, BlockReference, Finality, RpcError, SendTxResponse},
     transaction::{Included, WaitLevel},
 };
@@ -145,7 +145,7 @@ impl<W: WaitLevel> WalletRelayer for SigningNear<W> {
             tx,
         )
         .await
-        .map_err(|_| Error::Validation("expired".to_string()))
+        .map_err(|_| Error::InvalidTx(InvalidTxError::Expired.into()))
         .flatten()
     }
 }
