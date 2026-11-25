@@ -75,6 +75,7 @@ jobs:
           - defuse-poa-token/no_registration
           - defuse-treasury-logger
           - defuse-wallet-ed25519
+          - defuse-wallet-solana
           - defuse-wallet-no-sign
           - defuse-wallet-webauthn-ed25519
           - defuse-wallet-webauthn-p256

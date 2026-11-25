@@ -1,0 +1,19 @@
+{
+  "public_key": "4K3LbDAJPT2Szp3UKXRL1yevwNrAxoYwFEYgaaYjh6P2",
+  "msg": {
+    "chain_id": "phantom-display-check-only",
+    "signer_id": "display-check.near",
+    "nonce": 42,
+    "created_at": "2026-11-17T23:15:20.551Z",
+    "timeout_secs": 300,
+    "pay_for_gas": false,
+    "request": {}
+  },
+  "outer_receiver": "ext.near",
+  "inner_receiver": "bob.near",
+  "inner_method": "f",
+  "accepted_padding": 12074,
+  "rejected_padding": 12089,
+  "message_bytes": 13636,
+  "message_sha256": "780d4aed0b0e5a41ae4157f85eca7594030381ab82f5eeefb674c04dc53e39cf"
+}

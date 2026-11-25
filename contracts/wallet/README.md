@@ -51,6 +51,10 @@ Each `request` contains:
 
 ### Signing Standards
 
+The [Solana variant](signatures/solana/README.md) signs the full
+[readable text](signatures/readable/README.md) of an execution or NEP-641
+message with `signMessage(bytes, "utf8")`, rather than an opaque digest.
+
 A single wallet-contract variant supports only a single signing standard, which
 is fixed at the time of a deployment. Each variant is deployed as a
 **separate** global contract.
