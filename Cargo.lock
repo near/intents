@@ -1210,6 +1210,7 @@ dependencies = [
  "digest-io",
  "hex",
  "impl-tools 0.13.0",
+ "sha2 0.11.1",
 ]
 
 [[package]]
