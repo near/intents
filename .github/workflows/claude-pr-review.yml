@@ -57,10 +57,8 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             .github/scripts/fetch-pr-comments.sh
-            .claude/skills/pr-review/SKILL.md
-            AGENTS.md
-            CONTRIBUTING.md
-            docs/practices/style.md
+            .agents/skills/pr-review/SKILL.md
+            .agents/AGENTS.md
 
       - name: Find the PR head
         id: head
@@ -69,6 +67,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           sha=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)
+
           if ! [[ $sha =~ ^[0-9a-f]{40}$ ]]; then
             echo "::error::unexpected PR head commit"
             exit 1
@@ -104,6 +103,7 @@ jobs:
           gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" > pr.diff ||
             echo "The diff is too large to download. List the changed files with gh pr view and read them in the pr directory." \
               > pr.diff
+
           if [ "$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)" != "$HEAD_SHA" ]; then
             echo "::error::the PR head moved while the review inputs were collected"
             exit 1
@@ -128,8 +128,8 @@ jobs:
             echo '<workspace>'
             echo 'The pull request head is checked out in the pr directory. Read, Grep'
             echo 'and Glob the code under review there. The files outside pr are the'
-            echo 'default branch copies of AGENTS.md, CONTRIBUTING.md and'
-            echo 'docs/practices/style.md. Anchor findings with paths relative to the'
+            echo 'default branch copies of .agents/AGENTS.md and the review skill.'
+            echo 'Anchor findings with paths relative to the'
             echo 'repository root, without the pr/ prefix. The diff of the pull request'
             echo 'at the head commit above is in pr.diff. Read that file instead of'
             echo 'running gh pr diff, which is not available.'
@@ -152,13 +152,13 @@ jobs:
             echo '</existing_discussions>'
             echo ''
             echo '<repository_rules>'
-            echo 'The repository rules below are AGENTS.md from the default branch.'
+            echo 'The repository rules below are .agents/AGENTS.md from the default branch.'
             echo ''
-            cat AGENTS.md
+            cat .agents/AGENTS.md
             echo '</repository_rules>'
             echo ''
             echo '<review_instructions>'
-            cat .claude/skills/pr-review/SKILL.md
+            cat .agents/skills/pr-review/SKILL.md
             echo '</review_instructions>'
             echo ''
             echo '<output>'
@@ -245,6 +245,7 @@ jobs:
           REVIEW: ${{ needs.claude-review.outputs.review }}
           HEAD_SHA: ${{ needs.claude-review.outputs.head_sha }}
         run: |
+
           if [ -z "$REVIEW" ]; then
             echo "::error::The review is empty: either the agent returned no text, or the runner withheld it for containing a secret (look for a 'Skip output' warning in the claude-review job)."
             exit 1
