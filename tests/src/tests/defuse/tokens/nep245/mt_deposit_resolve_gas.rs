@@ -20,6 +20,7 @@ use defuse_sandbox::{
     kit::{
         AccountId, Gas, NearToken, SigningNear,
         json_types::U128,
+        protocol::Action,
         rpc::{ActionView, ExecutionStatus, ReceiptContent},
         transaction::Final,
     },
@@ -280,7 +281,7 @@ async fn mt_deposit_resolve_gas(
     let env = Arc::new(env);
 
     env.transaction(env.defuse.contract_id())
-        .transfer(NearToken::from_near(1000))
+        .add_action(Action::transfer(NearToken::from_near(1000)))
         .await
         .unwrap();
 
@@ -364,7 +365,7 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
     let amount = 1u128;
 
     env.transaction(env.defuse.contract_id())
-        .transfer(NearToken::from_near(1000))
+        .add_action(Action::transfer(NearToken::from_near(1000)))
         .await
         .unwrap();
 
@@ -462,7 +463,7 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
     let env = Arc::new(env);
 
     env.transaction(env.defuse.contract_id())
-        .transfer(NearToken::from_near(1000))
+        .add_action(Action::transfer(NearToken::from_near(1000)))
         .await
         .unwrap();
 
@@ -547,6 +548,7 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
     // only returns execution outcomes), so we can find the callback by name.
     let outcome = env
         .root
+        .near()
         .tx_status(
             execution_result.transaction_hash(),
             author_account.account_id(),
