@@ -12,7 +12,7 @@ use impl_tools::autoimpl;
 use near_kit::{
     Error, Gas, NearToken, SigningNear,
     protocol::{Action, InvalidTxError},
-    rpc::{AccountState, BlockReference, Finality, RpcError, SendTxResponse},
+    rpc::{RpcError, SendTxResponse},
     transaction::{Included, WaitLevel},
 };
 use serde::{Deserialize, Serialize};
@@ -105,21 +105,7 @@ impl<W: WaitLevel> WalletRelayer for SigningNear<W> {
             .max_nonce_retries(u32::MAX)
             .transaction(&request.msg.signer_id);
 
-        let initialized = match self
-            .near()
-            .rpc()
-            .view_account(tx.receiver_id(), BlockReference::Finality(Finality::Final))
-            .await
-        {
-            Ok(account) => matches!(account.state, AccountState::Initialized),
-            Err(RpcError::AccountNotFound { .. } | RpcError::UninitializedAccount { .. }) => false,
-            Err(err) => return Err(err.into()),
-        };
-
-        if !initialized {
-            let Some(state_init) = request.deterministic_state_init else {
-                return Err(Error::Validation("uninitialized account".to_string()));
-            };
+        if let Some(state_init) = request.deterministic_state_init {
             if state_init.derive_account_id() != request.msg.signer_id {
                 return Err(Error::Validation("invalid state_init".to_string()));
             }
