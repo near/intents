@@ -3,9 +3,10 @@
 use defuse_core::{intents::MaybeIntentEvent, payload::Payload};
 use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::{
+    AsNep297Event,
     extensions::{
         defuse::{
-            DefuseExt, DefuseSignerExt, MultiPayloadArgs,
+            DefuseExt, DefuseSignerExt,
             core::{
                 Nonce, Timestamp,
                 accounts::{AccountEvent, NonceEvent},
@@ -16,13 +17,12 @@ use defuse_sandbox::{
                 tokens::TransferEvent,
             },
         },
-        mt::{Mt, MtBalanceOfArgs},
+        mt::Mt,
     },
-    kit::{AccountId, CryptoHash, protocol::AccountIdRef},
-    sandbox::SandboxConfig,
+    kit::{AccountId, AccountIdRef, CryptoHash},
+    sandbox::Sandbox,
 };
 use defuse_test_utils::random::rng;
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 
@@ -104,9 +104,7 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
         .await;
     let result = env
         .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[transfer_intent_payload.clone()],
-        })
+        .simulate_intents(&[transfer_intent_payload.clone()])
         .await
         .unwrap();
 
@@ -144,10 +142,7 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
     // Verify balances haven't changed (simulate is a view method)
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.account_id(),
-                token_id: &ft_id.to_string()
-            })
+            .mt_balance_of(user.account_id(), &ft_id.to_string())
             .await
             .unwrap()
             .0,
@@ -155,10 +150,7 @@ async fn simulate_is_view_method(#[future(awt)] env: Env, #[notrace] mut rng: im
     );
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: other_user.account_id(),
-                token_id: &ft_id.to_string()
-            })
+            .mt_balance_of(other_user.account_id(), &ft_id.to_string())
             .await
             .unwrap()
             .0,
@@ -175,7 +167,7 @@ async fn webauthn() {
     const SIGNER_ID: &AccountIdRef =
         AccountIdRef::new_or_panic("0x3602b546589a8fcafdce7fad64a46f91db0e4d50");
 
-    let sandbox = SandboxConfig::builder()
+    let sandbox = Sandbox::builder()
         .root_account(ROOT_ID)
         .fresh()
         .await
@@ -184,7 +176,7 @@ async fn webauthn() {
     let env = EnvBuilder::default()
         .defuse_name(DEFUSE_NAME)
         .poa_factory_name(POA_FACTORY_NAME)
-        .build(sandbox.client())
+        .build(sandbox.root_account())
         .await;
 
     let (user, ft) = futures::join!(
@@ -223,10 +215,7 @@ async fn webauthn() {
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user.account_id(),
-                token_id: &ft_id.to_string()
-            })
+            .mt_balance_of(user.account_id(), &ft_id.to_string())
             .await
             .unwrap()
             .0,
@@ -234,10 +223,7 @@ async fn webauthn() {
     );
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: SIGNER_ID,
-                token_id: &ft_id.to_string()
-            })
+            .mt_balance_of(SIGNER_ID, &ft_id.to_string())
             .await
             .unwrap()
             .0,

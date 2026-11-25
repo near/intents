@@ -51,9 +51,8 @@ impl RpcResolver {
                 // fetch the block concurrently with access key only if block_hash is already known
                 join!(
                     // TODO: cache resolved blocks with some TTL and other limis
-                    self.client.block(block_hash.into()),
-                    self.client
-                        .view_access_key(account_id, &rpc_pk, block_hash.into())
+                    self.client.block(block_hash),
+                    self.client.view_access_key(account_id, &rpc_pk, block_hash)
                 )
             } else {
                 // otherwise, fetch the block first
@@ -61,7 +60,7 @@ impl RpcResolver {
                 // and then the access key against fetched block hash
                 let access_key = self
                     .client
-                    .view_access_key(account_id, &rpc_pk, block.header.hash.into())
+                    .view_access_key(account_id, &rpc_pk, block.header.hash)
                     .await;
                 (Ok(block), access_key)
             }
@@ -85,16 +84,12 @@ impl RpcResolver {
             // Account exists but it doesn't have this public key added as an access key -> reject.
             // Even if this is an implicit account ID derived from this public key, it could have
             // been deleted by the owner.
-            //
-            // TODO: A Universal Implicit AccountId can be first "created" by incoming transfer,
-            // and only later initialized via StateInit. So, we need to fetch account's metadata
-            // and fallback to `Err(AccountNotFound(_))` branch below if "initialized" flag is
-            // not set.
             Err(RpcError::AccessKeyNotFound { .. }) => false,
 
-            // Account doesn't exist on-chain yet -> allow only if it's an implicit account derived
-            // from this public key, since it can be initialized any time in the future.
-            Err(RpcError::AccountNotFound { .. }) => {
+            // Account doesn't exist on-chain or has not been initialized yet -> allow only if it's
+            // an implicit account derived from this public key, since it can be initialized any time
+            // in the future.
+            Err(RpcError::AccountNotFound { .. } | RpcError::UninitializedAccount { .. }) => {
                 // TODO: or check if we have `self.state_inits.get(&account_id)` with this public
                 // key added, since it can be just one of them
                 auth.access_key.to_implicit_account_id() == *account_id
@@ -146,10 +141,11 @@ mod tests {
 
     use defuse_time::Timestamp;
     use near_kit::{
-        signer::{InMemorySigner, Signer},
+        protocol::Action,
+        signer::{InMemorySigner, SecretKey, Signer},
         transaction::Final,
     };
-    use near_kit_sandbox::SandboxConfig;
+    use near_kit_sandbox::Sandbox;
 
     use crate::{
         OffchainMessage,
@@ -162,18 +158,23 @@ mod tests {
     async fn full_access_key() {
         const PAYLOAD: &str = "Hello, Near!";
 
-        let sandbox = SandboxConfig::fresh().await.unwrap();
-        let mut near = sandbox.client();
+        let sandbox = Sandbox::builder().fresh().await.unwrap();
+        let mut near = sandbox.root_account();
 
         let msg = OffchainMessage {
-            chain_id: near.chain_id().as_str().to_string(),
+            chain_id: near.near().chain_id().as_str().to_string(),
             signer_id: near.account_id().clone(),
             path: vec![],
             timestamp: Timestamp::now() - Duration::from_mins(1),
             payload: PAYLOAD.to_string(),
         };
 
-        let signed = near.sign_message(msg.clone().into()).await.unwrap();
+        let signed = near
+            .signer()
+            .key()
+            .sign_nep413(near.account_id(), &msg.clone().into())
+            .await
+            .unwrap();
         let authorization: String = AccessKeyAuthorization {
             msg,
             via: AccessKeySchema::Nep413 { callback_url: None },
@@ -182,7 +183,7 @@ mod tests {
         }
         .into();
 
-        let resolver = RpcResolver::new(near.rpc().clone())
+        let resolver = RpcResolver::new(near.near().rpc().clone())
             .await
             .expect("failed to initialize RPC resolver")
             // set explicitly, we're testing a top-level auth via FullAccessKey
@@ -197,22 +198,24 @@ mod tests {
         println!("{authorization}\n{} -> {resolved}", near.account_id());
         assert_eq!(PAYLOAD, resolved, "resolved invalid payload");
 
-        let new_signer = InMemorySigner::generate_implicit();
+        let new_key = SecretKey::generate_ed25519();
+        let new_signer = InMemorySigner::implicit(new_key.clone()).unwrap();
         // check on other account
         resolver
             .resolve_auth(new_signer.account_id(), &authorization)
             .await
             .expect_err("authorization must be invalid only for non-signer accounts");
 
-        // rotate key
-        near.add_full_access_key(new_signer.public_key().clone())
-            .delete_key(near.public_key().unwrap())
+        // rotate key on the same account
+        near.transaction(near.account_id())
+            .add_action(Action::add_full_access_key(new_key.public_key()))
+            .add_action(Action::delete_key(near.signer().public_key()))
             .wait_until::<Final>() // wait for finalization
             .await
             .unwrap()
-            .result()
+            .checked()
             .unwrap();
-        near = near.with_signer(new_signer);
+        near = near.with_signer(InMemorySigner::new(near.account_id(), new_key));
 
         resolver
             .resolve_auth(near.account_id(), &authorization)

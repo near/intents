@@ -41,7 +41,7 @@ use defuse_sandbox::extensions::{
         },
         nep245::Token,
     },
-    mt::{Mt, MtBalanceOfArgs},
+    mt::Mt,
 };
 use defuse_test_utils::wasms::DEFUSE_WASM;
 
@@ -606,14 +606,14 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
     {
         assert_eq!(
             defuse2_mt
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.account_id(),
-                    token_id: &TokenId::Nep245(Nep245TokenId::new(
+                .mt_balance_of(
+                    user1.account_id(),
+                    &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft1_id.to_string()
                     ))
-                    .to_string(),
-                })
+                    .to_string()
+                )
                 .await
                 .unwrap()
                 .0,
@@ -622,14 +622,14 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
 
         assert_eq!(
             defuse2_mt
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.account_id(),
-                    token_id: &TokenId::Nep245(Nep245TokenId::new(
+                .mt_balance_of(
+                    user1.account_id(),
+                    &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft2_id.to_string()
                     ))
-                    .to_string(),
-                })
+                    .to_string()
+                )
                 .await
                 .unwrap()
                 .0,
@@ -638,14 +638,14 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
 
         assert_eq!(
             defuse2_mt
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.account_id(),
-                    token_id: &TokenId::Nep245(Nep245TokenId::new(
+                .mt_balance_of(
+                    user1.account_id(),
+                    &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft3_id.to_string()
                     ))
-                    .to_string(),
-                })
+                    .to_string()
+                )
                 .await
                 .unwrap()
                 .0,
@@ -696,14 +696,14 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
     {
         assert_eq!(
             defuse2_mt
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.account_id(),
-                    token_id: &TokenId::Nep245(Nep245TokenId::new(
+                .mt_balance_of(
+                    user1.account_id(),
+                    &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft1_id.to_string()
                     ))
-                    .to_string(),
-                })
+                    .to_string()
+                )
                 .await
                 .unwrap()
                 .0,
@@ -712,14 +712,14 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
 
         assert_eq!(
             defuse2_mt
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.account_id(),
-                    token_id: &TokenId::Nep245(Nep245TokenId::new(
+                .mt_balance_of(
+                    user1.account_id(),
+                    &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft2_id.to_string()
                     ))
-                    .to_string(),
-                })
+                    .to_string()
+                )
                 .await
                 .unwrap()
                 .0,
@@ -728,14 +728,14 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
 
         assert_eq!(
             defuse2_mt
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.account_id(),
-                    token_id: &TokenId::Nep245(Nep245TokenId::new(
+                .mt_balance_of(
+                    user1.account_id(),
+                    &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft3_id.to_string()
                     ))
-                    .to_string(),
-                })
+                    .to_string()
+                )
                 .await
                 .unwrap()
                 .0,
@@ -781,14 +781,14 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
         // Only ft1 balance changes
         assert_eq!(
             defuse2_mt
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.account_id(),
-                    token_id: &TokenId::Nep245(Nep245TokenId::new(
+                .mt_balance_of(
+                    user1.account_id(),
+                    &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft1_id.to_string()
                     ))
-                    .to_string(),
-                })
+                    .to_string()
+                )
                 .await
                 .unwrap()
                 .0,
@@ -797,14 +797,14 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
 
         assert_eq!(
             defuse2_mt
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.account_id(),
-                    token_id: &TokenId::Nep245(Nep245TokenId::new(
+                .mt_balance_of(
+                    user1.account_id(),
+                    &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft2_id.to_string()
                     ))
-                    .to_string(),
-                })
+                    .to_string()
+                )
                 .await
                 .unwrap()
                 .0,
@@ -813,14 +813,14 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
 
         assert_eq!(
             defuse2_mt
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.account_id(),
-                    token_id: &TokenId::Nep245(Nep245TokenId::new(
+                .mt_balance_of(
+                    user1.account_id(),
+                    &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft3_id.to_string()
                     ))
-                    .to_string(),
-                })
+                    .to_string()
+                )
                 .await
                 .unwrap()
                 .0,
@@ -890,14 +890,14 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
     {
         assert_eq!(
             defuse2_mt
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.account_id(),
-                    token_id: &TokenId::Nep245(Nep245TokenId::new(
+                .mt_balance_of(
+                    user1.account_id(),
+                    &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft1_id.to_string()
                     ))
-                    .to_string(),
-                })
+                    .to_string()
+                )
                 .await
                 .unwrap()
                 .0,
@@ -906,14 +906,14 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
 
         assert_eq!(
             defuse2_mt
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.account_id(),
-                    token_id: &TokenId::Nep245(Nep245TokenId::new(
+                .mt_balance_of(
+                    user1.account_id(),
+                    &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft2_id.to_string()
                     ))
-                    .to_string(),
-                })
+                    .to_string()
+                )
                 .await
                 .unwrap()
                 .0,
@@ -922,14 +922,14 @@ async fn multitoken_withdrawals(#[future(awt)] env: Env) {
 
         assert_eq!(
             defuse2_mt
-                .mt_balance_of(MtBalanceOfArgs {
-                    account_id: user1.account_id(),
-                    token_id: &TokenId::Nep245(Nep245TokenId::new(
+                .mt_balance_of(
+                    user1.account_id(),
+                    &TokenId::Nep245(Nep245TokenId::new(
                         env.defuse.contract_id().to_owned(),
                         ft3_id.to_string()
                     ))
-                    .to_string(),
-                })
+                    .to_string()
+                )
                 .await
                 .unwrap()
                 .0,

@@ -1,4 +1,5 @@
 use defuse_sandbox::{
+    account::AccountExt,
     extensions::{
         defuse::{
             DefuseExt, DefuseSignerExt, ToEventLog,
@@ -9,10 +10,10 @@ use defuse_sandbox::{
             },
             tokens::DepositMessage,
         },
-        mt::{Mt, MtBalanceOfArgs},
+        mt::Mt,
         wnear::WNearExt,
     },
-    kit::{Gas, NearToken, transaction::Final},
+    kit::{Gas, NearToken, standards::FungibleToken},
 };
 use rstest::rstest;
 
@@ -75,17 +76,17 @@ async fn native_withdraw_intent(
     .await
     .expect("failed to wrap NEAR");
 
-    env.ft(env.wnear.contract_id())
+    env.contract::<FungibleToken>(env.wnear.contract_id())
         .transfer_call(
             env.defuse.contract_id(),
             total_amount_yocto,
             DepositMessage::new(other_user.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
-        .expect("failed to deposit wNEAR to user2");
+        .expect("failed to deposit wNEAR to user2")
+        .checked()
+        .unwrap();
 
     // withdraw native NEAR to corresponding receivers
     let withdraw_payload = other_user
@@ -111,11 +112,10 @@ async fn native_withdraw_intent(
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: other_user.account_id(),
-                token_id: &TokenId::Nep141(Nep141TokenId::new(env.wnear.contract_id().clone()))
-                    .to_string()
-            })
+            .mt_balance_of(
+                other_user.account_id(),
+                &TokenId::Nep141(Nep141TokenId::new(env.wnear.contract_id().clone())).to_string()
+            )
             .await
             .unwrap()
             .0,

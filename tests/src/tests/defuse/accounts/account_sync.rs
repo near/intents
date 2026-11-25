@@ -1,9 +1,10 @@
 use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::{
+    AsNep297Event,
     extensions::{
         acl::AccessControllableExt,
         defuse::{
-            DefuseExt, HasPublicKeyArgs,
+            DefuseExt,
             contract::Role,
             core::{
                 PublicKey,
@@ -16,7 +17,6 @@ use defuse_sandbox::{
     kit::AccountId,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, fixtures::public_key, random::rng};
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 use std::{
     borrow::Cow,
@@ -81,7 +81,7 @@ async fn test_force_add_public_keys(
 
         // the number of emitted events should be equal to the number of added public keys
         assert_eq!(
-            result.logs().len(),
+            result.logs().count(),
             public_keys.values().map(HashSet::len).sum::<usize>()
         );
 
@@ -89,10 +89,7 @@ async fn test_force_add_public_keys(
             for public_key in keys {
                 assert!(
                     env.defuse
-                        .has_public_key(HasPublicKeyArgs {
-                            account_id,
-                            public_key,
-                        })
+                        .has_public_key(account_id, public_key)
                         .await
                         .unwrap(),
                     "Public key {public_key:?} not found for account {account_id}",
@@ -108,7 +105,7 @@ async fn test_force_add_public_keys(
                     .to_nep297_event()
                     .to_event_log();
 
-                assert!(result.logs().contains(&event));
+                assert!(result.logs().any(|log| log == event));
             }
         }
     }
@@ -170,7 +167,7 @@ async fn test_force_add_and_remove_public_keys(
 
         // the number of emitted events should be equal to the number of removed public keys
         assert_eq!(
-            result.logs().len(),
+            result.logs().count(),
             public_keys.values().map(HashSet::len).sum::<usize>()
         );
 
@@ -178,10 +175,7 @@ async fn test_force_add_and_remove_public_keys(
             for public_key in keys {
                 assert!(
                     !env.defuse
-                        .has_public_key(HasPublicKeyArgs {
-                            account_id,
-                            public_key,
-                        })
+                        .has_public_key(account_id, public_key)
                         .await
                         .unwrap(),
                     "Public key {public_key:?} found for account {account_id}",
@@ -198,7 +192,7 @@ async fn test_force_add_and_remove_public_keys(
                 .to_nep297_event()
                 .to_event_log();
 
-                assert!(result.logs().contains(&event));
+                assert!(result.logs().any(|log| log == event));
             }
         }
     }

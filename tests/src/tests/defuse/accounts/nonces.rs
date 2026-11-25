@@ -3,7 +3,7 @@ use defuse_sandbox::{
     extensions::{
         acl::AccessControllableExt,
         defuse::{
-            DefuseExt, DefuseSignerExt, IsNonceUsedArgs,
+            AsBase64, DefuseExt, DefuseSignerExt,
             contract::Role,
             core::{Nonce, Salt, Timestamp, intents::DefuseIntents},
             create_random_salted_nonce,
@@ -64,10 +64,7 @@ async fn test_commit_nonces(
 
         assert!(
             env.defuse
-                .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
-                    nonce: &legacy_nonce,
-                })
+                .is_nonce_used(user.account_id(), AsBase64(legacy_nonce))
                 .await
                 .unwrap(),
         );
@@ -155,10 +152,7 @@ async fn test_commit_nonces(
 
         assert!(
             env.defuse
-                .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
-                    nonce: &expirable_nonce,
-                })
+                .is_nonce_used(user.account_id(), AsBase64(expirable_nonce))
                 .await
                 .unwrap(),
         );
@@ -197,10 +191,7 @@ async fn test_commit_nonces(
 
         assert!(
             env.defuse
-                .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
-                    nonce: &old_salt_nonce,
-                })
+                .is_nonce_used(user.account_id(), AsBase64(old_salt_nonce))
                 .await
                 .unwrap(),
         );
@@ -315,10 +306,7 @@ async fn test_cleanup_nonces(
 
         assert!(
             !env.defuse
-                .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
-                    nonce: &expirable_nonce,
-                })
+                .is_nonce_used(user.account_id(), AsBase64(expirable_nonce))
                 .await
                 .unwrap(),
         );
@@ -344,10 +332,7 @@ async fn test_cleanup_nonces(
             async {
                 assert!(
                     env.defuse
-                        .is_nonce_used(IsNonceUsedArgs {
-                            account_id: user.account_id(),
-                            nonce: &legacy_nonce,
-                        })
+                        .is_nonce_used(user.account_id(), AsBase64(legacy_nonce))
                         .await
                         .unwrap()
                 );
@@ -355,10 +340,7 @@ async fn test_cleanup_nonces(
             async {
                 assert!(
                     env.defuse
-                        .is_nonce_used(IsNonceUsedArgs {
-                            account_id: user.account_id(),
-                            nonce: &long_term_expirable_nonce,
-                        })
+                        .is_nonce_used(user.account_id(), AsBase64(long_term_expirable_nonce))
                         .await
                         .unwrap()
                 );
@@ -389,10 +371,7 @@ async fn test_cleanup_nonces(
 
         assert!(
             !env.defuse
-                .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
-                    nonce: &long_term_expirable_nonce,
-                })
+                .is_nonce_used(user.account_id(), AsBase64(long_term_expirable_nonce))
                 .await
                 .unwrap(),
         );
@@ -467,15 +446,7 @@ async fn cleanup_multiple_nonces(
                 let defuse = &env.defuse;
                 let user_id = user.account_id().clone();
 
-                async move {
-                    !defuse
-                        .is_nonce_used(IsNonceUsedArgs {
-                            account_id: &user_id,
-                            nonce: &n,
-                        })
-                        .await
-                        .unwrap()
-                }
+                async move { !defuse.is_nonce_used(&user_id, AsBase64(n)).await.unwrap() }
             })
             .await
     );

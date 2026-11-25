@@ -3,8 +3,8 @@
 use defuse_sandbox::{
     extensions::{
         defuse::{
-            Defuse, DefuseDeployerExt, DefuseExt, DefuseSignerExt, ExtractNonceExt,
-            IsNonceUsedArgs, MultiPayloadArgs, ToEventLog,
+            AsBase64, Defuse, DefuseDeployerExt, DefuseExt, DefuseSignerExt, ExtractNonceExt,
+            ToEventLog,
             contract::config::{DefuseConfig, RolesConfig},
             core::{
                 PublicKey,
@@ -26,17 +26,21 @@ use defuse_sandbox::{
             },
             tokens::DepositMessage,
         },
-        mt::{Mt, MtBalanceOfArgs, MtExt},
+        mt::{Mt, MtExt},
         nft::NftAdminExt,
         wnear::WNearExt,
     },
-    kit::{Gas, NearToken, transaction::Final},
+    kit::{
+        Gas, NearToken,
+        json_types::Base64VecU8,
+        protocol::Action,
+        standards::{FungibleToken, NonFungibleToken},
+    },
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata,
 };
-use near_sdk::json_types::Base64VecU8;
 use rstest::rstest;
 
 use crate::{
@@ -83,9 +87,7 @@ async fn simulate_transfer_intent(#[future(awt)] env: Env) {
 
     let result = env
         .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[transfer_intent_payload.clone()],
-        })
+        .simulate_intents(&[transfer_intent_payload.clone()])
         .await
         .unwrap();
 
@@ -112,10 +114,7 @@ async fn simulate_ft_withdraw_intent(#[future(awt)] env: Env) {
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &ft1_token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &ft1_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -139,9 +138,7 @@ async fn simulate_ft_withdraw_intent(#[future(awt)] env: Env) {
 
     let result = env
         .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[ft_withdraw_payload.clone()],
-        })
+        .simulate_intents(&[ft_withdraw_payload.clone()])
         .await
         .unwrap();
 
@@ -166,25 +163,22 @@ async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
         .unwrap();
 
     user1
-        .ft(env.wnear.contract_id())
+        .contract::<FungibleToken>(env.wnear.contract_id())
         .transfer_call(
             env.defuse.contract_id(),
             wnear_amount.as_yoctonear(),
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
+        .unwrap()
+        .checked()
         .unwrap();
 
     // Verify wNEAR balance in Defuse
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &wnear_token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &wnear_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -204,9 +198,7 @@ async fn simulate_native_withdraw_intent(#[future(awt)] env: Env) {
 
     let result = env
         .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[native_withdraw_payload.clone()],
-        })
+        .simulate_intents(&[native_withdraw_payload.clone()])
         .await
         .unwrap();
 
@@ -224,8 +216,10 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
         futures::join!(env.create_named_user("nft_issuer_admin"), env.create_user());
 
     env.transaction(user1.account_id())
-        .transfer(NearToken::from_near(100))
+        .add_action(Action::transfer(NearToken::from_near(100)))
         .await
+        .unwrap()
+        .checked()
         .unwrap();
 
     let nft_contract = user1
@@ -261,24 +255,21 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
     .into();
 
     user1
-        .nft(nft_contract.contract_id())
+        .contract::<NonFungibleToken>(nft_contract.contract_id())
         .transfer_call(
             env.defuse.contract_id(),
             DUMMY_NFT_ID,
             user1.account_id().as_str(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
+        .unwrap()
+        .checked()
         .unwrap();
 
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &nft_token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &nft_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -302,9 +293,7 @@ async fn simulate_nft_withdraw_intent(#[future(awt)] env: Env) {
 
     let result = env
         .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[nft_withdraw_payload.clone()],
-        })
+        .simulate_intents(&[nft_withdraw_payload.clone()])
         .await
         .unwrap();
 
@@ -341,7 +330,7 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
 
     // Register user1's public key on defuse2
     user1
-        .defuse_add_public_key(defuse2.account_id(), user1.signer().unwrap().public_key())
+        .defuse_add_public_key(defuse2.account_id(), user1.signer().public_key())
         .await
         .unwrap();
 
@@ -355,10 +344,7 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
     // Verify balance in first Defuse contract
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &ft1_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &ft1_id.to_string())
             .await
             .unwrap()
             .0,
@@ -386,10 +372,7 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
     assert_eq!(
         defuse2
             .contract::<Mt>(defuse2.account_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &nep245_token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &nep245_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -417,9 +400,7 @@ async fn simulate_mt_withdraw_intent(#[future(awt)] env: Env) {
 
     // Simulate the intent on defuse2 (which has the tokens)
     let result = defuse2
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[mt_withdraw_payload.clone()],
-        })
+        .simulate_intents(&[mt_withdraw_payload.clone()])
         .await
         .unwrap();
 
@@ -444,25 +425,22 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
         .unwrap();
 
     user1
-        .ft(env.wnear.contract_id())
+        .contract::<FungibleToken>(env.wnear.contract_id())
         .transfer_call(
             env.defuse.contract_id(),
             wnear_amount.as_yoctonear(),
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
+        .unwrap()
+        .checked()
         .unwrap();
 
     // Verify wNEAR balance in Defuse
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &wnear_token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &wnear_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -483,9 +461,7 @@ async fn simulate_storage_deposit_intent(#[future(awt)] env: Env) {
 
     let result = env
         .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[storage_deposit_payload.clone()],
-        })
+        .simulate_intents(&[storage_deposit_payload.clone()])
         .await
         .unwrap();
 
@@ -524,10 +500,7 @@ async fn simulate_token_diff_intent(#[future(awt)] env: Env) {
     // Verify initial balances
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &ft1_token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &ft1_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -535,10 +508,7 @@ async fn simulate_token_diff_intent(#[future(awt)] env: Env) {
     );
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user2.account_id(),
-                token_id: &ft2_token_id.to_string()
-            })
+            .mt_balance_of(user2.account_id(), &ft2_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -574,11 +544,7 @@ async fn simulate_token_diff_intent(#[future(awt)] env: Env) {
         .unwrap();
 
     let payloads = [user1_payload, user2_payload];
-    let result = env
-        .defuse
-        .simulate_intents(MultiPayloadArgs { signed: &payloads })
-        .await
-        .unwrap();
+    let result = env.defuse.simulate_intents(&payloads).await.unwrap();
 
     assert_eq_defuse_event_logs(payloads.to_event_log(), result.report.logs);
 }
@@ -607,9 +573,7 @@ async fn simulate_add_public_key_intent(
 
     let result = env
         .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[add_public_key_payload.clone()],
-        })
+        .simulate_intents(&[add_public_key_payload.clone()])
         .await
         .unwrap();
 
@@ -653,9 +617,7 @@ async fn simulate_remove_public_key_intent(
 
     let result = env
         .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[remove_public_key_payload.clone()],
-        })
+        .simulate_intents(&[remove_public_key_payload.clone()])
         .await
         .unwrap();
 
@@ -676,9 +638,7 @@ async fn simulate_set_auth_by_predecessor_id_intent(#[future(awt)] env: Env) {
 
     let result = env
         .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[set_auth_payload.clone()],
-        })
+        .simulate_intents(&[set_auth_payload.clone()])
         .await
         .unwrap();
 
@@ -703,25 +663,22 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
         .unwrap();
 
     user1
-        .ft(env.wnear.contract_id())
+        .contract::<FungibleToken>(env.wnear.contract_id())
         .transfer_call(
             env.defuse.contract_id(),
             wnear_amount.as_yoctonear(),
             DepositMessage::new(user1.account_id().clone()).to_string(),
         )
         .gas(Gas::from_tgas(300))
-        .send()
-        .wait_until::<Final>()
         .await
+        .unwrap()
+        .checked()
         .unwrap();
 
     // Verify wNEAR balance
     assert_eq!(
         env.contract::<Mt>(env.defuse.contract_id())
-            .mt_balance_of(MtBalanceOfArgs {
-                account_id: user1.account_id(),
-                token_id: &wnear_token_id.to_string()
-            })
+            .mt_balance_of(user1.account_id(), &wnear_token_id.to_string())
             .await
             .unwrap()
             .0,
@@ -743,9 +700,7 @@ async fn simulate_auth_call_intent(#[future(awt)] env: Env) {
 
     let result = env
         .defuse
-        .simulate_intents(MultiPayloadArgs {
-            signed: &[auth_call_payload.clone()],
-        })
+        .simulate_intents(&[auth_call_payload.clone()])
         .await
         .unwrap();
 
@@ -785,9 +740,7 @@ mod imt {
 
         let result = env
             .defuse
-            .simulate_intents(MultiPayloadArgs {
-                signed: &[mint_payload.clone()],
-            })
+            .simulate_intents(&[mint_payload.clone()])
             .await
             .unwrap();
 
@@ -837,9 +790,7 @@ mod imt {
 
         let result = env
             .defuse
-            .simulate_intents(MultiPayloadArgs {
-                signed: &[burn_payload.clone()],
-            })
+            .simulate_intents(&[burn_payload.clone()])
             .await
             .unwrap();
 
@@ -862,18 +813,15 @@ mod imt {
 
         assert!(
             env.defuse
-                .is_nonce_used(IsNonceUsedArgs {
-                    account_id: user.account_id(),
-                    nonce: &payload.extract_nonce().unwrap(),
-                })
+                .is_nonce_used(
+                    user.account_id(),
+                    AsBase64(payload.extract_nonce().unwrap())
+                )
                 .await
                 .unwrap(),
         );
 
-        let result = env
-            .defuse
-            .simulate_intents(MultiPayloadArgs { signed: &[payload] })
-            .await;
+        let result = env.defuse.simulate_intents(&[payload]).await;
 
         assert!(result.is_err());
     }

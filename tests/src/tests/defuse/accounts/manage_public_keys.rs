@@ -1,16 +1,18 @@
 use std::borrow::Cow;
 
-use defuse_sandbox::extensions::defuse::{
-    DefuseExt, HasPublicKeyArgs,
-    core::{
-        PublicKey,
-        accounts::{AccountEvent, PublicKeyEvent},
-        events::DefuseEvent,
-        intents::MaybeIntentEvent,
+use defuse_sandbox::{
+    AsNep297Event,
+    extensions::defuse::{
+        DefuseExt,
+        core::{
+            PublicKey,
+            accounts::{AccountEvent, PublicKeyEvent},
+            events::DefuseEvent,
+            intents::MaybeIntentEvent,
+        },
     },
 };
 use defuse_test_utils::fixtures::public_key;
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 
 use crate::tests::defuse::env::{Env, env};
@@ -28,10 +30,7 @@ async fn test_add_public_key(
 
     assert!(
         !env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user.account_id(),
-                public_key: &public_key,
-            })
+            .has_public_key(user.account_id(), &public_key)
             .await
             .unwrap()
     );
@@ -50,14 +49,11 @@ async fn test_add_public_key(
     .to_nep297_event()
     .to_event_log();
 
-    assert_eq!(result.logs(), [event]);
+    itertools::assert_equal(result.logs(), [event]);
 
     assert!(
         env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user.account_id(),
-                public_key: &public_key,
-            })
+            .has_public_key(user.account_id(), &public_key)
             .await
             .unwrap()
     );
@@ -80,10 +76,7 @@ async fn test_add_and_remove_public_key(
 
     assert!(
         env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user.account_id(),
-                public_key: &public_key,
-            })
+            .has_public_key(user.account_id(), &public_key)
             .await
             .unwrap()
     );
@@ -102,14 +95,11 @@ async fn test_add_and_remove_public_key(
     .to_nep297_event()
     .to_event_log();
 
-    assert_eq!(result.logs(), [event]);
+    itertools::assert_equal(result.logs(), [event]);
 
     assert!(
         !env.defuse
-            .has_public_key(HasPublicKeyArgs {
-                account_id: user.account_id(),
-                public_key: &public_key,
-            })
+            .has_public_key(user.account_id(), &public_key)
             .await
             .unwrap()
     );

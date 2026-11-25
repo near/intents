@@ -8,16 +8,19 @@ use defuse_core::{intents::tokens::NotifyOnTransfer, tokens::BATCH_MAX_TOKENS};
 use defuse_near_utils::{REFUND_MEMO, TOTAL_LOG_LENGTH_LIMIT};
 use defuse_randomness::Rng;
 use defuse_sandbox::{
-    account::Account,
+    AsNep297Event,
+    account::AccountExt,
     extensions::{
         defuse::{
             nep245::{MtBurnEvent, MtEvent, MtMintEvent},
             tokens::{DepositAction, DepositMessage},
         },
-        mt::{Mt, MtOnTransferArgs},
+        mt::Mt,
     },
     kit::{
-        AccountId, Gas, Near, NearToken,
+        AccountId, Gas, NearToken, SigningNear,
+        json_types::U128,
+        protocol::Action,
         rpc::{ActionView, ExecutionStatus, ReceiptContent},
         transaction::Final,
     },
@@ -27,7 +30,6 @@ use defuse_test_utils::{
     wasms::MT_RECEIVER_STUB_WASM,
 };
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::{events::AsNep297Event, json_types::U128};
 use rstest::rstest;
 use std::{borrow::Cow, sync::Arc};
 
@@ -42,7 +44,7 @@ enum TokenIdGenerationMode {
     Long,
 }
 
-async fn make_author_account(mode: TokenIdGenerationMode, env: &Env) -> Near {
+async fn make_author_account(mode: TokenIdGenerationMode, env: &Env) -> SigningNear {
     match mode {
         TokenIdGenerationMode::Short => {
             // Use root account directly: 0.test
@@ -67,7 +69,7 @@ async fn make_author_account(mode: TokenIdGenerationMode, env: &Env) -> Near {
 
 fn make_defuse_token_ids(
     mode: TokenIdGenerationMode,
-    author_account: &Near,
+    author_account: &SigningNear,
     token_ids: &[String],
 ) -> Vec<String> {
     match mode {
@@ -176,7 +178,7 @@ async fn run_deposit_resolve_gas_test(
     gen_mode: TokenIdGenerationMode,
     token_count: usize,
     env: Arc<Env>,
-    author_account: Near,
+    author_account: SigningNear,
     receiver_id: AccountId,
     rng: Arc<tokio::sync::Mutex<impl Rng>>,
 ) -> anyhow::Result<()> {
@@ -201,13 +203,13 @@ async fn run_deposit_resolve_gas_test(
     let execution_result = author_account
         .transaction(env.defuse.contract_id()) // defuse contract receives the deposit
         .add_action(
-            Mt::mt_on_transfer(MtOnTransferArgs {
-                sender_id: author_account.account_id(), // sender_id (who the tokens are being deposited for)
-                previous_owner_ids: &vec![author_account.account_id().clone(); token_count],
-                token_ids: &token_ids,
-                amounts: &amounts,
-                msg: &serde_json::to_string(&deposit_message).unwrap(),
-            })
+            Mt::mt_on_transfer(
+                author_account.account_id(), // sender_id (who the tokens are being deposited for)
+                &vec![author_account.account_id().clone(); token_count],
+                &token_ids,
+                &amounts.iter().copied().map(U128).collect::<Vec<_>>(),
+                &serde_json::to_string(&deposit_message).unwrap(),
+            )
             .gas(Gas::from_tgas(300)),
         )
         .await
@@ -279,7 +281,7 @@ async fn mt_deposit_resolve_gas(
     let env = Arc::new(env);
 
     env.transaction(env.defuse.contract_id())
-        .transfer(NearToken::from_near(1000))
+        .add_action(Action::transfer(NearToken::from_near(1000)))
         .await
         .unwrap();
 
@@ -363,7 +365,7 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
     let amount = 1u128;
 
     env.transaction(env.defuse.contract_id())
-        .transfer(NearToken::from_near(1000))
+        .add_action(Action::transfer(NearToken::from_near(1000)))
         .await
         .unwrap();
 
@@ -392,13 +394,13 @@ async fn mt_desposit_resolve_can_handle_large_blob_value_returned_from_notificat
     let execution_result = author_account
         .transaction(env.defuse.contract_id())
         .add_action(
-            Mt::mt_on_transfer(MtOnTransferArgs {
-                sender_id: author_account.account_id(),
-                previous_owner_ids: &[author_account.account_id().clone()],
-                token_ids: &["testtoken1".to_string()],
-                amounts: &[amount],
-                msg: &serde_json::to_string(&deposit_message).unwrap(),
-            })
+            Mt::mt_on_transfer(
+                author_account.account_id(),
+                &[author_account.account_id().clone()],
+                &["testtoken1".to_string()],
+                &[U128(amount)],
+                &serde_json::to_string(&deposit_message).unwrap(),
+            )
             .gas(Gas::from_tgas(300)),
         )
         .await
@@ -461,7 +463,7 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
     let env = Arc::new(env);
 
     env.transaction(env.defuse.contract_id())
-        .transfer(NearToken::from_near(1000))
+        .add_action(Action::transfer(NearToken::from_near(1000)))
         .await
         .unwrap();
 
@@ -501,13 +503,13 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
     author_account
         .transaction(env.defuse.contract_id())
         .add_action(
-            Mt::mt_on_transfer(MtOnTransferArgs {
-                sender_id: author_account.account_id(),
-                previous_owner_ids: &[author_account.account_id().clone()],
-                token_ids: std::slice::from_ref(&token_id),
-                amounts: &[RECEIVER_BALANCE],
-                msg: &serde_json::to_string(&pre_fund_message).unwrap(),
-            })
+            Mt::mt_on_transfer(
+                author_account.account_id(),
+                &[author_account.account_id().clone()],
+                std::slice::from_ref(&token_id),
+                &[U128(RECEIVER_BALANCE)],
+                &serde_json::to_string(&pre_fund_message).unwrap(),
+            )
             .gas(Gas::from_tgas(300)),
         )
         .await
@@ -530,13 +532,13 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
     let execution_result = author_account
         .transaction(env.defuse.contract_id())
         .add_action(
-            Mt::mt_on_transfer(MtOnTransferArgs {
-                sender_id: author_account.account_id(),
-                previous_owner_ids: &vec![author_account.account_id().clone(); TOKEN_COUNT],
-                token_ids: &token_ids,
-                amounts: &amounts,
-                msg: &serde_json::to_string(&deposit_message).unwrap(),
-            })
+            Mt::mt_on_transfer(
+                author_account.account_id(),
+                &vec![author_account.account_id().clone(); TOKEN_COUNT],
+                &token_ids,
+                &amounts.map(U128),
+                &serde_json::to_string(&deposit_message).unwrap(),
+            )
             .gas(Gas::from_tgas(300)),
         )
         .await
@@ -546,6 +548,7 @@ async fn mt_resolve_deposit_caps_refunds_to_deposited_amounts(#[future(awt)] env
     // only returns execution outcomes), so we can find the callback by name.
     let outcome = env
         .root
+        .near()
         .tx_status(
             execution_result.transaction_hash(),
             author_account.account_id(),

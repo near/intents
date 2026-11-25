@@ -1,9 +1,9 @@
 use anyhow::Result;
 use near_kit::{
-    AccountId, Near, NearToken,
-    protocol::{GlobalContractId, StateInit, StateInitV1},
-    transaction::Final,
+    AccountId, NearToken, SigningNear,
+    protocol::{Action, GlobalContractId, StateInit, StateInitV1},
 };
+
 use std::collections::BTreeMap;
 
 pub trait DeployDeterministicAccountExt {
@@ -16,7 +16,7 @@ pub trait DeployDeterministicAccountExt {
     ) -> Result<AccountId>;
 }
 
-impl DeployDeterministicAccountExt for Near {
+impl DeployDeterministicAccountExt for SigningNear {
     async fn deploy_deterministic_account(
         &self,
         global_contract_id: GlobalContractId,
@@ -29,11 +29,10 @@ impl DeployDeterministicAccountExt for Near {
         });
         let account_id = si.derive_account_id();
 
-        self.state_init(si, deposit)
-            .send()
-            .wait_until::<Final>()
+        self.transaction(&account_id)
+            .add_action(Action::state_init(si, deposit))
             .await?
-            .result()?;
+            .checked()?;
 
         Ok(account_id)
     }

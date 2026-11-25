@@ -1398,7 +1398,7 @@ dependencies = [
  "defuse-serde-utils",
  "hex-literal",
  "near-account-id",
- "near-kit",
+ "near-kit-primitives",
  "near-sdk",
  "schemars 0.8.22",
  "serde",
@@ -1485,8 +1485,6 @@ version = "0.1.0"
 dependencies = [
  "defuse-crypto",
  "defuse-mpc-kdf",
- "defuse-near-promise",
- "defuse-near-sender",
  "impl-tools 0.13.0",
  "near-kit",
  "serde",
@@ -1509,7 +1507,7 @@ dependencies = [
  "near-account-id",
  "near-gas",
  "near-global-contracts",
- "near-kit",
+ "near-kit-primitives",
  "near-sdk",
  "near-token",
  "rstest",
@@ -1517,21 +1515,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
-]
-
-[[package]]
-name = "defuse-near-sender"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "cfg_eval",
- "defuse-near-promise",
- "impl-tools 0.13.0",
- "near-kit",
- "schemars 0.8.22",
- "serde",
- "serde_with",
- "trait-variant",
 ]
 
 [[package]]
@@ -1575,7 +1558,7 @@ dependencies = [
  "defuse-nep461",
  "digest-io",
  "hex-literal",
- "near-kit",
+ "near-kit-primitives",
  "rstest",
  "schemars 0.8.22",
  "serde",
@@ -1637,7 +1620,7 @@ dependencies = [
  "defuse-serde-utils",
  "hex-literal",
  "near-account-id",
- "near-kit",
+ "near-kit-primitives",
  "near-sdk",
  "schemars 0.8.22",
  "serde",
@@ -1703,6 +1686,7 @@ dependencies = [
  "defuse-nep245",
  "defuse-outlayer-app",
  "defuse-poa-factory",
+ "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-wallet-sdk",
  "near-contract-standards",
@@ -1712,7 +1696,6 @@ dependencies = [
  "rstest",
  "serde",
  "serde_json",
- "serde_with",
 ]
 
 [[package]]
@@ -1768,8 +1751,8 @@ dependencies = [
  "impl-tools 0.13.0",
  "itertools",
  "multi-token-receiver-stub",
+ "near-account-id",
  "near-contract-standards",
- "near-sdk",
  "rstest",
  "serde_json",
  "strum 0.28.0",
@@ -1932,11 +1915,10 @@ dependencies = [
  "borsh",
  "bs58 0.5.1",
  "defuse-mpc-signer",
- "defuse-near-sender",
  "defuse-nep641",
  "defuse-wallet",
  "defuse-wallet-ed25519",
- "derive_more",
+ "defuse-wallet-sdk",
  "futures",
  "hex-literal",
  "impl-tools 0.13.0",
@@ -3692,32 +3674,19 @@ dependencies = [
 
 [[package]]
 name = "near-kit"
-version = "0.20.1"
+version = "0.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "294bd31dcea04d2ae423cf2d499737ebabd6d8da04eeba5a13f1c45a646ea0cf"
+checksum = "9b472fce219f03e1d9cdf6bfac264e876d2abdfdd03c95dafe8b08be9eccb8af"
 dependencies = [
  "base64 0.23.1",
  "borsh",
- "bs58 0.5.1",
- "ed25519-dalek 3.0.0",
- "getrandom 0.4.3",
  "gloo-timers",
- "hex",
  "hyper",
- "js-sys",
- "k256",
- "ml-dsa",
- "near-account-id",
- "near-gas",
- "near-global-contracts",
  "near-kit-macros",
- "near-token",
+ "near-kit-primitives",
  "reqwest",
  "serde",
  "serde_json",
- "serde_with",
- "sha2 0.11.1",
- "sha3 0.12.0",
  "thiserror 2.0.21",
  "tokio",
  "tracing",
@@ -3725,9 +3694,9 @@ dependencies = [
 
 [[package]]
 name = "near-kit-macros"
-version = "0.14.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5565d050a154d4431f767e17786758e65a511aa1b6ac9a6169942b6774f7831"
+checksum = "156790b67e5a25e8340e7ccfe0937fc31c9996c23fa01a5bafa4536a488174cf"
 dependencies = [
  "proc-macro-crate 3.5.0",
  "proc-macro2",
@@ -3736,10 +3705,40 @@ dependencies = [
 ]
 
 [[package]]
-name = "near-kit-sandbox"
-version = "0.20.1"
+name = "near-kit-primitives"
+version = "0.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aca5ab2abe52c3b2ab6160c79593e30d904171aad603f6981ed7d96d3d9489dc"
+checksum = "711accd6ae9ee5697d3275e3710b4167fce19d9956a99747276c40839984fecc"
+dependencies = [
+ "base64 0.23.1",
+ "borsh",
+ "bs58 0.5.1",
+ "ed25519-dalek 3.0.0",
+ "getrandom 0.4.3",
+ "hex",
+ "js-sys",
+ "k256",
+ "ml-dsa",
+ "near-account-id",
+ "near-gas",
+ "near-global-contracts",
+ "near-kit-macros",
+ "near-sdk-core",
+ "near-token",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "sha2 0.11.1",
+ "sha3 0.12.0",
+ "thiserror 2.0.21",
+ "tracing",
+]
+
+[[package]]
+name = "near-kit-sandbox"
+version = "0.34.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa7e40a17694f595acebd12a66494d8cf0415bf686ebaa600056971643baec86"
 dependencies = [
  "libc",
  "near-kit",
@@ -4475,7 +4474,7 @@ version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e67ba7e9b2b56446f1d419b1d807906278ffa1a658a8a5d8a39dcb1f5a78614f"
 dependencies = [
- "toml_edit 0.25.17+spec-1.1.0",
+ "toml_edit 0.25.18+spec-1.1.0",
 ]
 
 [[package]]
@@ -6151,9 +6150,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.25.17+spec-1.1.0"
+version = "0.25.18+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3641d5bbb5349a79e1020a242d251efbc546ad8048d133958323ce9c40a9c9c"
+checksum = "1ec6e78bd70db9420d8d212fa9dc97f116448a1ceff5d00eabb991d407e21396"
 dependencies = [
  "indexmap 2.14.2",
  "toml_datetime 1.1.2+spec-1.1.0",

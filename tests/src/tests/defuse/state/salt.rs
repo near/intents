@@ -4,16 +4,18 @@ use crate::{
     tests::defuse::env::{Env, env},
     utils::asserts::ResultAssertsExt,
 };
-use defuse_sandbox::extensions::{
-    acl::AccessControllableExt,
-    defuse::{
-        DefuseExt, SaltArgs,
-        contract::Role,
-        core::{accounts::SaltRotationEvent, events::DefuseEvent},
+use defuse_sandbox::{
+    AsNep297Event,
+    extensions::{
+        acl::AccessControllableExt,
+        defuse::{
+            DefuseExt,
+            contract::Role,
+            core::{accounts::SaltRotationEvent, events::DefuseEvent},
+        },
     },
 };
 use futures::FutureExt;
-use near_sdk::events::AsNep297Event;
 use rstest::rstest;
 
 #[rstest]
@@ -60,13 +62,11 @@ async fn update_current_salt(
         .to_nep297_event()
         .to_event_log();
 
-        assert!(res.logs().contains(&event));
+        assert!(res.logs().any(|log| log == event));
 
         let (current_salt, prev_salt_is_valid) = futures::try_join!(
             env.defuse.current_salt().into_future(),
-            env.defuse
-                .is_valid_salt(SaltArgs { salt: prev_salt })
-                .into_future()
+            env.defuse.is_valid_salt(prev_salt).into_future()
         )
         .unwrap();
 
@@ -126,14 +126,9 @@ async fn invalidate_salts(
         .to_nep297_event()
         .to_event_log();
 
-        assert!(res.logs().contains(&event));
+        assert!(res.logs().any(|log| log == event));
 
-        assert!(
-            !env.defuse
-                .is_valid_salt(SaltArgs { salt: prev_salt })
-                .await
-                .unwrap()
-        );
+        assert!(!env.defuse.is_valid_salt(prev_salt).await.unwrap());
     }
 
     // invalidate current salt by salt manager
@@ -151,14 +146,9 @@ async fn invalidate_salts(
         .to_nep297_event()
         .to_event_log();
 
-        assert!(res.logs().contains(&event));
+        assert!(res.logs().any(|log| log == event));
 
-        assert!(
-            !env.defuse
-                .is_valid_salt(SaltArgs { salt: prev_salt })
-                .await
-                .unwrap()
-        );
+        assert!(!env.defuse.is_valid_salt(prev_salt).await.unwrap());
         assert_ne!(prev_salt, current_salt);
     }
 }

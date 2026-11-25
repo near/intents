@@ -19,7 +19,7 @@ borsh = { workspace = true, features = ["derive"], optional = true }
 cfg_eval = { workspace = true, optional = true }
 defuse-digest = { workspace = true, features = ["sha2"], optional = true }
 defuse-serde-utils = { workspace = true, features = ["hex"], optional = true }
-near-kit = { workspace = true, optional = true }
+near-kit-primitives = { workspace = true, default-features = false, optional = true }
 near-sdk = { workspace = true, optional = true }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
@@ -33,8 +33,8 @@ borsh-schema = ["borsh", "borsh/unstable__schema", "near-account-id/abi"]
 digest = ["dep:defuse-digest"]
 near-kit = [
   "dep:defuse-serde-utils",
-  "dep:near-kit",
-  "near-kit/contracts",
+  "dep:near-kit-primitives",
+  "near-kit-primitives/contracts",
   "serde",
 ]
 near-contract = ["dep:defuse-serde-utils", "dep:near-sdk", "serde"]

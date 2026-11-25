@@ -1,26 +1,23 @@
 use anyhow::Result;
 use defuse_escrow_swap::{Params, Storage};
-use near_kit::{Gas, Near, protocol::AccountIdRef, transaction::Final};
-use serde::{Deserialize, Serialize};
+use near_kit::{AccountIdRef, Gas, SigningNear, rpc::CheckedOutcome};
 
-use crate::outcome::SuccessfulExecutionOutcome;
+use crate::extensions::FnCallTransaction;
 
 pub use defuse_escrow_swap as contract;
 
-#[derive(Serialize, Deserialize)]
-pub struct EsParams {
-    pub params: Params,
-}
-
 #[near_kit::contract]
 pub trait Escrow {
+    /// See [`es_view()`](defuse_escrow_swap::Escrow::es_view) method.
     fn es_view(&self) -> Storage;
 
+    /// See [`es_close()`](defuse_escrow_swap::Escrow::es_close) method.
     #[call]
-    fn es_close(&mut self, params: EsParams) -> bool;
+    fn es_close(&mut self, params: &Params);
 
+    /// See [`es_lost_found()`](defuse_escrow_swap::Escrow::es_lost_found) method.
     #[call]
-    fn es_lost_found(&mut self, params: EsParams) -> bool;
+    fn es_lost_found(&mut self, params: &Params);
 }
 
 pub trait EscrowExt {
@@ -28,37 +25,37 @@ pub trait EscrowExt {
         &self,
         escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 
     async fn es_lost_found(
         &self,
         escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
-    ) -> Result<SuccessfulExecutionOutcome>;
+    ) -> Result<CheckedOutcome>;
 }
 
-impl EscrowExt for Near {
+impl EscrowExt for SigningNear {
     async fn es_close(
         &self,
         escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
-    ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(escrow_id.as_ref())
-            .add_action(Escrow::es_close(EsParams { params }).gas(Gas::from_tgas(300)))
-            .wait_until::<Final>()
-            .await?
-            .try_into()
+    ) -> Result<CheckedOutcome> {
+        self.fn_call(
+            escrow_id.as_ref(),
+            Escrow::es_close(&params).gas(Gas::from_tgas(300)),
+        )
+        .await
     }
 
     async fn es_lost_found(
         &self,
         escrow_id: impl AsRef<AccountIdRef>,
         params: Params,
-    ) -> Result<SuccessfulExecutionOutcome> {
-        self.transaction(escrow_id.as_ref())
-            .add_action(Escrow::es_lost_found(EsParams { params }).gas(Gas::from_tgas(300)))
-            .wait_until::<Final>()
-            .await?
-            .try_into()
+    ) -> Result<CheckedOutcome> {
+        self.fn_call(
+            escrow_id.as_ref(),
+            Escrow::es_lost_found(&params).gas(Gas::from_tgas(300)),
+        )
+        .await
     }
 }
