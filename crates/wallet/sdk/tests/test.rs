@@ -18,6 +18,7 @@ use near_kit::{
 use near_kit_sandbox::Sandbox;
 use rand::{rand_core::UnwrapErr, rngs::SysRng};
 use rstest::{fixture, rstest};
+use serde_json::json;
 use sha2::{Digest, Sha256};
 use tokio::sync::OnceCell;
 use tracing_subscriber::EnvFilter;
@@ -58,12 +59,10 @@ async fn rotate(
                                         NearPromise::new(master.real_account_id()).function_call(
                                             FunctionCall::name("w_execute_extension")
                                                 .attach_deposit(NearToken::from_yoctonear(1))
-                                                .args_json(serde_json::json!({
-                                                    "request": Request::from(
-                                                        WalletOp::SetSignatureMode {
-                                                            enable: false,
-                                                        },
-                                                    ),
+                                                .args_json(json!({"request": Request::from(
+                                                    WalletOp::SetSignatureMode {
+                                                        enable: false,
+                                                    }),
                                                 }))
                                                 .gas(Gas::from_tgas(10)),
                                         ),
@@ -71,7 +70,7 @@ async fn rotate(
                                     .await
                                     .unwrap();
 
-                                serde_json::json!({ "msg": msg, "proof": proof })
+                                json!({ "msg": msg, "proof": proof })
                             })
                             .gas(Gas::from_tgas(20)),
                     )]),
