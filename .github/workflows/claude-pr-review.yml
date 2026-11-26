@@ -220,6 +220,7 @@ jobs:
             }
           claude_args: >-
             --model opus
+            --disallowed-tools "Edit,Write,NotebookEdit"
             --allowed-tools "Read,Grep,Glob,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr view:*),Bash(gh pr list:*)"
             --json-schema '{"type":"object","properties":{"review":{"type":"string","description":"The review body in the required output structure, as GitHub-flavored Markdown"}},"required":["review"],"additionalProperties":false}'
 
