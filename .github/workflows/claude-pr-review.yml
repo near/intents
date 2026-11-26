@@ -100,9 +100,15 @@ jobs:
         run: |
           bash .github/scripts/fetch-pr-comments.sh
           mv /tmp/pr_comments_context.txt pr_comments_context.txt
-          gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" > pr.diff ||
-            echo "The diff is too large to download. List the changed files with gh pr view and read them in the pr directory." \
-              > pr.diff
+
+          # Stop without a complete diff: the head checkout cannot show deleted content.
+          # i.e. we wouldn't be able to detect if an important check has been removed 
+
+          if ! gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" > pr.diff; then
+            rm -f pr.diff
+            echo "::error::could not obtain a complete PR diff; review input collection stopped"
+            exit 1
+          fi
 
           if [ "$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)" != "$HEAD_SHA" ]; then
             echo "::error::the PR head moved while the review inputs were collected"
