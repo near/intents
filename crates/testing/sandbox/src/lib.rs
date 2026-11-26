@@ -3,7 +3,7 @@
 pub mod account;
 pub mod extensions;
 pub mod global_contract;
-pub mod nep616;
+pub mod nep655;
 
 pub use near_kit as kit;
 pub use near_kit_sandbox as sandbox;

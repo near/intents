@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use defuse_sandbox::{
     extensions::{mt::MtExt, mt_receiver::MtReceiverStubDeployerExt},
     kit::{NearToken, json_types::U128},
-    nep616::DeployDeterministicAccountExt,
+    nep655::DeployDeterministicAccountExt,
 };
 use multi_token_receiver_stub::MTReceiverMode;
 use rstest::rstest;

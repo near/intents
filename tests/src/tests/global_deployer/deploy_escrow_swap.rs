@@ -11,7 +11,7 @@ use defuse_sandbox::{
         mt_receiver::MtReceiverStub,
     },
     kit::AccountId,
-    nep616::DeployDeterministicAccountExt,
+    nep655::DeployDeterministicAccountExt,
 };
 use defuse_test_utils::wasms::ESCROW_SWAP_WASM;
 use std::{

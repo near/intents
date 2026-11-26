@@ -8,7 +8,7 @@ use near_kit::{
     AccountIdRef, Gas, NearToken, SigningNear, protocol::GlobalContractId, rpc::CheckedOutcome,
 };
 
-use crate::{extensions::FnCallTransaction, nep616::DeployDeterministicAccountExt};
+use crate::{extensions::FnCallTransaction, nep655::DeployDeterministicAccountExt};
 
 pub use defuse_global_deployer as contract;
 

@@ -7,7 +7,7 @@ use near_kit::{
     AccountIdRef, NearToken, SigningNear, protocol::GlobalContractId, rpc::CheckedOutcome,
 };
 
-use crate::{extensions::FnCallTransaction, nep616::DeployDeterministicAccountExt};
+use crate::{extensions::FnCallTransaction, nep655::DeployDeterministicAccountExt};
 
 pub use defuse_outlayer_app as contract;
 
