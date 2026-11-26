@@ -13,7 +13,8 @@ You are reviewing a Rust pull request. Produce a thorough, actionable review usi
 
 **GATHER CONTEXT FIRST:**
 - If a PR number was given, use it; otherwise resolve the PR for the current branch with `gh pr view`.
-- In CI, read `pr.diff` and inspect the PR files in `pr/`. Outside CI, obtain the diff with `gh pr diff <number>`. Obtain PR metadata with `gh pr view <number>`.
+- In CI, read `pr.diff` and inspect the PR files in `pr/`. Obtain PR metadata with `gh pr view <number>`.
+- Outside CI, before reading any code, use a separate worktree at the PR head or switch to the PR branch with `gh pr checkout <number>`. Preserve existing local changes; use a clean worktree if necessary. Verify that `git rev-parse HEAD` matches `gh pr view <number> --json headRefOid --jq .headRefOid`. Obtain the diff with `gh pr diff <number>`, then verify the PR head again; if it changed, update the checkout and retrieve the diff again. Inspect all PR files and surrounding code from that verified checkout.
 - Review existing PR comments and discussions before giving feedback (`gh pr view <number> --comments`). In CI, read `pr_comments_context.txt` instead.
 
 **IMPORTANT - CONTEXT AWARENESS:**
