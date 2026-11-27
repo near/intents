@@ -192,26 +192,38 @@ The `near-gds` command is an extension for [near-cli-rs](https://github.com/near
 ### Install
 
 ```sh
-cargo install --path ./crates/global-deployer/near-gds
+cargo install --path ./contracts/global-deployer/near-gds
 ```
 
 ### Usage
 
 ```sh
 $ near gds --help
-Compute StateInit for a global-deployer contract
+Print JSON storage key-value pairs (as base64) for `StateInit` of a Global Deployer contract
 
 Usage: near-gds [OPTIONS] --owner-id <AccountId>
 
 Options:
-      --owner-id <AccountId>  Owner account ID
-  -i, --index <N>             Unique index for the deployer instance. Can be used to derive
-                              multiple deployers for a single owner [default: 0]
-      --approve <HASH>        Pre-approve SHA-256 code hash: first `gd_deploy()` won't require
-                              `gd_approve()`. Hash can be encoded as base58 or hex with `0x`
-                              prefix
-  -q, --quiet                 Output single-line JSON with base64-encoded keys/values
-  -h, --help                  Print help
+      --owner-id <AccountId>
+          Owner account ID
+
+  -i, --index <N>
+          Unique index for the deployer instance. Can be used to derive multiple deployers for
+          a single owner [default: 0]
+
+      --pre-approve <HASH | @FILE | @->
+          Pre-approve SHA-256 code hash, so that first `gd_deploy()` won't require
+          `gd_approve()` before it.
+
+          `HASH` can be encoded as base58 or hex with `0x` prefix. `@FILE` will calculate
+          SHA-256 hash of the `FILE` contents. `@-` will calculate SHA-256 hash of the stdin
+          contents.
+
+  -q, --quiet
+          Output single-line JSON with base64-encoded keys/values
+
+  -h, --help
+          Print help (see a summary with '-h')
 ```
 
 ### Example
