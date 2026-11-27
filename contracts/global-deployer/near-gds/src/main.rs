@@ -63,3 +63,76 @@ fn main() -> anyhow::Result<()> {
     )
     .context("JSON")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::CommandFactory;
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+    };
+
+    fn readme_text() -> String {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../README.md");
+        fs::read_to_string(&path).unwrap_or_else(|err| panic!("read {}: {err}", path.display()))
+    }
+
+    fn workspace_root() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..")
+    }
+
+    fn usage_section(readme: &str) -> &str {
+        let start = readme
+            .find("### Usage")
+            .unwrap_or_else(|| panic!("README is missing a '### Usage' section"));
+        let rest = &readme[start..];
+        let end = rest.find("### Example").unwrap_or(rest.len());
+        &rest[..end]
+    }
+
+    #[test]
+    fn readme_install_path_exists() {
+        let readme = readme_text();
+        let paths: Vec<&str> = readme
+            .lines()
+            .filter_map(|line| line.trim().strip_prefix("cargo install --path "))
+            .collect();
+        assert!(
+            !paths.is_empty(),
+            "README should document `cargo install --path`"
+        );
+        for rel in paths {
+            let resolved = workspace_root().join(rel.trim_start_matches("./"));
+            assert!(
+                Path::new(&resolved).exists(),
+                "documented install path `{rel}` does not exist (resolved to {})",
+                resolved.display()
+            );
+        }
+    }
+
+    #[test]
+    fn readme_usage_matches_cli_flags() {
+        let readme = readme_text();
+        let section = usage_section(&readme);
+        let help = crate::Args::command().render_long_help().to_string();
+
+        assert!(
+            help.contains("--pre-approve"),
+            "CLI --help must include --pre-approve:\n{help}"
+        );
+        assert!(
+            section.contains("--pre-approve"),
+            "README Usage/help must document --pre-approve:\n{section}"
+        );
+        assert!(
+            !section.contains("--approve <"),
+            "README Usage/help still documents the stale --approve flag; the CLI flag is --pre-approve:\n{section}"
+        );
+        assert!(
+            section.contains("@FILE"),
+            "README Usage/help should document @FILE / @- hash sources, as --help does:\n{section}"
+        );
+    }
+}
